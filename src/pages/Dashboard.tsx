@@ -160,7 +160,7 @@ const Dashboard = () => {
 
       <button
         onClick={() => setCaptureOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform z-50"
+        className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform z-50 aura-glow"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <Plus className="w-8 h-8" />
