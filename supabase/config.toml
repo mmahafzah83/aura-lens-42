@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.account-brief]
 verify_jwt = false
+
+[functions.deduplicate-entries]
+verify_jwt = false

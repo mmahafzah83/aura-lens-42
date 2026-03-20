@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive, Languages } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive, Languages, Sparkles } from "lucide-react";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +61,9 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
   const [copied, setCopied] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [togglingPin, setTogglingPin] = useState<string | null>(null);
+  const [dedupScanning, setDedupScanning] = useState(false);
+  const [dedupGroups, setDedupGroups] = useState<any[] | null>(null);
+  const [dedupApplying, setDedupApplying] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -163,6 +166,41 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDedupScan = async () => {
+    setDedupScanning(true);
+    setDedupGroups(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+        body: { mode: "scan" },
+      });
+      if (error) throw error;
+      if (data?.groups?.length > 0) {
+        setDedupGroups(data.groups);
+      } else {
+        toast({ title: t("dedup.noDuplicates") });
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setDedupScanning(false);
+  };
+
+  const handleDedupApply = async () => {
+    setDedupApplying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+        body: { mode: "apply" },
+      });
+      if (error) throw error;
+      toast({ title: `${data?.deletedCount || 0} ${t("dedup.done")}` });
+      setDedupGroups(null);
+      onRefresh?.();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setDedupApplying(false);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
@@ -172,8 +210,16 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
+            onClick={handleDedupScan}
+            disabled={dedupScanning}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all duration-150 active:scale-[0.97] bg-secondary text-muted-foreground hover:text-primary hover:border-primary/30 border border-transparent"
+          >
+            {dedupScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {dedupScanning ? t("dedup.scanning") : t("dedup.button")}
+          </button>
+          <button
             onClick={() => setShowArchive(!showArchive)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all duration-150 active:scale-[0.97] ${
               showArchive ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -316,6 +362,50 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
           )}
         </div>
       </ScrollArea>
+
+      {/* Dedup Results Dialog */}
+      <Dialog open={!!dedupGroups} onOpenChange={(open) => { if (!open) setDedupGroups(null); }}>
+        <DialogContent className="glass-card border-border/30 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-gradient-gold text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              {dedupGroups?.length || 0} {t("dedup.found")}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px] mt-2">
+            <div className="space-y-4">
+              {dedupGroups?.map((group: any, gi: number) => (
+                <div key={gi} className="rounded-xl bg-secondary/30 border border-border/20 p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground italic">{group.reason}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary px-2 py-0.5 rounded-full bg-primary/15">{t("dedup.keep")}</span>
+                    <span className="text-sm text-foreground truncate">{group.keep?.title}</span>
+                  </div>
+                  {group.archive?.map((a: any, ai: number) => (
+                    <div key={ai} className="flex items-center gap-2 opacity-60">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-destructive px-2 py-0.5 rounded-full bg-destructive/15">{t("dedup.remove")}</span>
+                      <span className="text-sm text-foreground truncate">{a.title}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="flex gap-2 mt-3">
+            <Button variant="outline" className="flex-1 border-border/30" onClick={() => setDedupGroups(null)}>
+              {t("dedup.cancel")}
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleDedupApply}
+              disabled={dedupApplying}
+            >
+              {dedupApplying ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Sparkles className="w-4 h-4 me-2" />}
+              {dedupApplying ? t("dedup.applying") : t("dedup.apply")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg">
