@@ -69,10 +69,10 @@ const Dashboard = () => {
   const pendingBrandPosts = entries.filter(e => e.summary && e.summary.trim().length > 0).length;
 
   const stats = [
-    { label: "Strategic Focus", value: topPillar ? topPillar[0] : "—", icon: BookOpen },
-    { label: "Pending Brand Posts", value: pendingBrandPosts, icon: BarChart3 },
-    { label: "Voice Notes", value: entries.filter(e => e.type === "voice").length, icon: Zap },
-    { label: "Strategic Insights", value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
+    { label: t("stats.strategicFocus"), value: topPillar ? topPillar[0] : "—", icon: BookOpen },
+    { label: t("stats.pendingPosts"), value: pendingBrandPosts, icon: BarChart3 },
+    { label: t("stats.voiceNotes"), value: entries.filter(e => e.type === "voice").length, icon: Zap },
+    { label: t("stats.strategicInsights"), value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
   ];
 
   return (
