@@ -13,9 +13,10 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-aura`;
 interface AuraChatSidebarProps {
   open: boolean;
   onClose: () => void;
+  initialMessage?: string;
 }
 
-const AuraChatSidebar = ({ open, onClose }: AuraChatSidebarProps) => {
+const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps) => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -33,6 +34,13 @@ const AuraChatSidebar = ({ open, onClose }: AuraChatSidebarProps) => {
       setTimeout(() => textareaRef.current?.focus(), 300);
     }
   }, [open]);
+
+  // Handle initial message from external trigger (e.g. framework briefing)
+  useEffect(() => {
+    if (open && initialMessage && messages.length === 0) {
+      send(initialMessage);
+    }
+  }, [open, initialMessage]);
 
   const streamChat = async (allMessages: Msg[], mode?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
