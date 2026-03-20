@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, Loader2, TrendingUp, TrendingDown, Zap, Target } from "lucide-react";
+import { Flame, Loader2, Eye, AlertTriangle, Lightbulb, Target } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -7,15 +7,17 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
+type MirrorResult = {
+  outsider_perception: string;
+  contradiction: string;
+  neglected_topic: string;
+  brand_alignment: number;
+  brand_rationale: string;
+};
+
 const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
   const [generating, setGenerating] = useState(false);
-  const [result, setResult] = useState<{
-    strengths: string[];
-    blind_spots: string[];
-    brand_alignment: number;
-    brand_rationale: string;
-    unlock_action: string;
-  } | null>(null);
+  const [result, setResult] = useState<MirrorResult | null>(null);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
@@ -29,7 +31,7 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
     try {
       const { data, error } = await supabase.functions.invoke("analyze-potential", {
         body: {
-          entries: entries.slice(0, 15).map((e) => ({
+          entries: entries.slice(0, 10).map((e) => ({
             type: e.type,
             skill_pillar: e.skill_pillar,
             summary: e.summary,
@@ -67,7 +69,7 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
           {generating && <Loader2 className="w-4 h-4 text-primary animate-spin" />}
         </div>
         <p className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
-          {entries.length}
+          Mirror
         </p>
         <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">
           Brand & Potential
@@ -80,9 +82,9 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Brand & Potential Mirror</DialogTitle>
+            <DialogTitle className="text-gradient-gold text-lg">Brand Mirror</DialogTitle>
           </DialogHeader>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Transformation Architect Assessment</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Based on your last 10 captures</p>
 
           {result && (
             <div className="space-y-5 mt-3">
@@ -101,43 +103,37 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
                 </div>
               </div>
 
-              {/* Strengths */}
+              {/* Outsider Perception */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
-                  <p className="text-xs text-green-400 uppercase tracking-widest font-semibold">Where You Lead</p>
+                  <Eye className="w-4 h-4 text-blue-400" />
+                  <p className="text-xs text-blue-400 uppercase tracking-widest font-semibold">How You Sound to an Outsider</p>
                 </div>
-                <ul className="space-y-2">
-                  {result.strengths.map((s, i) => (
-                    <li key={i} className="text-sm text-foreground leading-relaxed bg-green-500/5 border border-green-500/10 rounded-lg p-3">
-                      {s}
-                    </li>
-                  ))}
-                </ul>
+                <div className="text-sm text-foreground leading-relaxed bg-blue-500/5 border border-blue-500/10 rounded-lg p-3" dir="auto">
+                  {result.outsider_perception}
+                </div>
               </div>
 
-              {/* Blind Spots */}
+              {/* Contradiction */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="w-4 h-4 text-amber-400" />
-                  <p className="text-xs text-amber-400 uppercase tracking-widest font-semibold">Blind Spots</p>
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <p className="text-xs text-amber-400 uppercase tracking-widest font-semibold">Contradiction in Your Thinking</p>
                 </div>
-                <ul className="space-y-2">
-                  {result.blind_spots.map((w, i) => (
-                    <li key={i} className="text-sm text-foreground leading-relaxed bg-amber-500/5 border border-amber-500/10 rounded-lg p-3">
-                      {w}
-                    </li>
-                  ))}
-                </ul>
+                <div className="text-sm text-foreground leading-relaxed bg-amber-500/5 border border-amber-500/10 rounded-lg p-3" dir="auto">
+                  {result.contradiction}
+                </div>
               </div>
 
-              {/* Unlock Action */}
-              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+              {/* Neglected Topic */}
+              <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-primary" />
-                  <p className="text-xs text-primary uppercase tracking-widest font-semibold">The Coach's Challenge</p>
+                  <Lightbulb className="w-4 h-4 text-green-400" />
+                  <p className="text-xs text-green-400 uppercase tracking-widest font-semibold">What You Should Be Talking About</p>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed italic">{result.unlock_action}</p>
+                <div className="text-sm text-foreground leading-relaxed bg-green-500/5 border border-green-500/10 rounded-lg p-3" dir="auto">
+                  {result.neglected_topic}
+                </div>
               </div>
             </div>
           )}
