@@ -129,7 +129,7 @@ const Dashboard = () => {
             <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">Track skill development</p>
           </div>
 
-          <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[300px] sm:min-h-[380px] radar-glow">
+          <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[250px] sm:min-h-[380px] radar-glow">
             <SkillRadar key={radarKey} />
           </div>
 
