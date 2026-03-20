@@ -82,7 +82,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
           } else if (fnData?.transcript) {
             setContent(fnData.transcript);
-            toast({ title: "Transcribed", description: "Voice note converted to text." });
+            if (fnData.summary) {
+              setVoiceAnalysis({ summary: fnData.summary, skill_pillar: fnData.skill_pillar || null });
+              toast({ title: "Analyzed", description: "Senior Partner briefing generated." });
+            } else {
+              toast({ title: "Transcribed", description: "Voice note converted to text." });
+            }
           }
         } catch (err) {
           console.error("Transcription fetch error:", err);
