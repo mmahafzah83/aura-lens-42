@@ -157,9 +157,21 @@ const Dashboard = () => {
         <Plus className="w-8 h-8" />
       </button>
 
-      <CaptureModal open={captureOpen} onOpenChange={setCaptureOpen} onCaptured={fetchEntries} />
+      <CaptureModal
+        open={captureOpen}
+        onOpenChange={setCaptureOpen}
+        onCaptured={fetchEntries}
+        onOpenChat={(msg) => {
+          setChatInitialMessage(msg);
+          setChatOpen(true);
+        }}
+      />
       <TrainingModal open={trainingOpen} onOpenChange={setTrainingOpen} onLogged={() => { setRadarKey(k => k + 1); }} />
-      <AuraChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />
+      <AuraChatSidebar
+        open={chatOpen}
+        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
+        initialMessage={chatInitialMessage}
+      />
     </div>
   );
 };
