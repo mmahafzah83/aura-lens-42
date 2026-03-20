@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket, ChevronLeft } from "lucide-react";
+import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,34 +19,33 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [swipeX, setSwipeX] = useState(0);
+  const [swipeY, setSwipeY] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
-  // Swipe-to-dismiss gesture
+  // Swipe-down-to-dismiss gesture
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (!touchStartRef.current) return;
-    const dx = e.touches[0].clientX - touchStartRef.current.x;
-    const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y);
-    // Only track horizontal swipe to the right
-    if (dx > 10 && dx > dy) {
-      setSwipeX(Math.max(0, dx));
+    const dy = e.touches[0].clientY - touchStartRef.current.y;
+    const dx = Math.abs(e.touches[0].clientX - touchStartRef.current.x);
+    // Only track vertical swipe downward
+    if (dy > 10 && dy > dx) {
+      setSwipeY(Math.max(0, dy * 0.6));
     }
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    if (swipeX > 120) {
+    if (swipeY > 140) {
       onClose();
     }
-    setSwipeX(0);
+    setSwipeY(0);
     touchStartRef.current = null;
-  }, [swipeX, onClose]);
+  }, [swipeY, onClose]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -177,9 +176,9 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   const handleMeetingPrep = () => {
     const topic = input.trim();
     if (topic) {
-      send(`Prepare a 1-page bilingual meeting prep memo for a VP meeting on: ${topic}`, "meeting-prep");
+      send(`Prepare a 1-page meeting prep memo for a VP meeting on: ${topic}`, "meeting-prep");
     } else {
-      send("Prepare a 1-page bilingual meeting prep memo for a VP meeting based on my most recent and strategic captures.", "meeting-prep");
+      send("Prepare a 1-page meeting prep memo for a VP meeting based on my most recent and strategic captures.", "meeting-prep");
     }
   };
 
@@ -202,164 +201,172 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   if (!open) return null;
 
   return (
-    <div
-      ref={panelRef}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      className="fixed inset-y-0 right-0 w-full sm:w-[420px] z-50 flex flex-col bg-background border-l border-border/30 shadow-2xl animate-in slide-in-from-right duration-300"
-      style={{
-        transform: swipeX > 0 ? `translateX(${swipeX}px)` : undefined,
-        transition: swipeX > 0 ? 'none' : 'transform 0.3s ease-out',
-        opacity: swipeX > 0 ? Math.max(0.3, 1 - swipeX / 300) : 1,
-      }}
-    >
-      {/* Header with back button */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-border/30">
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={onClose}
-            className="p-1.5 -ml-1 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press sm:hidden"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">Ask Aura</h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">RAG-Powered Intelligence Vault</p>
-          </div>
+    <div className="fixed inset-0 z-[9998] flex flex-col">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Chat panel — swipe down to dismiss */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="relative z-[1] flex flex-col w-full h-full sm:w-[420px] sm:h-auto sm:max-h-[90vh] sm:m-auto sm:rounded-2xl bg-background border border-border/30 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom duration-300"
+        style={{
+          transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
+          transition: swipeY > 0 ? 'none' : 'transform 0.3s ease-out',
+          opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
+        }}
+      >
+        {/* Swipe indicator (mobile) */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
-        <div className="flex items-center gap-1">
-          {messages.length > 0 && (
+
+        {/* Sticky header with close button — respects safe area */}
+        <div
+          className="flex items-center justify-between px-5 py-3 border-b border-border/30 sticky top-0 bg-background/95 backdrop-blur-md z-10"
+          style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Zap className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Ask Aura</h2>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Intelligence Vault</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            {messages.length > 0 && (
+              <button
+                onClick={() => setMessages([])}
+                className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press"
+                title="Clear chat"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
             <button
-              onClick={() => setMessages([])}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary"
-              title="Clear chat"
+              onClick={onClose}
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-xl hover:bg-secondary tactile-press"
             >
-              <Trash2 className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <Zap className="w-7 h-7 text-primary" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">Your Vault, Unlocked</h3>
+              <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
+                Ask across your captures, uploaded PDFs, voice notes, and screenshots. Aura uses RAG to find the most relevant intelligence.
+              </p>
+              <div className="mt-6 space-y-2 w-full max-w-[280px]">
+                {[
+                  "What are my recurring themes this month?",
+                  "Find insights from my uploaded SWA PDFs",
+                  "What frameworks have I captured?",
+                ].map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => send(q)}
+                    className="w-full text-left text-xs px-3 py-2.5 rounded-lg bg-secondary/60 border border-border/20 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors tactile-press"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
-          <button
-            onClick={onClose}
-            className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-        {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center py-12">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Zap className="w-7 h-7 text-primary" />
-            </div>
-            <h3 className="text-base font-semibold text-foreground mb-1">Your Vault, Unlocked</h3>
-            <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-              Ask across your captures, uploaded PDFs, voice notes, and screenshots. Aura uses RAG to find the most relevant intelligence.
-            </p>
-            <div className="mt-6 space-y-2 w-full max-w-[280px]">
-              {[
-                "What are my recurring themes this month?",
-                "Find insights from my uploaded SWA PDFs",
-                "What frameworks have I captured?",
-              ].map((q) => (
-                <button
-                  key={q}
-                  onClick={() => send(q)}
-                  className="w-full text-left text-xs px-3 py-2.5 rounded-lg bg-secondary/60 border border-border/20 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+          {messages.map((msg, i) => (
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
-              }`}
-              dir="auto"
-              style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.role === "assistant" ? (
-                <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-primary [&_code]:text-xs [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                </div>
-              ) : (
-                msg.content
-              )}
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
+                    : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
+                }`}
+                style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
+              >
+                {msg.role === "assistant" ? (
+                  <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-primary [&_code]:text-xs [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  msg.content
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-          <div className="flex justify-start">
-            <div className="bg-secondary/60 border border-border/20 rounded-2xl rounded-bl-md px-4 py-3">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+          {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
+            <div className="flex justify-start">
+              <div className="bg-secondary/60 border border-border/20 rounded-2xl rounded-bl-md px-4 py-3">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-border/30 px-4 py-3 space-y-2" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-        <div className="flex gap-2">
-          <Textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask about your captures & documents…"
-            rows={1}
-            className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[40px] max-h-[120px]"
-            dir="auto"
-          />
-          <Button
-            onClick={() => send(input)}
-            disabled={isLoading || !input.trim()}
-            size="icon"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-10 flex-shrink-0"
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleMeetingPrep}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            Meeting Prep
-          </button>
-          <button
-            onClick={handleDraftDeck}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
-          >
-            <Presentation className="w-3.5 h-3.5" />
-            Draft Deck
-          </button>
-          <button
-            onClick={handleSynthesize}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
-          >
-            <Rocket className="w-3.5 h-3.5" />
-            Synthesize Pursuit
-          </button>
+
+        {/* Input — respects safe area bottom */}
+        <div
+          className="border-t border-border/30 px-4 py-3 space-y-2"
+          style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex gap-2">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your captures & documents…"
+              rows={1}
+              className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[40px] max-h-[120px]"
+            />
+            <Button
+              onClick={() => send(input)}
+              disabled={isLoading || !input.trim()}
+              size="icon"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-10 flex-shrink-0"
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleMeetingPrep}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1 tactile-press"
+            >
+              <Briefcase className="w-3.5 h-3.5" />
+              Meeting Prep
+            </button>
+            <button
+              onClick={handleDraftDeck}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1 tactile-press"
+            >
+              <Presentation className="w-3.5 h-3.5" />
+              Draft Deck
+            </button>
+            <button
+              onClick={handleSynthesize}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1 tactile-press"
+            >
+              <Rocket className="w-3.5 h-3.5" />
+              Synthesize
+            </button>
+          </div>
         </div>
       </div>
     </div>
