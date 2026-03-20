@@ -2,3 +2,6 @@ project_id = "zddlsztxfzvevzjbuocc"
 
 [functions.summarize-link]
 verify_jwt = false
+
+[functions.draft-post]
+verify_jwt = false
