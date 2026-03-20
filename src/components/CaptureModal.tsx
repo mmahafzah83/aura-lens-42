@@ -184,6 +184,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     } else {
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");
+      setVoiceAnalysis(null);
       onCaptured();
       onOpenChange(false);
     }
