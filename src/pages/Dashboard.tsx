@@ -83,7 +83,7 @@ const Dashboard = () => {
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
-      <header className="border-b border-border/20 px-4 sm:px-8 py-4">
+      <header className="border-b border-border/20 px-4 sm:px-8 py-4 flex-shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
