@@ -210,8 +210,16 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
+            onClick={handleDedupScan}
+            disabled={dedupScanning}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all duration-150 active:scale-[0.97] bg-secondary text-muted-foreground hover:text-primary hover:border-primary/30 border border-transparent"
+          >
+            {dedupScanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {dedupScanning ? t("dedup.scanning") : t("dedup.button")}
+          </button>
+          <button
             onClick={() => setShowArchive(!showArchive)}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all duration-150 active:scale-[0.97] ${
               showArchive ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >

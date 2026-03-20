@@ -82,6 +82,16 @@ const translations: Record<string, string> = {
   "account.pdfGenerated": "Meeting brief downloaded",
   "frameworks.title": "Expert Frameworks",
   "frameworks.empty": "No frameworks yet. Capture content about expert systems to auto-extract.",
+  "dedup.button": "De-duplicate",
+  "dedup.scanning": "Scanning for duplicates…",
+  "dedup.noDuplicates": "No duplicates found — vault is clean!",
+  "dedup.found": "duplicate group(s) found",
+  "dedup.keep": "Keep",
+  "dedup.remove": "Remove",
+  "dedup.apply": "Merge & Clean",
+  "dedup.applying": "Merging…",
+  "dedup.done": "duplicates removed",
+  "dedup.cancel": "Cancel",
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
