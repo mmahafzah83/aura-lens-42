@@ -83,7 +83,6 @@ const Dashboard = () => {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    localStorage.setItem("aura-onboarded", "1");
   };
 
   return (
