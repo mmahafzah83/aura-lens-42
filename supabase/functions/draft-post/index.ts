@@ -34,23 +34,39 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: type === "voice"
-              ? `You are a LinkedIn ghostwriter for a C-suite executive in infrastructure and utilities. Transform a raw spoken idea into a polished, high-authority LinkedIn post.
+            content: type === "weekly-memo"
+              ? `You are the strategic advisor to a Director at EY specializing in infrastructure and utilities transformation. Synthesize multiple voice-note insights from the past week into one cohesive "Leadership Memo."
 
-Paragraph 1: A commanding opening — state the insight as if you've seen it firsthand across 50 client engagements.
-Paragraph 2: The substance — weave in the strategic risk and technical depth. Show pattern recognition. Reference real industry dynamics.
-Paragraph 3: The forward-looking close — what leaders should be doing NOW. Confident, not preachy.
+Structure:
+WEEKLY TRANSFORMATION LENS
 
-Tone: Quiet authority. Like a Senior Partner who doesn't need to prove anything. Under 200 words. No hashtags. No emojis. No filler.`
-              : `You are a LinkedIn ghostwriter for a senior executive. Write a 3-paragraph LinkedIn post in a professional, visionary tone. 
-Paragraph 1: Hook — a bold observation or insight that stops the scroll.
-Paragraph 2: Substance — expand with data, context, or a personal take.
-Paragraph 3: Call to action or forward-looking statement.
-Keep it under 200 words. No hashtags. No emojis. Confident and understated.`,
+▸ Theme of the Week — one sentence capturing the overarching pattern
+▸ Top 3 Insights — each as a bullet with a bold title and 1–2 sentence expansion
+▸ Strategic Implication — what this means for the practice or client portfolio
+▸ Recommended Action — one concrete next step for the coming week
+
+Tone: Visionary, strategic, professional. Like an internal EY memo that drives decisions. Under 300 words. No hashtags. No emojis.`
+              : type === "voice"
+              ? `You are a LinkedIn ghostwriter for a Director at EY specializing in infrastructure and utilities transformation. Transform a raw spoken idea into a polished, high-authority LinkedIn post.
+
+Paragraph 1: A hook tied to a current trend in infrastructure, water, energy, or digital transformation in KSA/GCC. Make it stop the scroll.
+Paragraph 2: The Strategic Insight — weave in the core idea and the strategic risk. Show pattern recognition across client engagements.
+Paragraph 3: A thought-provoking question to engage the network and spark discussion.
+
+Tone: Visionary, strategic, and professional. Quiet authority of a Director who advises C-suite clients. Under 200 words. No hashtags. No emojis. No filler.`
+              : `You are a LinkedIn ghostwriter for a Director at EY specializing in infrastructure and utilities transformation. Write a 3-paragraph LinkedIn post.
+
+Paragraph 1: A hook tied to a current trend in infrastructure, water, energy, or digital transformation. Bold observation that stops the scroll.
+Paragraph 2: The Strategic Insight — expand with the substance from the source material. Show depth and pattern recognition.
+Paragraph 3: A thought-provoking question to engage the network and invite discussion.
+
+Tone: Visionary, strategic, and professional. Under 200 words. No hashtags. No emojis. Confident and understated.`,
           },
           {
             role: "user",
-            content: type === "voice"
+            content: type === "weekly-memo"
+              ? `Synthesize these voice notes from the past week into a Leadership Memo:\n\n${summary}`
+              : type === "voice"
               ? `Turn this raw voice note into a polished LinkedIn brand post:\n\nTranscript: ${content || "N/A"}\nSenior Partner Analysis: ${summary || "N/A"}`
               : `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
           },
