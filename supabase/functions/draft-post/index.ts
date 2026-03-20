@@ -109,6 +109,8 @@ Context focus: infrastructure, water, energy, or digital transformation.${biling
       "voice": `Turn this raw voice note into a polished LinkedIn brand post:\n\nTranscript: ${content || "N/A"}\nSenior Partner Analysis: ${summary || "N/A"}`,
       "arabic-executive": `اكتب منشور لينكدإن عربي بأسلوب التنفيذي السعودي من هذا المحتوى:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمصدر: ${content || "N/A"}`,
       "translate-executive-ar": `ترجم المحتوى التالي إلى العربية التنفيذية:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمحتوى: ${content || "N/A"}`,
+      "directors-insight-en": `Here are my last 5 captures. Produce a 2-sentence Director's Insight:\n\n${summary}`,
+      "directors-insight-ar": `هذه آخر ٥ التقاطاتي. أنتج رؤية المدير في جملتين:\n\n${summary}`,
       "default": `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
     };
 
