@@ -18,7 +18,7 @@ interface CaptureModalProps {
   onOpenChat?: (prefill: string) => void;
 }
 
-const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => {
+const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureModalProps) => {
   const [captureType, setCaptureType] = useState<CaptureType>("link");
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
