@@ -96,7 +96,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{stat.value}</p>
+              <p className={`font-bold text-foreground tracking-tight ${typeof stat.value === 'string' ? 'text-sm sm:text-base' : 'text-2xl sm:text-3xl'}`}>{stat.value}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">{stat.label}</p>
             </div>
           ))}
