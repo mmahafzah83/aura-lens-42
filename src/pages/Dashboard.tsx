@@ -81,13 +81,6 @@ const Dashboard = () => {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30 font-medium"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {t("lang.toggle")}
-            </button>
-            <button
               onClick={() => setChatOpen(true)}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30"
             >
