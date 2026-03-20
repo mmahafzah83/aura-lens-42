@@ -51,9 +51,21 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekEntries = entries.filter(e => new Date(e.created_at) >= weekAgo);
+
+  const pillarCounts: Record<string, number> = {};
+  weekEntries.forEach(e => {
+    if (e.skill_pillar) pillarCounts[e.skill_pillar] = (pillarCounts[e.skill_pillar] || 0) + 1;
+  });
+  const topPillar = Object.entries(pillarCounts).sort((a, b) => b[1] - a[1])[0];
+
+  const pendingBrandPosts = entries.filter(e => e.summary && e.summary.trim().length > 0).length;
+
   const stats = [
-    { label: "Total Captures", value: entries.length, icon: BookOpen },
-    { label: "Links Saved", value: entries.filter(e => e.type === "link").length, icon: BarChart3 },
+    { label: "Strategic Focus", value: topPillar ? topPillar[0] : "—", icon: BookOpen },
+    { label: "Pending Brand Posts", value: pendingBrandPosts, icon: BarChart3 },
     { label: "Voice Notes", value: entries.filter(e => e.type === "voice").length, icon: Zap },
     { label: "Strategic Insights", value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
   ];
@@ -84,7 +96,7 @@ const Dashboard = () => {
               <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{stat.value}</p>
+              <p className={`font-bold text-foreground tracking-tight ${typeof stat.value === 'string' ? 'text-sm sm:text-base' : 'text-2xl sm:text-3xl'}`}>{stat.value}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">{stat.label}</p>
             </div>
           ))}
