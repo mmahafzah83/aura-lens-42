@@ -6,6 +6,7 @@ import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
+import PotentialUnleashed from "@/components/PotentialUnleashed";
 import RecentEntries from "@/components/RecentEntries";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -54,12 +55,11 @@ const Dashboard = () => {
     { label: "Total Captures", value: entries.length, icon: BookOpen },
     { label: "Links Saved", value: entries.filter(e => e.type === "link").length, icon: BarChart3 },
     { label: "Voice Notes", value: entries.filter(e => e.type === "voice").length, icon: Zap },
-    { label: "Strategic Insights", value: entries.filter(e => (e as any).has_strategic_insight === true).length, icon: TrendingUp },
+    { label: "Strategic Insights", value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
   ];
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      {/* Header */}
       <header className="border-b border-border/30 px-4 sm:px-8 py-4 sm:py-5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -77,10 +77,8 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Dashboard */}
       <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-min">
-          {/* Stats Row */}
           {stats.map((stat) => (
             <div key={stat.label} className="glass-card rounded-2xl p-4 sm:p-6 hover:bg-card-hover transition-colors">
               <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -91,10 +89,12 @@ const Dashboard = () => {
             </div>
           ))}
 
-          {/* Weekly Transformation Lens */}
           <WeeklyTransformationLens entries={entries} />
 
-          {/* Capture Button — hidden on mobile, shown in grid on desktop */}
+          {/* Potential Unleashed Card */}
+          <PotentialUnleashed entries={entries} />
+
+          {/* Capture Button — hidden on mobile */}
           <div
             className="hidden md:flex glass-card rounded-2xl p-10 flex-col items-center justify-center text-center gold-glow cursor-pointer hover:bg-card-hover transition-all group"
             onClick={() => setCaptureOpen(true)}
@@ -106,7 +106,6 @@ const Dashboard = () => {
             <p className="text-xs text-muted-foreground tracking-wide">Link, voice note, or thought</p>
           </div>
 
-          {/* Log Training Button */}
           <div
             className="col-span-2 md:col-span-1 glass-card rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
             onClick={() => setTrainingOpen(true)}
@@ -118,19 +117,16 @@ const Dashboard = () => {
             <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">Track skill development</p>
           </div>
 
-          {/* Skill Radar — spans 2 cols */}
           <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[300px] sm:min-h-[380px] radar-glow">
             <SkillRadar key={radarKey} />
           </div>
 
-          {/* Recent Entries — full width */}
           <div className="col-span-2 lg:col-span-4 glass-card rounded-2xl p-4 sm:p-8">
             <RecentEntries entries={entries} />
           </div>
         </div>
       </main>
 
-      {/* Mobile FAB — Capture button */}
       <button
         onClick={() => setCaptureOpen(true)}
         className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform z-50"

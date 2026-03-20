@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-const PILLARS = ["Strategy", "Technology", "Utilities", "Leadership", "Brand"] as const;
+const PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"] as const;
 
 interface TrainingModalProps {
   open: boolean;
