@@ -363,6 +363,50 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
         </div>
       </ScrollArea>
 
+      {/* Dedup Results Dialog */}
+      <Dialog open={!!dedupGroups} onOpenChange={(open) => { if (!open) setDedupGroups(null); }}>
+        <DialogContent className="glass-card border-border/30 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-gradient-gold text-lg flex items-center gap-2">
+              <Sparkles className="w-5 h-5" />
+              {dedupGroups?.length || 0} {t("dedup.found")}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[400px] mt-2">
+            <div className="space-y-4">
+              {dedupGroups?.map((group: any, gi: number) => (
+                <div key={gi} className="rounded-xl bg-secondary/30 border border-border/20 p-4 space-y-2">
+                  <p className="text-xs text-muted-foreground italic">{group.reason}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary px-2 py-0.5 rounded-full bg-primary/15">{t("dedup.keep")}</span>
+                    <span className="text-sm text-foreground truncate">{group.keep?.title}</span>
+                  </div>
+                  {group.archive?.map((a: any, ai: number) => (
+                    <div key={ai} className="flex items-center gap-2 opacity-60">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-destructive px-2 py-0.5 rounded-full bg-destructive/15">{t("dedup.remove")}</span>
+                      <span className="text-sm text-foreground truncate">{a.title}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="flex gap-2 mt-3">
+            <Button variant="outline" className="flex-1 border-border/30" onClick={() => setDedupGroups(null)}>
+              {t("dedup.cancel")}
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleDedupApply}
+              disabled={dedupApplying}
+            >
+              {dedupApplying ? <Loader2 className="w-4 h-4 me-2 animate-spin" /> : <Sparkles className="w-4 h-4 me-2" />}
+              {dedupApplying ? t("dedup.applying") : t("dedup.apply")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg">
           <DialogHeader>
