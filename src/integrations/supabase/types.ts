@@ -20,6 +20,8 @@ export type Database = {
           created_at: string
           has_strategic_insight: boolean
           id: string
+          image_url: string | null
+          pinned: boolean
           skill_pillar: string | null
           summary: string | null
           title: string | null
@@ -32,6 +34,8 @@ export type Database = {
           created_at?: string
           has_strategic_insight?: boolean
           id?: string
+          image_url?: string | null
+          pinned?: boolean
           skill_pillar?: string | null
           summary?: string | null
           title?: string | null
@@ -44,6 +48,8 @@ export type Database = {
           created_at?: string
           has_strategic_insight?: boolean
           id?: string
+          image_url?: string | null
+          pinned?: boolean
           skill_pillar?: string | null
           summary?: string | null
           title?: string | null

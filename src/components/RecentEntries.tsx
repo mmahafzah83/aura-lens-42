@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,12 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 
-type Entry = Database["public"]["Tables"]["entries"]["Row"];
+type Entry = Database["public"]["Tables"]["entries"]["Row"] & { pinned?: boolean; image_url?: string | null };
 
-const iconMap = {
+const iconMap: Record<string, any> = {
   link: Link,
   voice: Mic,
   text: Type,
+  image: ImageIcon,
 };
 
 function detectDir(text: string): "rtl" | "ltr" {
@@ -47,15 +48,34 @@ const ExpandableSummary = ({ text }: { text: string }) => {
   );
 };
 
-const RecentEntries = ({ entries }: { entries: Entry[] }) => {
+const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: () => void }) => {
   const [search, setSearch] = useState("");
   const [draftingId, setDraftingId] = useState<string | null>(null);
   const [draftPost, setDraftPost] = useState("");
   const [draftOpen, setDraftOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+  const [togglingPin, setTogglingPin] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const filtered = entries.filter((e) => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const activeEntries = entries.filter((e) => {
+    const isPinned = (e as any).pinned === true;
+    const isOld = new Date(e.created_at) < thirtyDaysAgo;
+    return isPinned || !isOld;
+  });
+
+  const archivedEntries = entries.filter((e) => {
+    const isPinned = (e as any).pinned === true;
+    const isOld = new Date(e.created_at) < thirtyDaysAgo;
+    return !isPinned && isOld;
+  });
+
+  const displayEntries = showArchive ? archivedEntries : activeEntries;
+
+  const filtered = displayEntries.filter((e) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -65,6 +85,23 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
       (e.skill_pillar && e.skill_pillar.toLowerCase().includes(q))
     );
   });
+
+  const handleTogglePin = async (entry: Entry) => {
+    setTogglingPin(entry.id);
+    const newPinned = !(entry as any).pinned;
+    const { error } = await supabase
+      .from("entries")
+      .update({ pinned: newPinned } as any)
+      .eq("id", entry.id);
+
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      (entry as any).pinned = newPinned;
+      onRefresh?.();
+    }
+    setTogglingPin(null);
+  };
 
   const handleDraft = async (entry: Entry) => {
     setDraftingId(entry.id);
@@ -102,38 +139,59 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
           <h3 className="text-lg font-semibold text-foreground mb-0.5">Recent Captures</h3>
           <p className="text-xs text-muted-foreground tracking-wide uppercase">Latest intelligence entries</p>
         </div>
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search captures…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 bg-secondary border-border/30 text-sm"
-          />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setShowArchive(!showArchive)}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+              showArchive ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            Archive{archivedEntries.length > 0 && ` (${archivedEntries.length})`}
+          </button>
+          <div className="relative flex-1 sm:w-52">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search captures…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9 bg-secondary border-border/30 text-sm"
+            />
+          </div>
         </div>
       </div>
       <ScrollArea className="h-[360px] sm:h-[420px]">
         <div className="space-y-3 pr-3">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground italic">
-              {search ? "No results found." : "No entries yet. Start capturing."}
+              {showArchive ? "No archived entries." : search ? "No results found." : "No entries yet. Start capturing."}
             </p>
           ) : (
             filtered.map((entry) => {
-              const Icon = iconMap[entry.type as keyof typeof iconMap] || Type;
+              const Icon = iconMap[entry.type] || Type;
               const pillar = entry.skill_pillar;
               const title = entry.title;
               const isLink = entry.type === "link";
               const isDrafting = draftingId === entry.id;
               const contentDir = detectDir(entry.content);
+              const isPinned = (entry as any).pinned === true;
+              const imageUrl = (entry as any).image_url;
 
               return (
                 <div
                   key={entry.id}
-                  className="flex items-start gap-3 p-3 sm:p-4 rounded-xl bg-secondary/40 border border-border/20 hover:bg-secondary/60 transition-colors"
+                  className={`flex items-start gap-3 p-3 sm:p-4 rounded-xl border transition-colors ${
+                    isPinned
+                      ? "bg-primary/5 border-primary/20 hover:bg-primary/10"
+                      : "bg-secondary/40 border-border/20 hover:bg-secondary/60"
+                  }`}
                 >
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                    {imageUrl ? (
+                      <img src={imageUrl} alt="" className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-cover" />
+                    ) : (
+                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1 space-y-1.5">
                     {isLink && title ? (
@@ -148,6 +206,8 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
                         {title}
                         <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                       </a>
+                    ) : title ? (
+                      <p className="text-sm font-medium text-foreground break-words" dir="auto">{title}</p>
                     ) : (
                       <p className="text-sm text-foreground break-words" dir={contentDir} style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
                         {entry.content}
@@ -163,6 +223,24 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </span>
+
+                      <button
+                        onClick={() => handleTogglePin(entry)}
+                        disabled={togglingPin === entry.id}
+                        className={`flex items-center gap-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 ${
+                          isPinned ? "text-primary" : "text-muted-foreground hover:text-primary"
+                        }`}
+                        title={isPinned ? "Unpin" : "Pin"}
+                      >
+                        {togglingPin === entry.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : isPinned ? (
+                          <PinOff className="w-3 h-3" />
+                        ) : (
+                          <Pin className="w-3 h-3" />
+                        )}
+                      </button>
+
                       {entry.summary && (
                         <button
                           onClick={() => handleDraft(entry)}
