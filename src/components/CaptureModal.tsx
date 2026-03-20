@@ -35,6 +35,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     let summary: string | null = null;
     let title: string | null = null;
     let skill_pillar: string | null = null;
+    let has_strategic_insight = false;
 
     if (captureType === "link") {
       toast({ title: "Analyzing", description: "AI is extracting strategic intelligence..." });
@@ -52,6 +53,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           title = fnData?.title || null;
           summary = fnData?.summary || null;
           skill_pillar = fnData?.skill_pillar || null;
+          has_strategic_insight = fnData?.has_strategic_insight === true;
         }
       } catch (err) {
         console.error("Summary fetch error:", err);
@@ -59,7 +61,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     }
 
     if (captureType === "voice" && !skill_pillar) {
-      // Auto-tag voice notes — simple keyword matching as fallback
       const lower = content.toLowerCase();
       if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) {
         skill_pillar = "Strategy";
@@ -72,7 +73,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       } else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) {
         skill_pillar = "Brand";
       } else {
-        skill_pillar = "Strategy"; // default
+        skill_pillar = "Strategy";
       }
     }
 
@@ -83,6 +84,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       summary,
       title,
       skill_pillar,
+      has_strategic_insight,
     } as any);
 
     if (error) {

@@ -53,7 +53,7 @@ const Dashboard = () => {
     { label: "Total Captures", value: entries.length, icon: BookOpen },
     { label: "Links Saved", value: entries.filter(e => e.type === "link").length, icon: BarChart3 },
     { label: "Voice Notes", value: entries.filter(e => e.type === "voice").length, icon: Zap },
-    { label: "Insights", value: entries.filter(e => e.summary).length, icon: TrendingUp },
+    { label: "Strategic Insights", value: entries.filter(e => (e as any).has_strategic_insight === true).length, icon: TrendingUp },
   ];
 
   return (
