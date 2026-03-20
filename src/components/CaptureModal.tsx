@@ -20,6 +20,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceAnalysis, setVoiceAnalysis] = useState<{ summary: string | null; skill_pillar: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -81,7 +82,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
           } else if (fnData?.transcript) {
             setContent(fnData.transcript);
-            toast({ title: "Transcribed", description: "Voice note converted to text." });
+            if (fnData.summary) {
+              setVoiceAnalysis({ summary: fnData.summary, skill_pillar: fnData.skill_pillar || null });
+              toast({ title: "Analyzed", description: "Senior Partner briefing generated." });
+            } else {
+              toast({ title: "Transcribed", description: "Voice note converted to text." });
+            }
           }
         } catch (err) {
           console.error("Transcription fetch error:", err);
@@ -144,20 +150,22 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       }
     }
 
-    if (captureType === "voice" && !skill_pillar) {
-      const lower = content.toLowerCase();
-      if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) {
-        skill_pillar = "Strategy";
-      } else if (lower.includes("tech") || lower.includes("code") || lower.includes("software") || lower.includes("digital twin")) {
-        skill_pillar = "Technology";
-      } else if (lower.includes("desalination") || lower.includes("utility") || lower.includes("nwc") || lower.includes("mewa") || lower.includes("water")) {
-        skill_pillar = "Utilities";
-      } else if (lower.includes("leader") || lower.includes("team") || lower.includes("manage")) {
-        skill_pillar = "Leadership";
-      } else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) {
-        skill_pillar = "Brand";
+    if (captureType === "voice") {
+      if (voiceAnalysis?.summary) {
+        summary = voiceAnalysis.summary;
+        has_strategic_insight = true;
+      }
+      if (voiceAnalysis?.skill_pillar) {
+        skill_pillar = voiceAnalysis.skill_pillar;
       } else {
-        skill_pillar = "Strategy";
+        // Fallback keyword tagging
+        const lower = content.toLowerCase();
+        if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) skill_pillar = "Strategy";
+        else if (lower.includes("tech") || lower.includes("digital twin")) skill_pillar = "Technology";
+        else if (lower.includes("desalination") || lower.includes("nwc") || lower.includes("mewa") || lower.includes("water")) skill_pillar = "Utilities";
+        else if (lower.includes("leader") || lower.includes("team") || lower.includes("manage")) skill_pillar = "Leadership";
+        else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) skill_pillar = "Brand";
+        else skill_pillar = "Strategy";
       }
     }
 
@@ -176,6 +184,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     } else {
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");
+      setVoiceAnalysis(null);
       onCaptured();
       onOpenChange(false);
     }
@@ -238,7 +247,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
                 <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 </div>
-                <p className="text-sm text-muted-foreground">Transcribing with Whisper…</p>
+                <p className="text-sm text-muted-foreground">Analyzing as Senior Partner…</p>
               </>
             ) : (
               <>
@@ -263,14 +272,25 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             )}
 
             {content && !isRecording && !isTranscribing && (
-              <div className="w-full mt-2">
+              <div className="w-full mt-2 space-y-3">
                 <Textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  rows={4}
+                  rows={3}
                   className="bg-secondary border-border/30 resize-none text-sm"
                   placeholder="Transcript will appear here…"
                 />
+                {voiceAnalysis?.summary && (
+                  <div className="bg-secondary/60 border border-border/20 rounded-xl p-4 space-y-2">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Senior Partner Analysis</p>
+                    <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">{voiceAnalysis.summary}</p>
+                    {voiceAnalysis.skill_pillar && (
+                      <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary mt-1">
+                        {voiceAnalysis.skill_pillar}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
