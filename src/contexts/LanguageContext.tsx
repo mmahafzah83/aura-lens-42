@@ -65,6 +65,20 @@ const translations: Record<string, Record<Lang, string>> = {
   "auth.hasAccount": { en: "Already have an account?", ar: "لديك حساب بالفعل؟" },
   "auth.needAccount": { en: "Need an account?", ar: "تحتاج حساب؟" },
   "lang.toggle": { en: "عربي", ar: "English" },
+  "account.title": { en: "Account Intelligence", ar: "استخبارات الحساب" },
+  "account.selectAccount": { en: "Focus Account", ar: "حساب التركيز" },
+  "account.selectFirst": { en: "Select an account first", ar: "اختر حساباً أولاً" },
+  "account.synthesize": { en: "Synthesize", ar: "تحليل" },
+  "account.analyzing": { en: "Analyzing intelligence vault…", ar: "جاري تحليل خزنة الذكاء…" },
+  "account.entries": { en: "entries", ar: "مدخلات" },
+  "account.docChunks": { en: "doc chunks", ar: "أجزاء مستندات" },
+  "account.strategicSynthesis": { en: "Strategic Synthesis", ar: "التوليف الاستراتيجي" },
+  "account.keyThemes": { en: "Key Themes", ar: "المحاور الرئيسية" },
+  "account.strategicQuestions": { en: "Questions for GM Discussion", ar: "أسئلة لنقاش المدير العام" },
+  "account.risks": { en: "Risk Factors", ar: "عوامل الخطر" },
+  "account.opportunities": { en: "Opportunities", ar: "الفرص" },
+  "account.architectBrief": { en: "Architect Meeting Brief (PDF)", ar: "إعداد ملخص الاجتماع (PDF)" },
+  "account.pdfGenerated": { en: "Meeting brief downloaded", ar: "تم تحميل ملخص الاجتماع" },
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);

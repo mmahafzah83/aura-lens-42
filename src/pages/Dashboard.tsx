@@ -12,6 +12,7 @@ import PotentialUnleashed from "@/components/PotentialUnleashed";
 import RecentEntries from "@/components/RecentEntries";
 import AuraChatSidebar from "@/components/AuraChatSidebar";
 import DocumentUpload from "@/components/DocumentUpload";
+import AccountIntelligence from "@/components/AccountIntelligence";
 import BriefingTab from "@/components/tabs/BriefingTab";
 import InfluenceTab from "@/components/tabs/InfluenceTab";
 import type { Database } from "@/integrations/supabase/types";
@@ -124,24 +125,31 @@ const Dashboard = () => {
 
           {/* Pursuits Tab */}
           <TabsContent value="pursuits" className="mt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 glass-card rounded-2xl p-5 sm:p-8">
-                <RecentEntries entries={entries} onRefresh={fetchEntries} />
+            <div className="space-y-6">
+              {/* Account Intelligence */}
+              <div className="glass-card rounded-2xl p-5 sm:p-8">
+                <AccountIntelligence />
               </div>
-              <div className="space-y-6">
-                <div
-                  className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
-                  onClick={() => setCaptureOpen(true)}
-                >
-                  <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform aura-glow">
-                    <Plus className="w-7 h-7 text-primary-foreground" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-foreground mb-1">{t("capture.title")}</h2>
-                  <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 glass-card rounded-2xl p-5 sm:p-8">
+                  <RecentEntries entries={entries} onRefresh={fetchEntries} />
                 </div>
-                <div className="glass-card rounded-2xl p-5 sm:p-6">
-                  <h3 className="text-sm font-semibold text-foreground mb-3 tracking-wide uppercase">{t("tab.uploadDoc")}</h3>
-                  <DocumentUpload onUploaded={fetchEntries} />
+                <div className="space-y-6">
+                  <div
+                    className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
+                    onClick={() => setCaptureOpen(true)}
+                  >
+                    <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform aura-glow">
+                      <Plus className="w-7 h-7 text-primary-foreground" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-foreground mb-1">{t("capture.title")}</h2>
+                    <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
+                  </div>
+                  <div className="glass-card rounded-2xl p-5 sm:p-6">
+                    <h3 className="text-sm font-semibold text-foreground mb-3 tracking-wide uppercase">{t("tab.uploadDoc")}</h3>
+                    <DocumentUpload onUploaded={fetchEntries} />
+                  </div>
                 </div>
               </div>
             </div>
