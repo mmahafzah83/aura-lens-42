@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import { BookOpen, MessageCircle, Loader2, ChevronDown, Zap } from "lucide-react";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import PotentialUnleashed from "@/components/PotentialUnleashed";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -13,12 +11,62 @@ interface BriefingTabProps {
   onOpenChat?: (msg?: string) => void;
 }
 
+/* ── Stat Card ─────────────────────────────────────── */
+const StatCard = ({ icon: Icon, value, label }: { icon: React.ElementType; value: number; label: string }) => (
+  <div className="glass-card rounded-2xl p-6 flex flex-col items-center gap-3 hover-lift transition-all">
+    <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center border border-primary/10">
+      <Icon className="w-4.5 h-4.5 text-primary/70" />
+    </div>
+    <p className="text-3xl sm:text-4xl font-light text-foreground tracking-tight tabular-nums">{value}</p>
+    <p className="text-[10px] text-muted-foreground/50 uppercase tracking-[0.18em] text-center">{label}</p>
+  </div>
+);
+
+/* ── Executive Headline (2-line clamp + expand) ───── */
+const InsightBlock = ({ text, loading }: { text: string; loading: boolean }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-3 py-8">
+        <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
+        <span className="text-sm text-muted-foreground">Synthesizing your strategic pulse…</span>
+      </div>
+    );
+  }
+
+  if (!text) {
+    return <p className="text-lg text-muted-foreground/40 italic font-light py-6">Capture insights to generate your Director's briefing.</p>;
+  }
+
+  return (
+    <div>
+      <blockquote
+        className={`text-xl sm:text-2xl text-foreground/90 leading-relaxed font-light tracking-tight ${!expanded ? "line-clamp-2" : ""}`}
+        style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+      >
+        "{text}"
+      </blockquote>
+      {text.length > 120 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-1.5 mt-3 text-xs text-primary/60 hover:text-primary transition-colors tactile-press"
+        >
+          <span>{expanded ? "Collapse" : "View Deep Insight"}</span>
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${expanded ? "rotate-180" : ""}`} />
+        </button>
+      )}
+    </div>
+  );
+};
+
+/* ── Main BriefingTab ─────────────────────────────── */
 const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
-  const { t } = useLanguage();
-  const [insight, setInsight] = useState<string>("");
+  const [insight, setInsight] = useState("");
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [showCaptures, setShowCaptures] = useState(false);
 
+  // Unique entries from last 7 days
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
   const weekEntriesMap = new Map<string, Entry>();
@@ -29,16 +77,17 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
   });
   const weekEntries = Array.from(weekEntriesMap.values());
 
+  const weeklyCaptures = weekEntries.length;
+  const voiceNotes = weekEntries.filter(e => e.type === "voice").length;
+  const strategicInsights = weekEntries.filter(e => e.has_strategic_insight === true && e.type !== "voice").length;
+  const otherCount = weeklyCaptures - voiceNotes - strategicInsights;
+
+  // Top pillar
   const pillarCounts: Record<string, number> = {};
   weekEntries.forEach(e => {
     if (e.skill_pillar) pillarCounts[e.skill_pillar] = (pillarCounts[e.skill_pillar] || 0) + 1;
   });
   const topPillar = Object.entries(pillarCounts).sort((a, b) => b[1] - a[1])[0];
-
-  const weeklyCaptures = weekEntries.length;
-  const voiceNotes = weekEntries.filter(e => e.type === "voice").length;
-  const strategicInsights = weekEntries.filter(e => e.has_strategic_insight === true && e.type !== "voice").length;
-  const otherCount = weeklyCaptures - voiceNotes - strategicInsights;
 
   useEffect(() => {
     const generateInsight = async () => {
@@ -84,120 +133,79 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
 
   const recentFive = entries.slice(0, 5);
 
-  const statItems = [
-    { value: weeklyCaptures, label: t("briefing.weekCaptures") },
-    { value: voiceNotes, label: t("briefing.voiceNotes") },
-    { value: strategicInsights, label: t("briefing.insights") },
-    { value: otherCount, label: "Other" },
-  ];
-
   return (
     <div className="space-y-8">
-      {/* Hero Strategic Pulse */}
+      {/* Hero — Strategic Pulse */}
       <div className="glass-card-elevated rounded-2xl p-8 sm:p-12 relative overflow-hidden">
-        {/* Decorative gold line */}
         <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
 
         <div className="flex items-center gap-3 mb-6">
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/15">
             <Zap className="w-4 h-4 text-primary" />
           </div>
-          <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-medium">{t("briefing.strategicPulse")}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-medium">Strategic Pulse</p>
         </div>
 
-        {/* Director's Insight — Editorial Hero */}
-        <div className="mb-8">
-          {loadingInsight ? (
-            <div className="flex items-center gap-3 py-6">
-              <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
-              <span className="text-sm text-muted-foreground">{t("briefing.generatingInsight")}</span>
-            </div>
-          ) : insight ? (
-            <blockquote className="text-xl sm:text-2xl lg:text-3xl text-foreground/90 leading-relaxed font-light tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-              "{insight}"
-            </blockquote>
-          ) : (
-            <p className="text-lg text-muted-foreground/60 italic font-light">{t("briefing.noInsight")}</p>
-          )}
-        </div>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-4 gap-6 pt-6 border-t border-border/10">
-          {statItems.map((stat, i) => (
-            <div key={i} className="animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
-              <p className="text-3xl sm:text-4xl font-light text-foreground tracking-tight">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.15em] mt-1">{stat.label}</p>
-            </div>
-          ))}
-        </div>
+        <InsightBlock text={insight} loading={loadingInsight} />
       </div>
 
-      {/* Ask Aura bar */}
-      <button
-        onClick={() => onOpenChat?.()}
-        className="w-full glass-card rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover-lift tactile-press transition-all group aura-search-glow"
-      >
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-primary/15">
-          <MessageCircle className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <span className="text-sm text-muted-foreground/60 group-hover:text-foreground transition-colors duration-300">
-          {t("chat.placeholder")}
-        </span>
-      </button>
+      {/* Stats — Minimalist icon cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard icon={TrendingUp} value={weeklyCaptures} label="This Week" />
+        <StatCard icon={Mic} value={voiceNotes} label="Voice Notes" />
+        <StatCard icon={Lightbulb} value={strategicInsights} label="Insights" />
+        <StatCard icon={FileText} value={otherCount} label="Other" />
+      </div>
 
-      {/* Two-column: Brand Mirror + Pillar Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <PotentialUnleashed entries={entries} />
+      {/* Strategic Focus */}
+      <div className="glass-card rounded-2xl p-8">
+        <p className="text-[10px] text-muted-foreground/40 uppercase tracking-[0.2em] mb-3">Strategic Focus</p>
+        <h2
+          className="text-4xl sm:text-5xl font-bold text-gradient-gold leading-none tracking-tighter mb-4"
+          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+        >
+          {topPillar ? topPillar[0] : "—"}
+        </h2>
+        <p className="text-xs text-muted-foreground/40 mb-6">Most active pillar based on this week's captures</p>
 
-        <div className="glass-card rounded-2xl p-8 col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2.5 mb-4">
-            <BookOpen className="w-5 h-5 text-primary/70" />
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-[0.2em]">{t("briefing.strategicFocus")}</h3>
-          </div>
-          <span className="text-4xl sm:text-6xl font-bold text-gradient-gold leading-none tracking-tighter block mb-2" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-            {topPillar ? topPillar[0] : "—"}
-          </span>
-          <p className="text-xs text-muted-foreground/50 mb-6">{t("briefing.focusDesc")}</p>
-
-          {Object.keys(pillarCounts).length > 0 && (
-            <div className="space-y-3 pt-6 border-t border-border/10">
-              {Object.entries(pillarCounts)
-                .sort((a, b) => b[1] - a[1])
-                .map(([pillar, count]) => {
-                  const maxCount = Math.max(...Object.values(pillarCounts));
-                  const pct = Math.round((count / maxCount) * 100);
-                  return (
-                    <div key={pillar} className="flex items-center gap-4">
-                      <span className="text-xs text-foreground/70 w-48 truncate">{pillar}</span>
-                      <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary/80 to-primary rounded-full transition-all duration-700 ease-out"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-[11px] text-muted-foreground/50 w-6 text-end tabular-nums">{count}</span>
+        {Object.keys(pillarCounts).length > 0 && (
+          <div className="space-y-3 pt-6 border-t border-border/10">
+            {Object.entries(pillarCounts)
+              .sort((a, b) => b[1] - a[1])
+              .map(([pillar, count]) => {
+                const maxCount = Math.max(...Object.values(pillarCounts));
+                const pct = Math.round((count / maxCount) * 100);
+                return (
+                  <div key={pillar} className="flex items-center gap-4">
+                    <span className="text-xs text-foreground/70 w-48 truncate">{pillar}</span>
+                    <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-primary/80 to-primary rounded-full transition-all duration-700 ease-out"
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
+                    <span className="text-[11px] text-muted-foreground/50 w-6 text-end tabular-nums">{count}</span>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
 
-      {/* Recent Captures — collapsed by default */}
+      {/* Recent Captures — collapsed */}
       <div className="glass-card rounded-2xl overflow-hidden">
         <button
           onClick={() => setShowCaptures(!showCaptures)}
           className="w-full flex items-center justify-between px-8 py-5 hover:bg-card-hover transition-colors duration-200 tactile-press"
         >
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.2em]">{t("briefing.recentCaptures")}</span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.2em]">Recent Captures</span>
           <ChevronDown className={`w-4 h-4 text-muted-foreground/40 transition-transform duration-300 ${showCaptures ? "rotate-180" : ""}`} />
         </button>
 
         {showCaptures && (
           <div className="px-8 pb-6 space-y-3 animate-fade-in">
             {recentFive.length === 0 ? (
-              <p className="text-xs text-muted-foreground/50 italic py-3">{t("entries.noEntries")}</p>
+              <p className="text-xs text-muted-foreground/50 italic py-3">No entries yet</p>
             ) : (
               recentFive.map((entry, i) => (
                 <div
@@ -210,9 +218,7 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
                       {entry.title || entry.content.slice(0, 60)}
                     </p>
                     {entry.summary && (
-                      <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">
-                        {entry.summary}
-                      </p>
+                      <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{entry.summary}</p>
                     )}
                     <div className="flex items-center gap-2.5 mt-2">
                       {entry.skill_pillar && (
@@ -230,6 +236,21 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Ask Aura — docked at bottom, separate from content */}
+      <div className="sticky bottom-0 pt-4 pb-2 -mx-5 sm:-mx-10 px-5 sm:px-10 bg-gradient-to-t from-background via-background/95 to-transparent">
+        <button
+          onClick={() => onOpenChat?.()}
+          className="w-full glass-card rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover-lift tactile-press transition-all group aura-search-glow"
+        >
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-primary/15">
+            <MessageCircle className="w-4.5 h-4.5 text-primary" />
+          </div>
+          <span className="text-sm text-muted-foreground/60 group-hover:text-foreground transition-colors duration-300">
+            Ask Aura anything…
+          </span>
+        </button>
       </div>
     </div>
   );
