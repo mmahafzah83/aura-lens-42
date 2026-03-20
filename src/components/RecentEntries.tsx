@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive, Languages } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive, Languages, Sparkles } from "lucide-react";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
