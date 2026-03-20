@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase } from "lucide-react";
+import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -35,7 +34,6 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     }
   }, [open]);
 
-  // Handle initial message from external trigger (e.g. framework briefing)
   useEffect(() => {
     if (open && initialMessage && messages.length === 0) {
       send(initialMessage);
@@ -107,7 +105,6 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
       }
     }
 
-    // Flush
     if (buffer.trim()) {
       for (let raw of buffer.split("\n")) {
         if (!raw) continue;
@@ -160,6 +157,15 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     }
   };
 
+  const handleSynthesize = () => {
+    const topic = input.trim();
+    if (topic) {
+      send(`Synthesize a pursuit for: ${topic}. Find the strategic intersection between my documents, captures, and leadership insights.`, "synthesize-pursuit");
+    } else {
+      send("Synthesize a pursuit based on my most recent captures and uploaded documents. Find the strategic intersection between my saved frameworks and leadership thoughts.", "synthesize-pursuit");
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -179,7 +185,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           </div>
           <div>
             <h2 className="text-sm font-semibold text-foreground">Ask Aura</h2>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Your Intelligence Vault</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">RAG-Powered Intelligence Vault</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -210,12 +216,12 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
             </div>
             <h3 className="text-base font-semibold text-foreground mb-1">Your Vault, Unlocked</h3>
             <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-              Ask about your captures, find frameworks, connect insights, or draft a presentation from your intelligence.
+              Ask across your captures, uploaded PDFs, voice notes, and screenshots. Aura uses RAG to find the most relevant intelligence.
             </p>
             <div className="mt-6 space-y-2 w-full max-w-[280px]">
               {[
                 "What are my recurring themes this month?",
-                "Find my notes on digital transformation",
+                "Find insights from my uploaded SWA PDFs",
                 "What frameworks have I captured?",
               ].map((q) => (
                 <button
@@ -272,7 +278,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about your captures…"
+            placeholder="Ask about your captures & documents…"
             rows={1}
             className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[40px] max-h-[120px]"
             dir="auto"
@@ -302,6 +308,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           >
             <Presentation className="w-3.5 h-3.5" />
             Draft Deck
+          </button>
+          <button
+            onClick={handleSynthesize}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
+          >
+            <Rocket className="w-3.5 h-3.5" />
+            Synthesize Pursuit
           </button>
         </div>
       </div>
