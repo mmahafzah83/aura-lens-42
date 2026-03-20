@@ -3,6 +3,7 @@ import { BookOpen, MessageCircle, Loader2, ChevronDown, Zap } from "lucide-react
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import PotentialUnleashed from "@/components/PotentialUnleashed";
+import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
