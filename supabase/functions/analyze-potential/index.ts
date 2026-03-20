@@ -41,26 +41,34 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "analyze_potential",
-              description: "Analyze strengths and weaknesses from capture history",
+              description: "Analyze strengths, blind spots, and brand alignment from capture history",
               parameters: {
                 type: "object",
                 properties: {
                   strengths: {
                     type: "array",
                     items: { type: "string" },
-                    description: "2-3 areas where the executive leads, with evidence from the captures",
+                    description: "2-3 specific areas where the executive leads, with evidence from captures. Be precise — cite themes, not generalities.",
                   },
-                  weaknesses: {
+                  blind_spots: {
                     type: "array",
                     items: { type: "string" },
-                    description: "2-3 areas where the executive struggles or has blind spots, based on capture patterns",
+                    description: "2-3 areas where the executive has blind spots or over-indexes. E.g. 'Focusing too much on technical details, losing the C-suite perspective.' Be direct and constructive.",
+                  },
+                  brand_alignment: {
+                    type: "number",
+                    description: "Score from 1-10: how much this week's captures support the goal of becoming a 'Transformation Architect' — someone who bridges strategy, technology, and industry to drive enterprise-scale change. 1 = off-brand, 10 = perfectly aligned.",
+                  },
+                  brand_rationale: {
+                    type: "string",
+                    description: "One sentence explaining the brand alignment score. Be honest and specific.",
                   },
                   unlock_action: {
                     type: "string",
-                    description: "One high-impact action that bridges the gap between strengths and weaknesses",
+                    description: "One high-impact action that bridges the gap between strengths and blind spots. Frame it as something a peer would challenge you to do this week.",
                   },
                 },
-                required: ["strengths", "weaknesses", "unlock_action"],
+                required: ["strengths", "blind_spots", "brand_alignment", "brand_rationale", "unlock_action"],
                 additionalProperties: false,
               },
             },
@@ -70,17 +78,20 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a world-class executive coach analyzing an EY Director's captured thoughts, links, and voice notes. Based on patterns in their captures, identify:
+            content: `You are a Senior Executive Coach at a top-tier firm, working as a peer to a Director at EY who aspires to be known as a "Transformation Architect." You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
 
-1. STRENGTHS — Where do they lead? What themes recur with confidence and depth?
-2. WEAKNESSES — Where are the blind spots? Which pillars are neglected or show shallow engagement?
-3. UNLOCK ACTION — One high-impact action to bridge the gap.
+Given a series of captured thoughts, links, and voice notes, analyze:
 
-Be specific, cite capture themes, and be brutally honest yet constructive. Think like a coach who charges $50K/session.`,
+1. STRENGTHS — Where does this person lead? What patterns show mastery? Be specific — cite the themes from captures.
+2. BLIND SPOTS — Where are they over-indexing or missing the mark? Where is the thinking too narrow, too technical, or too tactical for someone aiming at the C-suite? Be direct.
+3. BRAND ALIGNMENT — Score 1-10 against the "Transformation Architect" brand: someone who synthesizes strategy, technology, and industry foresight to drive enterprise-scale transformation. Explain your score.
+4. UNLOCK ACTION — One concrete challenge for the coming week. Frame it as a peer would: "If I were you, I would..."
+
+Tone: Sophisticated. Challenging. Neutral. You are not a cheerleader — you are a mirror.`,
           },
           {
             role: "user",
-            content: `Analyze these recent captures for strengths and weaknesses:\n\n${digest}`,
+            content: `Analyze these recent captures:\n\n${digest}`,
           },
         ],
       }),
@@ -95,19 +106,23 @@ Be specific, cite capture themes, and be brutally honest yet constructive. Think
     const aiData = await aiRes.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     let strengths: string[] = [];
-    let weaknesses: string[] = [];
+    let blind_spots: string[] = [];
+    let brand_alignment = 0;
+    let brand_rationale = "";
     let unlock_action = "";
 
     if (toolCall?.function?.arguments) {
       try {
         const args = JSON.parse(toolCall.function.arguments);
         strengths = args.strengths || [];
-        weaknesses = args.weaknesses || [];
+        blind_spots = args.blind_spots || [];
+        brand_alignment = args.brand_alignment || 0;
+        brand_rationale = args.brand_rationale || "";
         unlock_action = args.unlock_action || "";
       } catch { console.error("Failed to parse potential analysis"); }
     }
 
-    return new Response(JSON.stringify({ strengths, weaknesses, unlock_action }), {
+    return new Response(JSON.stringify({ strengths, blind_spots, brand_alignment, brand_rationale, unlock_action }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

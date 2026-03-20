@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
 
-// Simple Arabic detection
 function hasArabic(text: string): boolean {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
 }
@@ -30,7 +29,6 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    console.log("Fetching URL:", url);
     const pageRes = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; AuraBot/1.0)",
@@ -80,7 +78,7 @@ serve(async (req) => {
                   title: { type: "string", description: "A clean, concise title for this page" },
                   summary: {
                     type: "string",
-                    description: "Exactly 3 bullet points capturing strategic objectives, KPIs, and key takeaways. Format: • Bullet 1\\n• Bullet 2\\n• Bullet 3. If Arabic content, provide bilingual (Arabic then English).",
+                    description: "Exactly 3 bullet points: strategic objectives, blind spots, and actionable intelligence. If Arabic content, provide bilingual (Arabic then English).",
                   },
                   skill_pillar: {
                     type: "string",
@@ -89,7 +87,7 @@ serve(async (req) => {
                   },
                   has_strategic_insight: {
                     type: "boolean",
-                    description: "true ONLY if the content contains a specific, named KPI or a clearly stated strategic objective.",
+                    description: "true ONLY if the content contains a specific KPI or clearly stated strategic objective.",
                   },
                 },
                 required: ["title", "summary", "skill_pillar", "has_strategic_insight"],
@@ -102,10 +100,12 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an executive intelligence analyst preparing briefing materials. Given web page content, extract:
-1. A clean TITLE for the page
-2. Exactly 3 bullet points focused on STRATEGIC OBJECTIVES and KPIs. Each bullet must be actionable intelligence.
-3. Classify under one skill pillar: ${NEW_PILLARS.join(", ")}.
+            content: `You are a Senior Executive Coach analyzing web content for a Director at EY who aspires to be a "Transformation Architect." You are sophisticated, challenging, and neutral.
+
+Given web page content, extract:
+1. A clean TITLE
+2. Exactly 3 bullet points: focus on what matters strategically — not what's interesting, but what's actionable. Name the risk. Name the opportunity. Be direct.
+3. Classify under: ${NEW_PILLARS.join(", ")}.
 ${bilingualInstruction}
 Page title from HTML: "${rawTitle}"`,
           },

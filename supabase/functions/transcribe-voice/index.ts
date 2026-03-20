@@ -36,7 +36,6 @@ serve(async (req) => {
 
     console.log("Transcribing audio:", audioFile.name, "size:", audioFile.size);
 
-    // Step 1: Whisper transcription — do NOT lock to English so Arabic works
     const whisperForm = new FormData();
     whisperForm.append("file", audioFile, audioFile.name || "recording.webm");
     whisperForm.append("model", "whisper-1");
@@ -74,7 +73,6 @@ serve(async (req) => {
       ? `\n\nIMPORTANT: The voice note is in Arabic. Provide each section (Core Idea, Strategic Risk, Next Step) in BOTH Arabic and English. Format each section as:\n[Arabic text]\n[English translation]`
       : "";
 
-    // Step 2: Senior Partner analysis via Lovable AI
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -88,13 +86,13 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "analyze_voice_note",
-              description: "Analyze a voice note as a Senior Partner would",
+              description: "Analyze a voice note as a Senior Executive Coach would",
               parameters: {
                 type: "object",
                 properties: {
-                  core_idea: { type: "string", description: "One sentence distilling the central thesis. If Arabic input, provide in both Arabic and English separated by newline." },
-                  strategic_risk: { type: "string", description: "One sentence identifying the key risk. If Arabic input, provide bilingual." },
-                  next_step: { type: "string", description: "One concrete, actionable next step. If Arabic input, provide bilingual." },
+                  core_idea: { type: "string", description: "One sentence distilling the central thesis. If Arabic, provide bilingual (Arabic then English)." },
+                  strategic_risk: { type: "string", description: "One sentence identifying the key risk or blind spot. If Arabic, provide bilingual." },
+                  next_step: { type: "string", description: "One concrete, actionable challenge for the executive. Frame as a peer would. If Arabic, provide bilingual." },
                   skill_pillar: {
                     type: "string",
                     enum: NEW_PILLARS,
@@ -111,12 +109,12 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a Senior Partner at EY with 25 years of experience advising C-suite executives in infrastructure, utilities, and digital transformation. You think in frameworks, you speak in precision, and you never waste a word. 
+            content: `You are a Senior Executive Coach working as a peer to a Director at EY who aspires to be a "Transformation Architect." You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
 
-Given a transcribed voice note from an executive, distill it into three components:
+Given a transcribed voice note, distill it into three components:
 1. THE CORE IDEA — the central thesis, stripped of noise
-2. THE STRATEGIC RISK — what could go wrong, what's being overlooked
-3. THE NEXT STEP — one concrete action item worthy of a partner meeting agenda
+2. THE STRATEGIC RISK — what could go wrong, what's being overlooked, or where the thinking is too narrow
+3. THE NEXT STEP — one concrete challenge worthy of a partner meeting agenda. Frame it as: "If I were you, I would..."
 
 Classify under: ${NEW_PILLARS.join(", ")}.${bilingualInstruction}`,
           },
