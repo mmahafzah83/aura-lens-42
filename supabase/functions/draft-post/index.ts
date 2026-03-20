@@ -98,6 +98,10 @@ Context focus: infrastructure, water, energy, or digital transformation.${biling
 - لا تترجم حرفياً — أعد صياغة المعنى بأسلوب عربي أصيل وراقٍ
 - إذا كان المحتوى يتضمن أُطر عمل أو نماذج، حافظ على مصطلحاتها الإنجليزية بين قوسين
 - اعرض الترجمة بتنسيق واضح مع عناوين فرعية`,
+
+      "directors-insight-en": `You are Aura, an executive intelligence advisor. Analyze the user's last 5 captures and produce exactly 2 sentences: a "Director's Insight" that identifies the strategic pattern or tension emerging from their recent activity. Be incisive, specific, and direct — not generic. Reference the actual themes in the captures. No filler.`,
+
+      "directors-insight-ar": `أنت أورا، مستشار الذكاء التنفيذي. حلّل آخر ٥ التقاطات للمستخدم وأنتج جملتين بالضبط: "رؤية المدير" التي تحدد النمط الاستراتيجي أو التوتر الناشئ من نشاطه الأخير. كن حاداً ومحدداً ومباشراً — ليس عاماً. أشر إلى المحاور الفعلية في الالتقاطات. بدون حشو.`,
     };
 
     const userPrompts: Record<string, string> = {
@@ -105,6 +109,8 @@ Context focus: infrastructure, water, energy, or digital transformation.${biling
       "voice": `Turn this raw voice note into a polished LinkedIn brand post:\n\nTranscript: ${content || "N/A"}\nSenior Partner Analysis: ${summary || "N/A"}`,
       "arabic-executive": `اكتب منشور لينكدإن عربي بأسلوب التنفيذي السعودي من هذا المحتوى:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمصدر: ${content || "N/A"}`,
       "translate-executive-ar": `ترجم المحتوى التالي إلى العربية التنفيذية:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمحتوى: ${content || "N/A"}`,
+      "directors-insight-en": `Here are my last 5 captures. Produce a 2-sentence Director's Insight:\n\n${summary}`,
+      "directors-insight-ar": `هذه آخر ٥ التقاطاتي. أنتج رؤية المدير في جملتين:\n\n${summary}`,
       "default": `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
     };
 
