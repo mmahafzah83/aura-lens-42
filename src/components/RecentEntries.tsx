@@ -30,6 +30,9 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-foreground truncate">{entry.content}</p>
+                  {entry.summary && (
+                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-line line-clamp-3">{entry.summary}</p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">
                     {new Date(entry.created_at).toLocaleDateString()}
                   </p>
