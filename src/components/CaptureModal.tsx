@@ -470,14 +470,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           </div>
         )}
 
-        <Button
-          onClick={handleSave}
-          disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
-          className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {saving && captureType === "link" ? "Extracting Intelligence…" : saving ? "Saving…" : "Save Entry"}
-        </Button>
+        {captureType !== "document" && (
+          <Button
+            onClick={handleSave}
+            disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
+            className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            {saving && captureType === "link" ? "Extracting Intelligence…" : saving ? "Saving…" : "Save Entry"}
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
   );
