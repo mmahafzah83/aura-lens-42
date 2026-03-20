@@ -259,6 +259,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       }
     }
 
+    // Detect expert framework content
+    const fullText = `${title || ""} ${summary || ""} ${entryContent}`.toLowerCase();
+    const isExpertFramework = /expert\s*system|framework|step[s]?\s*(1|one)|branding\s*(system|model|framework)|methodology|playbook|blueprint|principle[s]?\s*of/i.test(fullText);
+    const framework_tag = isExpertFramework ? "#ExpertFramework" : null;
+
     const { data: insertData, error } = await supabase.from("entries").insert({
       user_id: user.id,
       type: captureType,
@@ -268,6 +273,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       skill_pillar,
       has_strategic_insight,
       image_url,
+      framework_tag,
     } as any).select("id").single();
 
     if (error) {
@@ -278,6 +284,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         supabase.functions.invoke("generate-embedding", {
           body: { text: `${title || ""} ${summary || ""} ${entryContent}`, table: "entries", record_id: insertData.id },
         }).catch((e) => console.error("Embedding error:", e));
+
+        // If expert framework, extract and save to master_frameworks
+        if (isExpertFramework) {
+          toast({ title: "Expert Framework Detected", description: "Extracting framework steps…" });
+          supabase.functions.invoke("extract-framework", {
+            body: { entry_id: insertData.id, title, summary, content: entryContent },
+          }).then(({ data, error: fwErr }) => {
+            if (!fwErr && data?.success) {
+              toast({ title: "Framework Saved", description: `"${data.framework_title}" added to your expert vault (${data.steps_count} steps).` });
+            }
+          }).catch((e) => console.error("Framework extraction error:", e));
+        }
       }
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");

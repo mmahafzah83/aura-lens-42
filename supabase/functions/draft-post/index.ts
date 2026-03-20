@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,39 @@ const corsHeaders = {
 
 function hasArabic(text: string): boolean {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+}
+
+// Helper to fetch master frameworks for the user
+async function fetchFrameworks(token: string | null): Promise<string> {
+  if (!token) return "";
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const { data: { user } } = await anonClient.auth.getUser(token);
+    if (!user) return "";
+
+    const { data: frameworks } = await supabase
+      .from("master_frameworks")
+      .select("title, framework_steps, summary, tags")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (!frameworks || frameworks.length === 0) return "";
+
+    const digest = frameworks.map((f: any) => {
+      const steps = (f.framework_steps || [])
+        .map((s: any) => `  ${s.step_number}. ${s.step_title}: ${s.step_description}`)
+        .join("\n");
+      return `Framework: ${f.title}\nSummary: ${f.summary}\nSteps:\n${steps}\nTags: ${(f.tags || []).join(", ")}`;
+    }).join("\n\n---\n\n");
+
+    return `\n\n=== EXPERT FRAMEWORKS (from user's master_frameworks vault) ===\nApply these frameworks and expert rules when drafting content. Reference specific steps where relevant.\n\n${digest}`;
+  } catch (e) {
+    console.error("Framework fetch error:", e);
+    return "";
+  }
 }
 
 serve(async (req) => {
@@ -27,6 +61,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Fetch frameworks for LinkedIn draft types
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.replace("Bearer ", "") || null;
+    let frameworkContext = "";
+    const draftTypes = ["voice", "default", "arabic-executive", "link", "text", "image"];
+    if (draftTypes.includes(type as string) || !type) {
+      frameworkContext = await fetchFrameworks(token);
+    }
+
     const inputText = `${title || ""} ${summary || ""} ${content || ""}`;
     const isArabic = hasArabic(inputText);
     const bilingualNote = isArabic
@@ -43,7 +86,7 @@ EXECUTIVE SCANNABILITY FORMAT (mandatory):
 3. THE 'SO WHAT?' — Exactly 3 bullet points using ◈ or ➔ symbols. Each bullet is one sharp insight (max 15 words).
 4. THE CTA — End with a single thought-provoking question to the industry. Not engagement bait — a real question that challenges assumptions.
 
-No hashtags. No emojis except ◈ and ➔. Under 150 words total.`;
+No hashtags. No emojis except ◈ and ➔. Under 150 words total.${frameworkContext}`;
 
     const systemPrompts: Record<string, string> = {
       "weekly-memo": `You are a Senior Executive Coach and peer to a Director at EY who aspires to be a "Transformation Architect." Synthesize multiple voice-note insights from the past week into one cohesive Leadership Memo.
@@ -88,7 +131,7 @@ Context focus: infrastructure, water, energy, or digital transformation.${biling
 3. الرؤية — ٣ نقاط باستخدام ◈ أو ➔ (كل نقة بحد أقصى ١٥ كلمة)
 4. السؤال — سؤال واحد يتحدى الافتراضات السائدة في القطاع
 
-بدون هاشتاقات. بدون إيموجي إلا ◈ و ➔. أقل من ١٥٠ كلمة.`,
+بدون هاشتاقات. بدون إيموجي إلا ◈ و ➔. أقل من ١٥٠ كلمة.${frameworkContext}`,
 
       "translate-executive-ar": `أنت مترجم تنفيذي محترف. ترجم المحتوى التالي إلى العربية الفصحى الراقية بأسلوب يليق بالمستوى التنفيذي.
 

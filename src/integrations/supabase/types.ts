@@ -100,6 +100,7 @@ export type Database = {
           content: string
           created_at: string
           embedding: string | null
+          framework_tag: string | null
           has_strategic_insight: boolean
           id: string
           image_url: string | null
@@ -117,6 +118,7 @@ export type Database = {
           content: string
           created_at?: string
           embedding?: string | null
+          framework_tag?: string | null
           has_strategic_insight?: boolean
           id?: string
           image_url?: string | null
@@ -134,6 +136,7 @@ export type Database = {
           content?: string
           created_at?: string
           embedding?: string | null
+          framework_tag?: string | null
           has_strategic_insight?: boolean
           id?: string
           image_url?: string | null
@@ -168,6 +171,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      master_frameworks: {
+        Row: {
+          created_at: string
+          entry_id: string | null
+          framework_steps: Json
+          id: string
+          source_type: string
+          summary: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry_id?: string | null
+          framework_steps?: Json
+          id?: string
+          source_type?: string
+          summary?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entry_id?: string | null
+          framework_steps?: Json
+          id?: string
+          source_type?: string
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "master_frameworks_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skill_targets: {
         Row: {
