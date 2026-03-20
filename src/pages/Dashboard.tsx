@@ -54,6 +54,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchEntries();
+
+    // Live sync: subscribe to entries changes
+    const channel = supabase
+      .channel('entries-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'entries' },
+        () => fetchEntries()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const handleLogout = async () => {
