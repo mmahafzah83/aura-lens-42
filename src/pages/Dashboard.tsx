@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const navigate = useNavigate();
 
