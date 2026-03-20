@@ -190,7 +190,7 @@ const Dashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </main>
+      </div></main>
 
       {/* Mobile FAB */}
       <button
