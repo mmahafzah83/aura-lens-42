@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          has_strategic_insight: boolean
           id: string
           skill_pillar: string | null
           summary: string | null
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          has_strategic_insight?: boolean
           id?: string
           skill_pillar?: string | null
           summary?: string | null
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          has_strategic_insight?: boolean
           id?: string
           skill_pillar?: string | null
           summary?: string | null

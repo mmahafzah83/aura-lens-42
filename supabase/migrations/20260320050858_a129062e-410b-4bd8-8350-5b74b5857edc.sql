@@ -1,0 +1,1 @@
+ALTER TABLE public.entries ADD COLUMN IF NOT EXISTS has_strategic_insight boolean NOT NULL DEFAULT false;
