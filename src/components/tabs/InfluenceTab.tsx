@@ -135,7 +135,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
                             </span>
                           )}
                           <span className="text-[10px] text-muted-foreground">
-                            {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            {formatSmartDate(entry.created_at)}
                           </span>
                         </div>
                       </div>
