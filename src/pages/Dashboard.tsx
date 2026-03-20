@@ -57,9 +57,9 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24 md:pb-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
-      <header className="border-b border-border/30 px-8 py-5">
+      <header className="border-b border-border/30 px-4 sm:px-8 py-4 sm:py-5">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -77,22 +77,22 @@ const Dashboard = () => {
       </header>
 
       {/* Dashboard */}
-      <main className="max-w-7xl mx-auto px-8 py-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 auto-rows-min">
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-min">
           {/* Stats Row */}
           {stats.map((stat) => (
-            <div key={stat.label} className="glass-card rounded-2xl p-6 hover:bg-card-hover transition-colors">
-              <div className="flex items-center justify-between mb-4">
-                <stat.icon className="w-5 h-5 text-primary" />
+            <div key={stat.label} className="glass-card rounded-2xl p-4 sm:p-6 hover:bg-card-hover transition-colors">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              <p className="text-3xl font-bold text-foreground tracking-tight">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-1.5 tracking-wide uppercase">{stat.label}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">{stat.value}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">{stat.label}</p>
             </div>
           ))}
 
-          {/* Capture Button */}
+          {/* Capture Button — hidden on mobile, shown in grid on desktop */}
           <div
-            className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center gold-glow cursor-pointer hover:bg-card-hover transition-all group"
+            className="hidden md:flex glass-card rounded-2xl p-10 flex-col items-center justify-center text-center gold-glow cursor-pointer hover:bg-card-hover transition-all group"
             onClick={() => setCaptureOpen(true)}
           >
             <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
@@ -104,27 +104,36 @@ const Dashboard = () => {
 
           {/* Log Training Button */}
           <div
-            className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
+            className="col-span-2 md:col-span-1 glass-card rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
             onClick={() => setTrainingOpen(true)}
           >
-            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform border border-border/30">
-              <GraduationCap className="w-8 h-8 text-primary" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform border border-border/30">
+              <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-1">Log Training</h2>
-            <p className="text-xs text-muted-foreground tracking-wide">Track skill development</p>
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-1">Log Training</h2>
+            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">Track skill development</p>
           </div>
 
           {/* Skill Radar — spans 2 cols */}
-          <div className="md:col-span-2 glass-card rounded-2xl p-8 min-h-[380px] radar-glow">
+          <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[300px] sm:min-h-[380px] radar-glow">
             <SkillRadar key={radarKey} />
           </div>
 
           {/* Recent Entries — full width */}
-          <div className="md:col-span-2 lg:col-span-4 glass-card rounded-2xl p-8">
+          <div className="col-span-2 lg:col-span-4 glass-card rounded-2xl p-4 sm:p-8">
             <RecentEntries entries={entries} />
           </div>
         </div>
       </main>
+
+      {/* Mobile FAB — Capture button */}
+      <button
+        onClick={() => setCaptureOpen(true)}
+        className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform z-50"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <Plus className="w-8 h-8" />
+      </button>
 
       <CaptureModal open={captureOpen} onOpenChange={setCaptureOpen} onCaptured={fetchEntries} />
       <TrainingModal open={trainingOpen} onOpenChange={setTrainingOpen} onLogged={() => { setRadarKey(k => k + 1); }} />
