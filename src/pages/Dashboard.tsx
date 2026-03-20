@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap } from "lucide-react";
+import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import SkillRadar from "@/components/SkillRadar";
