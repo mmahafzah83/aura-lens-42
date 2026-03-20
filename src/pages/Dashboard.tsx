@@ -15,6 +15,7 @@ import AccountIntelligence from "@/components/AccountIntelligence";
 import BriefingTab from "@/components/tabs/BriefingTab";
 import InfluenceTab from "@/components/tabs/InfluenceTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
+import MyFrameworks from "@/components/MyFrameworks";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
