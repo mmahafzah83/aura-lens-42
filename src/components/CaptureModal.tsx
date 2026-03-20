@@ -15,6 +15,7 @@ interface CaptureModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCaptured: () => void;
+  onOpenChat?: (prefill: string) => void;
 }
 
 const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => {
