@@ -15,6 +15,7 @@ import AccountIntelligence from "@/components/AccountIntelligence";
 import BriefingTab from "@/components/tabs/BriefingTab";
 import InfluenceTab from "@/components/tabs/InfluenceTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
+import MyFrameworks from "@/components/MyFrameworks";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -187,23 +188,26 @@ const Dashboard = () => {
 
             {activeTab === "growth" && (
               <div className="animate-tab-spring">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow">
-                    <SkillRadar key={radarKey} />
-                  </div>
-                  <div className="space-y-8">
-                    <div
-                      className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
-                      onClick={() => setTrainingOpen(true)}
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 border border-border/20">
-                        <TrendingUp className="w-7 h-7 text-primary" />
-                      </div>
-                      <h2 className="text-lg font-semibold text-foreground mb-1.5">Log Training</h2>
-                      <p className="text-xs text-muted-foreground tracking-wide">Track your growth hours</p>
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow">
+                      <SkillRadar key={radarKey} />
                     </div>
-                    <WeeklyTransformationLens entries={entries} />
+                    <div className="space-y-8">
+                      <div
+                        className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
+                        onClick={() => setTrainingOpen(true)}
+                      >
+                        <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 border border-border/20">
+                          <TrendingUp className="w-7 h-7 text-primary" />
+                        </div>
+                        <h2 className="text-lg font-semibold text-foreground mb-1.5">Log Training</h2>
+                        <p className="text-xs text-muted-foreground tracking-wide">Track your growth hours</p>
+                      </div>
+                      <WeeklyTransformationLens entries={entries} />
+                    </div>
                   </div>
+                  <MyFrameworks />
                 </div>
               </div>
             )}
