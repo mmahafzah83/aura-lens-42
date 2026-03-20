@@ -86,37 +86,38 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative">
+    <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative safe-area-container">
       {/* Animated gradient mesh background */}
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
       {/* Onboarding */}
       {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
 
-      {/* Premium Header */}
-      <header className="border-b border-border/10 px-5 sm:px-10 py-5 flex-shrink-0 bg-background/80 backdrop-blur-xl z-40 relative">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-              <Zap className="w-4.5 h-4.5 text-primary" />
+      {/* Main Content — header scrolls with content */}
+      <main className="flex-1 overflow-y-auto relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-36 md:pb-10">
+          {/* Scrollable Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Zap className="w-4.5 h-4.5 text-primary" />
+              </div>
+              <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
             </div>
-            <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setChatOpen(true)}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ask Aura</span>
+              </button>
+              <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
+              <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title="Log out">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setChatOpen(true)}
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("header.askAura")}</span>
-            </button>
-            <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
-            <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title={t("header.logout")}>
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto relative z-10">
