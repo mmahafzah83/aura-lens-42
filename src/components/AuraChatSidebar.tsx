@@ -19,8 +19,34 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Swipe-to-dismiss gesture
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y);
+    // Only track horizontal swipe to the right
+    if (dx > 10 && dx > dy) {
+      setSwipeX(Math.max(0, dx));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (swipeX > 120) {
+      onClose();
+    }
+    setSwipeX(0);
+    touchStartRef.current = null;
+  }, [swipeX, onClose]);
 
   useEffect(() => {
     if (scrollRef.current) {
