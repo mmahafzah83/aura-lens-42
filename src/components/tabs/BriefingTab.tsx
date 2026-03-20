@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
@@ -9,7 +9,48 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 interface BriefingTabProps {
   entries: Entry[];
   onOpenChat?: (msg?: string) => void;
+  onRefresh?: () => Promise<void> | void;
 }
+
+/* ── Pull-to-Refresh Hook ─────────────────────────── */
+const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pullY, setPullY] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = useRef(0);
+  const pulling = useRef(false);
+  const THRESHOLD = 80;
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop <= 0) {
+      startY.current = e.touches[0].clientY;
+      pulling.current = true;
+    }
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!pulling.current) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy > 0) {
+      setPullY(Math.min(dy * 0.45, 120));
+    }
+  }, []);
+
+  const onTouchEnd = useCallback(async () => {
+    if (!pulling.current) return;
+    pulling.current = false;
+    if (pullY >= THRESHOLD && onRefresh) {
+      setRefreshing(true);
+      try { await onRefresh(); } catch {}
+      setRefreshing(false);
+    }
+    setPullY(0);
+  }, [pullY, onRefresh]);
+
+  const progress = Math.min(pullY / THRESHOLD, 1);
+
+  return { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd };
+};
 
 /* ── Stat Card ─────────────────────────────────────── */
 const StatCard = ({ icon: Icon, value, label }: { icon: React.ElementType; value: number; label: string }) => (
