@@ -13,7 +13,6 @@ import RecentEntries from "@/components/RecentEntries";
 import AuraChatSidebar from "@/components/AuraChatSidebar";
 import DocumentUpload from "@/components/DocumentUpload";
 import AccountIntelligence from "@/components/AccountIntelligence";
-import DocumentUpload from "@/components/DocumentUpload";
 import BriefingTab from "@/components/tabs/BriefingTab";
 import InfluenceTab from "@/components/tabs/InfluenceTab";
 import type { Database } from "@/integrations/supabase/types";
