@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Linkedin, Languages, Loader2, Copy, Check, Megaphone } from "lucide-react";
+import { formatSmartDate } from "@/lib/formatDate";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
