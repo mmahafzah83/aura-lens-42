@@ -124,7 +124,7 @@ const Dashboard = () => {
           </TabsList>
 
           {/* Briefing Tab */}
-          <TabsContent value="briefing" className="mt-0">
+          <TabsContent value="briefing" className="mt-0 animate-fade-in">
             <BriefingTab entries={entries} onOpenChat={(msg) => {
               setChatInitialMessage(msg);
               setChatOpen(true);
