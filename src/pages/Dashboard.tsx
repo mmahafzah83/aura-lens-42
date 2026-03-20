@@ -119,9 +119,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative z-10">
-        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-36 md:pb-10">
           {/* Desktop Tab Bar */}
           <div className="hidden md:flex w-full justify-start gap-2 mb-10 border-b border-border/10 pb-0">
             {TAB_ITEMS.map((tab) => (
@@ -140,7 +137,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {/* Tab Content with spring-style transition */}
+          {/* Tab Content */}
           <div className="tab-content-spring">
             {activeTab === "briefing" && (
               <div className="animate-tab-spring">
@@ -169,11 +166,11 @@ const Dashboard = () => {
                         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 aura-glow border border-primary/20">
                           <Plus className="w-7 h-7 text-primary" />
                         </div>
-                        <h2 className="text-lg font-semibold text-foreground mb-1.5">{t("capture.title")}</h2>
-                        <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
+                        <h2 className="text-lg font-semibold text-foreground mb-1.5">Capture</h2>
+                        <p className="text-xs text-muted-foreground tracking-wide">Text, voice, link, or image</p>
                       </div>
                       <div className="glass-card rounded-2xl p-6 sm:p-8">
-                        <h3 className="text-sm font-semibold text-foreground mb-4 tracking-widest uppercase">{t("tab.uploadDoc")}</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4 tracking-widest uppercase">Upload Document</h3>
                         <DocumentUpload onUploaded={fetchEntries} />
                       </div>
                     </div>
@@ -202,8 +199,8 @@ const Dashboard = () => {
                       <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 border border-border/20">
                         <TrendingUp className="w-7 h-7 text-primary" />
                       </div>
-                      <h2 className="text-lg font-semibold text-foreground mb-1.5">{t("training.title")}</h2>
-                      <p className="text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
+                      <h2 className="text-lg font-semibold text-foreground mb-1.5">Log Training</h2>
+                      <p className="text-xs text-muted-foreground tracking-wide">Track your growth hours</p>
                     </div>
                     <WeeklyTransformationLens entries={entries} />
                   </div>
