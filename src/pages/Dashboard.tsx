@@ -115,7 +115,7 @@ const Dashboard = () => {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="flex items-center gap-2 px-4 py-3 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-colors"
+                className="flex items-center gap-2 px-4 py-3 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-all duration-200"
               >
                 <tab.icon className="w-4 h-4" />
                 <span className="text-sm font-medium">{tab.label}</span>
@@ -124,7 +124,7 @@ const Dashboard = () => {
           </TabsList>
 
           {/* Briefing Tab */}
-          <TabsContent value="briefing" className="mt-0">
+          <TabsContent value="briefing" className="mt-0 animate-fade-in">
             <BriefingTab entries={entries} onOpenChat={(msg) => {
               setChatInitialMessage(msg);
               setChatOpen(true);
@@ -132,7 +132,7 @@ const Dashboard = () => {
           </TabsContent>
 
           {/* Pursuits Tab */}
-          <TabsContent value="pursuits" className="mt-0">
+          <TabsContent value="pursuits" className="mt-0 animate-fade-in">
             <div className="space-y-6">
               {/* Account Intelligence */}
               <div className="glass-card rounded-2xl p-5 sm:p-8">
@@ -164,12 +164,12 @@ const Dashboard = () => {
           </TabsContent>
 
           {/* Influence Tab */}
-          <TabsContent value="influence" className="mt-0">
+          <TabsContent value="influence" className="mt-0 animate-fade-in">
             <InfluenceTab entries={entries} onRefresh={fetchEntries} />
           </TabsContent>
 
           {/* Growth Tab */}
-          <TabsContent value="growth" className="mt-0">
+          <TabsContent value="growth" className="mt-0 animate-fade-in">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass-card rounded-2xl p-5 sm:p-8 min-h-[400px] radar-glow">
                 <SkillRadar key={radarKey} />
@@ -195,7 +195,7 @@ const Dashboard = () => {
       {/* Mobile FAB */}
       <button
         onClick={() => setCaptureOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform z-50 aura-glow"
+        className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-90 transition-transform duration-150 z-50 aura-glow"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <Plus className="w-8 h-8" />
