@@ -20,6 +20,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceAnalysis, setVoiceAnalysis] = useState<{ summary: string | null; skill_pillar: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
