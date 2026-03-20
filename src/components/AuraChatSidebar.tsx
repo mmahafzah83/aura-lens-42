@@ -286,14 +286,24 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </div>
-        <button
-          onClick={handleDraftDeck}
-          disabled={isLoading}
-          className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
-        >
-          <Presentation className="w-3.5 h-3.5" />
-          Draft Deck {input.trim() ? `on "${input.trim().slice(0, 30)}…"` : "from my vault"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleMeetingPrep}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
+          >
+            <Briefcase className="w-3.5 h-3.5" />
+            Meeting Prep
+          </button>
+          <button
+            onClick={handleDraftDeck}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1"
+          >
+            <Presentation className="w-3.5 h-3.5" />
+            Draft Deck
+          </button>
+        </div>
       </div>
     </div>
   );
