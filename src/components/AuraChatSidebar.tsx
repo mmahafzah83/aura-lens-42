@@ -35,6 +35,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     }
   }, [open]);
 
+  // Handle initial message from external trigger (e.g. framework briefing)
+  useEffect(() => {
+    if (open && initialMessage && messages.length === 0) {
+      send(initialMessage);
+    }
+  }, [open, initialMessage]);
+
   const streamChat = async (allMessages: Msg[], mode?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
