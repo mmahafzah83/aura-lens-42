@@ -13,9 +13,10 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-aura`;
 interface AuraChatSidebarProps {
   open: boolean;
   onClose: () => void;
+  initialMessage?: string;
 }
 
-const AuraChatSidebar = ({ open, onClose }: AuraChatSidebarProps) => {
+const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps) => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
