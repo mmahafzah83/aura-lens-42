@@ -19,7 +19,9 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          skill_pillar: string | null
           summary: string | null
+          title: string | null
           type: string
           updated_at: string
           user_id: string
@@ -28,7 +30,9 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          skill_pillar?: string | null
           summary?: string | null
+          title?: string | null
           type: string
           updated_at?: string
           user_id: string
@@ -37,9 +41,38 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          skill_pillar?: string | null
           summary?: string | null
+          title?: string | null
           type?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      training_logs: {
+        Row: {
+          created_at: string
+          duration_hours: number
+          id: string
+          pillar: string
+          topic: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          pillar: string
+          topic: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_hours?: number
+          id?: string
+          pillar?: string
+          topic?: string
           user_id?: string
         }
         Relationships: []

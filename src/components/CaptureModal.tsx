@@ -32,10 +32,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       return;
     }
 
-    // If it's a link, generate an AI summary first
     let summary: string | null = null;
+    let title: string | null = null;
+    let skill_pillar: string | null = null;
+
     if (captureType === "link") {
-      toast({ title: "Analyzing", description: "AI is reading the page..." });
+      toast({ title: "Analyzing", description: "AI is extracting strategic intelligence..." });
       try {
         const { data: fnData, error: fnError } = await supabase.functions.invoke("summarize-link", {
           body: { url: content.trim() },
@@ -47,10 +49,30 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           console.error("Summary error:", fnData.error);
           toast({ title: "Summary unavailable", description: fnData.error, variant: "destructive" });
         } else {
+          title = fnData?.title || null;
           summary = fnData?.summary || null;
+          skill_pillar = fnData?.skill_pillar || null;
         }
       } catch (err) {
         console.error("Summary fetch error:", err);
+      }
+    }
+
+    if (captureType === "voice" && !skill_pillar) {
+      // Auto-tag voice notes — simple keyword matching as fallback
+      const lower = content.toLowerCase();
+      if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) {
+        skill_pillar = "Strategy";
+      } else if (lower.includes("tech") || lower.includes("code") || lower.includes("software")) {
+        skill_pillar = "Technology";
+      } else if (lower.includes("utility") || lower.includes("tool") || lower.includes("process")) {
+        skill_pillar = "Utilities";
+      } else if (lower.includes("leader") || lower.includes("team") || lower.includes("manage")) {
+        skill_pillar = "Leadership";
+      } else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) {
+        skill_pillar = "Brand";
+      } else {
+        skill_pillar = "Strategy"; // default
       }
     }
 
@@ -59,12 +81,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       type: captureType,
       content: content.trim(),
       summary,
-    });
+      title,
+      skill_pillar,
+    } as any);
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Captured", description: summary ? "Entry saved with executive summary." : "Entry saved successfully." });
+      toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");
       onCaptured();
       onOpenChange(false);
@@ -95,7 +119,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-card border-border/50 sm:max-w-md">
+      <DialogContent className="glass-card border-border/30 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-gradient-gold text-xl">Capture Intelligence</DialogTitle>
         </DialogHeader>
@@ -122,7 +146,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             placeholder="Paste a URL..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="bg-secondary border-border/50"
+            className="bg-secondary border-border/30"
           />
         )}
 
@@ -132,12 +156,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={4}
-            className="bg-secondary border-border/50 resize-none"
+            className="bg-secondary border-border/30 resize-none"
           />
         )}
 
         {captureType === "voice" && (
-          <div className="flex flex-col items-center gap-4 py-4">
+          <div className="flex flex-col items-center gap-4 py-6">
             <button
               onClick={toggleRecording}
               className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
@@ -149,7 +173,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
               <Mic className={`w-8 h-8 ${isRecording ? "text-destructive-foreground" : "text-primary-foreground"}`} />
             </button>
             <p className="text-sm text-muted-foreground">
-              {isRecording ? "Recording... tap to stop" : "Tap to record"}
+              {isRecording ? "Recording… tap to stop" : "Tap to record"}
             </p>
           </div>
         )}
@@ -160,7 +184,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {saving && captureType === "link" ? "Analyzing & Saving..." : "Save Entry"}
+          {saving && captureType === "link" ? "Extracting Intelligence…" : "Save Entry"}
         </Button>
       </DialogContent>
     </Dialog>
