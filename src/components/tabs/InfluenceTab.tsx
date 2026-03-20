@@ -16,13 +16,13 @@ const SummaryText = ({ text }: { text: string }) => {
 
   return (
     <div>
-      <p className={`text-xs text-muted-foreground mt-1 ${!expanded && isLong ? "line-clamp-2" : ""}`}>
+      <p className={`text-xs text-muted-foreground/60 mt-1.5 leading-relaxed ${!expanded && isLong ? "line-clamp-2" : ""}`}>
         {text}
       </p>
       {isLong && (
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="text-[10px] text-primary hover:text-primary/80 mt-0.5 font-medium"
+          className="text-[10px] text-primary/70 hover:text-primary mt-1 font-medium transition-colors duration-200"
         >
           {expanded ? "Less" : "Read more"}
         </button>
@@ -71,49 +71,50 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
   };
 
   return (
-    <div className="h-[calc(100dvh-180px)] overflow-y-auto overscroll-contain space-y-6 pb-32">
-      <div className="glass-card rounded-2xl p-5 sm:p-8">
-        <div className="flex items-center gap-2 mb-1">
-          <Megaphone className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold text-foreground">{t("influence.title")}</h2>
+    <div className="h-[calc(100dvh-180px)] overflow-y-auto overscroll-contain space-y-8 pb-36">
+      <div className="glass-card rounded-2xl p-6 sm:p-10">
+        <div className="flex items-center gap-3 mb-2">
+          <Megaphone className="w-5 h-5 text-primary/70" />
+          <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t("influence.title")}</h2>
         </div>
-        <p className="text-xs text-muted-foreground mb-6">{t("influence.subtitle")}</p>
+        <p className="text-xs text-muted-foreground/50 mb-8 tracking-wide">{t("influence.subtitle")}</p>
 
         {brandReady.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">{t("influence.empty")}</p>
+          <p className="text-sm text-muted-foreground/40 italic">{t("influence.empty")}</p>
         ) : (
-          <div className="space-y-3">
-            {brandReady.map((entry) => {
+          <div className="space-y-4">
+            {brandReady.map((entry, i) => {
               const isDrafting = draftingId === entry.id;
 
               return (
                 <div
                   key={entry.id}
-                  className="p-4 rounded-xl bg-secondary/30 border border-border/20 hover:bg-secondary/50 transition-colors h-auto"
+                  className="p-5 rounded-xl bg-secondary/15 border border-border/10 hover:border-primary/10 transition-all duration-300 h-auto hover-lift animate-fade-in"
+                  style={{ animationDelay: `${i * 60}ms` }}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground break-words">
+                      <p className="text-sm font-medium text-foreground break-words leading-relaxed">
                         {entry.title || entry.content.slice(0, 80)}
                       </p>
                       {entry.summary && <SummaryText text={entry.summary} />}
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2.5 mt-3">
                         {entry.skill_pillar && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                          <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
                             {entry.skill_pillar}
                           </span>
                         )}
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">
                           {formatSmartDate(entry.created_at)}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/10">
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border/8">
                     <button
                       onClick={() => handleDraft(entry)}
                       disabled={isDrafting}
-                      className="flex items-center gap-1 text-[10px] font-medium text-primary/80 hover:text-primary transition-colors disabled:opacity-50 px-2 py-1 rounded-md bg-primary/10 active:scale-95"
+                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-all duration-200 disabled:opacity-40 px-3 py-1.5 rounded-lg bg-primary/6 hover:bg-primary/12 tactile-press border border-primary/8"
                     >
                       {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
                       Generate EN Post
@@ -127,14 +128,14 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
       </div>
 
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
-        <DialogContent className="glass-card border-border/30 sm:max-w-lg">
+        <DialogContent className="glass-card-elevated border-border/10 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">{t("draft.title")}</DialogTitle>
+            <DialogTitle className="text-gradient-gold text-xl" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t("draft.title")}</DialogTitle>
           </DialogHeader>
-          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words">
+          <div className="bg-secondary/20 rounded-xl p-6 mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words border border-border/8">
             {draftPost}
           </div>
-          <Button onClick={handleCopy} variant="outline" className="w-full mt-2 border-border/30">
+          <Button onClick={handleCopy} variant="outline" className="w-full mt-3 border-border/15 hover-lift tactile-press">
             {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
             {copied ? t("draft.copied") : t("draft.copy")}
           </Button>
