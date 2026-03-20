@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle } from "lucide-react";
+import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
@@ -22,6 +23,7 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const navigate = useNavigate();
+  const { lang, setLang, t } = useLanguage();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -67,10 +69,10 @@ const Dashboard = () => {
   const pendingBrandPosts = entries.filter(e => e.summary && e.summary.trim().length > 0).length;
 
   const stats = [
-    { label: "Strategic Focus", value: topPillar ? topPillar[0] : "—", icon: BookOpen },
-    { label: "Pending Brand Posts", value: pendingBrandPosts, icon: BarChart3 },
-    { label: "Voice Notes", value: entries.filter(e => e.type === "voice").length, icon: Zap },
-    { label: "Strategic Insights", value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
+    { label: t("stats.strategicFocus"), value: topPillar ? topPillar[0] : "—", icon: BookOpen },
+    { label: t("stats.pendingPosts"), value: pendingBrandPosts, icon: BarChart3 },
+    { label: t("stats.voiceNotes"), value: entries.filter(e => e.type === "voice").length, icon: Zap },
+    { label: t("stats.strategicInsights"), value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
   ];
 
   return (
@@ -83,13 +85,20 @@ const Dashboard = () => {
             </div>
             <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLang(lang === "en" ? "ar" : "en")}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-secondary/60 border border-border/20 hover:border-primary/30 font-medium"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {t("lang.toggle")}
+            </button>
             <button
               onClick={() => setChatOpen(true)}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-secondary/60 border border-border/20 hover:border-primary/30"
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ask Aura</span>
+              <span className="hidden sm:inline">{t("header.askAura")}</span>
             </button>
             <span className="text-xs text-muted-foreground hidden sm:block tracking-wider uppercase">{user?.email}</span>
             <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -124,8 +133,8 @@ const Dashboard = () => {
             <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
               <Plus className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-1">Capture</h2>
-            <p className="text-xs text-muted-foreground tracking-wide">Link, voice note, or thought</p>
+            <h2 className="text-xl font-semibold text-foreground mb-1">{t("capture.title")}</h2>
+            <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
           </div>
 
           <div
@@ -135,8 +144,8 @@ const Dashboard = () => {
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform border border-border/30">
               <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-1">Log Training</h2>
-            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">Track skill development</p>
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-1">{t("training.title")}</h2>
+            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
           </div>
 
           <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[250px] sm:min-h-[380px] radar-glow">

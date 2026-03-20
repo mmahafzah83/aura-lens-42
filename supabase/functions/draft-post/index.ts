@@ -72,11 +72,39 @@ Context focus: infrastructure, water, energy, or digital transformation in KSA/G
 ${COACH_TONE}
 
 Context focus: infrastructure, water, energy, or digital transformation.${bilingualNote}`,
+
+      "arabic-executive": `أنت مستشار تنفيذي أول وكاتب محتوى لينكدإن لمدير في EY يُعرف بلقب "مهندس التحول."
+
+اكتب منشور لينكدإن باللغة العربية الفصحى الراقية بأسلوب "التنفيذي السعودي":
+
+القواعد:
+- اللغة: عربية فصحى رسمية، رؤيوية، تتماشى مع مصطلحات رؤية السعودية 2030
+- استخدم مصطلحات مثل: التحول الرقمي، الاستدامة، تمكين القطاع الخاص، رأس المال البشري، الحوكمة، التميز المؤسسي
+- لا تستخدم لغة عامية أو مبالغة عاطفية
+
+الهيكل:
+1. الافتتاحية — جملة واحدة جريئة عن تحول استراتيجي
+2. فراغات — كل جملة في سطر مستقل
+3. الرؤية — ٣ نقاط باستخدام ◈ أو ➔ (كل نقة بحد أقصى ١٥ كلمة)
+4. السؤال — سؤال واحد يتحدى الافتراضات السائدة في القطاع
+
+بدون هاشتاقات. بدون إيموجي إلا ◈ و ➔. أقل من ١٥٠ كلمة.`,
+
+      "translate-executive-ar": `أنت مترجم تنفيذي محترف. ترجم المحتوى التالي إلى العربية الفصحى الراقية بأسلوب يليق بالمستوى التنفيذي.
+
+القواعد:
+- استخدم مصطلحات رؤية السعودية 2030 حيثما كان ذلك مناسباً
+- حافظ على النبرة الاستراتيجية والمهنية
+- لا تترجم حرفياً — أعد صياغة المعنى بأسلوب عربي أصيل وراقٍ
+- إذا كان المحتوى يتضمن أُطر عمل أو نماذج، حافظ على مصطلحاتها الإنجليزية بين قوسين
+- اعرض الترجمة بتنسيق واضح مع عناوين فرعية`,
     };
 
     const userPrompts: Record<string, string> = {
       "weekly-memo": `Synthesize these voice notes from the past week into a Leadership Memo with a Coach's Challenge:\n\n${summary}`,
       "voice": `Turn this raw voice note into a polished LinkedIn brand post:\n\nTranscript: ${content || "N/A"}\nSenior Partner Analysis: ${summary || "N/A"}`,
+      "arabic-executive": `اكتب منشور لينكدإن عربي بأسلوب التنفيذي السعودي من هذا المحتوى:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمصدر: ${content || "N/A"}`,
+      "translate-executive-ar": `ترجم المحتوى التالي إلى العربية التنفيذية:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمحتوى: ${content || "N/A"}`,
       "default": `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
     };
 
