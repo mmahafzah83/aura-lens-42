@@ -25,7 +25,6 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Fetch the page content
     console.log("Fetching URL:", url);
     const pageRes = await fetch(url, {
       headers: {
@@ -42,12 +41,15 @@ serve(async (req) => {
     }
 
     let pageText = await pageRes.text();
-    // Truncate to avoid token limits - keep first ~8000 chars
-    if (pageText.length > 8000) {
-      pageText = pageText.substring(0, 8000);
+
+    // Extract <title> before stripping HTML
+    const titleMatch = pageText.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const rawTitle = titleMatch ? titleMatch[1].replace(/\s+/g, " ").trim() : "";
+
+    if (pageText.length > 12000) {
+      pageText = pageText.substring(0, 12000);
     }
 
-    // Strip HTML tags for cleaner input
     pageText = pageText.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
     pageText = pageText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
     pageText = pageText.replace(/<[^>]+>/g, " ");
@@ -55,7 +57,6 @@ serve(async (req) => {
 
     console.log("Page text length:", pageText.length);
 
-    // Call Lovable AI for summary
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -64,15 +65,49 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "extract_intelligence",
+              description: "Extract strategic intelligence from a web page",
+              parameters: {
+                type: "object",
+                properties: {
+                  title: {
+                    type: "string",
+                    description: "A clean, concise title for this page (use the page's own title if good, otherwise create one)",
+                  },
+                  summary: {
+                    type: "string",
+                    description: "Exactly 3 bullet points capturing strategic objectives, KPIs, and key takeaways. Format: • Bullet 1\\n• Bullet 2\\n• Bullet 3",
+                  },
+                  skill_pillar: {
+                    type: "string",
+                    enum: ["Strategy", "Technology", "Utilities", "Leadership", "Brand"],
+                    description: "Which executive skill pillar this content most relates to",
+                  },
+                },
+                required: ["title", "summary", "skill_pillar"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "extract_intelligence" } },
         messages: [
           {
             role: "system",
-            content:
-              "You are an executive intelligence analyst. Given the content of a web page, produce exactly 3 concise bullet points that capture the most strategically important takeaways. Each bullet should be one sentence. Use the format:\n• Bullet 1\n• Bullet 2\n• Bullet 3\nNo preamble, no extra text.",
+            content: `You are an executive intelligence analyst preparing briefing materials. Given web page content, extract:
+1. A clean TITLE for the page
+2. Exactly 3 bullet points focused on STRATEGIC OBJECTIVES and KPIs mentioned. Each bullet must be actionable intelligence useful in a board meeting or strategy session. Format bullets with • prefix.
+3. Classify under one skill pillar: Strategy, Technology, Utilities, Leadership, or Brand.
+
+Page title from HTML: "${rawTitle}"`,
           },
           {
             role: "user",
-            content: `Summarize this page from ${url}:\n\n${pageText}`,
+            content: `Analyze this page from ${url}:\n\n${pageText}`,
           },
         ],
       }),
@@ -81,14 +116,12 @@ serve(async (req) => {
     if (!aiRes.ok) {
       if (aiRes.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again shortly." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (aiRes.status === 402) {
         return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const errText = await aiRes.text();
@@ -97,11 +130,30 @@ serve(async (req) => {
     }
 
     const aiData = await aiRes.json();
-    const summary = aiData.choices?.[0]?.message?.content || "";
+    
+    // Parse tool call response
+    let title = rawTitle || url;
+    let summary = "";
+    let skill_pillar = "Strategy";
 
-    console.log("Summary generated successfully");
+    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+    if (toolCall?.function?.arguments) {
+      try {
+        const args = JSON.parse(toolCall.function.arguments);
+        title = args.title || title;
+        summary = args.summary || "";
+        skill_pillar = args.skill_pillar || "Strategy";
+      } catch {
+        // Fallback to content if tool call parsing fails
+        summary = aiData.choices?.[0]?.message?.content || "";
+      }
+    } else {
+      summary = aiData.choices?.[0]?.message?.content || "";
+    }
 
-    return new Response(JSON.stringify({ summary }), {
+    console.log("Intelligence extracted successfully");
+
+    return new Response(JSON.stringify({ title, summary, skill_pillar }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
