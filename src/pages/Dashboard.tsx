@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap } from "lucide-react";
+import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import SkillRadar from "@/components/SkillRadar";
@@ -8,6 +8,7 @@ import TrainingModal from "@/components/TrainingModal";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
 import PotentialUnleashed from "@/components/PotentialUnleashed";
 import RecentEntries from "@/components/RecentEntries";
+import AuraChatSidebar from "@/components/AuraChatSidebar";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -17,6 +18,7 @@ const Dashboard = () => {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
+  const [chatOpen, setChatOpen] = useState(false);
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const navigate = useNavigate();
 
@@ -81,6 +83,13 @@ const Dashboard = () => {
             <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setChatOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-secondary/60 border border-border/20 hover:border-primary/30"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ask Aura</span>
+            </button>
             <span className="text-xs text-muted-foreground hidden sm:block tracking-wider uppercase">{user?.email}</span>
             <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-4 h-4" />
@@ -149,6 +158,7 @@ const Dashboard = () => {
 
       <CaptureModal open={captureOpen} onOpenChange={setCaptureOpen} onCaptured={fetchEntries} />
       <TrainingModal open={trainingOpen} onOpenChange={setTrainingOpen} onLogged={() => { setRadarKey(k => k + 1); }} />
+      <AuraChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 };
