@@ -34,7 +34,15 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a LinkedIn ghostwriter for a senior executive. Write a 3-paragraph LinkedIn post in a professional, visionary tone. 
+            content: type === "voice"
+              ? `You are a LinkedIn ghostwriter for a C-suite executive in infrastructure and utilities. Transform a raw spoken idea into a polished, high-authority LinkedIn post.
+
+Paragraph 1: A commanding opening — state the insight as if you've seen it firsthand across 50 client engagements.
+Paragraph 2: The substance — weave in the strategic risk and technical depth. Show pattern recognition. Reference real industry dynamics.
+Paragraph 3: The forward-looking close — what leaders should be doing NOW. Confident, not preachy.
+
+Tone: Quiet authority. Like a Senior Partner who doesn't need to prove anything. Under 200 words. No hashtags. No emojis. No filler.`
+              : `You are a LinkedIn ghostwriter for a senior executive. Write a 3-paragraph LinkedIn post in a professional, visionary tone. 
 Paragraph 1: Hook — a bold observation or insight that stops the scroll.
 Paragraph 2: Substance — expand with data, context, or a personal take.
 Paragraph 3: Call to action or forward-looking statement.
@@ -42,7 +50,9 @@ Keep it under 200 words. No hashtags. No emojis. Confident and understated.`,
           },
           {
             role: "user",
-            content: `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
+            content: type === "voice"
+              ? `Turn this raw voice note into a polished LinkedIn brand post:\n\nTranscript: ${content || "N/A"}\nSenior Partner Analysis: ${summary || "N/A"}`
+              : `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
           },
         ],
       }),
