@@ -151,6 +151,15 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     }
   };
 
+  const handleMeetingPrep = () => {
+    const topic = input.trim();
+    if (topic) {
+      send(`Prepare a 1-page bilingual meeting prep memo for a VP meeting on: ${topic}`, "meeting-prep");
+    } else {
+      send("Prepare a 1-page bilingual meeting prep memo for a VP meeting based on my most recent and strategic captures.", "meeting-prep");
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
