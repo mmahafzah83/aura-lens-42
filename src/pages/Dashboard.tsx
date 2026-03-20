@@ -127,10 +127,10 @@ const Dashboard = () => {
 
           {/* Capture Button — hidden on mobile */}
           <div
-            className="hidden md:flex glass-card rounded-2xl p-10 flex-col items-center justify-center text-center gold-glow cursor-pointer hover:bg-card-hover transition-all group"
+            className="hidden md:flex glass-card rounded-2xl p-10 flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
             onClick={() => setCaptureOpen(true)}
           >
-            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform aura-glow">
               <Plus className="w-8 h-8 text-primary-foreground" />
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-1">{t("capture.title")}</h2>
