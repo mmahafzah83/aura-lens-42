@@ -247,7 +247,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
                 <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
                 </div>
-                <p className="text-sm text-muted-foreground">Transcribing with Whisper…</p>
+                <p className="text-sm text-muted-foreground">Analyzing as Senior Partner…</p>
               </>
             ) : (
               <>
