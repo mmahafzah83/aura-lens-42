@@ -91,6 +91,9 @@ const Dashboard = () => {
             </div>
           ))}
 
+          {/* Weekly Transformation Lens */}
+          <WeeklyTransformationLens entries={entries} />
+
           {/* Capture Button — hidden on mobile, shown in grid on desktop */}
           <div
             className="hidden md:flex glass-card rounded-2xl p-10 flex-col items-center justify-center text-center gold-glow cursor-pointer hover:bg-card-hover transition-all group"
