@@ -390,6 +390,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     {imageAnalysis.skill_pillar}
                   </span>
                 )}
+                {onOpenChat && (
+                  <button
+                    onClick={() => {
+                      const title = imageAnalysis.title || "this framework";
+                      onOpenChat(`Turn the framework "${title}" into a 5-minute briefing for my next meeting. Structure it as: Context (30s), Core Framework (2min), Application to Our Client (2min), One Provocative Question (30s).`);
+                      onOpenChange(false);
+                    }}
+                    className="mt-2 w-full text-left text-xs px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors"
+                  >
+                    ◈ Turn this framework into a 5-minute meeting briefing?
+                  </button>
+                )}
               </div>
             )}
           </div>
