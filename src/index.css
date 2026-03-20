@@ -58,13 +58,27 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', 'IBM Plex Sans Arabic', system-ui, sans-serif;
     letter-spacing: 0.01em;
+  }
+
+  .rtl body,
+  html[dir="rtl"] body {
+    font-family: 'IBM Plex Sans Arabic', 'Inter', system-ui, sans-serif;
+    letter-spacing: 0;
   }
 
   h1, h2, h3, h4 {
     font-family: 'Playfair Display', Georgia, serif;
     letter-spacing: -0.02em;
+  }
+
+  html[dir="rtl"] h1,
+  html[dir="rtl"] h2,
+  html[dir="rtl"] h3,
+  html[dir="rtl"] h4 {
+    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+    letter-spacing: 0;
   }
 }
 
