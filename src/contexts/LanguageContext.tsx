@@ -80,6 +80,8 @@ const translations: Record<string, string> = {
   "account.opportunities": "Opportunities",
   "account.architectBrief": "Architect Meeting Brief (PDF)",
   "account.pdfGenerated": "Meeting brief downloaded",
+  "frameworks.title": "Expert Frameworks",
+  "frameworks.empty": "No frameworks yet. Capture content about expert systems to auto-extract.",
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
