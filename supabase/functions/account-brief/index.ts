@@ -24,20 +24,35 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
     if (userError || !user) throw new Error("Unauthorized");
 
-    // Search vault for account-related content
-    const { data: vaultResults, error: vaultError } = await supabase.rpc("search_vault", {
-      p_user_id: user.id,
-      p_query: account,
-      p_limit: 15,
-    });
+    // Query entries directly (tagged with account or matching in content/title)
+    const { data: entries, error: entriesErr } = await supabase
+      .from("entries")
+      .select("id, title, summary, content, skill_pillar, type")
+      .eq("user_id", user.id)
+      .or(`account_name.eq.${account},title.ilike.%${account}%,content.ilike.%${account}%`)
+      .order("created_at", { ascending: false })
+      .limit(15);
 
-    if (vaultError) {
-      console.error("Vault search error:", vaultError);
-    }
+    if (entriesErr) console.error("Entries query error:", entriesErr);
 
-    const results = vaultResults || [];
-    const entryResults = results.filter((r: any) => r.source === "entry");
-    const docResults = results.filter((r: any) => r.source === "document");
+    // Query document chunks directly
+    const { data: docChunks, error: docsErr } = await supabase
+      .from("document_chunks")
+      .select("id, content, document_id, documents!inner(filename, summary)")
+      .eq("user_id", user.id)
+      .limit(50);
+
+    if (docsErr) console.error("Doc chunks query error:", docsErr);
+
+    // Filter doc chunks that mention the account
+    const accountLower = account.toLowerCase();
+    const relevantDocs = (docChunks || []).filter((dc: any) => 
+      dc.content.toLowerCase().includes(accountLower) ||
+      dc.documents?.filename?.toLowerCase().includes(accountLower) ||
+      dc.documents?.summary?.toLowerCase().includes(accountLower)
+    ).slice(0, 15);
+
+    const entryResults = entries || [];
 
     // Build context for AI synthesis
     const contextParts: string[] = [];
@@ -45,14 +60,14 @@ serve(async (req) => {
     if (entryResults.length > 0) {
       contextParts.push("=== ENTRIES (Your Captures) ===");
       entryResults.forEach((e: any, i: number) => {
-        contextParts.push(`[Entry ${i + 1}] ${e.title || ""}\n${e.summary || e.content}\nPillar: ${e.skill_pillar || "N/A"}`);
+        contextParts.push(`[Entry ${i + 1}] ${e.title || ""}\n${e.summary || e.content?.slice(0, 300)}\nPillar: ${e.skill_pillar || "N/A"}`);
       });
     }
 
-    if (docResults.length > 0) {
+    if (relevantDocs.length > 0) {
       contextParts.push("\n=== DOCUMENTS (Uploaded Files) ===");
-      docResults.forEach((d: any, i: number) => {
-        contextParts.push(`[Doc Chunk ${i + 1}] Source: ${d.title || "Unknown"}\n${d.content}`);
+      relevantDocs.forEach((d: any, i: number) => {
+        contextParts.push(`[Doc Chunk ${i + 1}] Source: ${d.documents?.filename || "Unknown"}\n${d.content?.slice(0, 400)}`);
       });
     }
 
@@ -60,13 +75,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         account,
         synthesis_en: `No intelligence found for "${account}". Capture some insights or upload documents related to this account.`,
-        synthesis_ar: `لم يتم العثور على معلومات استخباراتية لـ "${account}". قم بالتقاط بعض الرؤى أو رفع مستندات متعلقة بهذا الحساب.`,
         entries_count: 0,
         docs_count: 0,
         key_themes_en: [],
-        key_themes_ar: [],
         strategic_questions_en: [],
-        strategic_questions_ar: [],
+        risk_factors: [],
+        opportunity_areas: [],
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -83,11 +97,11 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
-            content: `You are Aura, an executive intelligence advisor for a senior EY professional. You analyze account intelligence and produce bilingual (English + Arabic) strategic syntheses. Return JSON using the tool provided.`,
+            content: `You are Aura, an executive intelligence advisor for a senior EY professional. Analyze account intelligence and produce strategic syntheses in English. Return JSON using the tool provided.`,
           },
           {
             role: "user",
@@ -103,16 +117,13 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  synthesis_en: { type: "string", description: "2-3 paragraph English executive synthesis of the account intelligence" },
-                  synthesis_ar: { type: "string", description: "2-3 paragraph Arabic executive synthesis (not a translation, a native Arabic perspective)" },
-                  key_themes_en: { type: "array", items: { type: "string" }, description: "3-5 key strategic themes in English" },
-                  key_themes_ar: { type: "array", items: { type: "string" }, description: "3-5 key strategic themes in Arabic" },
-                  strategic_questions_en: { type: "array", items: { type: "string" }, description: "3 strategic questions to raise in a GM meeting (English)" },
-                  strategic_questions_ar: { type: "array", items: { type: "string" }, description: "3 strategic questions to raise in a GM meeting (Arabic)" },
-                  risk_factors: { type: "array", items: { type: "string" }, description: "2-3 risk factors or blind spots" },
+                  synthesis_en: { type: "string", description: "2-3 paragraph English executive synthesis" },
+                  key_themes_en: { type: "array", items: { type: "string" }, description: "3-5 key strategic themes" },
+                  strategic_questions_en: { type: "array", items: { type: "string" }, description: "3 strategic questions for a GM meeting" },
+                  risk_factors: { type: "array", items: { type: "string" }, description: "2-3 risk factors" },
                   opportunity_areas: { type: "array", items: { type: "string" }, description: "2-3 opportunity areas" },
                 },
-                required: ["synthesis_en", "synthesis_ar", "key_themes_en", "key_themes_ar", "strategic_questions_en", "strategic_questions_ar", "risk_factors", "opportunity_areas"],
+                required: ["synthesis_en", "key_themes_en", "strategic_questions_en", "risk_factors", "opportunity_areas"],
                 additionalProperties: false,
               },
             },
@@ -124,18 +135,13 @@ serve(async (req) => {
 
     if (!aiResp.ok) {
       const status = aiResp.status;
+      const errText = await aiResp.text();
+      console.error("AI error:", status, errText);
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again shortly." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errText = await aiResp.text();
-      console.error("AI error:", status, errText);
       throw new Error("AI synthesis failed");
     }
 
@@ -153,7 +159,7 @@ serve(async (req) => {
       account,
       ...synthesis,
       entries_count: entryResults.length,
-      docs_count: docResults.length,
+      docs_count: relevantDocs.length,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
