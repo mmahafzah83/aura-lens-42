@@ -54,17 +54,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchEntries();
-
-    // Live sync: subscribe to entries changes
     const channel = supabase
       .channel('entries-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'entries' },
-        () => fetchEntries()
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entries' }, () => fetchEntries())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, []);
 
@@ -81,26 +74,26 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      {/* Header */}
-      <header className="border-b border-border/20 px-4 sm:px-8 py-4 flex-shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {/* Premium Header */}
+      <header className="border-b border-border/10 px-5 sm:px-10 py-5 flex-shrink-0 bg-background/80 backdrop-blur-xl z-40">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+              <Zap className="w-4.5 h-4.5 text-primary" />
             </div>
             <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => setChatOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("header.askAura")}</span>
             </button>
-            <span className="text-xs text-muted-foreground hidden sm:block tracking-wider uppercase">{user?.email}</span>
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title={t("header.logout")}>
+            <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
+            <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title={t("header.logout")}>
               <LogOut className="w-4 h-4" />
             </button>
           </div>
@@ -108,97 +101,116 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto"><div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-28 md:pb-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-36 md:pb-10">
+          <Tabs defaultValue="briefing" className="w-full">
+            {/* Desktop Tab Bar */}
+            <TabsList className="hidden md:flex w-full justify-start gap-2 bg-transparent p-0 mb-10 border-b border-border/10 rounded-none h-auto pb-0">
+              {tabItems.map((tab) => (
+                <TabsTrigger
+                  key={tab.value}
+                  value={tab.value}
+                  className="flex items-center gap-2.5 px-5 py-4 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-all duration-300"
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span className="text-sm font-medium tracking-wide">{tab.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            <TabsContent value="briefing" className="mt-0 animate-tab-enter">
+              <BriefingTab entries={entries} onOpenChat={(msg) => {
+                setChatInitialMessage(msg);
+                setChatOpen(true);
+              }} />
+            </TabsContent>
+
+            <TabsContent value="pursuits" className="mt-0 animate-tab-enter">
+              <div className="space-y-8">
+                <div className="glass-card rounded-2xl p-6 sm:p-10">
+                  <AccountIntelligence entries={entries} />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 glass-card rounded-2xl p-6 sm:p-10">
+                    <RecentEntries entries={entries} onRefresh={fetchEntries} />
+                  </div>
+                  <div className="space-y-8">
+                    <div
+                      className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
+                      onClick={() => setCaptureOpen(true)}
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 aura-glow border border-primary/20">
+                        <Plus className="w-7 h-7 text-primary" />
+                      </div>
+                      <h2 className="text-lg font-semibold text-foreground mb-1.5">{t("capture.title")}</h2>
+                      <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
+                    </div>
+                    <div className="glass-card rounded-2xl p-6 sm:p-8">
+                      <h3 className="text-sm font-semibold text-foreground mb-4 tracking-widest uppercase">{t("tab.uploadDoc")}</h3>
+                      <DocumentUpload onUploaded={fetchEntries} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="influence" className="mt-0 animate-tab-enter">
+              <InfluenceTab entries={entries} onRefresh={fetchEntries} />
+            </TabsContent>
+
+            <TabsContent value="growth" className="mt-0 animate-tab-enter">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow">
+                  <SkillRadar key={radarKey} />
+                </div>
+                <div className="space-y-8">
+                  <div
+                    className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
+                    onClick={() => setTrainingOpen(true)}
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 border border-border/20">
+                      <TrendingUp className="w-7 h-7 text-primary" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-foreground mb-1.5">{t("training.title")}</h2>
+                    <p className="text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
+                  </div>
+                  <WeeklyTransformationLens entries={entries} />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
+      {/* Mobile Floating Island Navigation */}
+      <nav
+        className="md:hidden fixed bottom-5 left-4 right-4 z-50 glass-island rounded-2xl px-2 py-2"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <Tabs defaultValue="briefing" className="w-full">
-          <TabsList className="w-full justify-start gap-1 bg-transparent p-0 mb-6 border-b border-border/20 rounded-none h-auto pb-0">
+          <TabsList className="w-full bg-transparent p-0 h-auto gap-0">
             {tabItems.map((tab) => (
               <TabsTrigger
-                key={tab.value}
+                key={`mobile-${tab.value}`}
                 value={tab.value}
-                className="flex items-center gap-2 px-4 py-3 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-all duration-200"
+                className="flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl text-muted-foreground/60 data-[state=active]:text-primary data-[state=active]:bg-primary/8 bg-transparent transition-all duration-200 tactile-press"
               >
-                <tab.icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <tab.icon className="w-4.5 h-4.5" />
+                <span className="text-[10px] font-medium tracking-wide">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
-
-          {/* Briefing Tab */}
-          <TabsContent value="briefing" className="mt-0 animate-fade-in">
-            <BriefingTab entries={entries} onOpenChat={(msg) => {
-              setChatInitialMessage(msg);
-              setChatOpen(true);
-            }} />
-          </TabsContent>
-
-          {/* Pursuits Tab */}
-          <TabsContent value="pursuits" className="mt-0 animate-fade-in">
-            <div className="space-y-6">
-              {/* Account Intelligence */}
-              <div className="glass-card rounded-2xl p-5 sm:p-8">
-                <AccountIntelligence entries={entries} />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 glass-card rounded-2xl p-5 sm:p-8">
-                  <RecentEntries entries={entries} onRefresh={fetchEntries} />
-                </div>
-                <div className="space-y-6">
-                  <div
-                    className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
-                    onClick={() => setCaptureOpen(true)}
-                  >
-                    <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform aura-glow">
-                      <Plus className="w-7 h-7 text-primary-foreground" />
-                    </div>
-                    <h2 className="text-lg font-semibold text-foreground mb-1">{t("capture.title")}</h2>
-                    <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
-                  </div>
-                  <div className="glass-card rounded-2xl p-5 sm:p-6">
-                    <h3 className="text-sm font-semibold text-foreground mb-3 tracking-wide uppercase">{t("tab.uploadDoc")}</h3>
-                    <DocumentUpload onUploaded={fetchEntries} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Influence Tab */}
-          <TabsContent value="influence" className="mt-0 animate-fade-in">
-            <InfluenceTab entries={entries} onRefresh={fetchEntries} />
-          </TabsContent>
-
-          {/* Growth Tab */}
-          <TabsContent value="growth" className="mt-0 animate-fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="glass-card rounded-2xl p-5 sm:p-8 min-h-[400px] radar-glow">
-                <SkillRadar key={radarKey} />
-              </div>
-              <div className="space-y-6">
-                <div
-                  className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
-                  onClick={() => setTrainingOpen(true)}
-                >
-                  <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-border/30">
-                    <TrendingUp className="w-7 h-7 text-primary" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-foreground mb-1">{t("training.title")}</h2>
-                  <p className="text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
-                </div>
-                <WeeklyTransformationLens entries={entries} />
-              </div>
-            </div>
-          </TabsContent>
         </Tabs>
-      </div></main>
+      </nav>
 
       {/* Mobile FAB */}
       <button
         onClick={() => setCaptureOpen(true)}
-        className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-90 transition-transform duration-150 z-50 aura-glow"
+        className="md:hidden fixed bottom-24 right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-50 aura-glow border border-primary/30"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <Plus className="w-8 h-8" />
+        <Plus className="w-6 h-6" />
       </button>
 
       <CaptureModal
