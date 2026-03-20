@@ -310,7 +310,7 @@ const AccountIntelligence = () => {
             <div className="glass-card rounded-xl p-5 border border-border/20">
               <h4 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">{t("account.keyThemes")}</h4>
               <div className="flex flex-wrap gap-2">
-                {(lang === "ar" ? synthesis.key_themes_ar : synthesis.key_themes_en).map((theme, i) => (
+                {synthesis.key_themes_en.map((theme, i) => (
                   <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                     {theme}
                   </span>
