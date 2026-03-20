@@ -51,9 +51,21 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekEntries = entries.filter(e => new Date(e.created_at) >= weekAgo);
+
+  const pillarCounts: Record<string, number> = {};
+  weekEntries.forEach(e => {
+    if (e.skill_pillar) pillarCounts[e.skill_pillar] = (pillarCounts[e.skill_pillar] || 0) + 1;
+  });
+  const topPillar = Object.entries(pillarCounts).sort((a, b) => b[1] - a[1])[0];
+
+  const pendingBrandPosts = entries.filter(e => e.summary && e.summary.trim().length > 0).length;
+
   const stats = [
-    { label: "Total Captures", value: entries.length, icon: BookOpen },
-    { label: "Links Saved", value: entries.filter(e => e.type === "link").length, icon: BarChart3 },
+    { label: "Strategic Focus", value: topPillar ? topPillar[0] : "—", icon: BookOpen },
+    { label: "Pending Brand Posts", value: pendingBrandPosts, icon: BarChart3 },
     { label: "Voice Notes", value: entries.filter(e => e.type === "voice").length, icon: Zap },
     { label: "Strategic Insights", value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
   ];
