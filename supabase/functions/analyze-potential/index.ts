@@ -24,7 +24,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const digest = entries
-      .slice(0, 15)
+      .slice(0, 10)
       .map((e: any, i: number) => `[${i + 1}] Type: ${e.type} | Pillar: ${e.skill_pillar || "N/A"} | Summary: ${e.summary || e.content}`)
       .join("\n\n");
 
@@ -40,58 +40,57 @@ serve(async (req) => {
           {
             type: "function",
             function: {
-              name: "analyze_potential",
-              description: "Analyze strengths, blind spots, and brand alignment from capture history",
+              name: "analyze_mirror",
+              description: "Brand Mirror analysis of the executive's last 10 captures",
               parameters: {
                 type: "object",
                 properties: {
-                  strengths: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "2-3 specific areas where the executive leads, with evidence from captures. Be precise — cite themes, not generalities.",
+                  outsider_perception: {
+                    type: "string",
+                    description: "2-3 sentences on how this person sounds to an outsider reading their captures. What image do they project? What would a stranger infer about their expertise, seniority, and focus? Be honest and specific — cite patterns.",
                   },
-                  blind_spots: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "2-3 areas where the executive has blind spots or over-indexes. E.g. 'Focusing too much on technical details, losing the C-suite perspective.' Be direct and constructive.",
+                  contradiction: {
+                    type: "string",
+                    description: "One clear contradiction or tension in the executive's thinking across captures. E.g. 'You advocate for digital-first transformation but your captures skew heavily toward traditional advisory frameworks.' Be direct, cite evidence.",
+                  },
+                  neglected_topic: {
+                    type: "string",
+                    description: "One topic the executive is NOT talking about but SHOULD be for LinkedIn visibility as a Transformation Architect. Explain why this gap matters and what they risk by ignoring it.",
                   },
                   brand_alignment: {
                     type: "number",
-                    description: "Score from 1-10: how much this week's captures support the goal of becoming a 'Transformation Architect' — someone who bridges strategy, technology, and industry to drive enterprise-scale change. 1 = off-brand, 10 = perfectly aligned.",
+                    description: "Score 1-10: how much these captures support the 'Transformation Architect' brand. 1 = off-brand, 10 = perfectly aligned.",
                   },
                   brand_rationale: {
                     type: "string",
-                    description: "One sentence explaining the brand alignment score. Be honest and specific.",
-                  },
-                  unlock_action: {
-                    type: "string",
-                    description: "One high-impact action that bridges the gap between strengths and blind spots. Frame it as something a peer would challenge you to do this week.",
+                    description: "One sentence explaining the brand alignment score.",
                   },
                 },
-                required: ["strengths", "blind_spots", "brand_alignment", "brand_rationale", "unlock_action"],
+                required: ["outsider_perception", "contradiction", "neglected_topic", "brand_alignment", "brand_rationale"],
                 additionalProperties: false,
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "analyze_potential" } },
+        tool_choice: { type: "function", function: { name: "analyze_mirror" } },
         messages: [
           {
             role: "system",
-            content: `You are a Senior Executive Coach at a top-tier firm, working as a peer to a Director at EY who aspires to be known as a "Transformation Architect." You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
+            content: `You are a Senior Executive Coach and Brand Strategist, working as a peer to a Director at EY who aspires to be known as a "Transformation Architect." You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
 
-Given a series of captured thoughts, links, and voice notes, analyze:
+Given the executive's last 10 captures (thoughts, links, voice notes), provide a Brand Mirror:
 
-1. STRENGTHS — Where does this person lead? What patterns show mastery? Be specific — cite the themes from captures.
-2. BLIND SPOTS — Where are they over-indexing or missing the mark? Where is the thinking too narrow, too technical, or too tactical for someone aiming at the C-suite? Be direct.
-3. BRAND ALIGNMENT — Score 1-10 against the "Transformation Architect" brand: someone who synthesizes strategy, technology, and industry foresight to drive enterprise-scale transformation. Explain your score.
-4. UNLOCK ACTION — One concrete challenge for the coming week. Frame it as a peer would: "If I were you, I would..."
+1. OUTSIDER PERCEPTION — How does this person sound to someone who doesn't know them? What brand are they actually projecting vs. what they intend? Be brutally honest.
+2. CONTRADICTION — Find one tension or inconsistency in their thinking. Where do their words and focus diverge? This isn't about being wrong — it's about blind spots in narrative coherence.
+3. NEGLECTED TOPIC — What should they be talking about on LinkedIn that they're completely ignoring? Think about what a Transformation Architect MUST be seen discussing: AI strategy, C-suite dynamics, industry disruption, cross-sector patterns, etc.
 
-Tone: Sophisticated. Challenging. Neutral. You are not a cheerleader — you are a mirror.`,
+Also score brand alignment (1-10) against the "Transformation Architect" identity.
+
+Tone: Sophisticated. Challenging. Neutral. You are a mirror, not a cheerleader.`,
           },
           {
             role: "user",
-            content: `Analyze these recent captures:\n\n${digest}`,
+            content: `Analyze these last 10 captures:\n\n${digest}`,
           },
         ],
       }),
@@ -105,24 +104,24 @@ Tone: Sophisticated. Challenging. Neutral. You are not a cheerleader — you are
 
     const aiData = await aiRes.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    let strengths: string[] = [];
-    let blind_spots: string[] = [];
+    let outsider_perception = "";
+    let contradiction = "";
+    let neglected_topic = "";
     let brand_alignment = 0;
     let brand_rationale = "";
-    let unlock_action = "";
 
     if (toolCall?.function?.arguments) {
       try {
         const args = JSON.parse(toolCall.function.arguments);
-        strengths = args.strengths || [];
-        blind_spots = args.blind_spots || [];
+        outsider_perception = args.outsider_perception || "";
+        contradiction = args.contradiction || "";
+        neglected_topic = args.neglected_topic || "";
         brand_alignment = args.brand_alignment || 0;
         brand_rationale = args.brand_rationale || "";
-        unlock_action = args.unlock_action || "";
-      } catch { console.error("Failed to parse potential analysis"); }
+      } catch { console.error("Failed to parse mirror analysis"); }
     }
 
-    return new Response(JSON.stringify({ strengths, blind_spots, brand_alignment, brand_rationale, unlock_action }), {
+    return new Response(JSON.stringify({ outsider_perception, contradiction, neglected_topic, brand_alignment, brand_rationale }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
