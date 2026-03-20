@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import DocumentUpload from "@/components/DocumentUpload";
 
-type CaptureType = "link" | "voice" | "text" | "image";
+type CaptureType = "link" | "voice" | "text" | "image" | "document";
 
 const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
 
@@ -289,6 +290,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     { key: "voice", icon: Mic, label: "Voice" },
     { key: "text", icon: Type, label: "Text" },
     { key: "image", icon: ImageIcon, label: "Image" },
+    { key: "document", icon: FileUp, label: "Doc" },
   ];
 
   return (
@@ -407,6 +409,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           </div>
         )}
 
+        {captureType === "document" && (
+          <DocumentUpload onUploaded={() => { onCaptured(); onOpenChange(false); }} />
+        )}
+
         {captureType === "voice" && (
           <div className="flex flex-col items-center gap-4 py-6">
             {isTranscribing ? (
@@ -464,14 +470,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           </div>
         )}
 
-        <Button
-          onClick={handleSave}
-          disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
-          className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
-        >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {saving && captureType === "link" ? "Extracting Intelligence…" : saving ? "Saving…" : "Save Entry"}
-        </Button>
+        {captureType !== "document" && (
+          <Button
+            onClick={handleSave}
+            disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
+            className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            {saving && captureType === "link" ? "Extracting Intelligence…" : saving ? "Saving…" : "Save Entry"}
+          </Button>
+        )}
       </DialogContent>
     </Dialog>
   );
