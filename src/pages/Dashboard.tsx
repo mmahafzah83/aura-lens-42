@@ -132,7 +132,7 @@ const Dashboard = () => {
           </TabsContent>
 
           {/* Pursuits Tab */}
-          <TabsContent value="pursuits" className="mt-0">
+          <TabsContent value="pursuits" className="mt-0 animate-fade-in">
             <div className="space-y-6">
               {/* Account Intelligence */}
               <div className="glass-card rounded-2xl p-5 sm:p-8">
