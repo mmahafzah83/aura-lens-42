@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
+import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
 import RecentEntries from "@/components/RecentEntries";
 import type { Database } from "@/integrations/supabase/types";
 
