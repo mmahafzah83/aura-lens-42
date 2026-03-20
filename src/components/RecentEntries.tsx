@@ -45,6 +45,7 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
           title: entryAny.title || "",
           summary: entry.summary || "",
           content: entry.content,
+          type: entry.type,
         },
       });
       if (error || data?.error) {
