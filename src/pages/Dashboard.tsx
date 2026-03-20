@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
+import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
 import RecentEntries from "@/components/RecentEntries";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -89,6 +90,9 @@ const Dashboard = () => {
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">{stat.label}</p>
             </div>
           ))}
+
+          {/* Weekly Transformation Lens */}
+          <WeeklyTransformationLens entries={entries} />
 
           {/* Capture Button — hidden on mobile, shown in grid on desktop */}
           <div

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, PenLine, Loader2, Copy, Check } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -132,24 +132,15 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </span>
-                      {entry.type === "voice" && (
+                      {entry.summary && (
                         <button
                           onClick={() => handleDraft(entry)}
                           disabled={isDrafting}
                           className="ml-auto flex items-center gap-1 text-[10px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50"
+                          title="Draft LinkedIn Post"
                         >
-                          {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <PenLine className="w-3 h-3" />}
-                          Generate Brand Post
-                        </button>
-                      )}
-                      {entry.type !== "voice" && entry.summary && (
-                        <button
-                          onClick={() => handleDraft(entry)}
-                          disabled={isDrafting}
-                          className="ml-auto flex items-center gap-1 text-[10px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50"
-                        >
-                          {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <PenLine className="w-3 h-3" />}
-                          Draft Post
+                          {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
+                          <span className="hidden sm:inline">LinkedIn Post</span>
                         </button>
                       )}
                     </div>
