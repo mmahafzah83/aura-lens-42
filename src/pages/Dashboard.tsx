@@ -8,6 +8,7 @@ import TrainingModal from "@/components/TrainingModal";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
 import PotentialUnleashed from "@/components/PotentialUnleashed";
 import RecentEntries from "@/components/RecentEntries";
+import AuraChatSidebar from "@/components/AuraChatSidebar";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
