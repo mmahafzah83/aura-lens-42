@@ -169,7 +169,7 @@ const Dashboard = () => {
           </TabsContent>
 
           {/* Growth Tab */}
-          <TabsContent value="growth" className="mt-0">
+          <TabsContent value="growth" className="mt-0 animate-fade-in">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass-card rounded-2xl p-5 sm:p-8 min-h-[400px] radar-glow">
                 <SkillRadar key={radarKey} />
