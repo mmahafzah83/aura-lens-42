@@ -150,20 +150,22 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       }
     }
 
-    if (captureType === "voice" && !skill_pillar) {
-      const lower = content.toLowerCase();
-      if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) {
-        skill_pillar = "Strategy";
-      } else if (lower.includes("tech") || lower.includes("code") || lower.includes("software") || lower.includes("digital twin")) {
-        skill_pillar = "Technology";
-      } else if (lower.includes("desalination") || lower.includes("utility") || lower.includes("nwc") || lower.includes("mewa") || lower.includes("water")) {
-        skill_pillar = "Utilities";
-      } else if (lower.includes("leader") || lower.includes("team") || lower.includes("manage")) {
-        skill_pillar = "Leadership";
-      } else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) {
-        skill_pillar = "Brand";
+    if (captureType === "voice") {
+      if (voiceAnalysis?.summary) {
+        summary = voiceAnalysis.summary;
+        has_strategic_insight = true;
+      }
+      if (voiceAnalysis?.skill_pillar) {
+        skill_pillar = voiceAnalysis.skill_pillar;
       } else {
-        skill_pillar = "Strategy";
+        // Fallback keyword tagging
+        const lower = content.toLowerCase();
+        if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) skill_pillar = "Strategy";
+        else if (lower.includes("tech") || lower.includes("digital twin")) skill_pillar = "Technology";
+        else if (lower.includes("desalination") || lower.includes("nwc") || lower.includes("mewa") || lower.includes("water")) skill_pillar = "Utilities";
+        else if (lower.includes("leader") || lower.includes("team") || lower.includes("manage")) skill_pillar = "Leadership";
+        else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) skill_pillar = "Brand";
+        else skill_pillar = "Strategy";
       }
     }
 
