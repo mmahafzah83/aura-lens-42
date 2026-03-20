@@ -50,6 +50,33 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_targets: {
+        Row: {
+          created_at: string
+          id: string
+          pillar: string
+          target_hours: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pillar: string
+          target_hours?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pillar?: string
+          target_hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           created_at: string
