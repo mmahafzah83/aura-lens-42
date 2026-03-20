@@ -134,7 +134,7 @@ const Dashboard = () => {
           </div>
 
           <div className="col-span-2 lg:col-span-4 glass-card rounded-2xl p-4 sm:p-8">
-            <RecentEntries entries={entries} />
+            <RecentEntries entries={entries} onRefresh={fetchEntries} />
           </div>
         </div>
       </main>
