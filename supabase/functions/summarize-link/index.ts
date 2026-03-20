@@ -87,8 +87,12 @@ serve(async (req) => {
                     enum: ["Strategy", "Technology", "Utilities", "Leadership", "Brand"],
                     description: "Which executive skill pillar this content most relates to",
                   },
+                  has_strategic_insight: {
+                    type: "boolean",
+                    description: "true ONLY if the content contains a specific, named KPI (e.g. revenue target, NPS score, conversion rate) OR a clearly stated strategic objective (e.g. 'expand into APAC by Q3'). Generic advice or news does NOT qualify.",
+                  },
                 },
-                required: ["title", "summary", "skill_pillar"],
+                required: ["title", "summary", "skill_pillar", "has_strategic_insight"],
                 additionalProperties: false,
               },
             },
@@ -135,6 +139,7 @@ Page title from HTML: "${rawTitle}"`,
     let title = rawTitle || url;
     let summary = "";
     let skill_pillar = "Strategy";
+    let has_strategic_insight = false;
 
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (toolCall?.function?.arguments) {
@@ -143,17 +148,17 @@ Page title from HTML: "${rawTitle}"`,
         title = args.title || title;
         summary = args.summary || "";
         skill_pillar = args.skill_pillar || "Strategy";
+        has_strategic_insight = args.has_strategic_insight === true;
       } catch {
-        // Fallback to content if tool call parsing fails
         summary = aiData.choices?.[0]?.message?.content || "";
       }
     } else {
       summary = aiData.choices?.[0]?.message?.content || "";
     }
 
-    console.log("Intelligence extracted successfully");
+    console.log("Intelligence extracted, strategic insight:", has_strategic_insight);
 
-    return new Response(JSON.stringify({ title, summary, skill_pillar }), {
+    return new Response(JSON.stringify({ title, summary, skill_pillar, has_strategic_insight }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
