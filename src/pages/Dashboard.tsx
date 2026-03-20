@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle, Globe } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Globe, Briefcase, Target, Megaphone, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
@@ -10,6 +11,9 @@ import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
 import PotentialUnleashed from "@/components/PotentialUnleashed";
 import RecentEntries from "@/components/RecentEntries";
 import AuraChatSidebar from "@/components/AuraChatSidebar";
+import DocumentUpload from "@/components/DocumentUpload";
+import BriefingTab from "@/components/tabs/BriefingTab";
+import InfluenceTab from "@/components/tabs/InfluenceTab";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -56,28 +60,17 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekEntries = entries.filter(e => new Date(e.created_at) >= weekAgo);
-
-  const pillarCounts: Record<string, number> = {};
-  weekEntries.forEach(e => {
-    if (e.skill_pillar) pillarCounts[e.skill_pillar] = (pillarCounts[e.skill_pillar] || 0) + 1;
-  });
-  const topPillar = Object.entries(pillarCounts).sort((a, b) => b[1] - a[1])[0];
-
-  const pendingBrandPosts = entries.filter(e => e.summary && e.summary.trim().length > 0).length;
-
-  const stats = [
-    { label: t("stats.strategicFocus"), value: topPillar ? topPillar[0] : "—", icon: BookOpen },
-    { label: t("stats.pendingPosts"), value: pendingBrandPosts, icon: BarChart3 },
-    { label: t("stats.voiceNotes"), value: entries.filter(e => e.type === "voice").length, icon: Zap },
-    { label: t("stats.strategicInsights"), value: entries.filter(e => e.has_strategic_insight === true).length, icon: TrendingUp },
+  const tabItems = [
+    { value: "briefing", label: t("tab.briefing"), icon: Briefcase },
+    { value: "pursuits", label: t("tab.pursuits"), icon: Target },
+    { value: "influence", label: t("tab.influence"), icon: Megaphone },
+    { value: "growth", label: t("tab.growth"), icon: TrendingUp },
   ];
 
   return (
     <div className="min-h-screen bg-background pb-24 md:pb-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      <header className="border-b border-border/30 px-4 sm:px-8 py-4 sm:py-5">
+      {/* Header */}
+      <header className="border-b border-border/20 px-4 sm:px-8 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -88,76 +81,102 @@ const Dashboard = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-secondary/60 border border-border/20 hover:border-primary/30 font-medium"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30 font-medium"
             >
               <Globe className="w-3.5 h-3.5" />
               {t("lang.toggle")}
             </button>
             <button
               onClick={() => setChatOpen(true)}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-secondary/60 border border-border/20 hover:border-primary/30"
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">{t("header.askAura")}</span>
             </button>
             <span className="text-xs text-muted-foreground hidden sm:block tracking-wider uppercase">{user?.email}</span>
-            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors" title={t("header.logout")}>
               <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-min">
-          {stats.map((stat) => (
-            <div key={stat.label} className="glass-card rounded-2xl p-4 sm:p-6 hover:bg-card-hover transition-colors">
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <stat.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+        <Tabs defaultValue="briefing" className="w-full">
+          <TabsList className="w-full justify-start gap-1 bg-transparent p-0 mb-6 border-b border-border/20 rounded-none h-auto pb-0">
+            {tabItems.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="flex items-center gap-2 px-4 py-3 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-colors"
+              >
+                <tab.icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {/* Briefing Tab */}
+          <TabsContent value="briefing" className="mt-0">
+            <BriefingTab entries={entries} />
+          </TabsContent>
+
+          {/* Pursuits Tab */}
+          <TabsContent value="pursuits" className="mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 glass-card rounded-2xl p-5 sm:p-8">
+                <RecentEntries entries={entries} onRefresh={fetchEntries} />
               </div>
-              <p className={`font-bold text-foreground tracking-tight ${typeof stat.value === 'string' ? 'text-sm sm:text-base' : 'text-2xl sm:text-3xl'}`}>{stat.value}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">{stat.label}</p>
+              <div className="space-y-6">
+                <div
+                  className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
+                  onClick={() => setCaptureOpen(true)}
+                >
+                  <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform aura-glow">
+                    <Plus className="w-7 h-7 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground mb-1">{t("capture.title")}</h2>
+                  <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
+                </div>
+                <div className="glass-card rounded-2xl p-5 sm:p-6">
+                  <h3 className="text-sm font-semibold text-foreground mb-3 tracking-wide uppercase">{t("tab.uploadDoc")}</h3>
+                  <DocumentUpload onUploaded={fetchEntries} />
+                </div>
+              </div>
             </div>
-          ))}
+          </TabsContent>
 
-          <WeeklyTransformationLens entries={entries} />
+          {/* Influence Tab */}
+          <TabsContent value="influence" className="mt-0">
+            <InfluenceTab entries={entries} onRefresh={fetchEntries} />
+          </TabsContent>
 
-          {/* Potential Unleashed Card */}
-          <PotentialUnleashed entries={entries} />
-
-          {/* Capture Button — hidden on mobile */}
-          <div
-            className="hidden md:flex glass-card rounded-2xl p-10 flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
-            onClick={() => setCaptureOpen(true)}
-          >
-            <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform aura-glow">
-              <Plus className="w-8 h-8 text-primary-foreground" />
+          {/* Growth Tab */}
+          <TabsContent value="growth" className="mt-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card rounded-2xl p-5 sm:p-8 min-h-[400px] radar-glow">
+                <SkillRadar key={radarKey} />
+              </div>
+              <div className="space-y-6">
+                <div
+                  className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
+                  onClick={() => setTrainingOpen(true)}
+                >
+                  <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform border border-border/30">
+                    <TrendingUp className="w-7 h-7 text-primary" />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground mb-1">{t("training.title")}</h2>
+                  <p className="text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
+                </div>
+                <WeeklyTransformationLens entries={entries} />
+              </div>
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-1">{t("capture.title")}</h2>
-            <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
-          </div>
-
-          <div
-            className="col-span-2 md:col-span-1 glass-card rounded-2xl p-6 sm:p-10 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-card-hover transition-all group"
-            onClick={() => setTrainingOpen(true)}
-          >
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform border border-border/30">
-              <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-1">{t("training.title")}</h2>
-            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
-          </div>
-
-          <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[250px] sm:min-h-[380px] radar-glow">
-            <SkillRadar key={radarKey} />
-          </div>
-
-          <div className="col-span-2 lg:col-span-4 glass-card rounded-2xl p-4 sm:p-8">
-            <RecentEntries entries={entries} onRefresh={fetchEntries} />
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
+      {/* Mobile FAB */}
       <button
         onClick={() => setCaptureOpen(true)}
         className="md:hidden fixed bottom-6 right-6 w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center active:scale-95 transition-transform z-50 aura-glow"
