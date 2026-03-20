@@ -213,8 +213,8 @@ const Dashboard = () => {
 
       {/* Mobile Floating Island Navigation — shared state */}
       <nav
-        className="md:hidden fixed bottom-5 left-4 right-4 z-50 glass-island rounded-2xl px-2 py-2"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="md:hidden fixed left-4 right-4 z-[60] glass-island rounded-2xl px-2 py-2"
+        style={{ bottom: 'calc(12px + env(safe-area-inset-bottom))' }}
       >
         <div className="flex w-full">
           {TAB_ITEMS.map((tab) => (
