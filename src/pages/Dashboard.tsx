@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, MessageCircle, Globe, Briefcase, Target, Megaphone, TrendingUp } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -28,7 +28,7 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const navigate = useNavigate();
-  const { lang, setLang, t } = useLanguage();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -54,6 +54,18 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchEntries();
+
+    // Live sync: subscribe to entries changes
+    const channel = supabase
+      .channel('entries-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'entries' },
+        () => fetchEntries()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const handleLogout = async () => {
@@ -80,13 +92,6 @@ const Dashboard = () => {
             <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30 font-medium"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {t("lang.toggle")}
-            </button>
             <button
               onClick={() => setChatOpen(true)}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card border border-border/20 hover:border-primary/30"

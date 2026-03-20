@@ -1,116 +1,94 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-
-type Lang = "en" | "ar";
+import { createContext, useContext, ReactNode } from "react";
 
 interface LanguageContextType {
-  lang: Lang;
-  setLang: (lang: Lang) => void;
+  lang: "en";
+  setLang: (lang: "en") => void;
   t: (key: string) => string;
-  isRTL: boolean;
+  isRTL: false;
 }
 
-const translations: Record<string, Record<Lang, string>> = {
-  "app.name": { en: "Aura", ar: "أورا" },
-  "app.subtitle": { en: "Executive Intelligence Platform", ar: "منصة الذكاء التنفيذي" },
-  "header.askAura": { en: "Ask Aura", ar: "اسأل أورا" },
-  "header.logout": { en: "Sign Out", ar: "تسجيل خروج" },
-  "tab.briefing": { en: "Briefing", ar: "الإحاطة" },
-  "tab.pursuits": { en: "Pursuits", ar: "المتابعات" },
-  "tab.influence": { en: "Influence", ar: "التأثير" },
-  "tab.growth": { en: "Growth", ar: "النمو" },
-  "tab.uploadDoc": { en: "Upload Document", ar: "رفع مستند" },
-  "briefing.strategicPulse": { en: "Strategic Pulse", ar: "النبض الاستراتيجي" },
-  "briefing.generatingInsight": { en: "Generating Director's Insight…", ar: "جاري إعداد رؤية المدير…" },
-  "briefing.noInsight": { en: "Capture some insights to generate your Director's Pulse.", ar: "التقط بعض الرؤى لإنشاء نبض المدير." },
-  "briefing.recentCaptures": { en: "Recent Captures", ar: "آخر الالتقاطات" },
-  "briefing.strategicFocus": { en: "Strategic Focus", ar: "التركيز الاستراتيجي" },
-  "briefing.focusDesc": { en: "Your dominant pillar this week based on capture activity", ar: "ركيزتك المهيمنة هذا الأسبوع بناءً على نشاط الالتقاط" },
-  "briefing.weekCaptures": { en: "This Week", ar: "هذا الأسبوع" },
-  "briefing.voiceNotes": { en: "Voice Notes", ar: "ملاحظات صوتية" },
-  "briefing.insights": { en: "Insights", ar: "رؤى" },
-  "briefing.pillarBreakdown": { en: "Pillar Breakdown", ar: "توزيع الركائز" },
-  "influence.title": { en: "Content Pipeline", ar: "خط إنتاج المحتوى" },
-  "influence.subtitle": { en: "Turn your captures into executive-grade LinkedIn posts", ar: "حوّل التقاطاتك إلى منشورات لينكدإن بمستوى تنفيذي" },
-  "influence.empty": { en: "No captures with summaries yet. Capture some insights first.", ar: "لا توجد التقاطات بملخصات بعد. ابدأ بالتقاط بعض الرؤى." },
-  "stats.strategicFocus": { en: "Strategic Focus", ar: "التركيز الاستراتيجي" },
-  "stats.pendingPosts": { en: "Pending Brand Posts", ar: "منشورات العلامة المعلّقة" },
-  "stats.voiceNotes": { en: "Voice Notes", ar: "الملاحظات الصوتية" },
-  "stats.strategicInsights": { en: "Strategic Insights", ar: "الرؤى الاستراتيجية" },
-  "capture.title": { en: "Capture", ar: "التقاط" },
-  "capture.subtitle": { en: "Link, voice note, or thought", ar: "رابط، ملاحظة صوتية، أو فكرة" },
-  "training.title": { en: "Log Training", ar: "تسجيل التدريب" },
-  "training.subtitle": { en: "Track skill development", ar: "تتبع تطوير المهارات" },
-  "entries.title": { en: "Recent Captures", ar: "آخر الالتقاطات" },
-  "entries.subtitle": { en: "Latest intelligence entries", ar: "أحدث مدخلات الذكاء" },
-  "entries.search": { en: "Search captures…", ar: "البحث في الالتقاطات…" },
-  "entries.archive": { en: "Archive", ar: "الأرشيف" },
-  "entries.noEntries": { en: "No entries yet. Start capturing.", ar: "لا توجد مدخلات بعد. ابدأ بالالتقاط." },
-  "entries.noResults": { en: "No results found.", ar: "لم يتم العثور على نتائج." },
-  "entries.noArchive": { en: "No archived entries.", ar: "لا توجد مدخلات مؤرشفة." },
-  "entries.linkedinPost": { en: "Generate EN Post", ar: "منشور إنجليزي" },
-  "entries.linkedinAr": { en: "Generate AR Post", ar: "منشور عربي" },
-  "entries.translate": { en: "Arabic Briefing", ar: "إحاطة عربية" },
-  "entries.readMore": { en: "Read more", ar: "اقرأ المزيد" },
-  "entries.less": { en: "Less", ar: "أقل" },
-  "draft.title": { en: "LinkedIn Draft", ar: "مسودة لينكدإن" },
-  "draft.copy": { en: "Copy to Clipboard", ar: "نسخ" },
-  "draft.copied": { en: "Copied!", ar: "تم النسخ!" },
-  "chat.title": { en: "Ask Aura", ar: "اسأل أورا" },
-  "chat.subtitle": { en: "Your Intelligence Vault", ar: "خزنة ذكائك" },
-  "chat.placeholder": { en: "Ask about your captures…", ar: "اسأل عن التقاطاتك…" },
-  "chat.vaultUnlocked": { en: "Your Vault, Unlocked", ar: "خزنتك، مفتوحة" },
-  "chat.vaultDesc": { en: "Ask about your captures, find frameworks, connect insights, or draft a presentation from your intelligence.", ar: "اسأل عن التقاطاتك، ابحث عن الأطر، اربط الرؤى، أو صِغ عرضاً تقديمياً من ذكائك." },
-  "chat.draftDeck": { en: "Draft Deck", ar: "مسودة العرض" },
-  "chat.clearChat": { en: "Clear chat", ar: "مسح المحادثة" },
-  "auth.signIn": { en: "Sign In", ar: "تسجيل الدخول" },
-  "auth.signUp": { en: "Create Account", ar: "إنشاء حساب" },
-  "auth.email": { en: "Email", ar: "البريد الإلكتروني" },
-  "auth.password": { en: "Password", ar: "كلمة المرور" },
-  "auth.hasAccount": { en: "Already have an account?", ar: "لديك حساب بالفعل؟" },
-  "auth.needAccount": { en: "Need an account?", ar: "تحتاج حساب؟" },
-  "lang.toggle": { en: "عربي", ar: "English" },
-  "account.title": { en: "Account Intelligence", ar: "استخبارات الحساب" },
-  "account.selectAccount": { en: "Focus Account", ar: "حساب التركيز" },
-  "account.selectFirst": { en: "Select an account first", ar: "اختر حساباً أولاً" },
-  "account.synthesize": { en: "Synthesize", ar: "تحليل" },
-  "account.analyzing": { en: "Analyzing intelligence vault…", ar: "جاري تحليل خزنة الذكاء…" },
-  "account.entries": { en: "entries", ar: "مدخلات" },
-  "account.docChunks": { en: "doc chunks", ar: "أجزاء مستندات" },
-  "account.strategicSynthesis": { en: "Strategic Synthesis", ar: "التوليف الاستراتيجي" },
-  "account.keyThemes": { en: "Key Themes", ar: "المحاور الرئيسية" },
-  "account.strategicQuestions": { en: "Questions for GM Discussion", ar: "أسئلة لنقاش المدير العام" },
-  "account.risks": { en: "Risk Factors", ar: "عوامل الخطر" },
-  "account.opportunities": { en: "Opportunities", ar: "الفرص" },
-  "account.architectBrief": { en: "Architect Meeting Brief (PDF)", ar: "إعداد ملخص الاجتماع (PDF)" },
-  "account.pdfGenerated": { en: "Meeting brief downloaded", ar: "تم تحميل ملخص الاجتماع" },
+const translations: Record<string, string> = {
+  "app.name": "Aura",
+  "app.subtitle": "Executive Intelligence Platform",
+  "header.askAura": "Ask Aura",
+  "header.logout": "Sign Out",
+  "tab.briefing": "Briefing",
+  "tab.pursuits": "Pursuits",
+  "tab.influence": "Influence",
+  "tab.growth": "Growth",
+  "tab.uploadDoc": "Upload Document",
+  "briefing.strategicPulse": "Strategic Pulse",
+  "briefing.generatingInsight": "Generating Director's Insight…",
+  "briefing.noInsight": "Capture some insights to generate your Director's Pulse.",
+  "briefing.recentCaptures": "Recent Captures",
+  "briefing.strategicFocus": "Strategic Focus",
+  "briefing.focusDesc": "Your dominant pillar this week based on capture activity",
+  "briefing.weekCaptures": "This Week",
+  "briefing.voiceNotes": "Voice Notes",
+  "briefing.insights": "Insights",
+  "briefing.pillarBreakdown": "Pillar Breakdown",
+  "influence.title": "Content Pipeline",
+  "influence.subtitle": "Turn your captures into executive-grade LinkedIn posts",
+  "influence.empty": "No captures with summaries yet. Capture some insights first.",
+  "stats.strategicFocus": "Strategic Focus",
+  "stats.pendingPosts": "Pending Brand Posts",
+  "stats.voiceNotes": "Voice Notes",
+  "stats.strategicInsights": "Strategic Insights",
+  "capture.title": "Capture",
+  "capture.subtitle": "Link, voice note, or thought",
+  "training.title": "Log Training",
+  "training.subtitle": "Track skill development",
+  "entries.title": "Recent Captures",
+  "entries.subtitle": "Latest intelligence entries",
+  "entries.search": "Search captures…",
+  "entries.archive": "Archive",
+  "entries.noEntries": "No entries yet. Start capturing.",
+  "entries.noResults": "No results found.",
+  "entries.noArchive": "No archived entries.",
+  "entries.linkedinPost": "Generate EN Post",
+  "entries.linkedinAr": "Generate AR Post",
+  "entries.translate": "Arabic Briefing",
+  "entries.readMore": "Read more",
+  "entries.less": "Less",
+  "draft.title": "LinkedIn Draft",
+  "draft.copy": "Copy to Clipboard",
+  "draft.copied": "Copied!",
+  "chat.title": "Ask Aura",
+  "chat.subtitle": "Your Intelligence Vault",
+  "chat.placeholder": "Ask about your captures…",
+  "chat.vaultUnlocked": "Your Vault, Unlocked",
+  "chat.vaultDesc": "Ask about your captures, find frameworks, connect insights, or draft a presentation from your intelligence.",
+  "chat.draftDeck": "Draft Deck",
+  "chat.clearChat": "Clear chat",
+  "auth.signIn": "Sign In",
+  "auth.signUp": "Create Account",
+  "auth.email": "Email",
+  "auth.password": "Password",
+  "auth.hasAccount": "Already have an account?",
+  "auth.needAccount": "Need an account?",
+  "account.title": "Account Intelligence",
+  "account.selectAccount": "Focus Account",
+  "account.selectFirst": "Select an account first",
+  "account.synthesize": "Synthesize",
+  "account.analyzing": "Analyzing intelligence vault…",
+  "account.entries": "entries",
+  "account.docChunks": "doc chunks",
+  "account.strategicSynthesis": "Strategic Synthesis",
+  "account.keyThemes": "Key Themes",
+  "account.strategicQuestions": "Questions for GM Discussion",
+  "account.risks": "Risk Factors",
+  "account.opportunities": "Opportunities",
+  "account.architectBrief": "Architect Meeting Brief (PDF)",
+  "account.pdfGenerated": "Meeting brief downloaded",
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [lang, setLangState] = useState<Lang>(() => {
-    return (localStorage.getItem("aura-lang") as Lang) || "en";
-  });
-
-  const setLang = (l: Lang) => {
-    setLangState(l);
-    localStorage.setItem("aura-lang", l);
-  };
-
-  const isRTL = lang === "ar";
-
-  useEffect(() => {
-    document.documentElement.dir = isRTL ? "rtl" : "ltr";
-    document.documentElement.lang = lang;
-    document.documentElement.classList.toggle("rtl", isRTL);
-  }, [lang, isRTL]);
-
-  const t = (key: string): string => {
-    return translations[key]?.[lang] || key;
-  };
+  const t = (key: string): string => translations[key] || key;
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t, isRTL }}>
+    <LanguageContext.Provider value={{ lang: "en", setLang: () => {}, t, isRTL: false }}>
       {children}
     </LanguageContext.Provider>
   );

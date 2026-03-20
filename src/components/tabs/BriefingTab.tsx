@@ -13,14 +13,21 @@ interface BriefingTabProps {
 }
 
 const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [insight, setInsight] = useState<string>("");
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [showCaptures, setShowCaptures] = useState(false);
 
+  // Unique entries from last 7 days (deduplicated by id)
   const weekAgo = new Date();
   weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekEntries = entries.filter(e => new Date(e.created_at) >= weekAgo);
+  const weekEntriesMap = new Map<string, Entry>();
+  entries.forEach(e => {
+    if (new Date(e.created_at) >= weekAgo && !weekEntriesMap.has(e.id)) {
+      weekEntriesMap.set(e.id, e);
+    }
+  });
+  const weekEntries = Array.from(weekEntriesMap.values());
 
   const pillarCounts: Record<string, number> = {};
   weekEntries.forEach(e => {
@@ -28,9 +35,11 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
   });
   const topPillar = Object.entries(pillarCounts).sort((a, b) => b[1] - a[1])[0];
 
-  const strategicInsights = entries.filter(e => e.has_strategic_insight === true).length;
+  // Stats that add up: voice + insights + other = weeklyCaptures
   const weeklyCaptures = weekEntries.length;
-  const voiceNotes = entries.filter(e => e.type === "voice").length;
+  const voiceNotes = weekEntries.filter(e => e.type === "voice").length;
+  const strategicInsights = weekEntries.filter(e => e.has_strategic_insight === true && e.type !== "voice").length;
+  const otherCount = weeklyCaptures - voiceNotes - strategicInsights;
 
   // Generate Director's Insight from last 5 captures
   useEffect(() => {
@@ -38,7 +47,6 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
       const latest = entries.slice(0, 5);
       if (latest.length === 0) return;
 
-      // Only regenerate if entries changed
       const fingerprint = latest.map(e => e.id).join(",");
       const prevFingerprint = sessionStorage.getItem("aura-insight-fp");
       const cachedInsight = sessionStorage.getItem("aura-insight");
@@ -58,7 +66,7 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
             title: "Director's Insight",
             summary: capturesSummary,
             content: "",
-            type: lang === "ar" ? "directors-insight-ar" : "directors-insight-en",
+            type: "directors-insight-en",
           },
         });
 
@@ -68,13 +76,13 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
           sessionStorage.setItem("aura-insight-fp", fingerprint);
         }
       } catch {
-        // Silently fail — insight is a nice-to-have
+        // Silently fail
       }
       setLoadingInsight(false);
     };
 
     if (entries.length > 0) generateInsight();
-  }, [entries, lang]);
+  }, [entries]);
 
   const recentFive = entries.slice(0, 5);
 
@@ -82,7 +90,6 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
     <div className="space-y-6">
       {/* Strategic Pulse */}
       <div className="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-        {/* Subtle animated gold edge */}
         <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{
           boxShadow: "inset 0 0 0 1px hsl(43 72% 52% / 0.15)",
         }} />
@@ -102,7 +109,7 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
               <span className="text-xs text-muted-foreground">{t("briefing.generatingInsight")}</span>
             </div>
           ) : insight ? (
-            <p className="text-sm text-foreground/90 leading-relaxed italic" dir="auto">
+            <p className="text-sm text-foreground/90 leading-relaxed italic">
               "{insight}"
             </p>
           ) : (
@@ -110,8 +117,8 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
           )}
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/20">
+        {/* Stats row — Voice + Insights + Other = This Week */}
+        <div className="grid grid-cols-4 gap-4 pt-4 border-t border-border/20">
           <div>
             <p className="text-2xl font-bold text-foreground">{weeklyCaptures}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("briefing.weekCaptures")}</p>
@@ -124,10 +131,14 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
             <p className="text-2xl font-bold text-foreground">{strategicInsights}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{t("briefing.insights")}</p>
           </div>
+          <div>
+            <p className="text-2xl font-bold text-foreground">{otherCount}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">Other</p>
+          </div>
         </div>
       </div>
 
-      {/* Ask Aura bar with pulsating glow */}
+      {/* Ask Aura bar */}
       <button
         onClick={() => onOpenChat?.()}
         className="w-full glass-card rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-card-hover transition-all group aura-search-glow"
@@ -144,7 +155,6 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <PotentialUnleashed entries={entries} />
 
-        {/* Focus Pillar + Breakdown */}
         <div className="glass-card rounded-2xl p-6 col-span-1 md:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <BookOpen className="w-5 h-5 text-primary" />
@@ -201,11 +211,11 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
                   className="flex items-start gap-3 p-3 rounded-xl bg-secondary/30 border border-border/15"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground truncate" dir="auto">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {entry.title || entry.content.slice(0, 60)}
                     </p>
                     {entry.summary && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1" dir="auto">
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                         {entry.summary}
                       </p>
                     )}

@@ -301,8 +301,8 @@ const AccountIntelligence = () => {
             {/* Synthesis */}
             <div className="glass-card rounded-xl p-5 border border-border/20">
               <h4 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">{t("account.strategicSynthesis")}</h4>
-              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line" dir="auto">
-                {lang === "ar" ? synthesis.synthesis_ar : synthesis.synthesis_en}
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                {synthesis.synthesis_en}
               </p>
             </div>
 
@@ -310,7 +310,7 @@ const AccountIntelligence = () => {
             <div className="glass-card rounded-xl p-5 border border-border/20">
               <h4 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">{t("account.keyThemes")}</h4>
               <div className="flex flex-wrap gap-2">
-                {(lang === "ar" ? synthesis.key_themes_ar : synthesis.key_themes_en).map((theme, i) => (
+                {synthesis.key_themes_en.map((theme, i) => (
                   <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                     {theme}
                   </span>
@@ -325,8 +325,8 @@ const AccountIntelligence = () => {
                 <h4 className="text-sm font-semibold text-primary uppercase tracking-wider">{t("account.strategicQuestions")}</h4>
               </div>
               <ul className="space-y-2">
-                {(lang === "ar" ? synthesis.strategic_questions_ar : synthesis.strategic_questions_en).map((q, i) => (
-                  <li key={i} className="text-sm text-foreground flex gap-2" dir="auto">
+                {synthesis.strategic_questions_en.map((q, i) => (
+                  <li key={i} className="text-sm text-foreground flex gap-2">
                     <span className="text-primary font-bold">{i + 1}.</span>
                     {q}
                   </li>
