@@ -71,7 +71,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
   };
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="h-[calc(100dvh-180px)] overflow-y-auto overscroll-contain space-y-6 pb-32">
       <div className="glass-card rounded-2xl p-5 sm:p-8">
         <div className="flex items-center gap-2 mb-1">
           <Megaphone className="w-5 h-5 text-primary" />
