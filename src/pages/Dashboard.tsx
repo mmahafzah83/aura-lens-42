@@ -115,7 +115,7 @@ const Dashboard = () => {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="flex items-center gap-2 px-4 py-3 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-colors"
+                className="flex items-center gap-2 px-4 py-3 rounded-none border-b-2 border-transparent text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none bg-transparent hover:text-foreground transition-all duration-200"
               >
                 <tab.icon className="w-4 h-4" />
                 <span className="text-sm font-medium">{tab.label}</span>
