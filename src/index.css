@@ -77,8 +77,8 @@
   html[dir="rtl"] h2,
   html[dir="rtl"] h3,
   html[dir="rtl"] h4 {
-    font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif;
-    letter-spacing: 0;
+    font-family: 'Playfair Display', 'IBM Plex Sans Arabic', Georgia, serif;
+    letter-spacing: -0.01em;
   }
 }
 
