@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +19,33 @@ const iconMap = {
 function detectDir(text: string): "rtl" | "ltr" {
   return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text) ? "rtl" : "ltr";
 }
+
+const ExpandableSummary = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 200;
+  const dir = detectDir(text);
+
+  return (
+    <div>
+      <p
+        className={`text-xs text-muted-foreground whitespace-pre-line leading-relaxed break-words ${!expanded && isLong ? "line-clamp-3" : ""}`}
+        dir={dir}
+        style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
+      >
+        {text}
+      </p>
+      {isLong && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary mt-1 transition-colors"
+        >
+          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {expanded ? "Less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+};
 
 const RecentEntries = ({ entries }: { entries: Entry[] }) => {
   const [search, setSearch] = useState("");
@@ -70,12 +97,12 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-5 gap-4">
+      <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
           <h3 className="text-lg font-semibold text-foreground mb-0.5">Recent Captures</h3>
           <p className="text-xs text-muted-foreground tracking-wide uppercase">Latest intelligence entries</p>
         </div>
-        <div className="relative w-64">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             placeholder="Search captures…"
@@ -85,8 +112,8 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
           />
         </div>
       </div>
-      <ScrollArea className="h-[420px]">
-        <div className="space-y-4 pr-3">
+      <ScrollArea className="h-[360px] sm:h-[420px]">
+        <div className="space-y-3 pr-3">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground italic">
               {search ? "No results found." : "No entries yet. Start capturing."}
@@ -99,15 +126,14 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
               const isLink = entry.type === "link";
               const isDrafting = draftingId === entry.id;
               const contentDir = detectDir(entry.content);
-              const summaryDir = entry.summary ? detectDir(entry.summary) : "ltr";
 
               return (
                 <div
                   key={entry.id}
-                  className="flex items-start gap-4 p-4 rounded-xl bg-secondary/40 border border-border/20 hover:bg-secondary/60 transition-colors"
+                  className="flex items-start gap-3 p-3 sm:p-4 rounded-xl bg-secondary/40 border border-border/20 hover:bg-secondary/60 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Icon className="w-4 h-4 text-primary" />
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1 space-y-1.5">
                     {isLink && title ? (
@@ -115,19 +141,20 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
                         href={entry.content}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-1.5 group"
+                        className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-1.5 group break-words"
                         dir="auto"
+                        style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
                       >
                         {title}
                         <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                       </a>
                     ) : (
-                      <p className="text-sm text-foreground truncate" dir={contentDir}>{entry.content}</p>
+                      <p className="text-sm text-foreground break-words" dir={contentDir} style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
+                        {entry.content}
+                      </p>
                     )}
-                    {entry.summary && (
-                      <p className="text-xs text-muted-foreground whitespace-pre-line line-clamp-4 leading-relaxed" dir={summaryDir}>{entry.summary}</p>
-                    )}
-                    <div className="flex items-center gap-2 pt-0.5">
+                    {entry.summary && <ExpandableSummary text={entry.summary} />}
+                    <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                       {pillar && (
                         <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
                           {pillar}
@@ -161,7 +188,7 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
           <DialogHeader>
             <DialogTitle className="text-gradient-gold text-lg">LinkedIn Draft</DialogTitle>
           </DialogHeader>
-          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto" dir="auto">
+          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words" dir="auto" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
             {draftPost}
           </div>
           <Button onClick={handleCopy} variant="outline" className="w-full mt-2 border-border/30">

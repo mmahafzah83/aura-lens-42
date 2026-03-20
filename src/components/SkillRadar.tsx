@@ -83,7 +83,7 @@ const SkillRadar = () => {
         <span className="text-xs text-muted-foreground">Show 12-month target</span>
       </div>
 
-      <div className="flex-1 min-h-[260px]">
+      <div className="flex-1 min-h-[200px] sm:min-h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%">
             <PolarGrid stroke="hsl(0 0% 20%)" strokeDasharray="3 3" />
