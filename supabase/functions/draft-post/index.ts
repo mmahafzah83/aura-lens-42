@@ -7,11 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-function hasArabic(text: string): boolean {
-  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
-}
-
-// Helper to fetch master frameworks for the user
 async function fetchFrameworks(token: string | null): Promise<string> {
   if (!token) return "";
   try {
@@ -37,43 +32,48 @@ async function fetchFrameworks(token: string | null): Promise<string> {
       return `Framework: ${f.title}\nSummary: ${f.summary}\nSteps:\n${steps}\nTags: ${(f.tags || []).join(", ")}`;
     }).join("\n\n---\n\n");
 
-    return `\n\n=== EXPERT FRAMEWORKS (from user's master_frameworks vault) ===\nApply these frameworks and expert rules when drafting content. Reference specific steps where relevant.\n\n${digest}`;
+    return digest;
   } catch (e) {
     console.error("Framework fetch error:", e);
     return "";
   }
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+async function callAI(apiKey: string, system: string, user: string, model = "google/gemini-3-flash-preview"): Promise<string> {
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
+  });
+  if (!res.ok) {
+    if (res.status === 429) throw { status: 429, message: "Rate limit exceeded. Try again shortly." };
+    if (res.status === 402) throw { status: 402, message: "AI credits exhausted." };
+    throw new Error("AI gateway error: " + res.status);
   }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { title, summary, content, type } = await req.json();
     if (!summary && !content) {
       return new Response(JSON.stringify({ error: "Content or summary is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch frameworks for LinkedIn draft types
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.replace("Bearer ", "") || null;
-    let frameworkContext = "";
-    const draftTypes = ["voice", "default", "arabic-executive", "link", "text", "image"];
-    if (draftTypes.includes(type as string) || !type) {
-      frameworkContext = await fetchFrameworks(token);
-    }
+    const frameworkDigest = await fetchFrameworks(token);
 
-    const inputText = `${title || ""} ${summary || ""} ${content || ""}`;
-    const isArabic = hasArabic(inputText);
-    const bilingualNote = isArabic
-      ? "\n\nIMPORTANT: The source material contains Arabic. Write the output in BOTH Arabic and English. First the Arabic version, then '---', then the English version."
+    const frameworkBlock = frameworkDigest
+      ? `\n\n=== EXPERT FRAMEWORKS (MANDATORY — apply strictly) ===\nYou MUST apply every rule below. These are the user's saved #ExpertSystem frameworks.\n\n${frameworkDigest}\n\n=== END FRAMEWORKS ===`
       : "";
 
     const COACH_TONE = `Tone: Visionary but grounded. Quiet authority. You are a peer — not a cheerleader.
@@ -86,7 +86,12 @@ EXECUTIVE SCANNABILITY FORMAT (mandatory):
 3. THE 'SO WHAT?' — Exactly 3 bullet points using ◈ or ➔ symbols. Each bullet is one sharp insight (max 15 words).
 4. THE CTA — End with a single thought-provoking question to the industry. Not engagement bait — a real question that challenges assumptions.
 
-No hashtags. No emojis except ◈ and ➔. Under 150 words total.${frameworkContext}`;
+CONTENT MIX (70-20-10 rule):
+- 70% Awareness: Share industry insight, trends, or original observations that position the author as a thought leader.
+- 20% Authority: Reference real frameworks, data, or specific expertise that demonstrates deep domain knowledge.
+- 10% Conversion: A subtle call-to-action or invitation — never salesy.
+
+No hashtags. No emojis except ◈ and ➔. Under 150 words total.${frameworkBlock}`;
 
     const systemPrompts: Record<string, string> = {
       "weekly-memo": `You are a Senior Executive Coach and peer to a Director at EY who aspires to be a "Transformation Architect." Synthesize multiple voice-note insights from the past week into one cohesive Leadership Memo.
@@ -100,96 +105,69 @@ WEEKLY TRANSFORMATION LENS
 ▸ Recommended Action — one concrete next step for the coming week
 
 ▸ THE COACH'S CHALLENGE
-Look at the weaknesses and blind spots from this week's thinking. Identify where the executive is avoiding discomfort, over-indexing on strengths, or missing the C-suite lens. Then ask ONE difficult, specific question that would prepare them for their next client meeting. The question should sting slightly — it should be the question a trusted peer would ask over a late-night drink, not in a boardroom.
+Look at the weaknesses and blind spots from this week's thinking. Ask ONE difficult, specific question.
 
-${COACH_TONE}${bilingualNote}`,
+${COACH_TONE}`,
 
       "voice": `You are a Senior Executive Coach and LinkedIn ghostwriter for a Director at EY who aspires to be a "Transformation Architect." Transform a raw spoken idea into a polished, high-authority LinkedIn post.
 
 ${COACH_TONE}
 
-Context focus: infrastructure, water, energy, or digital transformation in KSA/GCC.${bilingualNote}`,
+Context focus: infrastructure, water, energy, or digital transformation in KSA/GCC.`,
 
       "default": `You are a Senior Executive Coach and LinkedIn ghostwriter for a Director at EY who aspires to be a "Transformation Architect." Write a LinkedIn post from the source material.
 
 ${COACH_TONE}
 
-Context focus: infrastructure, water, energy, or digital transformation.${bilingualNote}`,
-
-      "arabic-executive": `أنت مستشار تنفيذي أول وكاتب محتوى لينكدإن لمدير في EY يُعرف بلقب "مهندس التحول."
-
-اكتب منشور لينكدإن باللغة العربية الفصحى الراقية بأسلوب "التنفيذي السعودي":
-
-القواعد:
-- اللغة: عربية فصحى رسمية، رؤيوية، تتماشى مع مصطلحات رؤية السعودية 2030
-- استخدم مصطلحات مثل: التحول الرقمي، الاستدامة، تمكين القطاع الخاص، رأس المال البشري، الحوكمة، التميز المؤسسي
-- لا تستخدم لغة عامية أو مبالغة عاطفية
-
-الهيكل:
-1. الافتتاحية — جملة واحدة جريئة عن تحول استراتيجي
-2. فراغات — كل جملة في سطر مستقل
-3. الرؤية — ٣ نقاط باستخدام ◈ أو ➔ (كل نقة بحد أقصى ١٥ كلمة)
-4. السؤال — سؤال واحد يتحدى الافتراضات السائدة في القطاع
-
-بدون هاشتاقات. بدون إيموجي إلا ◈ و ➔. أقل من ١٥٠ كلمة.${frameworkContext}`,
-
-      "translate-executive-ar": `أنت مترجم تنفيذي محترف. ترجم المحتوى التالي إلى العربية الفصحى الراقية بأسلوب يليق بالمستوى التنفيذي.
-
-القواعد:
-- استخدم مصطلحات رؤية السعودية 2030 حيثما كان ذلك مناسباً
-- حافظ على النبرة الاستراتيجية والمهنية
-- لا تترجم حرفياً — أعد صياغة المعنى بأسلوب عربي أصيل وراقٍ
-- إذا كان المحتوى يتضمن أُطر عمل أو نماذج، حافظ على مصطلحاتها الإنجليزية بين قوسين
-- اعرض الترجمة بتنسيق واضح مع عناوين فرعية`,
+Context focus: infrastructure, water, energy, or digital transformation.`,
 
       "directors-insight-en": `You are Aura, an executive intelligence advisor. Analyze the user's last 5 captures and produce exactly 2 sentences: a "Director's Insight" that identifies the strategic pattern or tension emerging from their recent activity. Be incisive, specific, and direct — not generic. Reference the actual themes in the captures. No filler.`,
-
-      "directors-insight-ar": `أنت أورا، مستشار الذكاء التنفيذي. حلّل آخر ٥ التقاطات للمستخدم وأنتج جملتين بالضبط: "رؤية المدير" التي تحدد النمط الاستراتيجي أو التوتر الناشئ من نشاطه الأخير. كن حاداً ومحدداً ومباشراً — ليس عاماً. أشر إلى المحاور الفعلية في الالتقاطات. بدون حشو.`,
     };
 
     const userPrompts: Record<string, string> = {
       "weekly-memo": `Synthesize these voice notes from the past week into a Leadership Memo with a Coach's Challenge:\n\n${summary}`,
       "voice": `Turn this raw voice note into a polished LinkedIn brand post:\n\nTranscript: ${content || "N/A"}\nSenior Partner Analysis: ${summary || "N/A"}`,
-      "arabic-executive": `اكتب منشور لينكدإن عربي بأسلوب التنفيذي السعودي من هذا المحتوى:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمصدر: ${content || "N/A"}`,
-      "translate-executive-ar": `ترجم المحتوى التالي إلى العربية التنفيذية:\n\nالعنوان: ${title || "N/A"}\nالملخص: ${summary || "N/A"}\nالمحتوى: ${content || "N/A"}`,
       "directors-insight-en": `Here are my last 5 captures. Produce a 2-sentence Director's Insight:\n\n${summary}`,
-      "directors-insight-ar": `هذه آخر ٥ التقاطاتي. أنتج رؤية المدير في جملتين:\n\n${summary}`,
       "default": `Draft a LinkedIn post based on this:\n\nTitle: ${title || "N/A"}\nSummary: ${summary || "N/A"}\nSource: ${content || "N/A"}`,
     };
 
     const sysPrompt = systemPrompts[type as string] || systemPrompts["default"];
     const userPrompt = userPrompts[type as string] || userPrompts["default"];
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: sysPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
-    });
+    // === PASS 1: Generate draft ===
+    const draft = await callAI(LOVABLE_API_KEY, sysPrompt, userPrompt);
 
-    if (!aiRes.ok) {
-      if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (aiRes.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      const errText = await aiRes.text();
-      console.error("AI error:", aiRes.status, errText);
-      throw new Error("AI gateway error");
+    // === PASS 2: Self-correction audit (only for LinkedIn-type posts with frameworks) ===
+    let finalPost = draft;
+    if (frameworkDigest && !["weekly-memo", "directors-insight-en"].includes(type as string)) {
+      const auditSystem = `You are a Quality Auditor for executive LinkedIn content. You have the original Expert System rules below. Your job:
+1. Compare the DRAFT against every framework rule/step.
+2. Check the 70-20-10 content mix (Awareness / Authority / Conversion).
+3. Verify the hook is bold and non-generic.
+4. Ensure strategic whitespace (one sentence per line, max 2 lines per paragraph).
+5. Confirm no banned words are used.
+6. Confirm the post reads like it was written by a top-tier EY Director — not an AI.
+
+If the draft passes all checks, return it UNCHANGED.
+If it fails ANY check, rewrite it to pass ALL checks. Return ONLY the final post text — no commentary.
+
+=== EXPERT FRAMEWORKS ===
+${frameworkDigest}
+=== END FRAMEWORKS ===`;
+
+      const auditPrompt = `Audit and correct this LinkedIn draft:\n\n${draft}`;
+      finalPost = await callAI(LOVABLE_API_KEY, auditSystem, auditPrompt);
     }
 
-    const aiData = await aiRes.json();
-    const post = aiData.choices?.[0]?.message?.content || "";
-
-    return new Response(JSON.stringify({ post }), {
+    return new Response(JSON.stringify({ post: finalPost }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
+    if (e?.status === 429 || e?.status === 402) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: e.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     console.error("draft-post error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
