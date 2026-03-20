@@ -120,7 +120,10 @@ const Dashboard = () => {
 
           {/* Briefing Tab */}
           <TabsContent value="briefing" className="mt-0">
-            <BriefingTab entries={entries} />
+            <BriefingTab entries={entries} onOpenChat={(msg) => {
+              setChatInitialMessage(msg);
+              setChatOpen(true);
+            }} />
           </TabsContent>
 
           {/* Pursuits Tab */}
