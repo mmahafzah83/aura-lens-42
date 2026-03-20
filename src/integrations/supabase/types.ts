@@ -20,6 +20,7 @@ export type Database = {
           content: string
           created_at: string
           document_id: string
+          embedding: string | null
           id: string
           metadata: Json | null
           tsv: unknown
@@ -30,6 +31,7 @@ export type Database = {
           content: string
           created_at?: string
           document_id: string
+          embedding?: string | null
           id?: string
           metadata?: Json | null
           tsv?: unknown
@@ -40,6 +42,7 @@ export type Database = {
           content?: string
           created_at?: string
           document_id?: string
+          embedding?: string | null
           id?: string
           metadata?: Json | null
           tsv?: unknown
@@ -95,6 +98,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          embedding: string | null
           has_strategic_insight: boolean
           id: string
           image_url: string | null
@@ -110,6 +114,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          embedding?: string | null
           has_strategic_insight?: boolean
           id?: string
           image_url?: string | null
@@ -125,6 +130,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          embedding?: string | null
           has_strategic_insight?: boolean
           id?: string
           image_url?: string | null
