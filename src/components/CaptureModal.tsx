@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import DocumentUpload from "@/components/DocumentUpload";
 
-type CaptureType = "link" | "voice" | "text" | "image";
+type CaptureType = "link" | "voice" | "text" | "image" | "document";
 
 const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
 
