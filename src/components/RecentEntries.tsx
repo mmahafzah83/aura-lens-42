@@ -16,6 +16,10 @@ const iconMap = {
   text: Type,
 };
 
+function detectDir(text: string): "rtl" | "ltr" {
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text) ? "rtl" : "ltr";
+}
+
 const RecentEntries = ({ entries }: { entries: Entry[] }) => {
   const [search, setSearch] = useState("");
   const [draftingId, setDraftingId] = useState<string | null>(null);
@@ -27,22 +31,20 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
   const filtered = entries.filter((e) => {
     if (!search.trim()) return true;
     const q = search.toLowerCase();
-    const entryAny = e as any;
     return (
       e.content.toLowerCase().includes(q) ||
       (e.summary && e.summary.toLowerCase().includes(q)) ||
-      (entryAny.title && entryAny.title.toLowerCase().includes(q)) ||
-      (entryAny.skill_pillar && entryAny.skill_pillar.toLowerCase().includes(q))
+      (e.title && e.title.toLowerCase().includes(q)) ||
+      (e.skill_pillar && e.skill_pillar.toLowerCase().includes(q))
     );
   });
 
   const handleDraft = async (entry: Entry) => {
-    const entryAny = entry as any;
     setDraftingId(entry.id);
     try {
       const { data, error } = await supabase.functions.invoke("draft-post", {
         body: {
-          title: entryAny.title || "",
+          title: entry.title || "",
           summary: entry.summary || "",
           content: entry.content,
           type: entry.type,
@@ -92,11 +94,12 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
           ) : (
             filtered.map((entry) => {
               const Icon = iconMap[entry.type as keyof typeof iconMap] || Type;
-              const entryAny = entry as any;
-              const pillar = entryAny.skill_pillar;
-              const title = entryAny.title;
+              const pillar = entry.skill_pillar;
+              const title = entry.title;
               const isLink = entry.type === "link";
               const isDrafting = draftingId === entry.id;
+              const contentDir = detectDir(entry.content);
+              const summaryDir = entry.summary ? detectDir(entry.summary) : "ltr";
 
               return (
                 <div
@@ -113,15 +116,16 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm font-medium text-foreground hover:text-primary transition-colors flex items-center gap-1.5 group"
+                        dir="auto"
                       >
                         {title}
-                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                       </a>
                     ) : (
-                      <p className="text-sm text-foreground truncate">{entry.content}</p>
+                      <p className="text-sm text-foreground truncate" dir={contentDir}>{entry.content}</p>
                     )}
                     {entry.summary && (
-                      <p className="text-xs text-muted-foreground whitespace-pre-line line-clamp-4 leading-relaxed">{entry.summary}</p>
+                      <p className="text-xs text-muted-foreground whitespace-pre-line line-clamp-4 leading-relaxed" dir={summaryDir}>{entry.summary}</p>
                     )}
                     <div className="flex items-center gap-2 pt-0.5">
                       {pillar && (
@@ -157,7 +161,7 @@ const RecentEntries = ({ entries }: { entries: Entry[] }) => {
           <DialogHeader>
             <DialogTitle className="text-gradient-gold text-lg">LinkedIn Draft</DialogTitle>
           </DialogHeader>
-          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto">
+          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto" dir="auto">
             {draftPost}
           </div>
           <Button onClick={handleCopy} variant="outline" className="w-full mt-2 border-border/30">

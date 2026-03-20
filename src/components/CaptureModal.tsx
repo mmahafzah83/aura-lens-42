@@ -9,6 +9,12 @@ import { useToast } from "@/hooks/use-toast";
 
 type CaptureType = "link" | "voice" | "text";
 
+const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
+
+function detectArabicDir(text: string): "rtl" | "ltr" {
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text) ? "rtl" : "ltr";
+}
+
 interface CaptureModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -33,7 +39,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Prefer webm/opus, fall back to whatever the browser supports
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
@@ -49,7 +54,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       };
 
       recorder.onstop = async () => {
-        // Stop all tracks
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
 
@@ -61,9 +65,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           return;
         }
 
-        // Transcribe via Whisper
         setIsTranscribing(true);
-        toast({ title: "Transcribing", description: "Whisper is processing your audio…" });
+        toast({ title: "Transcribing", description: "Processing your audio…" });
 
         try {
           const formData = new FormData();
@@ -76,7 +79,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           );
 
           if (fnError) {
-            console.error("Transcription error:", fnError);
             toast({ title: "Transcription failed", description: fnError.message, variant: "destructive" });
           } else if (fnData?.error) {
             toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
@@ -90,7 +92,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             }
           }
         } catch (err) {
-          console.error("Transcription fetch error:", err);
           toast({ title: "Error", description: "Could not transcribe audio.", variant: "destructive" });
         }
         setIsTranscribing(false);
@@ -100,8 +101,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       setIsRecording(true);
       toast({ title: "Recording", description: "Speak clearly. Tap stop when done." });
     } catch (err) {
-      console.error("Microphone error:", err);
-      toast({ title: "Microphone Error", description: "Could not access microphone. Check browser permissions.", variant: "destructive" });
+      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
   };
 
@@ -134,10 +134,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           body: { url: content.trim() },
         });
         if (fnError) {
-          console.error("Summary function error:", fnError);
           toast({ title: "Summary unavailable", description: "Saving link without summary.", variant: "destructive" });
         } else if (fnData?.error) {
-          console.error("Summary error:", fnData.error);
           toast({ title: "Summary unavailable", description: fnData.error, variant: "destructive" });
         } else {
           title = fnData?.title || null;
@@ -158,14 +156,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       if (voiceAnalysis?.skill_pillar) {
         skill_pillar = voiceAnalysis.skill_pillar;
       } else {
-        // Fallback keyword tagging
         const lower = content.toLowerCase();
-        if (lower.includes("strategy") || lower.includes("plan") || lower.includes("objective")) skill_pillar = "Strategy";
-        else if (lower.includes("tech") || lower.includes("digital twin")) skill_pillar = "Technology";
-        else if (lower.includes("desalination") || lower.includes("nwc") || lower.includes("mewa") || lower.includes("water")) skill_pillar = "Utilities";
-        else if (lower.includes("leader") || lower.includes("team") || lower.includes("manage")) skill_pillar = "Leadership";
-        else if (lower.includes("brand") || lower.includes("personal") || lower.includes("market")) skill_pillar = "Brand";
-        else skill_pillar = "Strategy";
+        if (lower.includes("advisory") || lower.includes("c-suite") || lower.includes("board")) skill_pillar = "C-Suite Advisory";
+        else if (lower.includes("architecture") || lower.includes("strategy") || lower.includes("plan")) skill_pillar = "Strategic Architecture";
+        else if (lower.includes("foresight") || lower.includes("trend") || lower.includes("future")) skill_pillar = "Industry Foresight";
+        else if (lower.includes("transform") || lower.includes("change") || lower.includes("steward")) skill_pillar = "Transformation Stewardship";
+        else if (lower.includes("digital") || lower.includes("tech") || lower.includes("ai") || lower.includes("data")) skill_pillar = "Digital Fluency";
+        else skill_pillar = "Strategic Architecture";
       }
     }
 
@@ -236,6 +233,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={4}
+            dir="auto"
             className="bg-secondary border-border/30 resize-none"
           />
         )}
@@ -277,13 +275,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   rows={3}
+                  dir="auto"
                   className="bg-secondary border-border/30 resize-none text-sm"
                   placeholder="Transcript will appear here…"
                 />
                 {voiceAnalysis?.summary && (
                   <div className="bg-secondary/60 border border-border/20 rounded-xl p-4 space-y-2">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Senior Partner Analysis</p>
-                    <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">{voiceAnalysis.summary}</p>
+                    <p className="text-xs text-foreground whitespace-pre-line leading-relaxed" dir="auto">{voiceAnalysis.summary}</p>
                     {voiceAnalysis.skill_pillar && (
                       <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary mt-1">
                         {voiceAnalysis.skill_pillar}

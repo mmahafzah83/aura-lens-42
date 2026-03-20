@@ -8,7 +8,7 @@ import { Settings2, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-const PILLARS = ["Strategy", "Technology", "Utilities", "Leadership", "Brand"];
+const PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
 const DEFAULT_TARGET = 100;
 
 const SkillRadar = () => {
@@ -39,7 +39,6 @@ const SkillRadar = () => {
 
       setTargets(tgts);
 
-      // Normalize against the max of either current or target so both fit the chart
       const allVals = [...Object.values(totals), ...Object.values(tgts)];
       const maxVal = Math.max(...allVals, 1);
 
@@ -51,7 +50,7 @@ const SkillRadar = () => {
     };
 
     fetch();
-  }, [saving]); // re-fetch after saving targets
+  }, [saving]);
 
   const handleSaveTargets = async () => {
     setSaving(true);
@@ -60,7 +59,6 @@ const SkillRadar = () => {
 
     for (const pillar of PILLARS) {
       const hours = targets[pillar] || DEFAULT_TARGET;
-      // Upsert via delete + insert since we can't use .upsert on untyped table
       await (supabase.from("skill_targets" as any) as any).delete().eq("user_id", user.id).eq("pillar", pillar);
       await (supabase.from("skill_targets" as any) as any).insert({ user_id: user.id, pillar, target_hours: hours });
     }
@@ -74,11 +72,9 @@ const SkillRadar = () => {
     <div className="w-full h-full flex flex-col">
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-lg font-semibold text-foreground">Skill Radar</h3>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setEditOpen(true)} className="text-muted-foreground hover:text-primary transition-colors">
-            <Settings2 className="w-4 h-4" />
-          </button>
-        </div>
+        <button onClick={() => setEditOpen(true)} className="text-muted-foreground hover:text-primary transition-colors">
+          <Settings2 className="w-4 h-4" />
+        </button>
       </div>
       <p className="text-xs text-muted-foreground mb-3 tracking-wide uppercase">Training hours by pillar</p>
 
@@ -93,25 +89,11 @@ const SkillRadar = () => {
             <PolarGrid stroke="hsl(0 0% 20%)" strokeDasharray="3 3" />
             <PolarAngleAxis
               dataKey="skill"
-              tick={{ fill: "hsl(40 15% 65%)", fontSize: 11, fontFamily: "Inter" }}
+              tick={{ fill: "hsl(40 15% 65%)", fontSize: 10, fontFamily: "Inter" }}
             />
-            <Radar
-              name="Current"
-              dataKey="current"
-              stroke="hsl(43 72% 52%)"
-              fill="hsl(43 72% 52%)"
-              fillOpacity={0.12}
-              strokeWidth={2}
-            />
+            <Radar name="Current" dataKey="current" stroke="hsl(43 72% 52%)" fill="hsl(43 72% 52%)" fillOpacity={0.12} strokeWidth={2} />
             {showTarget && (
-              <Radar
-                name="Target"
-                dataKey="target"
-                stroke="hsl(0 0% 40%)"
-                fill="none"
-                strokeWidth={1.5}
-                strokeDasharray="6 3"
-              />
+              <Radar name="Target" dataKey="target" stroke="hsl(0 0% 40%)" fill="none" strokeWidth={1.5} strokeDasharray="6 3" />
             )}
           </RadarChart>
         </ResponsiveContainer>

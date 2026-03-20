@@ -6,6 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
+
+function hasArabic(text: string): boolean {
+  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -30,14 +36,13 @@ serve(async (req) => {
 
     console.log("Transcribing audio:", audioFile.name, "size:", audioFile.size);
 
-    // Step 1: Whisper transcription
+    // Step 1: Whisper transcription — do NOT lock to English so Arabic works
     const whisperForm = new FormData();
     whisperForm.append("file", audioFile, audioFile.name || "recording.webm");
     whisperForm.append("model", "whisper-1");
-    whisperForm.append("language", "en");
     whisperForm.append(
       "prompt",
-      "Desalination, Digital Twin, NWC, MEWA, KPI, CAPEX, OPEX, SCADA, RO membrane, reverse osmosis, PPP, strategic objectives, utilities, infrastructure, ESG, NOM, TDS, SEC"
+      "Desalination, Digital Twin, NWC, MEWA, KPI, CAPEX, OPEX, SCADA, RO membrane, reverse osmosis, PPP, strategic objectives, utilities, infrastructure, ESG, NOM, TDS, SEC, تحلية, مياه, بنية تحتية, استراتيجية, تحول رقمي"
     );
 
     const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -49,16 +54,8 @@ serve(async (req) => {
     if (!whisperRes.ok) {
       const errText = await whisperRes.text();
       console.error("Whisper API error:", whisperRes.status, errText);
-      if (whisperRes.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (whisperRes.status === 401) {
-        return new Response(JSON.stringify({ error: "Invalid OpenAI API key." }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      if (whisperRes.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (whisperRes.status === 401) return new Response(JSON.stringify({ error: "Invalid OpenAI API key." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       throw new Error(`Whisper transcription failed (${whisperRes.status})`);
     }
 
@@ -71,6 +68,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const isArabic = hasArabic(transcript);
+    const bilingualInstruction = isArabic
+      ? `\n\nIMPORTANT: The voice note is in Arabic. Provide each section (Core Idea, Strategic Risk, Next Step) in BOTH Arabic and English. Format each section as:\n[Arabic text]\n[English translation]`
+      : "";
 
     // Step 2: Senior Partner analysis via Lovable AI
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -90,22 +92,13 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  core_idea: {
-                    type: "string",
-                    description: "One sentence distilling the central thesis or insight from the voice note",
-                  },
-                  strategic_risk: {
-                    type: "string",
-                    description: "One sentence identifying the key risk, blind spot, or challenge that a board-level executive should be aware of",
-                  },
-                  next_step: {
-                    type: "string",
-                    description: "One concrete, actionable next step — something that could be assigned in a Monday morning partner meeting",
-                  },
+                  core_idea: { type: "string", description: "One sentence distilling the central thesis. If Arabic input, provide in both Arabic and English separated by newline." },
+                  strategic_risk: { type: "string", description: "One sentence identifying the key risk. If Arabic input, provide bilingual." },
+                  next_step: { type: "string", description: "One concrete, actionable next step. If Arabic input, provide bilingual." },
                   skill_pillar: {
                     type: "string",
-                    enum: ["Strategy", "Technology", "Utilities", "Leadership", "Brand"],
-                    description: "Which executive skill pillar this thought most relates to",
+                    enum: NEW_PILLARS,
+                    description: "Which skill pillar this thought most relates to",
                   },
                 },
                 required: ["core_idea", "strategic_risk", "next_step", "skill_pillar"],
@@ -122,8 +115,10 @@ serve(async (req) => {
 
 Given a transcribed voice note from an executive, distill it into three components:
 1. THE CORE IDEA — the central thesis, stripped of noise
-2. THE STRATEGIC RISK — what could go wrong, what's being overlooked, or what the market doesn't see yet
-3. THE NEXT STEP — one concrete action item worthy of a partner meeting agenda`,
+2. THE STRATEGIC RISK — what could go wrong, what's being overlooked
+3. THE NEXT STEP — one concrete action item worthy of a partner meeting agenda
+
+Classify under: ${NEW_PILLARS.join(", ")}.${bilingualInstruction}`,
           },
           {
             role: "user",
@@ -144,9 +139,7 @@ Given a transcribed voice note from an executive, distill it into three componen
           const args = JSON.parse(toolCall.function.arguments);
           summary = `▸ The Core Idea\n${args.core_idea}\n\n▸ The Strategic Risk\n${args.strategic_risk}\n\n▸ The Next Step\n${args.next_step}`;
           skill_pillar = args.skill_pillar || null;
-        } catch {
-          console.error("Failed to parse AI response");
-        }
+        } catch { console.error("Failed to parse AI response"); }
       }
     } else {
       console.error("AI analysis failed:", aiRes.status);
