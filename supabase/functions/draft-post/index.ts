@@ -98,6 +98,10 @@ Context focus: infrastructure, water, energy, or digital transformation.${biling
 - لا تترجم حرفياً — أعد صياغة المعنى بأسلوب عربي أصيل وراقٍ
 - إذا كان المحتوى يتضمن أُطر عمل أو نماذج، حافظ على مصطلحاتها الإنجليزية بين قوسين
 - اعرض الترجمة بتنسيق واضح مع عناوين فرعية`,
+
+      "directors-insight-en": `You are Aura, an executive intelligence advisor. Analyze the user's last 5 captures and produce exactly 2 sentences: a "Director's Insight" that identifies the strategic pattern or tension emerging from their recent activity. Be incisive, specific, and direct — not generic. Reference the actual themes in the captures. No filler.`,
+
+      "directors-insight-ar": `أنت أورا، مستشار الذكاء التنفيذي. حلّل آخر ٥ التقاطات للمستخدم وأنتج جملتين بالضبط: "رؤية المدير" التي تحدد النمط الاستراتيجي أو التوتر الناشئ من نشاطه الأخير. كن حاداً ومحدداً ومباشراً — ليس عاماً. أشر إلى المحاور الفعلية في الالتقاطات. بدون حشو.`,
     };
 
     const userPrompts: Record<string, string> = {
