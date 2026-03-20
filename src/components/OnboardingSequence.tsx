@@ -67,6 +67,15 @@ const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
         exiting ? "opacity-0 scale-[1.15] pointer-events-none" : "opacity-100 scale-100"
       }`}
     >
+      {/* Skip button — visible on splash & radar steps */}
+      {step < STEPS.length && !exiting && (
+        <button
+          onClick={handleEnter}
+          className="absolute top-6 right-6 text-[11px] text-muted-foreground/40 hover:text-muted-foreground transition-colors tracking-widest uppercase tactile-press z-10"
+        >
+          Skip
+        </button>
+      )}
       {/* Gradient mesh background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="onboarding-mesh absolute inset-0" />
