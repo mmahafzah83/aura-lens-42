@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
@@ -9,7 +9,48 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 interface BriefingTabProps {
   entries: Entry[];
   onOpenChat?: (msg?: string) => void;
+  onRefresh?: () => Promise<void> | void;
 }
+
+/* ── Pull-to-Refresh Hook ─────────────────────────── */
+const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [pullY, setPullY] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = useRef(0);
+  const pulling = useRef(false);
+  const THRESHOLD = 80;
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop <= 0) {
+      startY.current = e.touches[0].clientY;
+      pulling.current = true;
+    }
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!pulling.current) return;
+    const dy = e.touches[0].clientY - startY.current;
+    if (dy > 0) {
+      setPullY(Math.min(dy * 0.45, 120));
+    }
+  }, []);
+
+  const onTouchEnd = useCallback(async () => {
+    if (!pulling.current) return;
+    pulling.current = false;
+    if (pullY >= THRESHOLD && onRefresh) {
+      setRefreshing(true);
+      try { await onRefresh(); } catch {}
+      setRefreshing(false);
+    }
+    setPullY(0);
+  }, [pullY, onRefresh]);
+
+  const progress = Math.min(pullY / THRESHOLD, 1);
+
+  return { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd };
+};
 
 /* ── Stat Card ─────────────────────────────────────── */
 const StatCard = ({ icon: Icon, value, label }: { icon: React.ElementType; value: number; label: string }) => (
@@ -61,10 +102,11 @@ const InsightBlock = ({ text, loading }: { text: string; loading: boolean }) => 
 };
 
 /* ── Main BriefingTab ─────────────────────────────── */
-const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
+const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
   const [insight, setInsight] = useState("");
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [showCaptures, setShowCaptures] = useState(false);
+  const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
 
   // Unique entries from last 7 days
   const weekAgo = new Date();
@@ -134,7 +176,23 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
   const recentFive = entries.slice(0, 5);
 
   return (
-    <div className="space-y-8">
+    <div
+      ref={containerRef}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      className="space-y-8 relative"
+    >
+      {/* Pull-to-refresh indicator */}
+      <div
+        className="flex items-center justify-center overflow-hidden transition-all duration-300 ease-out"
+        style={{ height: pullY > 0 || refreshing ? `${Math.max(pullY, refreshing ? 48 : 0)}px` : '0px' }}
+      >
+        <RefreshCw
+          className={`w-5 h-5 text-primary/60 transition-transform duration-200 ${refreshing ? "animate-spin" : ""}`}
+          style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
+        />
+      </div>
       {/* Hero — Strategic Pulse */}
       <div className="glass-card-elevated rounded-2xl p-8 sm:p-12 relative overflow-hidden">
         <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
