@@ -83,6 +83,13 @@ const Dashboard = () => {
             <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setChatOpen(true)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg bg-secondary/60 border border-border/20 hover:border-primary/30"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ask Aura</span>
+            </button>
             <span className="text-xs text-muted-foreground hidden sm:block tracking-wider uppercase">{user?.email}</span>
             <button onClick={handleLogout} className="text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-4 h-4" />
