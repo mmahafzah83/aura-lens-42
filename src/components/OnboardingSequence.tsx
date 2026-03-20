@@ -1,13 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Zap } from "lucide-react";
 
 const TAGLINE = "Where Leaders Think Clearly.";
-
-const STEPS = [
-  { key: "splash", duration: 4200 },
-  { key: "radar", duration: 2400 },
-  { key: "briefing", duration: 2200 },
-];
 
 const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) => {
   const [displayed, setDisplayed] = useState("");
@@ -35,32 +29,43 @@ const TypewriterText = ({ text, delay = 0 }: { text: string; delay?: number }) =
   );
 };
 
+const STEPS = [
+  { key: "splash", duration: 4200 },
+  { key: "radar", duration: 2400 },
+];
+
 const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
   const [step, setStep] = useState(0);
   const [exiting, setExiting] = useState(false);
+  const [showCta, setShowCta] = useState(false);
 
-  const advance = useCallback(() => {
-    if (step < STEPS.length - 1) {
-      setStep((s) => s + 1);
-    } else {
-      setExiting(true);
-      setTimeout(onComplete, 600);
-    }
-  }, [step, onComplete]);
-
+  // Auto-advance through splash and radar, then stop at CTA
   useEffect(() => {
-    const timer = setTimeout(advance, STEPS[step].duration);
-    return () => clearTimeout(timer);
-  }, [step, advance]);
+    if (step < STEPS.length) {
+      const timer = setTimeout(() => setStep((s) => s + 1), STEPS[step].duration);
+      return () => clearTimeout(timer);
+    }
+    // step === STEPS.length → show CTA screen, wait for click
+  }, [step]);
 
-  const exit = () => {
+  // Fade in the CTA button after a brief delay
+  useEffect(() => {
+    if (step === STEPS.length) {
+      const timer = setTimeout(() => setShowCta(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [step]);
+
+  const handleEnter = () => {
     setExiting(true);
-    setTimeout(onComplete, 600);
+    setTimeout(onComplete, 700);
   };
 
   return (
     <div
-      className={`fixed inset-0 z-[100] bg-background flex items-center justify-center transition-opacity duration-500 ${exiting ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+      className={`fixed inset-0 z-[100] bg-background flex items-center justify-center transition-all duration-700 ${
+        exiting ? "opacity-0 scale-[1.15] pointer-events-none" : "opacity-100 scale-100"
+      }`}
     >
       {/* Gradient mesh background */}
       <div className="absolute inset-0 overflow-hidden">
@@ -141,8 +146,8 @@ const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
         </div>
       )}
 
-      {/* Step 2: Briefing slide-in with CTA */}
-      {step === 2 && (
+      {/* Step 2: Mandatory CTA — waits for explicit click */}
+      {step >= STEPS.length && (
         <div className="flex flex-col items-center gap-8 px-8 animate-onboard-slide-up max-w-md text-center">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/15">
             <Zap className="w-6 h-6 text-primary" />
@@ -157,8 +162,11 @@ const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
             Your strategic intelligence layer is ready. Capture insights, build frameworks, and lead with clarity.
           </p>
           <button
-            onClick={exit}
-            className="mt-4 px-8 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium tracking-wide tactile-press hover-lift transition-all border border-primary/30"
+            onClick={handleEnter}
+            className={`mt-4 px-10 py-3.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium tracking-wide tactile-press hover-lift transition-all border border-primary/30 aura-glow ${
+              showCta ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+            }`}
+            style={{ transition: "opacity 0.5s ease, transform 0.5s ease" }}
           >
             Enter Aura
           </button>
