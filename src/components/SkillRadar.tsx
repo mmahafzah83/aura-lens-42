@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from "recharts";
+import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer, Tooltip } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -90,6 +90,18 @@ const SkillRadar = () => {
             <PolarAngleAxis
               dataKey="skill"
               tick={{ fill: "hsl(40 15% 65%)", fontSize: 10, fontFamily: "Inter" }}
+            />
+            <Tooltip
+              contentStyle={{
+                background: "hsl(0 0% 7%)",
+                border: "0.5px solid hsl(43 72% 52% / 0.15)",
+                borderRadius: "12px",
+                boxShadow: "0 8px 32px hsl(0 0% 0% / 0.4)",
+                padding: "8px 14px",
+                fontSize: "12px",
+                color: "hsl(40 10% 92%)",
+              }}
+              itemStyle={{ color: "hsl(43 72% 52%)" }}
             />
             <Radar name="Current" dataKey="current" stroke="hsl(43 72% 52%)" fill="hsl(43 72% 52%)" fillOpacity={0.12} strokeWidth={2} />
             {showTarget && (

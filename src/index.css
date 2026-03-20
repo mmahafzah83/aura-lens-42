@@ -184,4 +184,113 @@
                 0 -1px 8px hsl(0 0% 0% / 0.2),
                 inset 0 1px 0 hsl(0 0% 100% / 0.06);
   }
+
+  /* Spring-style tab transition */
+  @keyframes tab-spring {
+    0% {
+      opacity: 0;
+      transform: translateY(16px) scale(0.97);
+      filter: blur(4px);
+    }
+    60% {
+      opacity: 1;
+      transform: translateY(-3px) scale(1.005);
+      filter: blur(0px);
+    }
+    80% {
+      transform: translateY(1px) scale(0.998);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0px);
+    }
+  }
+
+  .animate-tab-spring {
+    animation: tab-spring 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Animated gradient mesh background */
+  @keyframes mesh-drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.05); }
+    50% { transform: translate(-20px, 15px) scale(0.98); }
+    75% { transform: translate(15px, 25px) scale(1.03); }
+  }
+
+  .gradient-mesh {
+    background:
+      radial-gradient(ellipse 600px 400px at 15% 20%, hsl(43 60% 20% / 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 500px 500px at 80% 70%, hsl(43 50% 15% / 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, hsl(0 0% 8% / 0.15) 0%, transparent 60%);
+    animation: mesh-drift 25s ease-in-out infinite;
+  }
+
+  /* Onboarding animations */
+  @keyframes onboard-fade-in {
+    0% { opacity: 0; transform: scale(0.92); filter: blur(8px); }
+    100% { opacity: 1; transform: scale(1); filter: blur(0px); }
+  }
+
+  @keyframes onboard-slide-up {
+    0% { opacity: 0; transform: translateY(40px); filter: blur(6px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+  }
+
+  @keyframes onboard-logo-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 40px -8px hsl(43 80% 50% / 0.3); }
+    50% { transform: scale(1.06); box-shadow: 0 0 80px -4px hsl(43 80% 55% / 0.5); }
+  }
+
+  @keyframes radar-line-draw {
+    0% { stroke-dashoffset: 600; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  @keyframes ring-draw {
+    0% { stroke-dashoffset: 520; opacity: 0; }
+    100% { stroke-dashoffset: 0; opacity: 1; }
+  }
+
+  @keyframes dot-appear {
+    0% { opacity: 0; r: 0; }
+    100% { opacity: 1; r: 3; }
+  }
+
+  .animate-onboard-fade-in {
+    animation: onboard-fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-onboard-slide-up {
+    animation: onboard-slide-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .onboarding-logo-pulse {
+    animation: onboard-logo-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .onboarding-radar-draw {
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    animation: radar-line-draw 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  }
+
+  .onboarding-ring-draw {
+    stroke-dasharray: 520;
+    stroke-dashoffset: 520;
+    animation: ring-draw 1s ease-out 0.1s forwards;
+  }
+
+  .onboarding-dot-appear {
+    opacity: 0;
+    animation: dot-appear 0.3s ease-out forwards;
+  }
+
+  .onboarding-mesh {
+    background:
+      radial-gradient(ellipse 500px 400px at 30% 30%, hsl(43 60% 25% / 0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 400px at 70% 60%, hsl(43 50% 18% / 0.08) 0%, transparent 70%);
+    animation: mesh-drift 20s ease-in-out infinite;
+  }
 }
