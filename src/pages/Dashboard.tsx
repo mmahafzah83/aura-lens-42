@@ -133,8 +133,8 @@ const Dashboard = () => {
             <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
               <Plus className="w-8 h-8 text-primary-foreground" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-1">Capture</h2>
-            <p className="text-xs text-muted-foreground tracking-wide">Link, voice note, or thought</p>
+            <h2 className="text-xl font-semibold text-foreground mb-1">{t("capture.title")}</h2>
+            <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
           </div>
 
           <div
