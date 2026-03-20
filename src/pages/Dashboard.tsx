@@ -86,41 +86,39 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative">
+    <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative safe-area-container">
       {/* Animated gradient mesh background */}
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
       {/* Onboarding */}
       {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
 
-      {/* Premium Header */}
-      <header className="border-b border-border/10 px-5 sm:px-10 py-5 flex-shrink-0 bg-background/80 backdrop-blur-xl z-40 relative">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-              <Zap className="w-4.5 h-4.5 text-primary" />
-            </div>
-            <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setChatOpen(true)}
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{t("header.askAura")}</span>
-            </button>
-            <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
-            <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title={t("header.logout")}>
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative z-10">
+      {/* Main Content — header scrolls with content */}
+      <main className="flex-1 overflow-y-auto relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-36 md:pb-10">
+          {/* Scrollable Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Zap className="w-4.5 h-4.5 text-primary" />
+              </div>
+              <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setChatOpen(true)}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Ask Aura</span>
+              </button>
+              <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
+              <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title="Log out">
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
           {/* Desktop Tab Bar */}
           <div className="hidden md:flex w-full justify-start gap-2 mb-10 border-b border-border/10 pb-0">
             {TAB_ITEMS.map((tab) => (
@@ -139,7 +137,7 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {/* Tab Content with spring-style transition */}
+          {/* Tab Content */}
           <div className="tab-content-spring">
             {activeTab === "briefing" && (
               <div className="animate-tab-spring">
@@ -168,11 +166,11 @@ const Dashboard = () => {
                         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 aura-glow border border-primary/20">
                           <Plus className="w-7 h-7 text-primary" />
                         </div>
-                        <h2 className="text-lg font-semibold text-foreground mb-1.5">{t("capture.title")}</h2>
-                        <p className="text-xs text-muted-foreground tracking-wide">{t("capture.subtitle")}</p>
+                        <h2 className="text-lg font-semibold text-foreground mb-1.5">Capture</h2>
+                        <p className="text-xs text-muted-foreground tracking-wide">Text, voice, link, or image</p>
                       </div>
                       <div className="glass-card rounded-2xl p-6 sm:p-8">
-                        <h3 className="text-sm font-semibold text-foreground mb-4 tracking-widest uppercase">{t("tab.uploadDoc")}</h3>
+                        <h3 className="text-sm font-semibold text-foreground mb-4 tracking-widest uppercase">Upload Document</h3>
                         <DocumentUpload onUploaded={fetchEntries} />
                       </div>
                     </div>
@@ -201,8 +199,8 @@ const Dashboard = () => {
                       <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 border border-border/20">
                         <TrendingUp className="w-7 h-7 text-primary" />
                       </div>
-                      <h2 className="text-lg font-semibold text-foreground mb-1.5">{t("training.title")}</h2>
-                      <p className="text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
+                      <h2 className="text-lg font-semibold text-foreground mb-1.5">Log Training</h2>
+                      <p className="text-xs text-muted-foreground tracking-wide">Track your growth hours</p>
                     </div>
                     <WeeklyTransformationLens entries={entries} />
                   </div>
@@ -215,8 +213,8 @@ const Dashboard = () => {
 
       {/* Mobile Floating Island Navigation — shared state */}
       <nav
-        className="md:hidden fixed bottom-5 left-4 right-4 z-50 glass-island rounded-2xl px-2 py-2"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="md:hidden fixed left-4 right-4 z-[60] glass-island rounded-2xl px-2 py-2"
+        style={{ bottom: 'calc(12px + env(safe-area-inset-bottom))' }}
       >
         <div className="flex w-full">
           {TAB_ITEMS.map((tab) => (
@@ -239,8 +237,8 @@ const Dashboard = () => {
       {/* Mobile FAB */}
       <button
         onClick={() => setCaptureOpen(true)}
-        className="md:hidden fixed bottom-24 right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-50 aura-glow border border-primary/30"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        className="md:hidden fixed right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[60] aura-glow border border-primary/30"
+        style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))' }}
       >
         <Plus className="w-6 h-6" />
       </button>
