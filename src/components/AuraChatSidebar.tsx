@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket, ChevronLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,8 +19,34 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Swipe-to-dismiss gesture
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const dx = e.touches[0].clientX - touchStartRef.current.x;
+    const dy = Math.abs(e.touches[0].clientY - touchStartRef.current.y);
+    // Only track horizontal swipe to the right
+    if (dx > 10 && dx > dy) {
+      setSwipeX(Math.max(0, dx));
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (swipeX > 120) {
+      onClose();
+    }
+    setSwipeX(0);
+    touchStartRef.current = null;
+  }, [swipeX, onClose]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -176,10 +202,27 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   if (!open) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[420px] z-50 flex flex-col bg-background border-l border-border/30 shadow-2xl animate-in slide-in-from-right duration-300">
-      {/* Header */}
+    <div
+      ref={panelRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="fixed inset-y-0 right-0 w-full sm:w-[420px] z-50 flex flex-col bg-background border-l border-border/30 shadow-2xl animate-in slide-in-from-right duration-300"
+      style={{
+        transform: swipeX > 0 ? `translateX(${swipeX}px)` : undefined,
+        transition: swipeX > 0 ? 'none' : 'transform 0.3s ease-out',
+        opacity: swipeX > 0 ? Math.max(0.3, 1 - swipeX / 300) : 1,
+      }}
+    >
+      {/* Header with back button */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/30">
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={onClose}
+            className="p-1.5 -ml-1 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press sm:hidden"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Zap className="w-4 h-4 text-primary-foreground" />
           </div>

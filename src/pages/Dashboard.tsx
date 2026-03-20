@@ -52,8 +52,7 @@ const Dashboard = () => {
       else {
         setUser({ email: session.user.email });
         // Show onboarding for first-time users
-        const seen = localStorage.getItem("aura-onboarded");
-        if (!seen) setShowOnboarding(true);
+        setShowOnboarding(true);
       }
     });
 
@@ -84,11 +83,10 @@ const Dashboard = () => {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
-    localStorage.setItem("aura-onboarded", "1");
   };
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden relative">
+    <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative">
       {/* Animated gradient mesh background */}
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
