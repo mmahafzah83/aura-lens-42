@@ -32,16 +32,39 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       return;
     }
 
+    // If it's a link, generate an AI summary first
+    let summary: string | null = null;
+    if (captureType === "link") {
+      toast({ title: "Analyzing", description: "AI is reading the page..." });
+      try {
+        const { data: fnData, error: fnError } = await supabase.functions.invoke("summarize-link", {
+          body: { url: content.trim() },
+        });
+        if (fnError) {
+          console.error("Summary function error:", fnError);
+          toast({ title: "Summary unavailable", description: "Saving link without summary.", variant: "destructive" });
+        } else if (fnData?.error) {
+          console.error("Summary error:", fnData.error);
+          toast({ title: "Summary unavailable", description: fnData.error, variant: "destructive" });
+        } else {
+          summary = fnData?.summary || null;
+        }
+      } catch (err) {
+        console.error("Summary fetch error:", err);
+      }
+    }
+
     const { error } = await supabase.from("entries").insert({
       user_id: user.id,
       type: captureType,
       content: content.trim(),
+      summary,
     });
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Captured", description: "Entry saved successfully." });
+      toast({ title: "Captured", description: summary ? "Entry saved with executive summary." : "Entry saved successfully." });
       setContent("");
       onCaptured();
       onOpenChange(false);
@@ -56,7 +79,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
         return;
       }
       setIsRecording(true);
-      // Simplified: In production, use MediaRecorder API
       toast({ title: "Recording", description: "Voice recording started. Click stop when done." });
     } else {
       setIsRecording(false);
@@ -138,7 +160,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          Save Entry
+          {saving && captureType === "link" ? "Analyzing & Saving..." : "Save Entry"}
         </Button>
       </DialogContent>
     </Dialog>
