@@ -143,7 +143,7 @@ const Dashboard = () => {
           <div className="tab-content-spring">
             {activeTab === "briefing" && (
               <div className="animate-tab-spring">
-                <BriefingTab entries={entries} onOpenChat={(msg) => {
+                <BriefingTab entries={entries} onRefresh={fetchEntries} onOpenChat={(msg) => {
                   setChatInitialMessage(msg);
                   setChatOpen(true);
                 }} />
