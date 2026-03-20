@@ -157,11 +157,11 @@ const BriefingTab = ({ entries, onOpenChat }: BriefingTabProps) => {
         <PotentialUnleashed entries={entries} />
 
         <div className="glass-card rounded-2xl p-6 col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <BookOpen className="w-5 h-5 text-primary" />
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">{t("briefing.strategicFocus")}</h3>
           </div>
-          <span className="text-2xl font-bold text-gradient-gold">
+          <span className="text-4xl sm:text-5xl font-bold text-gradient-gold leading-tight tracking-tight">
             {topPillar ? topPillar[0] : "—"}
           </span>
           <p className="text-xs text-muted-foreground mt-1 mb-4">{t("briefing.focusDesc")}</p>
