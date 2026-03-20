@@ -10,6 +10,27 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
+const SummaryText = ({ text }: { text: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 160;
+
+  return (
+    <div>
+      <p className={`text-xs text-muted-foreground mt-1 ${!expanded && isLong ? "line-clamp-2" : ""}`}>
+        {text}
+      </p>
+      {isLong && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+          className="text-[10px] text-primary hover:text-primary/80 mt-0.5 font-medium"
+        >
+          {expanded ? "Less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: () => void }) => {
   const [draftingId, setDraftingId] = useState<string | null>(null);
   const [draftingArId, setDraftingArId] = useState<string | null>(null);
@@ -88,8 +109,8 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
         {brandReady.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">{t("influence.empty")}</p>
         ) : (
-          <ScrollArea className="h-[500px]">
-            <div className="space-y-3 pe-3">
+          <ScrollArea className="max-h-[600px]">
+            <div className="space-y-3 pr-3">
               {brandReady.map((entry) => {
                 const isDrafting = draftingId === entry.id;
                 const isDraftingAr = draftingArId === entry.id;
@@ -98,27 +119,27 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
                 return (
                   <div
                     key={entry.id}
-                    className="flex items-start justify-between gap-4 p-4 rounded-xl bg-secondary/30 border border-border/20 hover:bg-secondary/50 transition-colors"
+                    className="p-4 rounded-xl bg-secondary/30 border border-border/20 hover:bg-secondary/50 transition-colors"
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground truncate" dir="auto">
-                        {entry.title || entry.content.slice(0, 80)}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2" dir="auto">
-                        {entry.summary}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        {entry.skill_pillar && (
-                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                            {entry.skill_pillar}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-foreground break-words">
+                          {entry.title || entry.content.slice(0, 80)}
+                        </p>
+                        {entry.summary && <SummaryText text={entry.summary} />}
+                        <div className="flex items-center gap-2 mt-2">
+                          {entry.skill_pillar && (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                              {entry.skill_pillar}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                           </span>
-                        )}
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/10 flex-wrap">
                       <button
                         onClick={() => handleTranslate(entry)}
                         disabled={isTranslating}
@@ -157,11 +178,11 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
           <DialogHeader>
             <DialogTitle className="text-gradient-gold text-lg">{t("draft.title")}</DialogTitle>
           </DialogHeader>
-          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words" dir="auto">
+          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words">
             {draftPost}
           </div>
           <Button onClick={handleCopy} variant="outline" className="w-full mt-2 border-border/30">
-            {copied ? <Check className="w-4 h-4 me-2" /> : <Copy className="w-4 h-4 me-2" />}
+            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
             {copied ? t("draft.copied") : t("draft.copy")}
           </Button>
         </DialogContent>
