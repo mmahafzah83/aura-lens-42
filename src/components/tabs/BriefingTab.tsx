@@ -176,7 +176,23 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
   const recentFive = entries.slice(0, 5);
 
   return (
-    <div className="space-y-8">
+    <div
+      ref={containerRef}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      className="space-y-8 relative"
+    >
+      {/* Pull-to-refresh indicator */}
+      <div
+        className="flex items-center justify-center overflow-hidden transition-all duration-300 ease-out"
+        style={{ height: pullY > 0 || refreshing ? `${Math.max(pullY, refreshing ? 48 : 0)}px` : '0px' }}
+      >
+        <RefreshCw
+          className={`w-5 h-5 text-primary/60 transition-transform duration-200 ${refreshing ? "animate-spin" : ""}`}
+          style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
+        />
+      </div>
       {/* Hero — Strategic Pulse */}
       <div className="glass-card-elevated rounded-2xl p-8 sm:p-12 relative overflow-hidden">
         <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
