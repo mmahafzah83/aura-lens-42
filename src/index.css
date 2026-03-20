@@ -125,4 +125,19 @@
   .aura-glow {
     animation: aura-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  @keyframes aura-search-pulse {
+    0%, 100% {
+      box-shadow: 0 0 12px -3px hsl(43 80% 50% / 0.2),
+                  0 0 30px -6px hsl(43 80% 45% / 0.08);
+    }
+    50% {
+      box-shadow: 0 0 20px -2px hsl(43 80% 55% / 0.35),
+                  0 0 50px -4px hsl(43 80% 45% / 0.15);
+    }
+  }
+
+  .aura-search-glow {
+    animation: aura-search-pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
 }
