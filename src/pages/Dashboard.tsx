@@ -52,8 +52,7 @@ const Dashboard = () => {
       else {
         setUser({ email: session.user.email });
         // Show onboarding for first-time users
-        const seen = localStorage.getItem("aura-onboarded");
-        if (!seen) setShowOnboarding(true);
+        setShowOnboarding(true);
       }
     });
 
