@@ -293,4 +293,17 @@
       radial-gradient(ellipse 400px 400px at 70% 60%, hsl(43 50% 18% / 0.08) 0%, transparent 70%);
     animation: mesh-drift 20s ease-in-out infinite;
   }
+
+  /* Typewriter cursor blink */
+  @keyframes cursor-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .typewriter-cursor {
+    animation: cursor-blink 0.8s step-end infinite;
+    color: hsl(43 72% 52%);
+    font-weight: 300;
+    margin-left: 1px;
+  }
 }
