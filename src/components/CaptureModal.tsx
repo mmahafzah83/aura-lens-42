@@ -290,6 +290,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     { key: "voice", icon: Mic, label: "Voice" },
     { key: "text", icon: Type, label: "Text" },
     { key: "image", icon: ImageIcon, label: "Image" },
+    { key: "document", icon: FileUp, label: "Doc" },
   ];
 
   return (
