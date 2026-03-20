@@ -164,7 +164,7 @@ const Dashboard = () => {
           </TabsContent>
 
           {/* Influence Tab */}
-          <TabsContent value="influence" className="mt-0">
+          <TabsContent value="influence" className="mt-0 animate-fade-in">
             <InfluenceTab entries={entries} onRefresh={fetchEntries} />
           </TabsContent>
 
