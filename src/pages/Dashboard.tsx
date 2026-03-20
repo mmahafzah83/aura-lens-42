@@ -81,9 +81,9 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="h-screen bg-background flex flex-col overflow-hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {/* Header */}
-      <header className="border-b border-border/20 px-4 sm:px-8 py-4">
+      <header className="border-b border-border/20 px-4 sm:px-8 py-4 flex-shrink-0">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -108,7 +108,7 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+      <main className="flex-1 overflow-y-auto"><div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-28 md:pb-8">
         <Tabs defaultValue="briefing" className="w-full">
           <TabsList className="w-full justify-start gap-1 bg-transparent p-0 mb-6 border-b border-border/20 rounded-none h-auto pb-0">
             {tabItems.map((tab) => (
@@ -190,7 +190,7 @@ const Dashboard = () => {
             </div>
           </TabsContent>
         </Tabs>
-      </main>
+      </div></main>
 
       {/* Mobile FAB */}
       <button
