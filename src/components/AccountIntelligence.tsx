@@ -301,8 +301,8 @@ const AccountIntelligence = () => {
             {/* Synthesis */}
             <div className="glass-card rounded-xl p-5 border border-border/20">
               <h4 className="text-sm font-semibold text-primary uppercase tracking-wider mb-3">{t("account.strategicSynthesis")}</h4>
-              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line" dir="auto">
-                {lang === "ar" ? synthesis.synthesis_ar : synthesis.synthesis_en}
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                {synthesis.synthesis_en}
               </p>
             </div>
 
