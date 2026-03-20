@@ -61,6 +61,9 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
   const [copied, setCopied] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [togglingPin, setTogglingPin] = useState<string | null>(null);
+  const [dedupScanning, setDedupScanning] = useState(false);
+  const [dedupGroups, setDedupGroups] = useState<any[] | null>(null);
+  const [dedupApplying, setDedupApplying] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
 
