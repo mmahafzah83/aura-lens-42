@@ -29,7 +29,7 @@ const Auth = () => {
     setLoading(true);
 
     const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/` } })
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: 'https://aura-lens-42.lovable.app/' } })
       : await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
