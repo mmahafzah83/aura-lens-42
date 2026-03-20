@@ -136,7 +136,7 @@ const Dashboard = () => {
             <div className="space-y-6">
               {/* Account Intelligence */}
               <div className="glass-card rounded-2xl p-5 sm:p-8">
-                <AccountIntelligence />
+                <AccountIntelligence entries={entries} />
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
