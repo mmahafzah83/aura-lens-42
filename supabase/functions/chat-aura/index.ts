@@ -114,10 +114,50 @@ serve(async (req) => {
     };
 
     const isDraftDeck = mode === "draft-deck" || lastUserMessage.toLowerCase().includes("draft a presentation") || lastUserMessage.toLowerCase().includes("draft deck") || lastUserMessage.toLowerCase().includes("draft a deck");
+    const isMeetingPrep = mode === "meeting-prep" || lastUserMessage.toLowerCase().includes("meeting prep");
 
     let systemPrompt: string;
 
-    if (isDraftDeck) {
+    if (isMeetingPrep) {
+      systemPrompt = `You are Aura, a Senior Executive Coach preparing a VP-level meeting memo for a Director at EY who brands himself as a "Transformation Architect."
+
+Generate a 1-page BILINGUAL meeting prep memo. Output BOTH English and Arabic versions separated by "---".
+
+**ENGLISH VERSION** — Structure:
+
+**MEETING PREP MEMO**
+*Date: [today] | Prepared by: Aura Intelligence*
+
+**CONTEXT** (2-3 sentences)
+Why this meeting matters. Reference the most relevant captures.
+
+**3 TALKING POINTS**
+◈ **[Point 1 Title]** — One sentence with supporting data from captures
+◈ **[Point 2 Title]** — One sentence connecting a strategic insight
+◈ **[Point 3 Title]** — One sentence with a forward-looking recommendation
+
+**THE ASK** — One clear sentence: what decision or alignment you need from the VP.
+
+**RISK TO FLAG** — One sentence on what could go wrong if action is delayed.
+
+**CLOSING QUESTION** — A single strategic question to leave the VP thinking.
+
+---
+
+**ARABIC VERSION** — النسخة العربية:
+
+**مذكرة تحضير الاجتماع**
+*التاريخ: [اليوم] | إعداد: أورا للذكاء التنفيذي*
+
+Same structure in formal Arabic (فصحى راقية). Use Vision 2030 terminology where relevant:
+التحول الرقمي، الاستدامة، تمكين القطاع الخاص، الكفاءة التشغيلية، رأس المال البشري
+
+Tone: Decisive, strategic, zero fluff. This memo should fit on one printed page. Reference their actual captures throughout.
+
+USER'S VAULT (${totalStats.total} captures | Pillars: ${totalStats.pillars.join(", ")}):
+
+${vaultContext}`;
+    } else if (isDraftDeck) {
       systemPrompt = `You are Aura, a Senior Executive Coach and Presentation Strategist for a Director at EY who brands himself as a "Transformation Architect."
 
 The user wants a structured presentation. You MUST follow the "Executive Storytelling" framework with exactly these 5 acts:
