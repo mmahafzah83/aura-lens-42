@@ -166,6 +166,41 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDedupScan = async () => {
+    setDedupScanning(true);
+    setDedupGroups(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+        body: { mode: "scan" },
+      });
+      if (error) throw error;
+      if (data?.groups?.length > 0) {
+        setDedupGroups(data.groups);
+      } else {
+        toast({ title: t("dedup.noDuplicates") });
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setDedupScanning(false);
+  };
+
+  const handleDedupApply = async () => {
+    setDedupApplying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("deduplicate-entries", {
+        body: { mode: "apply" },
+      });
+      if (error) throw error;
+      toast({ title: `${data?.deletedCount || 0} ${t("dedup.done")}` });
+      setDedupGroups(null);
+      onRefresh?.();
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setDedupApplying(false);
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
