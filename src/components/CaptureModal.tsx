@@ -409,6 +409,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           </div>
         )}
 
+        {captureType === "document" && (
+          <DocumentUpload onUploaded={() => { onCaptured(); onOpenChange(false); }} />
+        )}
+
         {captureType === "voice" && (
           <div className="flex flex-col items-center gap-4 py-6">
             {isTranscribing ? (
