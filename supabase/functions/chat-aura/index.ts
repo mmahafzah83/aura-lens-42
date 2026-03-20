@@ -51,16 +51,45 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const lastUserMessage = messages[messages.length - 1]?.content || "";
 
-    // --- RAG: Full-text search across entries + document chunks ---
+    // --- RAG: Hybrid search (keyword + semantic) across entries + document chunks ---
     let ragContext = "";
     let ragResults: any[] = [];
 
+    // Generate query embedding for semantic search
+    let queryEmbedding: number[] | null = null;
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (OPENAI_API_KEY) {
+      try {
+        const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: lastUserMessage.slice(0, 8000),
+          }),
+        });
+        if (embRes.ok) {
+          const embData = await embRes.json();
+          queryEmbedding = embData.data?.[0]?.embedding || null;
+        }
+      } catch (e) {
+        console.error("Query embedding error:", e);
+      }
+    }
+
     try {
-      const { data: searchResults } = await adminClient.rpc("search_vault", {
+      const rpcParams: any = {
         p_user_id: user.id,
         p_query: lastUserMessage,
         p_limit: 15,
-      });
+      };
+      if (queryEmbedding) {
+        rpcParams.p_query_embedding = `[${queryEmbedding.join(",")}]`;
+      }
+      const { data: searchResults } = await adminClient.rpc("search_vault", rpcParams);
       if (searchResults && searchResults.length > 0) {
         ragResults = searchResults;
       }

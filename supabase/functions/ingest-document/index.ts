@@ -216,6 +216,51 @@ serve(async (req) => {
       }
     }
 
+    // Generate embeddings for each chunk (fire-and-forget, non-blocking)
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (OPENAI_API_KEY) {
+      const chunkTexts = chunkRows.map((r) => r.content);
+      try {
+        const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: chunkTexts,
+          }),
+        });
+        if (embRes.ok) {
+          const embData = await embRes.json();
+          // Fetch inserted chunk IDs
+          const { data: insertedChunks } = await adminClient
+            .from("document_chunks")
+            .select("id, chunk_index")
+            .eq("document_id", document_id)
+            .order("chunk_index", { ascending: true });
+
+          if (insertedChunks) {
+            for (const emb of embData.data || []) {
+              const chunk = insertedChunks[emb.index];
+              if (chunk) {
+                const vectorStr = `[${emb.embedding.join(",")}]`;
+                await adminClient
+                  .from("document_chunks")
+                  .update({ embedding: vectorStr } as any)
+                  .eq("id", chunk.id);
+              }
+            }
+          }
+        } else {
+          console.error("Embedding API error:", embRes.status, await embRes.text());
+        }
+      } catch (embErr) {
+        console.error("Embedding generation error:", embErr);
+      }
+    }
+
     // Update document status
     await adminClient
       .from("documents")

@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.chat-aura]
 verify_jwt = false
+
+[functions.ingest-document]
+verify_jwt = false
+
+[functions.generate-embedding]
+verify_jwt = false

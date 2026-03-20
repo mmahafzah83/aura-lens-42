@@ -259,7 +259,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       }
     }
 
-    const { error } = await supabase.from("entries").insert({
+    const { data: insertData, error } = await supabase.from("entries").insert({
       user_id: user.id,
       type: captureType,
       content: entryContent,
@@ -268,11 +268,17 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       skill_pillar,
       has_strategic_insight,
       image_url,
-    } as any);
+    } as any).select("id").single();
 
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
+      // Generate embedding in background (non-blocking)
+      if (insertData?.id) {
+        supabase.functions.invoke("generate-embedding", {
+          body: { text: `${title || ""} ${summary || ""} ${entryContent}`, table: "entries", record_id: insertData.id },
+        }).catch((e) => console.error("Embedding error:", e));
+      }
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");
       setVoiceAnalysis(null);
