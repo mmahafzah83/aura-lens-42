@@ -87,8 +87,12 @@ serve(async (req) => {
                     enum: ["Strategy", "Technology", "Utilities", "Leadership", "Brand"],
                     description: "Which executive skill pillar this content most relates to",
                   },
+                  has_strategic_insight: {
+                    type: "boolean",
+                    description: "true ONLY if the content contains a specific, named KPI (e.g. revenue target, NPS score, conversion rate) OR a clearly stated strategic objective (e.g. 'expand into APAC by Q3'). Generic advice or news does NOT qualify.",
+                  },
                 },
-                required: ["title", "summary", "skill_pillar"],
+                required: ["title", "summary", "skill_pillar", "has_strategic_insight"],
                 additionalProperties: false,
               },
             },
