@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, summary, content } = await req.json();
+    const { title, summary, content, type } = await req.json();
     if (!summary && !content) {
       return new Response(JSON.stringify({ error: "Content or summary is required" }), {
         status: 400,
