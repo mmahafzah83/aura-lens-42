@@ -158,6 +158,7 @@ const Dashboard = () => {
 
       <CaptureModal open={captureOpen} onOpenChange={setCaptureOpen} onCaptured={fetchEntries} />
       <TrainingModal open={trainingOpen} onOpenChange={setTrainingOpen} onLogged={() => { setRadarKey(k => k + 1); }} />
+      <AuraChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 };
