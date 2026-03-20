@@ -325,8 +325,8 @@ const AccountIntelligence = () => {
                 <h4 className="text-sm font-semibold text-primary uppercase tracking-wider">{t("account.strategicQuestions")}</h4>
               </div>
               <ul className="space-y-2">
-                {(lang === "ar" ? synthesis.strategic_questions_ar : synthesis.strategic_questions_en).map((q, i) => (
-                  <li key={i} className="text-sm text-foreground flex gap-2" dir="auto">
+                {synthesis.strategic_questions_en.map((q, i) => (
+                  <li key={i} className="text-sm text-foreground flex gap-2">
                     <span className="text-primary font-bold">{i + 1}.</span>
                     {q}
                   </li>
