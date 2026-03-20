@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, Loader2, TrendingUp, TrendingDown, Zap } from "lucide-react";
+import { Flame, Loader2, TrendingUp, TrendingDown, Zap, Target } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,13 +9,19 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
   const [generating, setGenerating] = useState(false);
-  const [result, setResult] = useState<{ strengths: string[]; weaknesses: string[]; unlock_action: string } | null>(null);
+  const [result, setResult] = useState<{
+    strengths: string[];
+    blind_spots: string[];
+    brand_alignment: number;
+    brand_rationale: string;
+    unlock_action: string;
+  } | null>(null);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
 
   const handleGenerate = async () => {
     if (entries.length === 0) {
-      toast({ title: "No captures yet", description: "Add some captures first to analyze your potential.", variant: "destructive" });
+      toast({ title: "No captures yet", description: "Add some captures first.", variant: "destructive" });
       return;
     }
 
@@ -44,6 +50,12 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
     setGenerating(false);
   };
 
+  const getBrandColor = (score: number) => {
+    if (score >= 8) return "text-green-400";
+    if (score >= 5) return "text-primary";
+    return "text-amber-400";
+  };
+
   return (
     <>
       <div
@@ -58,21 +70,38 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
           {entries.length}
         </p>
         <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">
-          Captures Analyzed
+          Brand & Potential
         </p>
         <p className="text-[10px] text-primary mt-2 font-medium group-hover:underline">
-          Unleash Potential →
+          Open the Mirror →
         </p>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="glass-card border-border/30 sm:max-w-lg">
+        <DialogContent className="glass-card border-border/30 sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">Potential Unleashed</DialogTitle>
+            <DialogTitle className="text-gradient-gold text-lg">Brand & Potential Mirror</DialogTitle>
           </DialogHeader>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Transformation Architect Assessment</p>
 
           {result && (
-            <div className="space-y-5 mt-2">
+            <div className="space-y-5 mt-3">
+              {/* Brand Alignment Score */}
+              <div className="flex items-center gap-4 bg-secondary/50 rounded-xl p-4 border border-border/20">
+                <div className="flex flex-col items-center">
+                  <Target className="w-5 h-5 text-primary mb-1" />
+                  <span className={`text-3xl font-bold ${getBrandColor(result.brand_alignment)}`}>
+                    {result.brand_alignment}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">/10</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-primary uppercase tracking-widest font-semibold mb-1">Brand Alignment</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{result.brand_rationale}</p>
+                </div>
+              </div>
+
+              {/* Strengths */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-4 h-4 text-green-400" />
@@ -87,13 +116,14 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
                 </ul>
               </div>
 
+              {/* Blind Spots */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingDown className="w-4 h-4 text-amber-400" />
-                  <p className="text-xs text-amber-400 uppercase tracking-widest font-semibold">Where You Struggle</p>
+                  <p className="text-xs text-amber-400 uppercase tracking-widest font-semibold">Blind Spots</p>
                 </div>
                 <ul className="space-y-2">
-                  {result.weaknesses.map((w, i) => (
+                  {result.blind_spots.map((w, i) => (
                     <li key={i} className="text-sm text-foreground leading-relaxed bg-amber-500/5 border border-amber-500/10 rounded-lg p-3">
                       {w}
                     </li>
@@ -101,12 +131,13 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
                 </ul>
               </div>
 
+              {/* Unlock Action */}
               <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-4 h-4 text-primary" />
-                  <p className="text-xs text-primary uppercase tracking-widest font-semibold">Unlock Action</p>
+                  <p className="text-xs text-primary uppercase tracking-widest font-semibold">The Coach's Challenge</p>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed">{result.unlock_action}</p>
+                <p className="text-sm text-foreground leading-relaxed italic">{result.unlock_action}</p>
               </div>
             </div>
           )}

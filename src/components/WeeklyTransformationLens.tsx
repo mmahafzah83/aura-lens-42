@@ -15,7 +15,6 @@ const WeeklyTransformationLens = ({ entries }: { entries: Entry[] }) => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  // Get voice notes from the last 7 days
   const now = new Date();
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const weeklyVoice = entries.filter(
@@ -33,7 +32,7 @@ const WeeklyTransformationLens = ({ entries }: { entries: Entry[] }) => {
     setGenerating(true);
     try {
       const thoughts = weeklyVoice
-        .slice(0, 10) // cap at 10 for context window
+        .slice(0, 10)
         .map((e, i) => `[${i + 1}] ${e.summary || e.content}`)
         .join("\n\n");
 
@@ -86,12 +85,12 @@ const WeeklyTransformationLens = ({ entries }: { entries: Entry[] }) => {
       </div>
 
       <Dialog open={memoOpen} onOpenChange={setMemoOpen}>
-        <DialogContent className="glass-card border-border/30 sm:max-w-lg">
+        <DialogContent className="glass-card border-border/30 sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-gradient-gold text-lg">Weekly Transformation Lens</DialogTitle>
           </DialogHeader>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Leadership Memo</p>
-          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Leadership Memo + Coach's Challenge</p>
+          <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto" dir="auto">
             {memo}
           </div>
           <Button onClick={handleCopy} variant="outline" className="w-full mt-2 border-border/30">
