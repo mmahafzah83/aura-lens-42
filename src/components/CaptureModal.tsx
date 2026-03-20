@@ -3,17 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type CaptureType = "link" | "voice" | "text";
+type CaptureType = "link" | "voice" | "text" | "image";
 
 const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
-
-function detectArabicDir(text: string): "rtl" | "ltr" {
-  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text) ? "rtl" : "ltr";
-}
 
 interface CaptureModalProps {
   open: boolean;
@@ -28,23 +24,100 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [voiceAnalysis, setVoiceAnalysis] = useState<{ summary: string | null; skill_pillar: string | null } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageAnalysis, setImageAnalysis] = useState<{
+    transcribed_text: string;
+    title: string;
+    summary: string;
+    skill_pillar: string;
+    has_strategic_insight: boolean;
+  } | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
   const { toast } = useToast();
-
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const handleImageSelect = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Too large", description: "Image must be under 10MB.", variant: "destructive" });
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    // Analyze with AI
+    setAnalyzing(true);
+    toast({ title: "Analyzing", description: "AI is reading your screenshot…" });
+
+    try {
+      const base64Reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        base64Reader.onload = () => {
+          const result = base64Reader.result as string;
+          resolve(result.split(",")[1]);
+        };
+        base64Reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("analyze-image", {
+        body: { image_base64: base64, mime_type: file.type },
+      });
+
+      if (error || data?.error) {
+        toast({ title: "Analysis failed", description: data?.error || error?.message, variant: "destructive" });
+      } else {
+        setImageAnalysis(data);
+        setContent(data.transcribed_text || file.name);
+        toast({ title: "Analyzed", description: "Image intelligence extracted." });
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not analyze image.", variant: "destructive" });
+    }
+    setAnalyzing(false);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          setCaptureType("image");
+          handleImageSelect(file);
+        }
+        return;
+      }
+    }
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageAnalysis(null);
+    setContent("");
+  };
 
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
         : MediaRecorder.isTypeSupported("audio/webm")
           ? "audio/webm"
           : "audio/mp4";
-
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
       chunksRef.current = [];
@@ -56,28 +129,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-
         const blob = new Blob(chunksRef.current, { type: mimeType });
         chunksRef.current = [];
-
         if (blob.size === 0) {
           toast({ title: "Error", description: "No audio captured.", variant: "destructive" });
           return;
         }
-
         setIsTranscribing(true);
         toast({ title: "Transcribing", description: "Processing your audio…" });
-
         try {
           const formData = new FormData();
           const ext = mimeType.includes("webm") ? "webm" : "mp4";
           formData.append("audio", blob, `recording.${ext}`);
-
-          const { data: fnData, error: fnError } = await supabase.functions.invoke(
-            "transcribe-voice",
-            { body: formData }
-          );
-
+          const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", { body: formData });
           if (fnError) {
             toast({ title: "Transcription failed", description: fnError.message, variant: "destructive" });
           } else if (fnData?.error) {
@@ -91,7 +155,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
               toast({ title: "Transcribed", description: "Voice note converted to text." });
             }
           }
-        } catch (err) {
+        } catch {
           toast({ title: "Error", description: "Could not transcribe audio.", variant: "destructive" });
         }
         setIsTranscribing(false);
@@ -100,7 +164,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       recorder.start();
       setIsRecording(true);
       toast({ title: "Recording", description: "Speak clearly. Tap stop when done." });
-    } catch (err) {
+    } catch {
       toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
     }
   };
@@ -113,8 +177,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
   };
 
   const handleSave = async () => {
-    if (!content.trim()) return;
+    if (captureType === "image" && !imageFile) return;
+    if (captureType !== "image" && !content.trim()) return;
     setSaving(true);
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ title: "Error", description: "Not authenticated", variant: "destructive" });
@@ -126,6 +192,35 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     let title: string | null = null;
     let skill_pillar: string | null = null;
     let has_strategic_insight = false;
+    let image_url: string | null = null;
+    let entryContent = content.trim();
+
+    if (captureType === "image" && imageFile) {
+      // Upload image to storage
+      const filePath = `${user.id}/${Date.now()}-${imageFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("capture-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from("capture-images").getPublicUrl(filePath);
+      image_url = urlData.publicUrl;
+
+      if (imageAnalysis) {
+        entryContent = imageAnalysis.transcribed_text || imageFile.name;
+        title = imageAnalysis.title;
+        summary = imageAnalysis.summary;
+        skill_pillar = imageAnalysis.skill_pillar;
+        has_strategic_insight = imageAnalysis.has_strategic_insight;
+      } else {
+        entryContent = imageFile.name;
+      }
+    }
 
     if (captureType === "link") {
       toast({ title: "Analyzing", description: "AI is extracting strategic intelligence..." });
@@ -133,11 +228,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
         const { data: fnData, error: fnError } = await supabase.functions.invoke("summarize-link", {
           body: { url: content.trim() },
         });
-        if (fnError) {
-          toast({ title: "Summary unavailable", description: "Saving link without summary.", variant: "destructive" });
-        } else if (fnData?.error) {
-          toast({ title: "Summary unavailable", description: fnData.error, variant: "destructive" });
-        } else {
+        if (!fnError && !fnData?.error) {
           title = fnData?.title || null;
           summary = fnData?.summary || null;
           skill_pillar = fnData?.skill_pillar || null;
@@ -157,11 +248,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
         skill_pillar = voiceAnalysis.skill_pillar;
       } else {
         const lower = content.toLowerCase();
-        if (lower.includes("advisory") || lower.includes("c-suite") || lower.includes("board")) skill_pillar = "C-Suite Advisory";
-        else if (lower.includes("architecture") || lower.includes("strategy") || lower.includes("plan")) skill_pillar = "Strategic Architecture";
-        else if (lower.includes("foresight") || lower.includes("trend") || lower.includes("future")) skill_pillar = "Industry Foresight";
-        else if (lower.includes("transform") || lower.includes("change") || lower.includes("steward")) skill_pillar = "Transformation Stewardship";
-        else if (lower.includes("digital") || lower.includes("tech") || lower.includes("ai") || lower.includes("data")) skill_pillar = "Digital Fluency";
+        if (lower.includes("advisory") || lower.includes("c-suite")) skill_pillar = "C-Suite Advisory";
+        else if (lower.includes("architecture") || lower.includes("strategy")) skill_pillar = "Strategic Architecture";
+        else if (lower.includes("foresight") || lower.includes("trend")) skill_pillar = "Industry Foresight";
+        else if (lower.includes("transform") || lower.includes("change")) skill_pillar = "Transformation Stewardship";
+        else if (lower.includes("digital") || lower.includes("tech") || lower.includes("ai")) skill_pillar = "Digital Fluency";
         else skill_pillar = "Strategic Architecture";
       }
     }
@@ -169,11 +260,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     const { error } = await supabase.from("entries").insert({
       user_id: user.id,
       type: captureType,
-      content: content.trim(),
+      content: entryContent,
       summary,
       title,
       skill_pillar,
       has_strategic_insight,
+      image_url,
     } as any);
 
     if (error) {
@@ -182,6 +274,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");
       setVoiceAnalysis(null);
+      setImageFile(null);
+      setImagePreview(null);
+      setImageAnalysis(null);
       onCaptured();
       onOpenChange(false);
     }
@@ -192,11 +287,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
     { key: "link", icon: Link, label: "Link" },
     { key: "voice", icon: Mic, label: "Voice" },
     { key: "text", icon: Type, label: "Text" },
+    { key: "image", icon: ImageIcon, label: "Image" },
   ];
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v && isRecording) stopRecording(); onOpenChange(v); }}>
-      <DialogContent className="glass-card border-border/30 sm:max-w-md">
+      <DialogContent className="glass-card border-border/30 sm:max-w-md" onPaste={handlePaste}>
         <DialogHeader>
           <DialogTitle className="text-gradient-gold text-xl">Capture Intelligence</DialogTitle>
         </DialogHeader>
@@ -205,8 +301,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
           {types.map(({ key, icon: Icon, label }) => (
             <button
               key={key}
-              onClick={() => { if (!isRecording && !isTranscribing) setCaptureType(key); }}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all ${
+              onClick={() => { if (!isRecording && !isTranscribing && !analyzing) { setCaptureType(key); if (key !== "image") clearImage(); } }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 captureType === key
                   ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -236,6 +332,66 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
             dir="auto"
             className="bg-secondary border-border/30 resize-none"
           />
+        )}
+
+        {captureType === "image" && (
+          <div className="space-y-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageSelect(file);
+              }}
+            />
+
+            {!imagePreview ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-border/40 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+              >
+                <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
+                <p className="text-sm text-muted-foreground">Click to upload or paste a screenshot</p>
+                <p className="text-[10px] text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+              </div>
+            ) : (
+              <div className="relative">
+                <img src={imagePreview} alt="Preview" className="w-full max-h-48 object-contain rounded-xl bg-secondary" />
+                <button
+                  onClick={clearImage}
+                  className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center hover:bg-background transition-colors"
+                >
+                  <X className="w-3.5 h-3.5 text-foreground" />
+                </button>
+              </div>
+            )}
+
+            {analyzing && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                AI is reading your screenshot…
+              </div>
+            )}
+
+            {imageAnalysis && (
+              <div className="bg-secondary/60 border border-border/20 rounded-xl p-4 space-y-2">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Image Intelligence</p>
+                {imageAnalysis.title && (
+                  <p className="text-sm font-medium text-foreground">{imageAnalysis.title}</p>
+                )}
+                <p className="text-xs text-foreground whitespace-pre-line leading-relaxed" dir="auto">
+                  {imageAnalysis.summary}
+                </p>
+                {imageAnalysis.skill_pillar && (
+                  <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary mt-1">
+                    {imageAnalysis.skill_pillar}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {captureType === "voice" && (
@@ -297,11 +453,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured }: CaptureModalProps) => 
 
         <Button
           onClick={handleSave}
-          disabled={saving || isRecording || isTranscribing || !content.trim()}
+          disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
           className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-          {saving && captureType === "link" ? "Extracting Intelligence…" : "Save Entry"}
+          {saving && captureType === "link" ? "Extracting Intelligence…" : saving ? "Saving…" : "Save Entry"}
         </Button>
       </DialogContent>
     </Dialog>
