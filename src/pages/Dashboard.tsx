@@ -144,8 +144,8 @@ const Dashboard = () => {
             <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary flex items-center justify-center mb-3 sm:mb-5 group-hover:scale-110 transition-transform border border-border/30">
               <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
             </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-1">Log Training</h2>
-            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">Track skill development</p>
+            <h2 className="text-lg sm:text-xl font-semibold text-foreground mb-1">{t("training.title")}</h2>
+            <p className="text-[10px] sm:text-xs text-muted-foreground tracking-wide">{t("training.subtitle")}</p>
           </div>
 
           <div className="col-span-2 md:col-span-2 glass-card rounded-2xl p-4 sm:p-8 min-h-[250px] sm:min-h-[380px] radar-glow">

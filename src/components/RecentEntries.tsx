@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin, ChevronDown, ChevronUp, Pin, PinOff, ImageIcon, Archive, Languages } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"] & { pinned?: boolean; image_url?: string | null };
@@ -23,6 +24,7 @@ function detectDir(text: string): "rtl" | "ltr" {
 
 const ExpandableSummary = ({ text }: { text: string }) => {
   const [expanded, setExpanded] = useState(false);
+  const { t } = useLanguage();
   const isLong = text.length > 200;
   const dir = detectDir(text);
 
@@ -41,7 +43,7 @@ const ExpandableSummary = ({ text }: { text: string }) => {
           className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary mt-1 transition-colors"
         >
           {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          {expanded ? "Less" : "Read more"}
+          {expanded ? t("entries.less") : t("entries.readMore")}
         </button>
       )}
     </div>
@@ -51,12 +53,15 @@ const ExpandableSummary = ({ text }: { text: string }) => {
 const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: () => void }) => {
   const [search, setSearch] = useState("");
   const [draftingId, setDraftingId] = useState<string | null>(null);
+  const [draftingArId, setDraftingArId] = useState<string | null>(null);
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [draftPost, setDraftPost] = useState("");
   const [draftOpen, setDraftOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [togglingPin, setTogglingPin] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -103,15 +108,16 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
     setTogglingPin(null);
   };
 
-  const handleDraft = async (entry: Entry) => {
-    setDraftingId(entry.id);
+  const handleDraft = async (entry: Entry, arStyle?: boolean) => {
+    if (arStyle) setDraftingArId(entry.id);
+    else setDraftingId(entry.id);
     try {
       const { data, error } = await supabase.functions.invoke("draft-post", {
         body: {
           title: entry.title || "",
           summary: entry.summary || "",
           content: entry.content,
-          type: entry.type,
+          type: arStyle ? "arabic-executive" : entry.type,
         },
       });
       if (error || data?.error) {
@@ -124,6 +130,30 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
       toast({ title: "Error", description: "Could not generate draft.", variant: "destructive" });
     }
     setDraftingId(null);
+    setDraftingArId(null);
+  };
+
+  const handleTranslate = async (entry: Entry) => {
+    setTranslatingId(entry.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("draft-post", {
+        body: {
+          title: entry.title || "",
+          summary: entry.summary || "",
+          content: entry.content,
+          type: "translate-executive-ar",
+        },
+      });
+      if (error || data?.error) {
+        toast({ title: "Translation failed", description: data?.error || error?.message, variant: "destructive" });
+      } else {
+        setDraftPost(data.post);
+        setDraftOpen(true);
+      }
+    } catch {
+      toast({ title: "Error", description: "Could not translate.", variant: "destructive" });
+    }
+    setTranslatingId(null);
   };
 
   const handleCopy = async () => {
@@ -136,8 +166,8 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-5 gap-4 flex-wrap">
         <div>
-          <h3 className="text-lg font-semibold text-foreground mb-0.5">Recent Captures</h3>
-          <p className="text-xs text-muted-foreground tracking-wide uppercase">Latest intelligence entries</p>
+          <h3 className="text-lg font-semibold text-foreground mb-0.5">{t("entries.title")}</h3>
+          <p className="text-xs text-muted-foreground tracking-wide uppercase">{t("entries.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
@@ -147,24 +177,24 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
             }`}
           >
             <Archive className="w-3.5 h-3.5" />
-            Archive{archivedEntries.length > 0 && ` (${archivedEntries.length})`}
+            {t("entries.archive")}{archivedEntries.length > 0 && ` (${archivedEntries.length})`}
           </button>
           <div className="relative flex-1 sm:w-52">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search captures…"
+              placeholder={t("entries.search")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9 bg-secondary border-border/30 text-sm"
+              className="ps-9 h-9 bg-secondary border-border/30 text-sm"
             />
           </div>
         </div>
       </div>
       <ScrollArea className="h-[360px] sm:h-[420px]">
-        <div className="space-y-3 pr-3">
+        <div className="space-y-3 pe-3">
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground italic">
-              {showArchive ? "No archived entries." : search ? "No results found." : "No entries yet. Start capturing."}
+              {showArchive ? t("entries.noArchive") : search ? t("entries.noResults") : t("entries.noEntries")}
             </p>
           ) : (
             filtered.map((entry) => {
@@ -173,6 +203,8 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
               const title = entry.title;
               const isLink = entry.type === "link";
               const isDrafting = draftingId === entry.id;
+              const isDraftingAr = draftingArId === entry.id;
+              const isTranslating = translatingId === entry.id;
               const contentDir = detectDir(entry.content);
               const isPinned = (entry as any).pinned === true;
               const imageUrl = (entry as any).image_url;
@@ -242,15 +274,38 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                       </button>
 
                       {entry.summary && (
-                        <button
-                          onClick={() => handleDraft(entry)}
-                          disabled={isDrafting}
-                          className="ml-auto flex items-center gap-1 text-[10px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50"
-                          title="Draft LinkedIn Post"
-                        >
-                          {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
-                          <span className="hidden sm:inline">LinkedIn Post</span>
-                        </button>
+                        <div className="ms-auto flex items-center gap-2">
+                          {/* Translate to Executive Arabic */}
+                          <button
+                            onClick={() => handleTranslate(entry)}
+                            disabled={isTranslating}
+                            className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                            title={t("entries.translate")}
+                          >
+                            {isTranslating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
+                            <span className="hidden sm:inline">{t("entries.translate")}</span>
+                          </button>
+                          {/* Arabic LinkedIn */}
+                          <button
+                            onClick={() => handleDraft(entry, true)}
+                            disabled={isDraftingAr}
+                            className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                            title={t("entries.linkedinAr")}
+                          >
+                            {isDraftingAr ? <Loader2 className="w-3 h-3 animate-spin" /> : <span className="text-[10px]">عر</span>}
+                            <span className="hidden sm:inline">{t("entries.linkedinAr")}</span>
+                          </button>
+                          {/* English LinkedIn */}
+                          <button
+                            onClick={() => handleDraft(entry)}
+                            disabled={isDrafting}
+                            className="flex items-center gap-1 text-[10px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50"
+                            title={t("entries.linkedinPost")}
+                          >
+                            {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
+                            <span className="hidden sm:inline">{t("entries.linkedinPost")}</span>
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -264,14 +319,14 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card border-border/30 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-lg">LinkedIn Draft</DialogTitle>
+            <DialogTitle className="text-gradient-gold text-lg">{t("draft.title")}</DialogTitle>
           </DialogHeader>
           <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words" dir="auto" style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}>
             {draftPost}
           </div>
           <Button onClick={handleCopy} variant="outline" className="w-full mt-2 border-border/30">
-            {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-            {copied ? "Copied!" : "Copy to Clipboard"}
+            {copied ? <Check className="w-4 h-4 me-2" /> : <Copy className="w-4 h-4 me-2" />}
+            {copied ? t("draft.copied") : t("draft.copy")}
           </Button>
         </DialogContent>
       </Dialog>
