@@ -1,32 +1,27 @@
-Aura app: EY Director executive coaching tool, English-only, dark theme, gold accents.
+Aura app: EY Director executive coaching tool, English-only, premium dark theme.
+
+## Design System (v2 — Premium Revamp)
+- Background: #0A0A0A (0 0% 4%), Cards: 0 0% 7%
+- Glassmorphism 2.0: backdrop-blur(16px), border 0.5px gold/8%, subtle white gradient overlays
+- Typography: Playfair Display for h1-h3, Inter for body/h4-h6
+- Gold accent: HSL 43 72% 52%, gradients for text
+- Animations: tab-enter, fade-in with blur, hover-lift translateY(-2px)
+- Mobile: floating glass-island nav dock, rounded-2xl
+- Spacing: generous — p-8/p-10/p-12, gap-8, mb-8
 
 ## Skill Pillars
 C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Stewardship, Digital Fluency
 
 ## DB Schema
-- entries: pinned, image_url, tsv, embedding(1536), account_name, framework_tag
-- documents, document_chunks: with tsv + embedding
-- focus_accounts: id, user_id, name (CRUD via modal)
-- master_frameworks: id, user_id, entry_id, title, framework_steps(jsonb), summary, tags(text[]), source_type
-- skill_targets, training_logs
-- search_vault() RPC: hybrid keyword+semantic search
-- storage: capture-images (public), documents (private)
-- Realtime enabled on entries table
+- entries: pinned, image_url, embedding (vector), framework_tag, account_name
+- master_frameworks: expert system rules storage
+- storage buckets: capture-images (public), documents (private)
 
 ## Edge Functions
-- summarize-link, draft-post, transcribe-voice, analyze-potential, analyze-image
-- chat-aura: RAG with modes (default, draft-deck, meeting-prep, synthesize-pursuit)
-- ingest-document, generate-embedding, account-brief
-- extract-framework: AI extracts steps from #ExpertFramework captures → master_frameworks
-- draft-post & analyze-potential: consult master_frameworks to apply expert rules
+- draft-post: 2-pass (draft + self-correction audit against master_frameworks)
+- extract-framework, chat-aura, summarize-link, transcribe-voice, analyze-potential, analyze-image, ingest-document, generate-embedding, deduplicate-entries, account-brief
 
-## Expert System Pipeline
-- CaptureModal auto-detects expert framework content via regex → sets framework_tag="#ExpertFramework"
-- extract-framework edge function: extracts structured steps → saves to master_frameworks
-- draft-post: fetches user's frameworks and injects into system prompt for LinkedIn drafts
-- analyze-potential (The Mirror): fetches frameworks to evaluate brand against expert rules
-
-## Design
-- Glass card aesthetic with gold gradients
+## Design Rules
 - Entries >30 days without pin → archived
-- Arabic removed; English-only; no RTL
+- No Arabic/RTL — English only
+- tactile-press (scale 0.96) on all interactive elements
