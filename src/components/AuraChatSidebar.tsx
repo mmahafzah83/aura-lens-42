@@ -24,7 +24,6 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Swipe-down-to-dismiss gesture
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
@@ -33,16 +32,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     if (!touchStartRef.current) return;
     const dy = e.touches[0].clientY - touchStartRef.current.y;
     const dx = Math.abs(e.touches[0].clientX - touchStartRef.current.x);
-    // Only track vertical swipe downward
     if (dy > 10 && dy > dx) {
       setSwipeY(Math.max(0, dy * 0.6));
     }
   }, []);
 
   const handleTouchEnd = useCallback(() => {
-    if (swipeY > 140) {
-      onClose();
-    }
+    if (swipeY > 140) onClose();
     setSwipeY(0);
     touchStartRef.current = null;
   }, [swipeY, onClose]);
@@ -67,9 +63,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
 
   const streamChat = async (allMessages: Msg[], mode?: string) => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      throw new Error("Not authenticated. Please sign in again.");
-    }
+    if (!session?.access_token) throw new Error("Not authenticated. Please sign in again.");
 
     const resp = await fetch(CHAT_URL, {
       method: "POST",
@@ -85,7 +79,6 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
       const err = await resp.json().catch(() => ({ error: "Request failed" }));
       throw new Error(err.error || `Error ${resp.status}`);
     }
-
     if (!resp.body) throw new Error("No response body");
 
     const reader = resp.body.getReader();
@@ -109,7 +102,6 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
       const { done: readerDone, value } = await reader.read();
       if (readerDone) break;
       buffer += decoder.decode(value, { stream: true });
-
       let newlineIdx: number;
       while ((newlineIdx = buffer.indexOf("\n")) !== -1) {
         let line = buffer.slice(0, newlineIdx);
@@ -153,7 +145,6 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
-
     try {
       await streamChat(newMessages, mode);
     } catch (e: any) {
@@ -166,29 +157,20 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   };
 
   const handleDraftDeck = () => {
-    if (input.trim()) {
-      send(`Draft a presentation on: ${input.trim()}`, "draft-deck");
-    } else {
-      send("Draft a presentation based on my most recent and most impactful captures. Create a strategic deck outline.", "draft-deck");
-    }
+    if (input.trim()) send(`Draft a presentation on: ${input.trim()}`, "draft-deck");
+    else send("Draft a presentation based on my most recent and most impactful captures. Create a strategic deck outline.", "draft-deck");
   };
 
   const handleMeetingPrep = () => {
     const topic = input.trim();
-    if (topic) {
-      send(`Prepare a 1-page meeting prep memo for a VP meeting on: ${topic}`, "meeting-prep");
-    } else {
-      send("Prepare a 1-page meeting prep memo for a VP meeting based on my most recent and strategic captures.", "meeting-prep");
-    }
+    if (topic) send(`Prepare a 1-page meeting prep memo for a VP meeting on: ${topic}`, "meeting-prep");
+    else send("Prepare a 1-page meeting prep memo for a VP meeting based on my most recent and strategic captures.", "meeting-prep");
   };
 
   const handleSynthesize = () => {
     const topic = input.trim();
-    if (topic) {
-      send(`Synthesize a pursuit for: ${topic}. Find the strategic intersection between my documents, captures, and leadership insights.`, "synthesize-pursuit");
-    } else {
-      send("Synthesize a pursuit based on my most recent captures and uploaded documents. Find the strategic intersection between my saved frameworks and leadership thoughts.", "synthesize-pursuit");
-    }
+    if (topic) send(`Synthesize a pursuit for: ${topic}. Find the strategic intersection between my documents, captures, and leadership insights.`, "synthesize-pursuit");
+    else send("Synthesize a pursuit based on my most recent captures and uploaded documents. Find the strategic intersection between my saved frameworks and leadership thoughts.", "synthesize-pursuit");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -201,16 +183,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9998] flex flex-col">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Chat panel — swipe down to dismiss */}
+    <div className="fixed inset-0 z-[10000] flex flex-col bg-background">
+      {/* Full-screen chat container with swipe support */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative z-[1] flex flex-col w-full h-full sm:w-[420px] sm:h-auto sm:max-h-[90vh] sm:m-auto sm:rounded-2xl bg-background border border-border/30 shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-bottom duration-300"
+        className="flex flex-col h-full w-full"
         style={{
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? 'none' : 'transform 0.3s ease-out',
@@ -218,13 +197,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
         }}
       >
         {/* Swipe indicator (mobile) */}
-        <div className="sm:hidden flex justify-center pt-3 pb-1">
+        <div className="sm:hidden flex justify-center pt-2 pb-0">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        {/* Sticky header with close button — respects safe area */}
+        {/* Sticky header — safe area aware */}
         <div
-          className="flex items-center justify-between px-5 py-3 border-b border-border/30 sticky top-0 bg-background/95 backdrop-blur-md z-10"
+          className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-background/95 backdrop-blur-md shrink-0"
           style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
         >
           <div className="flex items-center gap-2.5">
@@ -248,15 +227,15 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
             )}
             <button
               onClick={onClose}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-xl hover:bg-secondary tactile-press"
+              className="p-2.5 text-muted-foreground hover:text-foreground transition-colors rounded-xl hover:bg-secondary tactile-press"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+        {/* Scrollable messages area — takes all remaining space */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -285,10 +264,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           )}
 
           {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === "user"
@@ -317,31 +293,12 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           )}
         </div>
 
-        {/* Input — respects safe area bottom */}
+        {/* Pinned bottom: action buttons + input — safe area aware */}
         <div
-          className="border-t border-border/30 px-4 py-3 space-y-2"
+          className="border-t border-border/30 px-4 py-3 space-y-2 shrink-0 bg-background"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
         >
-          <div className="flex gap-2">
-            <Textarea
-              ref={textareaRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about your captures & documents…"
-              rows={1}
-              className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[40px] max-h-[120px]"
-            />
-            <Button
-              onClick={() => send(input)}
-              disabled={isLoading || !input.trim()}
-              size="icon"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-10 flex-shrink-0"
-            >
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
-          </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-1">
             <button
               onClick={handleMeetingPrep}
               disabled={isLoading}
@@ -366,6 +323,25 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
               <Rocket className="w-3.5 h-3.5" />
               Synthesize
             </button>
+          </div>
+          <div className="flex gap-2">
+            <Textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask about your captures & documents…"
+              rows={1}
+              className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[40px] max-h-[120px]"
+            />
+            <Button
+              onClick={() => send(input)}
+              disabled={isLoading || !input.trim()}
+              size="icon"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-10 flex-shrink-0"
+            >
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
       </div>
