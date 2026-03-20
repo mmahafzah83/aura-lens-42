@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.draft-post]
 verify_jwt = false
+
+[functions.transcribe-voice]
+verify_jwt = false
