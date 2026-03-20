@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      document_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_id: string
+          id: string
+          metadata: Json | null
+          tsv: unknown
+          user_id: string
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string
+          document_id: string
+          id?: string
+          metadata?: Json | null
+          tsv?: unknown
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+          tsv?: unknown
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          file_type: string
+          file_url: string
+          filename: string
+          id: string
+          page_count: number | null
+          status: string
+          summary: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_type: string
+          file_url: string
+          filename: string
+          id?: string
+          page_count?: number | null
+          status?: string
+          summary?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_type?: string
+          file_url?: string
+          filename?: string
+          id?: string
+          page_count?: number | null
+          status?: string
+          summary?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       entries: {
         Row: {
           content: string
@@ -25,6 +102,7 @@ export type Database = {
           skill_pillar: string | null
           summary: string | null
           title: string | null
+          tsv: unknown
           type: string
           updated_at: string
           user_id: string
@@ -39,6 +117,7 @@ export type Database = {
           skill_pillar?: string | null
           summary?: string | null
           title?: string | null
+          tsv?: unknown
           type: string
           updated_at?: string
           user_id: string
@@ -53,6 +132,7 @@ export type Database = {
           skill_pillar?: string | null
           summary?: string | null
           title?: string | null
+          tsv?: unknown
           type?: string
           updated_at?: string
           user_id?: string
@@ -118,7 +198,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_vault: {
+        Args: { p_limit?: number; p_query: string; p_user_id: string }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          pinned: boolean
+          rank: number
+          skill_pillar: string
+          source: string
+          summary: string
+          title: string
+          type: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
