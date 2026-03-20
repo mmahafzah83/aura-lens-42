@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Mic, Type, ExternalLink, Search, PenLine, Loader2, Copy, Check } from "lucide-react";
+import { Link, Mic, Type, ExternalLink, Search, Loader2, Copy, Check, Linkedin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
