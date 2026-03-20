@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle } from "lucide-react";
+import { Plus, LogOut, Zap, BarChart3, BookOpen, TrendingUp, GraduationCap, MessageCircle, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
