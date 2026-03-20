@@ -33,7 +33,17 @@ serve(async (req) => {
       ? "\n\nIMPORTANT: The source material contains Arabic. Write the output in BOTH Arabic and English. First the Arabic version, then '---', then the English version."
       : "";
 
-    const COACH_TONE = "Tone: Sophisticated, challenging, and neutral. You are a peer — not a cheerleader. Push toward potential. Speak with quiet authority. No hashtags. No emojis. No filler.";
+    const COACH_TONE = `Tone: Visionary but grounded. Quiet authority. You are a peer — not a cheerleader.
+
+BANNED WORDS: Never use "delve," "tapestry," "landscape," "synergy," "leverage" (as verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal). These sound like AI wrote it.
+
+EXECUTIVE SCANNABILITY FORMAT (mandatory):
+1. THE HOOK — One bold, standalone sentence about a strategic shift. This is the scroll-stopper. No preamble.
+2. WHITESPACE — Every sentence gets its own line. Max 2 lines per paragraph. Let the reader breathe.
+3. THE 'SO WHAT?' — Exactly 3 bullet points using ◈ or ➔ symbols. Each bullet is one sharp insight (max 15 words).
+4. THE CTA — End with a single thought-provoking question to the industry. Not engagement bait — a real question that challenges assumptions.
+
+No hashtags. No emojis except ◈ and ➔. Under 150 words total.`;
 
     const systemPrompts: Record<string, string> = {
       "weekly-memo": `You are a Senior Executive Coach and peer to a Director at EY who aspires to be a "Transformation Architect." Synthesize multiple voice-note insights from the past week into one cohesive Leadership Memo.
@@ -49,23 +59,19 @@ WEEKLY TRANSFORMATION LENS
 ▸ THE COACH'S CHALLENGE
 Look at the weaknesses and blind spots from this week's thinking. Identify where the executive is avoiding discomfort, over-indexing on strengths, or missing the C-suite lens. Then ask ONE difficult, specific question that would prepare them for their next client meeting. The question should sting slightly — it should be the question a trusted peer would ask over a late-night drink, not in a boardroom.
 
-${COACH_TONE} Under 400 words.${bilingualNote}`,
+${COACH_TONE}${bilingualNote}`,
 
       "voice": `You are a Senior Executive Coach and LinkedIn ghostwriter for a Director at EY who aspires to be a "Transformation Architect." Transform a raw spoken idea into a polished, high-authority LinkedIn post.
 
-Paragraph 1: A hook tied to a current trend in infrastructure, water, energy, or digital transformation in KSA/GCC. Make it stop the scroll.
-Paragraph 2: The Strategic Insight — weave in the core idea and the strategic risk. Show pattern recognition across client engagements.
-Paragraph 3: A thought-provoking question that challenges the reader's assumptions. Not soft engagement bait — a real question.
+${COACH_TONE}
 
-${COACH_TONE} Under 200 words.${bilingualNote}`,
+Context focus: infrastructure, water, energy, or digital transformation in KSA/GCC.${bilingualNote}`,
 
-      "default": `You are a Senior Executive Coach and LinkedIn ghostwriter for a Director at EY who aspires to be a "Transformation Architect." Write a 3-paragraph LinkedIn post.
+      "default": `You are a Senior Executive Coach and LinkedIn ghostwriter for a Director at EY who aspires to be a "Transformation Architect." Write a LinkedIn post from the source material.
 
-Paragraph 1: A hook tied to a current trend in infrastructure, water, energy, or digital transformation. A bold observation — not a platitude.
-Paragraph 2: The Strategic Insight — expand with substance. Show depth, pattern recognition, and the courage to name what others won't.
-Paragraph 3: A challenging question that invites real dialogue, not performative agreement.
+${COACH_TONE}
 
-${COACH_TONE} Under 200 words.${bilingualNote}`,
+Context focus: infrastructure, water, energy, or digital transformation.${bilingualNote}`,
     };
 
     const userPrompts: Record<string, string> = {
