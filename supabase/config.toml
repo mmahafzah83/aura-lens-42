@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.analyze-potential]
 verify_jwt = false
+
+[functions.analyze-image]
+verify_jwt = false
