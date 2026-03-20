@@ -96,6 +96,7 @@ export type Database = {
       }
       entries: {
         Row: {
+          account_name: string | null
           content: string
           created_at: string
           embedding: string | null
@@ -112,6 +113,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_name?: string | null
           content: string
           created_at?: string
           embedding?: string | null
@@ -128,6 +130,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_name?: string | null
           content?: string
           created_at?: string
           embedding?: string | null
@@ -141,6 +144,27 @@ export type Database = {
           tsv?: unknown
           type?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      focus_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
           user_id?: string
         }
         Relationships: []
