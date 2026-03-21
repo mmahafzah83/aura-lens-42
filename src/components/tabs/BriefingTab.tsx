@@ -194,6 +194,9 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
           style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
         />
       </div>
+      {/* Daily Intelligence Cards */}
+      <IntelligenceCards />
+
       {/* Hero — Strategic Pulse */}
       <div className="glass-card-elevated rounded-2xl p-8 sm:p-12 relative overflow-hidden">
         <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
