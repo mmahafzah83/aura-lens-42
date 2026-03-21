@@ -23,6 +23,7 @@ export type Database = {
           firm: string | null
           generated_skills: Json
           id: string
+          last_active_at: string | null
           leadership_style: string | null
           level: string | null
           north_star_goal: string | null
@@ -39,6 +40,7 @@ export type Database = {
           firm?: string | null
           generated_skills?: Json
           id?: string
+          last_active_at?: string | null
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
@@ -55,6 +57,7 @@ export type Database = {
           firm?: string | null
           generated_skills?: Json
           id?: string
+          last_active_at?: string | null
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null

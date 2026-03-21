@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -49,6 +50,37 @@ const Dashboard = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const navigate = useNavigate();
+  const checkStrategicNudge = useCallback(async (accessToken: string) => {
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-nudge`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.nudge) {
+        toast(data.nudge.title, {
+          description: data.nudge.body,
+          duration: 12000,
+          action: {
+            label: "Open Aura",
+            onClick: () => {
+              setChatInitialMessage(data.nudge.body);
+              setChatOpen(true);
+            },
+          },
+        });
+      }
+    } catch (e) {
+      console.error("Nudge check failed:", e);
+    }
+  }, []);
+
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -68,9 +100,11 @@ const Dashboard = () => {
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (profile && (profile as any).completed) {
-          setShowOnboarding(true); // returning user: quick splash
+          setShowOnboarding(true);
+          // Check for 48h nudge in background
+          checkStrategicNudge(session.access_token);
         } else {
-          setShowDiagnostic(true); // new user: full diagnostic
+          setShowDiagnostic(true);
         }
       }
     });
