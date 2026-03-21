@@ -1,75 +1,91 @@
 import { useState } from "react";
-import { Zap, ChevronRight, Loader2, Check } from "lucide-react";
+import { Zap, ChevronLeft, ChevronRight, Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EVIDENCE_MATRIX, calculateScore } from "@/components/diagnostic/EvidenceMatrix";
 
 interface DiagnosticAnswer {
   firm: string;
   level: string;
   core_practice: string;
   sector_focus: string;
-  north_star_goal: string;
-  years_experience: string;
+  north_star_goal: string[];
+  total_experience: number;
+  consulting_experience: number;
   leadership_style: string;
   brand_pillars: string;
+  challenges: string[];
 }
 
-interface GeneratedSkill {
-  rank: number;
-  name: string;
-  category: string;
-  description: string;
-  korn_ferry_alignment: string;
+type Phase = "interview" | "generating" | "assessment" | "saving";
+
+interface QuestionDef {
+  key: keyof DiagnosticAnswer;
+  question: string;
+  subtitle: string;
+  options?: string[];
+  allowCustom?: boolean;
+  multiSelect?: boolean;
+  type?: "experience";
 }
 
-const QUESTIONS = [
+const QUESTIONS: QuestionDef[] = [
   {
-    key: "firm" as const,
+    key: "firm",
     question: "What type of firm are you at?",
     subtitle: "This shapes the competency model we'll use.",
     options: ["Big 4 (EY, Deloitte, PwC, KPMG)", "MBB (McKinsey, BCG, Bain)", "Boutique Consultancy", "Corporate / In-house", "Other"],
   },
   {
-    key: "level" as const,
+    key: "level",
     question: "What is your current level?",
     subtitle: "Your seniority defines the leadership competencies that matter most.",
     options: ["Senior Manager", "Director", "Senior Director", "Associate Partner", "Partner / Principal"],
   },
   {
-    key: "core_practice" as const,
+    key: "core_practice",
     question: "What is your core practice area?",
     subtitle: "This determines the technical depth we'll assess.",
     options: ["Strategy & Transactions", "Digital Transformation", "Risk & Compliance", "People & Organization", "Technology Consulting"],
     allowCustom: true,
   },
   {
-    key: "sector_focus" as const,
+    key: "sector_focus",
     question: "What sector do you focus on?",
     subtitle: "Sector expertise shapes your market positioning.",
     options: ["Financial Services", "Energy & Utilities", "Government & Public Sector", "Health & Life Sciences", "TMT (Tech, Media, Telecom)"],
     allowCustom: true,
   },
   {
-    key: "years_experience" as const,
-    question: "How many years in consulting?",
-    subtitle: "Experience level calibrates our expectations.",
-    options: ["5–8 years", "8–12 years", "12–18 years", "18+ years"],
+    key: "total_experience",
+    question: "Your Professional Experience",
+    subtitle: "Enter your total years and consulting-specific years. This calibrates your profile.",
+    type: "experience",
   },
   {
-    key: "leadership_style" as const,
+    key: "leadership_style",
     question: "How would you describe your leadership style?",
     subtitle: "This helps us identify complementary skill gaps.",
     options: ["Analytical / Data-Driven", "Visionary / Strategic", "Collaborative / Empathetic", "Execution-Focused / Operational"],
   },
   {
-    key: "north_star_goal" as const,
-    question: "What is your 24-month North Star goal?",
-    subtitle: "Be specific — this drives everything.",
+    key: "north_star_goal",
+    question: "What are your 24-month North Star goals?",
+    subtitle: "Select all that apply — this creates a hybrid roadmap.",
     options: ["Make Partner / Principal", "Build a $10M+ Practice", "Lead a Major Transformation", "Transition to C-Suite / Industry"],
     allowCustom: true,
+    multiSelect: true,
   },
   {
-    key: "brand_pillars" as const,
+    key: "challenges",
+    question: "What are your biggest challenges right now?",
+    subtitle: "Select all that apply — Aura will prioritize these gaps.",
+    options: ["Building Executive Presence", "Originating New Revenue", "Managing Stakeholder Conflict", "Scaling Team Performance", "Developing Thought Leadership", "Navigating Organizational Politics"],
+    multiSelect: true,
+  },
+  {
+    key: "brand_pillars",
     question: "Define your 3 Brand Pillars",
     subtitle: "The core strategic themes that define your personal brand. Separate with commas.",
     options: ["Digital Transformation, Innovation, Future of Work", "Sustainability, ESG, Responsible Growth", "Data-Driven Strategy, AI, Operational Excellence", "Leadership Development, Culture Change, Talent Strategy"],
@@ -77,104 +93,177 @@ const QUESTIONS = [
   },
 ];
 
-type Phase = "interview" | "generating" | "assessment" | "saving";
-
 const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
   const [phase, setPhase] = useState<Phase>("interview");
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Partial<DiagnosticAnswer>>({});
   const [customInput, setCustomInput] = useState("");
   const [showCustom, setShowCustom] = useState(false);
-  const [skills, setSkills] = useState<GeneratedSkill[]>([]);
+  const [multiSelections, setMultiSelections] = useState<string[]>([]);
+  const [totalExp, setTotalExp] = useState("");
+  const [consultingExp, setConsultingExp] = useState("");
   const [profileSummary, setProfileSummary] = useState("");
-  const [ratings, setRatings] = useState<Record<string, number>>({});
+  // Evidence matrix: skillName -> [q1, q2, q3] booleans
+  const [evidenceChecks, setEvidenceChecks] = useState<Record<string, boolean[]>>(() => {
+    const init: Record<string, boolean[]> = {};
+    EVIDENCE_MATRIX.forEach((s) => { init[s.name] = [false, false, false]; });
+    return init;
+  });
+  const [assessmentSkillIndex, setAssessmentSkillIndex] = useState(0);
   const [exiting, setExiting] = useState(false);
 
   const currentQ = QUESTIONS[questionIndex];
+  const totalSteps = QUESTIONS.length;
+  const progressPct = phase === "interview"
+    ? ((questionIndex + 1) / totalSteps) * 60
+    : phase === "assessment"
+      ? 60 + ((assessmentSkillIndex + 1) / EVIDENCE_MATRIX.length) * 35
+      : phase === "saving" ? 100 : 50;
+
+  const goBack = () => {
+    if (phase === "assessment") {
+      if (assessmentSkillIndex > 0) {
+        setAssessmentSkillIndex((i) => i - 1);
+      } else {
+        setPhase("interview");
+        setQuestionIndex(QUESTIONS.length - 1);
+      }
+      return;
+    }
+    if (questionIndex > 0) {
+      setQuestionIndex((i) => i - 1);
+      setShowCustom(false);
+      setCustomInput("");
+      setMultiSelections([]);
+    }
+  };
 
   const selectOption = (value: string) => {
     const updated = { ...answers, [currentQ.key]: value };
     setAnswers(updated);
     setShowCustom(false);
     setCustomInput("");
+    advance(updated);
+  };
 
+  const confirmMultiSelect = () => {
+    if (multiSelections.length === 0) return;
+    const updated = { ...answers, [currentQ.key]: multiSelections };
+    setAnswers(updated);
+    setMultiSelections([]);
+    advance(updated);
+  };
+
+  const confirmExperience = () => {
+    const t = parseInt(totalExp) || 0;
+    const c = parseInt(consultingExp) || 0;
+    if (t <= 0) return;
+    const updated = {
+      ...answers,
+      total_experience: t,
+      consulting_experience: c,
+    };
+    setAnswers(updated);
+    advance(updated);
+  };
+
+  const advance = (updated: Partial<DiagnosticAnswer>) => {
     if (questionIndex < QUESTIONS.length - 1) {
       setQuestionIndex((i) => i + 1);
     } else {
-      generateProfile(updated as DiagnosticAnswer);
+      startAssessment();
     }
   };
 
   const submitCustom = () => {
-    if (customInput.trim()) {
+    if (!customInput.trim()) return;
+    if (currentQ.multiSelect) {
+      setMultiSelections((prev) => [...prev, customInput.trim()]);
+      setCustomInput("");
+      setShowCustom(false);
+    } else {
       selectOption(customInput.trim());
     }
   };
 
-  const generateProfile = async (data: DiagnosticAnswer) => {
-    setPhase("generating");
-    try {
-      const { data: result, error } = await supabase.functions.invoke("generate-skill-profile", {
-        body: data,
-      });
-      if (error) throw error;
-      const generated = result.skills || [];
-      setSkills(generated);
-      setProfileSummary(result.profile_summary || "");
-      const initialRatings: Record<string, number> = {};
-      generated.forEach((s: GeneratedSkill) => {
-        initialRatings[s.name] = 50;
-      });
-      setRatings(initialRatings);
-      setPhase("assessment");
-    } catch (err) {
-      console.error("Profile generation failed:", err);
-      // Fallback with default skills
-      const fallback: GeneratedSkill[] = [
-        { rank: 1, name: "Strategic Client Advisory", category: "Strategic", description: "Ability to serve as a trusted strategic advisor to C-suite clients", korn_ferry_alignment: "Strategic Mindset" },
-        { rank: 2, name: "Revenue Growth Leadership", category: "Commercial", description: "Driving organic revenue growth through client relationships", korn_ferry_alignment: "Business Insight" },
-        { rank: 3, name: "Executive Presence", category: "Leadership", description: "Commanding respect and influence in senior stakeholder settings", korn_ferry_alignment: "Courage" },
-        { rank: 4, name: "Team Development", category: "Leadership", description: "Building and mentoring high-performing consulting teams", korn_ferry_alignment: "Develops Talent" },
-        { rank: 5, name: "Industry Thought Leadership", category: "Strategic", description: "Establishing authority through published perspectives and keynotes", korn_ferry_alignment: "Cultivates Innovation" },
-        { rank: 6, name: "Complex Program Delivery", category: "Technical", description: "Leading multi-workstream transformations to successful outcomes", korn_ferry_alignment: "Drives Results" },
-        { rank: 7, name: "Stakeholder Management", category: "Relational", description: "Navigating complex political landscapes and building coalitions", korn_ferry_alignment: "Collaborates" },
-        { rank: 8, name: "Market Positioning", category: "Commercial", description: "Differentiating your practice in a competitive market", korn_ferry_alignment: "Financial Acumen" },
-        { rank: 9, name: "Digital Fluency", category: "Technical", description: "Understanding emerging tech trends and their business implications", korn_ferry_alignment: "Tech Savvy" },
-        { rank: 10, name: "Resilience Under Pressure", category: "Leadership", description: "Maintaining composure and decision quality in high-stakes situations", korn_ferry_alignment: "Manages Ambiguity" },
-      ];
-      setSkills(fallback);
-      setProfileSummary("Your executive development path has been mapped using standard consulting competency frameworks.");
-      const initialRatings: Record<string, number> = {};
-      fallback.forEach((s) => { initialRatings[s.name] = 50; });
-      setRatings(initialRatings);
-      setPhase("assessment");
+  const toggleMulti = (opt: string) => {
+    setMultiSelections((prev) =>
+      prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
+    );
+  };
+
+  const startAssessment = () => {
+    setPhase("assessment");
+    setAssessmentSkillIndex(0);
+  };
+
+  const toggleEvidence = (skillName: string, qIndex: number) => {
+    setEvidenceChecks((prev) => {
+      const arr = [...(prev[skillName] || [false, false, false])];
+      arr[qIndex] = !arr[qIndex];
+      return { ...prev, [skillName]: arr };
+    });
+  };
+
+  const nextSkill = () => {
+    if (assessmentSkillIndex < EVIDENCE_MATRIX.length - 1) {
+      setAssessmentSkillIndex((i) => i + 1);
     }
+  };
+
+  const isLastSkill = assessmentSkillIndex === EVIDENCE_MATRIX.length - 1;
+
+  const computeRatings = (): Record<string, number> => {
+    const r: Record<string, number> = {};
+    EVIDENCE_MATRIX.forEach((s) => {
+      r[s.name] = calculateScore(evidenceChecks[s.name] || [false, false, false]);
+    });
+    return r;
   };
 
   const saveAndComplete = async () => {
     setPhase("saving");
+    const ratings = computeRatings();
+    const skills = EVIDENCE_MATRIX.map((s) => ({
+      rank: s.rank,
+      name: s.name,
+      category: s.category,
+      description: `${s.tier}-tier competency`,
+      korn_ferry_alignment: s.category,
+    }));
+
+    // Determine Industry Expert Pivot tag
+    const totalYears = (answers.total_experience as number) || 0;
+    const consultYears = (answers.consulting_experience as number) || 0;
+    const isIndustryPivot = totalYears > 15 && consultYears < 10;
+    const yearsLabel = isIndustryPivot
+      ? `${totalYears}y total / ${consultYears}y consulting (Industry Expert Pivot)`
+      : `${totalYears}y total / ${consultYears}y consulting`;
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const brandPillarsArr = (answers.brand_pillars || "").split(",").map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
+      const brandPillarsArr = (typeof answers.brand_pillars === "string" ? answers.brand_pillars : "")
+        .split(",").map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
+
+      const northStarArr = Array.isArray(answers.north_star_goal) ? answers.north_star_goal : [answers.north_star_goal].filter(Boolean);
 
       await supabase.from("diagnostic_profiles").upsert({
         user_id: session.user.id,
-        firm: answers.firm || null,
-        level: answers.level || null,
-        core_practice: answers.core_practice || null,
-        sector_focus: answers.sector_focus || null,
-        north_star_goal: answers.north_star_goal || null,
-        years_experience: answers.years_experience || null,
-        leadership_style: answers.leadership_style || null,
+        firm: (answers.firm as string) || null,
+        level: (answers.level as string) || null,
+        core_practice: (answers.core_practice as string) || null,
+        sector_focus: (answers.sector_focus as string) || null,
+        north_star_goal: northStarArr.join(" | "),
+        years_experience: yearsLabel,
+        leadership_style: (answers.leadership_style as string) || null,
         generated_skills: skills,
         skill_ratings: ratings,
         brand_pillars: brandPillarsArr,
         completed: true,
       } as any, { onConflict: "user_id" });
 
-      // Also populate skill_targets from top 5 skills
       const topSkills = skills.slice(0, 5);
       for (const skill of topSkills) {
         await supabase.from("skill_targets").upsert({
@@ -197,10 +286,17 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
       Commercial: "text-emerald-400",
       Leadership: "text-blue-400",
       Technical: "text-purple-400",
-      Relational: "text-rose-400",
     };
     return map[cat] || "text-muted-foreground";
   };
+
+  const levelBadge = (level: string) => {
+    if (level === "Base") return "bg-emerald-500/20 text-emerald-400";
+    if (level === "Intermediate") return "bg-amber-500/20 text-amber-400";
+    return "bg-rose-500/20 text-rose-400";
+  };
+
+  const currentSkill = EVIDENCE_MATRIX[assessmentSkillIndex];
 
   return (
     <div
@@ -212,83 +308,176 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
         <div className="onboarding-mesh absolute inset-0" />
       </div>
 
+      {/* Global Progress Bar */}
+      <div className="relative z-20 px-4 pt-2" style={{ paddingTop: "calc(8px + env(safe-area-inset-top))" }}>
+        <Progress value={progressPct} className="h-1.5 bg-muted/20" />
+      </div>
+
       {/* Interview Phase */}
       {phase === "interview" && (
-        <div className="flex-1 flex flex-col relative z-10 safe-area-container" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-          {/* Progress bar */}
-          <div className="px-6 pt-6 pb-2">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
-                <Zap className="w-3.5 h-3.5 text-primary" />
+        <div className="flex-1 flex flex-col relative z-10 overflow-y-auto">
+          <div className="px-5 pt-4 pb-2">
+            <div className="flex items-center gap-3 mb-3">
+              {questionIndex > 0 && (
+                <button onClick={goBack} className="w-9 h-9 rounded-xl bg-muted/10 flex items-center justify-center border border-border/10 tactile-press">
+                  <ChevronLeft className="w-5 h-5 text-foreground/60" />
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
+                  <Zap className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-xs text-muted-foreground/50 tracking-[0.2em] uppercase">Executive Diagnostic</span>
               </div>
-              <span className="text-[10px] text-muted-foreground/50 tracking-[0.3em] uppercase">Executive Diagnostic</span>
             </div>
-            <div className="flex gap-1.5">
-              {QUESTIONS.map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1 flex-1 rounded-full transition-all duration-500 ${
-                    i < questionIndex ? "bg-primary" : i === questionIndex ? "bg-primary/60" : "bg-muted/20"
-                  }`}
-                />
-              ))}
-            </div>
-            <p className="text-[10px] text-muted-foreground/40 mt-2 tracking-wide">
-              {questionIndex + 1} of {QUESTIONS.length}
+            <p className="text-xs text-muted-foreground/40 tracking-wide">
+              {questionIndex + 1} of {totalSteps}
             </p>
           </div>
 
-          {/* Question */}
-          <div className="flex-1 flex flex-col justify-center px-6 pb-8 animate-onboard-slide-up" key={questionIndex}>
+          <div className="flex-1 px-5 pb-8 animate-onboard-slide-up" key={questionIndex}>
             <h2
-              className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-2"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif", lineHeight: 1.2 }}
+              className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-2 leading-tight"
+              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
             >
               {currentQ.question}
             </h2>
-            <p className="text-sm text-muted-foreground/50 mb-8">{currentQ.subtitle}</p>
+            <p className="text-base text-muted-foreground/50 mb-6">{currentQ.subtitle}</p>
 
-            <div className="space-y-3">
-              {currentQ.options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => selectOption(opt)}
-                  className="w-full text-left px-5 py-4 rounded-xl glass-card border border-border/10 text-sm text-foreground/80 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 tactile-press flex items-center justify-between group"
-                >
-                  <span>{opt}</span>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
-                </button>
-              ))}
-
-              {currentQ.allowCustom && !showCustom && (
-                <button
-                  onClick={() => setShowCustom(true)}
-                  className="w-full text-left px-5 py-4 rounded-xl border border-dashed border-border/20 text-sm text-muted-foreground/50 hover:text-foreground/70 hover:border-primary/20 transition-all duration-200"
-                >
-                  + Type my own answer
-                </button>
-              )}
-
-              {showCustom && (
-                <div className="flex gap-2">
+            {/* Experience Input */}
+            {currentQ.type === "experience" && (
+              <div className="space-y-5">
+                <div>
+                  <label className="text-sm font-medium text-foreground/70 mb-2 block">Total Professional Experience (years)</label>
                   <input
-                    autoFocus
-                    value={customInput}
-                    onChange={(e) => setCustomInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && submitCustom()}
-                    placeholder="Type your answer..."
-                    className="flex-1 px-5 py-4 rounded-xl bg-muted/10 border border-border/20 text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={totalExp}
+                    onChange={(e) => setTotalExp(e.target.value)}
+                    placeholder="e.g. 18"
+                    className="w-full px-5 py-4 rounded-xl bg-muted/10 border border-border/20 text-lg text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
                   />
-                  <button
-                    onClick={submitCustom}
-                    disabled={!customInput.trim()}
-                    className="px-5 py-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-30 tactile-press"
-                  >
-                    Next
-                  </button>
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground/70 mb-2 block">Consulting-Specific Experience (years)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={consultingExp}
+                    onChange={(e) => setConsultingExp(e.target.value)}
+                    placeholder="e.g. 12"
+                    className="w-full px-5 py-4 rounded-xl bg-muted/10 border border-border/20 text-lg text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
+                  />
+                </div>
+                {parseInt(totalExp) > 15 && parseInt(consultingExp) < 10 && (
+                  <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <p className="text-sm text-amber-400 font-medium">🏷️ Industry Expert Pivot detected</p>
+                    <p className="text-xs text-amber-400/60 mt-1">Your deep industry experience will shape a unique consulting trajectory.</p>
+                  </div>
+                )}
+                <button
+                  onClick={confirmExperience}
+                  disabled={!totalExp || parseInt(totalExp) <= 0}
+                  className="w-full px-6 py-4 rounded-xl bg-primary text-primary-foreground text-base font-medium disabled:opacity-30 tactile-press flex items-center justify-center gap-2"
+                >
+                  Continue <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Multi-Select */}
+            {currentQ.multiSelect && currentQ.options && (
+              <div className="space-y-3">
+                {currentQ.options.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => toggleMulti(opt)}
+                    className={`w-full text-left px-5 py-4 rounded-xl border text-base transition-all duration-200 tactile-press flex items-center gap-3 ${
+                      multiSelections.includes(opt)
+                        ? "border-primary/40 bg-primary/10 text-foreground"
+                        : "border-border/10 glass-card text-foreground/80 hover:border-primary/20"
+                    }`}
+                  >
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                      multiSelections.includes(opt) ? "border-primary bg-primary" : "border-muted-foreground/30"
+                    }`}>
+                      {multiSelections.includes(opt) && <Check className="w-3 h-3 text-primary-foreground" />}
+                    </div>
+                    <span>{opt}</span>
+                  </button>
+                ))}
+
+                {currentQ.allowCustom && !showCustom && (
+                  <button
+                    onClick={() => setShowCustom(true)}
+                    className="w-full text-left px-5 py-4 rounded-xl border border-dashed border-border/20 text-base text-muted-foreground/50 hover:text-foreground/70 hover:border-primary/20 transition-all"
+                  >
+                    + Type my own
+                  </button>
+                )}
+                {showCustom && (
+                  <div className="flex gap-2">
+                    <input
+                      autoFocus
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submitCustom()}
+                      placeholder="Type your answer..."
+                      className="flex-1 px-5 py-4 rounded-xl bg-muted/10 border border-border/20 text-base text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
+                    />
+                    <button onClick={submitCustom} disabled={!customInput.trim()} className="px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-medium disabled:opacity-30 tactile-press">Add</button>
+                  </div>
+                )}
+
+                <button
+                  onClick={confirmMultiSelect}
+                  disabled={multiSelections.length === 0}
+                  className="w-full mt-4 px-6 py-4 rounded-xl bg-primary text-primary-foreground text-base font-medium disabled:opacity-30 tactile-press flex items-center justify-center gap-2"
+                >
+                  Continue ({multiSelections.length} selected) <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Single Select */}
+            {!currentQ.multiSelect && !currentQ.type && currentQ.options && (
+              <div className="space-y-3">
+                {currentQ.options.map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => selectOption(opt)}
+                    className="w-full text-left px-5 py-4 rounded-xl glass-card border border-border/10 text-base text-foreground/80 hover:border-primary/30 hover:bg-primary/5 transition-all duration-200 tactile-press flex items-center justify-between group"
+                  >
+                    <span>{opt}</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors" />
+                  </button>
+                ))}
+
+                {currentQ.allowCustom && !showCustom && (
+                  <button
+                    onClick={() => setShowCustom(true)}
+                    className="w-full text-left px-5 py-4 rounded-xl border border-dashed border-border/20 text-base text-muted-foreground/50 hover:text-foreground/70 hover:border-primary/20 transition-all"
+                  >
+                    + Type my own answer
+                  </button>
+                )}
+                {showCustom && (
+                  <div className="flex gap-2">
+                    <input
+                      autoFocus
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submitCustom()}
+                      placeholder="Type your answer..."
+                      className="flex-1 px-5 py-4 rounded-xl bg-muted/10 border border-border/20 text-base text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30"
+                    />
+                    <button onClick={submitCustom} disabled={!customInput.trim()} className="px-5 py-4 rounded-xl bg-primary text-primary-foreground text-base font-medium disabled:opacity-30 tactile-press">Next</button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -299,86 +488,120 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/15 mb-8 onboarding-logo-pulse">
             <Zap className="w-8 h-8 text-primary" />
           </div>
-          <h2
-            className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-3 text-center"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          >
+          <h2 className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-3 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Architecting Your Profile
           </h2>
-          <p className="text-sm text-muted-foreground/50 text-center max-w-xs mb-8">
+          <p className="text-base text-muted-foreground/50 text-center max-w-xs mb-8">
             Analyzing your trajectory against MBB and Korn Ferry leadership frameworks...
           </p>
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       )}
 
-      {/* Assessment Phase */}
-      {phase === "assessment" && (
-        <div className="flex-1 flex flex-col relative z-10 safe-area-container" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-          <div className="px-6 pt-6 pb-4">
+      {/* Assessment Phase — Evidence Matrix, one skill at a time */}
+      {phase === "assessment" && currentSkill && (
+        <div className="flex-1 flex flex-col relative z-10 overflow-y-auto">
+          <div className="px-5 pt-4 pb-3">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
-                <Zap className="w-3.5 h-3.5 text-primary" />
+              <button onClick={goBack} className="w-9 h-9 rounded-xl bg-muted/10 flex items-center justify-center border border-border/10 tactile-press">
+                <ChevronLeft className="w-5 h-5 text-foreground/60" />
+              </button>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
+                  <Zap className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <span className="text-xs text-muted-foreground/50 tracking-[0.2em] uppercase">Evidence Matrix</span>
               </div>
-              <span className="text-[10px] text-muted-foreground/50 tracking-[0.3em] uppercase">Micro-Assessment</span>
             </div>
-            <h2
-              className="text-xl sm:text-2xl text-foreground/90 tracking-tight mb-1"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-            >
-              Rate Your Current Proficiency
-            </h2>
-            <p className="text-xs text-muted-foreground/50">
-              Slide each skill to your honest self-assessment. This creates your Skill Radar baseline.
+            <p className="text-xs text-muted-foreground/40">
+              Skill {assessmentSkillIndex + 1} of {EVIDENCE_MATRIX.length}
             </p>
-            {profileSummary && (
-              <p className="text-xs text-primary/60 mt-2 italic">{profileSummary}</p>
-            )}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 pb-32">
-            <div className="space-y-5">
-              {skills.map((skill, i) => (
-                <div key={skill.name} className="glass-card rounded-xl p-4 border border-border/10">
-                  <div className="flex items-start justify-between mb-1">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[10px] font-bold text-muted-foreground/40">#{skill.rank}</span>
-                        <span className={`text-[9px] tracking-widest uppercase ${categoryColor(skill.category)}`}>
-                          {skill.category}
-                        </span>
+          <div className="flex-1 px-5 pb-32 animate-onboard-slide-up" key={currentSkill.name}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-muted-foreground/40">#{currentSkill.rank}</span>
+              <span className={`text-xs tracking-widest uppercase ${categoryColor(currentSkill.category)}`}>
+                {currentSkill.category}
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-muted/20 text-muted-foreground/50">{currentSkill.tier}</span>
+            </div>
+
+            <h2
+              className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-2 leading-tight"
+              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            >
+              {currentSkill.name}
+            </h2>
+            <p className="text-base text-muted-foreground/50 mb-6">
+              Answer honestly — your score is calculated from evidence, not self-perception.
+            </p>
+
+            {/* Score display */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="text-3xl font-bold text-primary tabular-nums">
+                {calculateScore(evidenceChecks[currentSkill.name] || [false, false, false])}%
+              </div>
+              <div className="flex-1">
+                <Progress
+                  value={calculateScore(evidenceChecks[currentSkill.name] || [false, false, false])}
+                  className="h-2.5 bg-muted/20"
+                />
+              </div>
+            </div>
+
+            {/* 3 evidence questions */}
+            <div className="space-y-4">
+              {currentSkill.questions.map((eq, qi) => {
+                const checked = (evidenceChecks[currentSkill.name] || [false, false, false])[qi];
+                return (
+                  <button
+                    key={qi}
+                    onClick={() => toggleEvidence(currentSkill.name, qi)}
+                    className={`w-full text-left px-5 py-4 rounded-xl border transition-all duration-200 tactile-press ${
+                      checked
+                        ? "border-primary/40 bg-primary/10"
+                        : "border-border/10 glass-card hover:border-primary/20"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                        checked ? "border-primary bg-primary" : "border-muted-foreground/30"
+                      }`}>
+                        {checked && <Check className="w-3 h-3 text-primary-foreground" />}
                       </div>
-                      <h3 className="text-sm font-semibold text-foreground/90">{skill.name}</h3>
-                      <p className="text-[11px] text-muted-foreground/40 mt-0.5 leading-relaxed">{skill.description}</p>
+                      <div className="flex-1">
+                        <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2 ${levelBadge(eq.level)}`}>
+                          {eq.level}
+                        </span>
+                        <p className="text-base text-foreground/80 leading-relaxed">{eq.question}</p>
+                      </div>
                     </div>
-                    <span className="text-lg font-bold text-primary ml-3 tabular-nums min-w-[3ch] text-right">
-                      {ratings[skill.name] || 50}%
-                    </span>
-                  </div>
-                  <Slider
-                    value={[ratings[skill.name] || 50]}
-                    onValueChange={([v]) => setRatings((r) => ({ ...r, [skill.name]: v }))}
-                    max={100}
-                    min={1}
-                    step={1}
-                    className="mt-3"
-                  />
-                </div>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Fixed bottom CTA */}
           <div
-            className="fixed bottom-0 left-0 right-0 z-[101] px-6 pb-6 pt-4"
-            style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom))", background: "linear-gradient(to top, hsl(var(--background)) 70%, transparent)" }}
+            className="fixed bottom-0 left-0 right-0 z-[101] px-5 pb-5 pt-4"
+            style={{ paddingBottom: "calc(20px + env(safe-area-inset-bottom))", background: "linear-gradient(to top, hsl(var(--background)) 70%, transparent)" }}
           >
             <button
-              onClick={saveAndComplete}
-              className="w-full px-8 py-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium tracking-wide tactile-press hover-lift transition-all border border-primary/30 aura-glow flex items-center justify-center gap-2"
+              onClick={isLastSkill ? saveAndComplete : nextSkill}
+              className="w-full px-8 py-4 rounded-xl bg-primary text-primary-foreground text-base font-medium tracking-wide tactile-press hover-lift transition-all border border-primary/30 aura-glow flex items-center justify-center gap-2"
             >
-              <Check className="w-4 h-4" />
-              Lock In My Baseline
+              {isLastSkill ? (
+                <>
+                  <Check className="w-4 h-4" />
+                  Lock In My Baseline
+                </>
+              ) : (
+                <>
+                  Next Skill <ChevronRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -390,13 +613,10 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/15 mb-8">
             <Check className="w-8 h-8 text-primary" />
           </div>
-          <h2
-            className="text-2xl text-foreground/90 tracking-tight text-center"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          >
+          <h2 className="text-2xl text-foreground/90 tracking-tight text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
             Your Aura is Set
           </h2>
-          <p className="text-sm text-muted-foreground/50 text-center mt-2">Entering your command center...</p>
+          <p className="text-base text-muted-foreground/50 text-center mt-2">Entering your command center...</p>
         </div>
       )}
     </div>
