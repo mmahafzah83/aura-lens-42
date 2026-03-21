@@ -157,6 +157,8 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const brandPillarsArr = (answers.brand_pillars || "").split(",").map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
+
       await supabase.from("diagnostic_profiles").upsert({
         user_id: session.user.id,
         firm: answers.firm || null,
@@ -168,6 +170,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
         leadership_style: answers.leadership_style || null,
         generated_skills: skills,
         skill_ratings: ratings,
+        brand_pillars: brandPillarsArr,
         completed: true,
       } as any, { onConflict: "user_id" });
 
