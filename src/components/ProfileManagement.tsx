@@ -260,6 +260,25 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
+
+          {/* Reset Assessment */}
+          {onResetDiagnostic && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                await (supabase.from("diagnostic_profiles" as any) as any)
+                  .update({ completed: false, skill_ratings: {}, generated_skills: [] })
+                  .eq("user_id", user.id);
+                onResetDiagnostic();
+              }}
+              className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reset Assessment & Re-Diagnose
+            </Button>
+          )}
         </div>
       )}
     </div>
