@@ -3,6 +3,7 @@ import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, Messag
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
+import IntelligenceCards from "@/components/IntelligenceCards";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
