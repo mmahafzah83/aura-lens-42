@@ -210,32 +210,38 @@ const Dashboard = () => {
             )}
 
             {activeTab === "pursuits" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring relative pb-20">
                 <div className="space-y-8">
                   <div className="glass-card rounded-2xl p-6 sm:p-10">
                     <AccountIntelligence entries={entries} />
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 glass-card rounded-2xl p-6 sm:p-10">
-                      <RecentEntries entries={entries} onRefresh={fetchEntries} />
-                    </div>
-                    <div className="space-y-8">
-                      <div
-                        className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
-                        onClick={() => setCaptureOpen(true)}
-                      >
-                        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 aura-glow border border-primary/20">
-                          <Plus className="w-7 h-7 text-primary" />
-                        </div>
-                        <h2 className="text-lg font-semibold text-foreground mb-1.5">Capture</h2>
-                        <p className="text-xs text-muted-foreground tracking-wide">Text, voice, link, or image</p>
-                      </div>
-                      <div className="glass-card rounded-2xl p-6 sm:p-8">
-                        <h3 className="text-sm font-semibold text-foreground mb-4 tracking-widest uppercase">Upload Document</h3>
+                  <div className="glass-card rounded-2xl p-6 sm:p-10">
+                    <RecentEntries entries={entries} onRefresh={fetchEntries} />
+                  </div>
+                  {/* Minimized Upload */}
+                  <div className="glass-card rounded-2xl p-4 sm:p-5">
+                    <details className="group">
+                      <summary className="flex items-center justify-between cursor-pointer list-none">
+                        <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Upload Document</span>
+                        <span className="text-[10px] text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="mt-3">
                         <DocumentUpload onUploaded={fetchEntries} />
                       </div>
-                    </div>
+                    </details>
                   </div>
+                </div>
+                {/* Sticky Quick Capture Bar */}
+                <div className="fixed left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-6xl md:mx-auto z-[999]" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+                  <button
+                    onClick={() => setCaptureOpen(true)}
+                    className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl glass-card border border-primary/20 hover-lift tactile-press transition-all"
+                  >
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 aura-glow">
+                      <Plus className="w-5 h-5 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">Quick Capture — text, voice, link, or image</span>
+                  </button>
                 </div>
               </div>
             )}
