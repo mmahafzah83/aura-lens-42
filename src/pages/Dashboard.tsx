@@ -19,6 +19,9 @@ import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
 import MarketTab from "@/components/tabs/MarketTab";
+import YearlyRoadmap from "@/components/YearlyRoadmap";
+import KPIProgressRings from "@/components/KPIProgressRings";
+import ProfileManagement from "@/components/ProfileManagement";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -213,27 +216,41 @@ const Dashboard = () => {
 
             {activeTab === "growth" && (
               <div className="animate-tab-spring">
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow">
+                <div className="space-y-6">
+                  {/* KPI Progress Rings */}
+                  <KPIProgressRings />
+
+                  {/* Skill Radar + Log Training */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
                       <SkillRadar key={radarKey} />
                     </div>
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                       <div
-                        className="glass-card rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
+                        className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
                         onClick={() => setTrainingOpen(true)}
                       >
-                        <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-5 group-hover:scale-105 transition-transform duration-300 border border-border/20">
-                          <TrendingUp className="w-7 h-7 text-primary" />
+                        <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300 border border-border/20">
+                          <TrendingUp className="w-6 h-6 text-primary" />
                         </div>
-                        <h2 className="text-lg font-semibold text-foreground mb-1.5">Log Training</h2>
+                        <h2 className="text-base font-semibold text-foreground mb-1">Log Training</h2>
                         <p className="text-xs text-muted-foreground tracking-wide">Track your growth hours</p>
                       </div>
                       <WeeklyTransformationLens entries={entries} />
                     </div>
                   </div>
+
+                  {/* 12-Month Roadmap */}
+                  <YearlyRoadmap />
+
+                  {/* Reading List */}
                   <SovereignReadingList />
+
+                  {/* Frameworks */}
                   <MyFrameworks />
+
+                  {/* Profile Management */}
+                  <ProfileManagement />
                 </div>
               </div>
             )}
