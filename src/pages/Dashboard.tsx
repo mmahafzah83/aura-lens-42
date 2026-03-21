@@ -97,6 +97,10 @@ const Dashboard = () => {
     setShowOnboarding(false);
   };
 
+  const handleDiagnosticComplete = () => {
+    setShowDiagnostic(false);
+  };
+
   return (
     <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative safe-area-container">
       {/* Animated gradient mesh background */}
