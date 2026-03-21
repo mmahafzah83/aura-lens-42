@@ -69,9 +69,11 @@ const Dashboard = () => {
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (profile && (profile as any).completed) {
-          setShowOnboarding(true); // returning user: quick splash
+          setShowOnboarding(true);
+          // Check for 48h nudge in background
+          checkStrategicNudge(session.access_token);
         } else {
-          setShowDiagnostic(true); // new user: full diagnostic
+          setShowDiagnostic(true);
         }
       }
     });
