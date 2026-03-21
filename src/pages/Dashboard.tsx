@@ -19,6 +19,9 @@ import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
 import MarketTab from "@/components/tabs/MarketTab";
+import YearlyRoadmap from "@/components/YearlyRoadmap";
+import KPIProgressRings from "@/components/KPIProgressRings";
+import ProfileManagement from "@/components/ProfileManagement";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
