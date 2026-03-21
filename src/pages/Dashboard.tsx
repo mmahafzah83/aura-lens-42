@@ -22,6 +22,7 @@ import MarketTab from "@/components/tabs/MarketTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import ProfileManagement from "@/components/ProfileManagement";
+import NotificationBell from "@/components/NotificationBell";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -127,7 +128,7 @@ const Dashboard = () => {
               </div>
               <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => setChatOpen(true)}
                 className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
@@ -135,6 +136,7 @@ const Dashboard = () => {
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Ask Aura</span>
               </button>
+              <NotificationBell />
               <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
               <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title="Log out">
                 <LogOut className="w-4 h-4" />
