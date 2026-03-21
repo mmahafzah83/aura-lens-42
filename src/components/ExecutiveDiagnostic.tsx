@@ -68,6 +68,13 @@ const QUESTIONS = [
     options: ["Make Partner / Principal", "Build a $10M+ Practice", "Lead a Major Transformation", "Transition to C-Suite / Industry"],
     allowCustom: true,
   },
+  {
+    key: "brand_pillars" as const,
+    question: "Define your 3 Brand Pillars",
+    subtitle: "The core strategic themes that define your personal brand. Separate with commas.",
+    options: ["Digital Transformation, Innovation, Future of Work", "Sustainability, ESG, Responsible Growth", "Data-Driven Strategy, AI, Operational Excellence", "Leadership Development, Culture Change, Talent Strategy"],
+    allowCustom: true,
+  },
 ];
 
 type Phase = "interview" | "generating" | "assessment" | "saving";
