@@ -197,18 +197,15 @@ const Dashboard = () => {
 
           {/* Tab Content */}
           <div className="tab-content-spring">
-            {activeTab === "briefing" && (
+            {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
                 <BriefingTab entries={entries} onRefresh={fetchEntries} onOpenChat={(msg) => {
                   setChatInitialMessage(msg);
                   setChatOpen(true);
                 }} />
-              </div>
-            )}
-
-            {activeTab === "market" && (
-              <div className="animate-tab-spring">
-                <MarketTab />
+                <div className="mt-8">
+                  <MarketTab />
+                </div>
               </div>
             )}
 

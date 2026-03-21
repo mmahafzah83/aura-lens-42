@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Flag, Star, CheckCircle2, Circle, Plus, Trash2 } from "lucide-react";
+import { Flag, Star, CheckCircle2, Circle, Plus, Trash2, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,6 +23,9 @@ const YearlyRoadmap = () => {
   const { toast } = useToast();
 
   const currentMonth = new Date().getMonth();
+  const now = new Date();
+  const endOfYear = new Date(now.getFullYear(), 11, 31);
+  const daysToGoal = Math.max(0, Math.ceil((endOfYear.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
   useEffect(() => {
     const load = async () => {
@@ -36,17 +39,10 @@ const YearlyRoadmap = () => {
 
       if (profile?.north_star_goal) setNorthStar(profile.north_star_goal);
 
-      // Load milestones from skill_targets as a lightweight store
-      const { data: targets } = await (supabase.from("skill_targets" as any) as any)
-        .select("pillar, target_hours")
-        .eq("user_id", user.id);
-
-      // Use training_logs count per pillar to mark milestones
       const { data: logs } = await (supabase.from("training_logs" as any) as any)
         .select("created_at, pillar")
         .eq("user_id", user.id);
 
-      // Generate synthetic milestones based on quarterly goals
       const quarters: Milestone[] = [
         { month: 2, label: "Q1: Foundation & Self-Assessment", done: currentMonth >= 2 },
         { month: 5, label: "Q2: Skill Acceleration", done: currentMonth >= 5 },
@@ -54,7 +50,6 @@ const YearlyRoadmap = () => {
         { month: 11, label: "Q4: North Star Sprint", done: currentMonth >= 11 },
       ];
 
-      // Add data-driven milestones
       const entryCount = (logs || []).length;
       if (entryCount >= 5) {
         quarters.push({ month: Math.min(currentMonth, 11), label: `${entryCount} training sessions logged`, done: true });
@@ -97,18 +92,26 @@ const YearlyRoadmap = () => {
             )}
           </div>
         </div>
-        <button onClick={() => setEditOpen(true)} className="text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card tactile-press">
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Days to Goal counter */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <CalendarClock className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-bold text-primary">{daysToGoal}</span>
+            <span className="text-[10px] text-muted-foreground">days left</span>
+          </div>
+          <button onClick={() => setEditOpen(true)} className="text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card tactile-press">
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Horizontal Timeline */}
       <div className="relative overflow-x-auto pb-4 -mx-2 px-2">
         <div className="flex items-center min-w-[600px] relative">
-          {/* Track line */}
-          <div className="absolute top-4 left-4 right-4 h-px bg-border/40" />
+          {/* Track line — thicker */}
+          <div className="absolute top-4 left-4 right-4 h-[3px] rounded-full bg-border/30" />
           <div
-            className="absolute top-4 left-4 h-px bg-primary/60 transition-all duration-700"
+            className="absolute top-4 left-4 h-[3px] rounded-full bg-primary/70 transition-all duration-700"
             style={{ width: `${((currentMonth + 1) / 12) * 100}%` }}
           />
 
@@ -119,7 +122,7 @@ const YearlyRoadmap = () => {
 
             return (
               <div key={idx} className="flex-1 flex flex-col items-center relative" style={{ minWidth: 50 }}>
-                {/* Dot */}
+                {/* Dot with current month glow */}
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center z-10 transition-all duration-300 ${
                   milestone
                     ? milestone.done
@@ -130,7 +133,7 @@ const YearlyRoadmap = () => {
                       : isPast
                         ? "bg-secondary/80 text-muted-foreground"
                         : "bg-secondary/40 text-muted-foreground/40"
-                }`}>
+                }`} style={isCurrent ? { boxShadow: '0 0 12px 3px hsl(43 72% 52% / 0.4)' } : undefined}>
                   {milestone ? (
                     milestone.done ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />
                   ) : (
@@ -140,7 +143,7 @@ const YearlyRoadmap = () => {
 
                 {/* Month Label */}
                 <span className={`text-[9px] mt-1.5 font-medium tracking-wider ${
-                  isCurrent ? "text-primary" : isPast ? "text-muted-foreground" : "text-muted-foreground/40"
+                  isCurrent ? "text-primary font-bold" : isPast ? "text-muted-foreground" : "text-muted-foreground/40"
                 }`}>
                   {label}
                 </span>
