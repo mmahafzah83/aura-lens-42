@@ -224,6 +224,7 @@ const Dashboard = () => {
                       <WeeklyTransformationLens entries={entries} />
                     </div>
                   </div>
+                  <SovereignReadingList />
                   <MyFrameworks />
                 </div>
               </div>
