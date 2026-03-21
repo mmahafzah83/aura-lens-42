@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, RotateCcw, ShieldCheck, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -12,7 +12,11 @@ interface Skill {
   description?: string;
 }
 
-const ProfileManagement = () => {
+interface ProfileManagementProps {
+  onResetDiagnostic?: () => void;
+}
+
+const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [firm, setFirm] = useState("");
@@ -256,6 +260,25 @@ const ProfileManagement = () => {
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
+
+          {/* Reset Assessment */}
+          {onResetDiagnostic && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+                await (supabase.from("diagnostic_profiles" as any) as any)
+                  .update({ completed: false, skill_ratings: {}, generated_skills: [] })
+                  .eq("user_id", user.id);
+                onResetDiagnostic();
+              }}
+              className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Reset Assessment & Re-Diagnose
+            </Button>
+          )}
         </div>
       )}
     </div>

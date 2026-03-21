@@ -288,7 +288,7 @@ const Dashboard = () => {
                   <MyFrameworks />
 
                   {/* Profile Management */}
-                  <ProfileManagement />
+                  <ProfileManagement onResetDiagnostic={() => setShowDiagnostic(true)} />
                 </div>
               </div>
             )}
