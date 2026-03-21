@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, RotateCcw, ShieldCheck, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
