@@ -51,11 +51,42 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const lastUserMessage = messages[messages.length - 1]?.content || "";
 
-    // --- RAG: Hybrid search (keyword + semantic) across entries + document chunks ---
+    // --- Fetch diagnostic profile for Memory Handshake ---
+    const { data: profile } = await supabase
+      .from("diagnostic_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("completed", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // --- Fetch skill radar data ---
+    const { data: skillTargets } = await supabase
+      .from("skill_targets")
+      .select("pillar, target_hours")
+      .eq("user_id", user.id);
+
+    // --- Fetch learned intelligence summary ---
+    const { data: learnedIntel } = await supabase
+      .from("learned_intelligence")
+      .select("title, intelligence_type, skill_pillars, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    // --- Fetch master frameworks ---
+    const { data: frameworks } = await supabase
+      .from("master_frameworks")
+      .select("title, summary, tags, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    // --- RAG: Hybrid search ---
     let ragContext = "";
     let ragResults: any[] = [];
 
-    // Generate query embedding for semantic search
     let queryEmbedding: number[] | null = null;
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY) {
@@ -97,7 +128,6 @@ serve(async (req) => {
       console.error("search_vault error:", e);
     }
 
-    // Also fetch recent entries for fallback context
     const { data: recentEntries } = await supabase
       .from("entries")
       .select("*")
@@ -107,7 +137,6 @@ serve(async (req) => {
 
     const allEntries = recentEntries || [];
 
-    // Fetch user's documents list
     const { data: documents } = await supabase
       .from("documents")
       .select("id, filename, file_type, summary, status, created_at")
@@ -116,7 +145,6 @@ serve(async (req) => {
       .order("created_at", { ascending: false })
       .limit(20);
 
-    // Build RAG context from search results
     if (ragResults.length > 0) {
       ragContext = ragResults.map((r: any, i: number) => {
         const parts = [`[${i + 1}] Source: ${r.source} | Type: ${r.type} | Date: ${r.created_at?.slice(0, 10)}`];
@@ -129,7 +157,6 @@ serve(async (req) => {
       }).join("\n\n---\n\n");
     }
 
-    // Fallback: if no RAG results, use recent entries
     if (!ragContext) {
       ragContext = allEntries.slice(0, 15).map((e: any, i: number) => {
         const parts = [`[${i + 1}] Type: ${e.type} | Pillar: ${e.skill_pillar || "N/A"} | Date: ${e.created_at?.slice(0, 10)}`];
@@ -156,138 +183,195 @@ serve(async (req) => {
       ? `\n\nUPLOADED DOCUMENTS (${documents.length}):\n${documents.map((d: any) => `- ${d.filename} (${d.file_type}) — ${d.summary || "No summary"}`).join("\n")}`
       : "";
 
+    // --- Build Memory Handshake context ---
+    let memoryContext = "";
+    if (profile) {
+      const exp = profile.years_experience || "unknown";
+      const firm = profile.firm || "Big 4";
+      const level = profile.level || "Director";
+      const sector = profile.sector_focus || "their sector";
+      const practice = profile.core_practice || "Transformation";
+      const northStar = profile.north_star_goal || "Partner";
+      memoryContext += `\nDIRECTOR PROFILE: ${level} at ${firm} | ${exp} years experience | Practice: ${practice} | Sector: ${sector} | North Star: ${northStar}`;
+      if (profile.brand_pillars && profile.brand_pillars.length > 0) {
+        memoryContext += ` | Brand Pillars: ${profile.brand_pillars.join(", ")}`;
+      }
+      const ratings = profile.skill_ratings as Record<string, number>;
+      if (ratings && typeof ratings === 'object') {
+        const sorted = Object.entries(ratings).sort(([,a],[,b]) => (a as number) - (b as number));
+        const weakest = sorted.slice(0, 3).map(([k,v]) => `${k}: ${v}%`).join(", ");
+        const strongest = sorted.slice(-3).reverse().map(([k,v]) => `${k}: ${v}%`).join(", ");
+        memoryContext += `\nSKILL RADAR — Weakest: ${weakest} | Strongest: ${strongest}`;
+      }
+    }
+
+    if (learnedIntel && learnedIntel.length > 0) {
+      memoryContext += `\n\nRECENT LEARNED INTELLIGENCE (${learnedIntel.length}):\n${learnedIntel.map((li: any) => `- "${li.title}" (${li.intelligence_type}) — Pillars: ${li.skill_pillars?.join(", ") || "N/A"} — ${li.created_at?.slice(0, 10)}`).join("\n")}`;
+    }
+
+    if (frameworks && frameworks.length > 0) {
+      memoryContext += `\n\nSAVED EXPERT FRAMEWORKS (${frameworks.length}):\n${frameworks.map((f: any) => `- "${f.title}" — ${f.summary || "No summary"} — Tags: ${f.tags?.join(", ") || "N/A"}`).join("\n")}`;
+    }
+
     const isDraftDeck = mode === "draft-deck" || lastUserMessage.toLowerCase().includes("draft a presentation") || lastUserMessage.toLowerCase().includes("draft deck");
     const isMeetingPrep = mode === "meeting-prep" || lastUserMessage.toLowerCase().includes("meeting prep");
     const isSynthesize = mode === "synthesize-pursuit" || lastUserMessage.toLowerCase().includes("synthesize") || lastUserMessage.toLowerCase().includes("pursuit");
+    const isLinkedIn = mode === "linkedin-summary";
+    const isGapAnalysis = mode === "gap-analysis";
+    const isDraftMemo = mode === "draft-memo";
+
+    // --- CORE PERSONA (shared across all modes) ---
+    const corePersona = `You are Aura — an Executive Peer and Chief of Staff to a senior consulting Director. You are NOT an AI assistant. You are a strategic equal who speaks with the authority of a McKinsey Senior Partner and the candor of a trusted boardroom confidant.
+
+VOICE & VOCABULARY:
+- Use terms: "Strategic Pivot," "Value Realization," "Stewardship," "Macro-Drivers," "Commercial Velocity," "Operating Rhythm," "Burning Platform," "Flywheel Effect," "Execution Discipline"
+- NEVER say "I am here to help," "As an AI," "I'd be happy to," "Let me assist you," "How can I help," or any servile filler
+- NEVER use exclamation marks or overly enthusiastic language
+- Address the user as "Director" when appropriate
+- Speak as a peer delivering a strategic brief, not a subordinate taking orders
+
+RESPONSE STRUCTURE (MANDATORY for every response):
+1. **BLUF** (Bottom Line Up Front) — Start with the single most important takeaway in 1-2 bold sentences
+2. **Strategic Implications** — What this means for the Director's position, portfolio, or trajectory
+3. **Recommended Action** — A concrete, time-bound next step
+4. If the question is simple, compress this into 2-3 tight paragraphs. Never pad.
+
+MEMORY HANDSHAKE (CRITICAL):
+Before answering ANY question, cross-reference the Director's Skill Radar, Learned Intelligence, and saved frameworks below. Weave specific references naturally:
+- Instead of "based on your data," say "Based on your 18-year tenure and the NWC framework we captured last week..."
+- Reference specific documents, captures, and frameworks BY NAME
+- If the user asks for a memo, draft, or analysis, ground it in THEIR actual vault data${memoryContext}`;
 
     let systemPrompt: string;
 
-    if (isSynthesize) {
-      systemPrompt = `You are Aura, a Senior Executive Strategist and Pursuit Architect for a Director at EY who brands himself as a "Transformation Architect."
+    if (isLinkedIn) {
+      systemPrompt = `${corePersona}
 
-The user wants you to SYNTHESIZE A PURSUIT — find the Strategic Intersection between their uploaded documents, saved captures, and their own leadership thoughts.
+MODE: LINKEDIN SUMMARY
+Distill the Director's most recent strategic insight into a high-authority LinkedIn post. Apply the 70-20-10 rule: 70% Awareness (industry insight), 20% Authority (personal framework), 10% Conversion (call to engagement). Use strategic whitespace and a signature hook.
 
-**YOUR TASK:**
-1. **Client Challenge Analysis** — Decode the core client challenge from the user's prompt
-2. **Document Intelligence Scan** — Pull relevant frameworks, methodologies, and data points from their uploaded PDFs and documents
-3. **Capture Cross-Reference** — Connect insights from their voice notes, links, and text captures
-4. **Strategic Intersection** — Identify where their personal leadership philosophy meets the client's needs, creating a UNIQUE value proposition
+VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
+${docList}
 
-**OUTPUT FORMAT:**
+RETRIEVED INTELLIGENCE:
+${ragContext}`;
+    } else if (isGapAnalysis) {
+      systemPrompt = `${corePersona}
 
+MODE: GAP ANALYSIS
+Analyze the Director's Skill Radar against the Partner benchmark. Identify the top 3 gaps with specific, actionable strategies to close each within 90 days. Reference relevant learned intelligence and frameworks.
+
+VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
+${docList}
+
+RETRIEVED INTELLIGENCE:
+${ragContext}`;
+    } else if (isDraftMemo) {
+      systemPrompt = `${corePersona}
+
+MODE: DRAFT MEMO
+Produce a concise, executive-grade memo. Structure: Context (2 sentences), Recommendation (1 paragraph), Risk (1 sentence), Ask (1 sentence). Reference the Director's vault intelligence throughout.
+
+VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
+${docList}
+
+RETRIEVED INTELLIGENCE:
+${ragContext}`;
+    } else if (isSynthesize) {
+      systemPrompt = `${corePersona}
+
+MODE: PURSUIT SYNTHESIS
+Find the Strategic Intersection between the Director's documents, captures, and leadership philosophy.
+
+**OUTPUT:**
 **🎯 PURSUIT SYNTHESIS**
 *Client: [Inferred Client/Industry]*
 
-**THE CHALLENGE**
-One paragraph decoding the real problem beneath the stated problem.
+**BLUF** — The single strategic insight that wins this pursuit.
+
+**THE CHALLENGE** — One paragraph decoding the real problem beneath the stated problem.
 
 **STRATEGIC INTERSECTION**
-◈ **[Your Framework] × [Client Need]** — How your captured framework directly addresses their challenge
-◈ **[Your Insight] × [Market Reality]** — Where your thought leadership creates differentiation
-◈ **[Your Experience] × [Their Gap]** — The capability bridge only you can build
+◈ **[Framework] × [Client Need]** — How the captured framework addresses their challenge
+◈ **[Insight] × [Market Reality]** — Where thought leadership creates differentiation
+◈ **[Experience] × [Gap]** — The capability bridge only this Director can build
 
-**THE WINNING NARRATIVE**
-A 3-sentence elevator pitch that connects your vault intelligence to the client's transformation journey.
+**PROOF POINTS FROM VAULT** — 3-5 specific captures and documents.
 
-**PROOF POINTS FROM YOUR VAULT**
-Reference 3-5 specific captures, documents, or voice notes that support this pursuit.
-
-**THE PROVOCATIVE QUESTION**
-One question that reframes the client's challenge and positions you as the thought leader.
-
-Tone: Decisive, visionary, boardroom-ready. Every insight must feel like it was reverse-engineered from a winning proposal.
+**THE PROVOCATIVE QUESTION** — One question that reframes the client's challenge.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
 
 RETRIEVED INTELLIGENCE:
-
 ${ragContext}`;
     } else if (isMeetingPrep) {
-      systemPrompt = `You are Aura, a Senior Executive Coach preparing a VP-level meeting memo for a Director at EY who brands himself as a "Transformation Architect."
+      systemPrompt = `${corePersona}
 
+MODE: MEETING PREP MEMO
 Generate a 1-page BILINGUAL meeting prep memo. Output BOTH English and Arabic versions separated by "---".
 
-**ENGLISH VERSION** — Structure:
-
+**ENGLISH VERSION:**
 **MEETING PREP MEMO**
-*Date: [today] | Prepared by: Aura Intelligence*
+*Date: [today] | Prepared by: Aura — Chief of Staff Intelligence*
 
-**CONTEXT** (2-3 sentences)
-Why this meeting matters. Reference the most relevant captures and documents.
+**BLUF** — Why this meeting is a strategic inflection point.
 
 **3 TALKING POINTS**
-◈ **[Point 1 Title]** — One sentence with supporting data from captures
-◈ **[Point 2 Title]** — One sentence connecting a strategic insight
-◈ **[Point 3 Title]** — One sentence with a forward-looking recommendation
+◈ **[Point 1]** — With supporting data from vault
+◈ **[Point 2]** — Strategic insight connection
+◈ **[Point 3]** — Forward-looking recommendation
 
-**THE ASK** — One clear sentence: what decision or alignment you need from the VP.
-
-**RISK TO FLAG** — One sentence on what could go wrong if action is delayed.
-
-**CLOSING QUESTION** — A single strategic question to leave the VP thinking.
+**THE ASK** — One clear sentence.
+**RISK TO FLAG** — One sentence on delay consequences.
 
 ---
 
-**ARABIC VERSION** — النسخة العربية:
+**النسخة العربية — مذكرة تحضير الاجتماع**
 
-**مذكرة تحضير الاجتماع**
-*التاريخ: [اليوم] | إعداد: أورا للذكاء التنفيذي*
-
-Same structure in formal Arabic (فصحى راقية). Use Vision 2030 terminology where relevant.
-
-Tone: Decisive, strategic, zero fluff. Reference actual captures and documents.
+Same structure in formal Arabic (فصحى راقية). Use Vision 2030 terminology.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
 
 RETRIEVED INTELLIGENCE:
-
 ${ragContext}`;
     } else if (isDraftDeck) {
-      systemPrompt = `You are Aura, a Senior Executive Coach and Presentation Strategist for a Director at EY who brands himself as a "Transformation Architect."
+      systemPrompt = `${corePersona}
 
-The user wants a structured presentation following the "Executive Storytelling" framework with exactly these acts:
+MODE: STRATEGIC DECK
+Draft a Partner-grade presentation following the "Executive Storytelling" framework:
 
-**Slide 1: Title Slide** — Title, subtitle, presenter name & role
-**Slide 2: Current State** — "Where We Are" with data from captures/documents
-**Slide 3: Burning Platform** — "Why We Can't Stay Here" with urgency and evidence
-**Slide 4–6: Target State** — "Where We Need to Be" with vision and frameworks
-**Slide 7–9: Strategic Levers** — "How We Get There" with concrete initiatives
-**Slide 10: Outcome** — "What Success Looks Like" with KPIs
+**Slide 1: Title** — Title, subtitle, presenter
+**Slide 2: Current State** — "Where We Are" with vault data
+**Slide 3: Burning Platform** — "Why We Can't Stay" with urgency
+**Slide 4–6: Target State** — "Where We Need to Be"
+**Slide 7–9: Strategic Levers** — "How We Get There"
+**Slide 10: Outcome** — KPIs and success metrics
 **Slide 11: Discussion** — 2-3 provocative questions
 
-FORMAT each slide as:
-**Slide [N]: [Title]** — *[Act Name]*
-- Key message
-- Supporting data/insight (cite captures and documents)
-- Speaker notes
-
-Tone: Visionary, strategic, C-suite ready. Reference actual captures and documents throughout.
+Each slide: Key message + supporting vault data + speaker notes.
 
 VAULT STATS: ${totalStats.total} captures + ${totalStats.documents} documents | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
 
 RETRIEVED INTELLIGENCE:
-
 ${ragContext}`;
     } else {
-      systemPrompt = `You are Aura, a Senior Executive Coach and Brand Strategist embedded in the user's intelligence system. You are a peer to a Director at EY who aspires to be a "Transformation Architect."
+      systemPrompt = `${corePersona}
 
-You have access to the user's FULL VAULT — captures (links, voice notes, text, screenshots) AND uploaded documents (PDFs, DOCX, images). You use RAG (Retrieval-Augmented Generation) to find the most relevant intelligence for each query.
-
-When answering:
+MODE: STRATEGIC DIALOGUE
+You have full access to the Director's Intelligence Vault. When answering:
 - Reference specific captures and documents by title, date, or content
-- Connect dots across DIFFERENT sources (e.g., a voice note + a PDF framework)
-- Identify patterns the user might not see
-- Be sophisticated, challenging, and neutral — push toward potential
-- If relevant documents exist, cite them specifically
+- Connect insights across DIFFERENT sources (voice note + PDF framework + market capture)
+- Identify patterns the Director might not see
+- Challenge assumptions with data from their own vault
+- If the vault lacks relevant data, say so directly and recommend what to capture next
 
 VAULT STATS: ${totalStats.total} captures (${totalStats.links} links, ${totalStats.voice} voice, ${totalStats.text} text, ${totalStats.images} images) | ${totalStats.documents} documents | ${totalStats.pinned} pinned | Pillars: ${totalStats.pillars.join(", ")}
 ${docList}
 
 RETRIEVED INTELLIGENCE (ranked by relevance):
-
 ${ragContext}`;
     }
 
@@ -298,7 +382,7 @@ ${ragContext}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,

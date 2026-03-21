@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket } from "lucide-react";
+import { X, Send, Loader2, Presentation, Zap, Trash2, Briefcase, Rocket, FileText, Target, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -156,21 +156,22 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     setIsLoading(false);
   };
 
-  const handleDraftDeck = () => {
-    if (input.trim()) send(`Draft a presentation on: ${input.trim()}`, "draft-deck");
-    else send("Draft a presentation based on my most recent and most impactful captures. Create a strategic deck outline.", "draft-deck");
-  };
+  const quickActions = [
+    { label: "LinkedIn Post", icon: Linkedin, mode: "linkedin-summary", prompt: "Summarize my most recent strategic insight into a high-authority LinkedIn post." },
+    { label: "Identify Gaps", icon: Target, mode: "gap-analysis", prompt: "Analyze my Skill Radar gaps against the Partner benchmark and recommend 90-day actions." },
+    { label: "Draft Memo", icon: FileText, mode: "draft-memo", prompt: "Draft an executive memo based on my most recent captures and strategic intelligence." },
+    { label: "Meeting Prep", icon: Briefcase, mode: "meeting-prep", prompt: "Prepare a 1-page meeting prep memo for a VP meeting based on my most recent captures." },
+    { label: "Draft Deck", icon: Presentation, mode: "draft-deck", prompt: "Draft a strategic presentation based on my most impactful captures." },
+    { label: "Synthesize", icon: Rocket, mode: "synthesize-pursuit", prompt: "Synthesize a pursuit from my documents, captures, and leadership insights." },
+  ];
 
-  const handleMeetingPrep = () => {
+  const handleQuickAction = (action: typeof quickActions[0]) => {
     const topic = input.trim();
-    if (topic) send(`Prepare a 1-page meeting prep memo for a VP meeting on: ${topic}`, "meeting-prep");
-    else send("Prepare a 1-page meeting prep memo for a VP meeting based on my most recent and strategic captures.", "meeting-prep");
-  };
-
-  const handleSynthesize = () => {
-    const topic = input.trim();
-    if (topic) send(`Synthesize a pursuit for: ${topic}. Find the strategic intersection between my documents, captures, and leadership insights.`, "synthesize-pursuit");
-    else send("Synthesize a pursuit based on my most recent captures and uploaded documents. Find the strategic intersection between my saved frameworks and leadership thoughts.", "synthesize-pursuit");
+    if (topic) {
+      send(`${action.prompt.replace("my most recent", `the following: ${topic}`)}`, action.mode);
+    } else {
+      send(action.prompt, action.mode);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -183,36 +184,37 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col bg-background">
-      {/* Full-screen chat container with swipe support */}
+    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Bottom sheet — 80% height */}
       <div
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="flex flex-col h-full w-full"
+        className="relative flex flex-col w-full bg-background rounded-t-2xl overflow-hidden"
         style={{
+          height: '80vh',
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? 'none' : 'transform 0.3s ease-out',
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
         }}
       >
-        {/* Swipe indicator (mobile) */}
-        <div className="sm:hidden flex justify-center pt-2 pb-0">
+        {/* Swipe handle */}
+        <div className="flex justify-center pt-2.5 pb-1 cursor-grab">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
         </div>
 
-        {/* Sticky header — safe area aware */}
-        <div
-          className="flex items-center justify-between px-5 py-3 border-b border-border/30 bg-background/95 backdrop-blur-md shrink-0"
-          style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}
-        >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-2 border-b border-border/30 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Ask Aura</h2>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Intelligence Vault</p>
+              <h2 className="text-sm font-semibold text-foreground">Aura</h2>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Chief of Staff</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -234,22 +236,22 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           </div>
         </div>
 
-        {/* Scrollable messages area — takes all remaining space */}
+        {/* Scrollable messages area */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-12">
+            <div className="flex flex-col items-center justify-center h-full text-center py-8">
               <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Zap className="w-7 h-7 text-primary" />
               </div>
-              <h3 className="text-base font-semibold text-foreground mb-1">Your Vault, Unlocked</h3>
+              <h3 className="text-base font-semibold text-foreground mb-1">Strategic Intelligence</h3>
               <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-                Ask across your captures, uploaded PDFs, voice notes, and screenshots. Aura uses RAG to find the most relevant intelligence.
+                Cross-referencing your Skill Radar, Learned Intelligence, and saved frameworks. Every response grounded in your vault.
               </p>
-              <div className="mt-6 space-y-2 w-full max-w-[280px]">
+              <div className="mt-5 space-y-2 w-full max-w-[280px]">
                 {[
-                  "What are my recurring themes this month?",
-                  "Find insights from my uploaded SWA PDFs",
-                  "What frameworks have I captured?",
+                  "What are the macro-drivers in my sector this quarter?",
+                  "Where is my biggest gap to Partner level?",
+                  "Draft a strategic position on my latest capture",
                 ].map((q) => (
                   <button
                     key={q}
@@ -293,44 +295,33 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           )}
         </div>
 
-        {/* Pinned bottom: action buttons + input — safe area aware */}
+        {/* Quick Actions row + Input */}
         <div
           className="border-t border-border/30 px-4 py-3 space-y-2 shrink-0 bg-background"
           style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
         >
-          <div className="flex items-center gap-3 mb-1">
-            <button
-              onClick={handleMeetingPrep}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1 tactile-press"
-            >
-              <Briefcase className="w-3.5 h-3.5" />
-              Meeting Prep
-            </button>
-            <button
-              onClick={handleDraftDeck}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1 tactile-press"
-            >
-              <Presentation className="w-3.5 h-3.5" />
-              Draft Deck
-            </button>
-            <button
-              onClick={handleSynthesize}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-1 tactile-press"
-            >
-              <Rocket className="w-3.5 h-3.5" />
-              Synthesize
-            </button>
+          {/* Quick Actions — horizontal scroll */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+            {quickActions.map((action) => (
+              <button
+                key={action.mode}
+                onClick={() => handleQuickAction(action)}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
+              >
+                <action.icon className="w-3.5 h-3.5" />
+                {action.label}
+              </button>
+            ))}
           </div>
+
           <div className="flex gap-2">
             <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about your captures & documents…"
+              placeholder="Strategic query…"
               rows={1}
               className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[40px] max-h-[120px]"
             />
