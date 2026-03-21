@@ -53,7 +53,7 @@ Output format:
 - Leadership Style: ${leadership_style || "Not specified"}
 - 24-Month North Star Goal: ${north_star_goal || "Not specified"}`;
 
-    const res = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
