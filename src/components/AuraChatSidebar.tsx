@@ -20,6 +20,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [savedIndices, setSavedIndices] = useState<Set<number>>(new Set());
   const [swipeY, setSwipeY] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
