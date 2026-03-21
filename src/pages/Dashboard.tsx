@@ -40,6 +40,7 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
