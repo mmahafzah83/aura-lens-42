@@ -15,6 +15,7 @@ import AccountIntelligence from "@/components/AccountIntelligence";
 import BriefingTab from "@/components/tabs/BriefingTab";
 import InfluenceTab from "@/components/tabs/InfluenceTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
+import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -39,6 +40,7 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -48,12 +50,21 @@ const Dashboard = () => {
       else setUser({ email: session.user.email });
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) navigate("/auth");
       else {
         setUser({ email: session.user.email });
-        // Show onboarding for first-time users
-        setShowOnboarding(true);
+        // Check if user has completed diagnostic
+        const { data: profile } = await supabase
+          .from("diagnostic_profiles" as any)
+          .select("completed")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (profile && (profile as any).completed) {
+          setShowOnboarding(true); // returning user: quick splash
+        } else {
+          setShowDiagnostic(true); // new user: full diagnostic
+        }
       }
     });
 
@@ -86,6 +97,10 @@ const Dashboard = () => {
     setShowOnboarding(false);
   };
 
+  const handleDiagnosticComplete = () => {
+    setShowDiagnostic(false);
+  };
+
   return (
     <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative safe-area-container">
       {/* Animated gradient mesh background */}
@@ -93,6 +108,7 @@ const Dashboard = () => {
 
       {/* Onboarding */}
       {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
+      {showDiagnostic && <ExecutiveDiagnostic onComplete={handleDiagnosticComplete} />}
 
       {/* Main Content — header scrolls with content */}
       <main className="flex-1 overflow-y-auto relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>

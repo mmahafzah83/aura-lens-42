@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      diagnostic_profiles: {
+        Row: {
+          completed: boolean
+          core_practice: string | null
+          created_at: string
+          firm: string | null
+          generated_skills: Json
+          id: string
+          leadership_style: string | null
+          level: string | null
+          north_star_goal: string | null
+          sector_focus: string | null
+          skill_ratings: Json
+          user_id: string
+          years_experience: string | null
+        }
+        Insert: {
+          completed?: boolean
+          core_practice?: string | null
+          created_at?: string
+          firm?: string | null
+          generated_skills?: Json
+          id?: string
+          leadership_style?: string | null
+          level?: string | null
+          north_star_goal?: string | null
+          sector_focus?: string | null
+          skill_ratings?: Json
+          user_id: string
+          years_experience?: string | null
+        }
+        Update: {
+          completed?: boolean
+          core_practice?: string | null
+          created_at?: string
+          firm?: string | null
+          generated_skills?: Json
+          id?: string
+          leadership_style?: string | null
+          level?: string | null
+          north_star_goal?: string | null
+          sector_focus?: string | null
+          skill_ratings?: Json
+          user_id?: string
+          years_experience?: string | null
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           chunk_index: number
