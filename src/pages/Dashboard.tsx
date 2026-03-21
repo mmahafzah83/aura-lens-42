@@ -22,6 +22,7 @@ import MarketTab from "@/components/tabs/MarketTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import ProfileManagement from "@/components/ProfileManagement";
+import NotificationBell from "@/components/NotificationBell";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
