@@ -50,12 +50,21 @@ const Dashboard = () => {
       else setUser({ email: session.user.email });
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) navigate("/auth");
       else {
         setUser({ email: session.user.email });
-        // Show onboarding for first-time users
-        setShowOnboarding(true);
+        // Check if user has completed diagnostic
+        const { data: profile } = await supabase
+          .from("diagnostic_profiles" as any)
+          .select("completed")
+          .eq("user_id", session.user.id)
+          .maybeSingle();
+        if (profile && (profile as any).completed) {
+          setShowOnboarding(true); // returning user: quick splash
+        } else {
+          setShowDiagnostic(true); // new user: full diagnostic
+        }
       }
     });
 
