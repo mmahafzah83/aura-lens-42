@@ -168,6 +168,12 @@ const Dashboard = () => {
               </div>
             )}
 
+            {activeTab === "market" && (
+              <div className="animate-tab-spring">
+                <MarketTab />
+              </div>
+            )}
+
             {activeTab === "pursuits" && (
               <div className="animate-tab-spring">
                 <div className="space-y-8">
