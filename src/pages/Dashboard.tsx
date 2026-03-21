@@ -17,6 +17,7 @@ import InfluenceTab from "@/components/tabs/InfluenceTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
+import SovereignReadingList from "@/components/SovereignReadingList";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -223,6 +224,7 @@ const Dashboard = () => {
                       <WeeklyTransformationLens entries={entries} />
                     </div>
                   </div>
+                  <SovereignReadingList />
                   <MyFrameworks />
                 </div>
               </div>
