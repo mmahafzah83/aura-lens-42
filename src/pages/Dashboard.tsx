@@ -29,8 +29,7 @@ import type { Database } from "@/integrations/supabase/types";
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const TAB_ITEMS = [
-  { value: "briefing", label: "Briefing", icon: Briefcase },
-  { value: "market", label: "Market", icon: Radar },
+  { value: "intelligence", label: "Intelligence", icon: Shield },
   { value: "pursuits", label: "Pursuits", icon: Target },
   { value: "influence", label: "Influence", icon: Megaphone },
   { value: "growth", label: "Growth", icon: TrendingUp },
