@@ -220,6 +220,69 @@ export type Database = {
         }
         Relationships: []
       }
+      learned_intelligence: {
+        Row: {
+          content: string
+          created_at: string
+          embedding: string | null
+          id: string
+          intelligence_type: string
+          skill_boost_pct: number
+          skill_pillars: string[]
+          source_document_id: string | null
+          source_entry_id: string | null
+          tags: string[]
+          title: string
+          tsv: unknown
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          intelligence_type?: string
+          skill_boost_pct?: number
+          skill_pillars?: string[]
+          source_document_id?: string | null
+          source_entry_id?: string | null
+          tags?: string[]
+          title: string
+          tsv?: unknown
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          intelligence_type?: string
+          skill_boost_pct?: number
+          skill_pillars?: string[]
+          source_document_id?: string | null
+          source_entry_id?: string | null
+          tags?: string[]
+          title?: string
+          tsv?: unknown
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learned_intelligence_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learned_intelligence_source_entry_id_fkey"
+            columns: ["source_entry_id"]
+            isOneToOne: false
+            referencedRelation: "entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       master_frameworks: {
         Row: {
           created_at: string
