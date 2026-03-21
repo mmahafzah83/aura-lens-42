@@ -11,6 +11,7 @@ interface DiagnosticAnswer {
   north_star_goal: string;
   years_experience: string;
   leadership_style: string;
+  brand_pillars: string;
 }
 
 interface GeneratedSkill {
