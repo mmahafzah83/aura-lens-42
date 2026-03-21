@@ -1,0 +1,1 @@
+ALTER TABLE public.diagnostic_profiles ADD COLUMN brand_pillars text[] NOT NULL DEFAULT '{}'::text[];

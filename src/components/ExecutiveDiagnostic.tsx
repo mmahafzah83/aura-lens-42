@@ -11,6 +11,7 @@ interface DiagnosticAnswer {
   north_star_goal: string;
   years_experience: string;
   leadership_style: string;
+  brand_pillars: string;
 }
 
 interface GeneratedSkill {
@@ -65,6 +66,13 @@ const QUESTIONS = [
     question: "What is your 24-month North Star goal?",
     subtitle: "Be specific — this drives everything.",
     options: ["Make Partner / Principal", "Build a $10M+ Practice", "Lead a Major Transformation", "Transition to C-Suite / Industry"],
+    allowCustom: true,
+  },
+  {
+    key: "brand_pillars" as const,
+    question: "Define your 3 Brand Pillars",
+    subtitle: "The core strategic themes that define your personal brand. Separate with commas.",
+    options: ["Digital Transformation, Innovation, Future of Work", "Sustainability, ESG, Responsible Growth", "Data-Driven Strategy, AI, Operational Excellence", "Leadership Development, Culture Change, Talent Strategy"],
     allowCustom: true,
   },
 ];
@@ -149,6 +157,8 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
+      const brandPillarsArr = (answers.brand_pillars || "").split(",").map((s: string) => s.trim()).filter(Boolean).slice(0, 3);
+
       await supabase.from("diagnostic_profiles").upsert({
         user_id: session.user.id,
         firm: answers.firm || null,
@@ -160,6 +170,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
         leadership_style: answers.leadership_style || null,
         generated_skills: skills,
         skill_ratings: ratings,
+        brand_pillars: brandPillarsArr,
         completed: true,
       } as any, { onConflict: "user_id" });
 

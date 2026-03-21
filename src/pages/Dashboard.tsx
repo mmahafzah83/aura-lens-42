@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -18,12 +18,14 @@ import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
+import MarketTab from "@/components/tabs/MarketTab";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const TAB_ITEMS = [
   { value: "briefing", label: "Briefing", icon: Briefcase },
+  { value: "market", label: "Market", icon: Radar },
   { value: "pursuits", label: "Pursuits", icon: Target },
   { value: "influence", label: "Influence", icon: Megaphone },
   { value: "growth", label: "Growth", icon: TrendingUp },
@@ -163,6 +165,12 @@ const Dashboard = () => {
                   setChatInitialMessage(msg);
                   setChatOpen(true);
                 }} />
+              </div>
+            )}
+
+            {activeTab === "market" && (
+              <div className="animate-tab-spring">
+                <MarketTab />
               </div>
             )}
 

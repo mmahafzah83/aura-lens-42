@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       diagnostic_profiles: {
         Row: {
+          brand_pillars: string[]
           completed: boolean
           core_practice: string | null
           created_at: string
@@ -31,6 +32,7 @@ export type Database = {
           years_experience: string | null
         }
         Insert: {
+          brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
           created_at?: string
@@ -46,6 +48,7 @@ export type Database = {
           years_experience?: string | null
         }
         Update: {
+          brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
           created_at?: string
