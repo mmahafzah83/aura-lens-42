@@ -21,15 +21,26 @@ const SkillRadar = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [{ data: logs }, { data: targetRows }] = await Promise.all([
+      const [{ data: logs }, { data: targetRows }, { data: intelligence }, { data: profile }] = await Promise.all([
         supabase.from("training_logs" as any).select("pillar, duration_hours") as any,
         supabase.from("skill_targets" as any).select("pillar, target_hours") as any,
+        supabase.from("learned_intelligence" as any).select("skill_pillars, skill_boost_pct") as any,
+        supabase.from("diagnostic_profiles" as any).select("generated_skills, skill_ratings").maybeSingle() as any,
       ]);
+
+      // Determine pillars: use diagnostic skills if available, else fallback
+      const diagSkills = profile?.data?.generated_skills || profile?.generated_skills;
+      const diagRatings = profile?.data?.skill_ratings || profile?.skill_ratings;
+      const activePillars = diagSkills && diagSkills.length > 0
+        ? diagSkills.slice(0, 5).map((s: any) => s.name)
+        : PILLARS;
 
       const totals: Record<string, number> = {};
       const tgts: Record<string, number> = {};
-      PILLARS.forEach((p) => { totals[p] = 0; tgts[p] = DEFAULT_TARGET; });
+      const boosts: Record<string, number> = {};
+      activePillars.forEach((p: string) => { totals[p] = 0; tgts[p] = DEFAULT_TARGET; boosts[p] = 0; });
 
+      // Training hours
       (logs || []).forEach((l: any) => {
         if (totals[l.pillar] !== undefined) totals[l.pillar] += Number(l.duration_hours) || 0;
       });
@@ -37,16 +48,31 @@ const SkillRadar = () => {
         if (tgts[t.pillar] !== undefined) tgts[t.pillar] = Number(t.target_hours) || DEFAULT_TARGET;
       });
 
+      // Intelligence boosts
+      (intelligence || []).forEach((i: any) => {
+        (i.skill_pillars || []).forEach((pillar: string) => {
+          if (boosts[pillar] !== undefined) boosts[pillar] += Number(i.skill_boost_pct || 3);
+        });
+      });
+
       setTargets(tgts);
 
-      const allVals = [...Object.values(totals), ...Object.values(tgts)];
-      const maxVal = Math.max(...allVals, 1);
-
-      setData(PILLARS.map((p) => ({
-        skill: p,
-        current: Math.round((totals[p] / maxVal) * 100),
-        target: Math.round((tgts[p] / maxVal) * 100),
-      })));
+      // Use diagnostic ratings as base if available, else training hours
+      if (diagRatings && Object.keys(diagRatings).length > 0) {
+        setData(activePillars.map((p: string) => ({
+          skill: p.length > 18 ? p.slice(0, 16) + "…" : p,
+          current: Math.min(100, (diagRatings[p] || 50) + (boosts[p] || 0)),
+          target: 100,
+        })));
+      } else {
+        const allVals = [...Object.values(totals), ...Object.values(tgts)];
+        const maxVal = Math.max(...allVals, 1);
+        setData(activePillars.map((p: string) => ({
+          skill: p.length > 18 ? p.slice(0, 16) + "…" : p,
+          current: Math.round(((totals[p] + boosts[p]) / maxVal) * 100),
+          target: Math.round((tgts[p] / maxVal) * 100),
+        })));
+      }
     };
 
     fetch();

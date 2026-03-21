@@ -296,6 +296,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             }
           }).catch((e) => console.error("Framework extraction error:", e));
         }
+
+        // Auto-deconstruct: extract learned intelligence from every capture
+        supabase.functions.invoke("deconstruct-upload", {
+          body: { entry_id: insertData.id },
+        }).then(({ data: deconData }) => {
+          if (deconData?.extracted > 0) {
+            toast({ title: "Intelligence Extracted", description: `${deconData.extracted} insights added to your Learning Vault.` });
+          }
+        }).catch((e) => console.error("Deconstruct error:", e));
       }
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");
