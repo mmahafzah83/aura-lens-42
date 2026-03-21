@@ -268,7 +268,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
           )}
 
           {messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
               <div
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   msg.role === "user"
@@ -285,6 +285,40 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
                   msg.content
                 )}
               </div>
+              {msg.role === "assistant" && msg.content && !isLoading && (
+                <button
+                  onClick={async () => {
+                    if (savedIndices.has(i)) return;
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.user) { toast.error("Sign in to save"); return; }
+                      const title = msg.content.split("\n").find(l => l.trim().length > 5)?.replace(/[#*◈]/g, "").trim().slice(0, 80) || "Aura Insight";
+                      const { error } = await supabase.from("entries").insert({
+                        user_id: session.user.id,
+                        type: "text",
+                        content: msg.content,
+                        title: `📌 ${title}`,
+                        summary: `Saved from Aura chat`,
+                        pinned: true,
+                        skill_pillar: "Strategic Architecture",
+                      });
+                      if (error) throw error;
+                      setSavedIndices(prev => new Set(prev).add(i));
+                      toast.success("Saved to Vault", { description: "Pinned as a strategic capture" });
+                    } catch (e: any) {
+                      toast.error("Failed to save", { description: e.message });
+                    }
+                  }}
+                  className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${
+                    savedIndices.has(i)
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-primary hover:bg-secondary/60"
+                  }`}
+                >
+                  {savedIndices.has(i) ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                  {savedIndices.has(i) ? "Saved to Vault" : "Save to Vault"}
+                </button>
+              )}
             </div>
           ))}
 
