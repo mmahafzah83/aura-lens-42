@@ -39,7 +39,7 @@ type TabValue = typeof TAB_ITEMS[number]["value"];
 
 const Dashboard = () => {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [activeTab, setActiveTab] = useState<TabValue>("briefing");
+  const [activeTab, setActiveTab] = useState<TabValue>("intelligence");
   const [captureOpen, setCaptureOpen] = useState(false);
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
