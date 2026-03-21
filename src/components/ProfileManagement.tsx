@@ -12,7 +12,11 @@ interface Skill {
   description?: string;
 }
 
-const ProfileManagement = () => {
+interface ProfileManagementProps {
+  onResetDiagnostic?: () => void;
+}
+
+const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [firm, setFirm] = useState("");
