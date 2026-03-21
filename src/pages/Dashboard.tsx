@@ -108,6 +108,7 @@ const Dashboard = () => {
 
       {/* Onboarding */}
       {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
+      {showDiagnostic && <ExecutiveDiagnostic onComplete={handleDiagnosticComplete} />}
 
       {/* Main Content — header scrolls with content */}
       <main className="flex-1 overflow-y-auto relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
