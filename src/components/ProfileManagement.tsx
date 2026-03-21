@@ -210,10 +210,17 @@ const ProfileManagement = () => {
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-2 block">Skills & Self-Assessment</label>
             <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
-              {skills.map((skill) => (
+              {skills.map((skill) => {
+                const isObjective = EVIDENCE_MATRIX.some(e => e.name === skill.name);
+                return (
                 <div key={skill.name} className="p-3 rounded-xl bg-secondary/30 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-foreground">{skill.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-foreground">{skill.name}</span>
+                      {isObjective && (
+                        <ShieldCheck className="w-3.5 h-3.5 text-primary" title="Verified via Objective Diagnostic" />
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-primary font-medium">{ratings[skill.name] || 0}%</span>
                       <button onClick={() => removeSkill(skill.name)} className="text-muted-foreground hover:text-destructive">
