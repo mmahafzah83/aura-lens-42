@@ -218,7 +218,7 @@ const ProfileManagement = () => {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm text-foreground">{skill.name}</span>
                       {isObjective && (
-                        <ShieldCheck className="w-3.5 h-3.5 text-primary" title="Verified via Objective Diagnostic" />
+                        <span title="Verified via Objective Diagnostic"><ShieldCheck className="w-3.5 h-3.5 text-primary" /></span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
