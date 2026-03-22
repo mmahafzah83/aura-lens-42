@@ -251,7 +251,21 @@ const IntelligenceCards = () => {
               {/* BLUF */}
               <div className="p-3 rounded-xl bg-background/40 border border-border/10 mb-3">
                 <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider mb-1">Director's BLUF</p>
-                <p className="text-xs text-foreground/70 leading-relaxed">{item.bluf}</p>
+                {item.bluf.includes("|") ? (
+                  <ul className="space-y-1.5 text-xs text-foreground/70 leading-relaxed">
+                    {item.bluf.split("|").map((bullet, bi) => {
+                      const labels = ["The Shift", "The Impact", "The Action"];
+                      return (
+                        <li key={bi} className="flex items-start gap-1.5">
+                          <span className="text-[9px] font-bold text-primary/60 uppercase whitespace-nowrap mt-0.5">{labels[bi] || "•"}</span>
+                          <span>{bullet.trim()}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-foreground/70 leading-relaxed">{item.bluf}</p>
+                )}
               </div>
 
               {/* Skill target */}

@@ -190,7 +190,7 @@ const SkillRadar = () => {
             <PolarGrid stroke="hsl(0 0% 20%)" strokeDasharray="3 3" />
             <PolarAngleAxis
               dataKey="skill"
-              tick={{ fill: "hsl(43 72% 52%)", fontSize: 10, fontWeight: 600 }}
+              tick={{ fill: "hsl(43 72% 52%)", fontSize: 11, fontWeight: 700 }}
               onClick={(e: any) => {
                 const label = e?.value;
                 const match = data.find((d) => d.skill === label);
