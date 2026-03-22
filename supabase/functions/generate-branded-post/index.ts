@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch user profile for brand pillars and voice
+    // Fetch user profile
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
       .select("firm, level, core_practice, sector_focus, brand_pillars, north_star_goal")
@@ -57,8 +57,9 @@ Deno.serve(async (req) => {
     const brandPillars = (p.brand_pillars || []).join(", ") || "Strategy, Innovation, Leadership";
     const firm = p.firm || "Big 4";
     const level = p.level || "Director";
+    const sector = p.sector_focus || "Water & Utilities";
 
-    // Fetch expert frameworks for context
+    // Fetch expert frameworks
     const { data: frameworks } = await supabase
       .from("master_frameworks")
       .select("title, summary, framework_steps")
@@ -69,40 +70,63 @@ Deno.serve(async (req) => {
       `Framework: ${f.title}\nSummary: ${f.summary}\nSteps: ${JSON.stringify(f.framework_steps)}`
     ).join("\n\n");
 
-    const systemPrompt = `You are an Elite Executive Brand Strategist for a ${level} at ${firm}.
+    // ─── HOOK-VALUE-IMAGE-CTA SYSTEM PROMPT ───
+    const systemPrompt = `You are an Elite Executive LinkedIn Ghostwriter for a ${level} at ${firm}, focused on ${sector}.
 
-BRAND PILLAR GUARDRAILS — every post MUST align with at least one of these pillars:
-${brandPillars}
+BRAND PILLARS: ${brandPillars}
 
-SIGNATURE VOICE RULES (Big 3/Big 4 standard):
-1. High-Authority Hook: Open with a provocative insight or counterintuitive observation
-2. Strategic Whitespace: Use short paragraphs (2-3 lines max), strategic line breaks
-3. 70-20-10 Content Mix:
-   - 70% Awareness: Industry insights, trends, market perspectives
-   - 20% Authority: Original frameworks, case studies, proven methodologies
-   - 10% Conversion: Subtle positioning as a thought leader
-4. Executive Tone: Confident but not arrogant. Data-informed, not data-heavy.
-5. End with a provocative question or call-to-reflection
+═══ THE 'HANDWRITTEN AUTHORITY' FRAMEWORK ═══
 
-SELF-AUDIT CHECKLIST (verify before output):
-✓ Does this align with at least one Brand Pillar?
-✓ Does the hook stop a busy executive from scrolling?
-✓ Is the whitespace strategic and mobile-optimized?
-✓ Does it position the author as a peer to the C-suite, not a subordinate?
-✓ Would a McKinsey Senior Partner share this?
+You MUST structure every post with these 4 sections. No exceptions.
 
-${frameworkContext ? `\nEXPERT FRAMEWORKS TO APPLY:\n${frameworkContext}` : ""}
+1. THE HOOK (Lines 1-3) — Newsletter Headline Logic:
+   • Open with a bold curiosity gap, contrarian insight, or startling statistic.
+   • Examples: "SR 228M is not a cost center. It's a data mine." or "The biggest threat to Saudi water security isn't scarcity. It's data illiteracy."
+   • The reader must NEED to click 'See more' by line 3. Create a cliffhanger.
+   • Never start with "I'm excited to share…" or "In today's world…"
 
-Output valid JSON:
+2. THE BODY — Atomic Formatting:
+   • Maximum whitespace. Every sentence gets its own line.
+   • No paragraph longer than 2 lines.
+   • Break complex points into 3 bullet points using ◈ or ➔.
+   • Include ONE specific 'Director-level' insight that connects the news to Value-Based P&L, Vision 2030, or Digital Transformation in ${sector}.
+   • Bold all financial figures and entities (e.g., **SR 228M**, **NWC**, **Vision 2030**).
+
+3. THE PARTNER LENS:
+   • Embed one sentence that only someone with 15+ years in ${sector} would write.
+   • Reference a specific metric, framework, or operational truth.
+   • This is NOT a generic observation — it's a specific, earned insight.
+
+4. THE CTA (Last line):
+   • End with ONE provocative, open-ended question that drives comments.
+   • Examples: "Are we digitizing for efficiency, or just for the sake of it?" or "When will we treat water data like oil futures?"
+   • Never use "What do you think?" or "Agree?"
+
+═══ BANNED WORDS ═══
+Never use: "delve," "tapestry," "landscape," "synergy," "leverage" (as verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal), "excited to share."
+
+═══ VISUAL COMPANION ═══
+Also generate an image_prompt for a 1080x1350 Minimalist Handwritten Blackboard Schematic:
+- Background: Deep charcoal or pure black
+- Ink: Single-color white or high-contrast gold
+- Style: Minimalist line art (boxes, circles, connecting arrows, loops)
+- Font: Simulated clear, slightly imperfect handwriting for labels
+- Content: An educational diagram that simplifies the CORE concept of the post (e.g., a loop showing 'Smart Meter Data → AI Prediction → Targeted Maintenance')
+- NO photorealistic people. NO glossy AI renders. NO stock photo style.
+
+${frameworkContext ? `\nEXPERT FRAMEWORKS TO WEAVE IN:\n${frameworkContext}` : ""}
+
+OUTPUT FORMAT — valid JSON only:
 {
-  "post": "The full LinkedIn post text with strategic formatting",
-  "brand_pillar_alignment": "Which brand pillar(s) this aligns to",
-  "content_mix_category": "awareness" | "authority" | "conversion",
-  "hook_type": "counterintuitive" | "data-driven" | "question" | "provocative",
-  "audit_passed": true/false,
-  "audit_notes": "Brief note on alignment"
+  "post": "The full LinkedIn post text with strategic formatting and line breaks",
+  "image_prompt": "Detailed prompt for the blackboard schematic diagram",
+  "hook_type": "curiosity_gap" | "contrarian" | "statistic" | "provocative",
+  "partner_lens": "The specific Director-level insight used",
+  "cta_question": "The closing provocative question",
+  "brand_pillar_alignment": "Which brand pillar(s) this aligns to"
 }`;
 
+    // ─── PASS 1: Generate draft ───
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -115,7 +139,7 @@ Output valid JSON:
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Transform this market intelligence into a high-authority LinkedIn post:\n\nTitle: ${news_item.title}\nSummary: ${news_item.summary}\nSource: ${news_item.source}\nPost Angle: ${news_item.post_angle || ""}\nRelevance: ${news_item.relevance_tag || ""}`,
+            content: `Transform this intelligence signal into a high-authority LinkedIn post using the Handwritten Authority framework:\n\nTitle: ${news_item.title}\nSIGNAL: ${news_item.summary}\nSource: ${news_item.source}\nAngle: ${news_item.post_angle || ""}\nVALUE: ${news_item.relevance_tag || ""}`,
           },
         ],
         response_format: { type: "json_object" },
@@ -131,7 +155,62 @@ Output valid JSON:
     const aiData = await aiRes.json();
     const parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
 
-    return new Response(JSON.stringify(parsed), {
+    // ─── PASS 2: Generate blackboard schematic image ───
+    let imageBase64: string | null = null;
+    if (parsed.image_prompt) {
+      try {
+        const imageRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3.1-flash-image-preview",
+            messages: [
+              {
+                role: "user",
+                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}`,
+              },
+            ],
+            modalities: ["image", "text"],
+          }),
+        });
+
+        if (imageRes.ok) {
+          const imageData = await imageRes.json();
+          const imgUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          if (imgUrl && imgUrl.startsWith("data:image")) {
+            // Upload to storage
+            const base64Data = imgUrl.split(",")[1];
+            const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const filename = `post-visual-${Date.now()}.png`;
+
+            const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+            const { error: uploadErr } = await serviceClient.storage
+              .from("capture-images")
+              .upload(`${user.id}/${filename}`, binaryData, {
+                contentType: "image/png",
+                upsert: true,
+              });
+
+            if (!uploadErr) {
+              const { data: urlData } = serviceClient.storage
+                .from("capture-images")
+                .getPublicUrl(`${user.id}/${filename}`);
+              imageBase64 = urlData?.publicUrl || null;
+            }
+          }
+        }
+      } catch (imgErr) {
+        console.warn("Image generation failed (non-blocking):", imgErr);
+      }
+    }
+
+    return new Response(JSON.stringify({
+      ...parsed,
+      image_url: imageBase64,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
