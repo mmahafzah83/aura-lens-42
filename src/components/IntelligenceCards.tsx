@@ -78,6 +78,7 @@ const IntelligenceCards = () => {
   const [draftResult, setDraftResult] = useState<DraftResult | null>(null);
   const [draftOpen, setDraftOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
   const { toast } = useToast();
 
   // Auto-fetch on login (session appears)
