@@ -173,7 +173,9 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
   useEffect(() => {
     const sectorItems = SEED_SIGNALS[userSector] || SEED_SIGNALS.default;
-    setItems(sectorItems);
+    // Hard source mandate: only include items with a valid URL
+    const verifiedItems = sectorItems.filter(item => item.url && item.url.startsWith("http"));
+    setItems(verifiedItems);
   }, [userSector]);
 
   const handleClick = (item: TickerItem) => {
