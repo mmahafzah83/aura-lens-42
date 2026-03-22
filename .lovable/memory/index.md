@@ -26,3 +26,4 @@ Dynamic from Executive Diagnostic (fallback: C-Suite Advisory, Strategic Archite
 - RTL support via dir="auto" on all text
 - Glass card aesthetic with gold gradients
 - Entries >30 days without pin → archived
+- Intelligence should prefer verified internal-only signals; external live-link feeds stay disabled until source quality is proven.
