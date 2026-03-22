@@ -185,8 +185,8 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
   useEffect(() => {
     const sectorItems = SEED_SIGNALS[userSector] || SEED_SIGNALS.default;
-    // Hard source mandate: only include items with a valid URL
-    const verifiedItems = sectorItems.filter(item => item.url && item.url.startsWith("http"));
+    // Deep-link mandate: reject homepages/top-level domains — only accept article-level URLs with unique slugs
+    const verifiedItems = sectorItems.filter((item) => isDeepLink(item.url));
     setItems(verifiedItems);
   }, [userSector]);
 
