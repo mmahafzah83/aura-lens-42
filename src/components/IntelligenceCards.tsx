@@ -209,6 +209,7 @@ const IntelligenceCards = () => {
       setDraftResult({
         post: data.post || "",
         image_url: data.image_url || null,
+        image_prompt: data.image_prompt || null,
         hook_type: data.hook_type,
         partner_lens: data.partner_lens,
         cta_question: data.cta_question,
