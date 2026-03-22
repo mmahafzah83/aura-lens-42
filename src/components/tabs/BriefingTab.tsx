@@ -195,8 +195,6 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
           style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
         />
       </div>
-      {/* Strategic Pulse Ticker — profile-dependent */}
-      <SectorPulseTicker onOpenChat={onOpenChat} />
 
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />
