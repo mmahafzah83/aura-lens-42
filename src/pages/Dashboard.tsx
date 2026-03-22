@@ -296,8 +296,8 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* Mobile Floating Island Navigation — hidden when chat is open */}
-      {!chatOpen && (
+      {/* Mobile Floating Island Navigation — hidden when chat, onboarding, or diagnostic is open */}
+      {!chatOpen && !showOnboarding && !showDiagnostic && (
         <nav
           className="md:hidden fixed left-4 right-4 z-[9999] glass-island rounded-2xl px-2 py-2"
           style={{ bottom: 'calc(12px + env(safe-area-inset-bottom))' }}
@@ -321,12 +321,12 @@ const Dashboard = () => {
         </nav>
       )}
 
-      {/* Mobile FAB — hidden when chat is open */}
-      {!chatOpen && (
+      {/* Mobile FAB — hidden when chat, onboarding, or diagnostic is open */}
+      {!chatOpen && !showOnboarding && !showDiagnostic && (
         <button
           onClick={() => setCaptureOpen(true)}
           className="md:hidden fixed right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[9998] aura-glow border border-primary/30"
-          style={{ bottom: 'calc(84px + env(safe-area-inset-bottom))' }}
+          style={{ bottom: 'calc(99px + env(safe-area-inset-bottom))' }}
         >
           <Plus className="w-6 h-6" />
         </button>

@@ -202,9 +202,10 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
         </div>
         <div className="flex gap-4 animate-marquee">
           {[
-            "MEWA approves SAR 2.1B desalination expansion in NEOM — capacity +30% by 2027",
-            "NWC launches AI-driven leak detection across Riyadh network — 15% efficiency gain projected",
-            "Vision 2030 water recycling target raised to 70% by 2025 — regulatory shift imminent",
+            "NEOM Water Expansion 2026: SAR 3.2B desalination mega-plant breaks ground — capacity +45% by 2028",
+            "MEWA 2026 Strategy: AI-driven smart metering mandate for all urban networks — 20% efficiency target",
+            "NWC privatization Phase III accelerates — new PPP model for 5 regional utilities announced Q1 2026",
+            "Vision 2030 recycled water target raised to 85% — industrial reuse regulation imminent",
           ].map((headline, i) => (
             <span key={i} className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />

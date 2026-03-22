@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, RotateCcw, ShieldCheck, RefreshCw } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
+import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 
 interface Skill {
   name: string;
@@ -30,18 +31,16 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [radarKey, setRadarKey] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
+        .select("*").eq("user_id", user.id).maybeSingle();
       if (profile) {
         setFirm(profile.firm || "");
         setLevel(profile.level || "");
@@ -49,33 +48,21 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
         setSectorFocus(profile.sector_focus || "");
         setNorthStar(profile.north_star_goal || "");
         setBrandPillars(profile.brand_pillars || []);
-        const gs = profile.generated_skills || [];
-        setSkills(gs);
+        setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
       }
       setLoading(false);
     };
     load();
-  }, []);
+  }, [radarKey]);
 
   const handleSave = async () => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-
     await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({
-        firm,
-        level,
-        core_practice: corePractice,
-        sector_focus: sectorFocus,
-        north_star_goal: northStar,
-        brand_pillars: brandPillars,
-        generated_skills: skills,
-        skill_ratings: ratings,
-      })
+      .update({ firm, level, core_practice: corePractice, sector_focus: sectorFocus, north_star_goal: northStar, brand_pillars: brandPillars, generated_skills: skills, skill_ratings: ratings })
       .eq("user_id", user.id);
-
     toast({ title: "Profile Updated", description: "Your executive profile has been saved." });
     setSaving(false);
   };
@@ -89,11 +76,7 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
 
   const removeSkill = (name: string) => {
     setSkills(prev => prev.filter(s => s.name !== name));
-    setRatings(prev => {
-      const next = { ...prev };
-      delete next[name];
-      return next;
-    });
+    setRatings(prev => { const next = { ...prev }; delete next[name]; return next; });
   };
 
   const addPillar = () => {
@@ -102,9 +85,7 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
     setNewPillar("");
   };
 
-  const removePillar = (idx: number) => {
-    setBrandPillars(prev => prev.filter((_, i) => i !== idx));
-  };
+  const removePillar = (idx: number) => setBrandPillars(prev => prev.filter((_, i) => i !== idx));
 
   if (loading) return <div className="glass-card rounded-2xl p-8 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
@@ -117,24 +98,15 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
           </div>
           <h3 className="text-lg font-semibold text-foreground">Profile & Skills</h3>
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-muted-foreground hover:text-primary transition-colors"
-        >
+        <button onClick={() => setExpanded(!expanded)} className="text-xs text-muted-foreground hover:text-primary transition-colors">
           {expanded ? "Collapse" : "Edit Profile"}
         </button>
       </div>
 
       {!expanded ? (
-        /* Compact view */
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Firm", value: firm },
-              { label: "Level", value: level },
-              { label: "Practice", value: corePractice },
-              { label: "Sector", value: sectorFocus },
-            ].map(item => (
+            {[{ label: "Firm", value: firm }, { label: "Level", value: level }, { label: "Practice", value: corePractice }, { label: "Sector", value: sectorFocus }].map(item => (
               <div key={item.label} className="p-3 rounded-xl bg-secondary/30">
                 <span className="text-[10px] text-muted-foreground tracking-wider uppercase">{item.label}</span>
                 <p className="text-sm text-foreground mt-0.5 truncate">{item.value || "—"}</p>
@@ -149,45 +121,36 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
           )}
           <div className="flex flex-wrap gap-1.5">
             {brandPillars.map((p, i) => (
-              <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-                {p}
-              </span>
+              <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{p}</span>
             ))}
           </div>
+
+          {/* Start Objective Audit button */}
+          <Button
+            variant="outline"
+            onClick={() => setAuditOpen(true)}
+            className="w-full mt-2 border-primary/30 text-primary hover:bg-primary/10 gap-2"
+          >
+            <ClipboardCheck className="w-4 h-4" />
+            Start Objective Audit
+          </Button>
         </div>
       ) : (
-        /* Expanded edit view */
         <div className="space-y-5">
-          {/* Basic Info */}
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Firm", value: firm, set: setFirm },
-              { label: "Level", value: level, set: setLevel },
-              { label: "Core Practice", value: corePractice, set: setCorePractice },
-              { label: "Sector Focus", value: sectorFocus, set: setSectorFocus },
-            ].map(item => (
+            {[{ label: "Firm", value: firm, set: setFirm }, { label: "Level", value: level, set: setLevel }, { label: "Core Practice", value: corePractice, set: setCorePractice }, { label: "Sector Focus", value: sectorFocus, set: setSectorFocus }].map(item => (
               <div key={item.label}>
                 <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
-                <Input
-                  value={item.value}
-                  onChange={(e) => item.set(e.target.value)}
-                  className="h-9 bg-secondary border-border/30 text-sm"
-                />
+                <Input value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
           </div>
 
-          {/* North Star */}
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">24-Month North Star</label>
-            <Input
-              value={northStar}
-              onChange={(e) => setNorthStar(e.target.value)}
-              className="h-9 bg-secondary border-border/30 text-sm"
-            />
+            <Input value={northStar} onChange={(e) => setNorthStar(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
           </div>
 
-          {/* Brand Pillars */}
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-2 block">Brand Pillars</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -199,69 +162,50 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
               ))}
             </div>
             <div className="flex gap-2">
-              <Input
-                placeholder="Add pillar…"
-                value={newPillar}
-                onChange={(e) => setNewPillar(e.target.value)}
-                className="h-8 bg-secondary border-border/30 text-sm flex-1"
-                onKeyDown={(e) => e.key === "Enter" && addPillar()}
-              />
+              <Input placeholder="Add pillar…" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
               <Button size="sm" variant="outline" onClick={addPillar} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
 
-          {/* Skills with Ratings */}
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-2 block">Skills & Self-Assessment</label>
             <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
               {skills.map((skill) => {
                 const isObjective = EVIDENCE_MATRIX.some(e => e.name === skill.name);
                 return (
-                <div key={skill.name} className="p-3 rounded-xl bg-secondary/30 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-foreground">{skill.name}</span>
-                      {isObjective && (
-                        <span title="Verified via Objective Diagnostic"><ShieldCheck className="w-3.5 h-3.5 text-primary" /></span>
-                      )}
+                  <div key={skill.name} className="p-3 rounded-xl bg-secondary/30 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm text-foreground">{skill.name}</span>
+                        {isObjective && <span title="Verified via Objective Diagnostic"><ShieldCheck className="w-3.5 h-3.5 text-primary" /></span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-primary font-medium">{ratings[skill.name] || 0}%</span>
+                        <button onClick={() => removeSkill(skill.name)} className="text-muted-foreground hover:text-destructive"><X className="w-3.5 h-3.5" /></button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-primary font-medium">{ratings[skill.name] || 0}%</span>
-                      <button onClick={() => removeSkill(skill.name)} className="text-muted-foreground hover:text-destructive">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <Slider value={[ratings[skill.name] || 0]} onValueChange={([v]) => setRatings(prev => ({ ...prev, [skill.name]: v }))} max={100} step={1} className="w-full" />
                   </div>
-                  <Slider
-                    value={[ratings[skill.name] || 0]}
-                    onValueChange={([v]) => setRatings(prev => ({ ...prev, [skill.name]: v }))}
-                    max={100}
-                    step={1}
-                    className="w-full"
-                  />
-                </div>
                 );
               })}
             </div>
             <div className="flex gap-2 mt-3">
-              <Input
-                placeholder="Add skill…"
-                value={newSkillName}
-                onChange={(e) => setNewSkillName(e.target.value)}
-                className="h-8 bg-secondary border-border/30 text-sm flex-1"
-                onKeyDown={(e) => e.key === "Enter" && addSkill()}
-              />
+              <Input placeholder="Add skill…" value={newSkillName} onChange={(e) => setNewSkillName(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addSkill()} />
               <Button size="sm" variant="outline" onClick={addSkill} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
 
-          {/* Save */}
           <Button onClick={handleSave} disabled={saving} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
             {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
             Save Profile
           </Button>
 
-          {/* Reset Assessment */}
+          {/* Start Objective Audit */}
+          <Button variant="outline" onClick={() => setAuditOpen(true)} className="w-full border-primary/30 text-primary hover:bg-primary/10 gap-2">
+            <ClipboardCheck className="w-4 h-4" />
+            Start Objective Audit
+          </Button>
+
           {onResetDiagnostic && (
             <Button
               variant="outline"
@@ -281,6 +225,8 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
           )}
         </div>
       )}
+
+      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => setRadarKey(k => k + 1)} />
     </div>
   );
 };

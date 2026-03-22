@@ -186,7 +186,7 @@ Generate exactly 2 briefing items as JSON:
       "source": "Publisher (use real sources: ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")})",
       "url": "Real URL or null",
       "skill_target": "Which skill gap this closes",
-      "bluf": "Director's BLUF: 2-sentence explanation of WHY this matters and HOW it closes the gap",
+      "bluf": "The Shift: [what changed] | The Impact: [what it means for the Director] | The Action: [what to do next]",
       "estimated_minutes": 15
     },
     {
@@ -195,7 +195,7 @@ Generate exactly 2 briefing items as JSON:
       "source": "Influence Pipeline",
       "url": null,
       "skill_target": "Which skill gap this demonstrates",
-      "bluf": "Director's BLUF: Why posting about this positions you as an authority and closes the gap",
+      "bluf": "The Shift: [market signal] | The Impact: [authority positioning opportunity] | The Action: [post this to close the gap]",
       "prompt": "A 2-line LinkedIn post draft starter the user can refine"
     }
   ]
