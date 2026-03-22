@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, ExternalLink, Loader2, RefreshCw, CheckCircle2, Target, Sparkles, TrendingUp, PenLine, Eye, EyeOff, Copy, Check, X, Download } from "lucide-react";
+import { BookOpen, ExternalLink, Loader2, RefreshCw, CheckCircle2, Target, Sparkles, TrendingUp, PenLine, Eye, EyeOff, Copy, Check, X, Download, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +29,7 @@ interface SkillGap {
 interface DraftResult {
   post: string;
   image_url?: string | null;
+  image_prompt?: string | null;
   hook_type?: string;
   partner_lens?: string;
   cta_question?: string;
@@ -77,6 +78,7 @@ const IntelligenceCards = () => {
   const [draftResult, setDraftResult] = useState<DraftResult | null>(null);
   const [draftOpen, setDraftOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
   const { toast } = useToast();
 
   // Auto-fetch on login (session appears)
@@ -207,6 +209,7 @@ const IntelligenceCards = () => {
       setDraftResult({
         post: data.post || "",
         image_url: data.image_url || null,
+        image_prompt: data.image_prompt || null,
         hook_type: data.hook_type,
         partner_lens: data.partner_lens,
         cta_question: data.cta_question,
@@ -226,6 +229,34 @@ const IntelligenceCards = () => {
     await navigator.clipboard.writeText(draftResult.post);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRegenerateImage = async () => {
+    if (!draftResult?.image_prompt) {
+      toast({ title: "No image prompt", description: "Cannot regenerate without an image concept.", variant: "destructive" });
+      return;
+    }
+    setRegeneratingImage(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { image_prompt: draftResult.image_prompt },
+      });
+
+      if (error) throw error;
+      if (data?.image_url) {
+        setDraftResult(prev => prev ? { ...prev, image_url: data.image_url } : prev);
+        toast({ title: "Image Regenerated", description: "New blackboard schematic generated." });
+      }
+    } catch (err) {
+      console.error("Regenerate image failed:", err);
+      toast({ title: "Regeneration Failed", description: "Could not generate a new schematic.", variant: "destructive" });
+    } finally {
+      setRegeneratingImage(false);
+    }
   };
 
   /** Parse BLUF into SIGNAL / ACTION / VALUE format */
@@ -487,6 +518,21 @@ const IntelligenceCards = () => {
                     >
                       <Download className="w-3 h-3" /> Save
                     </a>
+                  </div>
+                  {/* Regenerate Image button */}
+                  <div className="p-3 pt-0 bg-background/50">
+                    <button
+                      onClick={handleRegenerateImage}
+                      disabled={regeneratingImage}
+                      className="w-full py-2.5 rounded-lg text-xs font-medium border border-primary/15 text-primary/70 hover:bg-primary/10 transition-all flex items-center justify-center gap-2 tactile-press"
+                    >
+                      {regeneratingImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      )}
+                      {regeneratingImage ? "Regenerating…" : "Regenerate Image"}
+                    </button>
                   </div>
                 </div>
               )}
