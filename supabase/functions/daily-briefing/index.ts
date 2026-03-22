@@ -21,13 +21,49 @@ const PARTNER_BENCHMARK: Record<string, number> = {
 };
 
 const HIGH_AUTHORITY_SOURCES = [
-  "McKinsey Insights", "McKinsey Quarterly", "BCG Henderson Institute",
-  "Korn Ferry Institute", "HBR (Harvard Business Review)",
   "MEWA (Ministry of Environment, Water and Agriculture)",
-  "NWC (National Water Company)", "Vision 2030 Reports",
-  "Gartner Utilities", "Deloitte Insights", "EY Parthenon",
-  "PwC Strategy&", "World Economic Forum",
+  "SWA (Saudi Water Authority)",
+  "NWC (National Water Company)",
+  "EY",
+  "McKinsey",
+  "PIF (Public Investment Fund)",
+  "Deloitte Insights",
+  "PwC Strategy&",
+  "BCG Henderson Institute",
+  "Korn Ferry Institute",
+  "HBR (Harvard Business Review)",
+  "Vision 2030 Reports",
+  "Gartner Utilities",
+  "World Economic Forum",
+  "SAMA",
+  "Ministry of Finance",
+  "MISA",
 ];
+
+/** Validate a URL is a deep article link, not a homepage or 404 */
+async function validateLink(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  try {
+    // Reject top-level domains (homepages)
+    const parsed = new URL(url);
+    const pathSegments = parsed.pathname.split("/").filter(Boolean);
+    if (pathSegments.length < 1) return null; // homepage only
+
+    // Health check — HEAD request
+    const res = await fetch(url, { method: "HEAD", redirect: "follow" });
+    if (!res.ok) return null;
+
+    // Check final URL isn't a homepage redirect
+    const finalUrl = res.url || url;
+    const finalParsed = new URL(finalUrl);
+    const finalSegments = finalParsed.pathname.split("/").filter(Boolean);
+    if (finalSegments.length < 1) return null;
+
+    return finalUrl;
+  } catch {
+    return null;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -94,7 +130,7 @@ Deno.serve(async (req) => {
     const totalYears = totalMatch ? parseInt(totalMatch[1]) : 0;
     const expBonus = totalYears > 15;
 
-    // Calculate gaps vs Partner Benchmark
+    // Calculate gaps vs Partner Benchmark — sorted by largest gap first (gap-prioritized)
     const skillGaps = skills
       .map((s: any) => {
         let current = Math.min(100, (ratings[s.name] || 10) + (boosts[s.name] || 0));
@@ -102,30 +138,35 @@ Deno.serve(async (req) => {
           current = Math.min(100, current + 10);
         }
         const target = PARTNER_BENCHMARK[s.name] || 90;
-        return {
-          name: s.name,
-          category: s.category,
-          current,
-          target,
-          delta: target - current,
-        };
+        return { name: s.name, category: s.category, current, target, delta: target - current };
       })
       .filter((g: any) => g.delta > 0)
       .sort((a: any, b: any) => b.delta - a.delta);
 
-    const top2Gaps = skillGaps.slice(0, 2);
+    const top3Gaps = skillGaps.slice(0, 3);
 
-    if (top2Gaps.length === 0) {
+    if (top3Gaps.length === 0) {
       return new Response(JSON.stringify({ items: [], gaps: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Try Perplexity for real-time market trend
+    // Check read history to avoid duplication
+    const { data: readHistory } = await supabase
+      .from("learned_intelligence" as any)
+      .select("title")
+      .eq("user_id", user.id)
+      .like("title", "Read:%")
+      .order("created_at", { ascending: false })
+      .limit(50) as any;
+
+    const readTitles = new Set((readHistory || []).map((r: any) => r.title?.replace("Read: ", "") || ""));
+
+    // Try Perplexity for real-time market signals
     let marketTrend: any = null;
     if (PERPLEXITY_API_KEY) {
       try {
-        const searchQuery = `Latest ${sectorFocus} industry trends 2026 ${top2Gaps[0].name} consulting leadership`;
+        const searchQuery = `Latest ${sectorFocus} industry trends 2026 ${top3Gaps[0].name} ${top3Gaps[1]?.name || ""} consulting leadership Saudi Arabia`;
         const perplexityRes = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {
@@ -137,11 +178,12 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `You are a market intelligence analyst. Return a JSON object with: {"title": "headline", "source": "publisher", "url": "link or null", "summary": "2-sentence summary of the trend"}. Focus on ${sectorFocus} sector from sources like ${HIGH_AUTHORITY_SOURCES.slice(0, 5).join(", ")}.`,
+                content: `You are a market intelligence analyst. Return a JSON object with: {"title": "headline", "source": "publisher", "url": "direct article URL (not a homepage)", "summary": "2-sentence summary"}. Focus on ${sectorFocus} sector from sources like ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")}. CRITICAL: The URL must be a direct link to a specific article page, NOT a homepage or category page. Only include content from 2026.`,
               },
               { role: "user", content: searchQuery },
             ],
-            search_recency_filter: "week",
+            search_recency_filter: "month",
+            search_after_date_filter: "01/01/2026",
           }),
         });
 
@@ -171,38 +213,56 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Use AI to generate deep-dive + influence opportunity
-    const gapNames = top2Gaps.map((g: any) => `${g.name} (gap: ${g.delta}%)`).join(", ");
+    // Use AI to generate gap-prioritized briefing items
+    const gapNames = top3Gaps.map((g: any) => `${g.name} (gap: ${g.delta}%)`).join(", ");
     const brandContext = brandPillars.length > 0 ? `Brand Pillars: ${brandPillars.join(", ")}` : "";
+    const readHistoryContext = readTitles.size > 0 ? `\n\nALREADY READ (do NOT repeat these):\n${Array.from(readTitles).slice(0, 20).join("\n")}` : "";
 
     const systemPrompt = `You are an elite executive intelligence advisor for a ${sectorFocus} consulting Director in Saudi Arabia.
 
-AUTHORIZED SOURCES ONLY: MEWA, SWA (Saudi Water Authority), PIF, NWC (National Water Company), EY, and their official publications.
+AUTHORIZED SOURCES ONLY: MEWA, SWA (Saudi Water Authority), PIF, NWC (National Water Company), EY, McKinsey.
 If sector is Finance/Banking, also include: SAMA, Ministry of Finance, MISA, PIF.
 
-CONTEXTUAL FILTER: Prioritize items that map directly to these skill gaps: ${gapNames}.
-Focus on Saudi ${sectorFocus} sector signals from 2026.
+GAP-PRIORITIZED SCANNING: You MUST prioritize the user's lowest-scoring skills first.
+Current skill gaps (ordered by severity): ${gapNames}
+Every item MUST map to one of these specific gaps.
 
-Generate exactly 2 briefing items as JSON:
+RECENCY GUARDRAIL: STRICTLY reject any content dated before January 1, 2026. Only include 2026 content.
+
+CONTEXTUAL FILTER: Focus on Saudi ${sectorFocus} sector signals from 2026.
+${readHistoryContext}
+
+Generate exactly 3 briefing items as JSON:
 {
   "items": [
     {
       "type": "deep_dive",
       "title": "Specific report/article title from authorized sources",
-      "source": "Publisher (MUST be from: ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")})",
-      "url": "Real URL or null",
-      "skill_target": "Which skill gap this closes",
+      "source": "Publisher (MUST be from authorized list)",
+      "url": "Direct article URL or null (NEVER a homepage)",
+      "skill_target": "Exact skill gap name this closes",
       "bluf": "[SIGNAL]: One sentence on the core market shift/disruption | [ACTION]: Immediate Director-level strategic advisory move | [VALUE]: Specific impact on Client P&L or Authority Index",
-      "estimated_minutes": 15
+      "estimated_minutes": 15,
+      "gap_alignment": "Closes: <skill name>"
+    },
+    {
+      "type": "market_trend",
+      "title": "Specific market trend headline",
+      "source": "Publisher",
+      "url": "Direct article URL or null",
+      "skill_target": "Exact skill gap name",
+      "bluf": "[SIGNAL]: ... | [ACTION]: ... | [VALUE]: ...",
+      "gap_alignment": "Closes: <skill name>"
     },
     {
       "type": "influence",
       "title": "LinkedIn post topic/hook for authority positioning",
       "source": "Influence Pipeline",
       "url": null,
-      "skill_target": "Which skill gap this demonstrates",
-      "bluf": "[SIGNAL]: Market signal triggering this post | [ACTION]: Publish this to demonstrate authority | [VALUE]: Expected boost to thought leadership and client engagement",
-      "prompt": "A 2-line LinkedIn post draft starter the user can refine"
+      "skill_target": "Exact skill gap name this demonstrates",
+      "bluf": "[SIGNAL]: Market signal triggering this post | [ACTION]: Publish this to demonstrate authority | [VALUE]: Expected boost to thought leadership",
+      "prompt": "A 2-line LinkedIn post draft starter",
+      "gap_alignment": "Closes: <skill name>"
     }
   ]
 }
@@ -210,14 +270,16 @@ Generate exactly 2 briefing items as JSON:
 BLUF FORMAT IS MANDATORY: Every bluf field MUST use the 3-part pipe-separated format:
 [SIGNAL]: ... | [ACTION]: ... | [VALUE]: ...
 
-Focus on real, verifiable resources from authorized sources only.`;
+S-A-V FRAMEWORK: Every generated briefing MUST strictly use [SIGNAL], [ACTION], [VALUE] structure. No exceptions.
+
+Focus on real, verifiable resources from authorized sources only. URLs must be direct article links, not homepages.`;
 
     const userPrompt = `Sector: ${sectorFocus}
 Practice: ${corePractice}
 ${brandContext}
-Top skill gaps: ${gapNames}
+Top skill gaps (ordered by severity): ${gapNames}
 
-Generate a deep-dive recommendation and an influence opportunity for today's briefing.`;
+Generate 3 gap-prioritized briefing items for today's intelligence scan. Each item must directly address one of the skill gaps listed above.`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -244,54 +306,42 @@ Generate a deep-dive recommendation and an influence opportunity for today's bri
     const parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
     const aiItems = parsed.items || [];
 
-    // Combine: deep-dive + market trend + influence
+    // Build final briefing with link validation
     const briefingItems: any[] = [];
 
-    // 1. Deep-dive
-    const deepDive = aiItems.find((i: any) => i.type === "deep_dive");
-    if (deepDive) {
+    for (const item of aiItems) {
+      // Validate links — discard if 404 or homepage
+      const validatedUrl = await validateLink(item.url);
+
+      // Skip items that were already read
+      if (readTitles.has(item.title)) continue;
+
       briefingItems.push({
-        ...deepDive,
-        icon: "📄",
+        ...item,
+        url: validatedUrl,
+        icon: item.type === "deep_dive" ? "📄" : item.type === "market_trend" ? "📈" : "💡",
+        gap_alignment: item.gap_alignment || `Closes: ${item.skill_target}`,
       });
     }
 
-    // 2. Market trend (from Perplexity or AI fallback)
-    if (marketTrend) {
-      briefingItems.push({
+    // Insert market trend from Perplexity if available and not already covered
+    if (marketTrend && !briefingItems.some(b => b.type === "market_trend")) {
+      const validatedTrendUrl = await validateLink(marketTrend.url);
+      briefingItems.splice(1, 0, {
         type: "market_trend",
         title: marketTrend.title,
         source: marketTrend.source || "Market Intelligence",
-        url: marketTrend.url,
-        skill_target: top2Gaps[0]?.name || "Sector Foresight",
-        bluf: `Director's BLUF: ${marketTrend.summary}`,
+        url: validatedTrendUrl,
+        skill_target: top3Gaps[0]?.name || "Sector Foresight",
+        bluf: `[SIGNAL]: ${marketTrend.summary} | [ACTION]: Review and assess strategic implications | [VALUE]: Enhanced sector authority and client advisory positioning`,
         icon: "📈",
-      });
-    } else {
-      // Fallback: generate a market trend from AI
-      briefingItems.push({
-        type: "market_trend",
-        title: `${sectorFocus} Sector: Key Developments This Week`,
-        source: "Aura Market Intelligence",
-        url: null,
-        skill_target: top2Gaps[0]?.name || "Sector Foresight",
-        bluf: `Director's BLUF: Stay current on ${sectorFocus} shifts to maintain your sector authority and close your ${top2Gaps[0]?.name} gap.`,
-        icon: "📈",
-      });
-    }
-
-    // 3. Influence opportunity
-    const influence = aiItems.find((i: any) => i.type === "influence");
-    if (influence) {
-      briefingItems.push({
-        ...influence,
-        icon: "💡",
+        gap_alignment: `Closes: ${top3Gaps[0]?.name || "Sector Foresight"}`,
       });
     }
 
     return new Response(JSON.stringify({
-      items: briefingItems,
-      gaps: top2Gaps,
+      items: briefingItems.slice(0, 3),
+      gaps: top3Gaps,
       sector: sectorFocus,
       generated_at: new Date().toISOString(),
     }), {

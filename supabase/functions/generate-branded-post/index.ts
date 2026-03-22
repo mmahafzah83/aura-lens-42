@@ -112,7 +112,7 @@ Also generate an image_prompt for a 1080x1350 Minimalist Handwritten Blackboard 
 - Style: Minimalist line art (boxes, circles, connecting arrows, loops)
 - Font: Simulated clear, slightly imperfect handwriting for labels
 - Content: An educational diagram that simplifies the CORE concept of the post (e.g., a loop showing 'Smart Meter Data → AI Prediction → Targeted Maintenance')
-- FOOTER: Ultra-slim signature at very bottom (max 8% height), written directly on blackboard in same ink — no bars/blocks. Left: "M. Mahafdhah | Business & Digital Transformation Expert". Right: "→ Share this Framework".
+- FOOTER: Ultra-slim signature at very bottom (max 8% height), written directly on blackboard in same ink — no bars/blocks. Left: "M. Mahafdhah | Digital Transformation Architect | 18Y Sector Expert". Right: "→ Share this Framework".
 - NO photorealistic people. NO glossy AI renders. NO stock photo style.
 
 ${frameworkContext ? `\nEXPERT FRAMEWORKS TO WEAVE IN:\n${frameworkContext}` : ""}
