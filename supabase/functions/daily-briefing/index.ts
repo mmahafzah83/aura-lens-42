@@ -175,33 +175,42 @@ Deno.serve(async (req) => {
     const gapNames = top2Gaps.map((g: any) => `${g.name} (gap: ${g.delta}%)`).join(", ");
     const brandContext = brandPillars.length > 0 ? `Brand Pillars: ${brandPillars.join(", ")}` : "";
 
-    const systemPrompt = `You are an elite executive intelligence advisor for a ${sectorFocus} consulting Director.
+    const systemPrompt = `You are an elite executive intelligence advisor for a ${sectorFocus} consulting Director in Saudi Arabia.
+
+AUTHORIZED SOURCES ONLY: MEWA, SWA (Saudi Water Authority), PIF, NWC (National Water Company), EY, and their official publications.
+If sector is Finance/Banking, also include: SAMA, Ministry of Finance, MISA, PIF.
+
+CONTEXTUAL FILTER: Prioritize items that map directly to these skill gaps: ${gapNames}.
+Focus on Saudi ${sectorFocus} sector signals from 2026.
 
 Generate exactly 2 briefing items as JSON:
 {
   "items": [
     {
       "type": "deep_dive",
-      "title": "Specific whitepaper/report title",
-      "source": "Publisher (use real sources: ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")})",
+      "title": "Specific report/article title from authorized sources",
+      "source": "Publisher (MUST be from: ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")})",
       "url": "Real URL or null",
       "skill_target": "Which skill gap this closes",
-      "bluf": "The Shift: [what changed] | The Impact: [what it means for the Director] | The Action: [what to do next]",
+      "bluf": "[SIGNAL]: One sentence on the core market shift/disruption | [ACTION]: Immediate Director-level strategic advisory move | [VALUE]: Specific impact on Client P&L or Authority Index",
       "estimated_minutes": 15
     },
     {
       "type": "influence",
-      "title": "LinkedIn post topic/hook",
+      "title": "LinkedIn post topic/hook for authority positioning",
       "source": "Influence Pipeline",
       "url": null,
       "skill_target": "Which skill gap this demonstrates",
-      "bluf": "The Shift: [market signal] | The Impact: [authority positioning opportunity] | The Action: [post this to close the gap]",
+      "bluf": "[SIGNAL]: Market signal triggering this post | [ACTION]: Publish this to demonstrate authority | [VALUE]: Expected boost to thought leadership and client engagement",
       "prompt": "A 2-line LinkedIn post draft starter the user can refine"
     }
   ]
 }
 
-Focus on real, verifiable resources. The deep-dive must be a real published resource.`;
+BLUF FORMAT IS MANDATORY: Every bluf field MUST use the 3-part pipe-separated format:
+[SIGNAL]: ... | [ACTION]: ... | [VALUE]: ...
+
+Focus on real, verifiable resources from authorized sources only.`;
 
     const userPrompt = `Sector: ${sectorFocus}
 Practice: ${corePractice}
