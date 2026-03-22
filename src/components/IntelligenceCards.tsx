@@ -29,6 +29,7 @@ interface SkillGap {
 interface DraftResult {
   post: string;
   image_url?: string | null;
+  image_prompt?: string | null;
   hook_type?: string;
   partner_lens?: string;
   cta_question?: string;
