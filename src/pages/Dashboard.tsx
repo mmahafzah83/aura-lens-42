@@ -164,7 +164,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setChatOpen(true)}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press z-30"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Ask Aura</span>

@@ -294,23 +294,16 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
                 })}
               </div>
 
-              {/* View Original Source — Prominent */}
-              {selectedItem.url ? (
-                <a
-                  href={selectedItem.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl bg-primary/15 border-2 border-primary/30 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
-                >
-                  <ExternalLink className="w-5 h-5" />
-                  <span>View Original Source</span>
-                </a>
-              ) : (
-                <div className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl bg-muted/10 border border-border/10 text-sm text-muted-foreground/50">
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Source link unavailable</span>
-                </div>
-              )}
+              {/* View Original Source — Always available (hard source mandate) */}
+              <a
+                href={selectedItem.url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl bg-primary/15 border-2 border-primary/30 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
+              >
+                <ExternalLink className="w-5 h-5" />
+                <span>View Original Source</span>
+              </a>
 
               <button
                 onClick={() => {
