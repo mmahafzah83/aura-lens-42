@@ -170,7 +170,7 @@ OUTPUT FORMAT — valid JSON only:
             messages: [
               {
                 role: "user",
-                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}`,
+                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}\n\n=== MANDATORY FOOTER BLOCK (bottom 120px of the image) ===\nAt the very bottom of the image, reserve a horizontal footer strip spanning the full width in the same handwritten blackboard style:\n- Background: a slightly darker charcoal strip\n- LEFT SIDE: Handwritten text in white or gold ink — "Mohammad Mahafdhah" (larger, prominent) with "Business & Digital Transformation Expert" directly below (smaller)\n- RIGHT SIDE: A simple hand-drawn arrow icon (→) followed by handwritten text "Share this Framework"\n- The footer MUST look hand-lettered, NOT typed. Maintain the chalk/ink blackboard aesthetic.\n- Keep clear separation between the diagram content above and this footer strip.`,
               },
             ],
             modalities: ["image", "text"],
