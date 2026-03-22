@@ -110,7 +110,7 @@ export default {
         "scale-in": "scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "slide-up": "slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         "tab-enter": "tab-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-        "ticker-scroll": "ticker-scroll 360s linear infinite",
+        "ticker-scroll": "ticker-scroll 120s linear infinite",
       },
     },
   },
