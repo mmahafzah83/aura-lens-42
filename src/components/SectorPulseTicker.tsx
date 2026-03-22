@@ -261,7 +261,7 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
       {/* Intelligence Drawer — Slide-up */}
       <Sheet open={!!selectedItem} onOpenChange={(open) => !open && handleClose()}>
-        <SheetContent side="bottom" className="glass-card border-t border-border/20 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-safe">
+        <SheetContent side="bottom" className="glass-card border-t border-border/20 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-10">
           {selectedItem && (
             <div className="pt-2 pb-6 px-1 space-y-5">
               <SheetHeader className="text-left">
