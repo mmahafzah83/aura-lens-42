@@ -16,6 +16,7 @@ interface BriefingItem {
   prompt?: string;
   estimated_minutes?: number;
   priority?: boolean;
+  gap_alignment?: string;
 }
 
 interface SkillGap {
@@ -171,7 +172,7 @@ const IntelligenceCards = () => {
       setReadItems((prev) => new Set([...prev, index]));
       toast({
         title: "Intelligence Absorbed",
-        description: `+2% to ${item.skill_target} · LinkedIn draft generated`,
+        description: `+2% to ${item.skill_target} · Authority Index updated · LinkedIn draft generated`,
       });
     } catch (err) {
       console.error("Mark as read failed:", err);
@@ -382,10 +383,15 @@ const IntelligenceCards = () => {
                   {renderBLUF(item.bluf)}
                 </div>
 
-                {/* Skill target */}
-                <div className="flex items-center gap-2 mb-3">
+                {/* Gap Alignment + Skill target */}
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  {item.gap_alignment && (
+                    <span className="text-[9px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/15 font-semibold uppercase tracking-widest">
+                      {item.gap_alignment}
+                    </span>
+                  )}
                   <TrendingUp className="w-3 h-3 text-primary/60" />
-                  <span className="text-[10px] text-primary/60">Closes: {item.skill_target}</span>
+                  <span className="text-[10px] text-primary/60">{item.skill_target}</span>
                   <span className="text-[10px] text-emerald-400 font-semibold ml-auto">+2%</span>
                 </div>
 
