@@ -325,8 +325,8 @@ const Dashboard = () => {
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <button
           onClick={() => setCaptureOpen(true)}
-          className="md:hidden fixed right-5 bottom-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[9998] aura-glow border border-primary/30"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          className="md:hidden fixed right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[45] aura-glow border border-primary/30"
+          style={{ bottom: 'calc(68px + env(safe-area-inset-bottom))' }}
         >
           <Plus className="w-6 h-6" />
         </button>
