@@ -195,26 +195,8 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
           style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
         />
       </div>
-      {/* Strategic Pulse Ticker — always visible */}
-      <div className="overflow-hidden rounded-xl glass-card p-3 relative">
-        <div className="flex items-center gap-2 mb-2">
-          <Zap className="w-3.5 h-3.5 text-primary" />
-          <span className="text-[10px] text-primary font-semibold tracking-widest uppercase">Live Sector Pulse</span>
-        </div>
-        <div className="flex gap-4 animate-marquee">
-          {[
-            "NEOM Water Expansion 2026: SAR 3.2B desalination mega-plant breaks ground — capacity +45% by 2028",
-            "MEWA 2026 Strategy: AI-driven smart metering mandate for all urban networks — 20% efficiency target",
-            "NWC privatization Phase III accelerates — new PPP model for 5 regional utilities announced Q1 2026",
-            "Vision 2030 recycled water target raised to 85% — industrial reuse regulation imminent",
-          ].map((headline, i) => (
-            <span key={i} className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
-              {headline}
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* Strategic Pulse Ticker — profile-dependent */}
+      <SectorPulseTicker onOpenChat={onOpenChat} />
 
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />
