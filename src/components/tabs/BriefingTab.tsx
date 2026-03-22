@@ -199,19 +199,8 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />
 
-      {/* Hero — Strategic Pulse */}
-      <div className="glass-card-elevated rounded-2xl p-8 sm:p-12 relative overflow-hidden">
-        <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
 
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/15">
-            <Zap className="w-4 h-4 text-primary" />
-          </div>
-          <p className="text-xs text-muted-foreground uppercase tracking-[0.2em] font-medium">Strategic Pulse</p>
-        </div>
 
-        <InsightBlock text={insight} loading={loadingInsight} />
-      </div>
 
       {/* Stats — Minimalist icon cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
