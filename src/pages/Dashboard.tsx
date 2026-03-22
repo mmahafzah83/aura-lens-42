@@ -298,7 +298,7 @@ const Dashboard = () => {
 
       {/* Static Footer Navigation — visible at bottom of content */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
-        <nav className="md:hidden w-full z-10 border-t border-border/10 bg-background/80 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/10 bg-background/95 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex w-full max-w-6xl mx-auto px-2 py-2">
             {TAB_ITEMS.map((tab) => (
               <button
