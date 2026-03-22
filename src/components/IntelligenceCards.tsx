@@ -231,6 +231,34 @@ const IntelligenceCards = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleRegenerateImage = async () => {
+    if (!draftResult?.image_prompt) {
+      toast({ title: "No image prompt", description: "Cannot regenerate without an image concept.", variant: "destructive" });
+      return;
+    }
+    setRegeneratingImage(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: { image_prompt: draftResult.image_prompt },
+      });
+
+      if (error) throw error;
+      if (data?.image_url) {
+        setDraftResult(prev => prev ? { ...prev, image_url: data.image_url } : prev);
+        toast({ title: "Image Regenerated", description: "New blackboard schematic generated." });
+      }
+    } catch (err) {
+      console.error("Regenerate image failed:", err);
+      toast({ title: "Regeneration Failed", description: "Could not generate a new schematic.", variant: "destructive" });
+    } finally {
+      setRegeneratingImage(false);
+    }
+  };
+
   /** Parse BLUF into SIGNAL / ACTION / VALUE format */
   const renderBLUF = (bluf: string) => {
     const labels = [
