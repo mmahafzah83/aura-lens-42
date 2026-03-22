@@ -172,7 +172,7 @@ const IntelligenceCards = () => {
       setReadItems((prev) => new Set([...prev, index]));
       toast({
         title: "Intelligence Absorbed",
-        description: `+2% to ${item.skill_target} · LinkedIn draft generated`,
+        description: `+2% to ${item.skill_target} · Authority Index updated · LinkedIn draft generated`,
       });
     } catch (err) {
       console.error("Mark as read failed:", err);
