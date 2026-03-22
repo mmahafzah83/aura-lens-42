@@ -152,7 +152,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-10">
+        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-24 md:pb-10">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3.5">
