@@ -7,6 +7,27 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const parseAiJsonObject = (raw: unknown) => {
+  if (typeof raw !== "string" || !raw.trim()) return {};
+
+  const extracted = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw;
+  const candidates = [
+    extracted,
+    extracted.replace(/[\u0000-\u001F\u007F]/g, " "),
+    extracted.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " "),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("Invalid AI JSON response");
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,7 +67,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch user profile
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
       .select("firm, level, core_practice, sector_focus, brand_pillars, north_star_goal")
@@ -59,7 +79,6 @@ Deno.serve(async (req) => {
     const level = p.level || "Director";
     const sector = p.sector_focus || "Water & Utilities";
 
-    // Fetch expert frameworks
     const { data: frameworks } = await supabase
       .from("master_frameworks")
       .select("title, summary, framework_steps")
@@ -70,7 +89,6 @@ Deno.serve(async (req) => {
       `Framework: ${f.title}\nSummary: ${f.summary}\nSteps: ${JSON.stringify(f.framework_steps)}`
     ).join("\n\n");
 
-    // ─── HOOK-VALUE-IMAGE-CTA SYSTEM PROMPT ───
     const systemPrompt = `You are an Elite Executive LinkedIn Ghostwriter for a ${level} at ${firm}, focused on ${sector}.
 
 BRAND PILLARS: ${brandPillars}
@@ -127,7 +145,6 @@ OUTPUT FORMAT — valid JSON only:
   "brand_pillar_alignment": "Which brand pillar(s) this aligns to"
 }`;
 
-    // ─── PASS 1: Generate draft ───
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -154,9 +171,8 @@ OUTPUT FORMAT — valid JSON only:
     }
 
     const aiData = await aiRes.json();
-    const parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
+    const parsed = parseAiJsonObject(aiData.choices?.[0]?.message?.content);
 
-    // ─── PASS 2: Generate blackboard schematic image ───
     let imageBase64: string | null = null;
     if (parsed.image_prompt) {
       try {
@@ -182,9 +198,8 @@ OUTPUT FORMAT — valid JSON only:
           const imageData = await imageRes.json();
           const imgUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
           if (imgUrl && imgUrl.startsWith("data:image")) {
-            // Upload to storage
             const base64Data = imgUrl.split(",")[1];
-            const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
             const filename = `post-visual-${Date.now()}.png`;
 
             const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
