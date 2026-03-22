@@ -519,6 +519,21 @@ const IntelligenceCards = () => {
                       <Download className="w-3 h-3" /> Save
                     </a>
                   </div>
+                  {/* Regenerate Image button */}
+                  <div className="p-3 pt-0 bg-background/50">
+                    <button
+                      onClick={handleRegenerateImage}
+                      disabled={regeneratingImage}
+                      className="w-full py-2.5 rounded-lg text-xs font-medium border border-primary/15 text-primary/70 hover:bg-primary/10 transition-all flex items-center justify-center gap-2 tactile-press"
+                    >
+                      {regeneratingImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ImageIcon className="w-3.5 h-3.5" />
+                      )}
+                      {regeneratingImage ? "Regenerating…" : "Regenerate Image"}
+                    </button>
+                  </div>
                 </div>
               )}
 
