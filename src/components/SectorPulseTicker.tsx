@@ -242,9 +242,9 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
   useEffect(() => {
     const sectorItems = SEED_SIGNALS[userSector] || SEED_SIGNALS.default;
-    // Deep-link mandate: reject homepages/top-level domains — only accept article-level URLs with unique slugs
-    const verifiedItems = sectorItems.filter((item) => isDeepLink(item.url));
-    setItems(verifiedItems);
+    // Elite 10 Curation: deep link + 30-day recency + relevance > 75% → exactly 10 articles
+    const elite10 = curateElite10(sectorItems, userSector);
+    setItems(elite10);
   }, [userSector]);
 
   const handleClick = (item: TickerItem) => {
