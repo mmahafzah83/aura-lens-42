@@ -80,6 +80,9 @@ serve(async (req) => {
 
 BANNED WORDS: Never use "delve," "tapestry," "landscape," "synergy," "leverage" (as verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal). These sound like AI wrote it.
 
+NEWSLETTER HEADLINE HOOK (mandatory for ALL posts):
+Open with bold curiosity gap, contrarian insight, or startling statistic. The reader must NEED to click 'See more' by line 3. Never start with "I'm excited to share…" or "In today's world…"
+
 EXECUTIVE SCANNABILITY FORMAT (mandatory):
 1. THE HOOK — One bold, standalone sentence about a strategic shift. This is the scroll-stopper. No preamble.
 2. WHITESPACE — Every sentence gets its own line. Max 2 lines per paragraph. Let the reader breathe.
@@ -90,6 +93,8 @@ CONTENT MIX (70-20-10 rule):
 - 70% Awareness: Share industry insight, trends, or original observations that position the author as a thought leader.
 - 20% Authority: Reference real frameworks, data, or specific expertise that demonstrates deep domain knowledge.
 - 10% Conversion: A subtle call-to-action or invitation — never salesy.
+
+BRAND PILLAR ALIGNMENT: Every post must align to Digital Transformation, Innovation, or Future of Work.
 
 No hashtags. No emojis except ◈ and ➔. Under 150 words total.${frameworkBlock}`;
 

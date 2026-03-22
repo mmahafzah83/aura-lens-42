@@ -112,6 +112,7 @@ Also generate an image_prompt for a 1080x1350 Minimalist Handwritten Blackboard 
 - Style: Minimalist line art (boxes, circles, connecting arrows, loops)
 - Font: Simulated clear, slightly imperfect handwriting for labels
 - Content: An educational diagram that simplifies the CORE concept of the post (e.g., a loop showing 'Smart Meter Data → AI Prediction → Targeted Maintenance')
+- FOOTER: Ultra-slim signature at very bottom (max 8% height), written directly on blackboard in same ink — no bars/blocks. Left: "M. Mahafdhah | Business & Digital Transformation Expert". Right: "→ Share this Framework".
 - NO photorealistic people. NO glossy AI renders. NO stock photo style.
 
 ${frameworkContext ? `\nEXPERT FRAMEWORKS TO WEAVE IN:\n${frameworkContext}` : ""}
@@ -170,7 +171,7 @@ OUTPUT FORMAT — valid JSON only:
             messages: [
               {
                 role: "user",
-                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}\n\n=== MANDATORY FOOTER BLOCK (bottom 120px of the image) ===\nAt the very bottom of the image, reserve a horizontal footer strip spanning the full width in the same handwritten blackboard style:\n- Background: a slightly darker charcoal strip\n- LEFT SIDE: Handwritten text in white or gold ink — "Mohammad Mahafdhah" (larger, prominent) with "Business & Digital Transformation Expert" directly below (smaller)\n- RIGHT SIDE: A simple hand-drawn arrow icon (→) followed by handwritten text "Share this Framework"\n- The footer MUST look hand-lettered, NOT typed. Maintain the chalk/ink blackboard aesthetic.\n- Keep clear separation between the diagram content above and this footer strip.`,
+                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}\n\n=== SLIM SIGNATURE FOOT (max 8% of image height, at the very bottom) ===\nDo NOT add any solid bar, gray block, or colored strip.\nWrite the footer text DIRECTLY on the same charcoal blackboard background in the same handwritten ink style as the diagram.\nLeft side (small): "M. Mahafdhah | Business & Digital Transformation Expert"\nRight side (small): "→ Share this Framework"\nThe foot must be ultra-slim and feel like a natural hand-lettered extension of the blackboard — NOT a separate UI element.`,
               },
             ],
             modalities: ["image", "text"],
