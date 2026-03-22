@@ -19,15 +19,72 @@ interface SectorPulseTickerProps {
   onOpenChat?: (msg?: string) => void;
 }
 
+/* ── Sector relevance keywords by profile ──────────── */
+const SECTOR_KEYWORDS: Record<string, string[]> = {
+  water: ["swa", "nwc", "mewa", "pif", "saudi water", "swcc", "desalination", "neom water", "water", "utility", "utilities", "irrigation", "wastewater", "recycled water", "leak detection", "metering"],
+  finance: ["sama", "tadawul", "fintech", "banking", "ipo", "sukuk", "insurance", "capital markets", "open banking", "digital bank", "wealth"],
+  default: ["vision 2030", "sdaia", "dga", "pif", "privatization", "digital transformation", "ai governance", "infrastructure", "government"],
+};
+
 /* ── Helper: Reject top-level domains — only accept deep article links ── */
 const isDeepLink = (url: string | null): url is string => {
   if (!url || !url.startsWith("http")) return false;
   try {
     const u = new URL(url);
-    // Reject if path is just "/" or empty — that's a homepage
     const path = u.pathname.replace(/\/+$/, "");
     return path.length > 0 && path !== "";
   } catch { return false; }
+};
+
+/* ── Helper: Validate publication date is within last 30 days from today ── */
+const isWithin30Days = (url: string): boolean => {
+  // Reject any URL containing /2024/ or /2023/ or earlier years
+  if (/\/20(1\d|2[0-4])\//.test(url)) return false;
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const currentYear = now.getFullYear();
+  // If URL contains a year/month pattern, validate it
+  const yearMonthMatch = url.match(/\/(20\d{2})\/(0[1-9]|1[0-2])\//);
+  if (yearMonthMatch) {
+    const urlYear = parseInt(yearMonthMatch[1]);
+    const urlMonth = parseInt(yearMonthMatch[2]);
+    const urlDate = new Date(urlYear, urlMonth - 1, 1);
+    return urlDate >= thirtyDaysAgo;
+  }
+  // If URL contains just a year, allow current year only
+  const yearMatch = url.match(/\/(20\d{2})\//);
+  if (yearMatch) {
+    const urlYear = parseInt(yearMatch[1]);
+    return urlYear >= currentYear;
+  }
+  // No date signal in URL — accept (permalink without dates)
+  return true;
+};
+
+/* ── Helper: Calculate relevance score (0-100) based on sector keywords ── */
+const calculateRelevance = (item: TickerItem, sector: string): number => {
+  const keywords = SECTOR_KEYWORDS[sector] || SECTOR_KEYWORDS.default;
+  const text = `${item.headline} ${item.source} ${item.bluf}`.toLowerCase();
+  let score = 50;
+  for (const kw of keywords) {
+    if (text.includes(kw)) score += 8;
+  }
+  if (item.sourceType === "saudi_official") score += 10;
+  else if (item.sourceType === "pif") score += 8;
+  else if (item.sourceType === "ey") score += 5;
+  return Math.min(score, 100);
+};
+
+/* ── Link Validation Middleware: Deep link + recency + relevance → Elite 10 ── */
+const curateElite10 = (signals: TickerItem[], sector: string): TickerItem[] => {
+  return signals
+    .filter((item) => isDeepLink(item.url))
+    .filter((item) => isWithin30Days(item.url!))
+    .map((item) => ({ item, relevance: calculateRelevance(item, sector) }))
+    .filter(({ relevance }) => relevance > 75)
+    .sort((a, b) => b.relevance - a.relevance)
+    .slice(0, 10)
+    .map(({ item }) => item);
 };
 
 /* ── Expanded 2026 signals — canonical deep-link article URLs ────────── */
@@ -185,9 +242,9 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
   useEffect(() => {
     const sectorItems = SEED_SIGNALS[userSector] || SEED_SIGNALS.default;
-    // Deep-link mandate: reject homepages/top-level domains — only accept article-level URLs with unique slugs
-    const verifiedItems = sectorItems.filter((item) => isDeepLink(item.url));
-    setItems(verifiedItems);
+    // Elite 10 Curation: deep link + 30-day recency + relevance > 75% → exactly 10 articles
+    const elite10 = curateElite10(sectorItems, userSector);
+    setItems(elite10);
   }, [userSector]);
 
   const handleClick = (item: TickerItem) => {
