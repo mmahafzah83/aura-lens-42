@@ -141,8 +141,8 @@ const Dashboard = () => {
     setShowDiagnostic(false);
   };
 
-  return (
-    <div className="h-screen max-h-screen bg-background flex flex-col overflow-hidden relative safe-area-container">
+    return (
+    <div className="min-h-screen bg-background flex flex-col relative safe-area-container">
       {/* Animated gradient mesh background */}
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
@@ -150,10 +150,10 @@ const Dashboard = () => {
       {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
       {showDiagnostic && <ExecutiveDiagnostic onComplete={handleDiagnosticComplete} />}
 
-      {/* Main Content — header scrolls with content */}
-      <main className="flex-1 overflow-y-auto relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-36 md:pb-10">
-          {/* Scrollable Header */}
+      {/* Main Content */}
+      <main className="flex-1 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-10">
+          {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3.5">
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
@@ -296,17 +296,17 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* Mobile Floating Island Navigation — hidden when chat, onboarding, or diagnostic is open */}
+      {/* Static Footer Navigation — visible at bottom of content */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
-        <nav
-          className="md:hidden fixed left-4 right-4 z-[9999] glass-island rounded-2xl px-2 py-2"
-          style={{ bottom: 'calc(12px + env(safe-area-inset-bottom))' }}
-        >
-          <div className="flex w-full">
+        <nav className="md:hidden w-full z-10 border-t border-border/10 bg-background/80 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="flex w-full max-w-6xl mx-auto px-2 py-2">
             {TAB_ITEMS.map((tab) => (
               <button
                 key={`mobile-${tab.value}`}
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => {
+                  setActiveTab(tab.value);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200 tactile-press ${
                   activeTab === tab.value
                     ? "text-primary bg-primary/8"
@@ -325,8 +325,8 @@ const Dashboard = () => {
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <button
           onClick={() => setCaptureOpen(true)}
-          className="md:hidden fixed right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[9998] aura-glow border border-primary/30"
-          style={{ bottom: 'calc(99px + env(safe-area-inset-bottom))' }}
+          className="md:hidden fixed right-5 bottom-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[9998] aura-glow border border-primary/30"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
         >
           <Plus className="w-6 h-6" />
         </button>

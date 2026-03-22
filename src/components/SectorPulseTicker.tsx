@@ -261,7 +261,7 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
       {/* Intelligence Drawer — Slide-up */}
       <Sheet open={!!selectedItem} onOpenChange={(open) => !open && handleClose()}>
-        <SheetContent side="bottom" className="glass-card border-t border-border/20 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-safe">
+        <SheetContent side="bottom" className="glass-card border-t border-border/20 rounded-t-3xl max-h-[85vh] overflow-y-auto pb-10">
           {selectedItem && (
             <div className="pt-2 pb-6 px-1 space-y-5">
               <SheetHeader className="text-left">
@@ -292,17 +292,22 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
                 })}
               </div>
 
-              {/* Source Link — Prominent */}
-              {selectedItem.url && (
+              {/* View Original Source — Prominent */}
+              {selectedItem.url ? (
                 <a
                   href={selectedItem.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-primary/10 border border-primary/20 text-sm font-semibold text-primary hover:bg-primary/15 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl bg-primary/15 border-2 border-primary/30 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>Open Original Source</span>
+                  <ExternalLink className="w-5 h-5" />
+                  <span>View Original Source</span>
                 </a>
+              ) : (
+                <div className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-xl bg-muted/10 border border-border/10 text-sm text-muted-foreground/50">
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Source link unavailable</span>
+                </div>
               )}
 
               <button
