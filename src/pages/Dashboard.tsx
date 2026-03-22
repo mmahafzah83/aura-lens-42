@@ -232,7 +232,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 {/* Sticky Quick Capture Bar */}
-                <div className="fixed left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-6xl md:mx-auto z-[999]" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+                <div className="fixed left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-6xl md:mx-auto z-[40]" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}>
                   <button
                     onClick={() => setCaptureOpen(true)}
                     className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl glass-card border border-primary/20 hover-lift tactile-press transition-all"
