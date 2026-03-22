@@ -152,7 +152,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-10">
+        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-24 md:pb-10">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3.5">
@@ -164,7 +164,7 @@ const Dashboard = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setChatOpen(true)}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press"
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press z-30"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Ask Aura</span>
@@ -232,7 +232,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 {/* Sticky Quick Capture Bar */}
-                <div className="fixed left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-6xl md:mx-auto z-[999]" style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+                <div className="fixed left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-6xl md:mx-auto z-[40]" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}>
                   <button
                     onClick={() => setCaptureOpen(true)}
                     className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl glass-card border border-primary/20 hover-lift tactile-press transition-all"
@@ -298,7 +298,7 @@ const Dashboard = () => {
 
       {/* Static Footer Navigation — visible at bottom of content */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
-        <nav className="md:hidden w-full z-10 border-t border-border/10 bg-background/80 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/10 bg-background/95 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex w-full max-w-6xl mx-auto px-2 py-2">
             {TAB_ITEMS.map((tab) => (
               <button
@@ -325,8 +325,8 @@ const Dashboard = () => {
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <button
           onClick={() => setCaptureOpen(true)}
-          className="md:hidden fixed right-5 bottom-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[9998] aura-glow border border-primary/30"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+          className="md:hidden fixed right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[45] aura-glow border border-primary/30"
+          style={{ bottom: 'calc(68px + env(safe-area-inset-bottom))' }}
         >
           <Plus className="w-6 h-6" />
         </button>
