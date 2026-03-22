@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 import IntelligenceCards from "@/components/IntelligenceCards";
-import SectorPulseTicker from "@/components/SectorPulseTicker";
+
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -195,8 +195,6 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
           style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
         />
       </div>
-      {/* Strategic Pulse Ticker — profile-dependent */}
-      <SectorPulseTicker onOpenChat={onOpenChat} />
 
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />
