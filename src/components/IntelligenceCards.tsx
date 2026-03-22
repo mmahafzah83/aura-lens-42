@@ -16,6 +16,7 @@ interface BriefingItem {
   prompt?: string;
   estimated_minutes?: number;
   priority?: boolean;
+  gap_alignment?: string;
 }
 
 interface SkillGap {
