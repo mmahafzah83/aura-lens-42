@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { BookOpen, ExternalLink, Loader2, RefreshCw, CheckCircle2, Target, Sparkles, TrendingUp, PenLine, Eye, EyeOff, Copy, Check, X, Download } from "lucide-react";
+import { BookOpen, ExternalLink, Loader2, RefreshCw, CheckCircle2, Target, Sparkles, TrendingUp, PenLine, Eye, EyeOff, Copy, Check, X, Download, ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
