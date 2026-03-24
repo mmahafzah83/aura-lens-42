@@ -258,9 +258,9 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === "influence" && (
+            {activeTab === "authority" && (
               <div className="animate-tab-spring">
-                <InfluenceTab entries={entries} onRefresh={fetchEntries} />
+                <AuthorityTab entries={entries} onRefresh={fetchEntries} />
               </div>
             )}
 
