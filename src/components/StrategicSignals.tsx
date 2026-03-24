@@ -335,6 +335,13 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         open={!!explorerSignal}
         onClose={() => setExplorerSignal(null)}
       />
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
+      />
     </div>
   );
 };

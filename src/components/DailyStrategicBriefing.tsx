@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Zap, Target, Crown, ArrowRight, RefreshCw, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import FrameworkBuilder from "./FrameworkBuilder";
 
 interface Briefing {
   date: string;
