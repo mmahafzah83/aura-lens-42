@@ -6,6 +6,9 @@ import type { Database } from "@/integrations/supabase/types";
 import IntelligenceCards from "@/components/IntelligenceCards";
 import StrategicSignals from "@/components/StrategicSignals";
 import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
+import AuthorityOpportunities from "@/components/AuthorityOpportunities";
+import ExecutiveInsightFeed from "@/components/ExecutiveInsightFeed";
+import KnowledgeGraph from "@/components/KnowledgeGraph";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
