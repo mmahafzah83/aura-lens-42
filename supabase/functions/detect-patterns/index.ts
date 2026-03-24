@@ -171,6 +171,7 @@ Detect 2-5 signals maximum. Quality over quantity.`;
           fragment_count: evidenceIds.length,
           framework_opportunity: signal.framework_opportunity || {},
           content_opportunity: signal.content_opportunity || {},
+          consulting_opportunity: signal.consulting_opportunity || {},
         })
         .select()
         .single();
