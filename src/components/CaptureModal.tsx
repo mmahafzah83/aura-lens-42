@@ -305,6 +305,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             toast({ title: "Intelligence Extracted", description: `${deconData.extracted} insights added to your Learning Vault.` });
           }
         }).catch((e) => console.error("Deconstruct error:", e));
+
+        // Evidence pipeline: extract structured fragments for pattern detection
+        supabase.functions.invoke("extract-evidence", {
+          body: { source_type: "entry", source_id: insertData.id, user_id: user.id },
+        }).catch((e) => console.error("Evidence extraction error:", e));
       }
       toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
       setContent("");

@@ -29,3 +29,9 @@ verify_jwt = false
 
 [functions.deduplicate-entries]
 verify_jwt = false
+
+[functions.extract-evidence]
+verify_jwt = false
+
+[functions.backfill-intelligence]
+verify_jwt = false
