@@ -434,8 +434,8 @@ const ContentBuilder = () => {
         <CarouselGenerator
           open={showCarousel}
           onClose={() => setShowCarousel(false)}
-          initialTitle={topic}
-          initialContext={context}
+          title={topic}
+          context={context}
         />
       )}
     </div>
