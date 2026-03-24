@@ -106,6 +106,11 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
           description: `${result.chunks} chunks created. Aura can now search this document.`,
         });
         onUploaded?.();
+
+        // Evidence pipeline: extract structured fragments from document
+        supabase.functions.invoke("extract-evidence", {
+          body: { source_type: "document", source_id: (doc as any).id, user_id: session?.user?.id },
+        }).catch((e) => console.error("Evidence extraction error:", e));
       } else {
         setStatus("error");
         toast({ title: "Processing failed", description: result.error, variant: "destructive" });
