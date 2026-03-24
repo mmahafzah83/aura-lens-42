@@ -103,6 +103,15 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       iconColor: "text-amber-400",
       action: () => onOpenChat?.(`Analyze this strategic signal in depth: "${briefing.strategic_signal.title}" — ${briefing.strategic_signal.description}`),
       actionLabel: "Explore Signal",
+      secondaryAction: () => {
+        setCarouselData({
+          title: briefing.strategic_signal.title,
+          description: briefing.strategic_signal.description,
+          context: briefing.framework_opportunity?.description || "",
+        });
+        setCarouselOpen(true);
+      },
+      secondaryLabel: "Carousel",
     },
     {
       icon: Target,
