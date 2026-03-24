@@ -5,6 +5,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 import IntelligenceCards from "@/components/IntelligenceCards";
 import StrategicSignals from "@/components/StrategicSignals";
+import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
