@@ -212,6 +212,15 @@ const Dashboard = () => {
               </div>
             )}
 
+            {activeTab === "strategy" && (
+              <div className="animate-tab-spring">
+                <StrategyTab onOpenChat={(msg) => {
+                  setChatInitialMessage(msg);
+                  setChatOpen(true);
+                }} />
+              </div>
+            )}
+
             {activeTab === "pursuits" && (
               <div className="animate-tab-spring relative pb-20">
                 <div className="space-y-8">
