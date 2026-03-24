@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Copy, Check, Crown, RefreshCw, Pencil, Eye } from "lucide-react";
+import { Loader2, Copy, Check, Crown, RefreshCw, Pencil, Eye, Globe, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface LinkedInDraftPanelProps {
   open: boolean;
@@ -17,21 +18,29 @@ interface LinkedInDraftPanelProps {
   context?: string;
 }
 
+type Lang = "en" | "ar";
+
 const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: LinkedInDraftPanelProps) => {
-  const [draft, setDraft] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [drafts, setDrafts] = useState<Record<Lang, string>>({ en: "", ar: "" });
+  const [lang, setLang] = useState<Lang>("en");
+  const [loading, setLoading] = useState<Record<Lang, boolean>>({ en: false, ar: false });
   const [editing, setEditing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [visualUrl, setVisualUrl] = useState<string | null>(null);
+  const [visualLoading, setVisualLoading] = useState(false);
+
+  const draft = drafts[lang];
 
   useEffect(() => {
     if (open && title) {
-      generateDraft();
+      generateDraft("en");
+      generateDraft("ar");
     }
   }, [open, title]);
 
-  const generateDraft = async () => {
-    setLoading(true);
-    setDraft("");
+  const generateDraft = async (targetLang: Lang) => {
+    setLoading(prev => ({ ...prev, [targetLang]: true }));
+    setDrafts(prev => ({ ...prev, [targetLang]: "" }));
     setEditing(false);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -48,6 +57,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
           summary: summary || title,
           content: context || "",
           type: "default",
+          lang: targetLang,
         },
         headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
       });
@@ -55,29 +65,56 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setDraft(data.post || "");
+      setDrafts(prev => ({ ...prev, [targetLang]: data.post || "" }));
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate draft");
+      toast.error(e.message || `Failed to generate ${targetLang === "ar" ? "Arabic" : "English"} draft`);
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, [targetLang]: false }));
+    }
+  };
+
+  const generateVisual = async () => {
+    setVisualLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+        body: {
+          image_prompt: `Strategic framework diagram for: ${title}. Key insight: ${hook || draft.slice(0, 120)}`,
+        },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setVisualUrl(data.image_url || null);
+      toast.success("Visual generated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate visual");
+    } finally {
+      setVisualLoading(false);
     }
   };
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(draft);
     setCopied(true);
-    toast.success("Copied to clipboard — ready to publish on LinkedIn");
+    toast.success("Copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleClose = () => {
     onClose();
     setTimeout(() => {
-      setDraft("");
+      setDrafts({ en: "", ar: "" });
       setEditing(false);
       setCopied(false);
+      setVisualUrl(null);
     }, 300);
   };
+
+  const isCurrentLoading = loading[lang];
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && handleClose()}>
@@ -93,7 +130,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                   LinkedIn Draft
                 </SheetTitle>
                 <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
-                  Authority post · Hook → Insight → Framework → CTA
+                  Bilingual authority post · EN + AR
                 </SheetDescription>
               </div>
             </div>
@@ -102,7 +139,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
 
         <div className="h-0.5 bg-gradient-to-r from-amber-500/40 via-primary/30 to-transparent mt-4" />
 
-        {/* Source Context */}
+        {/* Topic */}
         <div className="px-5 pt-4 pb-2">
           <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold mb-1">Topic</p>
           <p className="text-xs font-medium text-foreground/80 leading-snug">{title}</p>
@@ -114,12 +151,27 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
         </div>
 
         <div className="px-5 py-4">
-          {loading ? (
+          {/* Language Toggle */}
+          <Tabs value={lang} onValueChange={(v) => { setLang(v as Lang); setEditing(false); }} className="mb-4">
+            <TabsList className="grid w-full grid-cols-2 h-8">
+              <TabsTrigger value="en" className="text-xs gap-1.5">
+                <Globe className="w-3 h-3" /> English
+                {loading.en && <Loader2 className="w-3 h-3 animate-spin" />}
+              </TabsTrigger>
+              <TabsTrigger value="ar" className="text-xs gap-1.5">
+                <Globe className="w-3 h-3" /> العربية
+                {loading.ar && <Loader2 className="w-3 h-3 animate-spin" />}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {isCurrentLoading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
               <div className="text-center">
-                <p className="text-xs text-muted-foreground/60">Drafting your authority post…</p>
-                <p className="text-[10px] text-muted-foreground/30 mt-1">Applying newsletter-style hook + framework audit</p>
+                <p className="text-xs text-muted-foreground/60">
+                  {lang === "ar" ? "جارٍ إعداد المنشور العربي…" : "Drafting your authority post…"}
+                </p>
               </div>
             </div>
           ) : draft ? (
@@ -145,13 +197,14 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                 {editing ? (
                   <Textarea
                     value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
+                    onChange={(e) => setDrafts(prev => ({ ...prev, [lang]: e.target.value }))}
                     className="border-0 rounded-none min-h-[300px] text-sm leading-relaxed resize-none focus-visible:ring-0 bg-transparent"
+                    dir={lang === "ar" ? "rtl" : "ltr"}
                   />
                 ) : (
                   <div
                     className="p-4 text-sm text-foreground/85 leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto"
-                    dir="auto"
+                    dir={lang === "ar" ? "rtl" : "auto"}
                     style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
                   >
                     {draft}
@@ -174,12 +227,46 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={generateDraft}
-                  disabled={loading}
+                  onClick={() => generateDraft(lang)}
+                  disabled={isCurrentLoading}
                   className="text-xs border-border/15"
                 >
                   <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
                 </Button>
+              </div>
+
+              {/* Visual Section */}
+              <div className="rounded-xl border border-primary/[0.08] bg-card/60 backdrop-blur-sm overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
+                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
+                    Blackboard Schematic
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={generateVisual}
+                    disabled={visualLoading}
+                    className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
+                  >
+                    {visualLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <ImageIcon className="w-3 h-3 mr-1" />
+                    )}
+                    {visualUrl ? "Regenerate" : "Generate"}
+                  </Button>
+                </div>
+                {visualLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
+                  </div>
+                ) : visualUrl ? (
+                  <img src={visualUrl} alt="Blackboard schematic" className="w-full" />
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-[10px] text-muted-foreground/30">Click Generate to create a visual</p>
+                  </div>
+                )}
               </div>
 
               {/* Word count */}
@@ -193,7 +280,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
               <Button
                 size="sm"
                 variant="outline"
-                onClick={generateDraft}
+                onClick={() => generateDraft(lang)}
                 className="mt-3 text-xs"
               >
                 Generate Draft
