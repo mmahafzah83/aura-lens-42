@@ -203,7 +203,10 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
         />
       </div>
 
-      {/* Daily Strategic Briefing — top of dashboard */}
+      {/* Strategic Command Center */}
+      <StrategicCommandCenter />
+
+      {/* Daily Strategic Briefing */}
       <DailyStrategicBriefing onOpenChat={onOpenChat} />
 
       {/* Daily Intelligence Cards */}
