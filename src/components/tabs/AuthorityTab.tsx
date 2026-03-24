@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Loader2, Save, Plus, X, Pencil, BookOpen, Sparkles,
   FileText, LayoutGrid, PenTool, Lightbulb, RefreshCw,
-  Send, ChevronRight, Copy, Check, Globe
+  Send, ChevronRight, Copy, Check, Globe, BarChart3
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import CarouselGenerator from "@/components/CarouselGenerator";
+import LinkedInIntelligence from "@/components/LinkedInIntelligence";
 
 /* ── Types ── */
 interface VoiceProfile {
@@ -551,7 +552,7 @@ interface AuthorityTabProps {
 }
 
 const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
-  const [activeSection, setActiveSection] = useState<"builder" | "voice" | "planner">("builder");
+  const [activeSection, setActiveSection] = useState<"builder" | "voice" | "planner" | "linkedin">("builder");
   const [builderTopic, setBuilderTopic] = useState("");
   const [builderFormat, setBuilderFormat] = useState<ContentType>("post");
 
@@ -565,6 +566,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
     { key: "builder" as const, label: "Content Builder", icon: PenTool },
     { key: "voice" as const, label: "Voice & Style", icon: Pencil },
     { key: "planner" as const, label: "Narrative Planner", icon: Lightbulb },
+    { key: "linkedin" as const, label: "LinkedIn Intel", icon: BarChart3 },
   ];
 
   return (
@@ -603,6 +605,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         {activeSection === "builder" && <ContentBuilder key={builderTopic} />}
         {activeSection === "voice" && <VoiceMemory />}
         {activeSection === "planner" && <NarrativePlanner onSelectTopic={handleSelectTopic} />}
+        {activeSection === "linkedin" && <LinkedInIntelligence />}
       </div>
     </div>
   );
