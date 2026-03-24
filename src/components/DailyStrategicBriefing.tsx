@@ -33,6 +33,8 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
   const [draftTitle, setDraftTitle] = useState("");
   const [draftHook, setDraftHook] = useState("");
   const [actionWorkspaceOpen, setActionWorkspaceOpen] = useState(false);
+  const [carouselOpen, setCarouselOpen] = useState(false);
+  const [carouselData, setCarouselData] = useState({ title: "", description: "", context: "" });
 
   const today = new Date().toDateString();
 
