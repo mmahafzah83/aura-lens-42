@@ -119,7 +119,11 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       body: briefing.authority_opportunity.hook,
       accent: "from-primary/20 to-primary/5",
       iconColor: "text-primary",
-      action: () => onOpenChat?.(`Draft a LinkedIn authority post: "${briefing.authority_opportunity.title}" — Hook: "${briefing.authority_opportunity.hook}"`),
+      action: () => {
+        setDraftTitle(briefing.authority_opportunity.title);
+        setDraftHook(briefing.authority_opportunity.hook);
+        setDraftOpen(true);
+      },
       actionLabel: "Draft Post",
     },
   ];
