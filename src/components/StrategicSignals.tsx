@@ -6,6 +6,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
+import FrameworkBuilder from "./FrameworkBuilder";
 
 interface StrategicSignal {
   id: string;
