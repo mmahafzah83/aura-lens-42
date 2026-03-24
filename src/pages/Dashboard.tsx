@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar, Shield, Lightbulb, Crown } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Target, TrendingUp, Shield, Lightbulb, Crown, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -8,13 +8,11 @@ import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
 import TrainingModal from "@/components/TrainingModal";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
-import PotentialUnleashed from "@/components/PotentialUnleashed";
 import RecentEntries from "@/components/RecentEntries";
 import AuraChatSidebar from "@/components/AuraChatSidebar";
 import DocumentUpload from "@/components/DocumentUpload";
 import AccountIntelligence from "@/components/AccountIntelligence";
 import BriefingTab from "@/components/tabs/BriefingTab";
-import InfluenceTab from "@/components/tabs/InfluenceTab";
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
@@ -22,19 +20,18 @@ import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
 import MarketTab from "@/components/tabs/MarketTab";
 import StrategyTab from "@/components/tabs/StrategyTab";
+import IdentityTab from "@/components/tabs/IdentityTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
-import ProfileManagement from "@/components/ProfileManagement";
-import ProfileIntelligence from "@/components/ProfileIntelligence";
 import NotificationBell from "@/components/NotificationBell";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const TAB_ITEMS = [
+  { value: "identity", label: "Identity", icon: User },
   { value: "intelligence", label: "Intelligence", icon: Shield },
   { value: "strategy", label: "Strategy", icon: Lightbulb },
-  { value: "pursuits", label: "Pursuits", icon: Target },
   { value: "authority", label: "Authority", icon: Crown },
   { value: "growth", label: "Growth", icon: TrendingUp },
 ] as const;
@@ -43,7 +40,7 @@ type TabValue = typeof TAB_ITEMS[number]["value"];
 
 const Dashboard = () => {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [activeTab, setActiveTab] = useState<TabValue>("intelligence");
+  const [activeTab, setActiveTab] = useState<TabValue>("identity");
   const [captureOpen, setCaptureOpen] = useState(false);
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
@@ -96,7 +93,6 @@ const Dashboard = () => {
       if (!session) navigate("/auth");
       else {
         setUser({ email: session.user.email });
-        // Check if user has completed diagnostic
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
           .select("completed")
@@ -104,7 +100,6 @@ const Dashboard = () => {
           .maybeSingle();
         if (profile && (profile as any).completed) {
           setShowOnboarding(true);
-          // Check for 48h nudge in background
           checkStrategicNudge(session.access_token);
         } else {
           setShowDiagnostic(true);
@@ -137,24 +132,16 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-  };
+  const handleOnboardingComplete = () => setShowOnboarding(false);
+  const handleDiagnosticComplete = () => setShowDiagnostic(false);
 
-  const handleDiagnosticComplete = () => {
-    setShowDiagnostic(false);
-  };
-
-    return (
+  return (
     <div className="min-h-screen bg-background flex flex-col relative safe-area-container">
-      {/* Animated gradient mesh background */}
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
-      {/* Onboarding */}
       {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
       {showDiagnostic && <ExecutiveDiagnostic onComplete={handleDiagnosticComplete} />}
 
-      {/* Main Content */}
       <main className="flex-1 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-24 md:pb-10">
           {/* Header */}
@@ -163,7 +150,10 @@ const Dashboard = () => {
               <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
                 <Zap className="w-4.5 h-4.5 text-primary" />
               </div>
-              <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
+              <div>
+                <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
+                <p className="text-[10px] text-muted-foreground/60 tracking-widest uppercase">Strategic Intelligence OS</p>
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -201,6 +191,12 @@ const Dashboard = () => {
 
           {/* Tab Content */}
           <div className="tab-content-spring">
+            {activeTab === "identity" && (
+              <div className="animate-tab-spring">
+                <IdentityTab onResetDiagnostic={() => setShowDiagnostic(true)} />
+              </div>
+            )}
+
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
                 <BriefingTab entries={entries} onRefresh={fetchEntries} onOpenChat={(msg) => {
@@ -209,6 +205,26 @@ const Dashboard = () => {
                 }} />
                 <div className="mt-8">
                   <MarketTab />
+                </div>
+                {/* Knowledge Vault */}
+                <div className="mt-8 space-y-6">
+                  <div className="glass-card rounded-2xl p-6 sm:p-10">
+                    <AccountIntelligence entries={entries} />
+                  </div>
+                  <div className="glass-card rounded-2xl p-6 sm:p-10">
+                    <RecentEntries entries={entries} onRefresh={fetchEntries} />
+                  </div>
+                  <div className="glass-card rounded-2xl p-4 sm:p-5">
+                    <details className="group">
+                      <summary className="flex items-center justify-between cursor-pointer list-none">
+                        <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Upload Document</span>
+                        <span className="text-[10px] text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
+                      </summary>
+                      <div className="mt-3">
+                        <DocumentUpload onUploaded={fetchEntries} />
+                      </div>
+                    </details>
+                  </div>
                 </div>
               </div>
             )}
@@ -222,43 +238,6 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === "pursuits" && (
-              <div className="animate-tab-spring relative pb-20">
-                <div className="space-y-8">
-                  <div className="glass-card rounded-2xl p-6 sm:p-10">
-                    <AccountIntelligence entries={entries} />
-                  </div>
-                  <div className="glass-card rounded-2xl p-6 sm:p-10">
-                    <RecentEntries entries={entries} onRefresh={fetchEntries} />
-                  </div>
-                  {/* Minimized Upload */}
-                  <div className="glass-card rounded-2xl p-4 sm:p-5">
-                    <details className="group">
-                      <summary className="flex items-center justify-between cursor-pointer list-none">
-                        <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Upload Document</span>
-                        <span className="text-[10px] text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
-                      </summary>
-                      <div className="mt-3">
-                        <DocumentUpload onUploaded={fetchEntries} />
-                      </div>
-                    </details>
-                  </div>
-                </div>
-                {/* Sticky Quick Capture Bar */}
-                <div className="fixed left-4 right-4 md:left-auto md:right-auto md:w-full md:max-w-6xl md:mx-auto z-[40]" style={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}>
-                  <button
-                    onClick={() => setCaptureOpen(true)}
-                    className="w-full flex items-center gap-3 px-5 py-3.5 rounded-2xl glass-card border border-primary/20 hover-lift tactile-press transition-all"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 aura-glow">
-                      <Plus className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="text-sm font-medium text-muted-foreground">Quick Capture — text, voice, link, or image</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
             {activeTab === "authority" && (
               <div className="animate-tab-spring">
                 <AuthorityTab entries={entries} onRefresh={fetchEntries} />
@@ -268,10 +247,7 @@ const Dashboard = () => {
             {activeTab === "growth" && (
               <div className="animate-tab-spring">
                 <div className="space-y-6">
-                  {/* KPI Progress Rings */}
                   <KPIProgressRings />
-
-                  {/* Skill Radar + Log Training */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
                       <SkillRadar key={radarKey} />
@@ -290,21 +266,9 @@ const Dashboard = () => {
                       <WeeklyTransformationLens entries={entries} />
                     </div>
                   </div>
-
-                  {/* 12-Month Roadmap */}
                   <YearlyRoadmap />
-
-                  {/* Reading List */}
                   <SovereignReadingList />
-
-                  {/* Frameworks */}
                   <MyFrameworks />
-
-                  {/* Profile Intelligence */}
-                  <ProfileIntelligence />
-
-                  {/* Profile Management */}
-                  <ProfileManagement onResetDiagnostic={() => setShowDiagnostic(true)} />
                 </div>
               </div>
             )}
@@ -312,7 +276,7 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* Static Footer Navigation — visible at bottom of content */}
+      {/* Mobile Bottom Nav */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/10 bg-background/95 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="flex w-full max-w-6xl mx-auto px-2 py-2">
@@ -337,7 +301,7 @@ const Dashboard = () => {
         </nav>
       )}
 
-      {/* Mobile FAB — hidden when chat, onboarding, or diagnostic is open */}
+      {/* Mobile FAB */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <button
           onClick={() => setCaptureOpen(true)}
