@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.generate-branded-post]
 verify_jwt = false
+
+[functions.generate-carousel]
+verify_jwt = false

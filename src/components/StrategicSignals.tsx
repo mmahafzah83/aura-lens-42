@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import {
   Loader2, Zap, Target, FileText, Pen, ChevronDown, ChevronUp,
-  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X, Search
+  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X, Search, LayoutGrid
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
+import CarouselGenerator from "./CarouselGenerator";
 
 interface StrategicSignal {
   id: string;
@@ -61,6 +62,7 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
   const [explorerSignal, setExplorerSignal] = useState<StrategicSignal | null>(null);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
+  const [carouselData, setCarouselData] = useState<{ title: string; description?: string; context?: string } | null>(null);
 
   const fetchSignals = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -324,6 +326,16 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                         <Search className="w-3.5 h-3.5" /> Explore Signal
                       </button>
                       <button
+                        onClick={() => setCarouselData({
+                          title: signal.signal_title,
+                          description: signal.explanation,
+                          context: signal.strategic_implications,
+                        })}
+                        className="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" /> Carousel
+                      </button>
+                      <button
                         onClick={() => dismissSignal(signal.id)}
                         className="text-[11px] text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1"
                       >
@@ -356,6 +368,13 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         hook={draftData?.hook}
         angle={draftData?.angle}
         context={draftData?.context}
+      />
+      <CarouselGenerator
+        open={!!carouselData}
+        onClose={() => setCarouselData(null)}
+        title={carouselData?.title || ""}
+        description={carouselData?.description}
+        context={carouselData?.context}
       />
     </div>
   );
