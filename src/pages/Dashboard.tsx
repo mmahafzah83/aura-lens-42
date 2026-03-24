@@ -23,6 +23,7 @@ import MarketTab from "@/components/tabs/MarketTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import ProfileManagement from "@/components/ProfileManagement";
+import ProfileIntelligence from "@/components/ProfileIntelligence";
 import NotificationBell from "@/components/NotificationBell";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -286,6 +287,9 @@ const Dashboard = () => {
 
                   {/* Frameworks */}
                   <MyFrameworks />
+
+                  {/* Profile Intelligence */}
+                  <ProfileIntelligence />
 
                   {/* Profile Management */}
                   <ProfileManagement onResetDiagnostic={() => setShowDiagnostic(true)} />
