@@ -24,6 +24,8 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderData, setBuilderData] = useState({ title: "", description: "" });
 
   const today = new Date().toDateString();
 
