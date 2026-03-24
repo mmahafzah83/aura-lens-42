@@ -205,6 +205,65 @@ export type Database = {
         }
         Relationships: []
       }
+      evidence_fragments: {
+        Row: {
+          confidence: number
+          content: string
+          created_at: string
+          embedding: string | null
+          entities: Json | null
+          fragment_type: string
+          id: string
+          metadata: Json | null
+          skill_pillars: string[]
+          source_registry_id: string
+          tags: string[]
+          title: string
+          tsv: unknown
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          entities?: Json | null
+          fragment_type: string
+          id?: string
+          metadata?: Json | null
+          skill_pillars?: string[]
+          source_registry_id: string
+          tags?: string[]
+          title: string
+          tsv?: unknown
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          entities?: Json | null
+          fragment_type?: string
+          id?: string
+          metadata?: Json | null
+          skill_pillars?: string[]
+          source_registry_id?: string
+          tags?: string[]
+          title?: string
+          tsv?: unknown
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evidence_fragments_source_registry_id_fkey"
+            columns: ["source_registry_id"]
+            isOneToOne: false
+            referencedRelation: "source_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       focus_accounts: {
         Row: {
           created_at: string
@@ -391,6 +450,51 @@ export type Database = {
           id?: string
           pillar?: string
           target_hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      source_registry: {
+        Row: {
+          content_preview: string | null
+          created_at: string
+          fragment_count: number
+          id: string
+          processed: boolean
+          processed_at: string | null
+          source_id: string
+          source_metadata: Json | null
+          source_type: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_preview?: string | null
+          created_at?: string
+          fragment_count?: number
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          source_id: string
+          source_metadata?: Json | null
+          source_type: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_preview?: string | null
+          created_at?: string
+          fragment_count?: number
+          id?: string
+          processed?: boolean
+          processed_at?: string | null
+          source_id?: string
+          source_metadata?: Json | null
+          source_type?: string
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
