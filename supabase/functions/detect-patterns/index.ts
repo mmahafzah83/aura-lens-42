@@ -107,6 +107,7 @@ For each detected pattern, output:
 - confidence: 0.0-1.0
 - framework_opportunity: { title, description, potential_steps: string[] } - a framework that could be built from this pattern
 - content_opportunity: { title, hook, angle } - a LinkedIn/thought leadership post opportunity
+- consulting_opportunity: { service_name, problem, target_clients, value_proposition } - a potential advisory or consulting theme derived from the signal
 
 Output valid JSON: { "signals": [...] }
 Detect 2-5 signals maximum. Quality over quantity.`;
