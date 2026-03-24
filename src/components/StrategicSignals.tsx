@@ -326,6 +326,16 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                         <Search className="w-3.5 h-3.5" /> Explore Signal
                       </button>
                       <button
+                        onClick={() => setCarouselData({
+                          title: signal.signal_title,
+                          description: signal.explanation,
+                          context: signal.strategic_implications,
+                        })}
+                        className="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" /> Carousel
+                      </button>
+                      <button
                         onClick={() => dismissSignal(signal.id)}
                         className="text-[11px] text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1"
                       >
