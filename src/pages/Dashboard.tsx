@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar, Shield } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar, Shield, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,6 +20,7 @@ import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
 import MarketTab from "@/components/tabs/MarketTab";
+import StrategyTab from "@/components/tabs/StrategyTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import ProfileManagement from "@/components/ProfileManagement";
@@ -31,6 +32,7 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const TAB_ITEMS = [
   { value: "intelligence", label: "Intelligence", icon: Shield },
+  { value: "strategy", label: "Strategy", icon: Lightbulb },
   { value: "pursuits", label: "Pursuits", icon: Target },
   { value: "influence", label: "Influence", icon: Megaphone },
   { value: "growth", label: "Growth", icon: TrendingUp },
@@ -207,6 +209,15 @@ const Dashboard = () => {
                 <div className="mt-8">
                   <MarketTab />
                 </div>
+              </div>
+            )}
+
+            {activeTab === "strategy" && (
+              <div className="animate-tab-spring">
+                <StrategyTab onOpenChat={(msg) => {
+                  setChatInitialMessage(msg);
+                  setChatOpen(true);
+                }} />
               </div>
             )}
 
