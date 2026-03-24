@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import CarouselGenerator from "@/components/CarouselGenerator";
+import LinkedInIntelligence from "@/components/LinkedInIntelligence";
 
 /* ── Types ── */
 interface VoiceProfile {
