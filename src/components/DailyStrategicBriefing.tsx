@@ -177,7 +177,7 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
 
       {/* Opportunity Sections */}
       <div className="grid gap-2.5">
-        {sections.map(({ icon: Icon, label, title, body, accent, iconColor, action, actionLabel }) => (
+        {sections.map(({ icon: Icon, label, title, body, accent, iconColor, action, actionLabel, secondaryAction, secondaryLabel }: any) => (
           <div key={label} className="glass-card rounded-xl border border-primary/[0.06] p-4 hover:border-primary/15 transition-colors duration-300">
             <div className="flex items-start gap-3">
               <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${accent} flex items-center justify-center flex-shrink-0`}>
@@ -187,12 +187,22 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
                 <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold mb-0.5">{label}</p>
                 <p className="text-xs font-semibold text-foreground mb-1 leading-snug">{title}</p>
                 <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{body}</p>
-                <button
-                  onClick={action}
-                  className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 mt-2 transition-colors"
-                >
-                  <ArrowRight className="w-3 h-3" /> {actionLabel}
-                </button>
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={action}
+                    className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                  >
+                    <ArrowRight className="w-3 h-3" /> {actionLabel}
+                  </button>
+                  {secondaryAction && (
+                    <button
+                      onClick={secondaryAction}
+                      className="text-[10px] text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                    >
+                      <LayoutGrid className="w-3 h-3" /> {secondaryLabel}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
