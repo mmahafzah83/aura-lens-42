@@ -9,6 +9,7 @@ import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
 import AuthorityOpportunities from "@/components/AuthorityOpportunities";
 import ExecutiveInsightFeed from "@/components/ExecutiveInsightFeed";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
+import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
