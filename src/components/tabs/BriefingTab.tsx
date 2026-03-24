@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle, RefreshCw, Network, ArrowRight } from "lucide-react";
+import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle, RefreshCw, GitBranch, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
@@ -224,7 +224,7 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-            <Network className="w-4 h-4 text-blue-400" />
+            <GitBranch className="w-4 h-4 text-blue-400" />
           </div>
           <div className="flex-1">
             <p className="text-xs font-semibold text-foreground leading-snug">Knowledge Graph</p>
