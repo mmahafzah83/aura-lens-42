@@ -34,7 +34,7 @@ const TAB_ITEMS = [
   { value: "intelligence", label: "Intelligence", icon: Shield },
   { value: "strategy", label: "Strategy", icon: Lightbulb },
   { value: "pursuits", label: "Pursuits", icon: Target },
-  { value: "influence", label: "Influence", icon: Megaphone },
+  { value: "authority", label: "Authority", icon: Crown },
   { value: "growth", label: "Growth", icon: TrendingUp },
 ] as const;
 
