@@ -552,7 +552,7 @@ interface AuthorityTabProps {
 }
 
 const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
-  const [activeSection, setActiveSection] = useState<"builder" | "voice" | "planner">("builder");
+  const [activeSection, setActiveSection] = useState<"builder" | "voice" | "planner" | "linkedin">("builder");
   const [builderTopic, setBuilderTopic] = useState("");
   const [builderFormat, setBuilderFormat] = useState<ContentType>("post");
 
