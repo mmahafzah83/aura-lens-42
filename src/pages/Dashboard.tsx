@@ -18,7 +18,7 @@ import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
-import MarketTab from "@/components/tabs/MarketTab";
+
 import StrategyTab from "@/components/tabs/StrategyTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
@@ -203,9 +203,6 @@ const Dashboard = () => {
                   setChatInitialMessage(msg);
                   setChatOpen(true);
                 }} />
-                <div className="mt-8">
-                  <MarketTab />
-                </div>
                 {/* Knowledge Vault */}
                 <div className="mt-8 space-y-6">
                   <div className="glass-card rounded-2xl p-6 sm:p-10">

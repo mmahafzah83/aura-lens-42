@@ -2,9 +2,9 @@ import { useState, useRef, useCallback } from "react";
 import { RefreshCw, GitBranch, ArrowRight, MessageCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
+import StrategicIntelligenceEngine from "@/components/StrategicIntelligenceEngine";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
-import StrategicSignals from "@/components/StrategicSignals";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -64,7 +64,7 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       onTouchEnd={onTouchEnd}
       className="space-y-8 relative"
     >
-      {/* Pull-to-refresh indicator */}
+      {/* Pull-to-refresh */}
       <div
         className="flex items-center justify-center overflow-hidden transition-all duration-300 ease-out"
         style={{ height: pullY > 0 || refreshing ? `${Math.max(pullY, refreshing ? 48 : 0)}px` : '0px' }}
@@ -75,14 +75,14 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
         />
       </div>
 
-      {/* Unified Strategic Command */}
+      {/* Strategic Command */}
       <StrategicCommandCenter />
 
-      {/* Daily Briefing (AI-generated) */}
+      {/* Daily Briefing */}
       <DailyStrategicBriefing onOpenChat={onOpenChat} />
 
-      {/* Strategic Pattern Signals */}
-      <StrategicSignals onOpenChat={onOpenChat} />
+      {/* Unified Strategic Intelligence Engine */}
+      <StrategicIntelligenceEngine onOpenChat={onOpenChat} />
 
       {/* Knowledge Graph */}
       <button
