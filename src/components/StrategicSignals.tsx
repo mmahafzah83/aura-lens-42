@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import {
   Loader2, Zap, Target, FileText, Pen, ChevronDown, ChevronUp,
-  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X, Search
+  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X, Search, LayoutGrid
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
+import CarouselGenerator from "./CarouselGenerator";
 
 interface StrategicSignal {
   id: string;
