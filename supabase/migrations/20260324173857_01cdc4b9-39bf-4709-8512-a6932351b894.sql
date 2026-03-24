@@ -1,0 +1,1 @@
+ALTER TABLE public.strategic_signals ADD COLUMN IF NOT EXISTS consulting_opportunity JSONB DEFAULT '{}'::jsonb;
