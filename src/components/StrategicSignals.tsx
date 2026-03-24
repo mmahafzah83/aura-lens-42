@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import {
   Loader2, Zap, Target, FileText, Pen, ChevronDown, ChevronUp,
-  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X
+  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X, Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SignalExplorer from "./SignalExplorer";
 
 interface StrategicSignal {
   id: string;
