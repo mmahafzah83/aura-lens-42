@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Loader2, Save, Plus, X, Pencil, BookOpen, Sparkles,
   FileText, LayoutGrid, PenTool, Lightbulb, RefreshCw,
-  Send, ChevronRight, Copy, Check, Globe
+  Send, ChevronRight, Copy, Check, Globe, BarChart3
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
