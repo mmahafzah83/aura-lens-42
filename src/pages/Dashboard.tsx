@@ -20,6 +20,7 @@ import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
 import SovereignReadingList from "@/components/SovereignReadingList";
 import MarketTab from "@/components/tabs/MarketTab";
+import StrategyTab from "@/components/tabs/StrategyTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import ProfileManagement from "@/components/ProfileManagement";
