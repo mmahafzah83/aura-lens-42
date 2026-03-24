@@ -190,6 +190,13 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
           </div>
         </div>
       </div>
+      <FrameworkBuilder
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        initialTitle={builderData.title}
+        initialDescription={builderData.description}
+        initialSteps={[]}
+      />
     </div>
   );
 };
