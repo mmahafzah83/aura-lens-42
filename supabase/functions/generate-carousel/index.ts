@@ -23,9 +23,9 @@ serve(async (req) => {
     const isArabic = lang === "ar";
 
     const styleGuides: Record<string, string> = {
-      consulting: "Consulting Style: Clean strategic diagrams, structured layouts, executive color palette (navy, gold, white). Use numbered frameworks, matrix layouts, and strategic terminology.",
-      thought_leadership: "Thought Leadership Style: Modern LinkedIn visuals optimized for engagement. Bold typography, high contrast, dynamic layouts. Use pull quotes and insight callouts.",
-      minimal: "Minimal Strategic Style: Elegant typography, generous whitespace, minimal visual elements. Monochrome with one accent color. Let the words breathe.",
+      consulting: "Consulting Style: Navy, gold, white palette. Clean strategic diagrams, numbered frameworks, matrix layouts.",
+      thought_leadership: "Thought Leadership Style: Dark dramatic backgrounds, bold accents (coral/red), high contrast, dynamic layouts.",
+      minimal: "Minimal Strategic Style: Light backgrounds, monochrome with one teal accent, generous whitespace, elegant typography.",
     };
 
     const styleInstruction = styleGuides[style] || styleGuides.consulting;
@@ -33,36 +33,53 @@ serve(async (req) => {
     const langInstruction = isArabic
       ? `Write ALL slide content in natural executive Arabic used by strategy leaders in the GCC.
 This is NOT a translation - it is original Arabic thought leadership.
-Use rhetorical patterns: contrast ("ليس ... بل ..."), reframing ("المشكلة ليست في ... بل في ..."), insight ladder.
+Use rhetorical patterns: contrast, reframing, insight ladder.
 Preferred terms: الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة، الهندسة التنظيمية
 Write concise, confident, executive Arabic. Right-to-left optimized.`
       : `Write ALL slide content in English. Use authoritative but conversational tone suitable for senior leaders and consultants.`;
 
-    const systemPrompt = `You are an Elite LinkedIn Carousel Content Strategist.
+    const systemPrompt = `You are an Elite LinkedIn Carousel Content Strategist who creates viral thought leadership carousels.
 
 Generate a LinkedIn carousel of exactly 10 slides following this storytelling structure:
 
-Slide 1 - HOOK: Bold attention-grabbing statement. Short, punchy, creates curiosity.
-Slide 2 - PROBLEM: The common misconception or challenge leaders face.
-Slide 3 - INSIGHT: The key reframing or surprising truth.
-Slides 4-7 - FRAMEWORK: Present the framework or key strategic ideas. One concept per slide with clear structure.
-Slide 8 - STRATEGIC IMPLICATION: Why this matters for leaders and organizations.
-Slide 9 - PRACTICAL TAKEAWAY: Actionable guidance leaders can apply immediately.
-Slide 10 - CLOSING QUESTION: A thought-provoking leadership question that drives engagement.
+Slide 1 - HOOK: Bold scroll-stopping statement. Maximum 6 words headline. Create curiosity.
+Slide 2 - PROBLEM: The common misconception or challenge. Maximum 8 words headline.
+Slide 3 - INSIGHT: The key reframing or surprising truth. Maximum 8 words headline.
+Slide 4 - FRAMEWORK_INTRO: Introduce the strategic model name. Maximum 6 words headline. Include a brief model overview.
+Slide 5 - FRAMEWORK_STEP: First core component. Maximum 6 words headline. One key idea only.
+Slide 6 - FRAMEWORK_STEP: Second core component. Maximum 6 words headline. One key idea only.
+Slide 7 - FRAMEWORK_VISUAL: Display the framework visually. Maximum 6 words headline. Include diagram_data with nodes and connections.
+Slide 8 - IMPLICATION: Why this matters for leaders. Maximum 8 words headline.
+Slide 9 - TAKEAWAY: Clear actionable guidance. Maximum 8 words headline.
+Slide 10 - CLOSING: Thought-provoking leadership question. Maximum 10 words headline.
 
 ${langInstruction}
 
 DESIGN STYLE: ${styleInstruction}
 
+CRITICAL RULES:
+- Headlines: MAXIMUM 8 words. Short. Punchy. Bold.
+- Supporting text: MAXIMUM 20 words. One or two short sentences only.
+- Each slide communicates ONE single idea.
+- NO long paragraphs. NO dense text.
+- Think mobile readability first.
+
 For each slide, return a JSON object with:
 - slide_number (1-10)
-- slide_type: "hook" | "problem" | "insight" | "framework" | "implication" | "takeaway" | "closing"
-- headline: The main bold text (max 8 words)
-- supporting_text: Supporting explanation (max 30 words)
-- visual_type: What visual element to show (e.g., "bold text cover", "numbered list", "comparison", "diagram", "quote", "icon grid", "single stat")
-- layout_style: "centered hero" | "left aligned" | "split layout" | "numbered list" | "quote block" | "stat callout"
+- slide_type: "hook" | "problem" | "insight" | "framework_intro" | "framework_step" | "framework_visual" | "implication" | "takeaway" | "closing"
+- headline: The main bold text (MAXIMUM 8 words)
+- supporting_text: Supporting explanation (MAXIMUM 20 words)
+- layout: "hero_center" | "left_impact" | "split_insight" | "numbered_point" | "diagram" | "quote_block" | "stat_callout" | "closing_question"
+- accent_element: optional visual cue ("number_badge" | "quote_mark" | "arrow_flow" | "divider_line" | "icon_grid" | null)
+- diagram_data: (only for framework_visual slides) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[], connections?: string[] }
 
-OUTPUT: Valid JSON only. Return an object: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "..." }
+Also generate:
+- carousel_title: A catchy title for the carousel
+- carousel_subtitle: A brief subtitle
+- linkedin_caption: A ready-to-post LinkedIn caption (3-4 short paragraphs with hook, insight, CTA)
+- hashtags: Array of 5-8 relevant hashtags
+
+OUTPUT: Valid JSON only. Return: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...] }
 
 BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize"`;
 
