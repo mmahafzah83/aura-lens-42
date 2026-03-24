@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle, RefreshCw } from "lucide-react";
+import { Loader2, ChevronDown, Zap, Mic, Lightbulb, FileText, TrendingUp, MessageCircle, RefreshCw, Network, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 import IntelligenceCards from "@/components/IntelligenceCards";
 import StrategicSignals from "@/components/StrategicSignals";
 import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
+import AuthorityOpportunities from "@/components/AuthorityOpportunities";
+import ExecutiveInsightFeed from "@/components/ExecutiveInsightFeed";
+import KnowledgeGraph from "@/components/KnowledgeGraph";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -110,6 +113,7 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
   const [insight, setInsight] = useState("");
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [showCaptures, setShowCaptures] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
 
   // Unique entries from last 7 days
@@ -207,6 +211,30 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       {/* Strategic Pattern Signals */}
       <StrategicSignals onOpenChat={onOpenChat} />
 
+      {/* Authority Opportunities */}
+      <AuthorityOpportunities />
+
+      {/* Executive Intelligence Feed */}
+      <ExecutiveInsightFeed />
+
+      {/* Knowledge Graph Button */}
+      <button
+        onClick={() => setGraphOpen(true)}
+        className="w-full glass-card rounded-xl border border-blue-500/10 bg-blue-500/[0.03] p-4 hover:border-blue-500/20 transition-colors text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <Network className="w-4 h-4 text-blue-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-semibold text-foreground leading-snug">Knowledge Graph</p>
+            <p className="text-[10px] text-muted-foreground/50">Explore how your ideas connect</p>
+          </div>
+          <ArrowRight className="w-3.5 h-3.5 text-blue-400/40 group-hover:text-blue-400 transition-colors" />
+        </div>
+      </button>
+
+      <KnowledgeGraph open={graphOpen} onClose={() => setGraphOpen(false)} />
 
       {/* Stats — Minimalist icon cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
