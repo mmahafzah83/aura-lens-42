@@ -113,6 +113,7 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
   const [insight, setInsight] = useState("");
   const [loadingInsight, setLoadingInsight] = useState(false);
   const [showCaptures, setShowCaptures] = useState(false);
+  const [graphOpen, setGraphOpen] = useState(false);
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
 
   // Unique entries from last 7 days
