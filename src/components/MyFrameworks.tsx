@@ -266,7 +266,7 @@ const MyFrameworks = () => {
                       </span>
                     )}
                     {hasActivations(fw.id) && (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary/90 border border-primary/15">
                         ACTIVATED
                       </span>
                     )}
