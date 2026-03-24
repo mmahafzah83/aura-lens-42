@@ -102,7 +102,10 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       body: briefing.framework_opportunity.description,
       accent: "from-blue-500/20 to-blue-500/5",
       iconColor: "text-blue-400",
-      action: () => onOpenChat?.(`Build a framework called "${briefing.framework_opportunity.title}" — ${briefing.framework_opportunity.description}`),
+      action: () => {
+        setBuilderData({ title: briefing.framework_opportunity.title, description: briefing.framework_opportunity.description });
+        setBuilderOpen(true);
+      },
       actionLabel: "Build Framework",
     },
     {
