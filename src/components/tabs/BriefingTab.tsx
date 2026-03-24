@@ -9,6 +9,7 @@ import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
 import AuthorityOpportunities from "@/components/AuthorityOpportunities";
 import ExecutiveInsightFeed from "@/components/ExecutiveInsightFeed";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
+import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -202,7 +203,10 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
         />
       </div>
 
-      {/* Daily Strategic Briefing — top of dashboard */}
+      {/* Strategic Command Center */}
+      <StrategicCommandCenter />
+
+      {/* Daily Strategic Briefing */}
       <DailyStrategicBriefing onOpenChat={onOpenChat} />
 
       {/* Daily Intelligence Cards */}
