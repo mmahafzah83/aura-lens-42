@@ -544,11 +544,10 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
         <FrameworkBuilder
           initialTitle={builderData.title}
           initialSteps={builderData.steps}
-          initialSummary={builderData.summary}
-          signalId={builderData.signalId}
+          initialDescription={builderData.summary || ""}
           open={!!builderData}
           onClose={() => setBuilderData(null)}
-          onSaved={() => { setBuilderData(null); fetchAll(); }}
+          onFrameworkCreated={() => { setBuilderData(null); fetchAll(); }}
         />
       )}
 
