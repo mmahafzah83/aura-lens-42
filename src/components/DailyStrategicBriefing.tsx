@@ -3,6 +3,7 @@ import { Loader2, Zap, Target, Crown, ArrowRight, RefreshCw, Sparkles } from "lu
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FrameworkBuilder from "./FrameworkBuilder";
+import LinkedInDraftPanel from "./LinkedInDraftPanel";
 
 interface Briefing {
   date: string;
@@ -26,6 +27,9 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
   const [refreshing, setRefreshing] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderData, setBuilderData] = useState({ title: "", description: "" });
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftHook, setDraftHook] = useState("");
 
   const today = new Date().toDateString();
 
@@ -115,7 +119,11 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       body: briefing.authority_opportunity.hook,
       accent: "from-primary/20 to-primary/5",
       iconColor: "text-primary",
-      action: () => onOpenChat?.(`Draft a LinkedIn authority post: "${briefing.authority_opportunity.title}" — Hook: "${briefing.authority_opportunity.hook}"`),
+      action: () => {
+        setDraftTitle(briefing.authority_opportunity.title);
+        setDraftHook(briefing.authority_opportunity.hook);
+        setDraftOpen(true);
+      },
       actionLabel: "Draft Post",
     },
   ];
@@ -196,6 +204,12 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
         initialTitle={builderData.title}
         initialDescription={builderData.description}
         initialSteps={[]}
+      />
+      <LinkedInDraftPanel
+        open={draftOpen}
+        onClose={() => setDraftOpen(false)}
+        title={draftTitle}
+        hook={draftHook}
       />
     </div>
   );
