@@ -38,20 +38,30 @@ Preferred terms: الحوكمة، التحول الرقمي، الاستراتي
 Write concise, confident, executive Arabic. Right-to-left optimized.`
       : `Write ALL slide content in English. Use authoritative but conversational tone suitable for senior leaders and consultants.`;
 
-    const systemPrompt = `You are an Elite LinkedIn Carousel Content Strategist who creates viral thought leadership carousels.
+    const systemPrompt = `You are an Elite LinkedIn Carousel Content Strategist who creates viral thought leadership carousels with VISUAL-FIRST design.
 
 Generate a LinkedIn carousel of exactly 10 slides following this storytelling structure:
 
 Slide 1 - HOOK: Bold scroll-stopping statement. Maximum 6 words headline. Create curiosity.
+  Visual: Bold conceptual AI image representing the topic (futuristic, dramatic, symbolic).
 Slide 2 - PROBLEM: The common misconception or challenge. Maximum 8 words headline.
+  Visual: Conceptual illustration showing fragmentation, complexity, or chaos.
 Slide 3 - INSIGHT: The key reframing or surprising truth. Maximum 8 words headline.
+  Visual: Symbolic illustration representing the strategic insight (bridge, unlock, connection).
 Slide 4 - FRAMEWORK_INTRO: Introduce the strategic model name. Maximum 6 words headline. Include a brief model overview.
+  Visual: Structured framework diagram introducing the model.
 Slide 5 - FRAMEWORK_STEP: First core component. Maximum 6 words headline. One key idea only.
+  Visual: Component diagram or infographic block for this element.
 Slide 6 - FRAMEWORK_STEP: Second core component. Maximum 6 words headline. One key idea only.
+  Visual: Component diagram or infographic block for this element.
 Slide 7 - FRAMEWORK_VISUAL: Display the framework visually. Maximum 6 words headline. Include diagram_data with nodes and connections.
+  Visual: Full strategic diagram showing the complete model.
 Slide 8 - IMPLICATION: Why this matters for leaders. Maximum 8 words headline.
+  Visual: Strategic impact illustration (growth, ripple effect, leadership).
 Slide 9 - TAKEAWAY: Clear actionable guidance. Maximum 8 words headline.
+  Visual: Action-oriented conceptual illustration (roadmap, checklist, compass).
 Slide 10 - CLOSING: Thought-provoking leadership question. Maximum 10 words headline.
+  Visual: Reflective conceptual image (horizon, summit, crossroads).
 
 ${langInstruction}
 
@@ -63,6 +73,7 @@ CRITICAL RULES:
 - Each slide communicates ONE single idea.
 - NO long paragraphs. NO dense text.
 - Think mobile readability first.
+- EVERY slide MUST have an image_prompt field describing the visual to generate.
 
 For each slide, return a JSON object with:
 - slide_number (1-10)
@@ -71,6 +82,7 @@ For each slide, return a JSON object with:
 - supporting_text: Supporting explanation (MAXIMUM 20 words)
 - layout: "hero_center" | "left_impact" | "split_insight" | "numbered_point" | "diagram" | "quote_block" | "stat_callout" | "closing_question"
 - accent_element: optional visual cue ("number_badge" | "quote_mark" | "arrow_flow" | "divider_line" | "icon_grid" | null)
+- image_prompt: A detailed prompt for generating a conceptual illustration for this slide. Describe the visual concept, style (minimalist line art, conceptual diagram, abstract illustration, strategic infographic), composition, and mood. 80-150 words. The image should be a 1080x1080 square visual suitable for a professional LinkedIn carousel. Style: modern consulting aesthetic, clean composition, sophisticated palette matching ${style} style. NO text in the image. NO logos. Abstract and conceptual only.
 - diagram_data: (only for framework_visual slides) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[], connections?: string[] }
 
 Also generate:
@@ -89,7 +101,7 @@ Title: ${title}
 ${description ? `Description: ${description}` : ""}
 ${context ? `Strategic Context: ${context}` : ""}
 
-Generate the carousel slides now.`;
+Generate the carousel slides now. Remember: every slide MUST have an image_prompt field.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
