@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Trash2, ChevronDown, ChevronUp, Loader2, RefreshCw, Check, Pencil, ImageIcon } from "lucide-react";
+import { BookOpen, Trash2, ChevronDown, ChevronUp, Loader2, RefreshCw, Check, Pencil, ImageIcon, Zap, FileText, Briefcase, Presentation, MessageSquare, Copy, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ReactMarkdown from "react-markdown";
 import type { Database } from "@/integrations/supabase/types";
 
 type Framework = Database["public"]["Tables"]["master_frameworks"]["Row"] & {
@@ -13,6 +15,16 @@ type Framework = Database["public"]["Tables"]["master_frameworks"]["Row"] & {
   diagram_description?: any;
 };
 type FrameworkStep = { step_number: number; step_title: string; step_description: string };
+
+type Activation = {
+  id: string;
+  framework_id: string;
+  output_type: string;
+  title: string;
+  content: string;
+  metadata: any;
+  created_at: string;
+};
 
 const DIAGRAM_TYPE_LABELS: Record<string, string> = {
   sequential_flow: "Sequential Flow",
@@ -23,12 +35,22 @@ const DIAGRAM_TYPE_LABELS: Record<string, string> = {
   hub_spoke: "Hub & Spoke",
 };
 
+const OUTPUT_CONFIG: Record<string, { icon: typeof FileText; label: string; color: string }> = {
+  linkedin_post: { icon: MessageSquare, label: "LinkedIn Post", color: "text-blue-400" },
+  consulting_opportunity: { icon: Briefcase, label: "Consulting Opportunity", color: "text-emerald-400" },
+  strategy_brief: { icon: FileText, label: "Strategy Brief", color: "text-amber-400" },
+  strategy_slide: { icon: Presentation, label: "Strategy Slide", color: "text-purple-400" },
+};
+
 const MyFrameworks = () => {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [generatingDiagramId, setGeneratingDiagramId] = useState<string | null>(null);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [activations, setActivations] = useState<Record<string, Activation[]>>({});
+  const [activationViewId, setActivationViewId] = useState<string | null>(null);
   const [refineOpen, setRefineOpen] = useState<string | null>(null);
   const [refineTitle, setRefineTitle] = useState("");
   const [refineSummary, setRefineSummary] = useState("");
@@ -47,7 +69,23 @@ const MyFrameworks = () => {
     setLoading(false);
   };
 
+  const fetchActivations = async (frameworkId: string) => {
+    const { data } = await supabase
+      .from("framework_activations")
+      .select("*")
+      .eq("framework_id", frameworkId)
+      .order("created_at", { ascending: true });
+    if (data) {
+      setActivations(prev => ({ ...prev, [frameworkId]: data as Activation[] }));
+    }
+  };
+
   useEffect(() => { fetchFrameworks(); }, []);
+
+  // Fetch activations when a framework is expanded
+  useEffect(() => {
+    if (expandedId) fetchActivations(expandedId);
+  }, [expandedId]);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -82,6 +120,48 @@ const MyFrameworks = () => {
       toast({ title: "Diagram Error", description: e.message || "Failed to generate diagram", variant: "destructive" });
     }
     setGeneratingDiagramId(null);
+  };
+
+  const handleApproveAndActivate = async (fw: Framework) => {
+    // First approve
+    const newTags = (fw.tags || []).includes("Approved")
+      ? fw.tags
+      : [...(fw.tags || []), "Approved"];
+    const { error } = await supabase
+      .from("master_frameworks")
+      .update({ tags: newTags })
+      .eq("id", fw.id);
+    if (error) {
+      toast({ title: "Approve failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setFrameworks(prev =>
+      prev.map(f => (f.id === fw.id ? { ...f, tags: newTags } : f))
+    );
+    toast({ title: "Framework Approved", description: "Generating activation outputs…" });
+
+    // Then activate
+    setActivatingId(fw.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error: actErr } = await supabase.functions.invoke("activate-framework", {
+        body: { framework_id: fw.id, user_id: user.id },
+      });
+      if (actErr) throw actErr;
+      if (data?.activations) {
+        setActivations(prev => ({ ...prev, [fw.id]: data.activations }));
+        toast({
+          title: "Framework Activated",
+          description: "LinkedIn post, consulting opportunity, strategy brief & slide generated.",
+        });
+      }
+    } catch (e: any) {
+      toast({ title: "Activation Error", description: e.message || "Failed to generate outputs", variant: "destructive" });
+    }
+    setActivatingId(null);
   };
 
   const openRefine = (fw: Framework) => {
@@ -119,20 +199,9 @@ const MyFrameworks = () => {
     setSaving(false);
   };
 
-  const handleApprove = async (fw: Framework) => {
-    const newTags = (fw.tags || []).includes("Approved")
-      ? fw.tags
-      : [...(fw.tags || []), "Approved"];
-    const { error } = await supabase
-      .from("master_frameworks")
-      .update({ tags: newTags })
-      .eq("id", fw.id);
-    if (!error) {
-      setFrameworks(prev =>
-        prev.map(f => (f.id === fw.id ? { ...f, tags: newTags } : f))
-      );
-      toast({ title: "Framework Approved", description: `"${fw.title}" is now part of your approved vault.` });
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: "Copied to clipboard" });
   };
 
   const steps = (fw: Framework): FrameworkStep[] => {
@@ -148,6 +217,9 @@ const MyFrameworks = () => {
     const dd = fw.diagram_description as any;
     return dd?.diagram_type || null;
   };
+
+  const getActivationsForFramework = (fwId: string) => activations[fwId] || [];
+  const hasActivations = (fwId: string) => getActivationsForFramework(fwId).length > 0;
 
   return (
     <div className="glass-card rounded-2xl p-6 sm:p-10">
@@ -191,6 +263,11 @@ const MyFrameworks = () => {
                     {isApproved(fw) && (
                       <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
                         APPROVED
+                      </span>
+                    )}
+                    {hasActivations(fw.id) && (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                        ACTIVATED
                       </span>
                     )}
                   </div>
@@ -270,6 +347,43 @@ const MyFrameworks = () => {
                     ))}
                   </div>
 
+                  {/* Activation Outputs */}
+                  {hasActivations(fw.id) && (
+                    <div className="rounded-xl border border-primary/10 bg-primary/3 p-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-primary" />
+                        <h3 className="text-xs font-semibold text-primary tracking-wide uppercase">Activation Outputs</h3>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {getActivationsForFramework(fw.id).map(act => {
+                          const config = OUTPUT_CONFIG[act.output_type] || { icon: FileText, label: act.output_type, color: "text-muted-foreground" };
+                          const Icon = config.icon;
+                          return (
+                            <button
+                              key={act.id}
+                              onClick={() => setActivationViewId(act.id)}
+                              className="flex flex-col items-center gap-2 p-3 rounded-lg bg-secondary/20 border border-border/10 hover:border-primary/20 hover:bg-secondary/30 transition-all text-center tactile-press"
+                            >
+                              <Icon className={`w-5 h-5 ${config.color}`} />
+                              <span className="text-[10px] font-medium text-foreground/80">{config.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Activating indicator */}
+                  {activatingId === fw.id && (
+                    <div className="rounded-xl border border-primary/15 bg-primary/5 p-5 flex items-center justify-center gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      <div>
+                        <p className="text-xs font-medium text-primary">Activating Framework Engine…</p>
+                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">Generating LinkedIn post, consulting opportunity, strategy brief & slide</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Bar */}
                   <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-border/8">
                     {(fw as any).diagram_url && (
@@ -299,16 +413,33 @@ const MyFrameworks = () => {
                       Refine
                     </Button>
 
-                    {!isApproved(fw) && (
+                    {!isApproved(fw) ? (
                       <Button
                         size="sm"
-                        onClick={() => handleApprove(fw)}
+                        onClick={() => handleApproveAndActivate(fw)}
+                        disabled={activatingId === fw.id}
                         className="text-[11px] h-8 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20"
                       >
-                        <Check className="w-3 h-3 mr-1.5" />
-                        Approve Framework
+                        {activatingId === fw.id ? (
+                          <><Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Activating…</>
+                        ) : (
+                          <><Zap className="w-3 h-3 mr-1.5" /> Approve & Activate</>
+                        )}
                       </Button>
-                    )}
+                    ) : !hasActivations(fw.id) ? (
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveAndActivate(fw)}
+                        disabled={activatingId === fw.id}
+                        className="text-[11px] h-8 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20"
+                      >
+                        {activatingId === fw.id ? (
+                          <><Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Activating…</>
+                        ) : (
+                          <><Zap className="w-3 h-3 mr-1.5" /> Activate Engine</>
+                        )}
+                      </Button>
+                    ) : null}
 
                     <div className="flex-1" />
 
@@ -411,6 +542,61 @@ const MyFrameworks = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Activation Output Viewer Dialog */}
+      <Dialog open={!!activationViewId} onOpenChange={(v) => !v && setActivationViewId(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          {(() => {
+            const act = Object.values(activations).flat().find(a => a.id === activationViewId);
+            if (!act) return null;
+            const config = OUTPUT_CONFIG[act.output_type] || { icon: FileText, label: act.output_type, color: "text-muted-foreground" };
+            const Icon = config.icon;
+            return (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/30 border border-border/10`}>
+                      <Icon className={`w-4 h-4 ${config.color}`} />
+                    </div>
+                    <DialogTitle className="text-foreground text-base" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                      {config.label}
+                    </DialogTitle>
+                  </div>
+                </DialogHeader>
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-xl bg-secondary/10 border border-border/10 p-5 prose prose-sm prose-invert max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="text-xs text-foreground/80 leading-relaxed mb-3">{children}</p>,
+                        h1: ({ children }) => <h1 className="text-sm font-bold text-foreground mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xs font-bold text-foreground/90 mb-2 mt-4">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-xs font-semibold text-foreground/80 mb-1.5 mt-3">{children}</h3>,
+                        strong: ({ children }) => <strong className="text-primary font-semibold">{children}</strong>,
+                        li: ({ children }) => <li className="text-xs text-foreground/70 leading-relaxed ml-4">{children}</li>,
+                        ul: ({ children }) => <ul className="list-disc space-y-1 mb-3">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal space-y-1 mb-3">{children}</ol>,
+                      }}
+                    >
+                      {act.content}
+                    </ReactMarkdown>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(act.content)}
+                      className="text-xs"
+                    >
+                      <Copy className="w-3 h-3 mr-1.5" />
+                      Copy Content
+                    </Button>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
