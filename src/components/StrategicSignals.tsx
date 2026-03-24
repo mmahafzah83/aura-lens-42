@@ -369,6 +369,13 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         angle={draftData?.angle}
         context={draftData?.context}
       />
+      <CarouselGenerator
+        open={!!carouselData}
+        onClose={() => setCarouselData(null)}
+        title={carouselData?.title || ""}
+        description={carouselData?.description}
+        context={carouselData?.context}
+      />
     </div>
   );
 };
