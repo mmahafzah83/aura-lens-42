@@ -285,6 +285,47 @@ export type Database = {
         }
         Relationships: []
       }
+      framework_activations: {
+        Row: {
+          content: string
+          created_at: string
+          framework_id: string
+          id: string
+          metadata: Json | null
+          output_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          framework_id: string
+          id?: string
+          metadata?: Json | null
+          output_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          framework_id?: string
+          id?: string
+          metadata?: Json | null
+          output_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_activations_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "master_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learned_intelligence: {
         Row: {
           content: string
