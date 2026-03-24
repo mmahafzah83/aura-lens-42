@@ -247,6 +247,13 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
         action={briefing.recommended_action.action}
         rationale={briefing.recommended_action.rationale}
       />
+      <CarouselGenerator
+        open={carouselOpen}
+        onClose={() => setCarouselOpen(false)}
+        title={carouselData.title}
+        description={carouselData.description}
+        context={carouselData.context}
+      />
     </div>
   );
 };
