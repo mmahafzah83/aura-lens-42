@@ -349,6 +349,14 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         initialDescription={builderData?.description || ""}
         initialSteps={builderData?.steps || []}
       />
+      <LinkedInDraftPanel
+        open={!!draftData}
+        onClose={() => setDraftData(null)}
+        title={draftData?.title || ""}
+        hook={draftData?.hook}
+        angle={draftData?.angle}
+        context={draftData?.context}
+      />
     </div>
   );
 };
