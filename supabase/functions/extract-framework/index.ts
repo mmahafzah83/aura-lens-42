@@ -17,7 +17,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Get user
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const token = authHeader?.replace("Bearer ", "");
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
@@ -28,7 +27,7 @@ serve(async (req) => {
 
     const inputText = `Title: ${title || ""}\nSummary: ${summary || ""}\nContent: ${content || ""}`;
 
-    // Use AI to extract framework steps
+    // Extract framework steps + diagram description in one AI call
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -40,13 +39,22 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert system analyst. Given content about an expert framework, methodology, or system (e.g., a branding framework, leadership model, strategy playbook), extract:
+            content: `You are an expert system analyst. Given content about an expert framework, methodology, or system, extract:
 1. A clear title for the framework
 2. The ordered steps/stages/principles as a structured list
 3. A concise summary of the framework's purpose and application
 4. Relevant tags
+5. A diagram description that best represents this framework visually
 
-Return JSON using the tool provided. Be precise — extract the actual steps/rules, not vague descriptions.`,
+For the diagram, choose the most appropriate type:
+- "sequential_flow" for step-by-step processes
+- "layered_architecture" for hierarchical layers
+- "circular_model" for cyclical/iterative processes
+- "pyramid" for priority/hierarchy models
+- "matrix" for 2-dimensional categorization
+- "hub_spoke" for central-concept radiating models
+
+Return JSON using the tool provided. Be precise.`,
           },
           {
             role: "user",
@@ -58,11 +66,11 @@ Return JSON using the tool provided. Be precise — extract the actual steps/rul
             type: "function",
             function: {
               name: "extract_framework",
-              description: "Extract structured expert framework",
+              description: "Extract structured expert framework with diagram",
               parameters: {
                 type: "object",
                 properties: {
-                  framework_title: { type: "string", description: "Clear title for the framework" },
+                  framework_title: { type: "string" },
                   framework_steps: {
                     type: "array",
                     items: {
@@ -74,16 +82,46 @@ Return JSON using the tool provided. Be precise — extract the actual steps/rul
                       },
                       required: ["step_number", "step_title", "step_description"],
                     },
-                    description: "Ordered steps/stages/principles of the framework",
                   },
-                  framework_summary: { type: "string", description: "1-2 sentence summary of the framework's purpose" },
-                  tags: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Relevant tags like 'branding', 'leadership', 'strategy', etc.",
+                  framework_summary: { type: "string" },
+                  tags: { type: "array", items: { type: "string" } },
+                  diagram_description: {
+                    type: "object",
+                    properties: {
+                      diagram_type: {
+                        type: "string",
+                        enum: ["sequential_flow", "layered_architecture", "circular_model", "pyramid", "matrix", "hub_spoke"],
+                      },
+                      nodes: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            id: { type: "string" },
+                            label: { type: "string" },
+                            description: { type: "string" },
+                          },
+                          required: ["id", "label"],
+                        },
+                      },
+                      connections: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            from: { type: "string" },
+                            to: { type: "string" },
+                            label: { type: "string" },
+                          },
+                          required: ["from", "to"],
+                        },
+                      },
+                      layout_notes: { type: "string" },
+                    },
+                    required: ["diagram_type", "nodes", "connections"],
                   },
                 },
-                required: ["framework_title", "framework_steps", "framework_summary", "tags"],
+                required: ["framework_title", "framework_steps", "framework_summary", "tags", "diagram_description"],
                 additionalProperties: false,
               },
             },
@@ -101,12 +139,11 @@ Return JSON using the tool provided. Be precise — extract the actual steps/rul
 
     const aiData = await aiResp.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-
     if (!toolCall?.function?.arguments) throw new Error("No structured response from AI");
 
     const extracted = JSON.parse(toolCall.function.arguments);
 
-    // Save to master_frameworks
+    // Save to master_frameworks with diagram description
     const { data: framework, error: insertError } = await supabase
       .from("master_frameworks")
       .insert({
@@ -117,7 +154,8 @@ Return JSON using the tool provided. Be precise — extract the actual steps/rul
         summary: extracted.framework_summary,
         tags: ["ExpertFramework", ...(extracted.tags || [])],
         source_type: "capture",
-      })
+        diagram_description: extracted.diagram_description || {},
+      } as any)
       .select("id, title")
       .single();
 
@@ -132,12 +170,24 @@ Return JSON using the tool provided. Be precise — extract the actual steps/rul
       .update({ framework_tag: "#ExpertFramework" })
       .eq("id", entry_id);
 
+    // Trigger diagram generation in background (non-blocking)
+    fetch(`${supabaseUrl}/functions/v1/generate-framework-diagram`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        framework_id: framework.id,
+        diagram_description: extracted.diagram_description,
+        framework_title: extracted.framework_title,
+      }),
+    }).catch((e) => console.error("Diagram generation trigger error:", e));
+
     return new Response(JSON.stringify({
       success: true,
       framework_id: framework.id,
       framework_title: framework.title,
       steps_count: extracted.framework_steps.length,
       tags: extracted.tags,
+      diagram_description: extracted.diagram_description,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {

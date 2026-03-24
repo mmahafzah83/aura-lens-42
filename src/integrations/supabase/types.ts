@@ -351,6 +351,8 @@ export type Database = {
       master_frameworks: {
         Row: {
           created_at: string
+          diagram_description: Json | null
+          diagram_url: string | null
           entry_id: string | null
           framework_steps: Json
           id: string
@@ -363,6 +365,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          diagram_description?: Json | null
+          diagram_url?: string | null
           entry_id?: string | null
           framework_steps?: Json
           id?: string
@@ -375,6 +379,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          diagram_description?: Json | null
+          diagram_url?: string | null
           entry_id?: string | null
           framework_steps?: Json
           id?: string
