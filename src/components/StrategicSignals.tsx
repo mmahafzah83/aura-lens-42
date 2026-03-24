@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
+import LinkedInDraftPanel from "./LinkedInDraftPanel";
 
 interface StrategicSignal {
   id: string;
