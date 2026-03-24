@@ -47,3 +47,9 @@ verify_jwt = false
 
 [functions.generate-action-output]
 verify_jwt = false
+
+[functions.regenerate-schematic]
+verify_jwt = false
+
+[functions.generate-branded-post]
+verify_jwt = false
