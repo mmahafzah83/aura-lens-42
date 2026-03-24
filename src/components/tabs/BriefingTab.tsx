@@ -5,6 +5,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 import IntelligenceCards from "@/components/IntelligenceCards";
 import StrategicSignals from "@/components/StrategicSignals";
+import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -196,6 +197,9 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
           style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
         />
       </div>
+
+      {/* Daily Strategic Briefing — top of dashboard */}
+      <DailyStrategicBriefing onOpenChat={onOpenChat} />
 
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />

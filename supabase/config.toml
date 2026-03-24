@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.detect-patterns]
 verify_jwt = false
+
+[functions.strategic-briefing]
+verify_jwt = false
