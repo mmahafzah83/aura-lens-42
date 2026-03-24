@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      authority_voice_profiles: {
+        Row: {
+          admired_posts: Json
+          created_at: string
+          example_posts: Json
+          id: string
+          preferred_structures: Json
+          storytelling_patterns: Json
+          tone: string
+          updated_at: string
+          user_id: string
+          vocabulary_preferences: Json
+        }
+        Insert: {
+          admired_posts?: Json
+          created_at?: string
+          example_posts?: Json
+          id?: string
+          preferred_structures?: Json
+          storytelling_patterns?: Json
+          tone?: string
+          updated_at?: string
+          user_id: string
+          vocabulary_preferences?: Json
+        }
+        Update: {
+          admired_posts?: Json
+          created_at?: string
+          example_posts?: Json
+          id?: string
+          preferred_structures?: Json
+          storytelling_patterns?: Json
+          tone?: string
+          updated_at?: string
+          user_id?: string
+          vocabulary_preferences?: Json
+        }
+        Relationships: []
+      }
       diagnostic_profiles: {
         Row: {
           brand_pillars: string[]
@@ -444,6 +483,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      narrative_suggestions: {
+        Row: {
+          angle: string
+          created_at: string
+          id: string
+          reason: string
+          recommended_format: string
+          source_signal_id: string | null
+          status: string
+          topic: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          angle?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          recommended_format?: string
+          source_signal_id?: string | null
+          status?: string
+          topic: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          angle?: string
+          created_at?: string
+          id?: string
+          reason?: string
+          recommended_format?: string
+          source_signal_id?: string | null
+          status?: string
+          topic?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
