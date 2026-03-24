@@ -205,6 +205,12 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
         initialDescription={builderData.description}
         initialSteps={[]}
       />
+      <LinkedInDraftPanel
+        open={draftOpen}
+        onClose={() => setDraftOpen(false)}
+        title={draftTitle}
+        hook={draftHook}
+      />
     </div>
   );
 };
