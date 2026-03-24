@@ -203,9 +203,6 @@ const Dashboard = () => {
                   setChatInitialMessage(msg);
                   setChatOpen(true);
                 }} />
-                <div className="mt-8">
-                  <MarketTab />
-                </div>
                 {/* Knowledge Vault */}
                 <div className="mt-8 space-y-6">
                   <div className="glass-card rounded-2xl p-6 sm:p-10">
