@@ -6,6 +6,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
+import FrameworkBuilder from "./FrameworkBuilder";
 
 interface StrategicSignal {
   id: string;
@@ -57,6 +58,7 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
   const [scanning, setScanning] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [explorerSignal, setExplorerSignal] = useState<StrategicSignal | null>(null);
+  const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
 
   const fetchSignals = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -259,7 +261,11 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                           </div>
                         )}
                         <button
-                          onClick={() => onOpenChat?.(`Build a complete framework from this opportunity: "${fw.title}" — ${fw.description}. Steps: ${(fw.potential_steps || []).join(", ")}`)}
+                          onClick={() => setBuilderData({
+                            title: fw.title,
+                            description: fw.description || "",
+                            steps: fw.potential_steps || [],
+                          })}
                           className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
                         >
                           <ArrowRight className="w-3 h-3" /> Generate Full Framework
@@ -328,6 +334,13 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         signal={explorerSignal}
         open={!!explorerSignal}
         onClose={() => setExplorerSignal(null)}
+      />
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
       />
     </div>
   );

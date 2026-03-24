@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Loader2, Zap, Target, Crown, ArrowRight, RefreshCw, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import FrameworkBuilder from "./FrameworkBuilder";
 
 interface Briefing {
   date: string;
@@ -23,6 +24,8 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [builderData, setBuilderData] = useState({ title: "", description: "" });
 
   const today = new Date().toDateString();
 
@@ -99,7 +102,10 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       body: briefing.framework_opportunity.description,
       accent: "from-blue-500/20 to-blue-500/5",
       iconColor: "text-blue-400",
-      action: () => onOpenChat?.(`Build a framework called "${briefing.framework_opportunity.title}" — ${briefing.framework_opportunity.description}`),
+      action: () => {
+        setBuilderData({ title: briefing.framework_opportunity.title, description: briefing.framework_opportunity.description });
+        setBuilderOpen(true);
+      },
       actionLabel: "Build Framework",
     },
     {
@@ -184,6 +190,13 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
           </div>
         </div>
       </div>
+      <FrameworkBuilder
+        open={builderOpen}
+        onClose={() => setBuilderOpen(false)}
+        initialTitle={builderData.title}
+        initialDescription={builderData.description}
+        initialSteps={[]}
+      />
     </div>
   );
 };
