@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar, Shield, Lightbulb } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Briefcase, Target, Megaphone, TrendingUp, Radar, Shield, Lightbulb, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,6 +15,7 @@ import DocumentUpload from "@/components/DocumentUpload";
 import AccountIntelligence from "@/components/AccountIntelligence";
 import BriefingTab from "@/components/tabs/BriefingTab";
 import InfluenceTab from "@/components/tabs/InfluenceTab";
+import AuthorityTab from "@/components/tabs/AuthorityTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import MyFrameworks from "@/components/MyFrameworks";
@@ -34,7 +35,7 @@ const TAB_ITEMS = [
   { value: "intelligence", label: "Intelligence", icon: Shield },
   { value: "strategy", label: "Strategy", icon: Lightbulb },
   { value: "pursuits", label: "Pursuits", icon: Target },
-  { value: "influence", label: "Influence", icon: Megaphone },
+  { value: "authority", label: "Authority", icon: Crown },
   { value: "growth", label: "Growth", icon: TrendingUp },
 ] as const;
 
@@ -258,9 +259,9 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === "influence" && (
+            {activeTab === "authority" && (
               <div className="animate-tab-spring">
-                <InfluenceTab entries={entries} onRefresh={fetchEntries} />
+                <AuthorityTab entries={entries} onRefresh={fetchEntries} />
               </div>
             )}
 
