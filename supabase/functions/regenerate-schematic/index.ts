@@ -80,20 +80,36 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Upload to storage
+    // Upload to storage with retry
     const base64Data = imgUrl.split(",")[1];
     const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
     const filename = `post-visual-${Date.now()}.png`;
 
     const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { error: uploadErr } = await serviceClient.storage
-      .from("capture-images")
-      .upload(`${user.id}/${filename}`, binaryData, {
-        contentType: "image/png",
-        upsert: true,
-      });
 
-    if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`);
+    let uploadErr: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await serviceClient.storage
+        .from("capture-images")
+        .upload(`${user.id}/${filename}`, binaryData, {
+          contentType: "image/png",
+          upsert: true,
+        });
+      uploadErr = result.error;
+      if (!uploadErr) break;
+      console.warn(`Upload attempt ${attempt + 1} failed:`, uploadErr.message);
+      if (attempt < 2) await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+
+    if (uploadErr) {
+      // Return the image as base64 data URL instead of failing
+      console.warn("All upload attempts failed, returning base64 fallback");
+      return new Response(JSON.stringify({
+        image_url: imgUrl,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: urlData } = serviceClient.storage
       .from("capture-images")
