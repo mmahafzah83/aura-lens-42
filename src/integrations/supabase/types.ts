@@ -550,6 +550,7 @@ export type Database = {
       strategic_signals: {
         Row: {
           confidence: number
+          consulting_opportunity: Json | null
           content_opportunity: Json | null
           created_at: string
           explanation: string
@@ -567,6 +568,7 @@ export type Database = {
         }
         Insert: {
           confidence?: number
+          consulting_opportunity?: Json | null
           content_opportunity?: Json | null
           created_at?: string
           explanation: string
@@ -584,6 +586,7 @@ export type Database = {
         }
         Update: {
           confidence?: number
+          consulting_opportunity?: Json | null
           content_opportunity?: Json | null
           created_at?: string
           explanation?: string
