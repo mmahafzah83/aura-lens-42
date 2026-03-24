@@ -288,6 +288,9 @@ const Dashboard = () => {
                   {/* Frameworks */}
                   <MyFrameworks />
 
+                  {/* Profile Intelligence */}
+                  <ProfileIntelligence />
+
                   {/* Profile Management */}
                   <ProfileManagement onResetDiagnostic={() => setShowDiagnostic(true)} />
                 </div>
