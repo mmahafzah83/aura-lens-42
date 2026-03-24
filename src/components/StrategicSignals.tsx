@@ -62,6 +62,7 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
   const [explorerSignal, setExplorerSignal] = useState<StrategicSignal | null>(null);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
+  const [carouselData, setCarouselData] = useState<{ title: string; description?: string; context?: string } | null>(null);
 
   const fetchSignals = async () => {
     const { data: { user } } = await supabase.auth.getUser();
