@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import {
   Loader2, Zap, Target, FileText, Pen, ChevronDown, ChevronUp,
-  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X
+  RefreshCw, Sparkles, Briefcase, Crown, ArrowRight, X, Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import SignalExplorer from "./SignalExplorer";
 
 interface StrategicSignal {
   id: string;
@@ -55,6 +56,7 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [explorerSignal, setExplorerSignal] = useState<StrategicSignal | null>(null);
 
   const fetchSignals = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -303,10 +305,10 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                     {/* Action Bar */}
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={() => onOpenChat?.(`Explore all opportunities from this strategic signal: "${signal.signal_title}" — ${signal.explanation}. Help me prioritize which to pursue first.`)}
+                        onClick={() => setExplorerSignal(signal)}
                         className="flex-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium"
                       >
-                        <Sparkles className="w-3.5 h-3.5" /> Explore with Aura
+                        <Search className="w-3.5 h-3.5" /> Explore Signal
                       </button>
                       <button
                         onClick={() => dismissSignal(signal.id)}
@@ -322,6 +324,11 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
           })}
         </div>
       )}
+      <SignalExplorer
+        signal={explorerSignal}
+        open={!!explorerSignal}
+        onClose={() => setExplorerSignal(null)}
+      />
     </div>
   );
 };
