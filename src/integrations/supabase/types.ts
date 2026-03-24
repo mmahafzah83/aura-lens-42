@@ -547,6 +547,60 @@ export type Database = {
         }
         Relationships: []
       }
+      strategic_signals: {
+        Row: {
+          confidence: number
+          content_opportunity: Json | null
+          created_at: string
+          explanation: string
+          fragment_count: number
+          framework_opportunity: Json | null
+          id: string
+          signal_title: string
+          skill_pillars: string[]
+          status: string
+          strategic_implications: string
+          supporting_evidence_ids: string[]
+          theme_tags: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          content_opportunity?: Json | null
+          created_at?: string
+          explanation: string
+          fragment_count?: number
+          framework_opportunity?: Json | null
+          id?: string
+          signal_title: string
+          skill_pillars?: string[]
+          status?: string
+          strategic_implications: string
+          supporting_evidence_ids?: string[]
+          theme_tags?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          content_opportunity?: Json | null
+          created_at?: string
+          explanation?: string
+          fragment_count?: number
+          framework_opportunity?: Json | null
+          id?: string
+          signal_title?: string
+          skill_pillars?: string[]
+          status?: string
+          strategic_implications?: string
+          supporting_evidence_ids?: string[]
+          theme_tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_logs: {
         Row: {
           created_at: string

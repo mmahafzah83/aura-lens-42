@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 import type { Database } from "@/integrations/supabase/types";
 import IntelligenceCards from "@/components/IntelligenceCards";
+import StrategicSignals from "@/components/StrategicSignals";
 
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -199,7 +200,8 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />
 
-
+      {/* Strategic Pattern Signals */}
+      <StrategicSignals onOpenChat={onOpenChat} />
 
 
       {/* Stats — Minimalist icon cards */}
