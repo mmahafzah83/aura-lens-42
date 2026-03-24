@@ -80,9 +80,28 @@ For each slide, return a JSON object with:
 - slide_type: "hook" | "problem" | "insight" | "framework_intro" | "framework_step" | "framework_visual" | "implication" | "takeaway" | "closing"
 - headline: The main bold text (MAXIMUM 8 words)
 - supporting_text: Supporting explanation (MAXIMUM 20 words)
+- visual_type: The category of visual for this slide. One of: "conceptual_image" | "conceptual_illustration" | "strategic_diagram" | "framework_visualization" | "infographic" | "sketch_drawing" | "icon_illustration" | "data_visualization" | "process_flow"
 - layout: "hero_center" | "left_impact" | "split_insight" | "numbered_point" | "diagram" | "quote_block" | "stat_callout" | "closing_question"
 - accent_element: optional visual cue ("number_badge" | "quote_mark" | "arrow_flow" | "divider_line" | "icon_grid" | null)
-- image_prompt: A detailed prompt for generating a conceptual illustration for this slide. Describe the visual concept, style (minimalist line art, conceptual diagram, abstract illustration, strategic infographic), composition, and mood. 80-150 words. The image should be a 1080x1080 square visual suitable for a professional LinkedIn carousel. Style: modern consulting aesthetic, clean composition, sophisticated palette matching ${style} style. NO text in the image. NO logos. Abstract and conceptual only.
+- image_prompt: A HIGHLY SPECIFIC and vivid prompt for generating a visual for this slide. This is CRITICAL. Each prompt must describe a CONCRETE SCENE, not abstract concepts. Include:
+  1. A specific scene or object composition (e.g. "futuristic control room overlooking a smart power grid" NOT "an image about digital transformation")
+  2. Visual style (e.g. "cinematic lighting, minimalistic style" or "minimal corporate illustration style" or "clean architectural diagram style")
+  3. Color palette direction (e.g. "deep blue and gold palette" or "dark navy with amber accents")
+  4. Atmosphere/mood (e.g. "strategic technology atmosphere" or "sense of urgency and fragmentation")
+  5. Specific objects or elements to include (e.g. "large digital interfaces, holographic dashboards, data streams")
+
+  Examples of GOOD image prompts:
+  - "Futuristic control room overlooking a smart power grid, large digital interfaces, cinematic lighting, minimalistic style, deep blue palette, strategic technology atmosphere."
+  - "Fragmented infrastructure systems floating disconnected in space, pipelines, servers, power stations not connected together, minimal corporate illustration style."
+  - "A grand bridge connecting two illuminated towers, one labeled Strategy the other Execution, dramatic perspective, golden light rays, architectural blueprint aesthetic."
+  - "Layered transparent architectural floors showing governance, technology, and operations layers, isometric view, clean lines, teal and navy color scheme."
+
+  Examples of BAD image prompts (too vague):
+  - "An image representing digital transformation"
+  - "A visual showing the framework concept"
+  - "An illustration about leadership"
+
+  80-150 words per prompt. NO text/words/letters/logos in the generated image. The visual must stand alone without text.
 - diagram_data: (only for framework_visual slides) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[], connections?: string[] }
 
 Also generate:
