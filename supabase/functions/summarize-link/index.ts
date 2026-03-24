@@ -29,16 +29,43 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const pageRes = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; AuraBot/1.0)",
-        Accept: "text/html,application/xhtml+xml,text/plain",
-      },
-    });
+    let pageRes: Response | null = null;
+    const fetchWithTimeout = async (targetUrl: string, timeoutMs = 10000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(targetUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    };
 
-    if (!pageRes.ok) {
+    // Try fetching with retry
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        pageRes = await fetchWithTimeout(url, attempt === 0 ? 8000 : 12000);
+        if (pageRes.ok) break;
+      } catch (e) {
+        console.warn(`Fetch attempt ${attempt + 1} failed:`, (e as Error).message);
+        if (attempt === 1) {
+          return new Response(
+            JSON.stringify({ error: "Could not reach this URL. The site may be blocking automated requests. Try a different source." }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    if (!pageRes || !pageRes.ok) {
       return new Response(
-        JSON.stringify({ error: `Failed to fetch URL (${pageRes.status})` }),
+        JSON.stringify({ error: `Failed to fetch URL (${pageRes?.status || "timeout"})` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
