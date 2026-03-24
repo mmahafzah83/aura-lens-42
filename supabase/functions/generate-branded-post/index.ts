@@ -93,56 +93,55 @@ Deno.serve(async (req) => {
 
 BRAND PILLARS: ${brandPillars}
 
-═══ THE 'HANDWRITTEN AUTHORITY' FRAMEWORK ═══
+You MUST produce TWO versions of every post: English AND Arabic.
 
-You MUST structure every post with these 4 sections. No exceptions.
+=== ENGLISH POST STRUCTURE ===
 
-1. THE HOOK (Lines 1-3) — Newsletter Headline Logic:
-   • Open with a bold curiosity gap, contrarian insight, or startling statistic.
-   • Examples: "SR 228M is not a cost center. It's a data mine." or "The biggest threat to Saudi water security isn't scarcity. It's data illiteracy."
-   • The reader must NEED to click 'See more' by line 3. Create a cliffhanger.
-   • Never start with "I'm excited to share…" or "In today's world…"
+1. SCROLL-STOPPING HOOK (Lines 1-2):
+   Bold curiosity gap, contrarian insight, or startling statistic.
+   The reader MUST click 'See more' by line 2.
 
-2. THE BODY — Atomic Formatting:
-   • Maximum whitespace. Every sentence gets its own line.
-   • No paragraph longer than 2 lines.
-   • Break complex points into 3 bullet points using ◈ or ➔.
-   • Include ONE specific 'Director-level' insight that connects the news to Value-Based P&L, Vision 2030, or Digital Transformation in ${sector}.
-   • Bold all financial figures and entities (e.g., **SR 228M**, **NWC**, **Vision 2030**).
+2. INSIGHT EXPLANATION (3-5 short lines):
+   Each sentence on its own line. Max 2 lines per paragraph.
+   One Director-level insight.
 
-3. THE PARTNER LENS:
-   • Embed one sentence that only someone with 15+ years in ${sector} would write.
-   • Reference a specific metric, framework, or operational truth.
-   • This is NOT a generic observation — it's a specific, earned insight.
+3. REFRAME / PARTNER LENS:
+   One sentence only someone with 15+ years in ${sector} would write.
 
-4. THE CTA (Last line):
-   • End with ONE provocative, open-ended question that drives comments.
-   • Examples: "Are we digitizing for efficiency, or just for the sake of it?" or "When will we treat water data like oil futures?"
-   • Never use "What do you think?" or "Agree?"
+4. KEY POINTS:
+   3 bullet points. Each max 15 words.
 
-═══ BANNED WORDS ═══
-Never use: "delve," "tapestry," "landscape," "synergy," "leverage" (as verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal), "excited to share."
+5. CTA:
+   One provocative open-ended question.
 
-═══ VISUAL COMPANION ═══
-Also generate an image_prompt for a 1080x1350 Minimalist Handwritten Blackboard Schematic:
-- Background: Deep charcoal or pure black
-- Ink: Single-color white or high-contrast gold
-- Style: Minimalist line art (boxes, circles, connecting arrows, loops)
-- Font: Simulated clear, slightly imperfect handwriting for labels
-- Content: An educational diagram that simplifies the CORE concept of the post (e.g., a loop showing 'Smart Meter Data → AI Prediction → Targeted Maintenance')
-- FOOTER: Ultra-slim signature at very bottom (max 8% height), written directly on blackboard in same ink — no bars/blocks. Left: "M. Mahafdhah | Digital Transformation Architect | 18Y Sector Expert". Right: "→ Share this Framework".
-- NO photorealistic people. NO glossy AI renders. NO stock photo style.
+=== ARABIC POST STRUCTURE ===
+Write in natural executive Arabic for GCC strategy leaders. NOT a translation.
+Use rhetorical patterns: contrast ("ليس ... بل ..."), reframing ("المشكلة ليست في ... بل في ..."), insight ladder, strategic warning, leadership question.
+Preferred terms: الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة، الهندسة التنظيمية
+Same structure as English but adapted for Arabic thought leadership.
 
-${frameworkContext ? `\nEXPERT FRAMEWORKS TO WEAVE IN:\n${frameworkContext}` : ""}
+=== RULES FOR BOTH ===
+- Short paragraphs, spaced lines, mobile-first
+- No hashtags, no emojis except symbols
+- Under 180 words each
+- Authoritative but conversational
 
-OUTPUT FORMAT — valid JSON only:
+BANNED WORDS (English): "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal)
+
+=== VISUAL COMPANION ===
+Generate an image_prompt for a 1080x1350 Minimalist Handwritten Blackboard Schematic.
+
+${frameworkContext ? `\nEXPERT FRAMEWORKS:\n${frameworkContext}` : ""}
+
+OUTPUT FORMAT - valid JSON only:
 {
-  "post": "The full LinkedIn post text with strategic formatting and line breaks",
-  "image_prompt": "Detailed prompt for the blackboard schematic diagram",
-  "hook_type": "curiosity_gap" | "contrarian" | "statistic" | "provocative",
-  "partner_lens": "The specific Director-level insight used",
-  "cta_question": "The closing provocative question",
-  "brand_pillar_alignment": "Which brand pillar(s) this aligns to"
+  "post_en": "The full English LinkedIn post",
+  "post_ar": "The full Arabic LinkedIn post",
+  "image_prompt": "Detailed prompt for blackboard schematic",
+  "hook_type": "curiosity_gap or contrarian or statistic or provocative",
+  "partner_lens": "The Director-level insight used",
+  "cta_question": "The closing question",
+  "brand_pillar_alignment": "Which brand pillars this aligns to"
 }`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -157,7 +156,7 @@ OUTPUT FORMAT — valid JSON only:
           { role: "system", content: systemPrompt },
           {
             role: "user",
-            content: `Transform this intelligence signal into a high-authority LinkedIn post using the Handwritten Authority framework:\n\nTitle: ${news_item.title}\nSIGNAL: ${news_item.summary}\nSource: ${news_item.source}\nAngle: ${news_item.post_angle || ""}\nVALUE: ${news_item.relevance_tag || ""}`,
+            content: `Transform this intelligence signal into bilingual LinkedIn posts:\n\nTitle: ${news_item.title}\nSIGNAL: ${news_item.summary}\nSource: ${news_item.source}\nAngle: ${news_item.post_angle || ""}\nVALUE: ${news_item.relevance_tag || ""}`,
           },
         ],
         response_format: { type: "json_object" },
