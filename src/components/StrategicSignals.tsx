@@ -286,7 +286,12 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                         )}
                         {ct.angle && <p className="text-[11px] text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
                         <button
-                          onClick={() => onOpenChat?.(`Draft a LinkedIn authority post: "${ct.title}" — Hook: "${ct.hook || signal.explanation}". Angle: ${ct.angle || "Strategic thought leadership"}`)}
+                          onClick={() => setDraftData({
+                            title: ct.title,
+                            hook: ct.hook || signal.explanation,
+                            angle: ct.angle || "Strategic thought leadership",
+                            context: signal.strategic_implications,
+                          })}
                           className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
                         >
                           <ArrowRight className="w-3 h-3" /> Draft Authority Post
