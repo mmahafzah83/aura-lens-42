@@ -200,7 +200,8 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       {/* Daily Intelligence Cards */}
       <IntelligenceCards />
 
-
+      {/* Strategic Pattern Signals */}
+      <StrategicSignals onOpenChat={onOpenChat} />
 
 
       {/* Stats — Minimalist icon cards */}
