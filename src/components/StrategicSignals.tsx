@@ -305,10 +305,10 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                     {/* Action Bar */}
                     <div className="flex gap-2 pt-2">
                       <button
-                        onClick={() => onOpenChat?.(`Explore all opportunities from this strategic signal: "${signal.signal_title}" — ${signal.explanation}. Help me prioritize which to pursue first.`)}
+                        onClick={() => setExplorerSignal(signal)}
                         className="flex-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium"
                       >
-                        <Sparkles className="w-3.5 h-3.5" /> Explore with Aura
+                        <Search className="w-3.5 h-3.5" /> Explore Signal
                       </button>
                       <button
                         onClick={() => dismissSignal(signal.id)}
