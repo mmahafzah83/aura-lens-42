@@ -566,6 +566,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
     { key: "builder" as const, label: "Content Builder", icon: PenTool },
     { key: "voice" as const, label: "Voice & Style", icon: Pencil },
     { key: "planner" as const, label: "Narrative Planner", icon: Lightbulb },
+    { key: "linkedin" as const, label: "LinkedIn Intel", icon: BarChart3 },
   ];
 
   return (
