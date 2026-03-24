@@ -605,6 +605,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         {activeSection === "builder" && <ContentBuilder key={builderTopic} />}
         {activeSection === "voice" && <VoiceMemory />}
         {activeSection === "planner" && <NarrativePlanner onSelectTopic={handleSelectTopic} />}
+        {activeSection === "linkedin" && <LinkedInIntelligence />}
       </div>
     </div>
   );
