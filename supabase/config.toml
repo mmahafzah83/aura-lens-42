@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.generate-carousel]
 verify_jwt = false
+
+[functions.generate-slide-visual]
+verify_jwt = false

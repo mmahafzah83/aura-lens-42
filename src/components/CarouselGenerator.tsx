@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import {
   Loader2, Globe, Download, RefreshCw, Pencil, Eye, ChevronLeft, ChevronRight,
-  LayoutGrid, Check, Copy, Hash,
+  LayoutGrid, Check, Copy, Hash, ImageIcon, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import jsPDF from "jspdf";
 
 /* ── Types ──────────────────────────── */
@@ -26,6 +27,8 @@ interface Slide {
   layout: string;
   accent_element?: string | null;
   diagram_data?: DiagramData;
+  image_prompt?: string;
+  image_url?: string;
   // legacy compat
   visual_type?: string;
   layout_style?: string;
@@ -68,16 +71,17 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
   if (data.type === "sequential_flow") {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", justifyContent: "center", direction: isAr ? "rtl" : "ltr" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "center", direction: isAr ? "rtl" : "ltr" }}>
         {nodes.map((n, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
-              padding: "16px 28px", borderRadius: 12, border: `2px solid ${palette.accent}`,
-              backgroundColor: `${palette.accent}15`, color: palette.fg,
-              fontSize: 22, fontWeight: 700, textAlign: "center", maxWidth: 200,
+              padding: "12px 20px", borderRadius: 10, border: `2px solid ${palette.accent}`,
+              backgroundColor: `${palette.accent}20`, color: palette.fg,
+              fontSize: 18, fontWeight: 700, textAlign: "center", maxWidth: 160,
+              backdropFilter: "blur(4px)",
             }}>{n}</div>
             {i < nodes.length - 1 && (
-              <span style={{ fontSize: 28, color: palette.accent, fontWeight: 700 }}>→</span>
+              <span style={{ fontSize: 24, color: palette.accent, fontWeight: 700 }}>→</span>
             )}
           </div>
         ))}
@@ -87,13 +91,14 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
   if (data.type === "layered") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 700, margin: "0 auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%", maxWidth: 500, margin: "0 auto" }}>
         {nodes.map((n, i) => (
           <div key={i} style={{
-            padding: "18px 32px", borderRadius: 10,
-            backgroundColor: `${palette.accent}${Math.max(10, 30 - i * 6).toString(16).padStart(2, "0")}`,
-            border: `1.5px solid ${palette.accent}40`, color: palette.fg,
-            fontSize: 22, fontWeight: 600, textAlign: "center",
+            padding: "14px 24px", borderRadius: 8,
+            backgroundColor: `${palette.accent}${Math.max(15, 40 - i * 8).toString(16).padStart(2, "0")}`,
+            border: `1.5px solid ${palette.accent}50`, color: palette.fg,
+            fontSize: 18, fontWeight: 600, textAlign: "center",
+            backdropFilter: "blur(4px)",
           }}>{n}</div>
         ))}
       </div>
@@ -102,26 +107,26 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
   if (data.type === "circular") {
     const count = nodes.length;
-    const radius = 160;
+    const radius = 120;
     return (
-      <div style={{ position: "relative", width: 400, height: 400, margin: "0 auto" }}>
+      <div style={{ position: "relative", width: 320, height: 320, margin: "0 auto" }}>
         {nodes.map((n, i) => {
           const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-          const x = 200 + radius * Math.cos(angle) - 70;
-          const y = 200 + radius * Math.sin(angle) - 30;
+          const x = 160 + radius * Math.cos(angle) - 55;
+          const y = 160 + radius * Math.sin(angle) - 24;
           return (
             <div key={i} style={{
-              position: "absolute", left: x, top: y, width: 140, height: 60,
+              position: "absolute", left: x, top: y, width: 110, height: 48,
               display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: 10, border: `2px solid ${palette.accent}`,
-              backgroundColor: `${palette.accent}18`, color: palette.fg,
-              fontSize: 16, fontWeight: 700, textAlign: "center", padding: "4px 8px",
+              borderRadius: 8, border: `2px solid ${palette.accent}`,
+              backgroundColor: `${palette.accent}20`, color: palette.fg,
+              fontSize: 13, fontWeight: 700, textAlign: "center", padding: "4px 6px",
+              backdropFilter: "blur(4px)",
             }}>{n}</div>
           );
         })}
-        {/* Center dot */}
         <div style={{
-          position: "absolute", left: 190, top: 190, width: 20, height: 20,
+          position: "absolute", left: 152, top: 152, width: 16, height: 16,
           borderRadius: "50%", backgroundColor: palette.accent,
         }} />
       </div>
@@ -130,13 +135,14 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
   if (data.type === "grid_2x2") {
     return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, maxWidth: 600, margin: "0 auto" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 440, margin: "0 auto" }}>
         {nodes.slice(0, 4).map((n, i) => (
           <div key={i} style={{
-            padding: "24px 20px", borderRadius: 12,
-            border: `2px solid ${palette.accent}40`,
-            backgroundColor: `${palette.accent}10`, color: palette.fg,
-            fontSize: 20, fontWeight: 700, textAlign: "center",
+            padding: "20px 16px", borderRadius: 10,
+            border: `2px solid ${palette.accent}50`,
+            backgroundColor: `${palette.accent}15`, color: palette.fg,
+            fontSize: 16, fontWeight: 700, textAlign: "center",
+            backdropFilter: "blur(4px)",
           }}>{n}</div>
         ))}
       </div>
@@ -146,7 +152,7 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
   return null;
 };
 
-/* ── Layout-Aware Slide Renderer ──────────────────── */
+/* ── Layout-Aware Slide Renderer with Visual ──────────────────── */
 const SlidePreview = ({
   slide, style, lang, size = 320,
 }: { slide: Slide; style: Style; lang: Lang; size?: number }) => {
@@ -156,11 +162,11 @@ const SlidePreview = ({
   const layout = slide.layout || slide.layout_style || "hero_center";
   const slideType = slide.slide_type;
   const hasDiagram = slideType === "framework_visual" && slide.diagram_data;
+  const hasImage = !!slide.image_url;
 
   const isHero = layout === "hero_center" || slideType === "hook" || slideType === "closing";
   const isQuote = layout === "quote_block";
   const isNumbered = layout === "numbered_point" || slideType === "framework_step";
-  const isSplit = layout === "split_insight";
   const isDiagram = layout === "diagram" || hasDiagram;
 
   return (
@@ -175,8 +181,36 @@ const SlidePreview = ({
         fontFamily: isAr ? "'Noto Sans Arabic', sans-serif" : "'Inter', system-ui, sans-serif",
         direction: isAr ? "rtl" : "ltr",
       }}>
+        {/* Background image */}
+        {hasImage && (
+          <div style={{
+            position: "absolute", inset: 0,
+            backgroundImage: `url(${slide.image_url})`,
+            backgroundSize: "cover", backgroundPosition: "center",
+            opacity: isHero ? 0.5 : 0.35,
+          }} />
+        )}
+
+        {/* Dark overlay for text readability */}
+        {hasImage && (
+          <div style={{
+            position: "absolute", inset: 0,
+            background: isHero
+              ? `linear-gradient(180deg, ${p.bg}80 0%, ${p.bg}CC 50%, ${p.bg}F0 100%)`
+              : `linear-gradient(180deg, ${p.bg}40 0%, ${p.bg}BB 40%, ${p.bg}EE 100%)`,
+          }} />
+        )}
+
+        {/* Visual indicator when no image yet */}
+        {!hasImage && slide.image_prompt && (
+          <div style={{
+            position: "absolute", inset: 0,
+            background: `radial-gradient(circle at 30% 30%, ${p.accent}08, transparent 70%), radial-gradient(circle at 70% 70%, ${p.accent}06, transparent 70%)`,
+          }} />
+        )}
+
         {/* Top accent bar */}
-        <div style={{ height: 5, background: `linear-gradient(90deg, ${p.accent}, transparent)` }} />
+        <div style={{ height: 5, background: `linear-gradient(90deg, ${p.accent}, transparent)`, position: "relative", zIndex: 2 }} />
 
         {/* Slide number */}
         <div style={{
@@ -184,7 +218,7 @@ const SlidePreview = ({
           width: 48, height: 48, borderRadius: 12,
           backgroundColor: p.accent, color: p.bg === "#FAFAF9" ? "#FFFFFF" : p.bg,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22, fontWeight: 800,
+          fontSize: 22, fontWeight: 800, zIndex: 3,
         }}>
           {slide.slide_number}
         </div>
@@ -193,7 +227,7 @@ const SlidePreview = ({
         <div style={{
           position: "absolute", top: 52, [isAr ? "left" : "right"]: 52,
           fontSize: 14, textTransform: "uppercase", letterSpacing: 5,
-          color: p.muted, fontWeight: 600, opacity: 0.4,
+          color: p.muted, fontWeight: 600, opacity: 0.4, zIndex: 3,
         }}>
           {(slideType || "").replace(/_/g, " ")}
         </div>
@@ -201,8 +235,9 @@ const SlidePreview = ({
         {/* Main content area */}
         <div style={{
           flex: 1, display: "flex", flexDirection: "column",
-          justifyContent: isHero ? "center" : isDiagram ? "flex-start" : "flex-end",
-          padding: isHero ? "100px 80px" : isDiagram ? "120px 80px 80px" : "80px 80px 120px",
+          justifyContent: hasImage && isHero ? "flex-end" : isHero ? "center" : isDiagram ? "flex-start" : "flex-end",
+          padding: hasImage && isHero ? "80px 80px 160px" : isHero ? "100px 80px" : isDiagram ? "120px 80px 80px" : "80px 80px 120px",
+          position: "relative", zIndex: 2,
         }}>
           {/* Quote mark for quote layout */}
           {isQuote && (
@@ -218,7 +253,8 @@ const SlidePreview = ({
               border: `3px solid ${p.accent}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 32, fontWeight: 800, color: p.accent,
-              marginBottom: 28,
+              marginBottom: 28, backgroundColor: `${p.bg}90`,
+              backdropFilter: "blur(8px)",
               ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
             }}>
               {slide.slide_number - 3}
@@ -243,6 +279,7 @@ const SlidePreview = ({
             textAlign: isHero ? "center" : (isAr ? "right" : "left"),
             maxWidth: 920,
             letterSpacing: "-0.02em",
+            textShadow: hasImage ? `0 2px 12px ${p.bg}80` : "none",
             ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
           }}>
             {slide.headline}
@@ -256,6 +293,7 @@ const SlidePreview = ({
               color: p.muted,
               textAlign: isHero ? "center" : (isAr ? "right" : "left"),
               maxWidth: 780,
+              textShadow: hasImage ? `0 1px 8px ${p.bg}60` : "none",
               ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
             }}>
               {slide.supporting_text}
@@ -274,18 +312,6 @@ const SlidePreview = ({
               </p>
             </div>
           )}
-
-          {/* Split layout accent block */}
-          {isSplit && (
-            <div style={{
-              marginTop: 32, padding: "24px 32px", borderRadius: 12,
-              backgroundColor: `${p.accent}12`, borderLeft: `4px solid ${p.accent}`,
-            }}>
-              <p style={{ fontSize: 22, color: p.fg, opacity: 0.8, lineHeight: 1.5 }}>
-                {slide.supporting_text}
-              </p>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
@@ -293,7 +319,7 @@ const SlidePreview = ({
           position: "absolute", bottom: 0, left: 0, right: 0,
           padding: "28px 52px", display: "flex", justifyContent: "space-between",
           alignItems: "center", fontSize: 15, color: p.muted, opacity: 0.35,
-          borderTop: `1px solid ${p.muted}15`,
+          borderTop: `1px solid ${p.muted}15`, zIndex: 3,
         }}>
           <span style={{ fontWeight: 600 }}>M. Mahafdhah</span>
           <span style={{ letterSpacing: 2, textTransform: "uppercase", fontSize: 12 }}>Share →</span>
@@ -315,10 +341,51 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const [gridView, setGridView] = useState(false);
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState<string[]>([]);
+  const [generatingVisuals, setGeneratingVisuals] = useState(false);
+  const [visualProgress, setVisualProgress] = useState(0);
+  const [visualTotal, setVisualTotal] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const currentSlides = slides[lang];
   const isLoading = loading[lang];
+
+  /* ── Generate slide visuals ── */
+  const generateVisuals = useCallback(async (targetLang: Lang, slideList: Slide[]) => {
+    const slidesWithPrompts = slideList.filter(s => s.image_prompt && !s.image_url);
+    if (slidesWithPrompts.length === 0) return;
+
+    setGeneratingVisuals(true);
+    setVisualTotal(slidesWithPrompts.length);
+    setVisualProgress(0);
+
+    for (let i = 0; i < slidesWithPrompts.length; i++) {
+      const slide = slidesWithPrompts[i];
+      try {
+        const { data, error } = await supabase.functions.invoke("generate-slide-visual", {
+          body: { image_prompt: slide.image_prompt, slide_number: slide.slide_number, style },
+        });
+
+        if (!error && data?.image_url) {
+          setSlides(prev => ({
+            ...prev,
+            [targetLang]: prev[targetLang].map(s =>
+              s.slide_number === slide.slide_number ? { ...s, image_url: data.image_url } : s
+            ),
+          }));
+        }
+      } catch (e) {
+        console.warn(`Failed to generate visual for slide ${slide.slide_number}:`, e);
+      }
+      setVisualProgress(i + 1);
+      // Small delay between requests to avoid rate limits
+      if (i < slidesWithPrompts.length - 1) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+
+    setGeneratingVisuals(false);
+    toast.success("Slide visuals generated");
+  }, [style]);
 
   const generate = useCallback(async (targetLang: Lang) => {
     setLoading(prev => ({ ...prev, [targetLang]: true }));
@@ -328,16 +395,22 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setSlides(prev => ({ ...prev, [targetLang]: data.slides || [] }));
+      const newSlides = data.slides || [];
+      setSlides(prev => ({ ...prev, [targetLang]: newSlides }));
       if (data.linkedin_caption) setCaption(data.linkedin_caption);
       if (data.hashtags) setHashtags(data.hashtags);
       if (targetLang === lang) setCurrentSlide(0);
+
+      // Auto-generate visuals after text generation
+      if (newSlides.length > 0) {
+        setTimeout(() => generateVisuals(targetLang, newSlides), 500);
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to generate carousel");
     } finally {
       setLoading(prev => ({ ...prev, [targetLang]: false }));
     }
-  }, [title, description, context, style, lang]);
+  }, [title, description, context, style, lang, generateVisuals]);
 
   const generateBoth = useCallback(() => {
     generate("en");
@@ -355,6 +428,33 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       ...prev,
       [lang]: prev[lang].map((s, i) => i === idx ? { ...s, [field]: value } : s),
     }));
+  };
+
+  /* ── Regenerate single slide visual ── */
+  const regenerateSlideVisual = async (idx: number) => {
+    const slide = currentSlides[idx];
+    if (!slide?.image_prompt) return;
+
+    // Clear existing image
+    setSlides(prev => ({
+      ...prev,
+      [lang]: prev[lang].map((s, i) => i === idx ? { ...s, image_url: undefined } : s),
+    }));
+
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-slide-visual", {
+        body: { image_prompt: slide.image_prompt, slide_number: slide.slide_number, style },
+      });
+      if (!error && data?.image_url) {
+        setSlides(prev => ({
+          ...prev,
+          [lang]: prev[lang].map((s, i) => i === idx ? { ...s, image_url: data.image_url } : s),
+        }));
+        toast.success(`Slide ${idx + 1} visual regenerated`);
+      }
+    } catch (e) {
+      toast.error("Failed to regenerate visual");
+    }
   };
 
   /* ── PDF Export ── */
@@ -383,6 +483,38 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         grd.addColorStop(1, p.gradientTo);
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, 1080, 1080);
+
+        // Draw background image if available
+        if (slide.image_url) {
+          try {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = () => reject();
+              img.src = slide.image_url!;
+            });
+            ctx.globalAlpha = isHero ? 0.5 : 0.35;
+            ctx.drawImage(img, 0, 0, 1080, 1080);
+            ctx.globalAlpha = 1;
+
+            // Dark overlay for readability
+            const overlayGrd = ctx.createLinearGradient(0, 0, 0, 1080);
+            if (isHero) {
+              overlayGrd.addColorStop(0, `${p.bg}80`);
+              overlayGrd.addColorStop(0.5, `${p.bg}CC`);
+              overlayGrd.addColorStop(1, `${p.bg}F0`);
+            } else {
+              overlayGrd.addColorStop(0, `${p.bg}40`);
+              overlayGrd.addColorStop(0.4, `${p.bg}BB`);
+              overlayGrd.addColorStop(1, `${p.bg}EE`);
+            }
+            ctx.fillStyle = overlayGrd;
+            ctx.fillRect(0, 0, 1080, 1080);
+          } catch {
+            // Image failed to load, continue without it
+          }
+        }
 
         // Top accent bar
         const barGrd = ctx.createLinearGradient(0, 0, 1080, 0);
@@ -532,8 +664,14 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setHasGenerated(false);
       setCaption("");
       setHashtags([]);
+      setGeneratingVisuals(false);
+      setVisualProgress(0);
+      setVisualTotal(0);
     }, 300);
   };
+
+  const imagesReady = currentSlides.filter(s => s.image_url).length;
+  const imagesTotal = currentSlides.filter(s => s.image_prompt).length;
 
   return (
     <Sheet open={open} onOpenChange={v => !v && handleClose()}>
@@ -550,7 +688,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   LinkedIn Carousel
                 </SheetTitle>
                 <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
-                  {currentSlides.length} slides · {PALETTES[style].name}
+                  {currentSlides.length} slides · {PALETTES[style].name} · {imagesReady}/{imagesTotal} visuals
                 </SheetDescription>
               </div>
             </div>
@@ -560,6 +698,18 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
 
         <div className="px-5 py-4 space-y-4">
+          {/* Visual Generation Progress */}
+          {generatingVisuals && (
+            <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                <span className="text-xs font-semibold text-foreground">Generating slide visuals…</span>
+                <span className="text-[10px] text-muted-foreground/60 ml-auto">{visualProgress}/{visualTotal}</span>
+              </div>
+              <Progress value={(visualProgress / Math.max(1, visualTotal)) * 100} className="h-1.5" />
+            </div>
+          )}
+
           {/* Controls Row */}
           <div className="flex flex-wrap gap-2">
             {/* Language Toggle */}
@@ -621,11 +771,21 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                     <button
                       key={idx}
                       onClick={() => { setCurrentSlide(idx); setGridView(false); }}
-                      className={`rounded-xl overflow-hidden border-2 transition-colors ${
+                      className={`rounded-xl overflow-hidden border-2 transition-colors relative ${
                         currentSlide === idx ? "border-primary/40" : "border-transparent hover:border-primary/15"
                       }`}
                     >
                       <SlidePreview slide={slide} style={style} lang={lang} size={240} />
+                      {!slide.image_url && slide.image_prompt && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <ImageIcon className="w-3 h-3 text-amber-500/60" />
+                        </div>
+                      )}
+                      {slide.image_url && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-emerald-500" />
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -657,12 +817,24 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                       <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
                         Slide {currentSlide + 1} · {(currentSlides[currentSlide].slide_type || "").replace(/_/g, " ")}
                       </p>
-                      <button
-                        onClick={() => setEditingIdx(editingIdx === currentSlide ? null : currentSlide)}
-                        className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
-                      >
-                        {editingIdx === currentSlide ? <><Eye className="w-3 h-3" /> Preview</> : <><Pencil className="w-3 h-3" /> Edit</>}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {currentSlides[currentSlide].image_prompt && (
+                          <button
+                            onClick={() => regenerateSlideVisual(currentSlide)}
+                            className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors"
+                            title="Regenerate visual"
+                          >
+                            <ImageIcon className="w-3 h-3" />
+                            {currentSlides[currentSlide].image_url ? "Regen" : "Generate"} Visual
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setEditingIdx(editingIdx === currentSlide ? null : currentSlide)}
+                          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                        >
+                          {editingIdx === currentSlide ? <><Eye className="w-3 h-3" /> Preview</> : <><Pencil className="w-3 h-3" /> Edit</>}
+                        </button>
+                      </div>
                     </div>
 
                     {editingIdx === currentSlide ? (
@@ -685,11 +857,31 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                             dir={lang === "ar" ? "rtl" : "ltr"}
                           />
                         </div>
+                        {currentSlides[currentSlide].image_prompt && (
+                          <div>
+                            <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Image Prompt</label>
+                            <Textarea
+                              value={currentSlides[currentSlide].image_prompt || ""}
+                              onChange={e => updateSlide(currentSlide, "image_prompt" as keyof Slide, e.target.value)}
+                              className="mt-1 text-xs min-h-[60px] text-muted-foreground/70"
+                            />
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="p-4" dir={lang === "ar" ? "rtl" : "ltr"}>
                         <p className="text-sm font-bold text-foreground mb-1">{currentSlides[currentSlide].headline}</p>
                         <p className="text-xs text-muted-foreground/60 leading-relaxed">{currentSlides[currentSlide].supporting_text}</p>
+                        {currentSlides[currentSlide].image_url && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-500/70">
+                            <Check className="w-3 h-3" /> Visual generated
+                          </div>
+                        )}
+                        {!currentSlides[currentSlide].image_url && currentSlides[currentSlide].image_prompt && (
+                          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-500/60">
+                            <ImageIcon className="w-3 h-3" /> Visual pending
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
