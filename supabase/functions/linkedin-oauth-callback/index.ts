@@ -1,26 +1,62 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
 Deno.serve(async (req) => {
-  const url = new URL(req.url);
-  const code = url.searchParams.get("code");
-  const error = url.searchParams.get("error");
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-  // This is a browser redirect endpoint - returns HTML
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID")!;
-  const LINKEDIN_CLIENT_SECRET = Deno.env.get("LINKEDIN_CLIENT_SECRET")!;
-  const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-oauth-callback`;
+  const LINKEDIN_CLIENT_ID = Deno.env.get("LINKEDIN_CLIENT_ID");
+  const LINKEDIN_CLIENT_SECRET = Deno.env.get("LINKEDIN_CLIENT_SECRET");
 
-  // Get the origin from the state or use a default
-  const appOrigin = url.searchParams.get("state") || "";
-
-  if (error || !code) {
-    return new Response(renderHTML("error", "LinkedIn authorization was denied or failed."), {
-      headers: { "Content-Type": "text/html" },
+  if (!LINKEDIN_CLIENT_ID || !LINKEDIN_CLIENT_SECRET) {
+    return new Response(JSON.stringify({ error: "LinkedIn credentials not configured" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
   try {
+    // Authenticate the calling user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { code, redirect_uri } = await req.json();
+    if (!code) {
+      return new Response(JSON.stringify({ error: "Missing authorization code" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!redirect_uri) {
+      return new Response(JSON.stringify({ error: "Missing redirect_uri" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Exchange code for access token
     const tokenRes = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
       method: "POST",
@@ -28,7 +64,7 @@ Deno.serve(async (req) => {
       body: new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: redirectUri,
+        redirect_uri,
         client_id: LINKEDIN_CLIENT_ID,
         client_secret: LINKEDIN_CLIENT_SECRET,
       }),
@@ -37,16 +73,18 @@ Deno.serve(async (req) => {
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok || !tokenData.access_token) {
       console.error("Token exchange failed:", tokenData);
-      return new Response(renderHTML("error", "Failed to obtain LinkedIn access token."), {
-        headers: { "Content-Type": "text/html" },
+      const errorMsg = tokenData.error_description || tokenData.error || "Token exchange failed";
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const accessToken = tokenData.access_token;
     const refreshToken = tokenData.refresh_token || null;
-    const expiresIn = tokenData.expires_in || 5184000; // 60 days default
+    const expiresIn = tokenData.expires_in || 5184000;
 
-    // Fetch LinkedIn profile using userinfo endpoint
+    // Fetch LinkedIn profile
     const profileRes = await fetch("https://api.linkedin.com/v2/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -54,54 +92,56 @@ Deno.serve(async (req) => {
 
     const linkedinId = profile.sub || "unknown";
     const displayName = profile.name || profile.given_name || "LinkedIn User";
-
-    // Store connection using service role
-    const supabaseAdmin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-    // The user_id will be set via a temp claim passed through state
-    // For now, we store with a placeholder and the frontend will link it
-    // Actually, we need the user's JWT. Let's use a different approach:
-    // Store the token temporarily and let the frontend claim it
-
-    const tempId = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
-    // Store in a temp way - the frontend will call to claim this
-    await supabaseAdmin.from("linkedin_connections").upsert({
-      id: tempId,
-      user_id: "00000000-0000-0000-0000-000000000000", // placeholder
-      linkedin_id: linkedinId,
-      display_name: displayName,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      token_expires_at: expiresAt,
-      scopes: ["openid", "profile", "email"],
-      status: "pending_claim",
-    });
+    const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Redirect back to app with temp ID
-    return new Response("", {
-      status: 302,
-      headers: {
-        Location: `${appOrigin || "https://aura-lens-42.lovable.app"}/dashboard?linkedin_temp_id=${tempId}`,
+    // Delete any existing connection for this user
+    await adminClient
+      .from("linkedin_connections")
+      .delete()
+      .eq("user_id", user.id);
+
+    // Create new active connection
+    const { data: connection, error: insertError } = await adminClient
+      .from("linkedin_connections")
+      .insert({
+        user_id: user.id,
+        linkedin_id: linkedinId,
+        display_name: displayName,
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        token_expires_at: expiresAt,
+        scopes: ["openid", "profile", "email"],
+        status: "active",
+        connected_at: new Date().toISOString(),
+      })
+      .select("id, display_name, connected_at")
+      .single();
+
+    if (insertError) {
+      console.error("DB insert error:", insertError);
+      return new Response(JSON.stringify({ error: "Failed to store connection" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      connection: {
+        id: connection.id,
+        display_name: connection.display_name,
+        connected_at: connection.connected_at,
       },
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
     console.error("LinkedIn OAuth callback error:", err);
-    return new Response(renderHTML("error", `OAuth error: ${err.message}`), {
-      headers: { "Content-Type": "text/html" },
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
-
-function renderHTML(status: string, message: string) {
-  return `<!DOCTYPE html>
-<html><head><title>LinkedIn Connection</title></head>
-<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;background:#0B0C0F;color:#fff;">
-<div style="text-align:center;max-width:400px;">
-  <h2>${status === "error" ? "❌ Connection Failed" : "✅ Connected"}</h2>
-  <p style="color:#999;">${message}</p>
-  <p style="color:#666;font-size:14px;">You can close this window.</p>
-</div>
-</body></html>`;
-}

@@ -18,14 +18,16 @@ Deno.serve(async (req) => {
   }
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-  const redirectUri = `${SUPABASE_URL}/functions/v1/linkedin-oauth-callback`;
 
   try {
     const { action, origin } = await req.json();
 
     if (action === "get-auth-url") {
-      const state = encodeURIComponent(origin || "");
+      // Build redirect_uri based on the calling app's origin
+      const appOrigin = origin || "https://aura-lens-42.lovable.app";
+      const redirectUri = `${appOrigin}/api/auth/linkedin/callback`;
       const scopes = "openid profile email";
+      const state = encodeURIComponent(appOrigin);
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scopes)}`;
 
       return new Response(JSON.stringify({ url: authUrl }), {

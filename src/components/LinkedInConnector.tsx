@@ -49,42 +49,9 @@ const LinkedInConnector = ({ onConnectionChange }: { onConnectionChange?: (conne
     setLoading(false);
   }, [onConnectionChange]);
 
-  // Check for LinkedIn callback temp_id in URL
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tempId = params.get("linkedin_temp_id");
-    if (tempId) {
-      // Remove from URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete("linkedin_temp_id");
-      window.history.replaceState({}, "", url.toString());
-
-      // Claim the connection
-      claimConnection(tempId);
-    } else {
-      checkStatus();
-    }
-  }, [checkStatus]);
-
-  const claimConnection = async (tempId: string) => {
-    setConnecting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("linkedin-claim", {
-        body: { temp_id: tempId },
-      });
-
-      if (error || !data?.success) {
-        toast({ title: "Connection failed", description: "Could not link LinkedIn account.", variant: "destructive" });
-      } else {
-        toast({ title: "LinkedIn Connected", description: `Connected as ${data.connection?.display_name || "LinkedIn User"}` });
-        onConnectionChange?.(true);
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to complete LinkedIn connection.", variant: "destructive" });
-    }
-    setConnecting(false);
     checkStatus();
-  };
+  }, [checkStatus]);
 
   const handleConnect = async () => {
     setConnecting(true);
