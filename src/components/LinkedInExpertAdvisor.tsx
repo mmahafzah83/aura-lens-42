@@ -176,27 +176,31 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
           </div>
 
           {/* Priority Move Hero */}
-          <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="w-4 h-4 text-primary" />
-              <p className="text-label text-[11px]">Priority Strategic Move</p>
+          {advisory.priorityMove && (
+            <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="w-4 h-4 text-primary" />
+                <p className="text-label text-[11px]">Priority Strategic Move</p>
+              </div>
+              <p className="text-lg font-semibold text-foreground leading-snug mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                {advisory.priorityMove.topic}
+              </p>
+              <p className="text-sm text-muted-foreground/70 leading-relaxed mb-4" dir="auto">{advisory.priorityMove.reason}</p>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-primary/8 text-primary/70 border border-primary/15">
+                  {advisory.priorityMove.format}
+                </span>
+                <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-secondary/30 text-muted-foreground/60 border border-border/10">
+                  {advisory.priorityMove.tone} tone
+                </span>
+                {advisory.priorityMove.themeReinforced && (
+                  <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/15">
+                    Reinforces: {advisory.priorityMove.themeReinforced}
+                  </span>
+                )}
+              </div>
             </div>
-            <p className="text-lg font-semibold text-foreground leading-snug mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-              {advisory.priorityMove.topic}
-            </p>
-            <p className="text-sm text-muted-foreground/70 leading-relaxed mb-4" dir="auto">{advisory.priorityMove.reason}</p>
-            <div className="flex flex-wrap gap-2">
-              <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-primary/8 text-primary/70 border border-primary/15">
-                {advisory.priorityMove.format}
-              </span>
-              <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-secondary/30 text-muted-foreground/60 border border-border/10">
-                {advisory.priorityMove.tone} tone
-              </span>
-              <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/15">
-                Reinforces: {advisory.priorityMove.themeReinforced}
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Authority Evolution */}
           {advisory.authorityEvolution && (
