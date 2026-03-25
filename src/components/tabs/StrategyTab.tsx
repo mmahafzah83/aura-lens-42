@@ -72,7 +72,7 @@ const StatCard = ({ icon: Icon, label, count, color, active, onClick }: {
       </div>
       <span className="text-metric text-foreground">{count}</span>
     </div>
-    <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">{label}</span>
+    <span className="text-label">{label}</span>
   </button>
 );
 

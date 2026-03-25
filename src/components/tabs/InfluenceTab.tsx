@@ -16,15 +16,15 @@ const SummaryText = ({ text }: { text: string }) => {
 
   return (
     <div>
-      <p className={`text-xs text-muted-foreground/60 mt-1.5 leading-relaxed ${!expanded && isLong ? "line-clamp-2" : ""}`}>
+      <p className={`text-sm text-muted-foreground leading-relaxed mt-1.5 ${!expanded && isLong ? "line-clamp-3" : ""}`}>
         {text}
       </p>
       {isLong && (
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="text-[10px] text-primary/70 hover:text-primary mt-1 font-medium transition-colors duration-200"
+          className="text-xs text-primary/70 hover:text-primary mt-1.5 font-medium transition-colors"
         >
-          {expanded ? "Less" : "Read more"}
+          {expanded ? "Show less" : "Read more"}
         </button>
       )}
     </div>
