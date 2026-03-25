@@ -536,6 +536,60 @@ export type Database = {
         }
         Relationships: []
       }
+      linkedin_posts: {
+        Row: {
+          comment_count: number
+          created_at: string
+          engagement_score: number
+          format_type: string | null
+          id: string
+          like_count: number
+          linkedin_post_id: string
+          media_type: string | null
+          post_text: string | null
+          published_at: string | null
+          repost_count: number
+          synced_at: string
+          theme: string | null
+          tone: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_count?: number
+          created_at?: string
+          engagement_score?: number
+          format_type?: string | null
+          id?: string
+          like_count?: number
+          linkedin_post_id: string
+          media_type?: string | null
+          post_text?: string | null
+          published_at?: string | null
+          repost_count?: number
+          synced_at?: string
+          theme?: string | null
+          tone?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_count?: number
+          created_at?: string
+          engagement_score?: number
+          format_type?: string | null
+          id?: string
+          like_count?: number
+          linkedin_post_id?: string
+          media_type?: string | null
+          post_text?: string | null
+          published_at?: string | null
+          repost_count?: number
+          synced_at?: string
+          theme?: string | null
+          tone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       master_frameworks: {
         Row: {
           created_at: string
