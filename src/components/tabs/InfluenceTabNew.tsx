@@ -20,18 +20,38 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [radarKey, setRadarKey] = useState(0);
   const [linkedInConnected, setLinkedInConnected] = useState(false);
   const [connectionInfo, setConnectionInfo] = useState<any>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncFailed, setSyncFailed] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleConnectionChange = useCallback((connected: boolean, info?: any) => {
     setLinkedInConnected(connected);
     setConnectionInfo(info || null);
+    setSyncFailed(false);
+  }, []);
+
+  const handleSyncStateChange = useCallback((isSyncing: boolean, failed?: boolean) => {
+    setSyncing(isSyncing);
+    if (failed !== undefined) setSyncFailed(failed);
+    if (!isSyncing && !failed) {
+      // Refresh intelligence data after successful sync
+      setRefreshKey(k => k + 1);
+    }
   }, []);
 
   return (
     <div className="space-y-6">
-      <LinkedInConnector onConnectionChange={(connected) => {
-        setLinkedInConnected(connected);
-      }} />
-      <InfluenceIntelligence linkedInConnected={linkedInConnected} connectionInfo={connectionInfo} />
+      <LinkedInConnector
+        onConnectionChange={handleConnectionChange}
+        onSyncStateChange={handleSyncStateChange}
+      />
+      <InfluenceIntelligence
+        key={refreshKey}
+        linkedInConnected={linkedInConnected}
+        connectionInfo={connectionInfo}
+        syncing={syncing}
+        syncFailed={syncFailed}
+      />
       <KPIProgressRings />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">

@@ -15,7 +15,12 @@ interface LinkedInConnectionStatus {
   };
 }
 
-const LinkedInConnector = ({ onConnectionChange }: { onConnectionChange?: (connected: boolean) => void }) => {
+interface LinkedInConnectorProps {
+  onConnectionChange?: (connected: boolean, info?: any) => void;
+  onSyncStateChange?: (syncing: boolean, failed?: boolean) => void;
+}
+
+const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInConnectorProps) => {
   const [status, setStatus] = useState<LinkedInConnectionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -41,7 +46,7 @@ const LinkedInConnector = ({ onConnectionChange }: { onConnectionChange?: (conne
         setStatus({ connected: false });
       } else {
         setStatus(data);
-        onConnectionChange?.(data?.connected || false);
+        onConnectionChange?.(data?.connected || false, data?.connection || null);
       }
     } catch {
       setStatus({ connected: false });
@@ -67,7 +72,6 @@ const LinkedInConnector = ({ onConnectionChange }: { onConnectionChange?: (conne
         return;
       }
 
-      // Redirect to LinkedIn OAuth
       window.location.href = data.url;
     } catch {
       toast({ title: "Error", description: "Failed to initiate LinkedIn connection.", variant: "destructive" });
@@ -77,21 +81,25 @@ const LinkedInConnector = ({ onConnectionChange }: { onConnectionChange?: (conne
 
   const handleSync = async () => {
     setSyncing(true);
+    onSyncStateChange?.(true);
     try {
       const { data, error } = await supabase.functions.invoke("linkedin-sync", {});
 
       if (error || !data?.success) {
         toast({ title: "Sync failed", description: data?.error || "Could not sync LinkedIn data.", variant: "destructive" });
+        onSyncStateChange?.(false, true);
       } else {
         const summary = data.summary;
         const desc = summary
           ? `Analyzed ${summary.postsAnalyzed} posts · ${summary.themesDetected} themes detected${summary.topTopic ? ` · Top: ${summary.topTopic}` : ""}`
           : data.note || "LinkedIn analytics updated.";
         toast({ title: "Sync complete", description: desc });
+        onSyncStateChange?.(false, false);
         checkStatus();
       }
     } catch {
       toast({ title: "Error", description: "Failed to sync LinkedIn data.", variant: "destructive" });
+      onSyncStateChange?.(false, true);
     }
     setSyncing(false);
   };
