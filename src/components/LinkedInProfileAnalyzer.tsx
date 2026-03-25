@@ -48,6 +48,8 @@ const stageLabel = (s: string) =>
 
 const LinkedInProfileAnalyzer = () => {
   const [url, setUrl] = useState("");
+  const [profileText, setProfileText] = useState("");
+  const [showPasteArea, setShowPasteArea] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,7 +115,7 @@ const LinkedInProfileAnalyzer = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("analyze-linkedin-profile", {
-        body: { url: url.trim() },
+        body: { url: url.trim(), profileText: profileText.trim() || undefined },
       });
 
       if (error) throw error;
@@ -132,7 +134,7 @@ const LinkedInProfileAnalyzer = () => {
   return (
     <section className="animate-fade-in">
       <h2 className="text-section-title text-foreground mb-2">Analyze LinkedIn Profile</h2>
-      <p className="text-meta mb-6">Paste a LinkedIn profile URL to extract strategic authority insights — no API connection required.</p>
+      <p className="text-meta mb-6">Paste a LinkedIn profile URL to extract strategic authority insights — optionally paste profile text for deeper analysis.</p>
 
       {/* Input card */}
       <div className="glass-card rounded-2xl p-6 mb-8">
@@ -153,6 +155,21 @@ const LinkedInProfileAnalyzer = () => {
             {loading ? "Analyzing…" : "Analyze Profile"}
           </Button>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowPasteArea(!showPasteArea)}
+          className="text-[11px] text-muted-foreground/50 hover:text-primary/70 transition-colors mt-2"
+        >
+          {showPasteArea ? "Hide paste area" : "💡 LinkedIn blocking? Paste profile text for better results"}
+        </button>
+        {showPasteArea && (
+          <textarea
+            placeholder="Paste the About section, headline, experience, or any profile text here…"
+            value={profileText}
+            onChange={(e) => setProfileText(e.target.value)}
+            className="mt-3 w-full min-h-[100px] rounded-xl bg-secondary/20 border border-border/15 p-3 text-sm text-foreground/80 placeholder:text-muted-foreground/30 focus:outline-none focus:ring-1 focus:ring-primary/30 resize-y"
+          />
+        )}
       </div>
 
       {/* Results */}
