@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Search, Loader2, Crown, Mic2, Target,
-  TrendingUp, Globe, Sparkles, ArrowRight, Lightbulb
+  TrendingUp, Globe, Sparkles, ArrowRight, Lightbulb, Save, CheckCircle2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,8 +49,56 @@ const stageLabel = (s: string) =>
 const LinkedInProfileAnalyzer = () => {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [analysis, setAnalysis] = useState<ProfileAnalysis | null>(null);
   const { toast } = useToast();
+
+  const handleSaveToKnowledge = async () => {
+    if (!analysis) return;
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast({ title: "Sign in required", variant: "destructive" }); return; }
+
+      const themeSummary = analysis.authority_themes
+        .map(t => `${t.theme} (${t.stage}, ${t.confidence} confidence) — evidence: ${t.evidence_signals.join(", ")}`)
+        .join("\n");
+      const toneSummary = analysis.tone_profile.map(t => `${t.tone}: ${t.strength}`).join(", ");
+      const content = [
+        `Strategic Positioning: ${analysis.strategic_positioning}`,
+        `\nAuthority Themes:\n${themeSummary}`,
+        `\nTone Profile: ${toneSummary}`,
+        `\nIndustries: ${analysis.industries.join(", ")}`,
+        `\nInfluence Signals: Posting ${analysis.influence_signals.posting_frequency}, Consistency ${analysis.influence_signals.topic_consistency}, ${analysis.influence_signals.industry_positioning}`,
+        analysis.content_formats.length ? `\nContent Formats: ${analysis.content_formats.join(", ")}` : "",
+        analysis.recommendations.length ? `\nRecommendations:\n${analysis.recommendations.map((r, i) => `${i + 1}. ${r}`).join("\n")}` : "",
+      ].filter(Boolean).join("\n");
+
+      const skillPillars = analysis.authority_themes
+        .filter(t => t.confidence !== "low")
+        .map(t => t.theme)
+        .slice(0, 5);
+
+      const { error } = await supabase.from("learned_intelligence").insert({
+        user_id: user.id,
+        title: `Profile Analysis: ${analysis.name || "LinkedIn Profile"}`,
+        content,
+        intelligence_type: "profile_analysis",
+        skill_pillars: skillPillars,
+        tags: [...analysis.industries, ...analysis.content_formats].slice(0, 10),
+        skill_boost_pct: 5,
+      });
+
+      if (error) throw error;
+      setSaved(true);
+      toast({ title: "Saved to Knowledge", description: "Authority themes and insights stored for cross-source analysis." });
+    } catch (e: any) {
+      toast({ title: "Save failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!url.trim()) return;
@@ -61,6 +109,7 @@ const LinkedInProfileAnalyzer = () => {
 
     setLoading(true);
     setAnalysis(null);
+    setSaved(false);
 
     try {
       const { data, error } = await supabase.functions.invoke("analyze-linkedin-profile", {
@@ -109,6 +158,19 @@ const LinkedInProfileAnalyzer = () => {
       {/* Results */}
       {analysis && (
         <div className="space-y-8 animate-fade-in">
+          {/* Save to Knowledge */}
+          <div className="flex justify-end">
+            <Button
+              variant={saved ? "secondary" : "outline"}
+              size="sm"
+              onClick={handleSaveToKnowledge}
+              disabled={saving || saved}
+              className="gap-2"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Save className="w-3.5 h-3.5" />}
+              {saving ? "Saving…" : saved ? "Saved to Knowledge" : "Save to Knowledge"}
+            </Button>
+          </div>
 
           {/* Strategic Positioning — Hero */}
           <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
