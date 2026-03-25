@@ -53,7 +53,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         connectionInfo={connectionInfo}
         syncing={syncing}
         syncFailed={syncFailed}
+        onSnapshotsLoaded={(count) => setHasSnapshots(count > 0)}
       />
+      <LinkedInExpertAdvisor hasSnapshots={hasSnapshots} />
       <KPIProgressRings />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
