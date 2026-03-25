@@ -9,6 +9,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 
 /* ── Types ── */
 interface CommandData {
+  userName: string;
   identityStatement: string;
   expertise: string;
   industry: string;
@@ -20,7 +21,15 @@ interface CommandData {
   recentIntelligence: Array<{ title: string; sourceCount: number; confidence: number; created_at: string }>;
 }
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+};
+
 const EMPTY: CommandData = {
+  userName: "",
   identityStatement: "",
   expertise: "—",
   industry: "—",
@@ -43,6 +52,9 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
 
   const loadData = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+
       const [signalsRes, profileRes, suggestionsRes, intelligenceRes] = await Promise.all([
         supabase.from("strategic_signals").select("signal_title, confidence, supporting_evidence_ids, theme_tags, framework_opportunity, content_opportunity, strategic_implications, explanation").eq("status", "active").order("confidence", { ascending: false }).limit(5),
         (supabase.from("diagnostic_profiles" as any) as any).select("core_practice, sector_focus, brand_pillars, identity_intelligence").maybeSingle(),
@@ -92,7 +104,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         created_at: s.created_at,
       }));
 
-      setData({ identityStatement, expertise, industry, signalTitle, signalConfidence, signalSources, recommendedMove, moveReason, recentIntelligence });
+      setData({ userName, identityStatement, expertise, industry, signalTitle, signalConfidence, signalSources, recommendedMove, moveReason, recentIntelligence });
     } catch (err) {
       console.error("Command center load error:", err);
     }
@@ -115,9 +127,9 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       {/* ── Header ── */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
-          What should you focus on today?
+          {getGreeting()}{data.userName ? `, ${data.userName}` : ""}
         </h1>
-        <p className="text-meta mt-2 text-base">Your strategic briefing</p>
+        <p className="text-meta mt-2 text-base">What should you focus on today?</p>
       </div>
 
       {/* ── Three Primary Cards ── */}
