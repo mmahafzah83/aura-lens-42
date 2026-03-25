@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import SignalExplorer from "@/components/SignalExplorer";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import StrategicEvolutionMap from "@/components/StrategicEvolutionMap";
 
 /* ── Types ── */
 interface StrategicSignal {
