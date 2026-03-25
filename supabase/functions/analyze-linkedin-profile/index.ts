@@ -196,7 +196,7 @@ ${isArabic ? "\nProvide the strategic_positioning in both Arabic and English." :
           },
           {
             role: "user",
-            content: `Analyze this LinkedIn profile from ${url}:\n\nPage content:\n${cleanText}\n\n${structuredData ? `Structured data:\n${structuredData}` : ""}`,
+            content: `Analyze this LinkedIn profile from ${url}:\n\n${contentContext}`,
           },
         ],
       }),
