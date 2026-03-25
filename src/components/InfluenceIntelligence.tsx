@@ -450,6 +450,7 @@ const InfluenceIntelligence = () => {
                 ))}
               </div>
             </div>
+          )}
         </div>
       )}
 
