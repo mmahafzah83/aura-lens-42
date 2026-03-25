@@ -37,7 +37,7 @@ interface Props {
   onSnapshotsLoaded?: (count: number) => void;
 }
 
-const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false }: Props) => {
+const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false, onSnapshotsLoaded }: Props) => {
   const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "tone" | "strategy">("trajectory");
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
