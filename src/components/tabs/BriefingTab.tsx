@@ -5,6 +5,7 @@ import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import StrategicIntelligenceEngine from "@/components/StrategicIntelligenceEngine";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
+import StrategicAdvisor from "@/components/StrategicAdvisor";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -77,6 +78,9 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
 
       {/* Strategic Command */}
       <StrategicCommandCenter />
+
+      {/* Strategic Advisor */}
+      <StrategicAdvisor onOpenChat={onOpenChat} />
 
       {/* Daily Briefing */}
       <DailyStrategicBriefing onOpenChat={onOpenChat} />
