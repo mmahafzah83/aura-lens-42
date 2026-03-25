@@ -86,7 +86,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
   const fetchAll = async () => {
     setLoading(true);
     const [sRes, iRes, fRes] = await Promise.all([
-      supabase.from("strategic_signals").select("id, signal_title, explanation, strategic_implications, supporting_evidence_ids, theme_tags, confidence, fragment_count, framework_opportunity, content_opportunity, created_at").eq("status", "active").order("confidence", { ascending: false }).limit(20),
+      supabase.from("strategic_signals").select("id, signal_title, explanation, strategic_implications, supporting_evidence_ids, theme_tags, skill_pillars, confidence, fragment_count, framework_opportunity, content_opportunity, consulting_opportunity, created_at").eq("status", "active").order("confidence", { ascending: false }).limit(20),
       supabase.from("learned_intelligence").select("id, title, content, intelligence_type, skill_pillars, tags, created_at").order("created_at", { ascending: false }).limit(30),
       supabase.from("master_frameworks").select("id, title, summary, tags, framework_steps, created_at").order("created_at", { ascending: false }).limit(20),
     ]);
