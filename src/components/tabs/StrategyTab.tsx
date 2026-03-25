@@ -21,10 +21,12 @@ interface StrategicSignal {
   strategic_implications: string;
   supporting_evidence_ids: string[];
   theme_tags: string[];
+  skill_pillars: string[];
   confidence: number;
   fragment_count: number;
   framework_opportunity: any;
   content_opportunity: any;
+  consulting_opportunity: any;
   created_at: string;
 }
 
