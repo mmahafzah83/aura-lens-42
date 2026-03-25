@@ -352,6 +352,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
         </div>
       </div>
 
+      {/* Evolution Map */}
+      <StrategicEvolutionMap onOpenChat={onOpenChat} />
+
       {/* Stats Row */}
       <div className="flex gap-3">
         <StatCard icon={Zap} label="Signals" count={signals.length} color="bg-amber-500/10 text-amber-400" active={viewMode === "signals"} onClick={() => setViewMode(viewMode === "signals" ? "overview" : "signals")} />
