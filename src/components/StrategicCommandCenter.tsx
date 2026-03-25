@@ -21,7 +21,15 @@ interface CommandData {
   recentIntelligence: Array<{ title: string; sourceCount: number; confidence: number; created_at: string }>;
 }
 
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+};
+
 const EMPTY: CommandData = {
+  userName: "",
   identityStatement: "",
   expertise: "—",
   industry: "—",
