@@ -151,16 +151,27 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
           </h1>
           <p className="text-meta mt-2 text-base">Signals → Insights → Frameworks</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={runPatternDetection}
-          disabled={detecting}
-          className="gap-2 shrink-0"
-        >
-          {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-          <span className="hidden sm:inline">Detect Patterns</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setGraphOpen(true)}
+            className="gap-2"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Signal Graph</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runPatternDetection}
+            disabled={detecting}
+            className="gap-2"
+          >
+            {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Detect Patterns</span>
+          </Button>
+        </div>
       </motion.div>
 
       {/* ── Empty State ── */}
