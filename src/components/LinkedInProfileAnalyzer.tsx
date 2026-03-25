@@ -115,7 +115,7 @@ const LinkedInProfileAnalyzer = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("analyze-linkedin-profile", {
-        body: { url: url.trim() },
+        body: { url: url.trim(), profileText: profileText.trim() || undefined },
       });
 
       if (error) throw error;
