@@ -53,6 +53,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
       supabase.from("strategic_signals").select("signal_title, theme_tags, confidence").eq("status", "active").gte("confidence", 0.7).order("confidence", { ascending: false }).limit(10),
     ]);
     setSnapshots(snapshotsRes.data || []);
+    onSnapshotsLoaded?.((snapshotsRes.data || []).length);
 
     const themes: Record<string, number> = {};
     (signalsRes.data || []).forEach((s: any) => {
