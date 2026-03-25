@@ -52,6 +52,9 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
 
   const loadData = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+
       const [signalsRes, profileRes, suggestionsRes, intelligenceRes] = await Promise.all([
         supabase.from("strategic_signals").select("signal_title, confidence, supporting_evidence_ids, theme_tags, framework_opportunity, content_opportunity, strategic_implications, explanation").eq("status", "active").order("confidence", { ascending: false }).limit(5),
         (supabase.from("diagnostic_profiles" as any) as any).select("core_practice, sector_focus, brand_pillars, identity_intelligence").maybeSingle(),
