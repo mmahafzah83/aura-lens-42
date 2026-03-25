@@ -91,6 +91,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh }: IntelligenceTabProp
         )}
       </div>
 
+      {/* Knowledge Intelligence Engine */}
+      <KnowledgeIntelligenceEngine />
+
       {/* Intelligence Engine */}
       <StrategicIntelligenceEngine onOpenChat={onOpenChat} />
 
