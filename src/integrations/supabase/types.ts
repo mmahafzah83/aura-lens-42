@@ -372,13 +372,17 @@ export type Database = {
         Row: {
           audience_breakdown: Json
           authority_themes: Json
+          authority_trajectory: string | null
           created_at: string
           engagement_rate: number
           follower_growth: number
           followers: number
+          format_breakdown: Json
           id: string
+          post_count: number
           recommendations: Json
           snapshot_date: string
+          tone_analysis: Json
           top_format: string | null
           top_topic: string | null
           user_id: string
@@ -386,13 +390,17 @@ export type Database = {
         Insert: {
           audience_breakdown?: Json
           authority_themes?: Json
+          authority_trajectory?: string | null
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
           followers?: number
+          format_breakdown?: Json
           id?: string
+          post_count?: number
           recommendations?: Json
           snapshot_date?: string
+          tone_analysis?: Json
           top_format?: string | null
           top_topic?: string | null
           user_id: string
@@ -400,13 +408,17 @@ export type Database = {
         Update: {
           audience_breakdown?: Json
           authority_themes?: Json
+          authority_trajectory?: string | null
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
           followers?: number
+          format_breakdown?: Json
           id?: string
+          post_count?: number
           recommendations?: Json
           snapshot_date?: string
+          tone_analysis?: Json
           top_format?: string | null
           top_topic?: string | null
           user_id?: string
