@@ -1,39 +1,20 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  TrendingUp, Users, BarChart3, MessageSquare, Target,
-  Eye, Zap, ArrowUpRight, ArrowDownRight, Minus,
-  ChevronRight, Lightbulb, Crown, Loader2,
+  TrendingUp, Users, BarChart3, Target,
+  ArrowUpRight, ArrowDownRight,
+  Lightbulb, Crown, Loader2,
   Linkedin, Sparkles, Calendar, Activity, AlertTriangle,
-  Clock, CheckCircle2, WifiOff
+  Clock, CheckCircle2, WifiOff, XCircle, RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
 import {
-  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
 
-/* ── Sub-components ── */
-const ScoreRing = ({ score, label, size = 56 }: { score: number; label: string; size?: number }) => {
-  const color = score >= 70 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-red-400";
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className={`relative rounded-full border-2 border-border/20 flex items-center justify-center ${color}`} style={{ width: size, height: size }}>
-        <span className="text-sm font-bold">{score}</span>
-      </div>
-      <span className="text-[10px] text-muted-foreground/60 text-center leading-tight">{label}</span>
-    </div>
-  );
-};
-
-const TrendIcon = ({ trend }: { trend: string }) => {
-  if (trend === "up") return <ArrowUpRight className="w-3 h-3 text-emerald-400" />;
-  if (trend === "down") return <ArrowDownRight className="w-3 h-3 text-red-400" />;
-  return <Minus className="w-3 h-3 text-muted-foreground/40" />;
-};
-
+/* ── Empty state ── */
 const EmptyState = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
   <div className="glass-card rounded-2xl p-6 sm:p-8 text-center py-12 animate-fade-in">
     <Icon className="w-10 h-10 text-primary/20 mx-auto mb-3" />
@@ -42,7 +23,7 @@ const EmptyState = ({ icon: Icon, title, description }: { icon: any; title: stri
   </div>
 );
 
-type ConnectionState = "disconnected" | "connected_no_sync" | "synced" | "stale";
+type ConnectionState = "disconnected" | "connected_no_sync" | "syncing" | "synced" | "stale" | "sync_failed";
 
 interface Props {
   linkedInConnected: boolean;
@@ -51,10 +32,12 @@ interface Props {
     last_synced_at?: string | null;
     connected_at?: string;
   } | null;
+  syncing?: boolean;
+  syncFailed?: boolean;
 }
 
-const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => {
-  const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "tone" | "strategy">("trajectory");
+const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false }: Props) => {
+  const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "strategy">("trajectory");
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
   const [authorityThemes, setAuthorityThemes] = useState<string[]>([]);
@@ -85,20 +68,18 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
   // Determine connection state
   const connectionState: ConnectionState = useMemo(() => {
     if (!linkedInConnected) return "disconnected";
+    if (syncing) return "syncing";
+    if (syncFailed) return "sync_failed";
     if (snapshots.length === 0) return "connected_no_sync";
-    // Check staleness: older than 7 days
     const latest = snapshots[0];
     if (latest?.snapshot_date) {
       const daysSince = Math.floor((Date.now() - new Date(latest.snapshot_date).getTime()) / (1000 * 60 * 60 * 24));
       if (daysSince > 7) return "stale";
     }
     return "synced";
-  }, [linkedInConnected, snapshots]);
+  }, [linkedInConnected, snapshots, syncing, syncFailed]);
 
-  // Latest snapshot data
   const latestSnapshot = snapshots[0] || null;
-
-  // Compute derived data from real snapshots
   const audienceBreakdown = latestSnapshot?.audience_breakdown || null;
   const latestFollowers = latestSnapshot?.followers || 0;
   const latestGrowth = latestSnapshot?.follower_growth || 0;
@@ -114,15 +95,12 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
     { key: "strategy" as const, label: "Strategy", icon: Target },
   ];
 
-  // Chart data from snapshots (chronological)
   const chartData = useMemo(() => {
     return [...snapshots].reverse().map((s: any) => ({
       date: s.snapshot_date?.slice(5) || "",
       followers: s.followers || 0,
       growth: s.follower_growth || 0,
       engagement: Number(s.engagement_rate) || 0,
-      topTopic: s.top_topic || "",
-      topFormat: s.top_format || "",
     }));
   }, [snapshots]);
 
@@ -136,72 +114,103 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
     );
   }
 
+  const statusBannerConfig: Record<ConnectionState, { icon: any; iconClass: string; bgClass: string; title: string; subtitle: string }> = {
+    disconnected: {
+      icon: WifiOff, iconClass: "text-muted-foreground/50",
+      bgClass: "bg-muted/20 border-border/10",
+      title: "LinkedIn not connected",
+      subtitle: "Connect your account above to sync analytics",
+    },
+    connected_no_sync: {
+      icon: Linkedin, iconClass: "text-[#0A66C2]",
+      bgClass: "bg-[#0A66C2]/5 border-[#0A66C2]/15",
+      title: "LinkedIn connected — awaiting first analytics sync",
+      subtitle: "Click \"Sync Now\" above to pull your analytics",
+    },
+    syncing: {
+      icon: Loader2, iconClass: "text-primary animate-spin",
+      bgClass: "bg-primary/5 border-primary/15",
+      title: "Syncing LinkedIn analytics…",
+      subtitle: "Fetching posts, classifying content, and generating insights",
+    },
+    synced: {
+      icon: CheckCircle2, iconClass: "text-emerald-400",
+      bgClass: "bg-emerald-500/5 border-emerald-500/15",
+      title: "Live LinkedIn data",
+      subtitle: connectionInfo?.last_synced_at
+        ? `Last synced: ${formatSmartDate(connectionInfo.last_synced_at)}`
+        : latestSnapshot?.snapshot_date
+        ? `Last synced: ${formatSmartDate(latestSnapshot.snapshot_date)}`
+        : "Recently synced",
+    },
+    stale: {
+      icon: AlertTriangle, iconClass: "text-amber-400",
+      bgClass: "bg-amber-500/5 border-amber-500/15",
+      title: "Data may be outdated",
+      subtitle: latestSnapshot?.snapshot_date
+        ? `Last synced: ${formatSmartDate(latestSnapshot.snapshot_date)} · Click \"Sync Now\" to refresh`
+        : "Click \"Sync Now\" to refresh",
+    },
+    sync_failed: {
+      icon: XCircle, iconClass: "text-red-400",
+      bgClass: "bg-red-500/5 border-red-500/15",
+      title: "LinkedIn sync failed",
+      subtitle: "Check your connection and try again with \"Sync Now\"",
+    },
+  };
+
+  const banner = statusBannerConfig[connectionState];
+  const BannerIcon = banner.icon;
+
+  const hasRealData = snapshots.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Status Banner */}
-      <div className={`rounded-xl p-4 flex items-center gap-3 border ${
-        connectionState === "disconnected" ? "bg-muted/20 border-border/10" :
-        connectionState === "connected_no_sync" ? "bg-[#0A66C2]/5 border-[#0A66C2]/15" :
-        connectionState === "stale" ? "bg-amber-500/5 border-amber-500/15" :
-        "bg-emerald-500/5 border-emerald-500/15"
-      }`}>
-        {connectionState === "disconnected" && (
-          <>
-            <WifiOff className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-foreground">LinkedIn not connected</p>
-              <p className="text-[10px] text-muted-foreground/50">Connect your account above to sync analytics</p>
-            </div>
-          </>
-        )}
-        {connectionState === "connected_no_sync" && (
-          <>
-            <Linkedin className="w-4 h-4 text-[#0A66C2] shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-foreground">LinkedIn connected — awaiting first analytics sync</p>
-              <p className="text-[10px] text-muted-foreground/50">Click "Sync Now" above to pull your analytics</p>
-            </div>
-            <Clock className="w-3.5 h-3.5 text-muted-foreground/40" />
-          </>
-        )}
-        {connectionState === "stale" && (
-          <>
-            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-foreground">Data may be outdated</p>
-              <p className="text-[10px] text-muted-foreground/50">
-                Last synced: {latestSnapshot?.snapshot_date ? formatSmartDate(latestSnapshot.snapshot_date) : "Unknown"} · Click "Sync Now" to refresh
-              </p>
-            </div>
-          </>
-        )}
-        {connectionState === "synced" && (
-          <>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <div className="flex-1">
-              <p className="text-xs font-medium text-foreground">Live LinkedIn data</p>
-              <p className="text-[10px] text-muted-foreground/50">
-                Last synced: {connectionInfo?.last_synced_at ? formatSmartDate(connectionInfo.last_synced_at) : latestSnapshot?.snapshot_date ? formatSmartDate(latestSnapshot.snapshot_date) : "Recently"}
-              </p>
-            </div>
-          </>
-        )}
+      <div className={`rounded-xl p-4 flex items-center gap-3 border ${banner.bgClass}`}>
+        <BannerIcon className={`w-4 h-4 shrink-0 ${banner.iconClass}`} />
+        <div className="flex-1">
+          <p className="text-xs font-medium text-foreground">{banner.title}</p>
+          <p className="text-[10px] text-muted-foreground/50">{banner.subtitle}</p>
+        </div>
+        {connectionState === "connected_no_sync" && <Clock className="w-3.5 h-3.5 text-muted-foreground/40" />}
       </div>
 
-      {/* If disconnected and no snapshots, show empty */}
-      {connectionState === "disconnected" && snapshots.length === 0 ? (
+      {/* Empty states for no-data scenarios */}
+      {connectionState === "disconnected" && !hasRealData && (
         <EmptyState
           icon={Linkedin}
           title="No influence data available"
           description="Connect your LinkedIn account to start tracking your authority development with real analytics."
         />
-      ) : connectionState === "connected_no_sync" ? (
+      )}
+
+      {connectionState === "connected_no_sync" && (
         <EmptyState
           icon={Activity}
           title="LinkedIn connected — analytics not synced yet"
           description="Use the Sync Now button to pull your first analytics snapshot. All insights will be generated from real LinkedIn data."
         />
-      ) : (
+      )}
+
+      {connectionState === "syncing" && !hasRealData && (
+        <div className="glass-card rounded-2xl p-8 text-center py-12 animate-fade-in">
+          <Loader2 className="w-10 h-10 text-primary/30 mx-auto mb-3 animate-spin" />
+          <p className="text-sm font-medium text-foreground mb-1">Pulling LinkedIn analytics…</p>
+          <p className="text-xs text-muted-foreground/50">This may take a moment while we classify your content.</p>
+        </div>
+      )}
+
+      {connectionState === "sync_failed" && !hasRealData && (
+        <EmptyState
+          icon={XCircle}
+          title="Sync failed — no data available"
+          description="We couldn't retrieve your LinkedIn analytics. Please check your connection and try syncing again."
+        />
+      )}
+
+      {/* Real data panels — only render when we have snapshots */}
+      {hasRealData && connectionState !== "connected_no_sync" && (
         <>
           {/* Header with real metrics */}
           <div className="glass-card rounded-2xl p-6 sm:p-8">
@@ -221,7 +230,6 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
               </div>
             </div>
 
-            {/* Follower Summary from real data */}
             <div className="mt-6 flex items-center gap-6 flex-wrap">
               <div>
                 <p className="text-2xl font-bold text-foreground tabular-nums">{latestFollowers.toLocaleString()}</p>
@@ -229,11 +237,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
               </div>
               {latestGrowth !== 0 && (
                 <div className="flex items-center gap-1.5">
-                  {latestGrowth > 0 ? (
-                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
-                  ) : (
-                    <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />
-                  )}
+                  {latestGrowth > 0 ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
                   <span className={`text-sm font-semibold ${latestGrowth > 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {latestGrowth > 0 ? "+" : ""}{latestGrowth}
                   </span>
@@ -242,11 +246,10 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
               )}
               <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
                 <Calendar className="w-3 h-3" />
-                {snapshots.length} snapshots
+                {snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""}
               </div>
             </div>
 
-            {/* Section Nav */}
             <div className="flex gap-1.5 mt-6 overflow-x-auto pb-1 -mx-1 px-1">
               {sections.map((s) => (
                 <button
@@ -266,13 +269,11 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
           {/* Authority Trajectory */}
           {activeSection === "trajectory" && (
             <div className="space-y-5 animate-fade-in">
-              {/* Authority Themes from real data */}
               <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-5">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Crown className="w-4 h-4 text-primary/70" />
                   What You're Becoming Known For
                 </h3>
-
                 {authorityThemes.length > 0 || (authorityThemesFromSnapshot as string[]).length > 0 ? (
                   <div className="space-y-3">
                     <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest font-semibold">Authority Themes (from signals & analytics)</p>
@@ -289,12 +290,11 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                 ) : (
                   <div className="text-center py-8">
                     <Lightbulb className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground/50">Capture more insights and sync LinkedIn data to identify authority themes.</p>
+                    <p className="text-xs text-muted-foreground/50">No authority themes identified yet. Sync more LinkedIn data to surface patterns.</p>
                   </div>
                 )}
               </div>
 
-              {/* Recent Snapshots */}
               {snapshots.length > 0 && (
                 <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
                   <div className="flex items-center justify-between">
@@ -302,10 +302,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                       <Calendar className="w-4 h-4 text-primary/70" />
                       Recent Snapshots
                     </h3>
-                    <button
-                      onClick={() => setActiveSection("history")}
-                      className="text-[10px] text-primary/70 hover:text-primary font-medium transition-colors"
-                    >
+                    <button onClick={() => setActiveSection("history")} className="text-[10px] text-primary/70 hover:text-primary font-medium transition-colors">
                       View full history →
                     </button>
                   </div>
@@ -354,10 +351,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={50} />
-                          <Tooltip
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }}
-                            labelStyle={{ color: "hsl(var(--muted-foreground))" }}
-                          />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }} />
                           <Area type="monotone" dataKey="followers" stroke="hsl(var(--primary))" fill="url(#followerGrad)" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -375,10 +369,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={40} unit="%" />
-                          <Tooltip
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }}
-                            formatter={(value: number) => [`${value.toFixed(1)}%`, "Engagement"]}
-                          />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }} formatter={(value: number) => [`${value.toFixed(1)}%`, "Engagement"]} />
                           <Line type="monotone" dataKey="engagement" stroke="#34d399" strokeWidth={2} dot={{ r: 3, fill: "#34d399" }} />
                         </LineChart>
                       </ResponsiveContainer>
@@ -396,10 +387,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={40} />
-                          <Tooltip
-                            contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }}
-                            formatter={(value: number) => [`+${value}`, "New Followers"]}
-                          />
+                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }} formatter={(value: number) => [`+${value}`, "New Followers"]} />
                           <Bar dataKey="growth" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -407,11 +395,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                   </div>
                 </>
               ) : (
-                <EmptyState
-                  icon={Activity}
-                  title="Not enough data yet"
-                  description="Sync your LinkedIn analytics at least twice to see trend charts."
-                />
+                <EmptyState icon={Activity} title="Not enough data yet" description="Sync your LinkedIn analytics at least twice to see trend charts." />
               )}
 
               {snapshots.length > 0 && (
@@ -447,7 +431,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
             </div>
           )}
 
-          {/* Audience - from real snapshot data */}
+          {/* Audience */}
           {activeSection === "audience" && (
             <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-6">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -478,13 +462,13 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
               ) : (
                 <div className="text-center py-8">
                   <Users className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/50">No audience data synced yet. Sync your LinkedIn analytics to see audience breakdown.</p>
+                  <p className="text-xs text-muted-foreground/50">No audience data synced yet. Audience breakdown requires LinkedIn Community Management API access.</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Content - from real snapshot data */}
+          {/* Content */}
           {activeSection === "content" && (
             <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-5">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -499,10 +483,12 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
                         <p className="text-xs font-medium text-foreground">Top Topic</p>
                         <p className="text-[10px] text-muted-foreground/60 mt-0.5">{latestSnapshot.top_topic}</p>
                       </div>
-                      <div className="text-right shrink-0">
-                        <p className="text-sm font-bold text-foreground tabular-nums">{latestEngagement.toFixed(1)}%</p>
-                        <p className="text-[9px] text-muted-foreground/40">engagement</p>
-                      </div>
+                      {latestEngagement > 0 && (
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-foreground tabular-nums">{latestEngagement.toFixed(1)}%</p>
+                          <p className="text-[9px] text-muted-foreground/40">engagement</p>
+                        </div>
+                      )}
                     </div>
                   )}
                   {latestSnapshot.top_format && (
@@ -523,7 +509,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo }: Props) => 
             </div>
           )}
 
-          {/* Strategy - from real snapshot recommendations */}
+          {/* Strategy */}
           {activeSection === "strategy" && (
             <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-5">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
