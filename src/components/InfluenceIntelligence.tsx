@@ -450,7 +450,9 @@ const InfluenceIntelligence = () => {
                 ))}
               </div>
             </div>
-          )}
+        </div>
+      )}
+
       {/* Audience */}
       {activeSection === "audience" && (
         <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-6">
