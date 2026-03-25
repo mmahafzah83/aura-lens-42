@@ -135,7 +135,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
           {getGreeting()}{data.userName ? `, ${data.userName}` : ""}
         </h1>
         <p className="text-meta mt-2 text-base">What should you focus on today?</p>
-      </div>
+      </motion.div>
 
       {/* ── Three Primary Cards ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
