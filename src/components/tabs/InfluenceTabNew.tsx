@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import LinkedInConnector from "@/components/LinkedInConnector";
 import InfluenceIntelligence from "@/components/InfluenceIntelligence";
 import LinkedInExpertAdvisor from "@/components/LinkedInExpertAdvisor";
+import LinkedInProfileAnalyzer from "@/components/LinkedInProfileAnalyzer";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -50,6 +51,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
 
       {/* Section 5: Strategic Advisor */}
       <LinkedInExpertAdvisor hasSnapshots={hasSnapshots} />
+
+      {/* Section 6: Public Profile Analyzer */}
+      <LinkedInProfileAnalyzer />
     </div>
   );
 };
