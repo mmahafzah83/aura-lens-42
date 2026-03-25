@@ -325,7 +325,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
             <Lightbulb className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground tracking-tight">Strategy Workspace</h2>
+            <h2 className="text-section-title text-foreground">Strategy Workspace</h2>
             <p className="text-xs text-muted-foreground">Patterns, insights, and framework opportunities</p>
           </div>
         </div>
