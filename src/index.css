@@ -190,10 +190,10 @@
 
   /* Tactile press for all interactive elements */
   .tactile-press {
-    @apply transition-all duration-150 ease-out;
+    @apply transition-all duration-[200ms] ease-[ease-in-out];
   }
   .tactile-press:active {
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
 
   /* Hover lift effect */
