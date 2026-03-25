@@ -51,6 +51,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
 
       {/* Section 5: Strategic Advisor */}
       <LinkedInExpertAdvisor hasSnapshots={hasSnapshots} />
+
+      {/* Section 6: Public Profile Analyzer */}
+      <LinkedInProfileAnalyzer />
     </div>
   );
 };
