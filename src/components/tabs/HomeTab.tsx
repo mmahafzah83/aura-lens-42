@@ -53,7 +53,7 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
   return { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd };
 };
 
-const HomeTab = ({ onOpenChat, onRefresh }: HomeTabProps) => {
+const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
   const [constellationOpen, setConstellationOpen] = useState(false);
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
 
