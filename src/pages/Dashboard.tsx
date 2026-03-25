@@ -23,6 +23,7 @@ import StrategyTab from "@/components/tabs/StrategyTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import YearlyRoadmap from "@/components/YearlyRoadmap";
 import KPIProgressRings from "@/components/KPIProgressRings";
+import InfluenceIntelligence from "@/components/InfluenceIntelligence";
 import NotificationBell from "@/components/NotificationBell";
 import type { Database } from "@/integrations/supabase/types";
 
