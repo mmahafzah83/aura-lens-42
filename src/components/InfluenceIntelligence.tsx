@@ -168,11 +168,24 @@ const InfluenceIntelligence = () => {
 
   const sections = [
     { key: "trajectory" as const, label: "Authority Trajectory", icon: Crown },
+    { key: "history" as const, label: "Analytics History", icon: Activity },
     { key: "audience" as const, label: "Audience", icon: Users },
     { key: "content" as const, label: "Content", icon: BarChart3 },
     { key: "tone" as const, label: "Tone", icon: MessageSquare },
     { key: "strategy" as const, label: "Strategy", icon: Target },
   ];
+
+  // Chart data from snapshots (chronological)
+  const chartData = useMemo(() => {
+    return [...snapshots].reverse().map((s: any) => ({
+      date: s.snapshot_date?.slice(5) || "", // MM-DD
+      followers: s.followers || 0,
+      growth: s.follower_growth || 0,
+      engagement: Number(s.engagement_rate) || 0,
+      topTopic: s.top_topic || "",
+      topFormat: s.top_format || "",
+    }));
+  }, [snapshots]);
 
   return (
     <div className="space-y-6">
