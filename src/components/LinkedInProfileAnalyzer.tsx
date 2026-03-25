@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Search, Loader2, Crown, Mic2, Target,
-  TrendingUp, Globe, Sparkles, ArrowRight, Lightbulb
+  TrendingUp, Globe, Sparkles, ArrowRight, Lightbulb, Save, CheckCircle2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
