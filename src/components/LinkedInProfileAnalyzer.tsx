@@ -158,6 +158,19 @@ const LinkedInProfileAnalyzer = () => {
       {/* Results */}
       {analysis && (
         <div className="space-y-8 animate-fade-in">
+          {/* Save to Knowledge */}
+          <div className="flex justify-end">
+            <Button
+              variant={saved ? "secondary" : "outline"}
+              size="sm"
+              onClick={handleSaveToKnowledge}
+              disabled={saving || saved}
+              className="gap-2"
+            >
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Save className="w-3.5 h-3.5" />}
+              {saving ? "Saving…" : saved ? "Saved to Knowledge" : "Save to Knowledge"}
+            </Button>
+          </div>
 
           {/* Strategic Positioning — Hero */}
           <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
