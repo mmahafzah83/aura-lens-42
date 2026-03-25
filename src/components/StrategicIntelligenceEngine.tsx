@@ -177,7 +177,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <h2 className="text-section-title text-foreground">
               Strategic Intelligence
             </h2>
             <p className="text-[10px] text-muted-foreground/40 tracking-wide">Converting knowledge into strategic signals</p>
