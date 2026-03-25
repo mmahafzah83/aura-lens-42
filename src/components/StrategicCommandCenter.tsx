@@ -104,7 +104,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         created_at: s.created_at,
       }));
 
-      setData({ identityStatement, expertise, industry, signalTitle, signalConfidence, signalSources, recommendedMove, moveReason, recentIntelligence });
+      setData({ userName, identityStatement, expertise, industry, signalTitle, signalConfidence, signalSources, recommendedMove, moveReason, recentIntelligence });
     } catch (err) {
       console.error("Command center load error:", err);
     }
