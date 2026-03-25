@@ -108,7 +108,7 @@ const TypeBadge = ({ type }: { type: string }) => {
 
 /* ── Main Component ── */
 const InfluenceIntelligence = () => {
-  const [activeSection, setActiveSection] = useState<"trajectory" | "audience" | "content" | "tone" | "strategy">("trajectory");
+  const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "tone" | "strategy">("trajectory");
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
   const [saving, setSaving] = useState(false);
