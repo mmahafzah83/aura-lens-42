@@ -6,6 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import StrategicIntelligenceEngine from "@/components/StrategicIntelligenceEngine";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import KnowledgeLibrary from "@/components/KnowledgeLibrary";
+import KnowledgeIntelligenceEngine from "@/components/KnowledgeIntelligenceEngine";
 import { MetricCard } from "@/components/ui/strategic-card";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
