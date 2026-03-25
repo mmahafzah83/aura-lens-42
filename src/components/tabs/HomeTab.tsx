@@ -71,6 +71,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
         />
       </div>
 
+      {/* Strategic Advisor — AI Chief Strategy Officer */}
+      <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
+
       {/* Strategic Command Center — 3 cards + Recent Intelligence */}
       <StrategicCommandCenter onOpenChat={onOpenChat} />
 
