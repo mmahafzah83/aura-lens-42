@@ -83,6 +83,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
   const [explorerOpen, setExplorerOpen] = useState(false);
   const [builderData, setBuilderData] = useState<{ title: string; steps: string[]; summary?: string } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
+  const [graphOpen, setGraphOpen] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
