@@ -171,7 +171,12 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         </motion.div>
 
         {/* Emerging Signal */}
-        <div className="glass-card rounded-2xl p-7 border border-amber-500/10">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="glass-card rounded-2xl p-7 border border-amber-500/10"
+        >
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/15">
               <Zap className="w-5 h-5 text-amber-400" />
