@@ -1,34 +1,22 @@
-# Aura typography & layout system. Updated: 2026-03-25
-
 Aura app: EY Director executive coaching tool with bilingual AR/EN support, dark theme, gold accents.
-
-## Typography Scale (MINIMUM 14px)
-- H1 page title: 34px/600 Playfair Display
-- H2 section title: 24px/600 Playfair Display
-- H3 card title: 18px/500 Playfair Display
-- Body: 16px/1.6 Inter
-- Meta/supporting: 14px muted-foreground
-- Labels: 14px/600 uppercase tracking-wide muted
-- Metrics: 32px/600 tabular-nums
-
-## CSS Utility Classes
-- `.text-page-title`, `.text-section-title`, `.text-card-title`, `.text-body`, `.text-meta`, `.text-label`, `.text-metric`
-- `.card-pad` = padding: 32px
-- `.section-gap` = margin-bottom: 48px
-- `.card-gap` = margin-bottom: 24px
-
-## Spacing (8pt grid)
-- Section spacing: 48px (space-y-12)
-- Card spacing: 24px (gap-6)
-- Text spacing: 16px
-- Card padding: 32px (card-pad)
 
 ## Skill Pillars
 C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Stewardship, Digital Fluency
 
 ## DB Schema Extensions
-- entries: `pinned` (bool), `image_url` (text)
+- entries: added `pinned` (bool, default false), `image_url` (text, nullable)
+- linkedin_connections: OAuth tokens, connection status, linkedin_id, display_name
 - storage bucket: `capture-images` (public)
+
+## Edge Functions
+- summarize-link, draft-post, transcribe-voice, analyze-potential, analyze-image
+- linkedin-oauth (get-auth-url, status, disconnect), linkedin-oauth-callback, linkedin-claim, linkedin-sync
+
+## LinkedIn OAuth
+- Authorization Code Flow with openid/profile/email scopes
+- Callback stores temp connection, frontend claims it via linkedin-claim
+- linkedin-sync fetches profile and stores influence_snapshots
+- Read-only: Aura never posts to LinkedIn
 
 ## Design
 - RTL support via dir="auto" on all text

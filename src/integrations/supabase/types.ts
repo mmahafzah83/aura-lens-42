@@ -476,6 +476,54 @@ export type Database = {
           },
         ]
       }
+      linkedin_connections: {
+        Row: {
+          access_token: string
+          connected_at: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          last_synced_at: string | null
+          linkedin_id: string | null
+          refresh_token: string | null
+          scopes: string[] | null
+          status: string
+          token_expires_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          last_synced_at?: string | null
+          linkedin_id?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          last_synced_at?: string | null
+          linkedin_id?: string | null
+          refresh_token?: string | null
+          scopes?: string[] | null
+          status?: string
+          token_expires_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       master_frameworks: {
         Row: {
           created_at: string

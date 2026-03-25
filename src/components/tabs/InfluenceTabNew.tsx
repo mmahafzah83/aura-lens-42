@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { TrendingUp } from "lucide-react";
 import InfluenceIntelligence from "@/components/InfluenceIntelligence";
+import LinkedInConnector from "@/components/LinkedInConnector";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import SkillRadar from "@/components/SkillRadar";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
@@ -17,9 +18,11 @@ interface InfluenceTabNewProps {
 const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
+  const [linkedInConnected, setLinkedInConnected] = useState(false);
 
   return (
     <div className="space-y-6">
+      <LinkedInConnector onConnectionChange={setLinkedInConnected} />
       <InfluenceIntelligence />
       <KPIProgressRings />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

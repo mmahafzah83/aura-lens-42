@@ -59,3 +59,15 @@ verify_jwt = false
 
 [functions.generate-slide-visual]
 verify_jwt = false
+
+[functions.linkedin-oauth]
+verify_jwt = false
+
+[functions.linkedin-oauth-callback]
+verify_jwt = false
+
+[functions.linkedin-claim]
+verify_jwt = false
+
+[functions.linkedin-sync]
+verify_jwt = false
