@@ -162,20 +162,20 @@ const Dashboard = () => {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 py-4 px-2 space-y-1">
+        <nav className="flex-1 py-4 px-2 space-y-2">
           {NAV_ITEMS.map((item) => {
             const isActive = activeTab === item.value;
             return (
               <button
                 key={item.value}
                 onClick={() => switchTab(item.value)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 tactile-press group ${
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-[250ms] ease-[ease-in-out] tactile-press group ${
                   isActive
-                    ? "bg-primary/10 text-primary border border-primary/15"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent"
+                    ? "bg-primary/12 text-primary border border-primary/20 shadow-[0_0_12px_hsl(43_80%_45%/0.1)]"
+                    : "text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-transparent"
                 }`}
               >
-                <item.icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"}`} />
+                <item.icon className={`w-5 h-5 shrink-0 transition-colors duration-[250ms] ${isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"}`} />
                 {!sidebarCollapsed && (
                   <span className="text-sm font-medium tracking-wide">{item.label}</span>
                 )}
@@ -219,20 +219,20 @@ const Dashboard = () => {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <nav className="flex-1 py-4 px-3 space-y-1">
+            <nav className="flex-1 py-4 px-3 space-y-2">
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.value;
                 return (
                   <button
                     key={item.value}
                     onClick={() => switchTab(item.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-[250ms] ease-[ease-in-out] ${
                       isActive
-                        ? "bg-primary/10 text-primary border border-primary/15"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent"
+                        ? "bg-primary/12 text-primary border border-primary/20 shadow-[0_0_12px_hsl(43_80%_45%/0.1)]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-transparent"
                     }`}
                   >
-                    <item.icon className="w-4.5 h-4.5" />
+                    <item.icon className="w-5 h-5" />
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
                 );

@@ -103,30 +103,42 @@
 
   .glass-card {
     background: linear-gradient(
-      145deg,
-      hsl(0 0% 100% / 0.04),
-      hsl(0 0% 100% / 0.015)
+      180deg,
+      hsl(0 0% 100% / 0.03),
+      hsl(0 0% 100% / 0)
     );
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 0.5px solid hsl(43 72% 52% / 0.08);
+    border: 1px solid hsl(0 0% 100% / 0.04);
+    border-radius: 16px;
     box-shadow: 0 1px 2px hsl(0 0% 0% / 0.3),
                 0 8px 32px hsl(0 0% 0% / 0.2),
                 inset 0 1px 0 hsl(0 0% 100% / 0.03);
+    transition: box-shadow 250ms ease-in-out, transform 250ms ease-in-out, border-color 250ms ease-in-out;
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 0 20px hsl(43 80% 45% / 0.15),
+                0 8px 32px hsl(0 0% 0% / 0.25),
+                inset 0 1px 0 hsl(0 0% 100% / 0.04);
+    transform: translateY(-1px);
+    border-color: hsl(0 0% 100% / 0.06);
   }
 
   .glass-card-elevated {
     background: linear-gradient(
-      145deg,
-      hsl(0 0% 100% / 0.06),
-      hsl(0 0% 100% / 0.02)
+      180deg,
+      hsl(0 0% 100% / 0.05),
+      hsl(0 0% 100% / 0.01)
     );
     backdrop-filter: blur(24px) saturate(1.3);
     -webkit-backdrop-filter: blur(24px) saturate(1.3);
-    border: 0.5px solid hsl(43 72% 52% / 0.12);
+    border: 1px solid hsl(0 0% 100% / 0.06);
+    border-radius: 16px;
     box-shadow: 0 2px 4px hsl(0 0% 0% / 0.3),
                 0 16px 48px hsl(0 0% 0% / 0.25),
                 inset 0 1px 0 hsl(0 0% 100% / 0.04);
+    transition: box-shadow 250ms ease-in-out, transform 250ms ease-in-out;
   }
 
   .gold-glow {
@@ -178,32 +190,33 @@
 
   /* Tactile press for all interactive elements */
   .tactile-press {
-    @apply transition-all duration-150 ease-out;
+    @apply transition-all duration-[200ms] ease-[ease-in-out];
   }
   .tactile-press:active {
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
 
   /* Hover lift effect */
   .hover-lift {
-    @apply transition-all duration-300 ease-out;
+    @apply transition-all duration-[250ms] ease-[ease-in-out];
   }
   .hover-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.3),
-                0 2px 8px hsl(0 0% 0% / 0.2);
+    box-shadow: 0 0 20px hsl(43 80% 45% / 0.15),
+                0 8px 32px hsl(0 0% 0% / 0.3);
   }
 
   /* Floating island nav */
   .glass-island {
     background: linear-gradient(
-      145deg,
-      hsl(0 0% 100% / 0.08),
-      hsl(0 0% 100% / 0.03)
+      180deg,
+      hsl(0 0% 100% / 0.06),
+      hsl(0 0% 100% / 0.02)
     );
     backdrop-filter: blur(24px) saturate(1.4);
     -webkit-backdrop-filter: blur(24px) saturate(1.4);
-    border: 0.5px solid hsl(43 72% 52% / 0.1);
+    border: 1px solid hsl(0 0% 100% / 0.06);
+    border-radius: 16px;
     box-shadow: 0 -4px 32px hsl(0 0% 0% / 0.4),
                 0 -1px 8px hsl(0 0% 0% / 0.2),
                 inset 0 1px 0 hsl(0 0% 100% / 0.06);
