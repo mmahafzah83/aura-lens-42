@@ -11,6 +11,45 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Check if this is a scheduled (cron) invocation
+    let body: any = {};
+    try { body = await req.json(); } catch { /* empty body is fine */ }
+    const isScheduled = body?.scheduled === true;
+
+    let userId: string;
+
+    if (isScheduled) {
+      // Scheduled: sync ALL active connections
+      const { data: allConns } = await adminClient
+        .from("linkedin_connections")
+        .select("user_id")
+        .eq("status", "active");
+
+      if (!allConns || allConns.length === 0) {
+        return new Response(JSON.stringify({ success: true, note: "No active connections to sync" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const results: any[] = [];
+      for (const c of allConns) {
+        try {
+          const result = await syncUserLinkedIn(c.user_id, adminClient);
+          results.push({ user_id: c.user_id, ...result });
+        } catch (e: any) {
+          results.push({ user_id: c.user_id, error: e.message });
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, scheduled: true, synced: results.length, results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Manual invocation: authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -18,7 +57,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -29,8 +67,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userId = user.id;
-    const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    userId = user.id;
 
     // Get user's active LinkedIn connection
     const { data: conn } = await adminClient
