@@ -134,7 +134,7 @@ const LinkedInProfileAnalyzer = () => {
   return (
     <section className="animate-fade-in">
       <h2 className="text-section-title text-foreground mb-2">Analyze LinkedIn Profile</h2>
-      <p className="text-meta mb-6">Paste a LinkedIn profile URL to extract strategic authority insights — no API connection required.</p>
+      <p className="text-meta mb-6">Paste a LinkedIn profile URL to extract strategic authority insights — optionally paste profile text for deeper analysis.</p>
 
       {/* Input card */}
       <div className="glass-card rounded-2xl p-6 mb-8">
