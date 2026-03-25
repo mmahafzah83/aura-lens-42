@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
+    const { url, profileText: userProvidedText } = await req.json();
     if (!url || !url.includes("linkedin.com/in/")) {
       return new Response(
         JSON.stringify({ error: "A valid LinkedIn profile URL is required (e.g. https://www.linkedin.com/in/username)" }),
@@ -27,54 +27,57 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch the public profile page
-    let profileUrl = url.trim();
-    if (!profileUrl.startsWith("http")) profileUrl = `https://${profileUrl}`;
-    // Ensure trailing slash for LinkedIn
-    if (!profileUrl.endsWith("/")) profileUrl += "/";
+    let pageText = userProvidedText?.trim() || "";
+    let structuredData = "";
 
-    let pageText = "";
-    let fetchError = "";
-
-    const fetchWithTimeout = async (targetUrl: string, timeoutMs = 12000) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        return await fetch(targetUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
-          },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timer);
-      }
-    };
-
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const res = await fetchWithTimeout(profileUrl, attempt === 0 ? 10000 : 15000);
-        if (res.ok) {
-          pageText = await res.text();
-          break;
-        } else {
-          fetchError = `HTTP ${res.status}`;
-        }
-      } catch (e) {
-        fetchError = (e as Error).message;
-        console.warn(`Profile fetch attempt ${attempt + 1} failed:`, fetchError);
-      }
-    }
-
+    // Only attempt fetch if user didn't provide text
     if (!pageText) {
-      return new Response(
-        JSON.stringify({
-          error: `Could not fetch the LinkedIn profile. ${fetchError}. The profile may be private or LinkedIn may be blocking the request. Try again later.`,
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      let profileUrl = url.trim();
+      if (!profileUrl.startsWith("http")) profileUrl = `https://${profileUrl}`;
+      if (!profileUrl.endsWith("/")) profileUrl += "/";
+
+      const fetchWithTimeout = async (targetUrl: string, timeoutMs = 12000) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          return await fetch(targetUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.9,ar;q=0.8",
+            },
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const res = await fetchWithTimeout(profileUrl, attempt === 0 ? 10000 : 15000);
+          if (res.ok) {
+            const rawHtml = await res.text();
+            let cleanHtml = rawHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+            cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+            const jsonLdMatches = rawHtml.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
+            if (jsonLdMatches) {
+              structuredData = jsonLdMatches.map(m => m.replace(/<\/?script[^>]*>/gi, "")).join("\n");
+            }
+            cleanHtml = cleanHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+            if (cleanHtml.length > 15000) cleanHtml = cleanHtml.substring(0, 15000);
+            if (structuredData.length > 5000) structuredData = structuredData.substring(0, 5000);
+            pageText = cleanHtml;
+            break;
+          } else {
+            console.warn(`Profile fetch attempt ${attempt + 1}: HTTP ${res.status}`);
+            await res.text(); // consume body
+          }
+        } catch (e) {
+          console.warn(`Profile fetch attempt ${attempt + 1} failed:`, (e as Error).message);
+        }
+      }
+      // If fetch failed, proceed with URL-only analysis (no error returned)
     }
 
     // Extract text content from HTML
