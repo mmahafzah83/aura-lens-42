@@ -82,7 +82,11 @@ serve(async (req) => {
 
     // pageText and structuredData already prepared above
 
-    const isArabic = hasArabic(cleanText);
+    const isArabic = hasArabic(pageText || url);
+
+    const contentContext = pageText
+      ? `Page content:\n${pageText}\n\n${structuredData ? `Structured data:\n${structuredData}` : ""}`
+      : "No page content was available (LinkedIn blocked the request). Analyze based on the URL username and your knowledge. Provide your best strategic analysis based on the LinkedIn username visible in the URL. If you cannot infer enough, provide general authority-building recommendations for a professional at this URL.";
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
