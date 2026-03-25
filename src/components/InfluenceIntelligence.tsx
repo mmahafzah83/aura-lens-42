@@ -1,15 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   TrendingUp, Users, BarChart3, MessageSquare, Target,
   Eye, Zap, ArrowUpRight, ArrowDownRight, Minus,
   ChevronRight, Lightbulb, Crown, Loader2, Save,
-  Linkedin, Globe, Sparkles, Calendar
+  Linkedin, Globe, Sparkles, Calendar, Activity
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
+import {
+  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from "recharts";
 
 /* ── Simulated Data (until LinkedIn API connected) ── */
 const PROFILE_ANALYSIS = {
