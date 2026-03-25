@@ -34,9 +34,10 @@ interface Props {
   } | null;
   syncing?: boolean;
   syncFailed?: boolean;
+  onSnapshotsLoaded?: (count: number) => void;
 }
 
-const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false }: Props) => {
+const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false, onSnapshotsLoaded }: Props) => {
   const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "tone" | "strategy">("trajectory");
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
@@ -52,6 +53,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
       supabase.from("strategic_signals").select("signal_title, theme_tags, confidence").eq("status", "active").gte("confidence", 0.7).order("confidence", { ascending: false }).limit(10),
     ]);
     setSnapshots(snapshotsRes.data || []);
+    onSnapshotsLoaded?.((snapshotsRes.data || []).length);
 
     const themes: Record<string, number> = {};
     (signalsRes.data || []).forEach((s: any) => {

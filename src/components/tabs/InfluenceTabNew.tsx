@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { TrendingUp } from "lucide-react";
 import InfluenceIntelligence from "@/components/InfluenceIntelligence";
 import LinkedInConnector from "@/components/LinkedInConnector";
+import LinkedInExpertAdvisor from "@/components/LinkedInExpertAdvisor";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import SkillRadar from "@/components/SkillRadar";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
@@ -23,6 +24,7 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [syncing, setSyncing] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hasSnapshots, setHasSnapshots] = useState(false);
 
   const handleConnectionChange = useCallback((connected: boolean, info?: any) => {
     setLinkedInConnected(connected);
@@ -51,7 +53,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         connectionInfo={connectionInfo}
         syncing={syncing}
         syncFailed={syncFailed}
+        onSnapshotsLoaded={(count) => setHasSnapshots(count > 0)}
       />
+      <LinkedInExpertAdvisor hasSnapshots={hasSnapshots} />
       <KPIProgressRings />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
