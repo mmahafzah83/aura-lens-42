@@ -6,8 +6,13 @@ import SignalsRadar from "@/components/SignalsRadar";
 import AuthorityMomentumMap from "@/components/AuthorityMomentumMap";
 import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
 import KnowledgeConstellation from "@/components/KnowledgeConstellation";
+import CaptureIntelligencePanel from "@/components/CaptureIntelligencePanel";
+import type { Database } from "@/integrations/supabase/types";
+
+type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 interface HomeTabProps {
+  entries?: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
 }
