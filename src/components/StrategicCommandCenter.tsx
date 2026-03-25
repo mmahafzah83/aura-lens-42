@@ -143,6 +143,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.02 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="glass-card rounded-2xl p-7 border border-primary/10 bg-gradient-to-br from-primary/[0.04] to-transparent"
         >
