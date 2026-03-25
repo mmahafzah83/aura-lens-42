@@ -1,15 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   TrendingUp, Users, BarChart3, MessageSquare, Target,
   Eye, Zap, ArrowUpRight, ArrowDownRight, Minus,
   ChevronRight, Lightbulb, Crown, Loader2, Save,
-  Linkedin, Globe, Sparkles, Calendar
+  Linkedin, Globe, Sparkles, Calendar, Activity
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
+import {
+  LineChart, Line, AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+} from "recharts";
 
 /* ── Simulated Data (until LinkedIn API connected) ── */
 const PROFILE_ANALYSIS = {
@@ -104,7 +108,7 @@ const TypeBadge = ({ type }: { type: string }) => {
 
 /* ── Main Component ── */
 const InfluenceIntelligence = () => {
-  const [activeSection, setActiveSection] = useState<"trajectory" | "audience" | "content" | "tone" | "strategy">("trajectory");
+  const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "tone" | "strategy">("trajectory");
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -164,11 +168,24 @@ const InfluenceIntelligence = () => {
 
   const sections = [
     { key: "trajectory" as const, label: "Authority Trajectory", icon: Crown },
+    { key: "history" as const, label: "Analytics History", icon: Activity },
     { key: "audience" as const, label: "Audience", icon: Users },
     { key: "content" as const, label: "Content", icon: BarChart3 },
     { key: "tone" as const, label: "Tone", icon: MessageSquare },
     { key: "strategy" as const, label: "Strategy", icon: Target },
   ];
+
+  // Chart data from snapshots (chronological)
+  const chartData = useMemo(() => {
+    return [...snapshots].reverse().map((s: any) => ({
+      date: s.snapshot_date?.slice(5) || "", // MM-DD
+      followers: s.followers || 0,
+      growth: s.follower_growth || 0,
+      engagement: Number(s.engagement_rate) || 0,
+      topTopic: s.top_topic || "",
+      topFormat: s.top_format || "",
+    }));
+  }, [snapshots]);
 
   return (
     <div className="space-y-6">
@@ -280,15 +297,23 @@ const InfluenceIntelligence = () => {
             </div>
           </div>
 
-          {/* Snapshot History */}
+          {/* Snapshot History - compact */}
           {snapshots.length > 0 && (
             <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary/70" />
-                Influence History
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary/70" />
+                  Recent Snapshots
+                </h3>
+                <button
+                  onClick={() => setActiveSection("history")}
+                  className="text-[10px] text-primary/70 hover:text-primary font-medium transition-colors"
+                >
+                  View full history →
+                </button>
+              </div>
               <div className="space-y-2">
-                {snapshots.slice(0, 6).map((snap: any) => (
+                {snapshots.slice(0, 3).map((snap: any) => (
                   <div key={snap.id} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
                     <span className="text-[10px] text-muted-foreground/50 tabular-nums w-20 shrink-0">{snap.snapshot_date}</span>
                     <div className="flex-1 min-w-0">
@@ -299,6 +324,125 @@ const InfluenceIntelligence = () => {
                             <ArrowUpRight className="w-2.5 h-2.5" />+{snap.follower_growth}
                           </span>
                         )}
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/40 tabular-nums">{Number(snap.engagement_rate).toFixed(1)}% eng.</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Analytics History */}
+      {activeSection === "history" && (
+        <div className="space-y-5 animate-fade-in">
+          {chartData.length > 1 ? (
+            <>
+              {/* Follower Growth Chart */}
+              <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary/70" />
+                  Follower Growth
+                </h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="followerGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={50} />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }}
+                        labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                      />
+                      <Area type="monotone" dataKey="followers" stroke="hsl(var(--primary))" fill="url(#followerGrad)" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Engagement Rate Chart */}
+              <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary/70" />
+                  Engagement Rate
+                </h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={40} unit="%" />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }}
+                        formatter={(value: number) => [`${value.toFixed(1)}%`, "Engagement"]}
+                      />
+                      <Line type="monotone" dataKey="engagement" stroke="#34d399" strokeWidth={2} dot={{ r: 3, fill: "#34d399" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Growth per Period */}
+              <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-primary/70" />
+                  Follower Growth per Period
+                </h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={40} />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }}
+                        formatter={(value: number) => [`+${value}`, "New Followers"]}
+                      />
+                      <Bar dataKey="growth" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="glass-card rounded-2xl p-6 sm:p-8 text-center py-12">
+              <Activity className="w-10 h-10 text-primary/20 mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground mb-1">Not enough data yet</p>
+              <p className="text-xs text-muted-foreground/50">Save at least 2 snapshots to see trend charts. Use the "Save Snapshot" button to record your current metrics.</p>
+            </div>
+          )}
+
+          {/* Full snapshot table */}
+          {snapshots.length > 0 && (
+            <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-primary/70" />
+                All Snapshots ({snapshots.length})
+              </h3>
+              <div className="space-y-2">
+                {snapshots.map((snap: any) => (
+                  <div key={snap.id} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
+                    <span className="text-[10px] text-muted-foreground/50 tabular-nums w-20 shrink-0">{snap.snapshot_date}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-foreground tabular-nums">{snap.followers?.toLocaleString()} followers</span>
+                        {snap.follower_growth > 0 && (
+                          <span className="text-[10px] text-emerald-400 flex items-center gap-0.5">
+                            <ArrowUpRight className="w-2.5 h-2.5" />+{snap.follower_growth}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {snap.top_topic && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10">{snap.top_topic}</span>}
+                        {snap.top_format && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary/30 text-muted-foreground/60 border border-border/10">{snap.top_format}</span>}
                       </div>
                     </div>
                     <span className="text-[10px] text-muted-foreground/40 tabular-nums">{Number(snap.engagement_rate).toFixed(1)}% eng.</span>
