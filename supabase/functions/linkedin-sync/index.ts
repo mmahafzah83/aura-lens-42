@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -19,23 +19,21 @@ Deno.serve(async (req) => {
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const supabase = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claims?.claims) {
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claims.claims.sub as string;
-    const supabaseAdmin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const userId = user.id;
+    const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Get user's LinkedIn connection
-    const { data: conn } = await supabaseAdmin
+    // Get user's active LinkedIn connection
+    const { data: conn } = await adminClient
       .from("linkedin_connections")
       .select("*")
       .eq("user_id", userId)
@@ -43,14 +41,15 @@ Deno.serve(async (req) => {
       .single();
 
     if (!conn) {
-      return new Response(JSON.stringify({ error: "No LinkedIn connection found" }), {
+      return new Response(JSON.stringify({ error: "No active LinkedIn connection found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const accessToken = conn.access_token;
+    const linkedinId = conn.linkedin_id;
 
-    // Fetch profile info
+    // ── Step 1: Fetch profile info ──
     let profileData: any = {};
     try {
       const profileRes = await fetch("https://api.linkedin.com/v2/userinfo", {
@@ -65,13 +64,150 @@ Deno.serve(async (req) => {
       console.error("Profile fetch failed:", e);
     }
 
-    // Note: LinkedIn's API for personal post analytics is very limited.
-    // The Community Management API requires partner-level access.
-    // We generate a simulated snapshot based on the connection being active,
-    // and enhance with real data when available through LinkedIn API products.
+    // ── Step 2: Fetch posts via multiple API approaches ──
+    let posts: any[] = [];
+    let postTexts: string[] = [];
 
-    // Get previous snapshot for growth calculation
-    const { data: prevSnapshot } = await supabaseAdmin
+    // Try REST API v2 posts endpoint
+    try {
+      const postsRes = await fetch(
+        `https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List(urn%3Ali%3Aperson%3A${linkedinId})&count=50`,
+        { headers: { Authorization: `Bearer ${accessToken}`, "X-Restli-Protocol-Version": "2.0.0" } }
+      );
+      if (postsRes.ok) {
+        const postsData = await postsRes.json();
+        posts = postsData.elements || [];
+      } else {
+        const errText = await postsRes.text();
+        console.log("ugcPosts API:", postsRes.status, errText);
+      }
+    } catch (e) {
+      console.log("ugcPosts not available:", e);
+    }
+
+    // Fallback: try shares API
+    if (posts.length === 0) {
+      try {
+        const sharesRes = await fetch(
+          `https://api.linkedin.com/v2/shares?q=owners&owners=urn%3Ali%3Aperson%3A${linkedinId}&count=50`,
+          { headers: { Authorization: `Bearer ${accessToken}`, "X-Restli-Protocol-Version": "2.0.0" } }
+        );
+        if (sharesRes.ok) {
+          const sharesData = await sharesRes.json();
+          posts = sharesData.elements || [];
+        } else {
+          await sharesRes.text();
+        }
+      } catch (e) {
+        console.log("Shares API not available:", e);
+      }
+    }
+
+    // Extract text from posts
+    for (const post of posts) {
+      const ugcText = post.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareCommentary?.text;
+      const shareText = post.text?.text;
+      const text = ugcText || shareText || "";
+      if (text.trim()) postTexts.push(text.trim());
+    }
+
+    // ── Step 3: Analyze post formats ──
+    const formatCounts: Record<string, number> = {};
+    for (const post of posts) {
+      const mediaCategory = post.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareMediaCategory;
+      const content = post.content;
+      let format = "Text";
+      if (mediaCategory === "IMAGE" || content?.contentEntities?.[0]?.entityLocation?.includes("image")) format = "Image";
+      else if (mediaCategory === "VIDEO") format = "Video";
+      else if (mediaCategory === "ARTICLE" || mediaCategory === "RICH") format = "Article";
+      else if (mediaCategory === "CAROUSEL") format = "Carousel";
+      formatCounts[format] = (formatCounts[format] || 0) + 1;
+    }
+    const topFormat = Object.entries(formatCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+    // ── Step 4: Use AI to classify themes, tones, and generate insights ──
+    let aiAnalysis: any = null;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+
+    if (LOVABLE_API_KEY && postTexts.length > 0) {
+      try {
+        const samplePosts = postTexts.slice(0, 15).map((t, i) => `Post ${i + 1}: ${t.slice(0, 500)}`).join("\n\n");
+
+        const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              {
+                role: "system",
+                content: `You are a LinkedIn content analyst. Analyze the following posts and return a JSON object with these fields:
+- themes: array of top 5 recurring themes/topics (short labels like "Digital Governance", "Leadership")
+- tones: array of objects {tone: string, score: number (0-100), impact: "high"|"medium"|"low"} for top 5 tones detected
+- topTopic: the single strongest topic across all posts
+- recommendations: array of 3-5 actionable recommendations as strings
+- engagementEstimate: estimated average engagement rate as a number (0-15)
+
+Return ONLY valid JSON, no markdown.`,
+              },
+              {
+                role: "user",
+                content: `Analyze these ${postTexts.length} LinkedIn posts:\n\n${samplePosts}`,
+              },
+            ],
+            tools: [{
+              type: "function",
+              function: {
+                name: "classify_posts",
+                description: "Classify LinkedIn posts by theme, tone, and generate recommendations",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    themes: { type: "array", items: { type: "string" } },
+                    tones: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          tone: { type: "string" },
+                          score: { type: "number" },
+                          impact: { type: "string", enum: ["high", "medium", "low"] },
+                        },
+                        required: ["tone", "score", "impact"],
+                      },
+                    },
+                    topTopic: { type: "string" },
+                    recommendations: { type: "array", items: { type: "string" } },
+                    engagementEstimate: { type: "number" },
+                  },
+                  required: ["themes", "tones", "topTopic", "recommendations", "engagementEstimate"],
+                },
+              },
+            }],
+            tool_choice: { type: "function", function: { name: "classify_posts" } },
+          }),
+        });
+
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+          if (toolCall?.function?.arguments) {
+            aiAnalysis = JSON.parse(toolCall.function.arguments);
+          }
+        } else {
+          const errText = await aiRes.text();
+          console.error("AI classification error:", aiRes.status, errText);
+        }
+      } catch (e) {
+        console.error("AI classification failed:", e);
+      }
+    }
+
+    // ── Step 5: Get previous snapshot for growth calculation ──
+    const { data: prevSnapshot } = await adminClient
       .from("influence_snapshots")
       .select("*")
       .eq("user_id", userId)
@@ -79,69 +215,33 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    // ── Step 6: Build snapshot from real data ──
+    const currentFollowers = prevSnapshot?.followers || 0;
     const prevFollowers = prevSnapshot?.followers || 0;
+    const followerGrowth = currentFollowers > 0 && prevFollowers > 0
+      ? currentFollowers - prevFollowers
+      : 0;
 
-    // Generate analytics snapshot
-    // In production with full LinkedIn API access, these would come from real API calls
+    const themes = aiAnalysis?.themes || [];
+    const engagementRate = aiAnalysis?.engagementEstimate || 0;
+    const topTopic = aiAnalysis?.topTopic || null;
+    const recommendations = aiAnalysis?.recommendations || [];
+
     const snapshot = {
       user_id: userId,
       snapshot_date: new Date().toISOString().split("T")[0],
-      followers: prevFollowers || 0,
-      follower_growth: 0,
-      engagement_rate: 0,
-      top_topic: null as string | null,
-      top_format: null as string | null,
-      authority_themes: [] as any[],
-      audience_breakdown: {} as any,
-      recommendations: [] as any[],
+      followers: currentFollowers,
+      follower_growth: followerGrowth,
+      engagement_rate: engagementRate,
+      top_topic: topTopic,
+      top_format: topFormat,
+      authority_themes: themes,
+      audience_breakdown: {},
+      recommendations: recommendations,
     };
 
-    // Try to fetch posts if we have the right scopes
-    try {
-      const postsRes = await fetch(
-        `https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List(urn%3Ali%3Aperson%3A${conn.linkedin_id})&count=20`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-
-      if (postsRes.ok) {
-        const postsData = await postsRes.json();
-        const posts = postsData.elements || [];
-
-        if (posts.length > 0) {
-          // Analyze post topics and formats
-          const topicCounts: Record<string, number> = {};
-          const formatCounts: Record<string, number> = {};
-
-          for (const post of posts) {
-            const content = post.specificContent?.["com.linkedin.ugc.ShareContent"];
-            const text = content?.shareCommentary?.text || "";
-            const mediaCategory = content?.shareMediaCategory || "NONE";
-
-            const format = mediaCategory === "IMAGE" ? "Image" :
-              mediaCategory === "VIDEO" ? "Video" :
-              mediaCategory === "ARTICLE" ? "Article" : "Text";
-            formatCounts[format] = (formatCounts[format] || 0) + 1;
-
-            // Simple topic extraction
-            const words = text.toLowerCase().split(/\s+/).filter((w: string) => w.length > 5);
-            for (const w of words.slice(0, 5)) {
-              topicCounts[w] = (topicCounts[w] || 0) + 1;
-            }
-          }
-
-          const topFormat = Object.entries(formatCounts).sort((a, b) => b[1] - a[1])[0];
-          snapshot.top_format = topFormat?.[0] || null;
-        }
-      } else {
-        const errText = await postsRes.text();
-        console.log("Posts API not available:", postsRes.status, errText);
-      }
-    } catch (e) {
-      console.log("Posts fetch not available:", e);
-    }
-
-    // Store snapshot
-    const { data: newSnapshot, error: snapErr } = await supabaseAdmin
+    // ── Step 7: Store snapshot ──
+    const { data: newSnapshot, error: snapErr } = await adminClient
       .from("influence_snapshots")
       .insert(snapshot)
       .select()
@@ -151,24 +251,36 @@ Deno.serve(async (req) => {
       console.error("Snapshot insert error:", snapErr);
     }
 
-    // Update last_synced_at
-    await supabaseAdmin
+    // ── Step 8: Update last_synced_at ──
+    await adminClient
       .from("linkedin_connections")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("id", conn.id);
 
+    // ── Build response ──
+    const syncSummary = {
+      postsAnalyzed: posts.length,
+      themesDetected: themes.length,
+      hasAIAnalysis: !!aiAnalysis,
+      topTopic,
+      topFormat,
+    };
+
     return new Response(JSON.stringify({
       success: true,
       snapshot: newSnapshot,
+      summary: syncSummary,
       profile: {
         name: profileData.name || conn.display_name,
         linkedin_id: conn.linkedin_id,
       },
-      note: "Full post analytics require LinkedIn Community Management API approval. Current sync captures available profile data.",
+      note: posts.length > 0
+        ? `Synced ${posts.length} posts with AI classification.`
+        : "Profile synced. Post analytics require LinkedIn Community Management API approval for full access.",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("LinkedIn sync error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

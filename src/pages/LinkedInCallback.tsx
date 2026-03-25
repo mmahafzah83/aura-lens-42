@@ -6,7 +6,7 @@ import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 const LinkedInCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"processing" | "success" | "error">("processing");
+  const [status, setStatus] = useState<"processing" | "syncing" | "success" | "error">("processing");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
@@ -65,6 +65,14 @@ const LinkedInCallback = () => {
           return;
         }
 
+        // ── Trigger first sync immediately after connection ──
+        setStatus("syncing");
+        try {
+          await supabase.functions.invoke("linkedin-sync", {});
+        } catch (syncErr) {
+          console.warn("First sync failed (non-blocking):", syncErr);
+        }
+
         setStatus("success");
         setTimeout(() => navigate("/dashboard?tab=influence"), 1500);
       } catch (err: any) {
@@ -87,10 +95,17 @@ const LinkedInCallback = () => {
             <p className="text-sm text-muted-foreground">Exchanging authorization code</p>
           </>
         )}
+        {status === "syncing" && (
+          <>
+            <Loader2 className="w-10 h-10 animate-spin text-primary mx-auto" />
+            <h2 className="text-xl font-semibold text-foreground">Syncing Analytics...</h2>
+            <p className="text-sm text-muted-foreground">Running first analytics sync with AI classification</p>
+          </>
+        )}
         {status === "success" && (
           <>
             <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-            <h2 className="text-xl font-semibold text-foreground">LinkedIn Connected</h2>
+            <h2 className="text-xl font-semibold text-foreground">LinkedIn Connected & Synced</h2>
             <p className="text-sm text-muted-foreground">Redirecting to Influence dashboard...</p>
           </>
         )}
