@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { TrendingUp } from "lucide-react";
 import InfluenceIntelligence from "@/components/InfluenceIntelligence";
 import LinkedInConnector from "@/components/LinkedInConnector";
@@ -19,11 +19,19 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [trainingOpen, setTrainingOpen] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
   const [linkedInConnected, setLinkedInConnected] = useState(false);
+  const [connectionInfo, setConnectionInfo] = useState<any>(null);
+
+  const handleConnectionChange = useCallback((connected: boolean, info?: any) => {
+    setLinkedInConnected(connected);
+    setConnectionInfo(info || null);
+  }, []);
 
   return (
     <div className="space-y-6">
-      <LinkedInConnector onConnectionChange={setLinkedInConnected} />
-      <InfluenceIntelligence />
+      <LinkedInConnector onConnectionChange={(connected) => {
+        setLinkedInConnected(connected);
+      }} />
+      <InfluenceIntelligence linkedInConnected={linkedInConnected} connectionInfo={connectionInfo} />
       <KPIProgressRings />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
