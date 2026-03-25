@@ -39,91 +39,128 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch all snapshots (up to 30)
-    const { data: snapshots } = await adminClient
-      .from("influence_snapshots")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("snapshot_date", { ascending: false })
-      .limit(30);
+    // Fetch all data sources in parallel
+    const [snapshotsRes, postsRes, entriesRes, docsRes, frameworksRes, intelligenceRes, profileRes] = await Promise.all([
+      adminClient.from("influence_snapshots").select("*").eq("user_id", user.id).order("snapshot_date", { ascending: false }).limit(30),
+      adminClient.from("linkedin_posts").select("post_text, theme, tone, format_type, like_count, comment_count, repost_count, engagement_score, published_at").eq("user_id", user.id).order("published_at", { ascending: false }).limit(50),
+      adminClient.from("entries").select("type, content, skill_pillar, framework_tag, created_at, title, summary").eq("user_id", user.id).order("created_at", { ascending: false }).limit(100),
+      adminClient.from("documents").select("filename, summary, file_type, created_at").eq("user_id", user.id).eq("status", "processed").limit(20),
+      adminClient.from("master_frameworks").select("title, summary, tags, created_at").eq("user_id", user.id).limit(20),
+      adminClient.from("learned_intelligence").select("title, intelligence_type, skill_pillars, tags, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
+      adminClient.from("diagnostic_profiles").select("core_practice, sector_focus, brand_pillars, level, leadership_style, north_star_goal").eq("user_id", user.id).maybeSingle(),
+    ]);
 
-    if (!snapshots || snapshots.length === 0) {
-      return new Response(JSON.stringify({ error: "No snapshots available. Sync LinkedIn first." }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const snapshots = snapshotsRes.data || [];
+    const posts = postsRes.data || [];
+    const entries = entriesRes.data || [];
+    const docs = docsRes.data || [];
+    const frameworks = frameworksRes.data || [];
+    const intelligence = intelligenceRes.data || [];
+    const profile = profileRes.data;
 
-    // Fetch diagnostic profile for context
-    const { data: profile } = await adminClient
-      .from("diagnostic_profiles")
-      .select("core_practice, sector_focus, brand_pillars, level, leadership_style")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const hasSnapshots = snapshots.length > 0;
 
-    // Build comprehensive data summary for AI
-    const latest = snapshots[0];
-    const oldest = snapshots[snapshots.length - 1];
-
+    // Build snapshot analytics
     const allThemes: Record<string, number> = {};
-    const allTones: Record<string, { totalScore: number; count: number; impacts: string[] }> = {};
+    const allTones: Record<string, { totalScore: number; count: number }> = {};
     const allFormats: Record<string, number> = {};
     let totalPosts = 0;
 
     for (const snap of snapshots) {
-      // Themes
       const themes = snap.authority_themes as string[] || [];
       themes.forEach((t: string) => { allThemes[t] = (allThemes[t] || 0) + 1; });
 
-      // Tones
-      const tones = snap.tone_analysis as { tone: string; score: number; impact: string }[] || [];
+      const tones = snap.tone_analysis as { tone: string; score: number }[] || [];
       tones.forEach((t) => {
-        if (!allTones[t.tone]) allTones[t.tone] = { totalScore: 0, count: 0, impacts: [] };
+        if (!allTones[t.tone]) allTones[t.tone] = { totalScore: 0, count: 0 };
         allTones[t.tone].totalScore += t.score;
         allTones[t.tone].count += 1;
-        allTones[t.tone].impacts.push(t.impact);
       });
 
-      // Formats
       const formats = snap.format_breakdown as Record<string, number> || {};
       Object.entries(formats).forEach(([f, c]) => { allFormats[f] = (allFormats[f] || 0) + (c as number); });
 
       totalPosts += snap.post_count || 0;
     }
 
-    const sortedThemes = Object.entries(allThemes).sort((a, b) => b[1] - a[1]).slice(0, 10);
-    const sortedTones = Object.entries(allTones)
-      .map(([tone, d]) => ({
-        tone,
-        avgScore: Math.round(d.totalScore / d.count),
-        appearances: d.count,
-        dominantImpact: d.impacts.sort((a, b) =>
-          d.impacts.filter(x => x === b).length - d.impacts.filter(x => x === a).length
-        )[0],
-      }))
-      .sort((a, b) => b.avgScore - a.avgScore);
-    const sortedFormats = Object.entries(allFormats).sort((a, b) => b[1] - a[1]);
+    // Authority evolution: compare first half vs second half of snapshots
+    const mid = Math.floor(snapshots.length / 2);
+    const recentSnaps = snapshots.slice(0, Math.max(mid, 1));
+    const olderSnaps = snapshots.slice(mid);
 
-    const followerTrend = snapshots.map(s => ({ date: s.snapshot_date, followers: s.followers, growth: s.follower_growth })).reverse();
-    const totalGrowth = latest.followers - oldest.followers;
+    const countThemesIn = (snaps: any[]) => {
+      const c: Record<string, number> = {};
+      snaps.forEach(s => {
+        (s.authority_themes as string[] || []).forEach((t: string) => { c[t] = (c[t] || 0) + 1; });
+      });
+      return c;
+    };
+    const recentThemes = countThemesIn(recentSnaps);
+    const olderThemes = countThemesIn(olderSnaps);
 
+    const themeEvolution = Object.keys({ ...recentThemes, ...olderThemes }).map(theme => ({
+      theme,
+      recent: recentThemes[theme] || 0,
+      older: olderThemes[theme] || 0,
+      trend: (recentThemes[theme] || 0) > (olderThemes[theme] || 0) ? "strengthening" : (recentThemes[theme] || 0) < (olderThemes[theme] || 0) ? "declining" : "stable",
+    }));
+
+    // Cross-source evidence
+    const entryTopics = entries.map(e => e.skill_pillar).filter(Boolean);
+    const entryTypes = entries.reduce((acc, e) => {
+      acc[e.type] = (acc[e.type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const frameworkTopics = frameworks.flatMap(f => f.tags || []);
+    const intelligenceTopics = intelligence.flatMap(i => i.skill_pillars || []);
+
+    // Engagement trends from posts
+    const postEngagement = posts.slice(0, 20).map(p => ({
+      theme: p.theme,
+      tone: p.tone,
+      format: p.format_type,
+      engagement: p.engagement_score,
+      likes: p.like_count,
+      comments: p.comment_count,
+    }));
+
+    // Build data context for AI
     const dataContext = JSON.stringify({
       snapshotCount: snapshots.length,
-      dateRange: { from: oldest.snapshot_date, to: latest.snapshot_date },
-      currentFollowers: latest.followers,
-      totalGrowth,
-      latestEngagement: latest.engagement_rate,
+      hasSnapshots,
+      dateRange: hasSnapshots ? {
+        from: snapshots[snapshots.length - 1].snapshot_date,
+        to: snapshots[0].snapshot_date,
+      } : null,
+      currentFollowers: hasSnapshots ? snapshots[0].followers : null,
+      totalGrowth: hasSnapshots ? snapshots[0].followers - snapshots[snapshots.length - 1].followers : null,
+      latestEngagement: hasSnapshots ? snapshots[0].engagement_rate : null,
       totalPostsAnalyzed: totalPosts,
-      themes: sortedThemes,
-      tones: sortedTones,
-      formats: sortedFormats,
-      latestTrajectory: latest.authority_trajectory,
-      latestRecommendations: latest.recommendations,
+      themes: Object.entries(allThemes).sort((a, b) => b[1] - a[1]).slice(0, 10),
+      themeEvolution,
+      tones: Object.entries(allTones).map(([tone, d]) => ({ tone, avgScore: Math.round(d.totalScore / d.count), appearances: d.count })).sort((a, b) => b.avgScore - a.avgScore),
+      formats: Object.entries(allFormats).sort((a, b) => b[1] - a[1]),
+      postEngagement,
+      latestTrajectory: hasSnapshots ? snapshots[0].authority_trajectory : null,
+      crossSourceSignals: {
+        entryCount: entries.length,
+        entryTypes,
+        topEntryTopics: Object.entries(entryTopics.reduce((acc, t) => { acc[t as string] = (acc[t as string] || 0) + 1; return acc; }, {} as Record<string, number>)).sort((a, b) => b[1] - a[1]).slice(0, 5),
+        documentCount: docs.length,
+        documentSummaries: docs.slice(0, 5).map(d => d.summary).filter(Boolean),
+        frameworkCount: frameworks.length,
+        frameworkTopics: [...new Set(frameworkTopics)].slice(0, 10),
+        intelligenceCount: intelligence.length,
+        intelligenceTopics: [...new Set(intelligenceTopics)].slice(0, 10),
+      },
       profile: profile ? {
         practice: profile.core_practice,
         sector: profile.sector_focus,
         pillars: profile.brand_pillars,
         level: profile.level,
         style: profile.leadership_style,
+        northStar: profile.north_star_goal,
       } : null,
     });
 
@@ -135,28 +172,37 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an elite LinkedIn Expert Advisor for a senior professional. You analyze their real LinkedIn analytics data across multiple snapshots to produce strategic intelligence. Be specific, cite actual data points, and write in a confident advisory tone. Every insight must be grounded in the real data provided — never fabricate or estimate beyond what the data shows.`
+            content: `You are an elite LinkedIn Expert Agent and Strategic Authority Advisor. You analyze the user's complete knowledge ecosystem — LinkedIn analytics, captures, documents, frameworks, and learned intelligence — to produce a continuous strategic advisory.
+
+Your role is to:
+1. Detect authority evolution trends across all sources
+2. Identify strategic opportunities and gaps
+3. Generate evidence-backed recommendations
+4. Track influence trajectory and momentum
+
+Be specific, cite actual data points, and write in a confident advisory tone. Every insight must be grounded in real data — never fabricate. If LinkedIn snapshots are unavailable, focus on cross-source authority signals from captures, documents, and frameworks.`,
           },
           {
             role: "user",
-            content: `Analyze this LinkedIn analytics data and produce a comprehensive expert advisory:\n\n${dataContext}`
+            content: `Analyze this complete knowledge ecosystem and produce a strategic advisory:\n\n${dataContext}`,
           },
         ],
         tools: [{
           type: "function",
           function: {
             name: "generate_expert_advisory",
-            description: "Generate a comprehensive LinkedIn Expert Advisory from real analytics data",
+            description: "Generate a comprehensive strategic advisory from cross-source authority analysis",
             parameters: {
               type: "object",
               properties: {
                 becomingKnownFor: {
                   type: "object",
                   properties: {
-                    headline: { type: "string", description: "One sentence summary of what they are becoming known for, e.g. 'Your authority is consolidating around digital transformation in utilities.'" },
-                    evidence: { type: "array", items: { type: "string" }, description: "2-3 supporting evidence points from the data" },
+                    headline: { type: "string", description: "What they are becoming known for" },
+                    evidence: { type: "array", items: { type: "string" }, description: "2-4 supporting evidence points citing specific sources" },
                   },
                   required: ["headline", "evidence"],
+                  additionalProperties: false,
                 },
                 strongestThemes: {
                   type: "array",
@@ -165,11 +211,23 @@ Deno.serve(async (req) => {
                     properties: {
                       theme: { type: "string" },
                       strength: { type: "string", enum: ["dominant", "emerging", "nascent"] },
-                      insight: { type: "string", description: "One sentence strategic insight about this theme" },
+                      insight: { type: "string" },
+                      evidenceSources: {
+                        type: "object",
+                        properties: {
+                          linkedinPosts: { type: "number" },
+                          captures: { type: "number" },
+                          documents: { type: "number" },
+                          frameworks: { type: "number" },
+                        },
+                        required: ["linkedinPosts", "captures", "documents", "frameworks"],
+                        additionalProperties: false,
+                      },
+                      trend: { type: "string", enum: ["strengthening", "stable", "declining"] },
                     },
-                    required: ["theme", "strength", "insight"],
+                    required: ["theme", "strength", "insight", "evidenceSources", "trend"],
+                    additionalProperties: false,
                   },
-                  description: "Top 5 authority themes ranked by strength",
                 },
                 tonePerformance: {
                   type: "array",
@@ -178,11 +236,12 @@ Deno.serve(async (req) => {
                     properties: {
                       tone: { type: "string" },
                       effectiveness: { type: "string", enum: ["high", "medium", "low"] },
-                      recommendation: { type: "string", description: "Brief advice on using this tone" },
+                      recommendation: { type: "string" },
+                      usagePercent: { type: "number", description: "Estimated usage percentage across posts" },
                     },
-                    required: ["tone", "effectiveness", "recommendation"],
+                    required: ["tone", "effectiveness", "recommendation", "usagePercent"],
+                    additionalProperties: false,
                   },
-                  description: "Tone analysis with performance assessment",
                 },
                 bestFormats: {
                   type: "array",
@@ -191,45 +250,85 @@ Deno.serve(async (req) => {
                     properties: {
                       format: { type: "string" },
                       postCount: { type: "number" },
-                      verdict: { type: "string", description: "One line assessment, e.g. 'Framework-led analytical posts outperform commentary'" },
+                      verdict: { type: "string" },
                     },
                     required: ["format", "postCount", "verdict"],
+                    additionalProperties: false,
                   },
-                  description: "Format performance analysis",
                 },
-                growthOpportunities: {
+                authorityEvolution: {
+                  type: "object",
+                  properties: {
+                    trajectory: { type: "string", enum: ["accelerating", "steady", "emerging", "pivoting"] },
+                    summary: { type: "string", description: "2-3 sentence summary of how authority is evolving" },
+                    themeTrends: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          theme: { type: "string" },
+                          trend: { type: "string", enum: ["strengthening", "stable", "declining", "emerging"] },
+                          signalDelta: { type: "string", description: "e.g. '+4 signals in last 30 days'" },
+                        },
+                        required: ["theme", "trend", "signalDelta"],
+                        additionalProperties: false,
+                      },
+                    },
+                  },
+                  required: ["trajectory", "summary", "themeTrends"],
+                  additionalProperties: false,
+                },
+                strategicOpportunities: {
                   type: "array",
                   items: {
                     type: "object",
                     properties: {
-                      opportunity: { type: "string", description: "Specific growth opportunity" },
-                      rationale: { type: "string", description: "Why this matters based on the data" },
+                      type: { type: "string", enum: ["emerging_theme", "declining_topic", "underutilized_expertise", "high_engagement_format", "tone_gap"] },
+                      title: { type: "string" },
+                      description: { type: "string" },
+                      evidence: { type: "string", description: "Specific data point supporting this opportunity" },
                       priority: { type: "string", enum: ["high", "medium", "low"] },
+                      action: { type: "string", description: "Specific recommended action" },
                     },
-                    required: ["opportunity", "rationale", "priority"],
+                    required: ["type", "title", "description", "evidence", "priority", "action"],
+                    additionalProperties: false,
                   },
-                  description: "3-5 growth opportunities",
+                  description: "3-5 strategic opportunities detected from cross-source analysis",
+                },
+                priorityMove: {
+                  type: "object",
+                  properties: {
+                    topic: { type: "string" },
+                    format: { type: "string" },
+                    tone: { type: "string" },
+                    reason: { type: "string", description: "Why this is the highest-impact next move" },
+                    themeReinforced: { type: "string", description: "Which authority theme this reinforces" },
+                  },
+                  required: ["topic", "format", "tone", "reason", "themeReinforced"],
+                  additionalProperties: false,
                 },
                 writeNext: {
                   type: "array",
                   items: {
                     type: "object",
                     properties: {
-                      topic: { type: "string", description: "Specific topic to write about" },
-                      angle: { type: "string", description: "Suggested angle or framing" },
-                      format: { type: "string", description: "Recommended format (e.g. framework post, carousel, long-form)" },
-                      reason: { type: "string", description: "Why this is a high-impact next post" },
+                      topic: { type: "string" },
+                      angle: { type: "string" },
+                      format: { type: "string" },
+                      reason: { type: "string" },
                     },
                     required: ["topic", "angle", "format", "reason"],
+                    additionalProperties: false,
                   },
-                  description: "3-5 specific next post recommendations",
+                  description: "3-5 additional content recommendations",
                 },
                 weeklyBrief: {
                   type: "string",
-                  description: "A 3-5 sentence weekly LinkedIn brief summarizing current position, momentum, and top priority action. Written in second person.",
+                  description: "3-5 sentence strategic brief summarizing current authority position, momentum, and top priority. Written in second person.",
                 },
               },
-              required: ["becomingKnownFor", "strongestThemes", "tonePerformance", "bestFormats", "growthOpportunities", "writeNext", "weeklyBrief"],
+              required: ["becomingKnownFor", "strongestThemes", "tonePerformance", "bestFormats", "authorityEvolution", "strategicOpportunities", "priorityMove", "writeNext", "weeklyBrief"],
+              additionalProperties: false,
             },
           },
         }],
@@ -240,27 +339,15 @@ Deno.serve(async (req) => {
     if (!res.ok) {
       const errText = await res.text();
       console.error("AI gateway error:", res.status, errText);
-      if (res.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited. Please try again in a moment." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (res.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "AI analysis failed" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (res.status === 429) return new Response(JSON.stringify({ error: "Rate limited. Try again shortly." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (res.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "AI analysis failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = await res.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
-      return new Response(JSON.stringify({ error: "AI returned no advisory" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "AI returned no advisory" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const advisory = JSON.parse(toolCall.function.arguments);
@@ -271,7 +358,10 @@ Deno.serve(async (req) => {
       meta: {
         snapshotsUsed: snapshots.length,
         totalPostsAnalyzed: totalPosts,
-        dateRange: { from: oldest.snapshot_date, to: latest.snapshot_date },
+        entriesAnalyzed: entries.length,
+        documentsAnalyzed: docs.length,
+        frameworksAnalyzed: frameworks.length,
+        dateRange: hasSnapshots ? { from: snapshots[snapshots.length - 1].snapshot_date, to: snapshots[0].snapshot_date } : null,
         generatedAt: new Date().toISOString(),
       },
     }), {
