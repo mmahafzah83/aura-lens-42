@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import CarouselGenerator from "@/components/CarouselGenerator";
 import LinkedInIntelligence from "@/components/LinkedInIntelligence";
+import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
@@ -533,6 +534,9 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         </h1>
         <p className="text-meta mt-2 text-base">Signal → Insight → Framework → Content → Audience</p>
       </motion.div>
+
+      {/* Strategic Advisor — authority context */}
+      <StrategicAdvisorPanel context="authority" compact />
 
       {/* Tab Bar */}
       <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-fit">

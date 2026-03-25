@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
+import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -394,6 +395,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         </h1>
         <p className="text-meta mt-2 text-base">Signal → Content → Audience → Growth</p>
       </motion.div>
+
+      {/* Strategic Advisor — influence context */}
+      <StrategicAdvisorPanel context="influence" compact />
 
       {/* Flow: Audience → Content Performance → Authority Growth */}
       <Section index={0}>

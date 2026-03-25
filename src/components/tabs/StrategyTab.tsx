@@ -13,6 +13,7 @@ import SignalExplorer from "@/components/SignalExplorer";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import SignalGraph from "@/components/SignalGraph";
+import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 
 /* ── Types ── */
 interface StrategicSignal {
@@ -173,6 +174,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
           </Button>
         </div>
       </motion.div>
+
+      {/* Strategic Advisor — compact */}
+      <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} />
 
       {/* ── Empty State ── */}
       {isEmpty && (

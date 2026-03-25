@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import CaptureIntelligencePanel from "@/components/CaptureIntelligencePanel";
+import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -69,6 +70,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
           style={{ transform: `rotate(${progress * 360}deg)`, opacity: Math.max(progress, refreshing ? 1 : 0) }}
         />
       </div>
+
+      {/* Strategic Advisor — AI Chief Strategy Officer */}
+      <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
 
       {/* Strategic Command Center — 3 cards + Recent Intelligence */}
       <StrategicCommandCenter onOpenChat={onOpenChat} />
