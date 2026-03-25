@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Mic, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -249,7 +249,7 @@ const Dashboard = () => {
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8 pb-24 md:pb-8">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8 pb-36 md:pb-24">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -268,13 +268,6 @@ const Dashboard = () => {
               </h2>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => openChat()}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-3 py-2 rounded-xl glass-card hover-lift tactile-press"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Ask Aura</span>
-              </button>
               <NotificationBell />
               <span className="text-[10px] text-muted-foreground/40 hidden sm:block tracking-widest uppercase">{user?.email}</span>
               <button onClick={handleLogout} className="text-muted-foreground/40 hover:text-foreground transition-colors tactile-press" title="Log out">
@@ -324,37 +317,79 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* ── Mobile Bottom Nav ── */}
+      {/* ── Persistent AI Bar ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border/10 bg-background/95 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="flex w-full px-1 py-1.5">
-            {NAV_ITEMS.map((tab) => (
-              <button
-                key={`mobile-${tab.value}`}
-                onClick={() => switchTab(tab.value)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-lg transition-all duration-200 tactile-press ${
-                  activeTab === tab.value
-                    ? "text-primary bg-primary/8"
-                    : "text-muted-foreground/50"
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                <span className="text-[8px] font-medium tracking-wide">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
-      )}
-
-      {/* ── Mobile FAB ── */}
-      {!chatOpen && !showOnboarding && !showDiagnostic && (
-        <button
-          onClick={() => setCaptureOpen(true)}
-          className="md:hidden fixed right-4 w-13 h-13 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[45] aura-glow border border-primary/30"
-          style={{ bottom: 'calc(60px + env(safe-area-inset-bottom))' }}
+        <div
+          className={`fixed z-40 transition-all duration-300 ${
+            sidebarCollapsed ? "md:left-[68px]" : "md:left-[220px]"
+          } left-0 right-0`}
+          style={{ bottom: 'env(safe-area-inset-bottom)' }}
         >
-          <Plus className="w-5.5 h-5.5" />
-        </button>
+          {/* Mobile bottom nav */}
+          <nav className="md:hidden border-t border-border/10 bg-background/95 backdrop-blur-xl">
+            <div className="flex w-full px-1 py-1.5">
+              {NAV_ITEMS.map((tab) => (
+                <button
+                  key={`mobile-${tab.value}`}
+                  onClick={() => switchTab(tab.value)}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-lg transition-all duration-200 tactile-press ${
+                    activeTab === tab.value ? "text-primary bg-primary/8" : "text-muted-foreground/50"
+                  }`}
+                >
+                  <tab.icon className="w-4 h-4" />
+                  <span className="text-[8px] font-medium tracking-wide">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* AI Bar */}
+          <div className="border-t border-border/10 bg-background/95 backdrop-blur-xl px-4 sm:px-6 py-3">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center gap-3">
+                {/* Quick Prompts */}
+                <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+                  {["What signals are emerging?", "Suggest a framework", "Draft a LinkedIn post"].map((prompt, i) => (
+                    <button
+                      key={i}
+                      onClick={() => openChat(prompt)}
+                      className="text-[9px] px-2.5 py-1.5 rounded-lg bg-secondary/30 text-muted-foreground/50 hover:text-primary hover:bg-primary/8 transition-colors border border-transparent hover:border-primary/15 whitespace-nowrap"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Main Input */}
+                <button
+                  onClick={() => openChat()}
+                  className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl glass-card border border-border/15 hover:border-primary/20 transition-all group cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-primary/50 group-hover:text-primary transition-colors shrink-0" />
+                  <span className="text-sm text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+                    What strategic question are you exploring?
+                  </span>
+                </button>
+
+                {/* Tool Buttons */}
+                <button
+                  onClick={() => setCaptureOpen(true)}
+                  className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-colors shrink-0 border border-transparent hover:border-primary/15"
+                  title="Attach document"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => { setCaptureOpen(true); }}
+                  className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-colors shrink-0 border border-transparent hover:border-primary/15 md:flex hidden"
+                  title="Voice question"
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       <CaptureModal

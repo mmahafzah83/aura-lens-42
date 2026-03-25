@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { RefreshCw, MessageCircle, GitBranch, ArrowRight } from "lucide-react";
+import { RefreshCw, GitBranch, ArrowRight } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import StrategicAdvisor from "@/components/StrategicAdvisor";
 import SignalsRadar from "@/components/SignalsRadar";
@@ -113,20 +113,6 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
 
       <KnowledgeConstellation open={constellationOpen} onClose={() => setConstellationOpen(false)} />
 
-      {/* Ask Aura */}
-      <div className="sticky bottom-0 pt-4 pb-2">
-        <button
-          onClick={() => onOpenChat?.()}
-          className="w-full glass-card rounded-2xl p-5 flex items-center gap-4 cursor-pointer hover-lift tactile-press transition-all group aura-search-glow"
-        >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300 border border-primary/15">
-            <MessageCircle className="w-4.5 h-4.5 text-primary" />
-          </div>
-          <span className="text-sm text-muted-foreground/60 group-hover:text-foreground transition-colors duration-300">
-            Ask Aura anything…
-          </span>
-        </button>
-      </div>
     </div>
   );
 };
