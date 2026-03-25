@@ -175,6 +175,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
         </div>
       </motion.div>
 
+      {/* Strategic Advisor — compact */}
+      <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} />
+
       {/* ── Empty State ── */}
       {isEmpty && (
         <div className="text-center py-20 space-y-4">
