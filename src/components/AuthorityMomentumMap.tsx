@@ -44,9 +44,7 @@ const AuthorityMomentumMap = () => {
         });
       });
 
-      // Count activations as content
       const contentCount = (activationsRes.data || []).length;
-      // Distribute content across top themes proportionally
       const topThemes = Object.entries(themeCounts).sort((a, b) => b[1].signals - a[1].signals);
       topThemes.slice(0, 3).forEach(([, v]) => { v.content = Math.ceil(contentCount / 3); });
 
@@ -70,7 +68,7 @@ const AuthorityMomentumMap = () => {
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl p-10 flex items-center justify-center min-h-[200px]">
+      <div className="glass-card rounded-2xl card-pad flex items-center justify-center min-h-[200px]">
         <Loader2 className="w-5 h-5 animate-spin text-primary/40" />
       </div>
     );
@@ -78,9 +76,9 @@ const AuthorityMomentumMap = () => {
 
   if (!themes.length) {
     return (
-      <div className="glass-card rounded-2xl p-8 text-center min-h-[160px] flex flex-col items-center justify-center gap-2">
+      <div className="glass-card rounded-2xl card-pad text-center min-h-[160px] flex flex-col items-center justify-center gap-3">
         <Crown className="w-6 h-6 text-primary/20" />
-        <p className="text-xs text-muted-foreground/40">Build more signals and frameworks to see authority momentum.</p>
+        <p className="text-meta">Build more signals and frameworks to see authority momentum.</p>
       </div>
     );
   }
@@ -88,19 +86,19 @@ const AuthorityMomentumMap = () => {
   const maxStrength = themes[0]?.totalStrength || 1;
 
   return (
-    <div className="glass-card rounded-2xl p-6 border border-border/8">
+    <div className="glass-card rounded-2xl card-pad border border-border/8">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
-          <Crown className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
+          <Crown className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Authority Momentum</h3>
-          <p className="text-[10px] text-muted-foreground/40">Themes gaining traction</p>
+          <h3 className="text-card-title text-foreground">Authority Momentum</h3>
+          <p className="text-meta">Themes gaining traction</p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         {themes.map((t, i) => {
           const pct = Math.round((t.totalStrength / maxStrength) * 100);
           const isHovered = hoveredTheme === t.theme;
@@ -112,12 +110,11 @@ const AuthorityMomentumMap = () => {
               onMouseLeave={() => setHoveredTheme(null)}
               className="group cursor-default"
             >
-              {/* Theme name + strength */}
-              <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  {i === 0 && <TrendingUp className="w-3 h-3 text-primary" />}
+                  {i === 0 && <TrendingUp className="w-4 h-4 text-primary" />}
                   <span
-                    className={`text-xs font-medium transition-colors duration-200 ${
+                    className={`text-body font-medium transition-colors duration-200 ${
                       isHovered ? "text-foreground" : "text-foreground/70"
                     }`}
                     style={i === 0 ? { fontFamily: "'Playfair Display', Georgia, serif" } : undefined}
@@ -125,10 +122,9 @@ const AuthorityMomentumMap = () => {
                     {t.theme}
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground/40 tabular-nums">{pct}%</span>
+                <span className="text-meta tabular-nums">{pct}%</span>
               </div>
 
-              {/* Bar */}
               <div className="relative h-3 rounded-full bg-secondary/30 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700 ease-out relative"
@@ -141,25 +137,20 @@ const AuthorityMomentumMap = () => {
                         : "hsl(var(--primary) / 0.25)",
                   }}
                 >
-                  {/* Shimmer effect for top theme */}
                   {i === 0 && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_3s_ease-in-out_infinite]" />
                   )}
                 </div>
-                {/* Glow on hover */}
                 {isHovered && (
                   <div
                     className="absolute inset-0 rounded-full"
-                    style={{
-                      boxShadow: "0 0 12px hsl(var(--primary) / 0.2)",
-                    }}
+                    style={{ boxShadow: "0 0 12px hsl(var(--primary) / 0.2)" }}
                   />
                 )}
               </div>
 
-              {/* Hover details */}
               {isHovered && (
-                <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground/50 animate-fade-in">
+                <div className="flex items-center gap-4 mt-2 text-meta animate-fade-in">
                   <span>{t.signalCount} signals</span>
                   <span>{t.frameworkCount} frameworks</span>
                   <span>{t.contentCount} content pieces</span>

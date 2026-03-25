@@ -67,35 +67,35 @@ const KnowledgeLibrary = () => {
   ];
 
   return (
-    <div className="glass-card rounded-2xl p-6 sm:p-8">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
-          <FileText className="w-4 h-4 text-primary/70" />
+    <div className="glass-card rounded-2xl card-pad">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
+          <FileText className="w-5 h-5 text-primary/70" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Knowledge Library</h3>
-          <p className="text-[10px] text-muted-foreground/40">All captured knowledge in one place</p>
+          <h3 className="text-card-title text-foreground">Knowledge Library</h3>
+          <p className="text-meta">All captured knowledge in one place</p>
         </div>
-        <span className="ml-auto text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{items.length}</span>
+        <span className="ml-auto text-meta bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{items.length}</span>
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/40" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search library…"
-            className="w-full pl-9 pr-4 py-2.5 bg-secondary/30 border border-border/15 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
+            className="w-full pl-10 pr-4 py-3 bg-secondary/30 border border-border/15 rounded-xl text-body text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/30 transition-colors"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {FILTERS.map((f) => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filter === f.key ? "bg-primary/10 text-primary border border-primary/20" : "bg-secondary/20 text-muted-foreground/50 hover:text-muted-foreground border border-transparent"
               }`}
             >
@@ -107,30 +107,30 @@ const KnowledgeLibrary = () => {
 
       {/* Items */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-16">
           <Loader2 className="w-5 h-5 animate-spin text-primary/40" />
         </div>
       ) : (
-        <ScrollArea className="h-[320px]">
-          <div className="space-y-2 pr-3">
+        <ScrollArea className="h-[360px]">
+          <div className="space-y-3 pr-3">
             {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground/40 text-center py-8">No items found</p>
+              <p className="text-body text-muted-foreground/40 text-center py-12">No items found</p>
             ) : (
               filtered.map((item) => {
                 const Icon = item.type === "document" ? FileUp : (ENTRY_ICONS[item.subtype] || Type);
                 return (
-                  <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-colors">
-                    <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
-                      <Icon className="w-3.5 h-3.5 text-primary/60" />
+                  <div key={`${item.type}-${item.id}`} className="flex items-center gap-3 p-4 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-colors">
+                    <div className="w-9 h-9 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-primary/60" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground truncate" dir="auto">{item.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] text-muted-foreground/40 capitalize">{item.type === "document" ? "Document" : item.subtype}</span>
-                        {item.pillar && <span className="text-[9px] bg-primary/10 text-primary/60 px-1.5 py-0.5 rounded-full">{item.pillar}</span>}
+                      <p className="text-body text-foreground truncate" dir="auto">{item.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-meta capitalize">{item.type === "document" ? "Document" : item.subtype}</span>
+                        {item.pillar && <span className="text-meta bg-primary/10 text-primary/60 px-2 py-0.5 rounded-full">{item.pillar}</span>}
                       </div>
                     </div>
-                    <span className="text-[9px] text-muted-foreground/30 shrink-0">{formatSmartDate(item.date)}</span>
+                    <span className="text-meta shrink-0">{formatSmartDate(item.date)}</span>
                   </div>
                 );
               })

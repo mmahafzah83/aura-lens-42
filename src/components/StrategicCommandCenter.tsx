@@ -8,25 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 
 /* ── Types ── */
 interface CommandData {
-  // Identity Snapshot
   primaryExpertise: string;
   authorityTheme: string;
   strategicFocus: string;
-  // Emerging Signal
   emergingSignal: string;
   emergingSignalDetail: string;
-  // Recommended Move
   recommendedMove: string;
   moveRationale: string;
-  // Development Metrics
   insightCount: number;
   frameworkCount: number;
   signalCount: number;
-  // Opportunities
   opportunities: Array<{ title: string; type: "framework" | "authority" | "market"; detail: string }>;
-  // Market Signals
   marketSignals: Array<{ title: string; confidence: number }>;
-  // Top Themes
   topThemes: string[];
 }
 
@@ -50,20 +43,18 @@ const EMPTY: CommandData = {
 
 const IdentityCard = ({ label, value }: { label: string; value: string }) => (
   <div className="space-y-2">
-    <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">{label}</p>
-    <p className="text-base font-semibold text-foreground leading-snug" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-      {value}
-    </p>
+    <p className="text-label">{label}</p>
+    <p className="text-card-title text-foreground">{value}</p>
   </div>
 );
 
 const MetricBlock = ({ value, label, icon: Icon }: { value: number; label: string; icon: React.ElementType }) => (
-  <div className="flex flex-col items-center gap-3 p-5 rounded-xl bg-secondary/10 border border-border/8">
+  <div className="flex flex-col items-center gap-3 p-6 rounded-xl bg-secondary/10 border border-border/8">
     <div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center border border-primary/10">
-      <Icon className="w-4.5 h-4.5 text-primary/70" />
+      <Icon className="w-5 h-5 text-primary/70" />
     </div>
-    <p className="text-3xl font-light text-foreground tracking-tight tabular-nums">{value}</p>
-    <p className="text-[9px] text-muted-foreground/50 uppercase tracking-[0.18em]">{label}</p>
+    <p className="text-metric text-foreground">{value}</p>
+    <p className="text-label">{label}</p>
   </div>
 );
 
@@ -74,15 +65,15 @@ const OpportunityRow = ({ title, type, detail }: { title: string; type: string; 
   const color = colors[type as keyof typeof colors] || "text-primary";
 
   return (
-    <div className="flex items-start gap-3.5 p-4 rounded-xl bg-secondary/10 border border-border/8 hover:border-primary/15 transition-all group">
-      <div className="w-8 h-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 border border-primary/10 group-hover:scale-105 transition-transform">
-        <Icon className={`w-4 h-4 ${color}`} />
+    <div className="flex items-start gap-4 p-5 rounded-xl bg-secondary/10 border border-border/8 hover:border-primary/15 transition-all group">
+      <div className="w-10 h-10 rounded-lg bg-primary/8 flex items-center justify-center shrink-0 border border-primary/10 group-hover:scale-105 transition-transform">
+        <Icon className={`w-5 h-5 ${color}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-foreground leading-snug">{title}</p>
-        <p className="text-[11px] text-muted-foreground/50 mt-1 line-clamp-2">{detail}</p>
+        <p className="text-body font-medium text-foreground leading-snug">{title}</p>
+        <p className="text-meta mt-1 line-clamp-2">{detail}</p>
       </div>
-      <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-secondary/30 text-muted-foreground/40 border border-border/10 capitalize shrink-0 mt-0.5">
+      <span className="text-meta font-medium px-3 py-1 rounded-full bg-secondary/30 border border-border/10 capitalize shrink-0 mt-0.5">
         {type}
       </span>
     </div>
@@ -90,12 +81,12 @@ const OpportunityRow = ({ title, type, detail }: { title: string; type: string; 
 };
 
 const SignalRow = ({ title, confidence }: { title: string; confidence: number }) => (
-  <div className="flex items-center gap-3 p-3.5 rounded-xl bg-secondary/10 border border-border/8">
-    <div className="w-6 h-6 rounded-md bg-emerald-500/10 flex items-center justify-center shrink-0">
-      <Globe className="w-3 h-3 text-emerald-400" />
+  <div className="flex items-center gap-3 p-4 rounded-xl bg-secondary/10 border border-border/8">
+    <div className="w-8 h-8 rounded-md bg-emerald-500/10 flex items-center justify-center shrink-0">
+      <Globe className="w-4 h-4 text-emerald-400" />
     </div>
-    <p className="text-xs font-medium text-foreground/80 flex-1 line-clamp-1">{title}</p>
-    <span className="text-[10px] text-muted-foreground/40 tabular-nums shrink-0">{Math.round(confidence * 100)}%</span>
+    <p className="text-body text-foreground/80 flex-1 line-clamp-1">{title}</p>
+    <span className="text-meta tabular-nums shrink-0">{Math.round(confidence * 100)}%</span>
   </div>
 );
 
@@ -124,12 +115,10 @@ const StrategicCommandCenter = () => {
       const suggestions = suggestionsRes.data || [];
       const profile = profileRes.data;
 
-      // Identity snapshot from profile
       const identity = profile?.identity_intelligence || {};
       const primaryExpertise = identity.primary_role || profile?.core_practice || "—";
       const strategicFocus = profile?.sector_focus || identity.industries?.[0] || "—";
 
-      // Derive themes
       const themeCounts: Record<string, number> = {};
       signals.forEach((s: any) => {
         (s.theme_tags || []).forEach((t: string) => {
@@ -139,12 +128,10 @@ const StrategicCommandCenter = () => {
       const sortedThemes = Object.entries(themeCounts).sort((a, b) => b[1] - a[1]);
       const authorityTheme = identity.authority_themes?.[0]?.theme || sortedThemes[0]?.[0] || (profile?.brand_pillars?.[0]) || "—";
 
-      // Emerging signal
       const topSignal = signals[0] as any;
       const emergingSignal = topSignal?.signal_title || "—";
       const emergingSignalDetail = topSignal?.explanation?.substring(0, 200) || "";
 
-      // Recommended move
       let recommendedMove = "Capture more insights to generate recommendations.";
       let moveRationale = "";
       if (suggestions.length > 0) {
@@ -157,7 +144,6 @@ const StrategicCommandCenter = () => {
         moveRationale = fo.description || topSignal.strategic_implications?.substring(0, 150) || "";
       }
 
-      // Opportunities
       const opportunities: CommandData["opportunities"] = [];
       signals.slice(0, 3).forEach((s: any) => {
         if (s.framework_opportunity?.title) {
@@ -173,7 +159,6 @@ const StrategicCommandCenter = () => {
         }
       });
 
-      // Market signals
       const marketSignals = signals.slice(0, 5).map((s: any) => ({
         title: s.signal_title,
         confidence: Number(s.confidence) || 0.7,
@@ -202,34 +187,34 @@ const StrategicCommandCenter = () => {
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl p-16 flex items-center justify-center">
+      <div className="glass-card rounded-2xl card-pad flex items-center justify-center" style={{ padding: 64 }}>
         <div className="flex flex-col items-center gap-4">
           <Compass className="w-8 h-8 text-primary/40 animate-spin" />
-          <span className="text-sm text-muted-foreground/40">Loading Strategic Command…</span>
+          <span className="text-meta">Loading Strategic Command…</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* ── Header ── */}
-      <div className="flex items-center gap-3.5">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 aura-glow">
-          <Compass className="w-5 h-5 text-primary" />
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 aura-glow">
+          <Compass className="w-6 h-6 text-primary" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h2 className="text-section-title text-foreground tracking-tight">
             Strategic Command
           </h2>
-          <p className="text-[10px] text-muted-foreground/40 tracking-wide">Your daily strategic briefing</p>
+          <p className="text-meta">Your daily strategic briefing</p>
         </div>
       </div>
 
       {/* ── Strategic Identity Snapshot ── */}
-      <div className="glass-card rounded-2xl p-6 sm:p-8 border border-primary/8">
-        <p className="text-[9px] font-semibold text-primary/60 uppercase tracking-[0.2em] mb-5">Strategic Identity</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="glass-card rounded-2xl card-pad border border-primary/8">
+        <p className="text-label text-primary/60 mb-6">Strategic Identity</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           <IdentityCard label="Primary Expertise" value={data.primaryExpertise} />
           <IdentityCard label="Authority Theme" value={data.authorityTheme} />
           <IdentityCard label="Strategic Focus" value={data.strategicFocus} />
@@ -237,57 +222,55 @@ const StrategicCommandCenter = () => {
       </div>
 
       {/* ── Emerging Signal + Recommended Move ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Emerging Signal */}
-        <div className="glass-card rounded-2xl p-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="glass-card rounded-2xl card-pad">
           <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-4 h-4 text-amber-400" />
-            <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Emerging Signal</p>
+            <Zap className="w-5 h-5 text-amber-400" />
+            <p className="text-label">Emerging Signal</p>
           </div>
-          <p className="text-base font-semibold text-foreground leading-snug mb-2" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <p className="text-card-title text-foreground mb-3">
             {data.emergingSignal}
           </p>
           {data.emergingSignalDetail && (
-            <p className="text-[11px] text-muted-foreground/50 leading-relaxed line-clamp-3">{data.emergingSignalDetail}</p>
+            <p className="text-meta leading-relaxed line-clamp-3">{data.emergingSignalDetail}</p>
           )}
         </div>
 
-        {/* Recommended Move */}
-        <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
+        <div className="glass-card rounded-2xl card-pad border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
           <div className="flex items-center gap-2 mb-4">
-            <ArrowRight className="w-4 h-4 text-primary" />
-            <p className="text-[9px] font-semibold text-primary/60 uppercase tracking-[0.2em]">Recommended Move</p>
+            <ArrowRight className="w-5 h-5 text-primary" />
+            <p className="text-label text-primary/60">Recommended Move</p>
           </div>
-          <p className="text-base font-semibold text-foreground leading-snug mb-2" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <p className="text-card-title text-foreground mb-3">
             {data.recommendedMove}
           </p>
           {data.moveRationale && (
-            <p className="text-[11px] text-muted-foreground/50 leading-relaxed line-clamp-3">{data.moveRationale}</p>
+            <p className="text-meta leading-relaxed line-clamp-3">{data.moveRationale}</p>
           )}
         </div>
       </div>
 
       {/* ── Strategic Development ── */}
-      <div className="glass-card rounded-2xl p-6 sm:p-8">
+      <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-2 mb-6">
-          <Layers className="w-4 h-4 text-primary/60" />
-          <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Strategic Development</p>
+          <Layers className="w-5 h-5 text-primary/60" />
+          <p className="text-label">Strategic Development</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-6 mb-8">
           <MetricBlock value={data.insightCount} label="Insights" icon={Sparkles} />
           <MetricBlock value={data.frameworkCount} label="Frameworks" icon={BookOpen} />
           <MetricBlock value={data.signalCount} label="Signals" icon={Zap} />
         </div>
 
         {data.topThemes.length > 0 && (
-          <div className="pt-5 border-t border-border/8">
-            <p className="text-[9px] text-muted-foreground/30 uppercase tracking-widest mb-3">Emerging Themes</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="pt-6 border-t border-border/8">
+            <p className="text-label mb-4">Emerging Themes</p>
+            <div className="flex flex-wrap gap-3">
               {data.topThemes.map((theme) => (
                 <span
                   key={theme}
-                  className="text-[10px] font-medium px-3 py-1.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10"
+                  className="text-meta font-medium px-4 py-2 rounded-full bg-primary/8 text-primary/70 border border-primary/10"
                 >
                   {theme}
                 </span>
@@ -299,12 +282,12 @@ const StrategicCommandCenter = () => {
 
       {/* ── Strategic Opportunities ── */}
       {data.opportunities.length > 0 && (
-        <div className="glass-card rounded-2xl p-6 sm:p-8">
-          <div className="flex items-center gap-2 mb-5">
-            <Target className="w-4 h-4 text-primary/60" />
-            <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Strategic Opportunities</p>
+        <div className="glass-card rounded-2xl card-pad">
+          <div className="flex items-center gap-2 mb-6">
+            <Target className="w-5 h-5 text-primary/60" />
+            <p className="text-label">Strategic Opportunities</p>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {data.opportunities.map((opp, i) => (
               <OpportunityRow key={i} {...opp} />
             ))}
@@ -314,12 +297,12 @@ const StrategicCommandCenter = () => {
 
       {/* ── Market Signals ── */}
       {data.marketSignals.length > 0 && (
-        <div className="glass-card rounded-2xl p-6 sm:p-8">
-          <div className="flex items-center gap-2 mb-5">
-            <Globe className="w-4 h-4 text-emerald-400/60" />
-            <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Market Signals</p>
+        <div className="glass-card rounded-2xl card-pad">
+          <div className="flex items-center gap-2 mb-6">
+            <Globe className="w-5 h-5 text-emerald-400/60" />
+            <p className="text-label">Market Signals</p>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {data.marketSignals.map((s, i) => (
               <SignalRow key={i} {...s} />
             ))}
