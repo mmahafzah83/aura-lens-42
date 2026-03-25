@@ -6,8 +6,13 @@ import SignalsRadar from "@/components/SignalsRadar";
 import AuthorityMomentumMap from "@/components/AuthorityMomentumMap";
 import DailyStrategicBriefing from "@/components/DailyStrategicBriefing";
 import KnowledgeConstellation from "@/components/KnowledgeConstellation";
+import CaptureIntelligencePanel from "@/components/CaptureIntelligencePanel";
+import type { Database } from "@/integrations/supabase/types";
+
+type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 interface HomeTabProps {
+  entries?: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
 }
@@ -48,7 +53,7 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
   return { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd };
 };
 
-const HomeTab = ({ onOpenChat, onRefresh }: HomeTabProps) => {
+const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
   const [constellationOpen, setConstellationOpen] = useState(false);
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
 
@@ -73,6 +78,9 @@ const HomeTab = ({ onOpenChat, onRefresh }: HomeTabProps) => {
 
       {/* Strategic Command */}
       <StrategicCommandCenter />
+
+      {/* Capture Intelligence */}
+      <CaptureIntelligencePanel entries={entries} onCaptured={onRefresh ? () => onRefresh() : () => {}} />
 
       {/* Visual Intelligence */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

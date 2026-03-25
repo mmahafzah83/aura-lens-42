@@ -1,11 +1,9 @@
-import { useState, useRef, useCallback } from "react";
-import { RefreshCw, GitBranch, ArrowRight, MessageCircle } from "lucide-react";
+import { useState } from "react";
+import { GitBranch, ArrowRight } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import StrategicIntelligenceEngine from "@/components/StrategicIntelligenceEngine";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
-import AccountIntelligence from "@/components/AccountIntelligence";
-import RecentEntries from "@/components/RecentEntries";
-import DocumentUpload from "@/components/DocumentUpload";
+import KnowledgeLibrary from "@/components/KnowledgeLibrary";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -23,26 +21,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh }: IntelligenceTabProp
       {/* Intelligence Engine */}
       <StrategicIntelligenceEngine onOpenChat={onOpenChat} />
 
-      {/* Knowledge Vault */}
-      <div className="space-y-6">
-        <div className="glass-card rounded-2xl p-6 sm:p-10">
-          <AccountIntelligence entries={entries} />
-        </div>
-        <div className="glass-card rounded-2xl p-6 sm:p-10">
-          <RecentEntries entries={entries} onRefresh={onRefresh ? async () => { await onRefresh(); } : undefined} />
-        </div>
-        <div className="glass-card rounded-2xl p-4 sm:p-5">
-          <details className="group">
-            <summary className="flex items-center justify-between cursor-pointer list-none">
-              <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Upload Document</span>
-              <span className="text-[10px] text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
-            </summary>
-            <div className="mt-3">
-              <DocumentUpload onUploaded={onRefresh ? async () => { await onRefresh(); } : undefined} />
-            </div>
-          </details>
-        </div>
-      </div>
+      {/* Knowledge Library */}
+      <KnowledgeLibrary />
 
       {/* Knowledge Graph */}
       <button
