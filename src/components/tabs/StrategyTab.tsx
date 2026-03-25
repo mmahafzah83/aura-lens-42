@@ -70,7 +70,7 @@ const StatCard = ({ icon: Icon, label, count, color, active, onClick }: {
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
         <Icon className="w-4 h-4" />
       </div>
-      <span className="text-2xl font-bold text-foreground tabular-nums">{count}</span>
+      <span className="text-metric text-foreground">{count}</span>
     </div>
     <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">{label}</span>
   </button>
