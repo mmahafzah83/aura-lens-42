@@ -143,7 +143,7 @@ const KnowledgeIntelligenceEngine = () => {
   // Auto-load on mount
   useEffect(() => { analyze(); }, []);
 
-  const tones = result?.tone_intelligence || result?.tone_patterns?.map(t => ({ ...t, effectiveness: t.effectiveness || "unknown" })) || [];
+  const tones: ToneEntry[] = result?.tone_intelligence || result?.tone_patterns?.map(t => ({ tone: t.tone, frequency: t.frequency, effectiveness: t.effectiveness || "unknown", evidence_source: undefined })) || [];
   const formats = result?.content_format_intelligence || [];
   const advisor = result?.strategic_advisor || [];
 
