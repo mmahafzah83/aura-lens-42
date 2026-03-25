@@ -202,16 +202,16 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
 
         <div className="grid grid-cols-3 gap-4 mb-5">
           <div className="text-center">
-            <p className="text-2xl font-light text-foreground tabular-nums">{evidence.totalEntries}</p>
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest mt-1">Captures</p>
+            <p className="text-metric text-foreground">{evidence.totalEntries}</p>
+            <p className="text-label mt-1">Captures</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-light text-foreground tabular-nums">{evidence.totalDocuments}</p>
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest mt-1">Documents</p>
+            <p className="text-metric text-foreground">{evidence.totalDocuments}</p>
+            <p className="text-label mt-1">Documents</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-light text-foreground tabular-nums">{evidence.totalFragments}</p>
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest mt-1">Evidence</p>
+            <p className="text-metric text-foreground">{evidence.totalFragments}</p>
+            <p className="text-label mt-1">Evidence</p>
           </div>
         </div>
 
