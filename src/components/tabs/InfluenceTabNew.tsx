@@ -24,6 +24,8 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [syncing, setSyncing] = useState(false);
   const [syncFailed, setSyncFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [hasSnapshots, setHasSnapshots] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleConnectionChange = useCallback((connected: boolean, info?: any) => {
     setLinkedInConnected(connected);
