@@ -83,7 +83,11 @@ const LinkedInConnector = ({ onConnectionChange }: { onConnectionChange?: (conne
       if (error || !data?.success) {
         toast({ title: "Sync failed", description: data?.error || "Could not sync LinkedIn data.", variant: "destructive" });
       } else {
-        toast({ title: "Sync complete", description: data.note || "LinkedIn analytics updated." });
+        const summary = data.summary;
+        const desc = summary
+          ? `Analyzed ${summary.postsAnalyzed} posts · ${summary.themesDetected} themes detected${summary.topTopic ? ` · Top: ${summary.topTopic}` : ""}`
+          : data.note || "LinkedIn analytics updated.";
+        toast({ title: "Sync complete", description: desc });
         checkStatus();
       }
     } catch {
