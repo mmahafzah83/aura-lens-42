@@ -245,6 +245,7 @@ const Dashboard = () => {
             {activeTab === "growth" && (
               <div className="animate-tab-spring">
                 <div className="space-y-6">
+                  <InfluenceIntelligence />
                   <KPIProgressRings />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
