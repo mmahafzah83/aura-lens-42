@@ -194,7 +194,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
       </div>
 
       {/* ── Evidence Overview ── */}
-      <div className="glass-card rounded-2xl p-6">
+      <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-2 mb-5">
           <Layers className="w-4 h-4 text-primary/60" />
           <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Knowledge Base</p>
