@@ -80,26 +80,7 @@ serve(async (req) => {
       // If fetch failed, proceed with URL-only analysis (no error returned)
     }
 
-    // Extract text content from HTML
-    let cleanText = pageText;
-    // Remove scripts and styles
-    cleanText = cleanText.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
-    cleanText = cleanText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-    // Extract structured data if available
-    const jsonLdMatches = pageText.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi);
-    let structuredData = "";
-    if (jsonLdMatches) {
-      structuredData = jsonLdMatches.map(m => {
-        const inner = m.replace(/<\/?script[^>]*>/gi, "");
-        return inner;
-      }).join("\n");
-    }
-    // Strip remaining HTML tags
-    cleanText = cleanText.replace(/<[^>]+>/g, " ");
-    cleanText = cleanText.replace(/\s+/g, " ").trim();
-    // Truncate
-    if (cleanText.length > 15000) cleanText = cleanText.substring(0, 15000);
-    if (structuredData.length > 5000) structuredData = structuredData.substring(0, 5000);
+    // pageText and structuredData already prepared above
 
     const isArabic = hasArabic(cleanText);
 
