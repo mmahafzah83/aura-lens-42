@@ -126,7 +126,11 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
   return (
     <div className="space-y-10">
       {/* ── Header ── */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
           {getGreeting()}{data.userName ? `, ${data.userName}` : ""}
         </h1>
