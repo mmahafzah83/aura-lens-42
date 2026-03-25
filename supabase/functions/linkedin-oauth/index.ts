@@ -24,11 +24,11 @@ Deno.serve(async (req) => {
     const { action, origin } = await req.json();
 
     if (action === "get-auth-url") {
-      const state = crypto.randomUUID();
-      const scopes = "openid profile email r_basicprofile";
+      const state = encodeURIComponent(origin || "");
+      const scopes = "openid profile email";
       const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&scope=${encodeURIComponent(scopes)}`;
 
-      return new Response(JSON.stringify({ url: authUrl, state }), {
+      return new Response(JSON.stringify({ url: authUrl }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
