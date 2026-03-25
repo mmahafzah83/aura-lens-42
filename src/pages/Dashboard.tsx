@@ -287,7 +287,7 @@ const Dashboard = () => {
           <div className="tab-content-spring">
             {activeTab === "home" && (
               <div className="animate-tab-spring">
-                <HomeTab onOpenChat={openChat} onRefresh={fetchEntries} />
+                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} />
               </div>
             )}
 
