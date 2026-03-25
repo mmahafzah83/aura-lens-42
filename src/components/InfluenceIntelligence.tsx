@@ -3,67 +3,46 @@ import {
   TrendingUp, Users, BarChart3, Target,
   ArrowUpRight, ArrowDownRight,
   Lightbulb, Crown, Loader2,
-  Linkedin, Sparkles, Calendar, Activity, AlertTriangle,
-  Clock, CheckCircle2, WifiOff, XCircle, MessageSquare,
-  Mic2, PenTool
+  Sparkles, Activity,
+  Mic2, PenTool, MessageSquare
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
-import { formatSmartDate } from "@/lib/formatDate";
 import {
-  AreaChart, Area, LineChart, Line, BarChart, Bar,
+  AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from "recharts";
-
-const EmptyState = ({ icon: Icon, title, description }: { icon: any; title: string; description: string }) => (
-  <div className="glass-card rounded-2xl p-6 sm:p-8 text-center py-12 animate-fade-in">
-    <Icon className="w-10 h-10 text-primary/20 mx-auto mb-3" />
-    <p className="text-sm font-medium text-foreground mb-1">{title}</p>
-    <p className="text-xs text-muted-foreground/50 max-w-md mx-auto">{description}</p>
-  </div>
-);
 
 type ConnectionState = "disconnected" | "connected_no_sync" | "syncing" | "synced" | "stale" | "sync_failed";
 
 interface Props {
   linkedInConnected: boolean;
-  connectionInfo?: {
-    display_name?: string;
-    last_synced_at?: string | null;
-    connected_at?: string;
-  } | null;
+  connectionInfo?: { display_name?: string; last_synced_at?: string | null; connected_at?: string } | null;
   syncing?: boolean;
   syncFailed?: boolean;
   onSnapshotsLoaded?: (count: number) => void;
 }
 
+/* ── Empty placeholder ── */
+const EmptyPanel = ({ icon: Icon, message }: { icon: any; message: string }) => (
+  <div className="text-center py-10">
+    <Icon className="w-8 h-8 text-muted-foreground/15 mx-auto mb-3" />
+    <p className="text-sm text-muted-foreground/40">{message}</p>
+  </div>
+);
+
 const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false, onSnapshotsLoaded }: Props) => {
-  const [activeSection, setActiveSection] = useState<"trajectory" | "history" | "audience" | "content" | "tone" | "strategy">("trajectory");
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(true);
-  const [authorityThemes, setAuthorityThemes] = useState<string[]>([]);
+  const [performanceTab, setPerformanceTab] = useState<"authority" | "posts" | "audience">("authority");
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const [snapshotsRes, signalsRes] = await Promise.all([
-      (supabase.from("influence_snapshots" as any) as any).select("*").order("snapshot_date", { ascending: false }).limit(30),
-      supabase.from("strategic_signals").select("signal_title, theme_tags, confidence").eq("status", "active").gte("confidence", 0.7).order("confidence", { ascending: false }).limit(10),
-    ]);
-    setSnapshots(snapshotsRes.data || []);
-    onSnapshotsLoaded?.((snapshotsRes.data || []).length);
-
-    const themes: Record<string, number> = {};
-    (signalsRes.data || []).forEach((s: any) => {
-      (s.theme_tags || []).forEach((t: string) => {
-        themes[t] = (themes[t] || 0) + 1;
-      });
-    });
-    setAuthorityThemes(
-      Object.entries(themes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t)
-    );
+    const { data } = await (supabase.from("influence_snapshots" as any) as any)
+      .select("*").order("snapshot_date", { ascending: false }).limit(30);
+    setSnapshots(data || []);
+    onSnapshotsLoaded?.((data || []).length);
     setLoadingSnapshots(false);
   };
 
@@ -80,417 +59,216 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
     return "synced";
   }, [linkedInConnected, snapshots, syncing, syncFailed]);
 
-  const latestSnapshot = snapshots[0] || null;
-  const audienceBreakdown = latestSnapshot?.audience_breakdown || null;
-  const latestFollowers = latestSnapshot?.followers || 0;
-  const latestGrowth = latestSnapshot?.follower_growth || 0;
-  const latestEngagement = Number(latestSnapshot?.engagement_rate) || 0;
-  const recommendations = (latestSnapshot?.recommendations || []) as string[];
-  const authorityThemesFromSnapshot = (latestSnapshot?.authority_themes || []) as string[];
-  const toneAnalysis = (latestSnapshot?.tone_analysis || []) as { tone: string; score: number; impact: string }[];
-  const formatBreakdown = (latestSnapshot?.format_breakdown || {}) as Record<string, number>;
-  const postCount = latestSnapshot?.post_count || 0;
-  const authorityTrajectory = latestSnapshot?.authority_trajectory as string | null;
+  const latest = snapshots[0] || null;
+  const followers = latest?.followers || 0;
+  const growth = latest?.follower_growth || 0;
+  const engagement = Number(latest?.engagement_rate) || 0;
+  const postCount = latest?.post_count || 0;
+  const authorityTrajectory = latest?.authority_trajectory as string | null;
+  const authorityThemes = (latest?.authority_themes || []) as string[];
+  const toneAnalysis = (latest?.tone_analysis || []) as { tone: string; score: number; impact: string }[];
+  const formatBreakdown = (latest?.format_breakdown || {}) as Record<string, number>;
+  const recommendations = (latest?.recommendations || []) as string[];
+  const audienceBreakdown = latest?.audience_breakdown || null;
 
-  const sections = [
-    { key: "trajectory" as const, label: "Authority", icon: Crown },
-    { key: "history" as const, label: "History", icon: Activity },
-    { key: "audience" as const, label: "Audience", icon: Users },
-    { key: "content" as const, label: "Content", icon: BarChart3 },
-    { key: "tone" as const, label: "Tone", icon: Mic2 },
-    { key: "strategy" as const, label: "Strategy", icon: Target },
-  ];
+  const writeNextRecs = recommendations.filter(r => r.startsWith("📝")).map(r => r.replace("📝 Write next: ", ""));
+  const strategicRecs = recommendations.filter(r => !r.startsWith("📝"));
 
-  const chartData = useMemo(() => {
-    return [...snapshots].reverse().map((s: any) => ({
+  const chartData = useMemo(() =>
+    [...snapshots].reverse().map((s: any) => ({
       date: s.snapshot_date?.slice(5) || "",
       followers: s.followers || 0,
-      growth: s.follower_growth || 0,
-      engagement: Number(s.engagement_rate) || 0,
-    }));
-  }, [snapshots]);
+    })),
+  [snapshots]);
 
-  const growthPct = latestFollowers > 0 ? ((latestGrowth / latestFollowers) * 100).toFixed(1) : "0";
+  const formatData = Object.entries(formatBreakdown).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  const formatTotal = formatData.reduce((sum, i) => sum + i.count, 0);
 
-  // Separate recommendations from write-next suggestions
-  const strategicRecs = recommendations.filter(r => !r.startsWith("📝"));
-  const writeNextRecs = recommendations.filter(r => r.startsWith("📝")).map(r => r.replace("📝 Write next: ", ""));
+  const hasRealData = snapshots.length > 0;
 
   if (loadingSnapshots) {
     return (
-      <div className="glass-card rounded-2xl p-8 flex items-center justify-center min-h-[200px]">
-        <Loader2 className="w-6 h-6 animate-spin text-primary/40" />
+      <div className="glass-card rounded-2xl p-10 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-primary/30" />
       </div>
     );
   }
 
-  const statusBannerConfig: Record<ConnectionState, { icon: any; iconClass: string; bgClass: string; title: string; subtitle: string }> = {
-    disconnected: {
-      icon: WifiOff, iconClass: "text-muted-foreground/50",
-      bgClass: "bg-muted/20 border-border/10",
-      title: "LinkedIn not connected",
-      subtitle: "Connect your account above to sync analytics",
-    },
-    connected_no_sync: {
-      icon: Linkedin, iconClass: "text-[#0A66C2]",
-      bgClass: "bg-[#0A66C2]/5 border-[#0A66C2]/15",
-      title: "LinkedIn connected — awaiting first analytics sync",
-      subtitle: "Click \"Sync Now\" above to pull your analytics",
-    },
-    syncing: {
-      icon: Loader2, iconClass: "text-primary animate-spin",
-      bgClass: "bg-primary/5 border-primary/15",
-      title: "Syncing LinkedIn analytics…",
-      subtitle: "Fetching posts, classifying content, and generating insights",
-    },
-    synced: {
-      icon: CheckCircle2, iconClass: "text-emerald-400",
-      bgClass: "bg-emerald-500/5 border-emerald-500/15",
-      title: "Live LinkedIn data",
-      subtitle: connectionInfo?.last_synced_at
-        ? `Last synced: ${formatSmartDate(connectionInfo.last_synced_at)}`
-        : latestSnapshot?.snapshot_date
-        ? `Last synced: ${formatSmartDate(latestSnapshot.snapshot_date)}`
-        : "Recently synced",
-    },
-    stale: {
-      icon: AlertTriangle, iconClass: "text-amber-400",
-      bgClass: "bg-amber-500/5 border-amber-500/15",
-      title: "Data may be outdated",
-      subtitle: latestSnapshot?.snapshot_date
-        ? `Last synced: ${formatSmartDate(latestSnapshot.snapshot_date)} · Click "Sync Now" to refresh`
-        : "Click \"Sync Now\" to refresh",
-    },
-    sync_failed: {
-      icon: XCircle, iconClass: "text-red-400",
-      bgClass: "bg-red-500/5 border-red-500/15",
-      title: "LinkedIn sync failed",
-      subtitle: "Check your connection and try again with \"Sync Now\"",
-    },
-  };
-
-  const banner = statusBannerConfig[connectionState];
-  const BannerIcon = banner.icon;
-  const hasRealData = snapshots.length > 0;
-
-  // Format breakdown chart data
-  const formatChartData = Object.entries(formatBreakdown).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+  /* No data states */
+  if (!hasRealData) {
+    if (connectionState === "syncing") {
+      return (
+        <div className="glass-card rounded-2xl p-10 text-center animate-fade-in">
+          <Loader2 className="w-10 h-10 text-primary/25 mx-auto mb-4 animate-spin" />
+          <p className="text-sm font-medium text-foreground mb-1">Syncing LinkedIn analytics…</p>
+          <p className="text-xs text-muted-foreground/40">Classifying content and generating insights.</p>
+        </div>
+      );
+    }
+    if (connectionState === "connected_no_sync") {
+      return (
+        <div className="glass-card rounded-2xl p-10 text-center animate-fade-in">
+          <Activity className="w-10 h-10 text-primary/15 mx-auto mb-4" />
+          <p className="text-sm font-medium text-foreground mb-1">LinkedIn connected — awaiting first analytics sync.</p>
+          <p className="text-xs text-muted-foreground/40">Click "Sync Now" above to pull your first analytics snapshot.</p>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Status Banner */}
-      <div className={`rounded-xl p-4 flex items-center gap-3 border ${banner.bgClass}`}>
-        <BannerIcon className={`w-4 h-4 shrink-0 ${banner.iconClass}`} />
-        <div className="flex-1">
-          <p className="text-xs font-medium text-foreground">{banner.title}</p>
-          <p className="text-[10px] text-muted-foreground/50">{banner.subtitle}</p>
-        </div>
-        {connectionState === "connected_no_sync" && <Clock className="w-3.5 h-3.5 text-muted-foreground/40" />}
-        {hasRealData && postCount > 0 && (
-          <span className="text-[10px] text-muted-foreground/40 tabular-nums shrink-0">{postCount} posts analyzed</span>
-        )}
-      </div>
+    <div className="space-y-12">
 
-      {/* Empty states */}
-      {connectionState === "disconnected" && !hasRealData && (
-        <EmptyState icon={Linkedin} title="No influence data available" description="Connect your LinkedIn account to start tracking your authority development with real analytics." />
-      )}
-      {connectionState === "connected_no_sync" && (
-        <EmptyState icon={Activity} title="LinkedIn connected — analytics not synced yet" description="Use the Sync Now button to pull your first analytics snapshot. All insights will be generated from real LinkedIn data." />
-      )}
-      {connectionState === "syncing" && !hasRealData && (
-        <div className="glass-card rounded-2xl p-8 text-center py-12 animate-fade-in">
-          <Loader2 className="w-10 h-10 text-primary/30 mx-auto mb-3 animate-spin" />
-          <p className="text-sm font-medium text-foreground mb-1">Pulling LinkedIn analytics…</p>
-          <p className="text-xs text-muted-foreground/50">This may take a moment while we classify your content.</p>
-        </div>
-      )}
-      {connectionState === "sync_failed" && !hasRealData && (
-        <EmptyState icon={XCircle} title="Sync failed — no data available" description="We couldn't retrieve your LinkedIn analytics. Please check your connection and try syncing again." />
-      )}
+      {/* ════════════════════════════════════════════════════
+          SECTION 2 — Authority Identity (Hero Card)
+         ════════════════════════════════════════════════════ */}
+      <section className="animate-fade-in">
+        <h2 className="text-section-title text-foreground mb-2">What You're Becoming Known For</h2>
+        <p className="text-meta mb-6">Your authority positioning derived from LinkedIn activity.</p>
 
-      {/* Real data panels */}
-      {hasRealData && connectionState !== "connected_no_sync" && (
-        <>
-          {/* Header */}
-          <div className="glass-card rounded-2xl p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-1">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                <TrendingUp className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-                  Influence Intelligence
-                </h2>
-                <p className="text-[10px] text-muted-foreground/50 tracking-wide">
-                  Strategic analysis from synced LinkedIn data
-                </p>
-              </div>
-            </div>
+        <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
+          {authorityTrajectory ? (
+            <p className="text-body text-foreground/90 leading-relaxed" dir="auto">
+              {authorityTrajectory}
+            </p>
+          ) : (
+            <p className="text-body text-muted-foreground/50">
+              Sync more LinkedIn data to surface your authority positioning.
+            </p>
+          )}
 
-            <div className="mt-6 flex items-center gap-6 flex-wrap">
-              <div>
-                <p className="text-2xl font-bold text-foreground tabular-nums">{latestFollowers.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground/50">Followers</p>
-              </div>
-              {latestGrowth !== 0 && (
-                <div className="flex items-center gap-1.5">
-                  {latestGrowth > 0 ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" /> : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
-                  <span className={`text-sm font-semibold ${latestGrowth > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    {latestGrowth > 0 ? "+" : ""}{latestGrowth}
+          {authorityThemes.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-border/10">
+              <p className="text-label text-[11px] mb-4">Supporting signals</p>
+              <div className="flex flex-wrap gap-2">
+                {authorityThemes.map((theme, i) => (
+                  <span
+                    key={i}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium bg-primary/8 text-primary/80 border border-primary/15 capitalize"
+                  >
+                    {String(theme).replace(/_/g, " ")}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/40">({growthPct}%)</span>
-                </div>
-              )}
-              {latestEngagement > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-foreground tabular-nums">{latestEngagement.toFixed(1)}%</span>
-                  <span className="text-[10px] text-muted-foreground/40">engagement</span>
-                </div>
-              )}
-              <div className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
-                <Calendar className="w-3 h-3" />
-                {snapshots.length} snapshot{snapshots.length !== 1 ? "s" : ""}
+                ))}
               </div>
-            </div>
-
-            <div className="flex gap-1.5 mt-6 overflow-x-auto pb-1 -mx-1 px-1">
-              {sections.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => setActiveSection(s.key)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap tactile-press ${
-                    activeSection === s.key ? "bg-primary/10 text-primary border border-primary/20" : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30"
-                  }`}
-                >
-                  <s.icon className="w-3.5 h-3.5" />
-                  {s.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── Authority Trajectory ── */}
-          {activeSection === "trajectory" && (
-            <div className="space-y-5 animate-fade-in">
-              {/* Authority Trajectory Statement */}
-              {authorityTrajectory && (
-                <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Crown className="w-4 h-4 text-primary/70" />
-                    Authority Trajectory
-                  </h3>
-                  <p className="text-xs text-foreground/80 leading-relaxed">{authorityTrajectory}</p>
-                </div>
-              )}
-
-              {/* Authority Themes */}
-              <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-5">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary/70" />
-                  What You're Becoming Known For
-                </h3>
-                {authorityThemes.length > 0 || authorityThemesFromSnapshot.length > 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest font-semibold">Authority Themes (from signals & analytics)</p>
-                    {(authorityThemes.length > 0 ? authorityThemes : authorityThemesFromSnapshot).map((theme, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/15 border border-border/10">
-                        <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Sparkles className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <span className="text-xs font-medium text-foreground capitalize">{String(theme).replace(/_/g, " ")}</span>
-                        <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-medium">emerging</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Lightbulb className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground/50">No authority themes identified yet. Sync more LinkedIn data to surface patterns.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Write Next Suggestions */}
-              {writeNextRecs.length > 0 && (
-                <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <PenTool className="w-4 h-4 text-primary/70" />
-                    What to Write Next
-                  </h3>
-                  <div className="space-y-2.5">
-                    {writeNextRecs.map((rec, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10 hover:border-primary/15 transition-all duration-300">
-                        <div className="flex items-start gap-3">
-                          <span className="text-[10px] font-bold text-primary/60 mt-0.5 shrink-0 tabular-nums w-5">{i + 1}.</span>
-                          <p className="text-xs text-foreground/80 leading-relaxed">{rec}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Recent Snapshots */}
-              {snapshots.length > 0 && (
-                <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary/70" />
-                      Recent Snapshots
-                    </h3>
-                    <button onClick={() => setActiveSection("history")} className="text-[10px] text-primary/70 hover:text-primary font-medium transition-colors">
-                      View full history →
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {snapshots.slice(0, 3).map((snap: any) => (
-                      <div key={snap.id} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
-                        <span className="text-[10px] text-muted-foreground/50 tabular-nums w-20 shrink-0">{snap.snapshot_date}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-medium text-foreground tabular-nums">{snap.followers?.toLocaleString()} followers</span>
-                            {snap.follower_growth !== 0 && (
-                              <span className={`text-[10px] flex items-center gap-0.5 ${snap.follower_growth > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                {snap.follower_growth > 0 ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                                {snap.follower_growth > 0 ? "+" : ""}{snap.follower_growth}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">{Number(snap.engagement_rate).toFixed(1)}% eng.</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
+        </div>
+      </section>
 
-          {/* ── Analytics History ── */}
-          {activeSection === "history" && (
-            <div className="space-y-5 animate-fade-in">
+      {/* ════════════════════════════════════════════════════
+          SECTION 3 — Influence Performance
+         ════════════════════════════════════════════════════ */}
+      <section className="animate-fade-in">
+        <h2 className="text-section-title text-foreground mb-2">Influence Performance</h2>
+        <p className="text-meta mb-6">Real metrics from your synced LinkedIn data.</p>
+
+        {/* Metric row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: "Followers", value: followers.toLocaleString() },
+            { label: "Growth", value: `${growth > 0 ? "+" : ""}${growth}`, color: growth > 0 ? "text-emerald-400" : growth < 0 ? "text-destructive" : undefined },
+            { label: "Engagement", value: engagement > 0 ? `${engagement.toFixed(1)}%` : "—" },
+            { label: "Posts Analyzed", value: postCount.toString() },
+          ].map((m) => (
+            <div key={m.label} className="glass-card rounded-2xl p-5 text-center">
+              <p className={`text-2xl font-bold tabular-nums ${m.color || "text-foreground"}`}>{m.value}</p>
+              <p className="text-label text-[10px] mt-1">{m.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6">
+          {([
+            { key: "authority" as const, label: "Authority", icon: Crown },
+            { key: "posts" as const, label: "Posts", icon: BarChart3 },
+            { key: "audience" as const, label: "Audience", icon: Users },
+          ] as const).map(t => (
+            <button
+              key={t.key}
+              onClick={() => setPerformanceTab(t.key)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 tactile-press ${
+                performanceTab === t.key
+                  ? "bg-primary/10 text-primary border border-primary/20"
+                  : "text-muted-foreground/50 hover:text-foreground hover:bg-secondary/20"
+              }`}
+            >
+              <t.icon className="w-3.5 h-3.5" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="animate-fade-in">
+          {performanceTab === "authority" && (
+            <div className="glass-card rounded-2xl p-8 space-y-5">
               {chartData.length > 1 ? (
-                <>
-                  <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary/70" />
-                      Follower Momentum
-                    </h3>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData}>
-                          <defs>
-                            <linearGradient id="followerGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={50} />
-                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }} />
-                          <Area type="monotone" dataKey="followers" stroke="hsl(var(--primary))" fill="url(#followerGrad)" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-primary/70" />
-                      Engagement Rate Trend
-                    </h3>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={40} unit="%" />
-                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }} formatter={(value: number) => [`${value.toFixed(1)}%`, "Engagement"]} />
-                          <Line type="monotone" dataKey="engagement" stroke="#34d399" strokeWidth={2} dot={{ r: 3, fill: "#34d399" }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-primary/70" />
-                      Follower Growth per Period
-                    </h3>
-                    <div className="h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.15)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} />
-                          <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.5)" }} axisLine={false} tickLine={false} width={40} />
-                          <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.2)", borderRadius: 12, fontSize: 12 }} formatter={(value: number) => [`${value > 0 ? "+" : ""}${value}`, "Growth"]} />
-                          <Bar dataKey="growth" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <EmptyState icon={Activity} title="Not enough data yet" description="Sync your LinkedIn analytics at least twice to see trend charts." />
-              )}
-
-              {snapshots.length > 0 && (
-                <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-primary/70" />
-                    All Snapshots ({snapshots.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {snapshots.map((snap: any) => (
-                      <div key={snap.id} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
-                        <span className="text-[10px] text-muted-foreground/50 tabular-nums w-20 shrink-0">{snap.snapshot_date}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-medium text-foreground tabular-nums">{snap.followers?.toLocaleString()} followers</span>
-                            {snap.follower_growth !== 0 && (
-                              <span className={`text-[10px] flex items-center gap-0.5 ${snap.follower_growth > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                {snap.follower_growth > 0 ? <ArrowUpRight className="w-2.5 h-2.5" /> : <ArrowDownRight className="w-2.5 h-2.5" />}
-                                {snap.follower_growth > 0 ? "+" : ""}{snap.follower_growth}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {snap.top_topic && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10">{snap.top_topic}</span>}
-                            {snap.top_format && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-secondary/30 text-muted-foreground/60 border border-border/10">{snap.top_format}</span>}
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">{Number(snap.engagement_rate).toFixed(1)}% eng.</span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="h-52">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="followerGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.1)" />
+                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} width={50} />
+                      <Tooltip
+                        contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.15)", borderRadius: 12, fontSize: 12 }}
+                      />
+                      <Area type="monotone" dataKey="followers" stroke="hsl(var(--primary))" fill="url(#followerGrad)" strokeWidth={2} dot={{ r: 3, fill: "hsl(var(--primary))" }} />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
+              ) : (
+                <EmptyPanel icon={TrendingUp} message="Sync LinkedIn at least twice to see follower trends." />
               )}
             </div>
           )}
 
-          {/* ── Audience ── */}
-          {activeSection === "audience" && (
-            <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-6">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary/70" />
-                Audience Intelligence
-              </h3>
+          {performanceTab === "posts" && (
+            <div className="glass-card rounded-2xl p-8 space-y-5">
+              {latest?.top_topic || latest?.top_format ? (
+                <div className="space-y-3">
+                  {latest.top_topic && (
+                    <div className="p-4 rounded-xl bg-secondary/15 border border-border/10">
+                      <p className="text-label text-[10px] mb-1">Strongest Topic</p>
+                      <p className="text-sm font-medium text-foreground">{latest.top_topic}</p>
+                    </div>
+                  )}
+                  {latest.top_format && (
+                    <div className="p-4 rounded-xl bg-secondary/15 border border-border/10">
+                      <p className="text-label text-[10px] mb-1">Strongest Format</p>
+                      <p className="text-sm font-medium text-foreground">{latest.top_format}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <EmptyPanel icon={BarChart3} message="No content performance data synced yet." />
+              )}
+            </div>
+          )}
+
+          {performanceTab === "audience" && (
+            <div className="glass-card rounded-2xl p-8 space-y-5">
               {audienceBreakdown && (audienceBreakdown.industries || audienceBreakdown.seniority || audienceBreakdown.geography) ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   {[
                     { title: "Industries", data: audienceBreakdown.industries || [] },
                     { title: "Seniority", data: audienceBreakdown.seniority || [] },
                     { title: "Geography", data: audienceBreakdown.geography || [] },
                   ].filter(g => g.data.length > 0).map((group) => (
                     <div key={group.title} className="space-y-3">
-                      <p className="text-[10px] font-semibold text-muted-foreground/50 tracking-widest uppercase">{group.title}</p>
+                      <p className="text-label text-[10px]">{group.title}</p>
                       {group.data.map((item: any) => (
                         <div key={item.name} className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-foreground/80">{item.name}</span>
-                            <span className="text-[10px] text-muted-foreground/50 tabular-nums">{item.pct}%</span>
+                            <span className="text-xs text-foreground/80">{item.name}</span>
+                            <span className="text-[10px] text-muted-foreground/40 tabular-nums">{item.pct}%</span>
                           </div>
                           <Progress value={item.pct} className="h-1" />
                         </div>
@@ -499,149 +277,99 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Users className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/50">No audience data synced yet. Audience breakdown requires LinkedIn Community Management API access.</p>
-                </div>
+                <EmptyPanel icon={Users} message="No audience data available. Requires LinkedIn Community Management API access." />
               )}
             </div>
           )}
+        </div>
+      </section>
 
-          {/* ── Content Performance ── */}
-          {activeSection === "content" && (
-            <div className="space-y-5 animate-fade-in">
-              {/* Top topic / format */}
-              <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-5">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-primary/70" />
-                  Content Performance
-                </h3>
-                {latestSnapshot?.top_topic || latestSnapshot?.top_format ? (
-                  <div className="space-y-3">
-                    {latestSnapshot.top_topic && (
-                      <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground">Strongest Topic</p>
-                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">{latestSnapshot.top_topic}</p>
-                        </div>
-                        {latestEngagement > 0 && (
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-foreground tabular-nums">{latestEngagement.toFixed(1)}%</p>
-                            <p className="text-[9px] text-muted-foreground/40">engagement</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {latestSnapshot.top_format && (
-                      <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-foreground">Strongest Format</p>
-                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">{latestSnapshot.top_format}</p>
-                        </div>
-                      </div>
-                    )}
+      {/* ════════════════════════════════════════════════════
+          SECTION 4 — Content Intelligence
+         ════════════════════════════════════════════════════ */}
+      <section className="animate-fade-in">
+        <h2 className="text-section-title text-foreground mb-2">Content Intelligence</h2>
+        <p className="text-meta mb-6">Classified analysis of your LinkedIn content.</p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Authority Themes */}
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Sparkles className="w-4 h-4 text-primary/70" />
+              <h3 className="text-sm font-semibold text-foreground">Authority Themes</h3>
+            </div>
+            {authorityThemes.length > 0 ? (
+              <div className="space-y-3">
+                {authorityThemes.map((theme, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/15 border border-border/10">
+                    <span className="text-xs font-medium text-foreground capitalize">{String(theme).replace(/_/g, " ")}</span>
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-medium">
+                      {i === 0 ? "Dominant" : i <= 1 ? "Emerging" : "Nascent"}
+                    </span>
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <BarChart3 className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                    <p className="text-xs text-muted-foreground/50">No content performance data synced yet.</p>
-                  </div>
-                )}
+                ))}
               </div>
+            ) : (
+              <EmptyPanel icon={Sparkles} message="No themes identified yet." />
+            )}
+          </div>
 
-              {/* Format Breakdown */}
-              {formatChartData.length > 0 && (
-                <div className="glass-card rounded-2xl p-6 sm:p-8 space-y-4">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary/70" />
-                    Format Breakdown
-                  </h3>
-                  <div className="space-y-3">
-                    {formatChartData.map((item) => {
-                      const total = formatChartData.reduce((sum, i) => sum + i.count, 0);
-                      const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
-                      return (
-                        <div key={item.name} className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-foreground/80 font-medium">{item.name}</span>
-                            <span className="text-[10px] text-muted-foreground/50 tabular-nums">{item.count} posts ({pct}%)</span>
-                          </div>
-                          <Progress value={pct} className="h-1.5" />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          {/* Tone Performance */}
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <Mic2 className="w-4 h-4 text-primary/70" />
+              <h3 className="text-sm font-semibold text-foreground">Tone Performance</h3>
             </div>
-          )}
-
-          {/* ── Tone Performance ── */}
-          {activeSection === "tone" && (
-            <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-5">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Mic2 className="w-4 h-4 text-primary/70" />
-                Tone Performance
-              </h3>
-              {toneAnalysis.length > 0 ? (
-                <div className="space-y-3">
-                  {toneAnalysis.sort((a, b) => b.score - a.score).map((t, i) => {
-                    const impactColor = t.impact === "high" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/15"
-                      : t.impact === "medium" ? "text-amber-400 bg-amber-500/10 border-amber-500/15"
-                      : "text-muted-foreground/60 bg-secondary/20 border-border/10";
-                    return (
-                      <div key={i} className="p-4 rounded-xl bg-secondary/15 border border-border/10">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-foreground capitalize">{t.tone}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${impactColor}`}>
-                              {t.impact} impact
-                            </span>
-                            <span className="text-xs font-bold text-foreground tabular-nums">{t.score}</span>
-                          </div>
-                        </div>
-                        <Progress value={t.score} className="h-1.5" />
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Mic2 className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/50">No tone analysis available yet. Sync LinkedIn posts to classify your writing tones.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Strategy ── */}
-          {activeSection === "strategy" && (
-            <div className="glass-card rounded-2xl p-6 sm:p-8 animate-fade-in space-y-5">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary/70" />
-                Strategic Recommendations
-              </h3>
-              {strategicRecs.length > 0 ? (
-                <div className="space-y-3">
-                  {strategicRecs.map((rec, i) => (
-                    <div key={i} className="p-4 rounded-xl bg-secondary/15 border border-border/10 hover:border-primary/15 transition-all duration-300">
-                      <div className="flex items-start gap-3">
-                        <Lightbulb className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
-                        <p className="text-xs text-foreground/80 leading-relaxed">{rec}</p>
-                      </div>
+            {toneAnalysis.length > 0 ? (
+              <div className="space-y-3">
+                {[...toneAnalysis].sort((a, b) => b.score - a.score).map((t, i) => {
+                  const impactStyle = t.impact === "high"
+                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/15"
+                    : t.impact === "medium"
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/15"
+                    : "bg-secondary/30 text-muted-foreground/50 border-border/10";
+                  return (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/15 border border-border/10">
+                      <span className="text-xs font-medium text-foreground capitalize">{t.tone}</span>
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${impactStyle}`}>
+                        {t.impact} effectiveness
+                      </span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Target className="w-8 h-8 text-primary/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/50">No strategic recommendations generated yet. Sync more LinkedIn data to receive actionable insights.</p>
-                </div>
-              )}
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyPanel icon={Mic2} message="No tone analysis available." />
+            )}
+          </div>
+
+          {/* Best Formats */}
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <MessageSquare className="w-4 h-4 text-primary/70" />
+              <h3 className="text-sm font-semibold text-foreground">Best Formats</h3>
             </div>
-          )}
-        </>
-      )}
+            {formatData.length > 0 ? (
+              <div className="space-y-3">
+                {formatData.map((item) => {
+                  const pct = formatTotal > 0 ? Math.round((item.count / formatTotal) * 100) : 0;
+                  return (
+                    <div key={item.name} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-foreground/80">{item.name}</span>
+                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">{pct}%</span>
+                      </div>
+                      <Progress value={pct} className="h-1" />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyPanel icon={MessageSquare} message="No format data available." />
+            )}
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

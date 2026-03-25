@@ -48,6 +48,12 @@
     --gold-glow: 43 80% 45%;
     --card-hover: 0 0% 11%;
     --surface-glass: 0 0% 8% / 0.7;
+
+    /* Influence page tokens */
+    --influence-bg: 228 18% 5%;
+    --influence-surface: 228 14% 9%;
+    --influence-accent-gold: 43 72% 52%;
+    --influence-accent-blue: 207 100% 62%;
   }
 }
 
