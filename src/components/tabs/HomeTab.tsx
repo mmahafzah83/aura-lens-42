@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { RefreshCw, MessageCircle, GitBranch, ArrowRight } from "lucide-react";
+import { RefreshCw, GitBranch, ArrowRight } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import StrategicAdvisor from "@/components/StrategicAdvisor";
 import SignalsRadar from "@/components/SignalsRadar";
