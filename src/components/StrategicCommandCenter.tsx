@@ -9,6 +9,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 
 /* ── Types ── */
 interface CommandData {
+  userName: string;
   identityStatement: string;
   expertise: string;
   industry: string;
