@@ -251,7 +251,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               Capture more insights to generate recommendations.
             </p>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Recent Intelligence ── */}
