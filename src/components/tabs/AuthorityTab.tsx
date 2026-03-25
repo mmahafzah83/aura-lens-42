@@ -535,6 +535,9 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         <p className="text-meta mt-2 text-base">Signal → Insight → Framework → Content → Audience</p>
       </motion.div>
 
+      {/* Strategic Advisor — authority context */}
+      <StrategicAdvisorPanel context="authority" compact />
+
       {/* Tab Bar */}
       <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-fit">
         {TABS.map(tab => {
