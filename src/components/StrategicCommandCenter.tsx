@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   Compass, Zap, ArrowRight, Loader2, Search, Lightbulb, PenLine,
   BookOpen, Save, Clock
@@ -125,17 +126,26 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
   return (
     <div className="space-y-10">
       {/* ── Header ── */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
           {getGreeting()}{data.userName ? `, ${data.userName}` : ""}
         </h1>
         <p className="text-meta mt-2 text-base">What should you focus on today?</p>
-      </div>
+      </motion.div>
 
       {/* ── Three Primary Cards ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Strategic Identity */}
-        <div className="glass-card rounded-2xl p-7 border border-primary/10 bg-gradient-to-br from-primary/[0.04] to-transparent">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="glass-card rounded-2xl p-7 border border-primary/10 bg-gradient-to-br from-primary/[0.04] to-transparent"
+        >
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/15">
               <Compass className="w-5 h-5 text-primary" />
@@ -158,10 +168,15 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Emerging Signal */}
-        <div className="glass-card rounded-2xl p-7 border border-amber-500/10">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="glass-card rounded-2xl p-7 border border-amber-500/10"
+        >
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/15">
               <Zap className="w-5 h-5 text-amber-400" />
@@ -194,10 +209,15 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               No signals detected yet. Capture more insights to generate signals.
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Recommended Move */}
-        <div className="glass-card rounded-2xl p-7 border border-emerald-500/10 bg-gradient-to-br from-emerald-500/[0.03] to-transparent">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="glass-card rounded-2xl p-7 border border-emerald-500/10 bg-gradient-to-br from-emerald-500/[0.03] to-transparent"
+        >
           <div className="flex items-center gap-3 mb-5">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/15">
               <ArrowRight className="w-5 h-5 text-emerald-400" />
@@ -231,7 +251,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               Capture more insights to generate recommendations.
             </p>
           )}
-        </div>
+        </motion.div>
       </div>
 
       {/* ── Recent Intelligence ── */}
