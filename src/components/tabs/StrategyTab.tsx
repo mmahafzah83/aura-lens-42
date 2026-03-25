@@ -410,6 +410,8 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
           onClose={() => setDraftData(null)}
         />
       )}
+
+      <SignalGraph open={graphOpen} onClose={() => setGraphOpen(false)} />
     </div>
   );
 };
