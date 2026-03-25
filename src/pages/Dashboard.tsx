@@ -91,7 +91,10 @@ const Dashboard = () => {
           .eq("user_id", session.user.id)
           .maybeSingle();
         if (profile && (profile as any).completed) {
-          setShowOnboarding(true);
+          const onboardKey = `aura_onboarded_${session.user.id}`;
+          if (!localStorage.getItem(onboardKey)) {
+            setShowOnboarding(true);
+          }
           checkStrategicNudge(session.access_token);
         } else {
           setShowDiagnostic(true);
