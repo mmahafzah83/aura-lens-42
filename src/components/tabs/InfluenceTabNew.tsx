@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { TrendingUp } from "lucide-react";
 import InfluenceIntelligence from "@/components/InfluenceIntelligence";
 import LinkedInConnector from "@/components/LinkedInConnector";
+import LinkedInExpertAdvisor from "@/components/LinkedInExpertAdvisor";
 import KPIProgressRings from "@/components/KPIProgressRings";
 import SkillRadar from "@/components/SkillRadar";
 import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
