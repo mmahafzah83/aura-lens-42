@@ -79,6 +79,9 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       {/* Strategic Command */}
       <StrategicCommandCenter />
 
+      {/* Strategic Advisor */}
+      <StrategicAdvisor onOpenChat={onOpenChat} />
+
       {/* Daily Briefing */}
       <DailyStrategicBriefing onOpenChat={onOpenChat} />
 
