@@ -63,7 +63,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      className="space-y-8 relative"
+      className="space-y-12 relative"
     >
       {/* Pull-to-refresh */}
       <div
@@ -97,17 +97,17 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       {/* Knowledge Constellation */}
       <button
         onClick={() => setConstellationOpen(true)}
-        className="w-full glass-card rounded-xl border border-border/10 p-4 hover:border-primary/15 transition-colors text-left group"
+        className="w-full glass-card rounded-xl border border-border/10 p-5 hover:border-primary/15 transition-colors text-left group"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-            <GitBranch className="w-4 h-4 text-primary/70" />
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+            <GitBranch className="w-5 h-5 text-primary/70" />
           </div>
           <div className="flex-1">
-            <p className="text-xs font-semibold text-foreground leading-snug">Knowledge Constellation</p>
-            <p className="text-[10px] text-muted-foreground/50">Explore how your ideas connect & evolve</p>
+            <p className="text-body font-semibold text-foreground leading-snug">Knowledge Constellation</p>
+            <p className="text-meta">Explore how your ideas connect & evolve</p>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/60 transition-colors" />
+          <ArrowRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary/60 transition-colors" />
         </div>
       </button>
 

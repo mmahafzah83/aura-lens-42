@@ -1,26 +1,34 @@
+# Aura typography & layout system. Updated: 2026-03-25
+
 Aura app: EY Director executive coaching tool with bilingual AR/EN support, dark theme, gold accents.
 
+## Typography Scale (MINIMUM 14px)
+- H1 page title: 34px/600 Playfair Display
+- H2 section title: 24px/600 Playfair Display
+- H3 card title: 18px/500 Playfair Display
+- Body: 16px/1.6 Inter
+- Meta/supporting: 14px muted-foreground
+- Labels: 14px/600 uppercase tracking-wide muted
+- Metrics: 32px/600 tabular-nums
+
+## CSS Utility Classes
+- `.text-page-title`, `.text-section-title`, `.text-card-title`, `.text-body`, `.text-meta`, `.text-label`, `.text-metric`
+- `.card-pad` = padding: 32px
+- `.section-gap` = margin-bottom: 48px
+- `.card-gap` = margin-bottom: 24px
+
+## Spacing (8pt grid)
+- Section spacing: 48px (space-y-12)
+- Card spacing: 24px (gap-6)
+- Text spacing: 16px
+- Card padding: 32px (card-pad)
+
 ## Skill Pillars
-Dynamic from Executive Diagnostic (fallback: C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Stewardship, Digital Fluency)
+C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Stewardship, Digital Fluency
 
-## DB Schema
-- entries: `pinned`, `image_url`, `framework_tag`, `embedding`
-- diagnostic_profiles: firm, level, core_practice, sector_focus, north_star_goal, generated_skills, skill_ratings
-- learned_intelligence: extracted frameworks/insights with skill_pillars, skill_boost_pct, embedding, tsv
+## DB Schema Extensions
+- entries: `pinned` (bool), `image_url` (text)
 - storage bucket: `capture-images` (public)
-
-## Edge Functions
-- summarize-link, draft-post, transcribe-voice, analyze-potential, analyze-image
-- generate-skill-profile: AI-generated top 10 skills from diagnostic
-- deconstruct-upload: extracts intelligence from every capture
-- sovereign-reading-list: AI reading recommendations based on skill gaps
-- extract-framework, generate-embedding, chat-aura, ingest-document
-
-## Autonomous Learning Vault
-- Every capture auto-deconstructed into learned_intelligence
-- Intelligence boosts Skill Radar percentages (+1-5% per extraction)
-- search_vault includes learned_intelligence for Ask Aura RAG
-- Sovereign Reading List in Growth tab targets largest skill gaps
 
 ## Design
 - RTL support via dir="auto" on all text

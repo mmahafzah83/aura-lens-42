@@ -181,29 +181,29 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
   const currentMode = INPUT_MODES.find((m) => m.key === mode)!;
 
   return (
-    <div className="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
+    <div className="glass-card rounded-2xl card-pad space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-          <ArrowRight className="w-4 h-4 text-primary" />
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+          <ArrowRight className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>Capture Intelligence</h3>
-          <p className="text-[10px] text-muted-foreground/50">Feed your strategic thinking system</p>
+          <h3 className="text-card-title text-foreground">Capture Intelligence</h3>
+          <p className="text-meta">Feed your strategic thinking system</p>
         </div>
       </div>
 
       {/* Mode Selector */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-3">
         {INPUT_MODES.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
             onClick={() => setMode(key)}
-            className={`flex flex-col items-center gap-1.5 py-3 rounded-xl text-[10px] font-medium transition-all ${
+            className={`flex flex-col items-center gap-2 py-4 rounded-xl text-sm font-medium transition-all ${
               mode === key ? "bg-primary/10 text-primary border border-primary/20" : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50 border border-transparent"
             }`}
           >
-            <Icon className="w-4 h-4" />
+            <Icon className="w-5 h-5" />
             {label}
           </button>
         ))}
@@ -217,33 +217,33 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
           <button
             onClick={() => !uploadingDoc && fileInputRef.current?.click()}
             disabled={uploadingDoc}
-            className="w-full border-2 border-dashed border-border/30 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-primary/40 transition-colors disabled:opacity-50"
+            className="w-full border-2 border-dashed border-border/30 rounded-xl p-8 flex flex-col items-center gap-3 hover:border-primary/40 transition-colors disabled:opacity-50"
           >
             {uploadingDoc ? <Loader2 className="w-6 h-6 text-primary animate-spin" /> : <FileUp className="w-6 h-6 text-muted-foreground/50" />}
-            <span className="text-xs text-muted-foreground">{uploadingDoc ? "Processing…" : "Click to upload PDF, DOCX, or image"}</span>
+            <span className="text-meta">{uploadingDoc ? "Processing…" : "Click to upload PDF, DOCX, or image"}</span>
           </button>
         </div>
       ) : mode === "voice" ? (
-        <div className="flex flex-col items-center gap-3 py-4">
+        <div className="flex flex-col items-center gap-4 py-6">
           {isTranscribing ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-body text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin text-primary" /> Transcribing…
             </div>
           ) : isRecording ? (
-            <button onClick={stopRecording} className="w-14 h-14 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center animate-pulse">
-              <Square className="w-5 h-5 text-destructive" />
+            <button onClick={stopRecording} className="w-16 h-16 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center animate-pulse">
+              <Square className="w-6 h-6 text-destructive" />
             </button>
           ) : (
-            <button onClick={startRecording} className="w-14 h-14 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/20 transition-colors">
-              <Mic className="w-6 h-6 text-primary" />
+            <button onClick={startRecording} className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/20 transition-colors">
+              <Mic className="w-7 h-7 text-primary" />
             </button>
           )}
           {content && (
-            <div className="w-full bg-secondary/30 rounded-xl p-3 mt-2">
-              <p className="text-xs text-foreground/80 leading-relaxed" dir="auto">{content}</p>
+            <div className="w-full bg-secondary/30 rounded-xl p-4 mt-2">
+              <p className="text-body text-foreground/80 leading-relaxed" dir="auto">{content}</p>
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground/40">{isRecording ? "Tap to stop recording" : "Tap to start recording"}</p>
+          <p className="text-meta">{isRecording ? "Tap to stop recording" : "Tap to start recording"}</p>
         </div>
       ) : (
         <div>
@@ -253,7 +253,7 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
               placeholder={currentMode.placeholder}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="w-full bg-secondary/30 border border-border/20 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors"
+              className="w-full bg-secondary/30 border border-border/20 rounded-xl px-4 py-4 text-body text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors"
             />
           ) : (
             <textarea
@@ -262,7 +262,7 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
               onChange={(e) => setContent(e.target.value)}
               rows={3}
               dir="auto"
-              className="w-full bg-secondary/30 border border-border/20 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors resize-none"
+              className="w-full bg-secondary/30 border border-border/20 rounded-xl px-4 py-4 text-body text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/30 transition-colors resize-none"
             />
           )}
         </div>
@@ -273,27 +273,27 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
         <button
           onClick={handleSave}
           disabled={saving || !content.trim()}
-          className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors disabled:opacity-30 border border-primary/15"
+          className="w-full py-4 rounded-xl bg-primary/10 text-primary text-body font-medium hover:bg-primary/20 transition-colors disabled:opacity-30 border border-primary/15"
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Capture"}
+          {saving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Capture"}
         </button>
       )}
 
       {/* Recent Captures */}
       {recentCaptures.length > 0 && (
-        <div className="pt-4 border-t border-border/10 space-y-2.5">
-          <p className="text-[9px] text-muted-foreground/40 uppercase tracking-[0.2em] font-semibold">Recent Captures</p>
+        <div className="pt-6 border-t border-border/10 space-y-3">
+          <p className="text-label">Recent Captures</p>
           {recentCaptures.map((entry) => {
             const Icon = TYPE_ICONS[entry.type] || Type;
             return (
-              <div key={entry.id} className="flex items-center gap-3 py-2 px-3 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
-                <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
-                  <Icon className="w-3 h-3 text-primary/60" />
+              <div key={entry.id} className="flex items-center gap-3 py-3 px-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
+                <div className="w-8 h-8 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-primary/60" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-foreground truncate" dir="auto">{entry.title || entry.content.slice(0, 60)}</p>
+                  <p className="text-body text-foreground truncate" dir="auto">{entry.title || entry.content.slice(0, 60)}</p>
                 </div>
-                <span className="text-[9px] text-muted-foreground/40 shrink-0">{formatSmartDate(entry.created_at)}</span>
+                <span className="text-meta shrink-0">{formatSmartDate(entry.created_at)}</span>
               </div>
             );
           })}
