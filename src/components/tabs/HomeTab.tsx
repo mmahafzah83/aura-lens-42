@@ -63,7 +63,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
-      className="space-y-8 relative"
+      className="space-y-12 relative"
     >
       {/* Pull-to-refresh */}
       <div
