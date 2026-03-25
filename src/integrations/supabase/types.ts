@@ -368,6 +368,51 @@ export type Database = {
           },
         ]
       }
+      influence_snapshots: {
+        Row: {
+          audience_breakdown: Json
+          authority_themes: Json
+          created_at: string
+          engagement_rate: number
+          follower_growth: number
+          followers: number
+          id: string
+          recommendations: Json
+          snapshot_date: string
+          top_format: string | null
+          top_topic: string | null
+          user_id: string
+        }
+        Insert: {
+          audience_breakdown?: Json
+          authority_themes?: Json
+          created_at?: string
+          engagement_rate?: number
+          follower_growth?: number
+          followers?: number
+          id?: string
+          recommendations?: Json
+          snapshot_date?: string
+          top_format?: string | null
+          top_topic?: string | null
+          user_id: string
+        }
+        Update: {
+          audience_breakdown?: Json
+          authority_themes?: Json
+          created_at?: string
+          engagement_rate?: number
+          follower_growth?: number
+          followers?: number
+          id?: string
+          recommendations?: Json
+          snapshot_date?: string
+          top_format?: string | null
+          top_topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       learned_intelligence: {
         Row: {
           content: string
