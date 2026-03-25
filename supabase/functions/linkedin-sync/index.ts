@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/* ── LinkedIn API helpers ── */
+
 async function fetchLinkedInProfile(accessToken: string) {
   try {
     const res = await fetch("https://api.linkedin.com/v2/userinfo", {
@@ -53,62 +55,86 @@ async function fetchLinkedInPosts(accessToken: string, linkedinId: string) {
   return posts;
 }
 
-function extractPostTexts(posts: any[]): string[] {
-  const texts: string[] = [];
-  for (const post of posts) {
-    const text = post.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareCommentary?.text
-      || post.text?.text || "";
-    if (text.trim()) texts.push(text.trim());
+async function fetchPostEngagement(accessToken: string, postUrn: string): Promise<{ likes: number; comments: number; reposts: number }> {
+  const result = { likes: 0, comments: 0, reposts: 0 };
+
+  // Try socialActions summary
+  try {
+    const res = await fetch(
+      `https://api.linkedin.com/v2/socialActions/${encodeURIComponent(postUrn)}`,
+      { headers: { Authorization: `Bearer ${accessToken}`, "X-Restli-Protocol-Version": "2.0.0" } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      result.likes = data.likesSummary?.totalLikes || data.numLikes || 0;
+      result.comments = data.commentsSummary?.totalFirstLevelComments || data.numComments || 0;
+      result.reposts = data.numShares || 0;
+    } else {
+      await res.text(); // consume body
+    }
+  } catch {
+    // socialActions may not be available
   }
-  return texts;
+
+  return result;
+}
+
+function extractPostData(post: any): { text: string; postUrn: string; mediaType: string; publishedAt: string | null } {
+  const text = post.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareCommentary?.text
+    || post.text?.text || "";
+
+  const postUrn = post.id || post.activity || "";
+
+  const mc = post.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareMediaCategory;
+  const content = post.content;
+  let mediaType = "text";
+  if (mc === "IMAGE" || content?.contentEntities?.[0]?.entityLocation?.includes("image")) mediaType = "image";
+  else if (mc === "VIDEO") mediaType = "video";
+  else if (mc === "ARTICLE" || mc === "RICH") mediaType = "article";
+  else if (mc === "CAROUSEL") mediaType = "carousel";
+
+  // Extract timestamp
+  let publishedAt: string | null = null;
+  if (post.created?.time) {
+    publishedAt = new Date(post.created.time).toISOString();
+  } else if (post.createdAt) {
+    publishedAt = new Date(post.createdAt).toISOString();
+  }
+
+  return { text: text.trim(), postUrn, mediaType, publishedAt };
 }
 
 function analyzeFormats(posts: any[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const post of posts) {
-    const mc = post.specificContent?.["com.linkedin.ugc.ShareContent"]?.shareMediaCategory;
-    const content = post.content;
-    let format = "Text";
-    if (mc === "IMAGE" || content?.contentEntities?.[0]?.entityLocation?.includes("image")) format = "Image";
-    else if (mc === "VIDEO") format = "Video";
-    else if (mc === "ARTICLE" || mc === "RICH") format = "Article";
-    else if (mc === "CAROUSEL") format = "Carousel";
+    const { mediaType } = extractPostData(post);
+    const format = mediaType.charAt(0).toUpperCase() + mediaType.slice(1);
     counts[format] = (counts[format] || 0) + 1;
   }
   return counts;
 }
 
 async function fetchFollowerCount(accessToken: string, linkedinId: string): Promise<number | null> {
-  // Try the networkSize endpoint (available with basic profile scope)
-  try {
-    const res = await fetch(
-      `https://api.linkedin.com/v2/networkSizes/urn:li:person:${linkedinId}?edgeType=CompanyFollowedByMember`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      if (typeof data.firstDegreeSize === "number") return data.firstDegreeSize;
+  for (const edgeType of ["CompanyFollowedByMember", "FOLLOW"]) {
+    try {
+      const res = await fetch(
+        `https://api.linkedin.com/v2/networkSizes/urn:li:person:${linkedinId}?edgeType=${edgeType}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.firstDegreeSize === "number") return data.firstDegreeSize;
+      } else {
+        await res.text();
+      }
+    } catch {
+      // try next edge type
     }
-  } catch (e) {
-    console.log("networkSizes not available:", e);
   }
-
-  // Try follower statistics (requires Community Management API)
-  try {
-    const res = await fetch(
-      `https://api.linkedin.com/v2/networkSizes/urn:li:person:${linkedinId}?edgeType=FOLLOW`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    if (res.ok) {
-      const data = await res.json();
-      if (typeof data.firstDegreeSize === "number") return data.firstDegreeSize;
-    }
-  } catch (e) {
-    console.log("Follower count not available:", e);
-  }
-
   return null;
 }
+
+/* ── AI Classification ── */
 
 interface AIAnalysis {
   themes: string[];
@@ -118,30 +144,35 @@ interface AIAnalysis {
   engagementEstimate: number;
   authorityTrajectory: string;
   writeNextSuggestions: string[];
+  postClassifications: { postIndex: number; theme: string; tone: string; format: string }[];
 }
 
-async function classifyWithAI(postTexts: string[], formatBreakdown: Record<string, number>, prevSnapshot: any): Promise<AIAnalysis | null> {
+async function classifyWithAI(
+  postTexts: string[],
+  formatBreakdown: Record<string, number>,
+  prevSnapshot: any
+): Promise<AIAnalysis | null> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY || postTexts.length === 0) return null;
 
   try {
-    const samplePosts = postTexts.slice(0, 15).map((t, i) => `Post ${i + 1}: ${t.slice(0, 500)}`).join("\n\n");
+    const samplePosts = postTexts.slice(0, 20).map((t, i) => `Post ${i + 1}: ${t.slice(0, 500)}`).join("\n\n");
 
     const contextInfo = prevSnapshot
       ? `Previous snapshot: ${prevSnapshot.followers} followers, engagement ${prevSnapshot.engagement_rate}%, themes: ${JSON.stringify(prevSnapshot.authority_themes)}`
       : "No previous snapshot data.";
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://api.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "system",
             content: `You are a LinkedIn content analyst for a senior professional. Analyze their posts and provide strategic intelligence. Context: ${contextInfo}. Format breakdown: ${JSON.stringify(formatBreakdown)}.`
           },
-          { role: "user", content: `Analyze these ${postTexts.length} LinkedIn posts:\n\n${samplePosts}` },
+          { role: "user", content: `Analyze these ${postTexts.length} LinkedIn posts and classify each one:\n\n${samplePosts}` },
         ],
         tools: [{
           type: "function",
@@ -158,35 +189,38 @@ async function classifyWithAI(postTexts: string[], formatBreakdown: Record<strin
                     type: "object",
                     properties: {
                       tone: { type: "string" },
-                      score: { type: "number", description: "0-100 how prominent this tone is" },
-                      impact: { type: "string", enum: ["high", "medium", "low"], description: "Estimated engagement impact" },
+                      score: { type: "number" },
+                      impact: { type: "string", enum: ["high", "medium", "low"] },
                     },
                     required: ["tone", "score", "impact"],
                   },
-                  description: "Tone analysis of posts",
                 },
-                topTopic: { type: "string", description: "Single strongest topic" },
-                recommendations: {
+                topTopic: { type: "string" },
+                recommendations: { type: "array", items: { type: "string" } },
+                engagementEstimate: { type: "number" },
+                authorityTrajectory: { type: "string" },
+                writeNextSuggestions: { type: "array", items: { type: "string" } },
+                postClassifications: {
                   type: "array",
-                  items: { type: "string" },
-                  description: "3-5 strategic recommendations for growing authority",
-                },
-                engagementEstimate: { type: "number", description: "Estimated engagement rate 0-15%" },
-                authorityTrajectory: {
-                  type: "string",
-                  description: "2-3 sentence assessment of authority development trajectory based on post patterns, themes, and consistency",
-                },
-                writeNextSuggestions: {
-                  type: "array",
-                  items: { type: "string" },
-                  description: "3-5 specific post ideas the author should write next based on their strongest themes and gaps",
+                  items: {
+                    type: "object",
+                    properties: {
+                      postIndex: { type: "number", description: "1-indexed post number" },
+                      theme: { type: "string", description: "Primary theme of this post" },
+                      tone: { type: "string", description: "Dominant tone (visionary, analytical, educational, operational, inspirational)" },
+                      format: { type: "string", description: "Content format (insight, framework, case study, opinion, storytelling, commentary)" },
+                    },
+                    required: ["postIndex", "theme", "tone", "format"],
+                  },
+                  description: "Classification for each analyzed post",
                 },
               },
-              required: ["themes", "tones", "topTopic", "recommendations", "engagementEstimate", "authorityTrajectory", "writeNextSuggestions"],
+              required: ["themes", "tones", "topTopic", "recommendations", "engagementEstimate", "authorityTrajectory", "writeNextSuggestions", "postClassifications"],
             },
           },
         }],
         tool_choice: { type: "function", function: { name: "classify_posts" } },
+        temperature: 0.3,
       }),
     });
 
@@ -194,7 +228,10 @@ async function classifyWithAI(postTexts: string[], formatBreakdown: Record<strin
       const data = await res.json();
       const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
       if (toolCall?.function?.arguments) {
-        return JSON.parse(toolCall.function.arguments) as AIAnalysis;
+        const parsed = typeof toolCall.function.arguments === "string"
+          ? JSON.parse(toolCall.function.arguments)
+          : toolCall.function.arguments;
+        return parsed as AIAnalysis;
       }
     } else {
       console.error("AI classification error:", res.status, await res.text());
@@ -204,6 +241,8 @@ async function classifyWithAI(postTexts: string[], formatBreakdown: Record<strin
   }
   return null;
 }
+
+/* ── Main Sync Logic ── */
 
 async function syncUserLinkedIn(userId: string, adminClient: any) {
   const { data: conn } = await adminClient
@@ -221,15 +260,24 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
   const linkedinId = conn.linkedin_id;
 
   // Parallel fetch: profile, posts, followers
-  const [profileData, posts, realFollowers] = await Promise.all([
+  const [profileData, rawPosts, realFollowers] = await Promise.all([
     fetchLinkedInProfile(accessToken),
     fetchLinkedInPosts(accessToken, linkedinId),
     fetchFollowerCount(accessToken, linkedinId),
   ]);
 
-  const postTexts = extractPostTexts(posts);
-  const formatBreakdown = analyzeFormats(posts);
+  // Extract post data and fetch engagement metrics (batch, max 20 at a time)
+  const postDataList = rawPosts.map(p => extractPostData(p));
+  const postTexts = postDataList.filter(p => p.text).map(p => p.text);
+  const formatBreakdown = analyzeFormats(rawPosts);
   const topFormat = Object.entries(formatBreakdown).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+  // Fetch engagement for each post (limited to 20 to avoid rate limits)
+  const engagementPromises = postDataList.slice(0, 20).map(async (pd) => {
+    if (!pd.postUrn) return { likes: 0, comments: 0, reposts: 0 };
+    return fetchPostEngagement(accessToken, pd.postUrn);
+  });
+  const engagements = await Promise.all(engagementPromises);
 
   // Previous snapshot for growth calculation
   const { data: prevSnapshot } = await adminClient
@@ -243,17 +291,65 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
   // AI classification
   const aiAnalysis = await classifyWithAI(postTexts, formatBreakdown, prevSnapshot);
 
-  // Determine follower count: real API > previous snapshot
+  // Store individual post records
+  const now = new Date().toISOString();
+  const postRecords = postDataList.slice(0, 50).map((pd, i) => {
+    const engagement = engagements[i] || { likes: 0, comments: 0, reposts: 0 };
+    const totalEngagement = engagement.likes + engagement.comments + engagement.reposts;
+    const classification = aiAnalysis?.postClassifications?.find(c => c.postIndex === i + 1);
+
+    return {
+      user_id: userId,
+      linkedin_post_id: pd.postUrn || `post-${i}-${Date.now()}`,
+      post_text: pd.text.slice(0, 5000) || null,
+      published_at: pd.publishedAt || null,
+      like_count: engagement.likes,
+      comment_count: engagement.comments,
+      repost_count: engagement.reposts,
+      engagement_score: totalEngagement,
+      media_type: pd.mediaType,
+      theme: classification?.theme || null,
+      tone: classification?.tone || null,
+      format_type: classification?.format || null,
+      synced_at: now,
+    };
+  });
+
+  // Upsert post records (on conflict: user_id + linkedin_post_id)
+  if (postRecords.length > 0) {
+    const { error: postsErr } = await adminClient
+      .from("linkedin_posts")
+      .upsert(postRecords, { onConflict: "user_id,linkedin_post_id" });
+    if (postsErr) console.error("Post upsert error:", postsErr);
+  }
+
+  // Calculate engagement rate from real data
+  const totalEngagementSum = engagements.reduce((s, e) => s + e.likes + e.comments + e.reposts, 0);
+  const realEngagementRate = engagements.length > 0 && realFollowers
+    ? Number(((totalEngagementSum / engagements.length / Math.max(realFollowers, 1)) * 100).toFixed(2))
+    : aiAnalysis?.engagementEstimate || 0;
+
+  // Determine follower count
   const currentFollowers = realFollowers ?? prevSnapshot?.followers ?? 0;
   const prevFollowers = prevSnapshot?.followers ?? 0;
   const followerGrowth = currentFollowers - prevFollowers;
+
+  // Build theme distribution from post classifications
+  const themeDistribution: Record<string, number> = {};
+  const toneDistribution: Record<string, number> = {};
+  if (aiAnalysis?.postClassifications) {
+    for (const c of aiAnalysis.postClassifications) {
+      if (c.theme) themeDistribution[c.theme] = (themeDistribution[c.theme] || 0) + 1;
+      if (c.tone) toneDistribution[c.tone] = (toneDistribution[c.tone] || 0) + 1;
+    }
+  }
 
   const snapshot = {
     user_id: userId,
     snapshot_date: new Date().toISOString().split("T")[0],
     followers: currentFollowers,
     follower_growth: followerGrowth,
-    engagement_rate: aiAnalysis?.engagementEstimate || 0,
+    engagement_rate: realEngagementRate,
     top_topic: aiAnalysis?.topTopic || null,
     top_format: topFormat,
     authority_themes: aiAnalysis?.themes || [],
@@ -264,7 +360,7 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
     ],
     tone_analysis: aiAnalysis?.tones || [],
     format_breakdown: formatBreakdown,
-    post_count: posts.length,
+    post_count: rawPosts.length,
     authority_trajectory: aiAnalysis?.authorityTrajectory || null,
   };
 
@@ -278,7 +374,7 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
 
   await adminClient
     .from("linkedin_connections")
-    .update({ last_synced_at: new Date().toISOString() })
+    .update({ last_synced_at: now })
     .eq("id", conn.id);
 
   const themes = aiAnalysis?.themes || [];
@@ -287,7 +383,8 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
     success: true,
     snapshot: newSnapshot,
     summary: {
-      postsAnalyzed: posts.length,
+      postsAnalyzed: rawPosts.length,
+      postsStored: postRecords.length,
       themesDetected: themes.length,
       tonesDetected: (aiAnalysis?.tones || []).length,
       hasAIAnalysis: !!aiAnalysis,
@@ -295,14 +392,19 @@ async function syncUserLinkedIn(userId: string, adminClient: any) {
       topFormat,
       followers: currentFollowers,
       followerGrowth,
+      engagementRate: realEngagementRate,
       hasRealFollowerCount: realFollowers !== null,
+      themeDistribution,
+      toneDistribution,
     },
     profile: { name: profileData.name || conn.display_name, linkedin_id: conn.linkedin_id },
-    note: posts.length > 0
-      ? `Synced ${posts.length} posts · ${themes.length} themes · ${(aiAnalysis?.tones || []).length} tones classified.`
+    note: rawPosts.length > 0
+      ? `Synced ${rawPosts.length} posts · ${postRecords.length} stored · ${themes.length} themes · ${(aiAnalysis?.tones || []).length} tones classified.`
       : "Profile synced. Post analytics require LinkedIn Community Management API approval for full access.",
   };
 }
+
+/* ── HTTP Handler ── */
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
