@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
     if (action === "get-auth-url") {
       // Build redirect_uri based on the calling app's origin
-      const appOrigin = origin || "https://aura-lens-42.lovable.app";
+      const appOrigin = origin || "https://www.aura-intel.org";
       const redirectUri = `${appOrigin}/api/auth/linkedin/callback`;
       const scopes = "openid profile email";
       const state = encodeURIComponent(appOrigin);
