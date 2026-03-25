@@ -190,7 +190,7 @@
 
   /* Tactile press for all interactive elements */
   .tactile-press {
-    @apply transition-all duration-[200ms] ease-[ease-in-out];
+    transition: all 200ms ease-in-out;
   }
   .tactile-press:active {
     transform: scale(0.97);
@@ -198,7 +198,7 @@
 
   /* Hover lift effect */
   .hover-lift {
-    @apply transition-all duration-[250ms] ease-[ease-in-out];
+    transition: all 250ms ease-in-out;
   }
   .hover-lift:hover {
     transform: translateY(-2px);
