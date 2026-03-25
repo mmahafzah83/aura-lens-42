@@ -209,7 +209,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               No signals detected yet. Capture more insights to generate signals.
             </p>
           )}
-        </div>
+        </motion.div>
 
         {/* Recommended Move */}
         <div className="glass-card rounded-2xl p-7 border border-emerald-500/10 bg-gradient-to-br from-emerald-500/[0.03] to-transparent">
