@@ -13,6 +13,7 @@ import SignalExplorer from "@/components/SignalExplorer";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import SignalGraph from "@/components/SignalGraph";
+import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 
 /* ── Types ── */
 interface StrategicSignal {
