@@ -109,6 +109,7 @@ const LinkedInProfileAnalyzer = () => {
 
     setLoading(true);
     setAnalysis(null);
+    setSaved(false);
 
     try {
       const { data, error } = await supabase.functions.invoke("analyze-linkedin-profile", {
