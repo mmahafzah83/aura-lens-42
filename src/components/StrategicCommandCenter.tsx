@@ -168,7 +168,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               </p>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Emerging Signal */}
         <div className="glass-card rounded-2xl p-7 border border-amber-500/10">
