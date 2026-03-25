@@ -142,7 +142,11 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex relative safe-area-container">
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
-      {showOnboarding && <OnboardingSequence onComplete={() => setShowOnboarding(false)} />}
+      {showOnboarding && <OnboardingSequence onComplete={async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) localStorage.setItem(`aura_onboarded_${session.user.id}`, "1");
+        setShowOnboarding(false);
+      }} />}
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
 
       {/* ── Desktop Sidebar ── */}
