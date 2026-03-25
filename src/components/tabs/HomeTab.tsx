@@ -79,6 +79,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       {/* Strategic Command */}
       <StrategicCommandCenter />
 
+      {/* Capture Intelligence */}
+      <CaptureIntelligencePanel entries={entries} onCaptured={onRefresh ? () => onRefresh() : () => {}} />
+
       {/* Visual Intelligence */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <SignalsRadar />
