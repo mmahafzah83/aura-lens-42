@@ -249,7 +249,7 @@ const Dashboard = () => {
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8 pb-24 md:pb-8">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8 pb-36 md:pb-24">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
