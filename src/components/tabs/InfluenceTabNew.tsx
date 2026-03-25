@@ -396,6 +396,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         <p className="text-meta mt-2 text-base">Signal → Content → Audience → Growth</p>
       </motion.div>
 
+      {/* Strategic Advisor — influence context */}
+      <StrategicAdvisorPanel context="influence" compact />
+
       {/* Flow: Audience → Content Performance → Authority Growth */}
       <Section index={0}>
         <AudienceSection snapshot={snapshot} />
