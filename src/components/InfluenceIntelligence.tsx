@@ -34,6 +34,7 @@ interface Props {
   } | null;
   syncing?: boolean;
   syncFailed?: boolean;
+  onSnapshotsLoaded?: (count: number) => void;
 }
 
 const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = false, syncFailed = false }: Props) => {
