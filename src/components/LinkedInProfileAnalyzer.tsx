@@ -48,6 +48,8 @@ const stageLabel = (s: string) =>
 
 const LinkedInProfileAnalyzer = () => {
   const [url, setUrl] = useState("");
+  const [profileText, setProfileText] = useState("");
+  const [showPasteArea, setShowPasteArea] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
