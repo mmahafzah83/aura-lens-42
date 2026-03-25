@@ -16,15 +16,15 @@ const SummaryText = ({ text }: { text: string }) => {
 
   return (
     <div>
-      <p className={`text-xs text-muted-foreground/60 mt-1.5 leading-relaxed ${!expanded && isLong ? "line-clamp-2" : ""}`}>
+      <p className={`text-sm text-muted-foreground leading-relaxed mt-1.5 ${!expanded && isLong ? "line-clamp-3" : ""}`}>
         {text}
       </p>
       {isLong && (
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="text-[10px] text-primary/70 hover:text-primary mt-1 font-medium transition-colors duration-200"
+          className="text-xs text-primary/70 hover:text-primary mt-1.5 font-medium transition-colors"
         >
-          {expanded ? "Less" : "Read more"}
+          {expanded ? "Show less" : "Read more"}
         </button>
       )}
     </div>
@@ -71,8 +71,8 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
   };
 
   return (
-    <div className="h-[calc(100dvh-180px)] overflow-y-auto overscroll-contain space-y-8 pb-36">
-      <div className="glass-card rounded-2xl p-6 sm:p-10">
+    <div className="space-y-12">
+      <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-3 mb-2">
           <Megaphone className="w-5 h-5 text-primary/70" />
           <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t("influence.title")}</h2>

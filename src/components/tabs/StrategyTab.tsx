@@ -70,9 +70,9 @@ const StatCard = ({ icon: Icon, label, count, color, active, onClick }: {
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
         <Icon className="w-4 h-4" />
       </div>
-      <span className="text-2xl font-bold text-foreground tabular-nums">{count}</span>
+      <span className="text-metric text-foreground">{count}</span>
     </div>
-    <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">{label}</span>
+    <span className="text-label">{label}</span>
   </button>
 );
 
@@ -317,7 +317,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
   const filteredFrameworks = viewMode === "frameworks" || viewMode === "overview" ? frameworks : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -325,7 +325,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
             <Lightbulb className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground tracking-tight">Strategy Workspace</h2>
+            <h2 className="text-section-title text-foreground">Strategy Workspace</h2>
             <p className="text-xs text-muted-foreground">Patterns, insights, and framework opportunities</p>
           </div>
         </div>

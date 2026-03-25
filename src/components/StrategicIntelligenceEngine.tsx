@@ -169,7 +169,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-12">
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3.5">
@@ -177,7 +177,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <h2 className="text-section-title text-foreground">
               Strategic Intelligence
             </h2>
             <p className="text-[10px] text-muted-foreground/40 tracking-wide">Converting knowledge into strategic signals</p>
@@ -194,7 +194,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
       </div>
 
       {/* ── Evidence Overview ── */}
-      <div className="glass-card rounded-2xl p-6">
+      <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-2 mb-5">
           <Layers className="w-4 h-4 text-primary/60" />
           <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Knowledge Base</p>
@@ -202,16 +202,16 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
 
         <div className="grid grid-cols-3 gap-4 mb-5">
           <div className="text-center">
-            <p className="text-2xl font-light text-foreground tabular-nums">{evidence.totalEntries}</p>
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest mt-1">Captures</p>
+            <p className="text-metric text-foreground">{evidence.totalEntries}</p>
+            <p className="text-label mt-1">Captures</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-light text-foreground tabular-nums">{evidence.totalDocuments}</p>
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest mt-1">Documents</p>
+            <p className="text-metric text-foreground">{evidence.totalDocuments}</p>
+            <p className="text-label mt-1">Documents</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-light text-foreground tabular-nums">{evidence.totalFragments}</p>
-            <p className="text-[9px] text-muted-foreground/50 uppercase tracking-widest mt-1">Evidence</p>
+            <p className="text-metric text-foreground">{evidence.totalFragments}</p>
+            <p className="text-label mt-1">Evidence</p>
           </div>
         </div>
 
