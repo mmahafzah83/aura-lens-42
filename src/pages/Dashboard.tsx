@@ -1,56 +1,49 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Target, TrendingUp, Shield, Lightbulb, Crown, User } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import SkillRadar from "@/components/SkillRadar";
 import CaptureModal from "@/components/CaptureModal";
-import TrainingModal from "@/components/TrainingModal";
-import WeeklyTransformationLens from "@/components/WeeklyTransformationLens";
-import RecentEntries from "@/components/RecentEntries";
 import AuraChatSidebar from "@/components/AuraChatSidebar";
-import DocumentUpload from "@/components/DocumentUpload";
-import AccountIntelligence from "@/components/AccountIntelligence";
-import BriefingTab from "@/components/tabs/BriefingTab";
-import AuthorityTab from "@/components/tabs/AuthorityTab";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
-import MyFrameworks from "@/components/MyFrameworks";
-import SovereignReadingList from "@/components/SovereignReadingList";
-
-import StrategyTab from "@/components/tabs/StrategyTab";
-import IdentityTab from "@/components/tabs/IdentityTab";
-import YearlyRoadmap from "@/components/YearlyRoadmap";
-import KPIProgressRings from "@/components/KPIProgressRings";
-import InfluenceIntelligence from "@/components/InfluenceIntelligence";
 import NotificationBell from "@/components/NotificationBell";
+import HomeTab from "@/components/tabs/HomeTab";
+import IdentityTab from "@/components/tabs/IdentityTab";
+import IntelligenceTab from "@/components/tabs/IntelligenceTab";
+import StrategyTab from "@/components/tabs/StrategyTab";
+import AuthorityTab from "@/components/tabs/AuthorityTab";
+import InfluenceTabNew from "@/components/tabs/InfluenceTabNew";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
-const TAB_ITEMS = [
+const NAV_ITEMS = [
+  { value: "home", label: "Home", icon: Compass },
   { value: "identity", label: "Identity", icon: User },
   { value: "intelligence", label: "Intelligence", icon: Shield },
   { value: "strategy", label: "Strategy", icon: Lightbulb },
   { value: "authority", label: "Authority", icon: Crown },
-  { value: "growth", label: "Growth", icon: TrendingUp },
+  { value: "influence", label: "Influence", icon: TrendingUp },
 ] as const;
 
-type TabValue = typeof TAB_ITEMS[number]["value"];
+type TabValue = typeof NAV_ITEMS[number]["value"];
 
 const Dashboard = () => {
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [activeTab, setActiveTab] = useState<TabValue>("identity");
+  const [activeTab, setActiveTab] = useState<TabValue>("home");
   const [captureOpen, setCaptureOpen] = useState(false);
-  const [trainingOpen, setTrainingOpen] = useState(false);
-  const [radarKey, setRadarKey] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
   const checkStrategicNudge = useCallback(async (accessToken: string) => {
     try {
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-nudge`, {
@@ -81,8 +74,6 @@ const Dashboard = () => {
       console.error("Nudge check failed:", e);
     }
   }, []);
-
-  const { t } = useLanguage();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -133,65 +124,173 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  const handleOnboardingComplete = () => setShowOnboarding(false);
-  const handleDiagnosticComplete = () => setShowDiagnostic(false);
+  const openChat = (msg?: string) => {
+    setChatInitialMessage(msg);
+    setChatOpen(true);
+  };
+
+  const switchTab = (tab: TabValue) => {
+    setActiveTab(tab);
+    setMobileSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col relative safe-area-container">
+    <div className="min-h-screen bg-background flex relative safe-area-container">
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
-      {showOnboarding && <OnboardingSequence onComplete={handleOnboardingComplete} />}
-      {showDiagnostic && <ExecutiveDiagnostic onComplete={handleDiagnosticComplete} />}
+      {showOnboarding && <OnboardingSequence onComplete={() => setShowOnboarding(false)} />}
+      {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
 
-      <main className="flex-1 relative z-10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="max-w-6xl mx-auto px-5 sm:px-10 py-8 sm:py-10 pb-24 md:pb-10">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Zap className="w-4.5 h-4.5 text-primary" />
+      {/* ── Desktop Sidebar ── */}
+      <aside
+        className={`hidden md:flex flex-col fixed top-0 left-0 h-full z-30 border-r border-border/10 bg-background/95 backdrop-blur-xl transition-all duration-300 ${
+          sidebarCollapsed ? "w-[68px]" : "w-[220px]"
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-border/8">
+          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
+            <Zap className="w-4.5 h-4.5 text-primary" />
+          </div>
+          {!sidebarCollapsed && (
+            <div className="overflow-hidden">
+              <h1 className="text-lg tracking-tight text-gradient-gold font-semibold">Aura</h1>
+              <p className="text-[8px] text-muted-foreground/40 tracking-[0.15em] uppercase">Strategic Intelligence OS</p>
+            </div>
+          )}
+        </div>
+
+        {/* Nav Items */}
+        <nav className="flex-1 py-4 px-2 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const isActive = activeTab === item.value;
+            return (
+              <button
+                key={item.value}
+                onClick={() => switchTab(item.value)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 tactile-press group ${
+                  isActive
+                    ? "bg-primary/10 text-primary border border-primary/15"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent"
+                }`}
+              >
+                <item.icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"}`} />
+                {!sidebarCollapsed && (
+                  <span className="text-sm font-medium tracking-wide">{item.label}</span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Bottom actions */}
+        <div className="px-2 py-4 border-t border-border/8 space-y-1">
+          <button
+            onClick={() => openChat()}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-all tactile-press"
+          >
+            <MessageCircle className="w-4.5 h-4.5 shrink-0" />
+            {!sidebarCollapsed && <span className="text-sm">Ask Aura</span>}
+          </button>
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-muted-foreground/40 hover:text-muted-foreground transition-all"
+          >
+            <Menu className="w-4 h-4 shrink-0" />
+            {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Mobile Sidebar Overlay ── */}
+      {mobileSidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
+          <aside className="absolute left-0 top-0 h-full w-[260px] bg-background border-r border-border/10 flex flex-col animate-slide-in-right" style={{ animationName: 'slideInLeft' }}>
+            <div className="flex items-center justify-between px-4 py-4 border-b border-border/8">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+                  <Zap className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-lg font-semibold text-gradient-gold">Aura</span>
               </div>
-              <div>
-                <h1 className="text-2xl tracking-tight text-gradient-gold">Aura</h1>
-                <p className="text-[10px] text-muted-foreground/60 tracking-widest uppercase">Strategic Intelligence OS</p>
-              </div>
+              <button onClick={() => setMobileSidebarOpen(false)} className="text-muted-foreground p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <nav className="flex-1 py-4 px-3 space-y-1">
+              {NAV_ITEMS.map((item) => {
+                const isActive = activeTab === item.value;
+                return (
+                  <button
+                    key={item.value}
+                    onClick={() => switchTab(item.value)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      isActive
+                        ? "bg-primary/10 text-primary border border-primary/15"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent"
+                    }`}
+                  >
+                    <item.icon className="w-4.5 h-4.5" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* ── Main Content ── */}
+      <main
+        className={`flex-1 relative z-10 transition-all duration-300 ${
+          sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
+        }`}
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      >
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-8 pb-24 md:pb-8">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              {/* Mobile hamburger */}
+              <button
+                onClick={() => setMobileSidebarOpen(true)}
+                className="md:hidden p-2 rounded-xl bg-secondary/30 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <h2
+                className="text-lg font-bold text-foreground tracking-tight"
+                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              >
+                {NAV_ITEMS.find(n => n.value === activeTab)?.label}
+              </h2>
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setChatOpen(true)}
-                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-4 py-2 rounded-xl glass-card hover-lift tactile-press z-30"
+                onClick={() => openChat()}
+                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-all duration-200 px-3 py-2 rounded-xl glass-card hover-lift tactile-press"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Ask Aura</span>
               </button>
               <NotificationBell />
-              <span className="text-[11px] text-muted-foreground/60 hidden sm:block tracking-widest uppercase">{user?.email}</span>
-              <button onClick={handleLogout} className="text-muted-foreground/50 hover:text-foreground transition-colors duration-200 tactile-press" title="Log out">
+              <span className="text-[10px] text-muted-foreground/40 hidden sm:block tracking-widest uppercase">{user?.email}</span>
+              <button onClick={handleLogout} className="text-muted-foreground/40 hover:text-foreground transition-colors tactile-press" title="Log out">
                 <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Desktop Tab Bar */}
-          <div className="hidden md:flex w-full justify-start gap-2 mb-10 border-b border-border/10 pb-0">
-            {TAB_ITEMS.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-                className={`flex items-center gap-2.5 px-5 py-4 border-b-2 transition-all duration-300 tactile-press ${
-                  activeTab === tab.value
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <tab.icon className="w-4 h-4" />
-                <span className="text-sm font-medium tracking-wide">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
           {/* Tab Content */}
           <div className="tab-content-spring">
+            {activeTab === "home" && (
+              <div className="animate-tab-spring">
+                <HomeTab onOpenChat={openChat} onRefresh={fetchEntries} />
+              </div>
+            )}
+
             {activeTab === "identity" && (
               <div className="animate-tab-spring">
                 <IdentityTab onResetDiagnostic={() => setShowDiagnostic(true)} />
@@ -200,39 +299,13 @@ const Dashboard = () => {
 
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
-                <BriefingTab entries={entries} onRefresh={fetchEntries} onOpenChat={(msg) => {
-                  setChatInitialMessage(msg);
-                  setChatOpen(true);
-                }} />
-                {/* Knowledge Vault */}
-                <div className="mt-8 space-y-6">
-                  <div className="glass-card rounded-2xl p-6 sm:p-10">
-                    <AccountIntelligence entries={entries} />
-                  </div>
-                  <div className="glass-card rounded-2xl p-6 sm:p-10">
-                    <RecentEntries entries={entries} onRefresh={fetchEntries} />
-                  </div>
-                  <div className="glass-card rounded-2xl p-4 sm:p-5">
-                    <details className="group">
-                      <summary className="flex items-center justify-between cursor-pointer list-none">
-                        <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Upload Document</span>
-                        <span className="text-[10px] text-muted-foreground group-open:rotate-180 transition-transform">▼</span>
-                      </summary>
-                      <div className="mt-3">
-                        <DocumentUpload onUploaded={fetchEntries} />
-                      </div>
-                    </details>
-                  </div>
-                </div>
+                <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} />
               </div>
             )}
 
             {activeTab === "strategy" && (
               <div className="animate-tab-spring">
-                <StrategyTab onOpenChat={(msg) => {
-                  setChatInitialMessage(msg);
-                  setChatOpen(true);
-                }} />
+                <StrategyTab onOpenChat={openChat} />
               </div>
             )}
 
@@ -242,72 +315,45 @@ const Dashboard = () => {
               </div>
             )}
 
-            {activeTab === "growth" && (
+            {activeTab === "influence" && (
               <div className="animate-tab-spring">
-                <div className="space-y-6">
-                  <InfluenceIntelligence />
-                  <KPIProgressRings />
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="glass-card rounded-2xl p-6 sm:p-10 min-h-[400px] radar-glow animate-data-pulse">
-                      <SkillRadar key={radarKey} />
-                    </div>
-                    <div className="space-y-6">
-                      <div
-                        className="glass-card rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover-lift tactile-press transition-all group"
-                        onClick={() => setTrainingOpen(true)}
-                      >
-                        <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-300 border border-border/20">
-                          <TrendingUp className="w-6 h-6 text-primary" />
-                        </div>
-                        <h2 className="text-base font-semibold text-foreground mb-1">Log Training</h2>
-                        <p className="text-xs text-muted-foreground tracking-wide">Track your growth hours</p>
-                      </div>
-                      <WeeklyTransformationLens entries={entries} />
-                    </div>
-                  </div>
-                  <YearlyRoadmap />
-                  <SovereignReadingList />
-                  <MyFrameworks />
-                </div>
+                <InfluenceTabNew entries={entries} />
               </div>
             )}
           </div>
         </div>
       </main>
 
-      {/* Mobile Bottom Nav */}
+      {/* ── Mobile Bottom Nav ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/10 bg-background/95 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="flex w-full max-w-6xl mx-auto px-2 py-2">
-            {TAB_ITEMS.map((tab) => (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border/10 bg-background/95 backdrop-blur-xl" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="flex w-full px-1 py-1.5">
+            {NAV_ITEMS.map((tab) => (
               <button
                 key={`mobile-${tab.value}`}
-                onClick={() => {
-                  setActiveTab(tab.value);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200 tactile-press ${
+                onClick={() => switchTab(tab.value)}
+                className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-lg transition-all duration-200 tactile-press ${
                   activeTab === tab.value
                     ? "text-primary bg-primary/8"
-                    : "text-muted-foreground/60"
+                    : "text-muted-foreground/50"
                 }`}
               >
-                <tab.icon className="w-4.5 h-4.5" />
-                <span className="text-[10px] font-medium tracking-wide">{tab.label}</span>
+                <tab.icon className="w-4 h-4" />
+                <span className="text-[8px] font-medium tracking-wide">{tab.label}</span>
               </button>
             ))}
           </div>
         </nav>
       )}
 
-      {/* Mobile FAB */}
+      {/* ── Mobile FAB ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <button
           onClick={() => setCaptureOpen(true)}
-          className="md:hidden fixed right-5 w-14 h-14 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[45] aura-glow border border-primary/30"
-          style={{ bottom: 'calc(68px + env(safe-area-inset-bottom))' }}
+          className="md:hidden fixed right-4 w-13 h-13 rounded-2xl bg-primary text-primary-foreground shadow-2xl flex items-center justify-center tactile-press transition-transform duration-150 z-[45] aura-glow border border-primary/30"
+          style={{ bottom: 'calc(60px + env(safe-area-inset-bottom))' }}
         >
-          <Plus className="w-6 h-6" />
+          <Plus className="w-5.5 h-5.5" />
         </button>
       )}
 
@@ -315,12 +361,8 @@ const Dashboard = () => {
         open={captureOpen}
         onOpenChange={setCaptureOpen}
         onCaptured={fetchEntries}
-        onOpenChat={(msg) => {
-          setChatInitialMessage(msg);
-          setChatOpen(true);
-        }}
+        onOpenChat={openChat}
       />
-      <TrainingModal open={trainingOpen} onOpenChange={setTrainingOpen} onLogged={() => { setRadarKey(k => k + 1); }} />
       <AuraChatSidebar
         open={chatOpen}
         onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
