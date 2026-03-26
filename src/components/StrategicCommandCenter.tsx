@@ -222,10 +222,25 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
 
               <div className="pt-2">
                 <SignalActions
-                  onExplore={() => onOpenChat?.(`Explore this signal in detail: ${data.opportunityTitle}`)}
+                  onExplore={() => {
+                    // Find top signal for explorer
+                    supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(1)
+                      .then(({ data: signals }) => {
+                        if (signals?.[0]) setExplorerSignal(signals[0]);
+                        else onOpenChat?.(`Explore this signal in detail: ${data.opportunityTitle}`);
+                      });
+                  }}
                   onCreateInsight={() => onOpenChat?.(`Create a strategic insight from: ${data.opportunityTitle}`)}
-                  onDevelopFramework={() => onOpenChat?.(`Develop a framework from: ${data.opportunityTitle}`)}
-                  onDraftContent={() => onOpenChat?.(`Draft authority content about: ${data.opportunityTitle}`)}
+                  onDevelopFramework={() => setBuilderData({
+                    title: data.opportunityTitle,
+                    description: data.opportunityExplanation,
+                    steps: [],
+                  })}
+                  onDraftContent={() => setDraftData({
+                    title: data.opportunityTitle,
+                    hook: data.opportunityExplanation,
+                    context: data.opportunityExplanation,
+                  })}
                 />
               </div>
             </>
