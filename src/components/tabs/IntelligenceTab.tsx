@@ -861,7 +861,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh }: IntelligenceTabProp
       />
 
       {/* Tab Bar */}
-      <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-full sm:w-fit overflow-x-auto">
+      <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-full sm:w-fit overflow-x-auto scrollbar-hide">
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.key;
