@@ -229,7 +229,6 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                   <SignalActions
                     onExplore={() => { setExplorerSignal(signal); setExplorerOpen(true); }}
                     onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${signal.signal_title}`)}
-                    onSaveForLater={undefined}
                   />
                 </div>
               );
