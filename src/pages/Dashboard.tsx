@@ -128,8 +128,17 @@ const Dashboard = () => {
   };
 
   const openChat = (msg?: string) => {
-    setChatInitialMessage(msg);
-    setChatOpen(true);
+    // Close first to reset state, then reopen with new context
+    if (chatOpen) {
+      setChatOpen(false);
+      setTimeout(() => {
+        setChatInitialMessage(msg);
+        setChatOpen(true);
+      }, 50);
+    } else {
+      setChatInitialMessage(msg);
+      setChatOpen(true);
+    }
   };
 
   const switchTab = (tab: TabValue) => {
