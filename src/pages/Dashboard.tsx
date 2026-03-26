@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
+  const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
