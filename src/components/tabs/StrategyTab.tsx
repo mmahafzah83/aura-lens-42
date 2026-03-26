@@ -283,19 +283,13 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                   <span className="ml-auto">{formatSmartDate(insight.created_at)}</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                <InsightActions
+                  onExpand={() => onOpenChat?.(`Expand insight: ${insight.title}\n\n${insight.content}`)}
+                  onBuildFramework={() => {
                     setBuilderData({ title: insight.title, steps: [], summary: insight.content });
-                  }}>
-                    <Layers className="w-3.5 h-3.5" /> Develop Framework
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Draft LinkedIn content from insight: ${insight.title}`)}>
-                    <PenLine className="w-3.5 h-3.5" /> Draft Content
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Add more evidence to insight: ${insight.title}`)}>
-                    <BookOpen className="w-3.5 h-3.5" /> Add Evidence
-                  </Button>
-                </div>
+                  }}
+                  onDraftContent={() => setDraftData({ title: insight.title, context: insight.content })}
+                />
               </div>
             ))}
           </div>
