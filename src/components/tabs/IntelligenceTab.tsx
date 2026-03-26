@@ -395,9 +395,42 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
 
   useEffect(() => { loadKnowledge(); }, []);
 
+  const isAbsoluteUrl = (value?: string | null) => Boolean(value && /^https?:\/\//i.test(value.trim()));
+
+  const resolveEntrySourceUrl = (entry: any) => {
+    if (entry.type === "link" && isAbsoluteUrl(entry.content)) {
+      return entry.content.trim();
+    }
+
+    if (entry.type === "image") {
+      const rawImageUrl = entry.image_url?.trim();
+      if (!rawImageUrl) return undefined;
+      if (isAbsoluteUrl(rawImageUrl)) return rawImageUrl;
+      return supabase.storage.from("capture-images").getPublicUrl(rawImageUrl).data.publicUrl;
+    }
+
+    return undefined;
+  };
+
+  const resolveDocumentSourceUrl = async (fileUrl?: string | null) => {
+    const rawFileUrl = fileUrl?.trim();
+    if (!rawFileUrl) return undefined;
+    if (isAbsoluteUrl(rawFileUrl)) return rawFileUrl;
+
+    const { data, error } = await supabase.storage.from("documents").createSignedUrl(rawFileUrl, 60 * 60);
+    if (error) {
+      console.error("Failed to create signed document URL", error);
+      return undefined;
+    }
+
+    return data.signedUrl;
+  };
+
   const loadKnowledge = async () => {
+    setLoading(true);
+
     const [entriesRes, docsRes, registryRes] = await Promise.all([
-      supabase.from("entries").select("id, type, title, content, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("entries").select("id, type, title, content, image_url, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("documents").select("id, filename, file_type, file_url, created_at").order("created_at", { ascending: false }).limit(100),
       supabase.from("source_registry").select("source_id, fragment_count").limit(500),
     ]);
@@ -406,16 +439,26 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
     (registryRes.data || []).forEach((r: any) => { fragmentMap[r.source_id] = r.fragment_count || 0; });
 
     const entryItems: KnowledgeItem[] = (entriesRes.data || []).map((e: any) => ({
-      id: e.id, type: "entry", title: e.title || e.content?.slice(0, 80) || "Untitled",
-      subtype: e.type, date: e.created_at, signalCount: fragmentMap[e.id] || 0,
-      sourceUrl: e.type === "link" ? e.content : undefined,
+      id: e.id,
+      type: "entry",
+      title: e.title || e.content?.slice(0, 80) || "Untitled",
+      subtype: e.type,
+      date: e.created_at,
+      signalCount: fragmentMap[e.id] || 0,
+      sourceUrl: resolveEntrySourceUrl(e),
     }));
 
-    const docItems: KnowledgeItem[] = (docsRes.data || []).map((d: any) => ({
-      id: d.id, type: "document", title: d.filename,
-      subtype: "document", date: d.created_at, signalCount: fragmentMap[d.id] || 0,
-      sourceUrl: d.file_url || undefined,
-    }));
+    const docItems: KnowledgeItem[] = await Promise.all(
+      (docsRes.data || []).map(async (d: any) => ({
+        id: d.id,
+        type: "document",
+        title: d.filename,
+        subtype: "document",
+        date: d.created_at,
+        signalCount: fragmentMap[d.id] || 0,
+        sourceUrl: await resolveDocumentSourceUrl(d.file_url),
+      }))
+    );
 
     setItems([...entryItems, ...docItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     setLoading(false);
