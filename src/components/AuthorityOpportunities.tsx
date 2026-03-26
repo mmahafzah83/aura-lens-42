@@ -122,7 +122,7 @@ const AuthorityOpportunities = () => {
                       })}
                       className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors bg-primary/5 hover:bg-primary/10 rounded-lg px-2.5 py-1"
                     >
-                      <FileText className="w-3 h-3" /> Draft Post
+                      <FileText className="w-3 h-3" /> Draft Content
                     </button>
                     <button
                       onClick={() => setCarouselData({
