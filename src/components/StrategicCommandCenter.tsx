@@ -47,6 +47,9 @@ const EMPTY: CommandData = {
 const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
   const [data, setData] = useState<CommandData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
+  const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
+  const [explorerSignal, setExplorerSignal] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
