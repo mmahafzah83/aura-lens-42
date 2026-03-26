@@ -56,7 +56,7 @@ Generate the carousel slides now. Remember: max 30 words per slide, rotate layou
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        max_tokens: 8192,
+        max_tokens: 16384,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
