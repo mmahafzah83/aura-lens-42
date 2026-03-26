@@ -435,8 +435,9 @@ const Dashboard = () => {
       />
       <AuraChatSidebar
         open={chatOpen}
-        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
+        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); }}
         initialMessage={chatInitialMessage}
+        context={chatContext}
       />
     </div>
   );
