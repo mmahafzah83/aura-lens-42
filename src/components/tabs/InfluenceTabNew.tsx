@@ -59,7 +59,7 @@ const AudienceSection = ({ snapshot }: { snapshot: any }) => {
       </div>
 
       {/* Key metrics */}
-      <div className="flex items-center gap-8 flex-wrap">
+      <div className="flex flex-wrap items-center gap-4 sm:gap-8">
         <div>
           <p className="text-3xl font-bold text-foreground tabular-nums">{followers.toLocaleString()}</p>
           <p className="text-meta">Followers</p>
