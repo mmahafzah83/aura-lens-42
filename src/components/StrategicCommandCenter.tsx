@@ -198,12 +198,12 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
 
           {data.opportunityTitle ? (
             <>
-              <h2
-                className="text-xl sm:text-2xl font-bold text-foreground leading-snug tracking-tight max-w-2xl"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-              >
-                {data.opportunityTitle}
-              </h2>
+               <h2
+                 className="text-xl sm:text-2xl font-bold text-foreground leading-snug tracking-tight break-words"
+                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+               >
+                 {data.opportunityTitle}
+               </h2>
 
               <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-sm text-muted-foreground">
                 {data.confidence > 0 && (
