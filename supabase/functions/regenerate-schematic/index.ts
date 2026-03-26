@@ -7,13 +7,40 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const CONTENT_STYLES = [
+  {
+    name: "premium_consulting",
+    prompt: "Ultra-clean dark premium background (#1a1a2e). Gold (#d4a843) accent lines. White text. Sharp geometric shapes with subtle gradients. Tier-1 consulting slide quality.",
+  },
+  {
+    name: "editorial_authority",
+    prompt: "Rich dark background with editorial typography — serif headers, clean sans-serif body. Subtle divider lines. High-end business magazine infographic feel.",
+  },
+  {
+    name: "structured_infographic",
+    prompt: "Dark background with clearly bounded sections. Icon markers for each element. Structured grid layout. Professional LinkedIn-ready visual with clear hierarchy.",
+  },
+  {
+    name: "minimal_executive",
+    prompt: "Near-black background with maximum whitespace. Few elements with strong visual weight. Single gold accent. Large bold typography. Executive boardroom quality.",
+  },
+  {
+    name: "strategic_blueprint",
+    prompt: "Dark navy background with thin technical grid lines. Blueprint aesthetic with teal accent lines. Monospaced labels. Technical architecture feel.",
+  },
+  {
+    name: "whiteboard_sketch",
+    prompt: "Deep charcoal blackboard background. White and gold hand-drawn style lines, boxes, arrows. Simulated handwriting labels. Professor's whiteboard aesthetic.",
+  },
+];
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { image_prompt } = await req.json();
+    const { image_prompt, style_index } = await req.json();
     if (!image_prompt) {
       return new Response(JSON.stringify({ error: "image_prompt required" }), {
         status: 400,
@@ -46,6 +73,33 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Select style — use provided index or random
+    const idx = typeof style_index === "number"
+      ? style_index % CONTENT_STYLES.length
+      : Math.floor(Math.random() * CONTENT_STYLES.length);
+    const selectedStyle = CONTENT_STYLES[idx];
+
+    const fullPrompt = `Create a 1080x1350 vertical image.
+
+=== VISUAL STYLE ===
+${selectedStyle.prompt}
+
+=== CONTENT ===
+${image_prompt}
+
+=== BRANDING ===
+- Background: Dark premium tone
+- Accent: Gold (#d4a843), white text, subtle grays
+- Typography: Clean, modern, consulting-grade
+- NO photorealistic elements. Pure diagrammatic/infographic style.
+- Ensure ALL text is LEGIBLE with proper contrast
+
+=== FOOTER (max 6% height, at very bottom) ===
+On the same dark background in small text:
+Left: "M. Mahafzah | Business & Digital Transformation Architect | Energy & Utilities"
+Right: "→ Share this Framework"
+No solid bars or blocks — blend seamlessly.`;
+
     const imageRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -54,12 +108,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3.1-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${image_prompt}\n\n=== SLIM SIGNATURE FOOT (max 8% of image height, at the very bottom) ===\nDo NOT add any solid bar, gray block, or colored strip.\nWrite the footer text DIRECTLY on the same charcoal blackboard background in the same handwritten ink style as the diagram.\nLeft side (small): "M. Mahafdhah | Digital Transformation Architect | 18Y Sector Expert"\nRight side (small): "→ Share this Framework"\nThe foot must be ultra-slim and feel like a natural hand-lettered extension of the blackboard — NOT a separate UI element.`,
-          },
-        ],
+        messages: [{ role: "user", content: fullPrompt }],
         modalities: ["image", "text"],
       }),
     });
@@ -102,11 +151,8 @@ Deno.serve(async (req) => {
     }
 
     if (uploadErr) {
-      // Return the image as base64 data URL instead of failing
       console.warn("All upload attempts failed, returning base64 fallback");
-      return new Response(JSON.stringify({
-        image_url: imgUrl,
-      }), {
+      return new Response(JSON.stringify({ image_url: imgUrl, style: selectedStyle.name }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -117,6 +163,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       image_url: urlData?.publicUrl || null,
+      style: selectedStyle.name,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

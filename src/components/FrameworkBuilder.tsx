@@ -41,6 +41,9 @@ const FrameworkBuilder = ({
   const [generatingDiagram, setGeneratingDiagram] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [diagramUrl, setDiagramUrl] = useState<string | null>(null);
+  const [lastArchetype, setLastArchetype] = useState<string | null>(null);
+  const [lastStyle, setLastStyle] = useState<string | null>(null);
+  const [diagramMeta, setDiagramMeta] = useState<string | null>(null);
 
   // Reset state when props change
   const resetWithProps = () => {
@@ -53,6 +56,9 @@ const FrameworkBuilder = ({
     );
     setCreatedId(null);
     setDiagramUrl(null);
+    setLastArchetype(null);
+    setLastStyle(null);
+    setDiagramMeta(null);
   };
 
   // Sync state when dialog opens with new data
@@ -154,11 +160,23 @@ const FrameworkBuilder = ({
     setGeneratingDiagram(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
-        body: { framework_id: createdId },
+        body: {
+          framework_id: createdId,
+          mode: "framework",
+          exclude_archetype: lastArchetype,
+          exclude_style: lastStyle,
+        },
       });
       if (error) throw error;
       if (data?.diagram_url) {
         setDiagramUrl(data.diagram_url);
+        setLastArchetype(data.archetype || null);
+        setLastStyle(data.style || null);
+        const label = [
+          data.archetype?.replace(/_/g, " "),
+          data.style?.replace(/_/g, " "),
+        ].filter(Boolean).join(" · ");
+        setDiagramMeta(label || null);
         toast.success("Diagram generated");
       }
     } catch (e: any) {
@@ -282,8 +300,13 @@ const FrameworkBuilder = ({
 
           {/* Diagram Preview */}
           {diagramUrl && (
-            <div className="rounded-xl overflow-hidden border border-border/10 bg-secondary/10">
-              <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
+            <div className="space-y-1.5">
+              <div className="rounded-xl overflow-hidden border border-border/10 bg-secondary/10">
+                <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
+              </div>
+              {diagramMeta && (
+                <p className="text-[10px] text-muted-foreground text-center capitalize">{diagramMeta}</p>
+              )}
             </div>
           )}
 

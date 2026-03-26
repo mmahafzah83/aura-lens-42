@@ -102,8 +102,16 @@ const MyFrameworks = () => {
   const handleGenerateDiagram = async (fw: Framework) => {
     setGeneratingDiagramId(fw.id);
     try {
+      // On regenerate, exclude the current archetype to get a different visual
+      const currentDesc = fw.diagram_description as any;
+      const excludeArchetype = currentDesc?.diagram_type || null;
+
       const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
-        body: { framework_id: fw.id },
+        body: {
+          framework_id: fw.id,
+          mode: "framework",
+          exclude_archetype: fw.diagram_url ? excludeArchetype : undefined,
+        },
       });
       if (error) throw error;
       if (data?.diagram_url) {
@@ -114,7 +122,11 @@ const MyFrameworks = () => {
               : f
           )
         );
-        toast({ title: "Diagram Generated", description: "Visual representation created." });
+        const label = [
+          data.archetype?.replace(/_/g, " "),
+          data.style?.replace(/_/g, " "),
+        ].filter(Boolean).join(" · ");
+        toast({ title: "Diagram Generated", description: label ? `Style: ${label}` : "Visual representation created." });
       }
     } catch (e: any) {
       toast({ title: "Diagram Error", description: e.message || "Failed to generate diagram", variant: "destructive" });
