@@ -162,20 +162,20 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-3"
+        className="space-y-3 overflow-hidden"
       >
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight break-words">
           {getGreeting()}{data.userName ? `, ${data.userName}` : ""}
         </h1>
         {data.identityStatement && (
-          <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
+          <p className="text-base text-muted-foreground leading-relaxed break-words">
             {data.identityStatement}
           </p>
         )}
         {data.northStar && (
-          <div className="flex items-center gap-2 text-sm text-primary/70">
-            <Target className="w-4 h-4" />
-            <span className="font-medium">{data.northStar}</span>
+          <div className="flex items-start gap-2 text-sm text-primary/70 min-w-0">
+            <Target className="w-4 h-4 shrink-0 mt-0.5" />
+            <span className="font-medium break-words min-w-0">{data.northStar}</span>
           </div>
         )}
       </motion.div>
@@ -198,12 +198,12 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
 
           {data.opportunityTitle ? (
             <>
-              <h2
-                className="text-xl sm:text-2xl font-bold text-foreground leading-snug tracking-tight max-w-2xl"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-              >
-                {data.opportunityTitle}
-              </h2>
+               <h2
+                 className="text-xl sm:text-2xl font-bold text-foreground leading-snug tracking-tight break-words"
+                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+               >
+                 {data.opportunityTitle}
+               </h2>
 
               <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-sm text-muted-foreground">
                 {data.confidence > 0 && (
@@ -215,7 +215,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               </div>
 
               {data.opportunityExplanation && (
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">
+                <p className="text-muted-foreground text-sm leading-relaxed break-words">
                   {data.opportunityExplanation}
                 </p>
               )}
@@ -265,7 +265,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         className="space-y-5"
       >
         <p className="text-label uppercase tracking-wider text-xs font-semibold">Authority Progress</p>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           {(data.pipeline || []).map((step, i) => {
             const Icon = step.icon;
             return (
@@ -295,7 +295,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
           <p className="text-label uppercase tracking-wider text-xs font-semibold">Recent Momentum</p>
           <div className="space-y-2">
             {(data.momentum || []).map((item, i) => (
-              <div key={i} className="flex items-center gap-3 py-2.5 px-3 sm:px-4 rounded-xl glass-card border border-border/6">
+              <div key={i} className="flex items-center gap-3 py-2.5 px-3 sm:px-4 rounded-xl glass-card border border-border/6 overflow-hidden">
                 <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
                   {item.type === "signal" ? <Zap className="w-3 h-3 text-primary/50" /> : <BookOpen className="w-3 h-3 text-primary/50" />}
                 </div>
