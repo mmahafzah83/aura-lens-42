@@ -418,7 +418,7 @@ const MyFrameworks = () => {
                         size="sm"
                         onClick={() => handleApproveAndActivate(fw)}
                         disabled={activatingId === fw.id}
-                        className="text-[11px] h-8 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20"
+                        className="text-[11px] h-8"
                       >
                         {activatingId === fw.id ? (
                           <><Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Activating…</>
@@ -431,7 +431,7 @@ const MyFrameworks = () => {
                         size="sm"
                         onClick={() => handleApproveAndActivate(fw)}
                         disabled={activatingId === fw.id}
-                        className="text-[11px] h-8 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20"
+                        className="text-[11px] h-8"
                       >
                         {activatingId === fw.id ? (
                           <><Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Activating…</>
