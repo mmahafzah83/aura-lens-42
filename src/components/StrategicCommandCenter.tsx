@@ -215,7 +215,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
               </div>
 
               {data.opportunityExplanation && (
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">
+                <p className="text-muted-foreground text-sm leading-relaxed break-words">
                   {data.opportunityExplanation}
                 </p>
               )}
