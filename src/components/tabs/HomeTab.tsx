@@ -80,14 +80,14 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
         processLogic="Identity → Intelligence → Strategy → Authority → Influence"
       />
 
+      {/* Strategic Command Center — welcome + opportunity + pipeline + momentum */}
+      <StrategicCommandCenter onOpenChat={onOpenChat} />
+
       {/* Strategic Advisor — AI Chief Strategy Officer */}
       <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
 
       {/* Strategic Companion — Critique Mode + Alerts */}
       <StrategicCompanion onOpenChat={onOpenChat} />
-
-      {/* Strategic Command Center — unified opportunity + pipeline + momentum */}
-      <StrategicCommandCenter onOpenChat={onOpenChat} />
     </div>
   );
 };
