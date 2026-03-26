@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Zap, Lightbulb, ArrowRight, Loader2, RefreshCw,
-  PenLine, Layers, Search, BookOpen, Save
+  Layers
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
 
 interface AdvisorData {
   priority_signal: {
