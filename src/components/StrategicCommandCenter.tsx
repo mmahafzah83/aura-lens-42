@@ -299,7 +299,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                 <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
                   {item.type === "signal" ? <Zap className="w-3 h-3 text-primary/50" /> : <BookOpen className="w-3 h-3 text-primary/50" />}
                 </div>
-                <p className="text-sm text-foreground truncate flex-1">{item.title}</p>
+                <p className="text-sm text-foreground truncate flex-1 min-w-0">{item.title}</p>
                 <span className="text-xs text-muted-foreground/50 shrink-0 flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatSmartDate(item.created_at)}
