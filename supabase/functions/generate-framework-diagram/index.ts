@@ -1,6 +1,32 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
+function repairAndParseJson(response: string): unknown {
+  let cleaned = response
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  const jsonStart = cleaned.search(/[\{\[]/);
+  const jsonEnd = cleaned.lastIndexOf(jsonStart !== -1 && cleaned[jsonStart] === '[' ? ']' : '}');
+
+  if (jsonStart === -1 || jsonEnd === -1) {
+    throw new Error("No JSON found in response");
+  }
+
+  cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    cleaned = cleaned
+      .replace(/,\s*}/g, "}")
+      .replace(/,\s*]/g, "]")
+      .replace(/[\x00-\x1F\x7F]/g, "");
+    return JSON.parse(cleaned);
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -61,12 +87,7 @@ Deno.serve(async (req) => {
         if (!descRes.ok) throw new Error("Failed to generate diagram description");
         const descData = await descRes.json();
         const raw = descData.choices?.[0]?.message?.content || "{}";
-        try {
-          diagramDesc = JSON.parse(raw.replace(/[\u0000-\u001F\u007F]/g, " "));
-        } catch {
-          const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-          diagramDesc = JSON.parse((m ? m[1] : raw).replace(/[\u0000-\u001F\u007F]/g, " "));
-        }
+        diagramDesc = repairAndParseJson(raw);
 
         // Save the diagram description
         await adminClient
