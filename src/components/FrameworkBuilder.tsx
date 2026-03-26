@@ -55,6 +55,21 @@ const FrameworkBuilder = ({
     setDiagramUrl(null);
   };
 
+  // Sync state when dialog opens with new data
+  useEffect(() => {
+    if (open) {
+      setTitle(initialTitle);
+      setSummary(initialDescription);
+      setSteps(
+        initialSteps.length > 0
+          ? initialSteps.map((s, i) => ({ step_number: i + 1, step_title: s, step_description: "" }))
+          : [{ step_number: 1, step_title: "", step_description: "" }]
+      );
+      setCreatedId(null);
+      setDiagramUrl(null);
+    }
+  }, [open, initialTitle, initialDescription]);
+
   const handleOpenChange = (v: boolean) => {
     if (!v) {
       onClose();
