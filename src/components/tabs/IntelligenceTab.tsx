@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import {
   Zap, BookOpen, Layers, Sparkles, Search, Lightbulb, PenLine,
   Link, Mic, Type, FileUp, FileText, ImageIcon, Clock, Loader2,
-  ArrowRight, RefreshCw, Brain
+  ArrowRight, RefreshCw, Brain, Shield
 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
