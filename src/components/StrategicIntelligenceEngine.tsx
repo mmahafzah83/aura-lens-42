@@ -360,7 +360,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
                           {ct.hook && <p className="text-[11px] text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">"{ct.hook}"</p>}
                           {ct.angle && <p className="text-[11px] text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
                           <button onClick={() => setDraftData({ title: ct.title, hook: ct.hook || signal.explanation, angle: ct.angle || "Strategic thought leadership", context: signal.strategic_implications })} className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
-                            <ArrowRight className="w-3 h-3" /> Draft Post
+                            <ArrowRight className="w-3 h-3" /> Draft Content
                           </button>
                         </OpportunitySection>
                       )}

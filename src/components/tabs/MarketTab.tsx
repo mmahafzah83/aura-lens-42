@@ -279,7 +279,7 @@ const MarketTab = () => {
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-[11px] text-primary font-medium hover:bg-primary/15 transition-all tactile-press"
                         >
                           {generatingIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                          Draft Post
+                          Draft Content
                         </button>
                       )}
                     </div>
