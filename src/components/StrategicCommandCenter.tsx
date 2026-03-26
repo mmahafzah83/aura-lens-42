@@ -7,6 +7,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { SignalActions } from "@/components/ui/action-buttons";
 import { formatSmartDate } from "@/lib/formatDate";
+import FrameworkBuilder from "@/components/FrameworkBuilder";
+import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import SignalExplorer from "@/components/SignalExplorer";
 
 /* ── Types ── */
 interface CommandData {
