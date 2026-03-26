@@ -23,12 +23,12 @@ serve(async (req) => {
     const isArabic = lang === "ar";
 
     const styleGuides: Record<string, string> = {
-      consulting: "Consulting Style: Navy, gold, white palette. Clean strategic diagrams, numbered frameworks, matrix layouts.",
-      thought_leadership: "Thought Leadership Style: Dark dramatic backgrounds, bold accents (coral/red), high contrast, dynamic layouts.",
-      minimal: "Minimal Strategic Style: Light backgrounds, monochrome with one teal accent, generous whitespace, elegant typography.",
+      minimal_creator: "Minimal Creator Style: Warm cream/off-white background (#FDF6EC), bold black typography, subtle tan accents. Clean, airy, premium feel. Think top LinkedIn creators.",
+      dark_creator: "Dark Creator Style: Pure black background (#0A0A0A), bright yellow (#FFD700) highlights and accents, white text. High contrast, bold, dramatic. Electric energy.",
+      corporate_gradient: "Corporate Gradient Style: Dark navy-to-charcoal gradient background, accent color line (teal or gold). Professional depth, subtle texture. Executive authority.",
     };
 
-    const styleInstruction = styleGuides[style] || styleGuides.consulting;
+    const styleInstruction = styleGuides[style] || styleGuides.minimal_creator;
 
     const langInstruction = isArabic
       ? `Write ALL slide content in natural executive Arabic used by strategy leaders in the GCC.
@@ -38,76 +38,89 @@ Preferred terms: الحوكمة، التحول الرقمي، الاستراتي
 Write concise, confident, executive Arabic. Right-to-left optimized.`
       : `Write ALL slide content in English. Use authoritative but conversational tone suitable for senior leaders and consultants.`;
 
-    const systemPrompt = `You are an Elite LinkedIn Carousel Content Strategist who creates viral thought leadership carousels with VISUAL-FIRST design.
+    const systemPrompt = `You are Aura's Elite LinkedIn Carousel Design Engine. You generate carousels optimized for mobile consumption that follow top-creator design principles.
 
-Generate a LinkedIn carousel of exactly 10 slides following this storytelling structure:
+CANVAS: 1080 × 1350 (LinkedIn portrait carousel format).
+SAFE MARGIN: 120px on all sides.
 
-Slide 1 - HOOK: Bold scroll-stopping statement. Maximum 6 words headline. Create curiosity.
-  Visual: Bold conceptual AI image representing the topic (futuristic, dramatic, symbolic).
-Slide 2 - PROBLEM: The common misconception or challenge. Maximum 8 words headline.
-  Visual: Conceptual illustration showing fragmentation, complexity, or chaos.
-Slide 3 - INSIGHT: The key reframing or surprising truth. Maximum 8 words headline.
-  Visual: Symbolic illustration representing the strategic insight (bridge, unlock, connection).
-Slide 4 - FRAMEWORK_INTRO: Introduce the strategic model name. Maximum 6 words headline. Include a brief model overview.
-  Visual: Structured framework diagram introducing the model.
-Slide 5 - FRAMEWORK_STEP: First core component. Maximum 6 words headline. One key idea only.
-  Visual: Component diagram or infographic block for this element.
-Slide 6 - FRAMEWORK_STEP: Second core component. Maximum 6 words headline. One key idea only.
-  Visual: Component diagram or infographic block for this element.
-Slide 7 - FRAMEWORK_VISUAL: Display the framework visually. Maximum 6 words headline. Include diagram_data with nodes and connections.
-  Visual: Full strategic diagram showing the complete model.
-Slide 8 - IMPLICATION: Why this matters for leaders. Maximum 8 words headline.
-  Visual: Strategic impact illustration (growth, ripple effect, leadership).
-Slide 9 - TAKEAWAY: Clear actionable guidance. Maximum 8 words headline.
-  Visual: Action-oriented conceptual illustration (roadmap, checklist, compass).
-Slide 10 - CLOSING: Thought-provoking leadership question. Maximum 10 words headline.
-  Visual: Reflective conceptual image (horizon, summit, crossroads).
+CONTENT STRUCTURE — exactly 10 slides following this narrative arc:
+
+Slide 1 — HOOK
+Bold, curiosity-driven statement that stops the scroll. Maximum 6 words headline.
+Purpose: Create irresistible curiosity.
+
+Slide 2 — PROBLEM_1
+Explain the problem part 1. Maximum 8 words headline.
+Purpose: Surface the pain or misconception.
+
+Slide 3 — PROBLEM_2
+Explain the problem part 2 or deepen it. Maximum 8 words headline.
+Purpose: Build tension and relevance.
+
+Slide 4 — INSIGHT_1
+Reveal the key insight. Maximum 8 words headline.
+Purpose: The "aha" reframing moment.
+
+Slide 5 — INSIGHT_2
+Expand or sharpen the insight. Maximum 8 words headline.
+Purpose: Lock in the new mental model.
+
+Slide 6 — FRAMEWORK_1
+First lesson or framework component. Maximum 6 words headline.
+Purpose: Deliver actionable value.
+
+Slide 7 — FRAMEWORK_2
+Second lesson or framework component. Maximum 6 words headline.
+Purpose: Continue building the system.
+
+Slide 8 — FRAMEWORK_3
+Third lesson or framework component. Maximum 6 words headline.
+Purpose: Complete the framework.
+
+Slide 9 — SUMMARY
+Summarize the key takeaway. Maximum 10 words headline.
+Purpose: Crystallize everything into one truth.
+
+Slide 10 — CTA
+Call to action. Maximum 8 words headline.
+Purpose: Drive engagement (follow, share, comment, save).
+
+TEXT RULES:
+- Maximum 30 words per slide TOTAL (headline + supporting text combined).
+- Headline font weight must DOMINATE the slide.
+- Use emphasis words: algorithm, authority, growth, visibility, strategy, clients, system.
+- Mark 1-3 KEY WORDS per slide in the "emphasis_words" array — these get visually highlighted.
+- Each slide communicates ONE idea only.
+- Readability in under 2 seconds on mobile.
+
+VISUAL STORYTELLING — use metaphors when useful:
+chess, icebergs, maps, architecture, movies, technology, bridges, compasses, puzzles.
+Each metaphor should strengthen the message.
 
 ${langInstruction}
 
 DESIGN STYLE: ${styleInstruction}
 
-CRITICAL RULES:
-- Headlines: MAXIMUM 8 words. Short. Punchy. Bold.
-- Supporting text: MAXIMUM 20 words. One or two short sentences only.
-- Each slide communicates ONE single idea.
-- NO long paragraphs. NO dense text.
-- Think mobile readability first.
-- EVERY slide MUST have an image_prompt field describing the visual to generate.
-
 For each slide, return a JSON object with:
 - slide_number (1-10)
-- slide_type: "hook" | "problem" | "insight" | "framework_intro" | "framework_step" | "framework_visual" | "implication" | "takeaway" | "closing"
-- headline: The main bold text (MAXIMUM 8 words)
-- supporting_text: Supporting explanation (MAXIMUM 20 words)
-- visual_type: The category of visual for this slide. One of: "conceptual_image" | "conceptual_illustration" | "strategic_diagram" | "framework_visualization" | "infographic" | "sketch_drawing" | "icon_illustration" | "data_visualization" | "process_flow"
-- layout: "hero_center" | "left_impact" | "split_insight" | "numbered_point" | "diagram" | "quote_block" | "stat_callout" | "closing_question"
-- accent_element: optional visual cue ("number_badge" | "quote_mark" | "arrow_flow" | "divider_line" | "icon_grid" | null)
-- image_prompt: A HIGHLY SPECIFIC and vivid prompt for generating a visual for this slide. This is CRITICAL. Each prompt must describe a CONCRETE SCENE, not abstract concepts. Include:
-  1. A specific scene or object composition (e.g. "futuristic control room overlooking a smart power grid" NOT "an image about digital transformation")
-  2. Visual style (e.g. "cinematic lighting, minimalistic style" or "minimal corporate illustration style" or "clean architectural diagram style")
-  3. Color palette direction (e.g. "deep blue and gold palette" or "dark navy with amber accents")
-  4. Atmosphere/mood (e.g. "strategic technology atmosphere" or "sense of urgency and fragmentation")
-  5. Specific objects or elements to include (e.g. "large digital interfaces, holographic dashboards, data streams")
-
-  Examples of GOOD image prompts:
-  - "Futuristic control room overlooking a smart power grid, large digital interfaces, cinematic lighting, minimalistic style, deep blue palette, strategic technology atmosphere."
-  - "Fragmented infrastructure systems floating disconnected in space, pipelines, servers, power stations not connected together, minimal corporate illustration style."
-  - "A grand bridge connecting two illuminated towers, one labeled Strategy the other Execution, dramatic perspective, golden light rays, architectural blueprint aesthetic."
-  - "Layered transparent architectural floors showing governance, technology, and operations layers, isometric view, clean lines, teal and navy color scheme."
-
-  Examples of BAD image prompts (too vague):
-  - "An image representing digital transformation"
-  - "A visual showing the framework concept"
-  - "An illustration about leadership"
-
-  80-150 words per prompt. NO text/words/letters/logos in the generated image. The visual must stand alone without text.
-- diagram_data: (only for framework_visual slides) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[], connections?: string[] }
+- slide_type: "hook" | "problem" | "insight" | "framework" | "summary" | "cta"
+- headline: Bold main text (respect word limits above)
+- supporting_text: Brief supporting line (combined with headline must stay under 30 words total)
+- emphasis_words: array of 1-3 key words from the headline to visually highlight
+- visual_anchor: One of: "arrow_down" | "highlight_box" | "underline_bar" | "icon_grid" | "number_badge" | "quote_mark" | "divider_accent" | null
+- layout: "hero_center" | "left_impact" | "split_vertical" | "numbered_point" | "quote_block" | "stat_callout" | "closing_centered"
+- image_prompt: A HIGHLY SPECIFIC and vivid prompt (80-150 words) for generating a cinematic visual. Include:
+  1. Specific scene/object composition
+  2. Visual style (cinematic, minimalistic, editorial)
+  3. Color palette matching the chosen style
+  4. Atmosphere/mood
+  5. NO text/words/letters/logos in the image
+- diagram_data: (only for framework slides if a diagram helps) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[] }
 
 Also generate:
-- carousel_title: A catchy title for the carousel
+- carousel_title: A catchy title
 - carousel_subtitle: A brief subtitle
-- linkedin_caption: A ready-to-post LinkedIn caption (3-4 short paragraphs with hook, insight, CTA)
+- linkedin_caption: A ready-to-post LinkedIn caption (3-4 short paragraphs: hook, insight, CTA)
 - hashtags: Array of 5-8 relevant hashtags
 
 OUTPUT: Valid JSON only. Return: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...] }
@@ -120,7 +133,7 @@ Title: ${title}
 ${description ? `Description: ${description}` : ""}
 ${context ? `Strategic Context: ${context}` : ""}
 
-Generate the carousel slides now. Remember: every slide MUST have an image_prompt field.`;
+Generate the carousel slides now. Remember: max 30 words per slide, emphasis_words array, visual_anchor for each slide.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

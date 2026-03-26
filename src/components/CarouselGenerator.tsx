@@ -24,18 +24,19 @@ interface Slide {
   slide_type: string;
   headline: string;
   supporting_text: string;
+  emphasis_words?: string[];
+  visual_anchor?: string | null;
   layout: string;
   accent_element?: string | null;
   diagram_data?: DiagramData;
   image_prompt?: string;
   image_url?: string;
-  // legacy compat
   visual_type?: string;
   layout_style?: string;
 }
 
 type Lang = "en" | "ar";
-type Style = "consulting" | "thought_leadership" | "minimal";
+type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
 
 interface CarouselGeneratorProps {
   open: boolean;
@@ -45,43 +46,152 @@ interface CarouselGeneratorProps {
   context?: string;
 }
 
+/* ── Canvas Dimensions (LinkedIn Portrait) ── */
+const CANVAS_W = 1080;
+const CANVAS_H = 1350;
+const SAFE_M = 120;
+
 /* ── Style Palettes ──────────────────── */
 const PALETTES: Record<Style, {
   bg: string; fg: string; accent: string; muted: string; subtle: string;
   gradientFrom: string; gradientTo: string; name: string;
+  emphBg: string; emphFg: string;
 }> = {
-  consulting: {
-    bg: "#0F1A3E", fg: "#FFFFFF", accent: "#D4AF37", muted: "#8BA4CC",
-    subtle: "#1A2B5E", gradientFrom: "#0F1A3E", gradientTo: "#1E2F6E", name: "Consulting",
+  minimal_creator: {
+    bg: "#FDF6EC", fg: "#1A1A1A", accent: "#C8A862", muted: "#6B6560",
+    subtle: "#F5EDE0", gradientFrom: "#FDF6EC", gradientTo: "#F8F0E3",
+    name: "Minimal Creator",
+    emphBg: "#1A1A1A", emphFg: "#FDF6EC",
   },
-  thought_leadership: {
-    bg: "#0A0A0A", fg: "#FFFFFF", accent: "#FF4D6A", muted: "#9CA3AF",
-    subtle: "#1A1A1A", gradientFrom: "#0A0A0A", gradientTo: "#1A0A14", name: "Thought Leadership",
+  dark_creator: {
+    bg: "#0A0A0A", fg: "#FFFFFF", accent: "#FFD700", muted: "#9CA3AF",
+    subtle: "#1A1A1A", gradientFrom: "#0A0A0A", gradientTo: "#111111",
+    name: "Dark Creator",
+    emphBg: "#FFD700", emphFg: "#0A0A0A",
   },
-  minimal: {
-    bg: "#FAFAF9", fg: "#1A1A1A", accent: "#0D6E8A", muted: "#6B7280",
-    subtle: "#F0EFED", gradientFrom: "#FAFAF9", gradientTo: "#F0F0EE", name: "Minimal Strategic",
+  corporate_gradient: {
+    bg: "#0C1B2E", fg: "#FFFFFF", accent: "#2ECDA7", muted: "#8BA4CC",
+    subtle: "#142640", gradientFrom: "#0C1B2E", gradientTo: "#1A2B45",
+    name: "Corporate Gradient",
+    emphBg: "#2ECDA7", emphFg: "#0C1B2E",
   },
 };
 
-/* ── Diagram Renderer (inline SVG-like using divs) ── */
-const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: typeof PALETTES.consulting; isAr: boolean }) => {
+/* ── Highlight Headline with emphasis words ── */
+const HighlightedHeadline = ({
+  text, emphasisWords = [], palette, fontSize, textAlign, isAr,
+}: {
+  text: string; emphasisWords?: string[]; palette: typeof PALETTES.minimal_creator;
+  fontSize: number; textAlign: string; isAr: boolean;
+}) => {
+  if (!emphasisWords || emphasisWords.length === 0) {
+    return (
+      <h2 style={{
+        fontSize, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.03em",
+        textAlign: textAlign as any, color: palette.fg, margin: 0,
+      }}>
+        {text}
+      </h2>
+    );
+  }
+
+  const parts: { text: string; highlight: boolean }[] = [];
+  let remaining = text;
+  const lowerEmphasis = emphasisWords.map(w => w.toLowerCase());
+
+  // Simple word-by-word splitting
+  const words = remaining.split(/(\s+)/);
+  for (const word of words) {
+    if (lowerEmphasis.includes(word.toLowerCase().replace(/[.,!?;:]/g, ""))) {
+      parts.push({ text: word, highlight: true });
+    } else {
+      parts.push({ text: word, highlight: false });
+    }
+  }
+
+  return (
+    <h2 style={{
+      fontSize, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.03em",
+      textAlign: textAlign as any, color: palette.fg, margin: 0,
+    }}>
+      {parts.map((part, i) => part.highlight ? (
+        <span key={i} style={{
+          backgroundColor: palette.emphBg,
+          color: palette.emphFg,
+          padding: "2px 10px",
+          borderRadius: 4,
+          boxDecorationBreak: "clone" as any,
+          WebkitBoxDecorationBreak: "clone" as any,
+        }}>{part.text}</span>
+      ) : (
+        <span key={i}>{part.text}</span>
+      ))}
+    </h2>
+  );
+};
+
+/* ── Visual Anchor Elements ── */
+const VisualAnchor = ({ type, palette }: { type: string | null | undefined; palette: typeof PALETTES.minimal_creator }) => {
+  if (!type) return null;
+
+  switch (type) {
+    case "arrow_down":
+      return (
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
+          <div style={{ fontSize: 48, color: palette.accent, lineHeight: 1 }}>↓</div>
+        </div>
+      );
+    case "underline_bar":
+      return (
+        <div style={{
+          width: 80, height: 6, backgroundColor: palette.accent,
+          borderRadius: 3, marginTop: 20,
+        }} />
+      );
+    case "highlight_box":
+      return (
+        <div style={{
+          width: 48, height: 48, border: `3px solid ${palette.accent}`,
+          borderRadius: 8, marginTop: 20, opacity: 0.5,
+        }} />
+      );
+    case "divider_accent":
+      return (
+        <div style={{
+          width: 120, height: 2, background: `linear-gradient(90deg, ${palette.accent}, transparent)`,
+          marginTop: 20,
+        }} />
+      );
+    case "number_badge":
+      return null; // handled separately in layout
+    case "quote_mark":
+      return (
+        <div style={{ fontSize: 96, lineHeight: 0.7, color: palette.accent, opacity: 0.25, fontFamily: "Georgia, serif" }}>
+          "
+        </div>
+      );
+    default:
+      return null;
+  }
+};
+
+/* ── Diagram Renderer ── */
+const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: typeof PALETTES.minimal_creator; isAr: boolean }) => {
   const nodes = data.nodes || [];
   if (nodes.length === 0) return null;
 
   if (data.type === "sequential_flow") {
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "center", direction: isAr ? "rtl" : "ltr" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "stretch" }}>
         {nodes.map((n, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <div style={{
-              padding: "12px 20px", borderRadius: 10, border: `2px solid ${palette.accent}`,
-              backgroundColor: `${palette.accent}20`, color: palette.fg,
-              fontSize: 18, fontWeight: 700, textAlign: "center", maxWidth: 160,
-              backdropFilter: "blur(4px)",
+              padding: "16px 28px", borderRadius: 12, border: `2px solid ${palette.accent}`,
+              backgroundColor: `${palette.accent}15`, color: palette.fg,
+              fontSize: 20, fontWeight: 800, textAlign: "center", width: "100%", maxWidth: 420,
             }}>{n}</div>
             {i < nodes.length - 1 && (
-              <span style={{ fontSize: 24, color: palette.accent, fontWeight: 700 }}>→</span>
+              <span style={{ fontSize: 28, color: palette.accent, fontWeight: 700 }}>↓</span>
             )}
           </div>
         ))}
@@ -91,14 +201,28 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
   if (data.type === "layered") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%", maxWidth: 500, margin: "0 auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
         {nodes.map((n, i) => (
           <div key={i} style={{
-            padding: "14px 24px", borderRadius: 8,
-            backgroundColor: `${palette.accent}${Math.max(15, 40 - i * 8).toString(16).padStart(2, "0")}`,
-            border: `1.5px solid ${palette.accent}50`, color: palette.fg,
-            fontSize: 18, fontWeight: 600, textAlign: "center",
-            backdropFilter: "blur(4px)",
+            padding: "18px 28px", borderRadius: 10,
+            backgroundColor: `${palette.accent}${Math.max(12, 35 - i * 6).toString(16).padStart(2, "0")}`,
+            border: `1.5px solid ${palette.accent}40`, color: palette.fg,
+            fontSize: 20, fontWeight: 700, textAlign: "center",
+          }}>{n}</div>
+        ))}
+      </div>
+    );
+  }
+
+  if (data.type === "grid_2x2") {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, width: "100%" }}>
+        {nodes.slice(0, 4).map((n, i) => (
+          <div key={i} style={{
+            padding: "24px 16px", borderRadius: 12,
+            border: `2px solid ${palette.accent}40`,
+            backgroundColor: `${palette.accent}10`, color: palette.fg,
+            fontSize: 18, fontWeight: 800, textAlign: "center",
           }}>{n}</div>
         ))}
       </div>
@@ -107,44 +231,27 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
   if (data.type === "circular") {
     const count = nodes.length;
-    const radius = 120;
+    const radius = 140;
     return (
-      <div style={{ position: "relative", width: 320, height: 320, margin: "0 auto" }}>
+      <div style={{ position: "relative", width: 380, height: 380, margin: "0 auto" }}>
         {nodes.map((n, i) => {
           const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-          const x = 160 + radius * Math.cos(angle) - 55;
-          const y = 160 + radius * Math.sin(angle) - 24;
+          const x = 190 + radius * Math.cos(angle) - 65;
+          const y = 190 + radius * Math.sin(angle) - 28;
           return (
             <div key={i} style={{
-              position: "absolute", left: x, top: y, width: 110, height: 48,
+              position: "absolute", left: x, top: y, width: 130, height: 56,
               display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: 8, border: `2px solid ${palette.accent}`,
-              backgroundColor: `${palette.accent}20`, color: palette.fg,
-              fontSize: 13, fontWeight: 700, textAlign: "center", padding: "4px 6px",
-              backdropFilter: "blur(4px)",
+              borderRadius: 10, border: `2px solid ${palette.accent}`,
+              backgroundColor: `${palette.accent}15`, color: palette.fg,
+              fontSize: 14, fontWeight: 800, textAlign: "center", padding: "4px 8px",
             }}>{n}</div>
           );
         })}
         <div style={{
-          position: "absolute", left: 152, top: 152, width: 16, height: 16,
+          position: "absolute", left: 183, top: 183, width: 14, height: 14,
           borderRadius: "50%", backgroundColor: palette.accent,
         }} />
-      </div>
-    );
-  }
-
-  if (data.type === "grid_2x2") {
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 440, margin: "0 auto" }}>
-        {nodes.slice(0, 4).map((n, i) => (
-          <div key={i} style={{
-            padding: "20px 16px", borderRadius: 10,
-            border: `2px solid ${palette.accent}50`,
-            backgroundColor: `${palette.accent}15`, color: palette.fg,
-            fontSize: 16, fontWeight: 700, textAlign: "center",
-            backdropFilter: "blur(4px)",
-          }}>{n}</div>
-        ))}
       </div>
     );
   }
@@ -152,29 +259,29 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
   return null;
 };
 
-/* ── Layout-Aware Slide Renderer with Visual ──────────────────── */
+/* ── Slide Renderer (1080×1350 Portrait) ──────────────────── */
 const SlidePreview = ({
-  slide, style, lang, size = 320,
-}: { slide: Slide; style: Style; lang: Lang; size?: number }) => {
+  slide, style, lang, width = 320,
+}: { slide: Slide; style: Style; lang: Lang; width?: number }) => {
   const p = PALETTES[style];
   const isAr = lang === "ar";
-  const scale = size / 1080;
+  const scale = width / CANVAS_W;
+  const height = width * (CANVAS_H / CANVAS_W);
   const layout = slide.layout || slide.layout_style || "hero_center";
   const slideType = slide.slide_type;
-  const hasDiagram = slideType === "framework_visual" && slide.diagram_data;
+  const hasDiagram = slide.diagram_data && slide.diagram_data.nodes?.length > 0;
   const hasImage = !!slide.image_url;
-
-  const isHero = layout === "hero_center" || slideType === "hook" || slideType === "closing";
+  const isHero = layout === "hero_center" || slideType === "hook" || slideType === "cta" || layout === "closing_centered";
   const isQuote = layout === "quote_block";
-  const isNumbered = layout === "numbered_point" || slideType === "framework_step";
-  const isDiagram = layout === "diagram" || hasDiagram;
+  const isNumbered = layout === "numbered_point";
+  const isFramework = slideType === "framework";
 
   return (
-    <div className="relative overflow-hidden flex-shrink-0" style={{ width: size, height: size, borderRadius: 12 }}>
+    <div className="relative overflow-hidden flex-shrink-0" style={{ width, height, borderRadius: 12 }}>
       <div style={{
-        width: 1080, height: 1080,
+        width: CANVAS_W, height: CANVAS_H,
         transform: `scale(${scale})`, transformOrigin: "top left",
-        background: `linear-gradient(160deg, ${p.gradientFrom}, ${p.gradientTo})`,
+        background: `linear-gradient(170deg, ${p.gradientFrom}, ${p.gradientTo})`,
         color: p.fg,
         display: "flex", flexDirection: "column",
         position: "relative",
@@ -187,47 +294,50 @@ const SlidePreview = ({
             position: "absolute", inset: 0,
             backgroundImage: `url(${slide.image_url})`,
             backgroundSize: "cover", backgroundPosition: "center",
-            opacity: isHero ? 0.5 : 0.35,
+            opacity: isHero ? 0.4 : 0.25,
           }} />
         )}
-
-        {/* Dark overlay for text readability */}
         {hasImage && (
           <div style={{
             position: "absolute", inset: 0,
             background: isHero
-              ? `linear-gradient(180deg, ${p.bg}80 0%, ${p.bg}CC 50%, ${p.bg}F0 100%)`
-              : `linear-gradient(180deg, ${p.bg}40 0%, ${p.bg}BB 40%, ${p.bg}EE 100%)`,
+              ? `linear-gradient(180deg, ${p.bg}60 0%, ${p.bg}CC 50%, ${p.bg}F5 100%)`
+              : `linear-gradient(180deg, ${p.bg}30 0%, ${p.bg}BB 35%, ${p.bg}F0 100%)`,
           }} />
         )}
 
-        {/* Visual indicator when no image yet */}
-        {!hasImage && slide.image_prompt && (
+        {/* Subtle ambient glow (no image) */}
+        {!hasImage && (
           <div style={{
             position: "absolute", inset: 0,
-            background: `radial-gradient(circle at 30% 30%, ${p.accent}08, transparent 70%), radial-gradient(circle at 70% 70%, ${p.accent}06, transparent 70%)`,
+            background: `radial-gradient(ellipse at 20% 20%, ${p.accent}08, transparent 60%), radial-gradient(ellipse at 80% 80%, ${p.accent}05, transparent 60%)`,
           }} />
         )}
 
         {/* Top accent bar */}
-        <div style={{ height: 5, background: `linear-gradient(90deg, ${p.accent}, transparent)`, position: "relative", zIndex: 2 }} />
-
-        {/* Slide number */}
         <div style={{
-          position: "absolute", top: 40, [isAr ? "right" : "left"]: 44,
-          width: 48, height: 48, borderRadius: 12,
-          backgroundColor: p.accent, color: p.bg === "#FAFAF9" ? "#FFFFFF" : p.bg,
+          height: 5, width: "100%",
+          background: `linear-gradient(90deg, ${p.accent}, ${p.accent}40, transparent)`,
+          position: "relative", zIndex: 2,
+        }} />
+
+        {/* Slide number badge */}
+        <div style={{
+          position: "absolute", top: SAFE_M - 40, [isAr ? "right" : "left"]: SAFE_M,
+          width: 52, height: 52, borderRadius: 14,
+          backgroundColor: p.accent, color: style === "minimal_creator" ? "#FFFFFF" : p.bg,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22, fontWeight: 800, zIndex: 3,
+          fontSize: 24, fontWeight: 900, zIndex: 3,
+          boxShadow: `0 4px 20px ${p.accent}40`,
         }}>
           {slide.slide_number}
         </div>
 
         {/* Slide type label */}
         <div style={{
-          position: "absolute", top: 52, [isAr ? "left" : "right"]: 52,
-          fontSize: 14, textTransform: "uppercase", letterSpacing: 5,
-          color: p.muted, fontWeight: 600, opacity: 0.4, zIndex: 3,
+          position: "absolute", top: SAFE_M - 28, [isAr ? "left" : "right"]: SAFE_M,
+          fontSize: 12, textTransform: "uppercase", letterSpacing: 6,
+          color: p.muted, fontWeight: 700, opacity: 0.3, zIndex: 3,
         }}>
           {(slideType || "").replace(/_/g, " ")}
         </div>
@@ -235,65 +345,50 @@ const SlidePreview = ({
         {/* Main content area */}
         <div style={{
           flex: 1, display: "flex", flexDirection: "column",
-          justifyContent: hasImage && isHero ? "flex-end" : isHero ? "center" : isDiagram ? "flex-start" : "flex-end",
-          padding: hasImage && isHero ? "80px 80px 160px" : isHero ? "100px 80px" : isDiagram ? "120px 80px 80px" : "80px 80px 120px",
+          justifyContent: isHero ? "center" : "flex-end",
+          padding: `${SAFE_M + 40}px ${SAFE_M}px ${SAFE_M + 60}px`,
           position: "relative", zIndex: 2,
+          gap: 20,
         }}>
           {/* Quote mark for quote layout */}
-          {isQuote && (
-            <div style={{ fontSize: 120, lineHeight: 0.7, color: p.accent, opacity: 0.3, marginBottom: 20, fontFamily: "Georgia, serif" }}>
-              "
-            </div>
-          )}
+          {isQuote && <VisualAnchor type="quote_mark" palette={p} />}
 
-          {/* Number badge for framework steps */}
-          {isNumbered && slide.slide_number >= 4 && slide.slide_number <= 6 && (
+          {/* Framework number badge */}
+          {isFramework && isNumbered && (
             <div style={{
-              width: 72, height: 72, borderRadius: "50%",
+              width: 80, height: 80, borderRadius: "50%",
               border: `3px solid ${p.accent}`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 32, fontWeight: 800, color: p.accent,
-              marginBottom: 28, backgroundColor: `${p.bg}90`,
-              backdropFilter: "blur(8px)",
+              fontSize: 36, fontWeight: 900, color: p.accent,
+              backgroundColor: `${p.accent}10`,
               ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
             }}>
-              {slide.slide_number - 3}
+              {slide.slide_number - 5}
             </div>
           )}
 
-          {/* Accent divider */}
-          {!isQuote && !isNumbered && (
-            <div style={{
-              width: 60, height: 4, backgroundColor: p.accent, borderRadius: 2,
-              marginBottom: 28,
-              ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
-            }} />
+          {/* Visual anchor (before headline) */}
+          {!isQuote && !isNumbered && slide.visual_anchor !== "arrow_down" && (
+            <VisualAnchor type={slide.visual_anchor || "underline_bar"} palette={p} />
           )}
 
-          {/* Headline */}
-          <h2 style={{
-            fontSize: isHero ? 72 : isQuote ? 56 : 52,
-            fontWeight: 800,
-            lineHeight: 1.12,
-            marginBottom: isDiagram ? 20 : 24,
-            textAlign: isHero ? "center" : (isAr ? "right" : "left"),
-            maxWidth: 920,
-            letterSpacing: "-0.02em",
-            textShadow: hasImage ? `0 2px 12px ${p.bg}80` : "none",
-            ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
-          }}>
-            {slide.headline}
-          </h2>
+          {/* Headline with emphasis highlighting */}
+          <HighlightedHeadline
+            text={slide.headline}
+            emphasisWords={slide.emphasis_words}
+            palette={p}
+            fontSize={isHero ? 76 : 60}
+            textAlign={isHero ? "center" : (isAr ? "right" : "left")}
+            isAr={isAr}
+          />
 
           {/* Supporting text */}
-          {!isDiagram && (
+          {!hasDiagram && slide.supporting_text && (
             <p style={{
-              fontSize: isHero ? 28 : 26,
-              lineHeight: 1.55,
-              color: p.muted,
+              fontSize: 28, lineHeight: 1.5,
+              color: p.muted, fontWeight: 400,
               textAlign: isHero ? "center" : (isAr ? "right" : "left"),
-              maxWidth: 780,
-              textShadow: hasImage ? `0 1px 8px ${p.bg}60` : "none",
+              maxWidth: 800,
               ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
             }}>
               {slide.supporting_text}
@@ -301,28 +396,27 @@ const SlidePreview = ({
           )}
 
           {/* Diagram */}
-          {isDiagram && slide.diagram_data && (
-            <div style={{ marginTop: 32 }}>
+          {hasDiagram && slide.diagram_data && (
+            <div style={{ marginTop: 16 }}>
               <DiagramOverlay data={slide.diagram_data} palette={p} isAr={isAr} />
-              <p style={{
-                fontSize: 20, color: p.muted, textAlign: "center",
-                marginTop: 28, opacity: 0.6,
-              }}>
-                {slide.supporting_text}
-              </p>
             </div>
+          )}
+
+          {/* Visual anchor (after content — arrow down) */}
+          {slide.visual_anchor === "arrow_down" && (
+            <VisualAnchor type="arrow_down" palette={p} />
           )}
         </div>
 
         {/* Footer */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
-          padding: "28px 52px", display: "flex", justifyContent: "space-between",
-          alignItems: "center", fontSize: 15, color: p.muted, opacity: 0.35,
+          padding: `24px ${SAFE_M}px`, display: "flex", justifyContent: "space-between",
+          alignItems: "center", fontSize: 14, color: p.muted, opacity: 0.3,
           borderTop: `1px solid ${p.muted}15`, zIndex: 3,
         }}>
-          <span style={{ fontWeight: 600 }}>M. Mahafdhah</span>
-          <span style={{ letterSpacing: 2, textTransform: "uppercase", fontSize: 12 }}>Share →</span>
+          <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafdhah</span>
+          <span style={{ letterSpacing: 3, textTransform: "uppercase", fontSize: 11 }}>Save ↗</span>
         </div>
       </div>
     </div>
@@ -333,7 +427,7 @@ const SlidePreview = ({
 const CarouselGenerator = ({ open, onClose, title, description, context }: CarouselGeneratorProps) => {
   const [slides, setSlides] = useState<Record<Lang, Slide[]>>({ en: [], ar: [] });
   const [lang, setLang] = useState<Lang>("en");
-  const [style, setStyle] = useState<Style>("consulting");
+  const [style, setStyle] = useState<Style>("minimal_creator");
   const [loading, setLoading] = useState<Record<Lang, boolean>>({ en: false, ar: false });
   const [currentSlide, setCurrentSlide] = useState(0);
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -377,7 +471,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         console.warn(`Failed to generate visual for slide ${slide.slide_number}:`, e);
       }
       setVisualProgress(i + 1);
-      // Small delay between requests to avoid rate limits
       if (i < slidesWithPrompts.length - 1) {
         await new Promise(r => setTimeout(r, 1500));
       }
@@ -401,7 +494,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       if (data.hashtags) setHashtags(data.hashtags);
       if (targetLang === lang) setCurrentSlide(0);
 
-      // Auto-generate visuals after text generation
       if (newSlides.length > 0) {
         setTimeout(() => generateVisuals(targetLang, newSlides), 500);
       }
@@ -430,12 +522,10 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }));
   };
 
-  /* ── Regenerate single slide visual ── */
   const regenerateSlideVisual = async (idx: number) => {
     const slide = currentSlides[idx];
     if (!slide?.image_prompt) return;
 
-    // Clear existing image
     setSlides(prev => ({
       ...prev,
       [lang]: prev[lang].map((s, i) => i === idx ? { ...s, image_url: undefined } : s),
@@ -457,34 +547,34 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }
   };
 
-  /* ── PDF Export ── */
+  /* ── PDF Export (1080×1350) ── */
   const exportPDF = async () => {
     if (currentSlides.length === 0) return;
     setExporting(true);
 
     try {
-      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1080, 1080] });
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [CANVAS_W, CANVAS_H] });
       const canvas = document.createElement("canvas");
-      canvas.width = 1080;
-      canvas.height = 1080;
+      canvas.width = CANVAS_W;
+      canvas.height = CANVAS_H;
       const ctx = canvas.getContext("2d")!;
       const p = PALETTES[style];
       const isAr = lang === "ar";
 
       for (let i = 0; i < currentSlides.length; i++) {
-        if (i > 0) pdf.addPage([1080, 1080], "landscape");
+        if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
         const slide = currentSlides[i];
         const layout = slide.layout || slide.layout_style || "hero_center";
-        const isHero = layout === "hero_center" || slide.slide_type === "hook" || slide.slide_type === "closing";
+        const isHero = layout === "hero_center" || slide.slide_type === "hook" || slide.slide_type === "cta";
 
         // Background gradient
-        const grd = ctx.createLinearGradient(0, 0, 1080, 1080);
+        const grd = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
         grd.addColorStop(0, p.gradientFrom);
         grd.addColorStop(1, p.gradientTo);
         ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, 1080, 1080);
+        ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-        // Draw background image if available
+        // Background image
         if (slide.image_url) {
           try {
             const img = new Image();
@@ -494,149 +584,71 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
               img.onerror = () => reject();
               img.src = slide.image_url!;
             });
-            ctx.globalAlpha = isHero ? 0.5 : 0.35;
-            ctx.drawImage(img, 0, 0, 1080, 1080);
+            ctx.globalAlpha = isHero ? 0.4 : 0.25;
+            ctx.drawImage(img, 0, 0, CANVAS_W, CANVAS_H);
             ctx.globalAlpha = 1;
 
-            // Dark overlay for readability
-            const overlayGrd = ctx.createLinearGradient(0, 0, 0, 1080);
-            if (isHero) {
-              overlayGrd.addColorStop(0, `${p.bg}80`);
-              overlayGrd.addColorStop(0.5, `${p.bg}CC`);
-              overlayGrd.addColorStop(1, `${p.bg}F0`);
-            } else {
-              overlayGrd.addColorStop(0, `${p.bg}40`);
-              overlayGrd.addColorStop(0.4, `${p.bg}BB`);
-              overlayGrd.addColorStop(1, `${p.bg}EE`);
-            }
+            const overlayGrd = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+            overlayGrd.addColorStop(0, `${p.bg}60`);
+            overlayGrd.addColorStop(0.5, `${p.bg}CC`);
+            overlayGrd.addColorStop(1, `${p.bg}F5`);
             ctx.fillStyle = overlayGrd;
-            ctx.fillRect(0, 0, 1080, 1080);
+            ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
           } catch {
-            // Image failed to load, continue without it
+            // Image failed to load
           }
         }
 
         // Top accent bar
-        const barGrd = ctx.createLinearGradient(0, 0, 1080, 0);
+        const barGrd = ctx.createLinearGradient(0, 0, CANVAS_W, 0);
         barGrd.addColorStop(0, p.accent);
+        barGrd.addColorStop(0.5, `${p.accent}40`);
         barGrd.addColorStop(1, "transparent");
         ctx.fillStyle = barGrd;
-        ctx.fillRect(0, 0, 1080, 5);
+        ctx.fillRect(0, 0, CANVAS_W, 5);
 
         // Slide number badge
         ctx.fillStyle = p.accent;
-        roundRect(ctx, 44, 40, 48, 48, 12);
+        roundRect(ctx, SAFE_M, SAFE_M - 40, 52, 52, 14);
         ctx.fill();
-        ctx.fillStyle = p.bg === "#FAFAF9" ? "#FFFFFF" : p.bg;
-        ctx.font = "800 22px Inter, Arial, sans-serif";
+        ctx.fillStyle = style === "minimal_creator" ? "#FFFFFF" : p.bg;
+        ctx.font = "900 24px Inter, Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(String(slide.slide_number), 68, 72);
+        ctx.fillText(String(slide.slide_number), SAFE_M + 26, SAFE_M - 8);
 
-        // Accent divider
+        // Underline bar accent
         ctx.fillStyle = p.accent;
-        const divX = isHero ? 510 : 80;
-        const divY = isHero ? 420 : 780;
-        ctx.fillRect(divX, divY, 60, 4);
+        const divX = isHero ? (CANVAS_W - 80) / 2 : SAFE_M;
+        const divY = isHero ? CANVAS_H / 2 - 140 : CANVAS_H - SAFE_M - 260;
+        ctx.fillRect(divX, divY, 80, 6);
 
         // Headline
         ctx.fillStyle = p.fg;
-        const fontSize = isHero ? 64 : 48;
-        ctx.font = `800 ${fontSize}px Inter, Arial, sans-serif`;
+        const fontSize = isHero ? 72 : 56;
+        ctx.font = `900 ${fontSize}px Inter, Arial, sans-serif`;
         ctx.textAlign = isHero ? "center" : (isAr ? "right" : "left");
-        const hx = isHero ? 540 : (isAr ? 1000 : 80);
-        const hy = isHero ? 500 : 840;
-        wrapText(ctx, slide.headline, hx, hy, 900, fontSize * 1.15);
+        const hx = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
+        const hy = isHero ? CANVAS_H / 2 - 60 : CANVAS_H - SAFE_M - 180;
+        wrapText(ctx, slide.headline, hx, hy, CANVAS_W - SAFE_M * 2, fontSize * 1.12);
 
         // Supporting text
         ctx.fillStyle = p.muted;
-        ctx.font = "400 24px Inter, Arial, sans-serif";
-        const sy = isHero ? 600 : 920;
-        wrapText(ctx, slide.supporting_text, hx, sy, 800, 34);
-
-        // Diagram rendering on canvas for framework_visual slides
-        if (slide.slide_type === "framework_visual" && slide.diagram_data?.nodes) {
-          const nodes = slide.diagram_data.nodes;
-          const dtype = slide.diagram_data.type;
-          ctx.textAlign = "center";
-
-          if (dtype === "sequential_flow") {
-            const total = nodes.length;
-            const boxW = 160;
-            const gap = 40;
-            const totalW = total * boxW + (total - 1) * gap;
-            let sx = (1080 - totalW) / 2;
-            const sy2 = 500;
-            for (let j = 0; j < total; j++) {
-              ctx.strokeStyle = p.accent;
-              ctx.lineWidth = 2;
-              roundRect(ctx, sx, sy2, boxW, 60, 10);
-              ctx.stroke();
-              ctx.fillStyle = `${p.accent}25`;
-              roundRect(ctx, sx, sy2, boxW, 60, 10);
-              ctx.fill();
-              ctx.fillStyle = p.fg;
-              ctx.font = "700 18px Inter, Arial, sans-serif";
-              ctx.fillText(nodes[j], sx + boxW / 2, sy2 + 36, boxW - 16);
-              if (j < total - 1) {
-                ctx.fillStyle = p.accent;
-                ctx.font = "700 24px Inter, Arial, sans-serif";
-                ctx.fillText("→", sx + boxW + gap / 2, sy2 + 36);
-              }
-              sx += boxW + gap;
-            }
-          } else if (dtype === "layered") {
-            let ly = 440;
-            for (let j = 0; j < nodes.length; j++) {
-              const w = 600;
-              const lx = (1080 - w) / 2;
-              ctx.fillStyle = `${p.accent}${Math.max(10, 35 - j * 8).toString(16).padStart(2, "0")}`;
-              roundRect(ctx, lx, ly, w, 52, 8);
-              ctx.fill();
-              ctx.strokeStyle = `${p.accent}50`;
-              ctx.lineWidth = 1.5;
-              roundRect(ctx, lx, ly, w, 52, 8);
-              ctx.stroke();
-              ctx.fillStyle = p.fg;
-              ctx.font = "600 20px Inter, Arial, sans-serif";
-              ctx.fillText(nodes[j], 540, ly + 33, w - 24);
-              ly += 64;
-            }
-          } else if (dtype === "grid_2x2") {
-            const boxSize = 200;
-            const gapG = 20;
-            const startX = (1080 - boxSize * 2 - gapG) / 2;
-            const startY = 460;
-            for (let j = 0; j < Math.min(4, nodes.length); j++) {
-              const col = j % 2;
-              const row = Math.floor(j / 2);
-              const bx = startX + col * (boxSize + gapG);
-              const by = startY + row * (boxSize + gapG);
-              ctx.fillStyle = `${p.accent}12`;
-              roundRect(ctx, bx, by, boxSize, boxSize, 12);
-              ctx.fill();
-              ctx.strokeStyle = `${p.accent}40`;
-              ctx.lineWidth = 2;
-              roundRect(ctx, bx, by, boxSize, boxSize, 12);
-              ctx.stroke();
-              ctx.fillStyle = p.fg;
-              ctx.font = "700 20px Inter, Arial, sans-serif";
-              ctx.fillText(nodes[j], bx + boxSize / 2, by + boxSize / 2 + 7, boxSize - 24);
-            }
-          }
-        }
+        ctx.font = "400 26px Inter, Arial, sans-serif";
+        const sy = isHero ? CANVAS_H / 2 + 60 : CANVAS_H - SAFE_M - 100;
+        wrapText(ctx, slide.supporting_text, hx, sy, CANVAS_W - SAFE_M * 2 - 40, 36);
 
         // Footer
-        ctx.globalAlpha = 0.35;
+        ctx.globalAlpha = 0.3;
         ctx.fillStyle = p.muted;
-        ctx.font = "600 14px Inter, Arial, sans-serif";
+        ctx.font = "700 13px Inter, Arial, sans-serif";
         ctx.textAlign = "left";
-        ctx.fillText("M. Mahafdhah", 52, 1050);
+        ctx.fillText("M. Mahafdhah", SAFE_M, CANVAS_H - 28);
         ctx.textAlign = "right";
-        ctx.font = "400 12px Inter, Arial, sans-serif";
-        ctx.fillText("SHARE →", 1028, 1050);
+        ctx.font = "400 11px Inter, Arial, sans-serif";
+        ctx.fillText("SAVE ↗", CANVAS_W - SAFE_M, CANVAS_H - 28);
         ctx.globalAlpha = 1;
 
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, 1080, 1080);
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, CANVAS_W, CANVAS_H);
       }
 
       pdf.save(`carousel-${lang}-${style}.pdf`);
@@ -683,7 +695,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/10">
                 <LayoutGrid className="w-4.5 h-4.5 text-primary" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <SheetTitle className="text-base font-bold text-foreground leading-tight">
                   LinkedIn Carousel
                 </SheetTitle>
@@ -697,7 +709,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
         <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
           {/* Visual Generation Progress */}
           {generatingVisuals && (
             <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
@@ -718,7 +730,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                 <button
                   key={l}
                   onClick={() => { setLang(l); setCurrentSlide(0); setEditingIdx(null); }}
-                  className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors ${
+                  className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
                     lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
                   }`}
                 >
@@ -730,12 +742,12 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             </div>
 
             {/* Style Selector */}
-            <div className="flex rounded-lg border border-border/20 overflow-hidden">
+            <div className="flex rounded-lg border border-border/20 overflow-hidden flex-wrap">
               {(Object.keys(PALETTES) as Style[]).map(s => (
                 <button
                   key={s}
                   onClick={() => setStyle(s)}
-                  className={`text-[10px] px-2.5 py-1.5 transition-colors ${
+                  className={`text-[10px] px-2.5 py-1.5 transition-colors min-h-[36px] whitespace-nowrap ${
                     style === s ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
                   }`}
                 >
@@ -747,7 +759,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             {/* Grid toggle */}
             <button
               onClick={() => setGridView(!gridView)}
-              className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors ${
+              className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors min-h-[36px] ${
                 gridView ? "bg-primary/15 text-primary border-primary/20" : "border-border/20 text-muted-foreground/50"
               }`}
             >
@@ -775,7 +787,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                         currentSlide === idx ? "border-primary/40" : "border-transparent hover:border-primary/15"
                       }`}
                     >
-                      <SlidePreview slide={slide} style={style} lang={lang} size={240} />
+                      <SlidePreview slide={slide} style={style} lang={lang} width={160} />
                       {!slide.image_url && slide.image_prompt && (
                         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
                           <ImageIcon className="w-3 h-3 text-amber-500/60" />
@@ -794,19 +806,19 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   {/* Slide Preview */}
                   <div className="flex justify-center">
                     <div className="rounded-xl overflow-hidden shadow-2xl border border-primary/[0.08]">
-                      <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} size={Math.min(480, 520)} />
+                      <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} />
                     </div>
                   </div>
 
                   {/* Navigation */}
                   <div className="flex items-center justify-center gap-3">
-                    <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="h-8 w-8 p-0">
+                    <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="h-10 w-10 p-0">
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
                     <span className="text-xs text-muted-foreground/60 font-medium min-w-[60px] text-center">
                       {currentSlide + 1} / {currentSlides.length}
                     </span>
-                    <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.min(currentSlides.length - 1, currentSlide + 1))} disabled={currentSlide === currentSlides.length - 1} className="h-8 w-8 p-0">
+                    <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.min(currentSlides.length - 1, currentSlide + 1))} disabled={currentSlide === currentSlides.length - 1} className="h-10 w-10 p-0">
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
@@ -821,16 +833,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                         {currentSlides[currentSlide].image_prompt && (
                           <button
                             onClick={() => regenerateSlideVisual(currentSlide)}
-                            className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors"
+                            className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors min-h-[36px]"
                             title="Regenerate visual"
                           >
                             <ImageIcon className="w-3 h-3" />
-                            {currentSlides[currentSlide].image_url ? "Regen" : "Generate"} Visual
+                            {currentSlides[currentSlide].image_url ? "Regen" : "Generate"}
                           </button>
                         )}
                         <button
                           onClick={() => setEditingIdx(editingIdx === currentSlide ? null : currentSlide)}
-                          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors min-h-[36px]"
                         >
                           {editingIdx === currentSlide ? <><Eye className="w-3 h-3" /> Preview</> : <><Pencil className="w-3 h-3" /> Edit</>}
                         </button>
@@ -872,6 +884,15 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                       <div className="p-4" dir={lang === "ar" ? "rtl" : "ltr"}>
                         <p className="text-sm font-bold text-foreground mb-1">{currentSlides[currentSlide].headline}</p>
                         <p className="text-xs text-muted-foreground/60 leading-relaxed">{currentSlides[currentSlide].supporting_text}</p>
+                        {currentSlides[currentSlide].emphasis_words && currentSlides[currentSlide].emphasis_words!.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {currentSlides[currentSlide].emphasis_words!.map((w, i) => (
+                              <span key={i} className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
+                                {w}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {currentSlides[currentSlide].image_url && (
                           <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-500/70">
                             <Check className="w-3 h-3" /> Visual generated
@@ -887,7 +908,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   </div>
 
                   {/* Thumbnail strip */}
-                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                     {currentSlides.map((slide, idx) => (
                       <button
                         key={idx}
@@ -896,7 +917,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                           currentSlide === idx ? "border-primary/50" : "border-transparent opacity-60 hover:opacity-100"
                         }`}
                       >
-                        <SlidePreview slide={slide} style={style} lang={lang} size={56} />
+                        <SlidePreview slide={slide} style={style} lang={lang} width={48} />
                       </button>
                     ))}
                   </div>
@@ -910,7 +931,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                     <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
                       <Hash className="w-3 h-3" /> Authority Package
                     </p>
-                    <button onClick={copyCaption} className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors">
+                    <button onClick={copyCaption} className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors min-h-[36px]">
                       <Copy className="w-3 h-3" /> Copy All
                     </button>
                   </div>
@@ -943,10 +964,10 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs">
+                <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs min-h-[44px]">
                   {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15">
+                <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15 min-h-[44px]">
                   <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
                 </Button>
               </div>
@@ -954,14 +975,14 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ) : (
             <div className="text-center py-16">
               <p className="text-xs text-muted-foreground/40">No carousel generated yet.</p>
-              <Button size="sm" variant="outline" onClick={generateBoth} className="mt-3 text-xs">
+              <Button size="sm" variant="outline" onClick={generateBoth} className="mt-3 text-xs min-h-[44px]">
                 Generate Carousel
               </Button>
             </div>
           )}
         </div>
 
-        <canvas ref={canvasRef} className="hidden" width={1080} height={1080} />
+        <canvas ref={canvasRef} className="hidden" width={CANVAS_W} height={CANVAS_H} />
       </SheetContent>
     </Sheet>
   );
