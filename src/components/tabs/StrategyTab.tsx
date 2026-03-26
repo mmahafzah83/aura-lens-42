@@ -267,9 +267,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
 
           <div className="space-y-3">
             {insights.slice(0, 5).map((insight) => (
-              <div
+               <div
                 key={insight.id}
-                className="glass-card rounded-2xl p-6 border border-border/8 hover:border-blue-500/15 transition-all"
+                className="glass-card rounded-2xl p-4 sm:p-6 border border-border/8 hover:border-blue-500/15 transition-all"
               >
                 <p className="text-foreground font-semibold text-sm leading-snug mb-2">{insight.title}</p>
                 <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-3">{insight.content}</p>
