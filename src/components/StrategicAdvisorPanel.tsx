@@ -143,7 +143,16 @@ const StrategicAdvisorPanel = ({
           size="sm"
           variant="outline"
           className="text-xs gap-1.5"
-          onClick={() => onOpenChat?.(data.recommended_move.action)}
+          onClick={() => {
+            const at = data.recommended_move.action_type;
+            if (at === "build_framework") {
+              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+            } else if (at === "draft_content" || at === "plan_narrative") {
+              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+            } else {
+              onOpenChat?.(data.recommended_move.action);
+            }
+          }}
         >
           <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
         </Button>
