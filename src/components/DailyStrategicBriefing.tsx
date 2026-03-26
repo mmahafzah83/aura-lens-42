@@ -138,7 +138,7 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
         setDraftHook(briefing.authority_opportunity.hook);
         setDraftOpen(true);
       },
-      actionLabel: "Draft Post",
+      actionLabel: "Draft Content",
     },
   ];
 
