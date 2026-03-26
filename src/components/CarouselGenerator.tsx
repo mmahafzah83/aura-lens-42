@@ -587,7 +587,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       }
       setVisualProgress(i + 1);
       if (i < slidesWithPrompts.length - 1) {
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 4000));
       }
     }
 
@@ -619,9 +619,9 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }
   }, [title, description, context, style, lang, generateVisuals]);
 
-  const generateBoth = useCallback(() => {
-    generate("en");
-    generate("ar");
+  const generateBoth = useCallback(async () => {
+    await generate("en");
+    await generate("ar");
   }, [generate]);
 
   const [hasGenerated, setHasGenerated] = useState(false);
