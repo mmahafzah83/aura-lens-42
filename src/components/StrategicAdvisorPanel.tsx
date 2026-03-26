@@ -225,7 +225,13 @@ const StrategicAdvisorPanel = ({
         )}
         <div className="pt-1">
           <SignalActions
-            onExplore={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}
+            onExplore={() => {
+              supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(1)
+                .then(({ data: signals }) => {
+                  if (signals?.[0]) setExplorerSignal(signals[0]);
+                  else onOpenChat?.(`Explore signal: ${data.priority_signal.title}`);
+                });
+            }}
             onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${data.priority_signal.title}`)}
             onDevelopFramework={() => setBuilderData({
               title: data.priority_signal.title,
