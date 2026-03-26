@@ -784,7 +784,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.font = "400 160px Georgia, serif";
           ctx.textAlign = isAr ? "right" : "left";
           const qmX = isAr ? CANVAS_W - SAFE_M : SAFE_M;
-          ctx.fillText(""", qmX, contentTop + contentH * 0.35);
+          ctx.fillText("\u201C", qmX, contentTop + contentH * 0.35);
           ctx.globalAlpha = 1;
 
           // Headline
