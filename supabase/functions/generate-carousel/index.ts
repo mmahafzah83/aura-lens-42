@@ -76,21 +76,10 @@ Generate the carousel slides now. Remember: max 30 words per slide, rotate layou
 
     let parsed;
     try {
-      let cleaned = raw
-        .replace(/```json\s*/gi, "")
-        .replace(/```\s*/g, "")
-        .replace(/[\u0000-\u001F\u007F]/g, " ")
-        .trim();
-
-      const jsonStart = cleaned.search(/[{[]/);
-      const jsonEnd = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
-      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
-      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
-      cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
-
-      parsed = JSON.parse(cleaned);
+      parsed = extractAndParseJson(raw);
     } catch (parseErr) {
       console.error("Raw LLM response (first 500 chars):", raw.substring(0, 500));
+      console.error("Raw LLM response (last 300 chars):", raw.substring(raw.length - 300));
       throw new Error("Failed to parse carousel response");
     }
 
