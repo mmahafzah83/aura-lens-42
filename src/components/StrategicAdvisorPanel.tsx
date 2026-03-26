@@ -191,13 +191,11 @@ const StrategicAdvisorPanel = ({
         {data.priority_signal.evidence_count != null && data.priority_signal.evidence_count > 0 && (
           <p className="text-meta">{data.priority_signal.evidence_count} evidence sources</p>
         )}
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}>
-            <Search className="w-3.5 h-3.5" /> Explore
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create insight from signal: ${data.priority_signal.title}`)}>
-            <Lightbulb className="w-3.5 h-3.5" /> Develop Insight
-          </Button>
+        <div className="pt-1">
+          <SignalActions
+            onExplore={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}
+            onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${data.priority_signal.title}`)}
+          />
         </div>
       </div>
 
