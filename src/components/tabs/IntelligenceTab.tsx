@@ -6,6 +6,7 @@ import {
   ArrowRight, RefreshCw, ChevronDown, ChevronUp, Layers, Trash2,
   Eye, BarChart3, Sparkles
 } from "lucide-react";
+import { SignalActions } from "@/components/ui/action-buttons";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
