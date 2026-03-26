@@ -372,6 +372,7 @@ interface KnowledgeItem {
   subtype: string;
   date: string;
   signalCount?: number;
+  sourceUrl?: string;
 }
 
 const ENTRY_ICONS: Record<string, typeof Link> = { link: Link, voice: Mic, text: Type, image: ImageIcon };
