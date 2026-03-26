@@ -587,7 +587,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       }
       setVisualProgress(i + 1);
       if (i < slidesWithPrompts.length - 1) {
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 4000));
       }
     }
 
