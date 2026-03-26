@@ -297,6 +297,31 @@ const Dashboard = () => {
                 );
               })}
             </nav>
+            <div className="px-3 py-4 border-t border-border/8 space-y-2">
+              <button
+                onClick={() => { setMobileSidebarOpen(false); openChat(); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all"
+              >
+                <Sparkles className="w-4.5 h-4.5 shrink-0" />
+                <span className="text-sm font-medium">Ask Aura</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
+                >
+                  <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                  <span>Attach</span>
+                </button>
+                <button
+                  onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
+                >
+                  <Mic className="w-3.5 h-3.5 shrink-0" />
+                  <span>Voice</span>
+                </button>
+              </div>
+            </div>
           </aside>
         </div>
       )}
