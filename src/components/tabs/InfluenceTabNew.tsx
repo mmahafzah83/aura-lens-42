@@ -148,7 +148,7 @@ const ContentPerformanceSection = ({ stats }: { stats: PostStats | null }) => {
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
           { label: "Posts Analyzed", value: stats.postCount, icon: FileText },
           { label: "Avg Engagement", value: `${stats.avgEngagement}%`, icon: Eye },
