@@ -398,7 +398,7 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
   const loadKnowledge = async () => {
     const [entriesRes, docsRes, registryRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, created_at").order("created_at", { ascending: false }).limit(200),
-      supabase.from("documents").select("id, filename, file_type, created_at").order("created_at", { ascending: false }).limit(100),
+      supabase.from("documents").select("id, filename, file_type, file_url, created_at").order("created_at", { ascending: false }).limit(100),
       supabase.from("source_registry").select("source_id, fragment_count").limit(500),
     ]);
 
@@ -408,11 +408,13 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
     const entryItems: KnowledgeItem[] = (entriesRes.data || []).map((e: any) => ({
       id: e.id, type: "entry", title: e.title || e.content?.slice(0, 80) || "Untitled",
       subtype: e.type, date: e.created_at, signalCount: fragmentMap[e.id] || 0,
+      sourceUrl: e.type === "link" ? e.content : undefined,
     }));
 
     const docItems: KnowledgeItem[] = (docsRes.data || []).map((d: any) => ({
       id: d.id, type: "document", title: d.filename,
       subtype: "document", date: d.created_at, signalCount: fragmentMap[d.id] || 0,
+      sourceUrl: d.file_url || undefined,
     }));
 
     setItems([...entryItems, ...docItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
