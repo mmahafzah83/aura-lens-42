@@ -77,7 +77,7 @@ const AudienceSection = ({ snapshot }: { snapshot: any }) => {
 
       {/* Audience segments */}
       {(audience.industries || audience.seniority || audience.geography) ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-2">
           {[
             { title: "Industries", data: audience.industries || [] },
             { title: "Seniority", data: audience.seniority || [] },
