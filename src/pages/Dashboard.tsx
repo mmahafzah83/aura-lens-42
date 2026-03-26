@@ -303,7 +303,7 @@ const Dashboard = () => {
 
       {/* ── Main Content ── */}
       <main
-        className={`flex-1 relative z-10 transition-all duration-300 ${
+        className={`flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
           sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
