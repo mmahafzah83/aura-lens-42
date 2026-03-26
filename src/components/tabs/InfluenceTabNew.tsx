@@ -239,7 +239,7 @@ const AuthorityGrowthSection = ({ snapshot, themes }: { snapshot: any; themes: A
       </div>
 
       {/* Trajectory + engagement */}
-      <div className="flex items-center gap-6 flex-wrap">
+      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         {trajectory && (
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
