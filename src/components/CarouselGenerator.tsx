@@ -51,6 +51,9 @@ interface CarouselGeneratorProps {
 const CANVAS_W = 1080;
 const CANVAS_H = 1350;
 const SAFE_M = 120;
+const VISUAL_REQUEST_DELAY_MS = 5000;
+const VISUAL_RETRY_DELAYS_MS = [7000, 12000] as const;
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /* ── Style Palettes ──────────────────── */
 const PALETTES: Record<Style, {
@@ -558,6 +561,37 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const currentSlides = slides[lang];
   const isLoading = loading[lang];
 
+  const invokeSlideVisual = useCallback(async (slide: Slide) => {
+    let lastMessage = "Failed to generate visual";
+
+    for (let attempt = 0; attempt <= VISUAL_RETRY_DELAYS_MS.length; attempt++) {
+      const { data, error } = await supabase.functions.invoke("generate-slide-visual", {
+        body: { image_prompt: slide.image_prompt, slide_number: slide.slide_number, style },
+      });
+
+      if (!error && data?.image_url) return data.image_url as string;
+
+      const status = (error as any)?.context?.status ?? (error as any)?.status;
+      const message = data?.error || error?.message || "Failed to generate visual";
+      const normalized = String(message).toLowerCase();
+      const shouldRetry =
+        status === 429 ||
+        normalized.includes("rate limit") ||
+        normalized.includes("no image generated");
+
+      lastMessage = message;
+
+      if (shouldRetry && attempt < VISUAL_RETRY_DELAYS_MS.length) {
+        await sleep(VISUAL_RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+
+      throw new Error(message);
+    }
+
+    throw new Error(lastMessage);
+  }, [style]);
+
   /* ── Generate slide visuals ── */
   const generateVisuals = useCallback(async (targetLang: Lang, slideList: Slide[]) => {
     const slidesWithPrompts = slideList.filter(s => s.image_prompt && !s.image_url);
@@ -570,30 +604,27 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     for (let i = 0; i < slidesWithPrompts.length; i++) {
       const slide = slidesWithPrompts[i];
       try {
-        const { data, error } = await supabase.functions.invoke("generate-slide-visual", {
-          body: { image_prompt: slide.image_prompt, slide_number: slide.slide_number, style },
-        });
-
-        if (!error && data?.image_url) {
-          setSlides(prev => ({
-            ...prev,
-            [targetLang]: prev[targetLang].map(s =>
-              s.slide_number === slide.slide_number ? { ...s, image_url: data.image_url } : s
-            ),
-          }));
-        }
-      } catch (e) {
+        const imageUrl = await invokeSlideVisual(slide);
+        setSlides(prev => ({
+          ...prev,
+          [targetLang]: prev[targetLang].map(s =>
+            s.slide_number === slide.slide_number ? { ...s, image_url: imageUrl } : s
+          ),
+        }));
+      } catch (e: any) {
         console.warn(`Failed to generate visual for slide ${slide.slide_number}:`, e);
       }
+
       setVisualProgress(i + 1);
+
       if (i < slidesWithPrompts.length - 1) {
-        await new Promise(r => setTimeout(r, 4000));
+        await sleep(VISUAL_REQUEST_DELAY_MS);
       }
     }
 
     setGeneratingVisuals(false);
     toast.success("Slide visuals generated");
-  }, [style]);
+  }, [invokeSlideVisual]);
 
   const generate = useCallback(async (targetLang: Lang) => {
     setLoading(prev => ({ ...prev, [targetLang]: true }));
@@ -610,7 +641,8 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       if (targetLang === lang) setCurrentSlide(0);
 
       if (newSlides.length > 0) {
-        setTimeout(() => generateVisuals(targetLang, newSlides), 500);
+        await sleep(500);
+        await generateVisuals(targetLang, newSlides);
       }
     } catch (e: any) {
       toast.error(e.message || "Failed to generate carousel");
@@ -647,18 +679,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }));
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-slide-visual", {
-        body: { image_prompt: slide.image_prompt, slide_number: slide.slide_number, style },
-      });
-      if (!error && data?.image_url) {
+      const imageUrl = await invokeSlideVisual(slide);
+      if (imageUrl) {
         setSlides(prev => ({
           ...prev,
-          [lang]: prev[lang].map((s, i) => i === idx ? { ...s, image_url: data.image_url } : s),
+          [lang]: prev[lang].map((s, i) => i === idx ? { ...s, image_url: imageUrl } : s),
         }));
         toast.success(`Slide ${idx + 1} visual regenerated`);
       }
-    } catch (e) {
-      toast.error("Failed to regenerate visual");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to regenerate visual");
     }
   };
 

@@ -10,6 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
     const { image_prompt, slide_number, style } = await req.json();
     if (!image_prompt) {
       return new Response(JSON.stringify({ error: "image_prompt is required" }), {
@@ -39,33 +40,13 @@ Concept: ${image_prompt}
 
 Make the illustration sophisticated, minimal, and visually striking. Use geometric shapes, abstract forms, and clean lines. The visual should convey the concept through imagery alone.`;
 
-    const imageRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [{ role: "user", content: fullPrompt }],
-        modalities: ["image", "text"],
-      }),
-    });
+    const retryDelays = [6000, 12000];
+    let imgUrl: string | undefined;
+    let failureStatus = 500;
+    let failureMessage = "No image generated";
 
-    if (!imageRes.ok) {
-      if (imageRes.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (imageRes.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI image error: ${imageRes.status}`);
-    }
-
-    const imageData = await imageRes.json();
-    let imgUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    // Retry once if no image was returned (model sometimes returns text-only)
-    if (!imgUrl || !imgUrl.startsWith("data:image")) {
-      console.warn("First attempt returned no image, retrying...");
-      await new Promise(r => setTimeout(r, 2000));
-      const retryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+      const imageRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -77,15 +58,36 @@ Make the illustration sophisticated, minimal, and visually striking. Use geometr
           modalities: ["image", "text"],
         }),
       });
-      if (retryRes.ok) {
-        const retryData = await retryRes.json();
-        imgUrl = retryData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+      if (imageRes.ok) {
+        const imageData = await imageRes.json();
+        imgUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+        if (imgUrl?.startsWith("data:image")) break;
+
+        failureStatus = 500;
+        failureMessage = "No image generated";
+      } else if (imageRes.status === 429) {
+        failureStatus = 429;
+        failureMessage = "Rate limit exceeded";
+      } else if (imageRes.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        throw new Error(`AI image error: ${imageRes.status}`);
+      }
+
+      if (attempt < retryDelays.length) {
+        const retryAfterHeader = imageRes.headers.get("retry-after");
+        const retryMs = retryAfterHeader ? Number(retryAfterHeader) * 1000 : retryDelays[attempt];
+        await sleep(Number.isFinite(retryMs) && retryMs > 0 ? retryMs : retryDelays[attempt]);
       }
     }
 
     if (!imgUrl || !imgUrl.startsWith("data:image")) {
-      return new Response(JSON.stringify({ error: "No image generated", slide_number }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return new Response(JSON.stringify({ error: failureMessage, slide_number }), {
+        status: failureStatus, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
