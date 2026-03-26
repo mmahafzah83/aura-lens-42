@@ -61,12 +61,7 @@ Deno.serve(async (req) => {
         if (!descRes.ok) throw new Error("Failed to generate diagram description");
         const descData = await descRes.json();
         const raw = descData.choices?.[0]?.message?.content || "{}";
-        try {
-          diagramDesc = JSON.parse(raw.replace(/[\u0000-\u001F\u007F]/g, " "));
-        } catch {
-          const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-          diagramDesc = JSON.parse((m ? m[1] : raw).replace(/[\u0000-\u001F\u007F]/g, " "));
-        }
+        diagramDesc = repairAndParseJson(raw);
 
         // Save the diagram description
         await adminClient
