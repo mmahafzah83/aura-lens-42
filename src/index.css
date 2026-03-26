@@ -110,7 +110,10 @@
   .section-gap { margin-bottom: 48px; }
   .card-gap { margin-bottom: 24px; }
   .text-gap { margin-bottom: 16px; }
-  .card-pad { padding: 32px; }
+  .card-pad { padding: 20px; }
+  @media (min-width: 640px) {
+    .card-pad { padding: 32px; }
+  }
 
   .glass-card {
     background: linear-gradient(
