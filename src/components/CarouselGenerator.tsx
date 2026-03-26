@@ -37,6 +37,29 @@ interface Slide {
   layout_style?: string;
 }
 
+interface FrameworkVisual {
+  concept: string;
+  type: "PHOTO" | "INFOGRAPHIC";
+}
+
+interface Framework {
+  id: string;
+  name: string;
+  description: string;
+  steps: string[];
+  diagram_type: "sequential_flow" | "layered" | "circular" | "grid_2x2";
+  key_visuals: FrameworkVisual[];
+}
+
+interface TopicAnalysis {
+  core_challenge: string;
+  strategic_insight: string;
+  transformation_theme: string;
+  target_audience: string;
+}
+
+type PipelineStep = "input" | "frameworks" | "carousel";
+
 type Lang = "en" | "ar";
 type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
 
