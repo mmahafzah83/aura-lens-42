@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Zap, BookOpen, Layers, Sparkles, Search, Lightbulb, PenLine,
+  Zap, BookOpen, Brain, Shield, Search, Lightbulb, PenLine, Target,
   Link, Mic, Type, FileUp, FileText, ImageIcon, Clock, Loader2,
-  ArrowRight, RefreshCw, Brain, Shield
+  ArrowRight, RefreshCw, ChevronDown, ChevronUp, Layers, Trash2,
+  Eye, BarChart3, Sparkles
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import SignalExplorer from "@/components/SignalExplorer";
+import FrameworkBuilder from "@/components/FrameworkBuilder";
+import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -24,7 +28,7 @@ interface IntelligenceTabProps {
 type SubTab = "signals" | "knowledge" | "patterns";
 
 /* ═══════════════════════════════════════════
-   Signals Sub-Tab
+   Full Signal type
    ═══════════════════════════════════════════ */
 
 interface Signal {
@@ -33,29 +37,98 @@ interface Signal {
   confidence: number;
   supporting_evidence_ids: string[];
   theme_tags: string[];
+  skill_pillars: string[];
   explanation: string;
+  strategic_implications: string;
+  framework_opportunity: any;
+  content_opportunity: any;
+  consulting_opportunity: any;
+  fragment_count: number;
   created_at: string;
 }
 
-const SignalsPanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
+/* ── Strategic Value helper ── */
+const getStrategicValue = (confidence: number, sources: number) => {
+  const score = confidence * 0.6 + Math.min(sources / 10, 1) * 0.4;
+  if (score >= 0.75) return { label: "High", class: "bg-emerald-500/15 text-emerald-400" };
+  if (score >= 0.5) return { label: "Medium", class: "bg-amber-500/15 text-amber-400" };
+  return { label: "Low", class: "bg-secondary/30 text-muted-foreground" };
+};
+
+/* ═══════════════════════════════════════════
+   Signals Sub-Tab
+   ═══════════════════════════════════════════ */
+
+const SignalsPanel = ({
+  onOpenChat,
+}: {
+  onOpenChat?: (msg?: string) => void;
+}) => {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [explorerSignal, setExplorerSignal] = useState<Signal | null>(null);
+  const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
+  const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
 
-  useEffect(() => {
-    loadSignals();
-  }, []);
+  useEffect(() => { loadSignals(); }, []);
 
   const loadSignals = async () => {
     const { data } = await supabase
       .from("strategic_signals")
-      .select("id, signal_title, confidence, supporting_evidence_ids, theme_tags, explanation, created_at")
+      .select("*")
       .eq("status", "active")
       .order("confidence", { ascending: false })
       .limit(20);
-    setSignals(data || []);
+    setSignals((data || []) as unknown as Signal[]);
     setLoading(false);
   };
+
+  const runPatternScan = async () => {
+    setScanning(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data, error } = await supabase.functions.invoke("detect-patterns", { body: { user_id: user.id } });
+      if (error) throw error;
+      if (data?.signals_detected > 0) {
+        toast.success(`${data.signals_detected} signal${data.signals_detected > 1 ? "s" : ""} detected`);
+        await loadSignals();
+      } else {
+        toast.info(data?.message || "No new patterns detected yet.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Pattern detection failed");
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  // Cluster signals by theme_tags overlap
+  const clusters = useMemo(() => {
+    if (signals.length === 0) return [];
+    const tagToSignals: Record<string, string[]> = {};
+    signals.forEach(s => {
+      (s.theme_tags || []).forEach(tag => {
+        if (!tagToSignals[tag]) tagToSignals[tag] = [];
+        tagToSignals[tag].push(s.id);
+      });
+    });
+
+    // Find clusters with 2+ signals sharing a tag
+    const clusterEntries = Object.entries(tagToSignals)
+      .filter(([, ids]) => ids.length >= 2)
+      .sort((a, b) => b[1].length - a[1].length)
+      .slice(0, 5);
+
+    return clusterEntries.map(([tag, ids]) => ({
+      name: tag,
+      signalCount: ids.length,
+      signalIds: [...new Set(ids)],
+    }));
+  }, [signals]);
 
   if (loading) {
     return (
@@ -70,80 +143,220 @@ const SignalsPanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) =
       <div className="glass-card rounded-2xl p-10 text-center">
         <Zap className="w-8 h-8 text-muted-foreground/30 mx-auto mb-3" />
         <p className="text-foreground font-medium mb-1">No signals detected yet</p>
-        <p className="text-muted-foreground text-sm">Capture more knowledge to generate strategic signals.</p>
+        <p className="text-muted-foreground text-sm mb-4">Capture more knowledge to generate strategic signals.</p>
+        <Button variant="outline" size="sm" onClick={runPatternScan} disabled={scanning} className="gap-1.5">
+          {scanning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          {scanning ? "Scanning…" : "Run Pattern Detection"}
+        </Button>
       </div>
     );
   }
 
-  const visible = showAll ? signals : signals.slice(0, 6);
+  const visible = showAll ? signals : signals.slice(0, 8);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header row with scan button */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">{signals.length} active signal{signals.length !== 1 ? "s" : ""}</p>
+        <Button variant="outline" size="sm" onClick={runPatternScan} disabled={scanning} className="gap-1.5 text-xs">
+          {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+          {scanning ? "Scanning…" : "Detect Patterns"}
+        </Button>
+      </div>
+
+      {/* Signal Clusters */}
+      {clusters.length > 0 && (
+        <div className="glass-card rounded-2xl p-5 border border-border/8">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
+              <Layers className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Signal Clusters</p>
+              <p className="text-xs text-muted-foreground">Related signals grouped by theme</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {clusters.map(c => (
+              <span key={c.name} className="text-xs px-3 py-1.5 rounded-full bg-primary/8 text-primary/80 border border-primary/12 font-medium">
+                {c.name} <span className="text-primary/50 ml-1">({c.signalCount})</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Signal Cards */}
       {visible.map((signal, i) => {
         const conf = Math.round(signal.confidence * 100);
         const sources = signal.supporting_evidence_ids?.length || 0;
+        const isExpanded = expandedId === signal.id;
+        const sv = getStrategicValue(signal.confidence, sources);
+        const fw = signal.framework_opportunity || {};
 
         return (
           <motion.div
             key={signal.id}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: i * 0.05 }}
-            className="glass-card rounded-2xl p-6 border border-border/8 hover:border-primary/15 transition-all"
+            transition={{ duration: 0.35, delay: i * 0.04 }}
+            className="glass-card rounded-2xl border border-border/8 hover:border-primary/15 transition-all overflow-hidden"
           >
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/15 shrink-0 mt-0.5">
-                <Zap className="w-5 h-5 text-amber-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-foreground font-semibold text-sm leading-snug mb-2">
-                  {signal.signal_title}
-                </p>
-                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-3">
-                  {signal.explanation}
-                </p>
-
-                <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                  <span className="tabular-nums font-medium text-amber-400">{conf}% confidence</span>
-                  <span>{sources} source{sources !== 1 ? "s" : ""}</span>
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatSmartDate(signal.created_at)}</span>
-                </div>
-
-                {signal.theme_tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {signal.theme_tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-primary/8 text-primary/70 border border-primary/10">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Explore this signal in depth: ${signal.signal_title}`)}>
-                    <Search className="w-3.5 h-3.5" /> Explore
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create a strategic insight from: ${signal.signal_title}`)}>
-                    <Lightbulb className="w-3.5 h-3.5" /> Create Insight
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Draft LinkedIn content about: ${signal.signal_title}`)}>
-                    <PenLine className="w-3.5 h-3.5" /> Draft Content
-                  </Button>
-                </div>
-              </div>
+            {/* Confidence bar */}
+            <div className="h-0.5 bg-muted/20">
+              <div className="h-full bg-gradient-to-r from-primary/60 to-primary/30 transition-all" style={{ width: `${conf}%` }} />
             </div>
+
+            {/* Card header — clickable to expand */}
+            <button
+              onClick={() => setExpandedId(isExpanded ? null : signal.id)}
+              className="w-full p-5 text-left"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/15 shrink-0 mt-0.5">
+                  <Zap className="w-5 h-5 text-amber-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-foreground font-semibold text-sm leading-snug mb-1.5">
+                    {signal.signal_title}
+                  </p>
+                  <p className={`text-muted-foreground text-sm leading-relaxed mb-3 ${isExpanded ? "" : "line-clamp-2"}`}>
+                    {signal.explanation}
+                  </p>
+
+                  {/* Metrics row */}
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
+                    <span className="tabular-nums font-medium text-amber-400">{conf}% confidence</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sv.class}`}>{sv.label} value</span>
+                    <span>{sources} source{sources !== 1 ? "s" : ""}</span>
+                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatSmartDate(signal.created_at)}</span>
+                  </div>
+
+                  {/* Tags */}
+                  {signal.theme_tags?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {signal.theme_tags.slice(0, 4).map(tag => (
+                        <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-primary/8 text-primary/70 border border-primary/10">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="shrink-0 mt-1">
+                  {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground/30" /> : <ChevronDown className="w-4 h-4 text-muted-foreground/30" />}
+                </div>
+              </div>
+            </button>
+
+            {/* Expanded detail */}
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-5 space-y-4 border-t border-border/8 pt-4">
+                    {/* Strategic Implication */}
+                    {signal.strategic_implications && (
+                      <div className="rounded-xl bg-card/60 p-4 border border-primary/[0.06]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="w-3.5 h-3.5 text-primary/70" />
+                          <p className="text-[10px] uppercase tracking-[0.15em] text-primary/60 font-semibold">Strategic Implication</p>
+                        </div>
+                        <p className="text-xs text-foreground/80 leading-relaxed">{signal.strategic_implications}</p>
+                        {signal.skill_pillars?.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-3">
+                            {signal.skill_pillars.map((p, j) => (
+                              <span key={j} className="text-[9px] bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">{p}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Standardized Action Buttons */}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1.5"
+                        onClick={() => setExplorerSignal(signal)}
+                      >
+                        <Search className="w-3.5 h-3.5" /> Explore
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1.5"
+                        onClick={() => onOpenChat?.(`Create a strategic insight from this signal:\n\nSignal: ${signal.signal_title}\n\nEvidence: ${signal.explanation}\n\nImplication: ${signal.strategic_implications}`)}
+                      >
+                        <Lightbulb className="w-3.5 h-3.5" /> Create Insight
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1.5"
+                        onClick={() => setBuilderData({
+                          title: fw.title || signal.signal_title,
+                          description: fw.description || signal.strategic_implications || "",
+                          steps: fw.potential_steps || [],
+                        })}
+                      >
+                        <Target className="w-3.5 h-3.5" /> Develop Framework
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs gap-1.5"
+                        onClick={() => setDraftData({
+                          title: signal.signal_title,
+                          hook: signal.explanation,
+                          angle: "Strategic thought leadership",
+                          context: signal.strategic_implications,
+                        })}
+                      >
+                        <PenLine className="w-3.5 h-3.5" /> Draft Content
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         );
       })}
 
-      {signals.length > 6 && !showAll && (
+      {signals.length > 8 && !showAll && (
         <button
           onClick={() => setShowAll(true)}
           className="w-full glass-card rounded-xl p-4 text-sm font-medium text-primary/70 hover:text-primary hover:border-primary/20 transition-colors flex items-center justify-center gap-2"
         >
-          View All Signals <ArrowRight className="w-4 h-4" />
+          View All {signals.length} Signals <ArrowRight className="w-4 h-4" />
         </button>
       )}
+
+      {/* Panels */}
+      <SignalExplorer signal={explorerSignal} open={!!explorerSignal} onClose={() => setExplorerSignal(null)} />
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
+      />
+      <LinkedInDraftPanel
+        open={!!draftData}
+        onClose={() => setDraftData(null)}
+        title={draftData?.title || ""}
+        hook={draftData?.hook}
+        angle={draftData?.angle}
+        context={draftData?.context}
+      />
     </div>
   );
 };
@@ -158,6 +371,7 @@ interface KnowledgeItem {
   title: string;
   subtype: string;
   date: string;
+  signalCount?: number;
 }
 
 const ENTRY_ICONS: Record<string, typeof Link> = { link: Link, voice: Mic, text: Type, image: ImageIcon };
@@ -174,29 +388,69 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadKnowledge();
-  }, []);
+  useEffect(() => { loadKnowledge(); }, []);
 
   const loadKnowledge = async () => {
-    const [entriesRes, docsRes] = await Promise.all([
+    const [entriesRes, docsRes, registryRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("documents").select("id, filename, file_type, created_at").order("created_at", { ascending: false }).limit(100),
+      supabase.from("source_registry").select("source_id, fragment_count").limit(500),
     ]);
+
+    const fragmentMap: Record<string, number> = {};
+    (registryRes.data || []).forEach((r: any) => { fragmentMap[r.source_id] = r.fragment_count || 0; });
 
     const entryItems: KnowledgeItem[] = (entriesRes.data || []).map((e: any) => ({
       id: e.id, type: "entry", title: e.title || e.content?.slice(0, 80) || "Untitled",
-      subtype: e.type, date: e.created_at,
+      subtype: e.type, date: e.created_at, signalCount: fragmentMap[e.id] || 0,
     }));
 
     const docItems: KnowledgeItem[] = (docsRes.data || []).map((d: any) => ({
       id: d.id, type: "document", title: d.filename,
-      subtype: "document", date: d.created_at,
+      subtype: "document", date: d.created_at, signalCount: fragmentMap[d.id] || 0,
     }));
 
     setItems([...entryItems, ...docItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     setLoading(false);
+  };
+
+  const analyzeSource = async (item: KnowledgeItem) => {
+    setAnalyzingId(item.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await supabase.functions.invoke("extract-evidence", {
+        body: {
+          user_id: user.id,
+          source_type: item.type === "document" ? "document" : "entry",
+          source_id: item.id,
+        },
+      });
+      if (error) throw error;
+      toast.success("Analysis complete — signals extracted");
+      await loadKnowledge();
+    } catch (err: any) {
+      toast.error(err.message || "Analysis failed");
+    } finally {
+      setAnalyzingId(null);
+    }
+  };
+
+  const deleteSource = async (item: KnowledgeItem) => {
+    try {
+      const table = item.type === "document" ? "documents" : "entries";
+      const { error } = await supabase.from(table).delete().eq("id", item.id);
+      if (error) throw error;
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      if (selectedId === item.id) { setSelectedId(null); setSelectedItem(null); }
+      toast.success("Source deleted");
+    } catch (err: any) {
+      toast.error(err.message || "Delete failed");
+    }
   };
 
   const filtered = items.filter(item => {
@@ -204,6 +458,11 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
     if (search && !item.title.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  const subtypeLabel = (subtype: string) => {
+    const map: Record<string, string> = { text: "Note", link: "Link", voice: "Voice", image: "Image", document: "Document" };
+    return map[subtype] || subtype;
+  };
 
   return (
     <div className="space-y-5">
@@ -235,22 +494,6 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="flex gap-2">
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.("I want to add a quick note")}>
-          <Type className="w-3.5 h-3.5" /> Add Note
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.("I want to add a link")}>
-          <Link className="w-3.5 h-3.5" /> Add Link
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.("I want to upload a document")}>
-          <FileUp className="w-3.5 h-3.5" /> Upload
-        </Button>
-        <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.("I want to record a voice insight")}>
-          <Mic className="w-3.5 h-3.5" /> Voice
-        </Button>
-      </div>
-
       {/* Feed */}
       {loading ? (
         <div className="flex justify-center py-12">
@@ -263,25 +506,89 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
           <p className="text-muted-foreground text-sm">Start capturing insights to build your knowledge base.</p>
         </div>
       ) : (
-        <ScrollArea className="max-h-[600px]">
-          <div className="space-y-2">
+        <ScrollArea className="h-[600px]">
+          <div className="space-y-2 pr-2">
             {filtered.map((item, i) => {
               const Icon = item.type === "document" ? FileText : (ENTRY_ICONS[item.subtype] || Type);
+              const isSelected = selectedId === item.id;
+
               return (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.3) }}
-                  className="flex items-center gap-3 p-4 rounded-xl glass-card border border-border/6 hover:border-primary/10 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-secondary/30 flex items-center justify-center shrink-0">
-                    <Icon className="w-4 h-4 text-muted-foreground/60" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-foreground truncate">{item.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 capitalize">{item.subtype} · {formatSmartDate(item.date)}</p>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedId(isSelected ? null : item.id);
+                      setSelectedItem(isSelected ? null : item);
+                    }}
+                    className={`w-full flex items-center gap-3 p-4 rounded-xl glass-card border text-left transition-all ${
+                      isSelected ? "border-primary/20 bg-primary/[0.03]" : "border-border/6 hover:border-primary/10"
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-secondary/30 flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4 text-muted-foreground/60" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground truncate" dir="auto">{item.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-xs text-muted-foreground">{subtypeLabel(item.subtype)}</span>
+                        <span className="text-xs text-muted-foreground/40">·</span>
+                        <span className="text-xs text-muted-foreground">{formatSmartDate(item.date)}</span>
+                        {(item.signalCount || 0) > 0 && (
+                          <>
+                            <span className="text-xs text-muted-foreground/40">·</span>
+                            <span className="text-xs text-primary/70 font-medium">{item.signalCount} signal{item.signalCount !== 1 ? "s" : ""}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground/30 transition-transform ${isSelected ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {/* Expanded actions */}
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="flex gap-2 px-4 py-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1.5"
+                            onClick={() => analyzeSource(item)}
+                            disabled={analyzingId === item.id}
+                          >
+                            {analyzingId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                            Analyze
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1.5"
+                            onClick={() => onOpenChat?.(`Tell me about this source: "${item.title}"`)}
+                          >
+                            <Eye className="w-3 h-3" /> Open
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1.5 text-destructive/70 hover:text-destructive"
+                            onClick={() => deleteSource(item)}
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               );
             })}
@@ -307,9 +614,7 @@ const PatternsPanel = () => {
   const [data, setData] = useState<PatternData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadPatterns();
-  }, []);
+  useEffect(() => { loadPatterns(); }, []);
 
   const loadPatterns = async () => {
     try {
@@ -323,7 +628,6 @@ const PatternsPanel = () => {
       const profile = profileRes.data;
       const posts = postsRes.data || [];
 
-      // Authority Themes
       const themeCounts: Record<string, { count: number; totalConf: number }> = {};
       signals.forEach((s: any) => {
         (s.theme_tags || []).forEach((t: string) => {
@@ -336,30 +640,18 @@ const PatternsPanel = () => {
         .sort((a, b) => b[1].count - a[1].count)
         .slice(0, 5)
         .map(([name, d]) => ({
-          name,
-          evidenceCount: d.count,
+          name, evidenceCount: d.count,
           confidence: d.count >= 5 ? "High" : d.count >= 3 ? "Medium" : "Low",
         }));
 
-      // Tone Intelligence
       const toneCounts: Record<string, number> = {};
-      posts.forEach((p: any) => {
-        if (p.tone) toneCounts[p.tone] = (toneCounts[p.tone] || 0) + 1;
-      });
+      posts.forEach((p: any) => { if (p.tone) toneCounts[p.tone] = (toneCounts[p.tone] || 0) + 1; });
       const sortedTones = Object.entries(toneCounts).sort((a, b) => b[1] - a[1]);
-      const toneIntelligence = {
-        dominant: sortedTones[0]?.[0] || "—",
-        secondary: sortedTones[1]?.[0] || "—",
-      };
+      const toneIntelligence = { dominant: sortedTones[0]?.[0] || "—", secondary: sortedTones[1]?.[0] || "—" };
 
-      // Industry Focus
       const identity = profile?.identity_intelligence || {};
-      const industryFocus = [
-        profile?.sector_focus,
-        ...(identity.industries || []),
-      ].filter(Boolean).slice(0, 4) as string[];
+      const industryFocus = [profile?.sector_focus, ...(identity.industries || [])].filter(Boolean).slice(0, 4) as string[];
 
-      // Language Signals from top signal titles
       const words: Record<string, number> = {};
       signals.forEach((s: any) => {
         s.signal_title.split(/\s+/).forEach((w: string) => {
@@ -367,10 +659,7 @@ const PatternsPanel = () => {
           if (clean.length > 4) words[clean] = (words[clean] || 0) + 1;
         });
       });
-      const languageSignals = Object.entries(words)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
-        .map(([w]) => w.charAt(0).toUpperCase() + w.slice(1));
+      const languageSignals = Object.entries(words).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([w]) => w.charAt(0).toUpperCase() + w.slice(1));
 
       setData({ authorityThemes, toneIntelligence, industryFocus, languageSignals });
     } catch (err) {
@@ -379,20 +668,12 @@ const PatternsPanel = () => {
     setLoading(false);
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="w-5 h-5 animate-spin text-primary/40" />
-      </div>
-    );
-  }
-
+  if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-primary/40" /></div>;
   if (!data) return null;
 
   const panels = [
     {
-      title: "Authority Themes",
-      icon: <Zap className="w-4 h-4 text-primary" />,
+      title: "Authority Themes", icon: <Zap className="w-4 h-4 text-primary" />,
       content: data.authorityThemes.length > 0 ? (
         <div className="space-y-3">
           {data.authorityThemes.map(t => (
@@ -409,49 +690,36 @@ const PatternsPanel = () => {
             </div>
           ))}
         </div>
-      ) : <p className="text-sm text-muted-foreground">Not enough data to detect themes yet.</p>,
+      ) : <p className="text-sm text-muted-foreground">Not enough data yet.</p>,
     },
     {
-      title: "Tone Intelligence",
-      icon: <Mic className="w-4 h-4 text-primary" />,
+      title: "Tone Intelligence", icon: <Mic className="w-4 h-4 text-primary" />,
       content: (
         <div className="space-y-3">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Dominant Tone</p>
-            <p className="text-sm font-medium text-foreground capitalize">{data.toneIntelligence.dominant}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Secondary Tone</p>
-            <p className="text-sm font-medium text-foreground capitalize">{data.toneIntelligence.secondary}</p>
-          </div>
+          <div><p className="text-xs text-muted-foreground mb-1">Dominant</p><p className="text-sm font-medium text-foreground capitalize">{data.toneIntelligence.dominant}</p></div>
+          <div><p className="text-xs text-muted-foreground mb-1">Secondary</p><p className="text-sm font-medium text-foreground capitalize">{data.toneIntelligence.secondary}</p></div>
         </div>
       ),
     },
     {
-      title: "Industry Focus",
-      icon: <Layers className="w-4 h-4 text-primary" />,
+      title: "Industry Focus", icon: <Layers className="w-4 h-4 text-primary" />,
       content: data.industryFocus.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {data.industryFocus.map(ind => (
-            <span key={ind} className="text-xs px-3 py-1.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10 font-medium">
-              {ind}
-            </span>
+            <span key={ind} className="text-xs px-3 py-1.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10 font-medium">{ind}</span>
           ))}
         </div>
       ) : <p className="text-sm text-muted-foreground">Complete your profile to see industry focus.</p>,
     },
     {
-      title: "Language Signals",
-      icon: <BookOpen className="w-4 h-4 text-primary" />,
+      title: "Language Signals", icon: <BookOpen className="w-4 h-4 text-primary" />,
       content: data.languageSignals.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {data.languageSignals.map(term => (
-            <span key={term} className="text-xs px-3 py-1.5 rounded-full bg-secondary/30 text-foreground/70 border border-border/10 font-medium">
-              {term}
-            </span>
+            <span key={term} className="text-xs px-3 py-1.5 rounded-full bg-secondary/30 text-foreground/70 border border-border/10 font-medium">{term}</span>
           ))}
         </div>
-      ) : <p className="text-sm text-muted-foreground">Not enough data to detect language patterns yet.</p>,
+      ) : <p className="text-sm text-muted-foreground">Not enough data yet.</p>,
     },
   ];
 
