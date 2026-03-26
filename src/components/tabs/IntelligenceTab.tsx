@@ -480,11 +480,10 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
     previewTab.document.write(`
       <html>
         <head><title>Opening document…</title></head>
-        <body style="font-family: sans-serif; padding: 24px; color: #444;">Opening document…</body>
+        <body style="margin:0;font-family:sans-serif;padding:24px;color:#444;">Opening document…</body>
       </html>
     `);
     previewTab.document.close();
-    previewTab.opener = null;
 
     setOpeningId(item.id);
 
@@ -494,8 +493,39 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
         throw error || new Error("Document download failed");
       }
 
-      const objectUrl = URL.createObjectURL(data);
-      previewTab.location.replace(objectUrl);
+      const fileBlob = data instanceof Blob ? data : new Blob([data]);
+      const objectUrl = URL.createObjectURL(fileBlob);
+      const mimeType = fileBlob.type || "application/octet-stream";
+
+      previewTab.document.title = item.title;
+      previewTab.document.body.innerHTML = "";
+      previewTab.document.body.style.margin = "0";
+      previewTab.document.body.style.background = "#0b0b0b";
+
+      if (mimeType.includes("pdf")) {
+        const frame = previewTab.document.createElement("iframe");
+        frame.src = objectUrl;
+        frame.title = item.title;
+        frame.style.width = "100vw";
+        frame.style.height = "100vh";
+        frame.style.border = "0";
+        previewTab.document.body.appendChild(frame);
+      } else if (mimeType.startsWith("image/")) {
+        const image = previewTab.document.createElement("img");
+        image.src = objectUrl;
+        image.alt = item.title;
+        image.style.maxWidth = "100%";
+        image.style.maxHeight = "100vh";
+        image.style.display = "block";
+        image.style.margin = "0 auto";
+        previewTab.document.body.style.display = "flex";
+        previewTab.document.body.style.alignItems = "center";
+        previewTab.document.body.style.justifyContent = "center";
+        previewTab.document.body.appendChild(image);
+      } else {
+        previewTab.location.href = objectUrl;
+      }
+
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       previewTab.close();
