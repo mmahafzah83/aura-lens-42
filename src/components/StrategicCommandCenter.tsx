@@ -251,7 +251,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       >
         <p className="text-label uppercase tracking-wider text-xs font-semibold">Authority Progress</p>
         <div className="grid grid-cols-5 gap-3">
-          {data.pipeline.map((step, i) => {
+          {(data.pipeline || []).map((step, i) => {
             const Icon = step.icon;
             return (
               <div key={step.label} className="relative">
@@ -270,7 +270,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
       </motion.div>
 
       {/* ── Section 4: Strategic Momentum ── */}
-      {data.momentum.length > 0 && (
+      {(data.momentum || []).length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -279,7 +279,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         >
           <p className="text-label uppercase tracking-wider text-xs font-semibold">Recent Momentum</p>
           <div className="space-y-2">
-            {data.momentum.map((item, i) => (
+            {(data.momentum || []).map((item, i) => (
               <div key={i} className="flex items-center gap-3 py-2.5 px-4 rounded-xl glass-card border border-border/6">
                 <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
                   {item.type === "signal" ? <Zap className="w-3 h-3 text-primary/50" /> : <BookOpen className="w-3 h-3 text-primary/50" />}
