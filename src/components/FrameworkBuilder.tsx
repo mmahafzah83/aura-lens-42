@@ -41,6 +41,9 @@ const FrameworkBuilder = ({
   const [generatingDiagram, setGeneratingDiagram] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [diagramUrl, setDiagramUrl] = useState<string | null>(null);
+  const [lastArchetype, setLastArchetype] = useState<string | null>(null);
+  const [lastStyle, setLastStyle] = useState<string | null>(null);
+  const [diagramMeta, setDiagramMeta] = useState<string | null>(null);
 
   // Reset state when props change
   const resetWithProps = () => {
