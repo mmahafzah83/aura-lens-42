@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Compass, Zap, ArrowRight, Loader2, Search, Lightbulb, PenLine,
+  Compass, Zap, ArrowRight, Loader2,
   BookOpen, Target, Brain, Crown, TrendingUp, Sparkles, Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { SignalActions } from "@/components/ui/action-buttons";
 import { formatSmartDate } from "@/lib/formatDate";
 
 /* ── Types ── */
