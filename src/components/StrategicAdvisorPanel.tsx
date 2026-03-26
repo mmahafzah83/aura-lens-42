@@ -39,21 +39,8 @@ interface StrategicAdvisorPanelProps {
   refreshTrigger?: number;
 }
 
-const ACTION_ICONS: Record<string, typeof PenLine> = {
-  draft_content: PenLine,
-  build_framework: Layers,
-  develop_insight: Lightbulb,
-  explore_signal: Search,
-  plan_narrative: BookOpen,
-};
-
-const ACTION_LABELS: Record<string, string> = {
-  draft_content: "Draft Content",
-  build_framework: "Build Framework",
-  develop_insight: "Develop Insight",
-  explore_signal: "Explore Signal",
-  plan_narrative: "Plan Narrative",
-};
+const ACTION_ICONS = ADVISOR_ACTION_ICONS;
+const ACTION_LABELS = ADVISOR_ACTION_LABELS;
 
 const StrategicAdvisorPanel = ({
   context = "full",
