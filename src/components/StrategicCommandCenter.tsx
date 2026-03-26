@@ -309,6 +309,26 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
           </div>
         </motion.div>
       )}
+      {/* Builder Panels */}
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
+      />
+      <LinkedInDraftPanel
+        open={!!draftData}
+        onClose={() => setDraftData(null)}
+        title={draftData?.title || ""}
+        hook={draftData?.hook}
+        context={draftData?.context}
+      />
+      <SignalExplorer
+        signal={explorerSignal}
+        open={!!explorerSignal}
+        onClose={() => setExplorerSignal(null)}
+      />
     </div>
   );
 };
