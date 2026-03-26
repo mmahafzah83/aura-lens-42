@@ -303,12 +303,12 @@ const Dashboard = () => {
 
       {/* ── Main Content ── */}
       <main
-        className={`flex-1 relative z-10 transition-all duration-300 ${
+        className={`flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
           sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-8 pb-24 md:pb-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-8 pb-24 md:pb-12 overflow-hidden">
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
