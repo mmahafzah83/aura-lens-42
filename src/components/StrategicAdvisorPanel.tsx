@@ -213,13 +213,11 @@ const StrategicAdvisorPanel = ({
             <span className="text-xs text-emerald-400/80 font-medium">{data.strategic_insight.linked_framework}</span>
           </div>
         )}
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}>
-            <Lightbulb className="w-3.5 h-3.5" /> Expand
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Build framework from: ${data.strategic_insight.title}`)}>
-            <Layers className="w-3.5 h-3.5" /> Build Framework
-          </Button>
+        <div className="pt-1">
+          <InsightActions
+            onExpand={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}
+            onBuildFramework={() => onOpenChat?.(`Build framework from: ${data.strategic_insight.title}`)}
+          />
         </div>
       </div>
 
