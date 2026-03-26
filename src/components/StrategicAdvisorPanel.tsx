@@ -220,7 +220,15 @@ const StrategicAdvisorPanel = ({
         <div className="pt-1">
           <InsightActions
             onExpand={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}
-            onBuildFramework={() => onOpenChat?.(`Build framework from: ${data.strategic_insight.title}`)}
+            onBuildFramework={() => setBuilderData({
+              title: data.strategic_insight.title,
+              description: data.strategic_insight.interpretation,
+              steps: [],
+            })}
+            onDraftContent={() => setDraftData({
+              title: data.strategic_insight.title,
+              context: data.strategic_insight.interpretation,
+            })}
           />
         </div>
       </div>
