@@ -5,6 +5,7 @@ import {
   ChevronRight, RefreshCw, Search, PenLine, BookOpen, Save,
   Sparkles, Send, X
 } from "lucide-react";
+import { SignalActions, InsightActions, FrameworkActions } from "@/components/ui/action-buttons";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
