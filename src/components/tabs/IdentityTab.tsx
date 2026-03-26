@@ -26,18 +26,18 @@ const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
       />
 
       {/* Sub Navigation */}
-      <div className="flex gap-2 border-b border-border/10 pb-0">
+      <div className="flex gap-2 border-b border-border/10 pb-0 overflow-x-auto scrollbar-hide w-full">
         {sections.map((section) => (
           <button
             key={section.key}
             onClick={() => setActiveSection(section.key)}
-            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all duration-300 tactile-press ${
+            className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-all duration-300 tactile-press whitespace-nowrap flex-1 sm:flex-none justify-center sm:justify-start ${
               activeSection === section.key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <section.icon className="w-3.5 h-3.5" />
+            <section.icon className="w-3.5 h-3.5 shrink-0" />
             <span className="text-xs font-medium tracking-wide">{section.label}</span>
           </button>
         ))}
