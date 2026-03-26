@@ -56,6 +56,7 @@ const StrategicAdvisorPanel = ({
   const [refreshing, setRefreshing] = useState(false);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
+  const [explorerSignal, setExplorerSignal] = useState<any>(null);
 
   const fetchAdvisor = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
