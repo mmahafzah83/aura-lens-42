@@ -572,20 +572,25 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
                             {analyzingId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             Analyze
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs gap-1.5"
-                            onClick={() => {
-                              if (item.sourceUrl) {
-                                window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
-                              } else {
-                                toast.info("No source URL available for this item");
-                              }
-                            }}
-                          >
-                            <Eye className="w-3 h-3" /> Open
-                          </Button>
+                          {item.sourceUrl ? (
+                            <a
+                              href={item.sourceUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center justify-center gap-1.5 text-xs font-medium h-8 rounded-md px-3 border border-border/50 bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+                            >
+                              <Eye className="w-3 h-3" /> Open
+                            </a>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs gap-1.5"
+                              onClick={() => toast.info("No source URL available for this item")}
+                            >
+                              <Eye className="w-3 h-3" /> Open
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
