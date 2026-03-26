@@ -102,7 +102,7 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       accent: "from-amber-500/20 to-amber-500/5",
       iconColor: "text-amber-400",
       action: () => onOpenChat?.(`Analyze this strategic signal in depth: "${briefing.strategic_signal.title}" — ${briefing.strategic_signal.description}`),
-      actionLabel: "Explore Signal",
+      actionLabel: "Explore",
       secondaryAction: () => {
         setCarouselData({
           title: briefing.strategic_signal.title,
