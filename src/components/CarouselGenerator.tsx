@@ -375,6 +375,18 @@ const SlidePreview = ({
             <VisualAnchor type={slide.visual_anchor || "underline_bar"} palette={p} />
           )}
 
+          {/* Pattern interrupt */}
+          {slide.pattern_interrupt && (
+            <div style={{
+              fontSize: 32, fontWeight: 900, letterSpacing: 6,
+              textTransform: "uppercase", color: p.accent,
+              textAlign: isHero ? "center" : (isAr ? "right" : "left"),
+              marginBottom: 8,
+            }}>
+              {slide.pattern_interrupt}
+            </div>
+          )}
+
           {/* Headline with emphasis highlighting */}
           <HighlightedHeadline
             text={slide.headline}
