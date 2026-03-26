@@ -311,8 +311,7 @@ const Dashboard = () => {
                 <Menu className="w-5 h-5" />
               </button>
               <h2
-                className="text-lg font-bold text-foreground tracking-tight"
-                style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                className="text-sm font-medium text-muted-foreground tracking-wide uppercase"
               >
                 {NAV_ITEMS.find(n => n.value === activeTab)?.label}
               </h2>
