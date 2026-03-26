@@ -662,7 +662,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }
   };
 
-  /* ── PDF Export (1080×1350) ── */
+  /* ── PDF Export (1080×1350) — Layout-Aware ── */
   const exportPDF = async () => {
     if (currentSlides.length === 0) return;
     setExporting(true);
@@ -680,7 +680,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         if (i > 0) pdf.addPage([CANVAS_W, CANVAS_H], "portrait");
         const slide = currentSlides[i];
         const layout = slide.layout || slide.layout_style || "hero_center";
-        const isHero = layout === "hero_center" || slide.slide_type === "hook" || slide.slide_type === "cta";
+        const slideType = slide.slide_type || "";
+        const isHero = layout === "hero_center" || layout === "closing_centered";
+        const isCta = layout === "closing_centered" || slideType === "cta";
+        const isStat = layout === "stat_callout";
+        const isQuote = layout === "quote_block";
+        const isNumbered = layout === "numbered_point";
+        const isLeft = layout === "left_impact";
+        const isRight = layout === "right_impact";
+        const isSplitL = layout === "split_vertical";
+        const isInfographicL = layout === "infographic";
 
         // Background gradient
         const grd = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
@@ -723,45 +732,328 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         ctx.fillRect(0, 0, CANVAS_W, 5);
 
         // Slide number badge
+        const badgeX = isAr ? CANVAS_W - SAFE_M - 52 : SAFE_M;
         ctx.fillStyle = p.accent;
-        roundRect(ctx, SAFE_M, SAFE_M - 40, 52, 52, 14);
+        roundRect(ctx, badgeX, SAFE_M - 40, 52, 52, 14);
         ctx.fill();
         ctx.fillStyle = style === "minimal_creator" ? "#FFFFFF" : p.bg;
         ctx.font = "900 24px Inter, Arial, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(String(slide.slide_number), SAFE_M + 26, SAFE_M - 8);
+        ctx.fillText(String(slide.slide_number), badgeX + 26, SAFE_M - 8);
 
-        // Underline bar accent
-        ctx.fillStyle = p.accent;
-        const divX = isHero ? (CANVAS_W - 80) / 2 : SAFE_M;
-        const divY = isHero ? CANVAS_H / 2 - 140 : CANVAS_H - SAFE_M - 260;
-        ctx.fillRect(divX, divY, 80, 6);
-
-        // Headline
-        ctx.fillStyle = p.fg;
-        const fontSize = isHero ? 72 : 56;
-        ctx.font = `900 ${fontSize}px Inter, Arial, sans-serif`;
-        ctx.textAlign = isHero ? "center" : (isAr ? "right" : "left");
-        const hx = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
-        const hy = isHero ? CANVAS_H / 2 - 60 : CANVAS_H - SAFE_M - 180;
-        wrapText(ctx, slide.headline, hx, hy, CANVAS_W - SAFE_M * 2, fontSize * 1.12);
-
-        // Supporting text
+        // Slide type label (opposite corner)
         ctx.fillStyle = p.muted;
-        ctx.font = "400 26px Inter, Arial, sans-serif";
-        const sy = isHero ? CANVAS_H / 2 + 60 : CANVAS_H - SAFE_M - 100;
-        wrapText(ctx, slide.supporting_text, hx, sy, CANVAS_W - SAFE_M * 2 - 40, 36);
-
-        // Footer
         ctx.globalAlpha = 0.3;
-        ctx.fillStyle = p.muted;
-        ctx.font = "700 13px Inter, Arial, sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText("M. Mahafdhah", SAFE_M, CANVAS_H - 28);
-        ctx.textAlign = "right";
-        ctx.font = "400 11px Inter, Arial, sans-serif";
-        ctx.fillText("SAVE ↗", CANVAS_W - SAFE_M, CANVAS_H - 28);
+        ctx.font = "700 12px Inter, Arial, sans-serif";
+        ctx.textAlign = isAr ? "left" : "right";
+        const labelX = isAr ? SAFE_M : CANVAS_W - SAFE_M;
+        ctx.fillText((slideType).replace(/_/g, " ").toUpperCase(), labelX, SAFE_M - 18);
         ctx.globalAlpha = 1;
+
+        // Content area calculations
+        const contentTop = SAFE_M + 60;
+        const contentBottom = isCta ? CANVAS_H - SAFE_M - 220 : CANVAS_H - SAFE_M - 80;
+        const contentH = contentBottom - contentTop;
+        const textX = SAFE_M;
+        const textW = CANVAS_W - SAFE_M * 2;
+
+        // ── Layout-specific rendering ──
+
+        if (isStat && slide.pattern_interrupt) {
+          // Large stat number centered
+          ctx.fillStyle = p.accent;
+          ctx.font = "900 120px Inter, Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(slide.pattern_interrupt, CANVAS_W / 2, contentTop + contentH * 0.35);
+
+          // Headline below
+          ctx.fillStyle = p.fg;
+          ctx.font = "900 56px Inter, Arial, sans-serif";
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], CANVAS_W / 2, contentTop + contentH * 0.55, textW, 64, p, "center");
+
+          // Supporting text
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 26px Inter, Arial, sans-serif";
+          ctx.textAlign = "center";
+          wrapText(ctx, slide.supporting_text, CANVAS_W / 2, contentTop + contentH * 0.72, textW - 60, 36);
+
+        } else if (isQuote) {
+          // Quote mark
+          ctx.fillStyle = p.accent;
+          ctx.globalAlpha = 0.25;
+          ctx.font = "400 160px Georgia, serif";
+          ctx.textAlign = isAr ? "right" : "left";
+          const qmX = isAr ? CANVAS_W - SAFE_M : SAFE_M;
+          ctx.fillText("\u201C", qmX, contentTop + contentH * 0.35);
+          ctx.globalAlpha = 1;
+
+          // Headline
+          ctx.fillStyle = p.fg;
+          ctx.font = "900 56px Inter, Arial, sans-serif";
+          const qAlign = isAr ? "right" : "left";
+          const qHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], qHx, contentTop + contentH * 0.5, textW, 64, p, qAlign);
+
+          // Supporting text
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 26px Inter, Arial, sans-serif";
+          ctx.textAlign = qAlign as CanvasTextAlign;
+          wrapText(ctx, slide.supporting_text, qHx, contentTop + contentH * 0.7, textW - 40, 36);
+
+        } else if (isNumbered) {
+          // Number circle
+          const circY = contentTop + contentH * 0.25;
+          const circX = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M - 40 : SAFE_M + 40);
+          ctx.beginPath();
+          ctx.arc(circX, circY, 40, 0, Math.PI * 2);
+          ctx.strokeStyle = p.accent;
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.fillStyle = `${p.accent}10`;
+          ctx.fill();
+          ctx.fillStyle = p.accent;
+          ctx.font = "900 36px Inter, Arial, sans-serif";
+          ctx.textAlign = "center";
+          const stepNum = slide.slide_number >= 6 && slide.slide_number <= 8 ? slide.slide_number - 5 : slide.slide_number;
+          ctx.fillText(String(stepNum), circX, circY + 13);
+
+          // Headline
+          ctx.fillStyle = p.fg;
+          ctx.font = "900 56px Inter, Arial, sans-serif";
+          const nAlign = isAr ? "right" : "left";
+          const nHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], nHx, contentTop + contentH * 0.5, textW, 64, p, nAlign);
+
+          // Supporting text
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 26px Inter, Arial, sans-serif";
+          ctx.textAlign = nAlign as CanvasTextAlign;
+          wrapText(ctx, slide.supporting_text, nHx, contentTop + contentH * 0.7, textW - 40, 36);
+
+        } else if (isSplitL) {
+          // Vertical divider
+          const midX = CANVAS_W / 2;
+          ctx.strokeStyle = `${p.accent}30`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(midX, contentTop + 40);
+          ctx.lineTo(midX, contentBottom - 40);
+          ctx.stroke();
+
+          // Left column: headline
+          ctx.fillStyle = p.fg;
+          ctx.font = "900 48px Inter, Arial, sans-serif";
+          const sLeftAlign = isAr ? "right" : "left";
+          const sLeftX = isAr ? midX - 30 : SAFE_M;
+          ctx.textAlign = sLeftAlign as CanvasTextAlign;
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], sLeftX, contentTop + contentH * 0.4, midX - SAFE_M - 40, 56, p, sLeftAlign);
+
+          // Right column: supporting text
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 26px Inter, Arial, sans-serif";
+          const sRightAlign = isAr ? "right" : "left";
+          const sRightX = isAr ? CANVAS_W - SAFE_M : midX + 30;
+          ctx.textAlign = sRightAlign as CanvasTextAlign;
+          wrapText(ctx, slide.supporting_text, sRightX, contentTop + contentH * 0.4, midX - SAFE_M - 40, 36);
+
+        } else if (isLeft || isRight) {
+          // Text on one side
+          const align = isRight ? (isAr ? "left" : "right") : (isAr ? "right" : "left");
+          const hx = align === "right" ? CANVAS_W - SAFE_M : SAFE_M;
+
+          // Accent bar
+          ctx.fillStyle = p.accent;
+          const barX = align === "right" ? CANVAS_W - SAFE_M - 80 : SAFE_M;
+          ctx.fillRect(barX, contentTop + contentH * 0.32, 80, 6);
+
+          // Pattern interrupt
+          if (slide.pattern_interrupt) {
+            ctx.fillStyle = p.accent;
+            ctx.font = "900 28px Inter, Arial, sans-serif";
+            ctx.textAlign = align as CanvasTextAlign;
+            ctx.fillText(slide.pattern_interrupt, hx, contentTop + contentH * 0.4);
+          }
+
+          // Headline
+          ctx.fillStyle = p.fg;
+          ctx.font = "900 60px Inter, Arial, sans-serif";
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], hx, contentTop + contentH * 0.5, textW * 0.75, 68, p, align);
+
+          // Supporting
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 26px Inter, Arial, sans-serif";
+          ctx.textAlign = align as CanvasTextAlign;
+          wrapText(ctx, slide.supporting_text, hx, contentTop + contentH * 0.72, textW * 0.75, 36);
+
+        } else if (isInfographicL && slide.diagram_data && slide.diagram_data.nodes?.length > 0) {
+          // Draw headline
+          ctx.fillStyle = p.fg;
+          ctx.font = "900 48px Inter, Arial, sans-serif";
+          ctx.textAlign = "center";
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], CANVAS_W / 2, contentTop + 60, textW, 56, p, "center");
+
+          // Draw diagram nodes
+          const nodes = slide.diagram_data.nodes;
+          const dType = slide.diagram_data.type;
+          const dStartY = contentTop + 140;
+          const dHeight = contentH - 180;
+
+          if (dType === "sequential_flow") {
+            const nodeH = 56;
+            const gap = Math.min(40, (dHeight - nodes.length * nodeH) / (nodes.length));
+            nodes.forEach((n, ni) => {
+              const ny = dStartY + ni * (nodeH + gap);
+              const nw = Math.min(420, textW - 80);
+              const nx = (CANVAS_W - nw) / 2;
+              ctx.strokeStyle = p.accent;
+              ctx.lineWidth = 2;
+              roundRect(ctx, nx, ny, nw, nodeH, 12);
+              ctx.stroke();
+              ctx.fillStyle = `${p.accent}15`;
+              roundRect(ctx, nx, ny, nw, nodeH, 12);
+              ctx.fill();
+              ctx.fillStyle = p.fg;
+              ctx.font = "800 20px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText(n, CANVAS_W / 2, ny + 35);
+              if (ni < nodes.length - 1) {
+                ctx.fillStyle = p.accent;
+                ctx.font = "700 28px Inter, Arial, sans-serif";
+                ctx.fillText("↓", CANVAS_W / 2, ny + nodeH + gap / 2 + 8);
+              }
+            });
+          } else if (dType === "grid_2x2") {
+            const cols = 2;
+            const rows = Math.ceil(nodes.length / cols);
+            const cellW = (textW - 40) / cols;
+            const cellH = Math.min(80, (dHeight - 40) / rows);
+            nodes.slice(0, 4).forEach((n, ni) => {
+              const col = ni % cols;
+              const row = Math.floor(ni / cols);
+              const cx = SAFE_M + 20 + col * cellW;
+              const cy = dStartY + row * (cellH + 16);
+              ctx.strokeStyle = `${p.accent}40`;
+              ctx.lineWidth = 2;
+              roundRect(ctx, cx, cy, cellW - 16, cellH, 12);
+              ctx.stroke();
+              ctx.fillStyle = `${p.accent}10`;
+              roundRect(ctx, cx, cy, cellW - 16, cellH, 12);
+              ctx.fill();
+              ctx.fillStyle = p.fg;
+              ctx.font = "800 18px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText(n, cx + (cellW - 16) / 2, cy + cellH / 2 + 6);
+            });
+          } else {
+            // Layered / circular fallback — simple list
+            const nodeH = 48;
+            const gap = 12;
+            nodes.forEach((n, ni) => {
+              const ny = dStartY + ni * (nodeH + gap);
+              const nw = textW - 40;
+              const nx = SAFE_M + 20;
+              ctx.fillStyle = `${p.accent}${Math.max(12, 35 - ni * 6).toString(16).padStart(2, "0")}`;
+              roundRect(ctx, nx, ny, nw, nodeH, 10);
+              ctx.fill();
+              ctx.strokeStyle = `${p.accent}40`;
+              ctx.lineWidth = 1.5;
+              roundRect(ctx, nx, ny, nw, nodeH, 10);
+              ctx.stroke();
+              ctx.fillStyle = p.fg;
+              ctx.font = "700 20px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText(n, CANVAS_W / 2, ny + 31);
+            });
+          }
+
+        } else {
+          // Hero center / default
+          // Accent bar
+          ctx.fillStyle = p.accent;
+          const divX = isHero ? (CANVAS_W - 80) / 2 : SAFE_M;
+          const divY = isHero ? contentTop + contentH * 0.3 : contentTop + contentH * 0.35;
+          ctx.fillRect(divX, divY, 80, 6);
+
+          // Pattern interrupt
+          if (slide.pattern_interrupt && !isStat) {
+            ctx.fillStyle = p.accent;
+            ctx.font = "900 32px Inter, Arial, sans-serif";
+            ctx.textAlign = isHero ? "center" : (isAr ? "right" : "left");
+            const piX = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
+            ctx.fillText(slide.pattern_interrupt, piX, divY + 50);
+          }
+
+          // Headline
+          ctx.fillStyle = p.fg;
+          const fontSize = isHero || isCta ? 72 : 56;
+          ctx.font = `900 ${fontSize}px Inter, Arial, sans-serif`;
+          const hAlign = isHero ? "center" : (isAr ? "right" : "left");
+          const hx = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
+          const hy = isHero ? contentTop + contentH * 0.45 : contentTop + contentH * 0.5;
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], hx, hy, textW, fontSize * 1.12, p, hAlign);
+
+          // Supporting text
+          if (!isCta) {
+            ctx.fillStyle = p.muted;
+            ctx.font = "400 26px Inter, Arial, sans-serif";
+            ctx.textAlign = hAlign as CanvasTextAlign;
+            const sy = isHero ? contentTop + contentH * 0.65 : contentTop + contentH * 0.72;
+            wrapText(ctx, slide.supporting_text, hx, sy, textW - 40, 36);
+          }
+
+          // Arrow down visual anchor
+          if (slide.visual_anchor === "arrow_down") {
+            ctx.fillStyle = p.accent;
+            ctx.font = "400 48px Inter, Arial, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("↓", CANVAS_W / 2, contentTop + contentH * 0.82);
+          }
+        }
+
+        // ── CTA Authority Branding ──
+        if (isCta) {
+          const ctaY = CANVAS_H - SAFE_M - 180;
+          // Divider line
+          const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 30, 0, CANVAS_W / 2 + 30, 0);
+          divGrd.addColorStop(0, "transparent");
+          divGrd.addColorStop(0.5, p.accent);
+          divGrd.addColorStop(1, "transparent");
+          ctx.fillStyle = divGrd;
+          ctx.fillRect(CANVAS_W / 2 - 30, ctaY, 60, 2);
+
+          ctx.textAlign = "center";
+          // Name
+          ctx.fillStyle = p.fg;
+          ctx.font = "800 22px Inter, Arial, sans-serif";
+          ctx.fillText("M. Mahafdah", CANVAS_W / 2, ctaY + 36);
+          // Title
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 16px Inter, Arial, sans-serif";
+          ctx.fillText("Strategy | Business & Digital Transformation", CANVAS_W / 2, ctaY + 62);
+          // LinkedIn
+          ctx.fillStyle = p.accent;
+          ctx.font = "600 14px Inter, Arial, sans-serif";
+          ctx.fillText("linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 86);
+          // Repost
+          ctx.fillStyle = p.muted;
+          ctx.globalAlpha = 0.7;
+          ctx.font = "400 15px Inter, Arial, sans-serif";
+          ctx.fillText("↻ Repost if this helped you.", CANVAS_W / 2, ctaY + 112);
+          ctx.globalAlpha = 1;
+        }
+
+        // ── Footer (non-CTA) ──
+        if (!isCta) {
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = p.muted;
+          ctx.font = "700 13px Inter, Arial, sans-serif";
+          ctx.textAlign = isAr ? "right" : "left";
+          ctx.fillText("M. Mahafdah", isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
+          ctx.textAlign = isAr ? "left" : "right";
+          ctx.font = "400 11px Inter, Arial, sans-serif";
+          ctx.fillText("SAVE ↗", isAr ? SAFE_M : CANVAS_W - SAFE_M, CANVAS_H - 28);
+          ctx.globalAlpha = 1;
+        }
 
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, CANVAS_W, CANVAS_H);
       }
@@ -1134,6 +1426,75 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
+}
+
+function drawHeadlineWithEmphasis(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  emphasisWords: string[],
+  x: number, y: number,
+  maxWidth: number, lineHeight: number,
+  p: { emphBg: string; emphFg: string; fg: string },
+  align: string,
+) {
+  if (!emphasisWords || emphasisWords.length === 0) {
+    ctx.textAlign = align as CanvasTextAlign;
+    wrapText(ctx, text, x, y, maxWidth, lineHeight);
+    return;
+  }
+
+  const lowerEmph = emphasisWords.map(w => w.toLowerCase());
+  const words = text.split(" ");
+  let line: { text: string; highlight: boolean }[][] = [[]];
+  let testStr = "";
+
+  // Word-wrap into lines
+  for (const word of words) {
+    const test = testStr + (testStr ? " " : "") + word;
+    if (ctx.measureText(test).width > maxWidth && testStr) {
+      line.push([]);
+      testStr = word;
+    } else {
+      testStr = test;
+    }
+    const isEmph = lowerEmph.includes(word.toLowerCase().replace(/[.,!?;:]/g, ""));
+    line[line.length - 1].push({ text: word, highlight: isEmph });
+  }
+
+  // Render each line
+  ctx.textAlign = "left"; // manual positioning
+  const savedFont = ctx.font;
+
+  line.forEach((lineWords, li) => {
+    const cy = y + li * lineHeight;
+    const fullLine = lineWords.map(w => w.text).join(" ");
+    const lineW = ctx.measureText(fullLine).width;
+    let startX: number;
+    if (align === "center") startX = x - lineW / 2;
+    else if (align === "right") startX = x - lineW;
+    else startX = x;
+
+    let cx = startX;
+    lineWords.forEach((w, wi) => {
+      const wordW = ctx.measureText(w.text).width;
+      if (w.highlight) {
+        // Draw background pill
+        ctx.fillStyle = p.emphBg;
+        roundRect(ctx, cx - 6, cy - lineHeight * 0.7, wordW + 12, lineHeight * 0.9, 4);
+        ctx.fill();
+        ctx.fillStyle = p.emphFg;
+      } else {
+        ctx.fillStyle = p.fg;
+      }
+      ctx.font = savedFont;
+      ctx.textAlign = "left";
+      ctx.fillText(w.text, cx, cy);
+      cx += wordW + ctx.measureText(" ").width;
+    });
+  });
+
+  // Restore
+  ctx.font = savedFont;
 }
 
 export default CarouselGenerator;
