@@ -619,9 +619,9 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }
   }, [title, description, context, style, lang, generateVisuals]);
 
-  const generateBoth = useCallback(() => {
-    generate("en");
-    generate("ar");
+  const generateBoth = useCallback(async () => {
+    await generate("en");
+    await generate("ar");
   }, [generate]);
 
   const [hasGenerated, setHasGenerated] = useState(false);

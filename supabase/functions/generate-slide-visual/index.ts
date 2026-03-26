@@ -59,7 +59,29 @@ Make the illustration sophisticated, minimal, and visually striking. Use geometr
     }
 
     const imageData = await imageRes.json();
-    const imgUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    let imgUrl = imageData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+    // Retry once if no image was returned (model sometimes returns text-only)
+    if (!imgUrl || !imgUrl.startsWith("data:image")) {
+      console.warn("First attempt returned no image, retrying...");
+      await new Promise(r => setTimeout(r, 2000));
+      const retryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3.1-flash-image-preview",
+          messages: [{ role: "user", content: fullPrompt }],
+          modalities: ["image", "text"],
+        }),
+      });
+      if (retryRes.ok) {
+        const retryData = await retryRes.json();
+        imgUrl = retryData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      }
+    }
 
     if (!imgUrl || !imgUrl.startsWith("data:image")) {
       return new Response(JSON.stringify({ error: "No image generated", slide_number }), {
