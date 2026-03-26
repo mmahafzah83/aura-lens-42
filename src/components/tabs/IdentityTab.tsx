@@ -2,6 +2,7 @@ import { useState } from "react";
 import { User, Brain, Settings, Sparkles } from "lucide-react";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
+import PageHeader from "@/components/PageHeader";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
