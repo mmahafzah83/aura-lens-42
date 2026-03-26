@@ -128,16 +128,17 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  const openChat = (msg?: string) => {
-    // Close first to reset state, then reopen with new context
+  const openChat = (msg?: string, ctx?: ChatContext) => {
     if (chatOpen) {
       setChatOpen(false);
       setTimeout(() => {
         setChatInitialMessage(msg);
+        setChatContext(ctx);
         setChatOpen(true);
       }, 50);
     } else {
       setChatInitialMessage(msg);
+      setChatContext(ctx);
       setChatOpen(true);
     }
   };
