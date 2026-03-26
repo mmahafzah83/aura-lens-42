@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
-import AuraChatSidebar from "@/components/AuraChatSidebar";
+import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import NotificationBell from "@/components/NotificationBell";
@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [captureOpen, setCaptureOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
+  const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
@@ -127,16 +128,17 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
-  const openChat = (msg?: string) => {
-    // Close first to reset state, then reopen with new context
+  const openChat = (msg?: string, ctx?: ChatContext) => {
     if (chatOpen) {
       setChatOpen(false);
       setTimeout(() => {
         setChatInitialMessage(msg);
+        setChatContext(ctx);
         setChatOpen(true);
       }, 50);
     } else {
       setChatInitialMessage(msg);
+      setChatContext(ctx);
       setChatOpen(true);
     }
   };
@@ -433,8 +435,9 @@ const Dashboard = () => {
       />
       <AuraChatSidebar
         open={chatOpen}
-        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); }}
+        onClose={() => { setChatOpen(false); setChatInitialMessage(undefined); setChatContext(undefined); }}
         initialMessage={chatInitialMessage}
+        context={chatContext}
       />
     </div>
   );
