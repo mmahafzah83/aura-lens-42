@@ -25,6 +25,7 @@ interface Slide {
   headline: string;
   supporting_text: string;
   emphasis_words?: string[];
+  pattern_interrupt?: string | null;
   visual_anchor?: string | null;
   layout: string;
   accent_element?: string | null;
