@@ -300,8 +300,13 @@ const FrameworkBuilder = ({
 
           {/* Diagram Preview */}
           {diagramUrl && (
-            <div className="rounded-xl overflow-hidden border border-border/10 bg-secondary/10">
-              <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
+            <div className="space-y-1.5">
+              <div className="rounded-xl overflow-hidden border border-border/10 bg-secondary/10">
+                <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
+              </div>
+              {diagramMeta && (
+                <p className="text-[10px] text-muted-foreground text-center capitalize">{diagramMeta}</p>
+              )}
             </div>
           )}
 
