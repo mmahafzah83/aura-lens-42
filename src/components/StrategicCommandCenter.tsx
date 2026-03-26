@@ -265,7 +265,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         className="space-y-5"
       >
         <p className="text-label uppercase tracking-wider text-xs font-semibold">Authority Progress</p>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           {(data.pipeline || []).map((step, i) => {
             const Icon = step.icon;
             return (
