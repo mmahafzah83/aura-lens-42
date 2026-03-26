@@ -324,16 +324,13 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* ── Persistent AI Bar ── */}
+      {/* ── Mobile Bottom Nav (navigation only, no AI bar) ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <div
-          className={`fixed z-40 transition-all duration-300 ${
-            sidebarCollapsed ? "md:left-[68px]" : "md:left-[220px]"
-          } left-0 right-0`}
+          className={`fixed z-40 left-0 right-0 md:hidden`}
           style={{ bottom: 'env(safe-area-inset-bottom)' }}
         >
-          {/* Mobile bottom nav */}
-          <nav className="md:hidden border-t border-border/10 bg-background/95 backdrop-blur-xl">
+          <nav className="border-t border-border/10 bg-background/95 backdrop-blur-xl">
             <div className="flex w-full px-1 py-1.5">
               {NAV_ITEMS.map((tab) => (
                 <button
@@ -349,53 +346,6 @@ const Dashboard = () => {
               ))}
             </div>
           </nav>
-
-          {/* AI Bar */}
-          <div className="border-t border-border/10 bg-background/95 backdrop-blur-xl px-4 sm:px-6 py-3">
-            <div className="max-w-5xl mx-auto">
-              <div className="flex items-center gap-3">
-                {/* Quick Prompts */}
-                <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-                  {["What signals are emerging?", "Suggest a framework", "Draft a LinkedIn post"].map((prompt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => openChat(prompt)}
-                      className="text-[9px] px-2.5 py-1.5 rounded-lg bg-secondary/30 text-muted-foreground/50 hover:text-primary hover:bg-primary/8 transition-colors border border-transparent hover:border-primary/15 whitespace-nowrap"
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Main Input */}
-                <button
-                  onClick={() => openChat()}
-                  className="flex-1 flex items-center gap-3 px-4 py-3 rounded-xl glass-card border border-border/15 hover:border-primary/20 transition-all group cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-primary/50 group-hover:text-primary transition-colors shrink-0" />
-                  <span className="text-sm text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
-                    What strategic question are you exploring?
-                  </span>
-                </button>
-
-                {/* Tool Buttons */}
-                <button
-                  onClick={() => setCaptureOpen(true)}
-                  className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-colors shrink-0 border border-transparent hover:border-primary/15"
-                  title="Attach document"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => { setCaptureOpen(true); }}
-                  className="w-10 h-10 rounded-xl bg-secondary/30 flex items-center justify-center text-muted-foreground/40 hover:text-primary hover:bg-primary/8 transition-colors shrink-0 border border-transparent hover:border-primary/15 md:flex hidden"
-                  title="Voice question"
-                >
-                  <Mic className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
