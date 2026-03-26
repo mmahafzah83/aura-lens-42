@@ -5,6 +5,7 @@ import {
   ArrowUpRight, ArrowDownRight, Sparkles, FileText,
   Zap, Eye, Lightbulb
 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
