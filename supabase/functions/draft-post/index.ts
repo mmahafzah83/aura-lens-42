@@ -214,6 +214,10 @@ ${frameworkDigest}
       finalPost = await callAI(LOVABLE_API_KEY, auditSystem, auditPrompt);
     }
 
+    // Strip any hashtags the model may have added despite instructions
+    finalPost = finalPost.replace(/\n*(?:#\w+\s*)+$/g, '').trim();
+    finalPost = finalPost.replace(/(?:#[A-Za-z]\w+)/g, '').replace(/\n{3,}/g, '\n\n').trim();
+
     return new Response(JSON.stringify({ post: finalPost }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
