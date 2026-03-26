@@ -274,10 +274,31 @@ const SlidePreview = ({
   const slideType = slide.slide_type;
   const hasDiagram = slide.diagram_data && slide.diagram_data.nodes?.length > 0;
   const hasImage = !!slide.image_url;
-  const isHero = layout === "hero_center" || slideType === "hook" || slideType === "cta" || layout === "closing_centered";
+  const isHero = layout === "hero_center" || layout === "closing_centered";
   const isQuote = layout === "quote_block";
   const isNumbered = layout === "numbered_point";
-  const isFramework = slideType === "framework";
+  const isStat = layout === "stat_callout";
+  const isLeft = layout === "left_impact";
+  const isRight = layout === "right_impact";
+  const isSplit = layout === "split_vertical";
+  const isInfographic = layout === "infographic";
+  const isCTA = layout === "closing_centered" || slideType === "cta";
+  const isFrameworkStep = slideType === "framework_step" || slideType === "framework";
+
+  // Determine text alignment based on layout
+  const getTextAlign = (): string => {
+    if (isHero || isStat || isCTA) return "center";
+    if (isRight) return isAr ? "left" : "right";
+    return isAr ? "right" : "left";
+  };
+  const textAlign = getTextAlign();
+
+  // Determine content vertical position based on layout
+  const getJustify = (): string => {
+    if (isHero || isStat || isCTA) return "center";
+    if (isLeft || isRight) return "center";
+    return "flex-end";
+  };
 
   return (
     <div className="relative overflow-hidden flex-shrink-0" style={{ width, height, borderRadius: 12 }}>
@@ -347,17 +368,29 @@ const SlidePreview = ({
 
         {/* Main content area */}
         <div style={{
-          flex: 1, display: "flex", flexDirection: "column",
-          justifyContent: isHero ? "center" : "flex-end",
-          padding: `${SAFE_M + 40}px ${SAFE_M}px ${SAFE_M + 60}px`,
+          flex: 1, display: "flex",
+          flexDirection: isSplit ? "row" : "column",
+          justifyContent: getJustify(),
+          alignItems: isSplit ? "center" : undefined,
+          padding: `${SAFE_M + 40}px ${SAFE_M}px ${isCTA ? SAFE_M + 180 : SAFE_M + 60}px`,
           position: "relative", zIndex: 2,
           gap: 20,
         }}>
           {/* Quote mark for quote layout */}
           {isQuote && <VisualAnchor type="quote_mark" palette={p} />}
 
-          {/* Framework number badge */}
-          {isFramework && isNumbered && (
+          {/* Stat callout — large number */}
+          {isStat && slide.pattern_interrupt && (
+            <div style={{
+              fontSize: 120, fontWeight: 900, color: p.accent,
+              textAlign: "center", lineHeight: 1, marginBottom: 8,
+            }}>
+              {slide.pattern_interrupt}
+            </div>
+          )}
+
+          {/* Numbered point badge */}
+          {isNumbered && isFrameworkStep && (
             <div style={{
               width: 80, height: 80, borderRadius: "50%",
               border: `3px solid ${p.accent}`,
@@ -366,48 +399,78 @@ const SlidePreview = ({
               backgroundColor: `${p.accent}10`,
               ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
             }}>
-              {slide.slide_number - 5}
+              {slide.slide_number >= 6 && slide.slide_number <= 8 ? slide.slide_number - 5 : slide.slide_number}
             </div>
           )}
 
           {/* Visual anchor (before headline) */}
-          {!isQuote && !isNumbered && slide.visual_anchor !== "arrow_down" && (
+          {!isQuote && !isNumbered && !isStat && slide.visual_anchor !== "arrow_down" && (
             <VisualAnchor type={slide.visual_anchor || "underline_bar"} palette={p} />
           )}
 
-          {/* Pattern interrupt */}
-          {slide.pattern_interrupt && (
+          {/* Pattern interrupt (non-stat) */}
+          {slide.pattern_interrupt && !isStat && (
             <div style={{
               fontSize: 32, fontWeight: 900, letterSpacing: 6,
               textTransform: "uppercase", color: p.accent,
-              textAlign: isHero ? "center" : (isAr ? "right" : "left"),
+              textAlign: textAlign as any,
               marginBottom: 8,
             }}>
               {slide.pattern_interrupt}
             </div>
           )}
 
-          {/* Headline with emphasis highlighting */}
-          <HighlightedHeadline
-            text={slide.headline}
-            emphasisWords={slide.emphasis_words}
-            palette={p}
-            fontSize={isHero ? 76 : 60}
-            textAlign={isHero ? "center" : (isAr ? "right" : "left")}
-            isAr={isAr}
-          />
+          {/* Split layout — left column */}
+          {isSplit ? (
+            <>
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
+                <HighlightedHeadline
+                  text={slide.headline}
+                  emphasisWords={slide.emphasis_words}
+                  palette={p}
+                  fontSize={52}
+                  textAlign={isAr ? "right" : "left"}
+                  isAr={isAr}
+                />
+              </div>
+              <div style={{
+                width: 2, backgroundColor: `${p.accent}30`,
+                alignSelf: "stretch", margin: "0 16px",
+              }} />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <p style={{
+                  fontSize: 26, lineHeight: 1.5, color: p.muted, fontWeight: 400,
+                  textAlign: isAr ? "right" : "left",
+                }}>
+                  {slide.supporting_text}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Headline with emphasis highlighting */}
+              <HighlightedHeadline
+                text={slide.headline}
+                emphasisWords={slide.emphasis_words}
+                palette={p}
+                fontSize={isHero || isCTA ? 76 : isStat ? 56 : 60}
+                textAlign={textAlign}
+                isAr={isAr}
+              />
 
-          {/* Supporting text */}
-          {!hasDiagram && slide.supporting_text && (
-            <p style={{
-              fontSize: 28, lineHeight: 1.5,
-              color: p.muted, fontWeight: 400,
-              textAlign: isHero ? "center" : (isAr ? "right" : "left"),
-              maxWidth: 800,
-              ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
-            }}>
-              {slide.supporting_text}
-            </p>
+              {/* Supporting text */}
+              {!hasDiagram && slide.supporting_text && !isCTA && (
+                <p style={{
+                  fontSize: 28, lineHeight: 1.5,
+                  color: p.muted, fontWeight: 400,
+                  textAlign: textAlign as any,
+                  maxWidth: 800,
+                  ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
+                }}>
+                  {slide.supporting_text}
+                </p>
+              )}
+            </>
           )}
 
           {/* Diagram */}
@@ -423,16 +486,53 @@ const SlidePreview = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          padding: `24px ${SAFE_M}px`, display: "flex", justifyContent: "space-between",
-          alignItems: "center", fontSize: 14, color: p.muted, opacity: 0.3,
-          borderTop: `1px solid ${p.muted}15`, zIndex: 3,
-        }}>
-          <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafdhah</span>
-          <span style={{ letterSpacing: 3, textTransform: "uppercase", fontSize: 11 }}>Save ↗</span>
-        </div>
+        {/* CTA Authority Branding Block */}
+        {isCTA && (
+          <div style={{
+            position: "absolute", bottom: SAFE_M + 20, left: SAFE_M, right: SAFE_M,
+            display: "flex", flexDirection: "column", alignItems: "center",
+            gap: 12, zIndex: 3,
+          }}>
+            <div style={{
+              width: 60, height: 2,
+              background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)`,
+              marginBottom: 8,
+            }} />
+            <div style={{
+              fontSize: 22, fontWeight: 800, color: p.fg, textAlign: "center",
+            }}>
+              M. Mahafdah
+            </div>
+            <div style={{
+              fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.6,
+            }}>
+              Strategy | Business & Digital Transformation
+            </div>
+            <div style={{
+              fontSize: 14, color: p.accent, textAlign: "center", fontWeight: 600,
+            }}>
+              linkedin.com/in/mmahafzah
+            </div>
+            <div style={{
+              fontSize: 15, color: p.muted, textAlign: "center", marginTop: 4, opacity: 0.7,
+            }}>
+              ↻ Repost if this helped you.
+            </div>
+          </div>
+        )}
+
+        {/* Footer (non-CTA) */}
+        {!isCTA && (
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            padding: `24px ${SAFE_M}px`, display: "flex", justifyContent: "space-between",
+            alignItems: "center", fontSize: 14, color: p.muted, opacity: 0.3,
+            borderTop: `1px solid ${p.muted}15`, zIndex: 3,
+          }}>
+            <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafdah</span>
+            <span style={{ letterSpacing: 3, textTransform: "uppercase", fontSize: 11 }}>Save ↗</span>
+          </div>
+        )}
       </div>
     </div>
   );
