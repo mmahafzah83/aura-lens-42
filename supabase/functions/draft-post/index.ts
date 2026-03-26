@@ -133,34 +133,45 @@ BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "h
 
 CRITICAL: Write in natural executive Arabic used by strategy leaders and consultants in the GCC. This is NOT a translation - it is original Arabic thought leadership.
 
-ARABIC RHETORICAL STRUCTURES (combine 2-3 per post):
+GENERAL STYLE:
+- Write for mobile reading. Short paragraphs. 1-2 sentences per paragraph.
+- Break ideas into multiple lines. Never produce large blocks of text.
+- Posts should feel reflective, clear, and conversational.
 
-1. Contrast Pattern: "ليس ... بل ..."
-2. Reframing: "المشكلة ليست في ... بل في ..."
-3. Insight Ladder: Statement then explanation then conclusion
-4. Executive Framework: Present ideas using structured numbered points
-5. Strategic Warning: Explain what leaders misunderstand about the topic
-6. Leadership Question: End with a thought-provoking question
-7. Future Signal: Explain an emerging trend and its leadership implication
+HOOK RULE (1-2 lines):
+- Bold opening using contrast ("ليس ... بل ...") or reframing ("المشكلة ليست في ... بل في ...").
+- Must create curiosity immediately.
 
-WRITING STRUCTURE (mandatory):
+STRUCTURE RULE:
+- Prefer structured thinking: Steps, Lists, Principles, Problem/Solution, Lessons, Rules.
+- Use Arabic rhetorical patterns: Contrast, Reframing, Insight Ladder, Strategic Warning, Leadership Question, Future Signal.
 
-1. HOOK (1-2 lines): Bold opening using contrast or reframing pattern
-2. INSIGHT: 3-5 short lines explaining the strategic point
-3. FRAMEWORK/KEY POINTS: 3 structured points
-4. CLOSING: Thought-provoking leadership question
+EXPLANATION PATTERN:
+- Every concept follows: Concept → Short explanation → Example.
+
+LINE RHYTHM:
+- Alternate between: Short statement → Explanation → Insight.
+- Natural executive Arabic rhythm, not translated English.
+
+AUTHORITY SIGNALS:
+- Include numbers, real outcomes, specific experience when possible.
+
+FORMAT RULES:
+- Lists, bullets, framework breakdowns, short sections.
+- Under 180 words. No hashtags, no emojis except symbols.
+- Right-to-left optimized formatting.
 
 PREFERRED TERMINOLOGY:
 الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة، الهندسة التنظيمية، رؤية 2030، البنية التحتية
 
-RULES:
-- Concise sentences, clear business vocabulary
-- Avoid bureaucratic Arabic
-- Feel natural, confident, executive - NOT translated
-- Short paragraphs, mobile-first readability
-- Under 180 words
-- No hashtags, no emojis except symbols
-- Right-to-left optimized formatting${frameworkBlock}`;
+CTA RULE:
+- End with one thought-provoking leadership question.
+
+FINAL RULE:
+- Every post must feel: Clear, Structured, Practical, Human.
+- Avoid sounding like AI. Avoid generic motivational language.
+- Prioritize clarity over creativity.
+- Feel natural, confident, executive - NOT translated.${frameworkBlock}`;
 
     const systemPrompts: Record<string, string> = {
       "weekly-memo": `You are a Senior Executive Coach. Synthesize voice-note insights into a Leadership Memo.\n\nStructure:\nWEEKLY TRANSFORMATION LENS\n\nTheme of the Week\nTop 3 Insights\nStrategic Implication\nRecommended Action\nCoach's Challenge\n\n${isArabic ? EXPERT_LINKEDIN_AR : EXPERT_LINKEDIN_EN}`,

@@ -93,40 +93,53 @@ Deno.serve(async (req) => {
 
 BRAND PILLARS: ${brandPillars}
 
-You MUST produce TWO versions of every post: English AND Arabic.
+You MUST produce TWO versions: English AND Arabic.
 
-=== ENGLISH POST STRUCTURE ===
+=== WRITING RULES (apply to BOTH languages) ===
 
-1. SCROLL-STOPPING HOOK (Lines 1-2):
-   Bold curiosity gap, contrarian insight, or startling statistic.
-   The reader MUST click 'See more' by line 2.
+GENERAL STYLE:
+- Write for mobile reading. Short paragraphs. 1-2 sentences per paragraph.
+- Break ideas into multiple lines. Never produce large blocks of text.
+- Posts should feel like speaking, not academic writing.
 
-2. INSIGHT EXPLANATION (3-5 short lines):
-   Each sentence on its own line. Max 2 lines per paragraph.
-   One Director-level insight.
+HOOK RULE (Lines 1-2):
+- Create curiosity using: contrarian insight, clear promise, surprising statistic, or strong observation.
+- Short and direct. Reader MUST click "See more."
 
-3. REFRAME / PARTNER LENS:
-   One sentence only someone with 15+ years in ${sector} would write.
+STRUCTURE RULE:
+- Prefer structured thinking over long explanation.
+- Use: Steps, Lists, Principles, Systems, Before/After, Problem/Solution, Lessons, Mistakes, Rules.
 
-4. KEY POINTS:
-   3 bullet points. Each max 15 words.
+EXPLANATION PATTERN:
+- Every concept: Concept → Short explanation → Example.
 
-5. CTA:
-   One provocative open-ended question.
+LINE RHYTHM:
+- Alternate: Short statement → Explanation → Insight.
 
-=== ARABIC POST STRUCTURE ===
+AUTHORITY SIGNALS:
+- Include: numbers, experiments, personal experience, real outcomes.
+
+INSIGHT INSERTION:
+- Insert mini insights throughout. Example: "Content is not about volume. It is about clarity."
+
+FORMAT RULES:
+- Lists, bullets, framework breakdowns, short sections.
+- Under 180 words each. No hashtags, no emojis except symbols.
+
+CTA RULE:
+- End with one simple action or provocative question.
+
+FINAL RULE:
+- Every post must feel: Clear, Structured, Practical, Human.
+- Avoid sounding like AI. Avoid generic motivational language. Prioritize clarity over creativity.
+
+BANNED WORDS (English): "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal)
+
+=== ARABIC POST RULES ===
 Write in natural executive Arabic for GCC strategy leaders. NOT a translation.
 Use rhetorical patterns: contrast ("ليس ... بل ..."), reframing ("المشكلة ليست في ... بل في ..."), insight ladder, strategic warning, leadership question.
 Preferred terms: الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة، الهندسة التنظيمية
-Same structure as English but adapted for Arabic thought leadership.
-
-=== RULES FOR BOTH ===
-- Short paragraphs, spaced lines, mobile-first
-- No hashtags, no emojis except symbols
-- Under 180 words each
-- Authoritative but conversational
-
-BANNED WORDS (English): "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize," "facilitate," "paradigm," "ecosystem" (unless literal)
+Arabic posts should feel reflective, clear, and conversational.
 
 === VISUAL COMPANION ===
 Generate an image_prompt for a 1080x1350 Minimalist Handwritten Blackboard Schematic.
