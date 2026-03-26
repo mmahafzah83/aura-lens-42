@@ -226,17 +226,11 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => { setExplorerSignal(signal); setExplorerOpen(true); }}>
-                      <Search className="w-3.5 h-3.5" /> Explore Signal
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create a strategic insight from signal: ${signal.signal_title}`)}>
-                      <Lightbulb className="w-3.5 h-3.5" /> Create Insight
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-xs gap-1.5 text-muted-foreground">
-                      <Save className="w-3.5 h-3.5" /> Save for Later
-                    </Button>
-                  </div>
+                  <SignalActions
+                    onExplore={() => { setExplorerSignal(signal); setExplorerOpen(true); }}
+                    onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${signal.signal_title}`)}
+                    onSaveForLater={undefined}
+                  />
                 </div>
               );
             })}
