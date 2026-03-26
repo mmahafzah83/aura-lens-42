@@ -126,6 +126,7 @@ const StrategicAdvisorPanel = ({
   // Compact mode — just recommended move
   if (compact) {
     return (
+      <>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -157,6 +158,21 @@ const StrategicAdvisorPanel = ({
           <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
         </Button>
       </motion.div>
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
+      />
+      <LinkedInDraftPanel
+        open={!!draftData}
+        onClose={() => setDraftData(null)}
+        title={draftData?.title || ""}
+        hook={draftData?.hook}
+        context={draftData?.context}
+      />
+      </>
     );
   }
 
