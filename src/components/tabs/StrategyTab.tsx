@@ -351,21 +351,15 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                     <span className="ml-auto">{formatSmartDate(fw.created_at)}</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                  <FrameworkActions
+                    onOpenFramework={() => {
                       setBuilderData({ title: fw.title, steps: steps.map((s: any) => typeof s === "string" ? s : s.title || s.name || ""), summary: fw.summary || "" });
-                    }}>
-                      <Layers className="w-3.5 h-3.5" /> Expand
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create a visual model for framework: ${fw.title}`)}>
-                      <BookOpen className="w-3.5 h-3.5" /> Visual Model
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                    }}
+                    onRefineFramework={() => onOpenChat?.(`Refine and improve framework: ${fw.title}`)}
+                    onDraftContent={() => {
                       setDraftData({ title: fw.title, context: fw.summary || "" });
-                    }}>
-                      <PenLine className="w-3.5 h-3.5" /> Draft Content
-                    </Button>
-                  </div>
+                    }}
+                  />
                 </div>
               );
             })}

@@ -280,50 +280,22 @@ const SignalsPanel = ({
                       </div>
                     )}
 
-                    {/* Standardized Action Buttons */}
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs gap-1.5"
-                        onClick={() => setExplorerSignal(signal)}
-                      >
-                        <Search className="w-3.5 h-3.5" /> Explore
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs gap-1.5"
-                        onClick={() => onOpenChat?.(`Create a strategic insight from this signal:\n\nSignal: ${signal.signal_title}\n\nEvidence: ${signal.explanation}\n\nImplication: ${signal.strategic_implications}`)}
-                      >
-                        <Lightbulb className="w-3.5 h-3.5" /> Create Insight
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs gap-1.5"
-                        onClick={() => setBuilderData({
-                          title: fw.title || signal.signal_title,
-                          description: fw.description || signal.strategic_implications || "",
-                          steps: fw.potential_steps || [],
-                        })}
-                      >
-                        <Target className="w-3.5 h-3.5" /> Develop Framework
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs gap-1.5"
-                        onClick={() => setDraftData({
-                          title: signal.signal_title,
-                          hook: signal.explanation,
-                          angle: "Strategic thought leadership",
-                          context: signal.strategic_implications,
-                        })}
-                      >
-                        <PenLine className="w-3.5 h-3.5" /> Draft Content
-                      </Button>
-                    </div>
+                    {/* Standardized Signal Actions */}
+                    <SignalActions
+                      onExplore={() => setExplorerSignal(signal)}
+                      onCreateInsight={() => onOpenChat?.(`Create a strategic insight from this signal:\n\nSignal: ${signal.signal_title}\n\nEvidence: ${signal.explanation}\n\nImplication: ${signal.strategic_implications}`)}
+                      onDevelopFramework={() => setBuilderData({
+                        title: fw.title || signal.signal_title,
+                        description: fw.description || signal.strategic_implications || "",
+                        steps: fw.potential_steps || [],
+                      })}
+                      onDraftContent={() => setDraftData({
+                        title: signal.signal_title,
+                        hook: signal.explanation,
+                        angle: "Strategic thought leadership",
+                        context: signal.strategic_implications,
+                      })}
+                    />
                   </div>
                 </motion.div>
               )}
