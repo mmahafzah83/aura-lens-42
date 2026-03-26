@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Zap, Brain, Eye, TrendingUp, AlertTriangle, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
@@ -13,6 +13,26 @@ interface Notification {
   created_at: string;
   metadata: any;
 }
+
+const TYPE_ICONS: Record<string, typeof Bell> = {
+  opportunity: Zap,
+  insight_ready: Brain,
+  pattern: Eye,
+  momentum: TrendingUp,
+  drift: AlertTriangle,
+  nudge: ArrowRight,
+  strategic: Zap,
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  opportunity: "text-amber-400",
+  insight_ready: "text-blue-400",
+  pattern: "text-emerald-400",
+  momentum: "text-orange-400",
+  drift: "text-red-400",
+  nudge: "text-primary",
+  strategic: "text-primary",
+};
 
 const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -35,9 +55,8 @@ const NotificationBell = () => {
       .channel("notifications-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
         fetchNotifications();
-        // Browser notification if permitted
         if ("Notification" in window && Notification.permission === "granted") {
-          // Will fire for new notifications
+          // Browser notification handled by service worker
         }
       })
       .subscribe();
@@ -45,13 +64,11 @@ const NotificationBell = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Request push permission on first open
   const handleOpen = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && "Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-    // Mark all as read when opening
     if (isOpen && unreadCount > 0) {
       markAllRead();
     }
@@ -93,7 +110,7 @@ const NotificationBell = () => {
         sideOffset={8}
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-          <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
+          <h4 className="text-sm font-semibold text-foreground">Strategic Alerts</h4>
           {notifications.length > 0 && (
             <button onClick={clearAll} className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">
               Clear all
@@ -104,49 +121,62 @@ const NotificationBell = () => {
           {notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <Bell className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">No notifications yet</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-1">Weekly summaries will appear here</p>
+              <p className="text-xs text-muted-foreground">No strategic alerts yet</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1">Aura will notify you when meaningful patterns emerge</p>
             </div>
           ) : (
-            notifications.map((n) => (
-              <div
-                key={n.id}
-                className={`px-4 py-3 border-b border-border/10 transition-colors ${
-                  n.read ? "opacity-60" : "bg-primary/5"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
-                      <h5 className="text-xs font-semibold text-foreground truncate">{n.title}</h5>
+            notifications.map((n) => {
+              const Icon = TYPE_ICONS[n.type] || Bell;
+              const iconColor = TYPE_COLORS[n.type] || "text-muted-foreground";
+              return (
+                <div
+                  key={n.id}
+                  className={`px-4 py-3 border-b border-border/10 transition-colors ${
+                    n.read ? "opacity-60" : "bg-primary/5"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-secondary/30 ${iconColor}`}>
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{n.body}</p>
-
-                    {/* KPI mini-bars */}
-                    {n.metadata && n.type === "weekly_summary" && (
-                      <div className="flex gap-3 mt-2">
-                        {[
-                          { label: "Auth", value: n.metadata.authority_index, color: "bg-primary" },
-                          { label: "Voice", value: n.metadata.market_voice, color: "bg-[hsl(200_70%_55%)]" },
-                        ].map((kpi) => (
-                          <div key={kpi.label} className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-muted-foreground">{kpi.label}</span>
-                            <div className="w-12 h-1 rounded-full bg-secondary overflow-hidden">
-                              <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.value || 0}%` }} />
-                            </div>
-                            <span className="text-[9px] text-muted-foreground">{kpi.value || 0}%</span>
-                          </div>
-                        ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h5 className="text-xs font-semibold text-foreground truncate">{n.title}</h5>
+                        <span className="text-[9px] text-muted-foreground/50 shrink-0">
+                          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                        </span>
                       </div>
-                    )}
+                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{n.body}</p>
+
+                      {/* Alert urgency badge */}
+                      {n.metadata?.urgency === "high" && (
+                        <span className="inline-block mt-1.5 text-[9px] uppercase font-bold tracking-wider text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded">
+                          High Priority
+                        </span>
+                      )}
+
+                      {/* KPI mini-bars for weekly summaries */}
+                      {n.metadata && n.type === "weekly_summary" && (
+                        <div className="flex gap-3 mt-2">
+                          {[
+                            { label: "Auth", value: n.metadata.authority_index, color: "bg-primary" },
+                            { label: "Voice", value: n.metadata.market_voice, color: "bg-blue-500" },
+                          ].map((kpi) => (
+                            <div key={kpi.label} className="flex items-center gap-1.5">
+                              <span className="text-[9px] text-muted-foreground">{kpi.label}</span>
+                              <div className="w-12 h-1 rounded-full bg-secondary overflow-hidden">
+                                <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.value || 0}%` }} />
+                              </div>
+                              <span className="text-[9px] text-muted-foreground">{kpi.value || 0}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[9px] text-muted-foreground/50 shrink-0 mt-0.5">
-                    {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                  </span>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </PopoverContent>
