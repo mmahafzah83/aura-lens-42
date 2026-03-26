@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Compass } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import CaptureIntelligencePanel from "@/components/CaptureIntelligencePanel";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import PageHeader from "@/components/PageHeader";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
