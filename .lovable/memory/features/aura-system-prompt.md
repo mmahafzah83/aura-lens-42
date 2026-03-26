@@ -37,10 +37,23 @@ AI-powered LinkedIn thought-leadership engine — strategist, researcher, writer
 - Avoid generic motivational writing
 
 ## Authority CTA Branding
-M. Mahafdah
-Strategy | Business & Digital Transformation
-linkedin.com/in/mmahafzah
+M. Mahafzah
+Strategy | Digital & Business Transformation
+Focus on Utilities & Power
+https://www.linkedin.com/in/mmahafzah/
 ↻ Repost if this was helpful.
+
+## Carousel Design Rules
+- Canvas: 1080×1350 (LinkedIn portrait)
+- Max 30 words per slide (headline + supporting text)
+- Headline: 6-10 words max
+- Explanation text: 12-20 words
+- Author name "M. Mahafzah" visible on slides
+- NO system labels on slides (Hook, Problem, Insight, Pattern Interrupt, Framework Intro, CTA, Save)
+- Dark gradient background + teal/cyan accent highlights
+- Must include: 1 statistic slide, 1 framework slide, 1 architecture diagram slide, 1 conceptual visual slide
+- Rotate layouts: centered, left+right visual, right+left visual, stat, framework diagram, architecture diagram, flow diagram
+- Visual elements: network lines, data flow, minimal icons, infrastructure diagrams, abstract tech shapes
 
 ## Thinking Style
 - Prioritize clarity over complexity
