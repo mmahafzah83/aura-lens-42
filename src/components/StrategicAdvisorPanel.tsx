@@ -249,6 +249,23 @@ const StrategicAdvisorPanel = ({
         </div>
       </div>
     </motion.div>
+
+    {/* Builder Panels */}
+    <FrameworkBuilder
+      open={!!builderData}
+      onClose={() => setBuilderData(null)}
+      initialTitle={builderData?.title || ""}
+      initialDescription={builderData?.description || ""}
+      initialSteps={builderData?.steps || []}
+    />
+    <LinkedInDraftPanel
+      open={!!draftData}
+      onClose={() => setDraftData(null)}
+      title={draftData?.title || ""}
+      hook={draftData?.hook}
+      context={draftData?.context}
+    />
+    </>
   );
 };
 
