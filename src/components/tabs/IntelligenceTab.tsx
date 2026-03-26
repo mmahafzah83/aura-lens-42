@@ -373,6 +373,7 @@ interface KnowledgeItem {
   date: string;
   signalCount?: number;
   sourceUrl?: string;
+  storagePath?: string;
 }
 
 const ENTRY_ICONS: Record<string, typeof Link> = { link: Link, voice: Mic, text: Type, image: ImageIcon };
@@ -392,6 +393,7 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
 
   useEffect(() => { loadKnowledge(); }, []);
 
@@ -410,20 +412,6 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
     }
 
     return undefined;
-  };
-
-  const resolveDocumentSourceUrl = async (fileUrl?: string | null) => {
-    const rawFileUrl = fileUrl?.trim();
-    if (!rawFileUrl) return undefined;
-    if (isAbsoluteUrl(rawFileUrl)) return rawFileUrl;
-
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(rawFileUrl, 60 * 60);
-    if (error) {
-      console.error("Failed to create signed document URL", error);
-      return undefined;
-    }
-
-    return data.signedUrl;
   };
 
   const loadKnowledge = async () => {
@@ -448,20 +436,73 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
       sourceUrl: resolveEntrySourceUrl(e),
     }));
 
-    const docItems: KnowledgeItem[] = await Promise.all(
-      (docsRes.data || []).map(async (d: any) => ({
-        id: d.id,
-        type: "document",
-        title: d.filename,
-        subtype: "document",
-        date: d.created_at,
-        signalCount: fragmentMap[d.id] || 0,
-        sourceUrl: await resolveDocumentSourceUrl(d.file_url),
-      }))
-    );
+    const docItems: KnowledgeItem[] = (docsRes.data || []).map((d: any) => ({
+      id: d.id,
+      type: "document",
+      title: d.filename,
+      subtype: "document",
+      date: d.created_at,
+      signalCount: fragmentMap[d.id] || 0,
+      sourceUrl: isAbsoluteUrl(d.file_url) ? d.file_url.trim() : undefined,
+      storagePath: d.file_url,
+    }));
 
     setItems([...entryItems, ...docItems].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     setLoading(false);
+  };
+
+  const openSource = async (item: KnowledgeItem) => {
+    if (item.type !== "document") {
+      if (!item.sourceUrl) {
+        toast.info("No source URL available for this item");
+        return;
+      }
+      window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (item.sourceUrl) {
+      window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (!item.storagePath) {
+      toast.info("No source file available for this document");
+      return;
+    }
+
+    const previewTab = window.open("", "_blank");
+    if (!previewTab) {
+      toast.error("Popup blocked — allow popups to open this document");
+      return;
+    }
+
+    previewTab.document.write(`
+      <html>
+        <head><title>Opening document…</title></head>
+        <body style="font-family: sans-serif; padding: 24px; color: #444;">Opening document…</body>
+      </html>
+    `);
+    previewTab.document.close();
+    previewTab.opener = null;
+
+    setOpeningId(item.id);
+
+    try {
+      const { data, error } = await supabase.storage.from("documents").download(item.storagePath);
+      if (error || !data) {
+        throw error || new Error("Document download failed");
+      }
+
+      const objectUrl = URL.createObjectURL(data);
+      previewTab.location.replace(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      previewTab.close();
+      toast.error(err?.message || "Could not open document");
+    } finally {
+      setOpeningId(null);
+    }
   };
 
   const analyzeSource = async (item: KnowledgeItem) => {
@@ -615,25 +656,16 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
                             {analyzingId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                             Analyze
                           </Button>
-                          {item.sourceUrl ? (
-                            <a
-                              href={item.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center gap-1.5 text-xs font-medium h-8 rounded-md px-3 border border-border/50 bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
-                            >
-                              <Eye className="w-3 h-3" /> Open
-                            </a>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs gap-1.5"
-                              onClick={() => toast.info("No source URL available for this item")}
-                            >
-                              <Eye className="w-3 h-3" /> Open
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs gap-1.5"
+                            onClick={() => void openSource(item)}
+                            disabled={openingId === item.id || (!item.sourceUrl && !item.storagePath)}
+                          >
+                            {openingId === item.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                            Open
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
