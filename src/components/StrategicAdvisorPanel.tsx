@@ -317,6 +317,11 @@ const StrategicAdvisorPanel = ({
       hook={draftData?.hook}
       context={draftData?.context}
     />
+    <SignalExplorer
+      signal={explorerSignal}
+      open={!!explorerSignal}
+      onClose={() => setExplorerSignal(null)}
+    />
     </>
   );
 };
