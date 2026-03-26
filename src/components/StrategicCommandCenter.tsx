@@ -205,7 +205,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                 {data.opportunityTitle}
               </h2>
 
-              <div className="flex items-center gap-5 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-sm text-muted-foreground">
                 {data.confidence > 0 && (
                   <span className="tabular-nums font-medium text-primary">{data.confidence}% confidence</span>
                 )}
