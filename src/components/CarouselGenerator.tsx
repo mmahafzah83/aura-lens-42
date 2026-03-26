@@ -25,6 +25,7 @@ interface Slide {
   headline: string;
   supporting_text: string;
   emphasis_words?: string[];
+  pattern_interrupt?: string | null;
   visual_anchor?: string | null;
   layout: string;
   accent_element?: string | null;
@@ -162,8 +163,10 @@ const VisualAnchor = ({ type, palette }: { type: string | null | undefined; pale
           marginTop: 20,
         }} />
       );
-    case "number_badge":
+     case "number_badge":
       return null; // handled separately in layout
+    case "large_number":
+      return null; // handled in slide content
     case "quote_mark":
       return (
         <div style={{ fontSize: 96, lineHeight: 0.7, color: palette.accent, opacity: 0.25, fontFamily: "Georgia, serif" }}>
@@ -370,6 +373,18 @@ const SlidePreview = ({
           {/* Visual anchor (before headline) */}
           {!isQuote && !isNumbered && slide.visual_anchor !== "arrow_down" && (
             <VisualAnchor type={slide.visual_anchor || "underline_bar"} palette={p} />
+          )}
+
+          {/* Pattern interrupt */}
+          {slide.pattern_interrupt && (
+            <div style={{
+              fontSize: 32, fontWeight: 900, letterSpacing: 6,
+              textTransform: "uppercase", color: p.accent,
+              textAlign: isHero ? "center" : (isAr ? "right" : "left"),
+              marginBottom: 8,
+            }}>
+              {slide.pattern_interrupt}
+            </div>
           )}
 
           {/* Headline with emphasis highlighting */}
