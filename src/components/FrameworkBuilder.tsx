@@ -157,11 +157,23 @@ const FrameworkBuilder = ({
     setGeneratingDiagram(true);
     try {
       const { data, error } = await supabase.functions.invoke("generate-framework-diagram", {
-        body: { framework_id: createdId },
+        body: {
+          framework_id: createdId,
+          mode: "framework",
+          exclude_archetype: lastArchetype,
+          exclude_style: lastStyle,
+        },
       });
       if (error) throw error;
       if (data?.diagram_url) {
         setDiagramUrl(data.diagram_url);
+        setLastArchetype(data.archetype || null);
+        setLastStyle(data.style || null);
+        const label = [
+          data.archetype?.replace(/_/g, " "),
+          data.style?.replace(/_/g, " "),
+        ].filter(Boolean).join(" · ");
+        setDiagramMeta(label || null);
         toast.success("Diagram generated");
       }
     } catch (e: any) {
