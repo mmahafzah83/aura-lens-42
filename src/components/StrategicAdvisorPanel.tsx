@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import SignalExplorer from "@/components/SignalExplorer";
 
 interface AdvisorData {
   priority_signal: {
@@ -55,6 +56,7 @@ const StrategicAdvisorPanel = ({
   const [refreshing, setRefreshing] = useState(false);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
+  const [explorerSignal, setExplorerSignal] = useState<any>(null);
 
   const fetchAdvisor = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -223,7 +225,13 @@ const StrategicAdvisorPanel = ({
         )}
         <div className="pt-1">
           <SignalActions
-            onExplore={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}
+            onExplore={() => {
+              supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(1)
+                .then(({ data: signals }) => {
+                  if (signals?.[0]) setExplorerSignal(signals[0]);
+                  else onOpenChat?.(`Explore signal: ${data.priority_signal.title}`);
+                });
+            }}
             onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${data.priority_signal.title}`)}
             onDevelopFramework={() => setBuilderData({
               title: data.priority_signal.title,
@@ -308,6 +316,11 @@ const StrategicAdvisorPanel = ({
       title={draftData?.title || ""}
       hook={draftData?.hook}
       context={draftData?.context}
+    />
+    <SignalExplorer
+      signal={explorerSignal}
+      open={!!explorerSignal}
+      onClose={() => setExplorerSignal(null)}
     />
     </>
   );
