@@ -1428,4 +1428,73 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
+function drawHeadlineWithEmphasis(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  emphasisWords: string[],
+  x: number, y: number,
+  maxWidth: number, lineHeight: number,
+  p: { emphBg: string; emphFg: string; fg: string },
+  align: string,
+) {
+  if (!emphasisWords || emphasisWords.length === 0) {
+    ctx.textAlign = align as CanvasTextAlign;
+    wrapText(ctx, text, x, y, maxWidth, lineHeight);
+    return;
+  }
+
+  const lowerEmph = emphasisWords.map(w => w.toLowerCase());
+  const words = text.split(" ");
+  let line: { text: string; highlight: boolean }[][] = [[]];
+  let testStr = "";
+
+  // Word-wrap into lines
+  for (const word of words) {
+    const test = testStr + (testStr ? " " : "") + word;
+    if (ctx.measureText(test).width > maxWidth && testStr) {
+      line.push([]);
+      testStr = word;
+    } else {
+      testStr = test;
+    }
+    const isEmph = lowerEmph.includes(word.toLowerCase().replace(/[.,!?;:]/g, ""));
+    line[line.length - 1].push({ text: word, highlight: isEmph });
+  }
+
+  // Render each line
+  ctx.textAlign = "left"; // manual positioning
+  const savedFont = ctx.font;
+
+  line.forEach((lineWords, li) => {
+    const cy = y + li * lineHeight;
+    const fullLine = lineWords.map(w => w.text).join(" ");
+    const lineW = ctx.measureText(fullLine).width;
+    let startX: number;
+    if (align === "center") startX = x - lineW / 2;
+    else if (align === "right") startX = x - lineW;
+    else startX = x;
+
+    let cx = startX;
+    lineWords.forEach((w, wi) => {
+      const wordW = ctx.measureText(w.text).width;
+      if (w.highlight) {
+        // Draw background pill
+        ctx.fillStyle = p.emphBg;
+        roundRect(ctx, cx - 6, cy - lineHeight * 0.7, wordW + 12, lineHeight * 0.9, 4);
+        ctx.fill();
+        ctx.fillStyle = p.emphFg;
+      } else {
+        ctx.fillStyle = p.fg;
+      }
+      ctx.font = savedFont;
+      ctx.textAlign = "left";
+      ctx.fillText(w.text, cx, cy);
+      cx += wordW + ctx.measureText(" ").width;
+    });
+  });
+
+  // Restore
+  ctx.font = savedFont;
+}
+
 export default CarouselGenerator;
