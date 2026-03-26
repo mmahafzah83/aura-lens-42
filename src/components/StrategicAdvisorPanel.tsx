@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
+import FrameworkBuilder from "@/components/FrameworkBuilder";
+import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 
 interface AdvisorData {
   priority_signal: {
