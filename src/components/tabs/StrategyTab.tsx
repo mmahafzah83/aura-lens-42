@@ -141,40 +141,32 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
   return (
     <div className="space-y-4">
       {/* ── Header ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex items-center justify-between"
+      <PageHeader
+        icon={Lightbulb}
+        title="Strategy"
+        question="What do these signals mean strategically?"
+        processLogic="Signals → Insights → Frameworks"
       >
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
-            What do these signals mean strategically?
-          </h1>
-          <p className="text-meta mt-2 text-base">Signals → Insights → Frameworks</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setGraphOpen(true)}
-            className="gap-2"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Signal Graph</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={runPatternDetection}
-            disabled={detecting}
-            className="gap-2"
-          >
-            {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Detect Patterns</span>
-          </Button>
-        </div>
-      </motion.div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setGraphOpen(true)}
+          className="gap-2"
+        >
+          <Zap className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Signal Graph</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={runPatternDetection}
+          disabled={detecting}
+          className="gap-2"
+        >
+          {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          <span className="hidden sm:inline">Detect Patterns</span>
+        </Button>
+      </PageHeader>
 
       {/* Strategic Advisor — compact */}
       <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} />

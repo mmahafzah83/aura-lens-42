@@ -72,6 +72,14 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
         />
       </div>
 
+      {/* Page Header */}
+      <PageHeader
+        icon={Compass}
+        title="Home"
+        question="What should you focus on today?"
+        processLogic="Capture → Signal → Insight → Framework → Authority → Influence"
+      />
+
       {/* Strategic Advisor — AI Chief Strategy Officer */}
       <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
 
