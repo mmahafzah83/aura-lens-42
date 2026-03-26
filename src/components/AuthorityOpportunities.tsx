@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Crown, ArrowRight, Loader2, Bell, Sparkles } from "lucide-react";
-import { ContentActions } from "@/components/ui/action-buttons";
+import { Crown, ArrowRight, Loader2, Bell, Sparkles, FileText, LayoutGrid } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
 import CarouselGenerator from "./CarouselGenerator";
