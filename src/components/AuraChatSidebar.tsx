@@ -57,9 +57,25 @@ const AuraChatSidebar = ({ open, onClose, initialMessage }: AuraChatSidebarProps
     }
   }, [open]);
 
+  // Reset messages when chat opens with a new/different initialMessage
+  const lastInitRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (open && initialMessage && messages.length === 0) {
-      send(initialMessage);
+    if (open) {
+      // If initialMessage changed or chat was reopened, start fresh
+      if (initialMessage !== lastInitRef.current) {
+        setMessages([]);
+        setSavedIndices(new Set());
+        lastInitRef.current = initialMessage;
+        if (initialMessage) {
+          // Small delay to let state clear before sending
+          setTimeout(() => send(initialMessage), 50);
+        }
+      } else if (!initialMessage && messages.length === 0) {
+        // Opening without a message — fresh chat, do nothing
+      }
+    } else {
+      // When closing, reset the ref so reopening triggers fresh state
+      lastInitRef.current = undefined;
     }
   }, [open, initialMessage]);
 
