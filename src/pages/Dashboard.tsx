@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
-import AuraChatSidebar from "@/components/AuraChatSidebar";
+import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import NotificationBell from "@/components/NotificationBell";
