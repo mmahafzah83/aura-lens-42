@@ -99,6 +99,58 @@ Generate the carousel slides now. Remember: max 30 words per slide, rotate layou
   }
 });
 
+function extractAndParseJson(raw: string): unknown {
+  let cleaned = raw
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .trim();
+
+  const jsonStart = cleaned.search(/[{[]/);
+  if (jsonStart === -1) throw new Error("No JSON found");
+
+  cleaned = cleaned.substring(jsonStart);
+
+  // Try direct parse first
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {
+    // continue to repair
+  }
+
+  // Fix trailing commas
+  cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+
+  // Try again
+  try {
+    return JSON.parse(cleaned);
+  } catch (_) {
+    // continue to repair truncation
+  }
+
+  // Repair truncated JSON by closing unbalanced braces/brackets
+  // First, remove any trailing incomplete string (e.g. `"some text that got cut`)
+  cleaned = cleaned.replace(/,?\s*"[^"]*$/, "");
+  // Remove trailing comma after last complete value
+  cleaned = cleaned.replace(/,\s*$/, "");
+
+  let braces = 0, brackets = 0;
+  for (const char of cleaned) {
+    if (char === "{") braces++;
+    if (char === "}") braces--;
+    if (char === "[") brackets++;
+    if (char === "]") brackets--;
+  }
+
+  while (brackets > 0) { cleaned += "]"; brackets--; }
+  while (braces > 0) { cleaned += "}"; braces--; }
+
+  // Fix trailing commas again after repair
+  cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+
+  return JSON.parse(cleaned);
+}
+
 function buildSystemPrompt(langInstruction: string, styleInstruction: string, isArabic: boolean): string {
   return `You are Aura — an AI-powered strategic content engine that produces consulting-quality LinkedIn carousels focused on infrastructure, utilities, AI, digital transformation, and sustainability.
 
