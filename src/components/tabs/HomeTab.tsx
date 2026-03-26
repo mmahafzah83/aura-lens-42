@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { RefreshCw, Compass } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import StrategicCompanion from "@/components/StrategicCompanion";
 import PageHeader from "@/components/PageHeader";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -81,6 +82,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
 
       {/* Strategic Advisor — AI Chief Strategy Officer */}
       <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
+
+      {/* Strategic Companion — Critique Mode + Alerts */}
+      <StrategicCompanion onOpenChat={onOpenChat} />
 
       {/* Strategic Command Center — unified opportunity + pipeline + momentum */}
       <StrategicCommandCenter onOpenChat={onOpenChat} />
