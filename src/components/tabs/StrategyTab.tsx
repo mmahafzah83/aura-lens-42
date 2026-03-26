@@ -209,9 +209,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
             {visibleSignals.map((signal) => {
               const sources = signal.supporting_evidence_ids?.length || 0;
               return (
-                <div
+                 <div
                   key={signal.id}
-                  className="glass-card rounded-2xl p-6 border border-border/8 hover:border-amber-500/15 transition-all"
+                  className="glass-card rounded-2xl p-4 sm:p-6 border border-border/8 hover:border-amber-500/15 transition-all"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <p className="text-foreground font-semibold text-sm leading-snug">{signal.signal_title}</p>
@@ -267,9 +267,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
 
           <div className="space-y-3">
             {insights.slice(0, 5).map((insight) => (
-              <div
+               <div
                 key={insight.id}
-                className="glass-card rounded-2xl p-6 border border-border/8 hover:border-blue-500/15 transition-all"
+                className="glass-card rounded-2xl p-4 sm:p-6 border border-border/8 hover:border-blue-500/15 transition-all"
               >
                 <p className="text-foreground font-semibold text-sm leading-snug mb-2">{insight.title}</p>
                 <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-3">{insight.content}</p>
@@ -318,9 +318,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
             {frameworks.slice(0, 6).map((fw) => {
               const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
               return (
-                <div
+                 <div
                   key={fw.id}
-                  className="glass-card rounded-2xl p-6 border border-border/8 hover:border-emerald-500/15 transition-all"
+                  className="glass-card rounded-2xl p-4 sm:p-6 border border-border/8 hover:border-emerald-500/15 transition-all"
                 >
                   <p className="text-foreground font-semibold text-sm leading-snug mb-2">{fw.title}</p>
                   {fw.summary && (

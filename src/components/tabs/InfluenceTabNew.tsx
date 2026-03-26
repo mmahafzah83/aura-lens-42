@@ -59,7 +59,7 @@ const AudienceSection = ({ snapshot }: { snapshot: any }) => {
       </div>
 
       {/* Key metrics */}
-      <div className="flex items-center gap-8 flex-wrap">
+      <div className="flex flex-wrap items-center gap-4 sm:gap-8">
         <div>
           <p className="text-3xl font-bold text-foreground tabular-nums">{followers.toLocaleString()}</p>
           <p className="text-meta">Followers</p>
@@ -77,7 +77,7 @@ const AudienceSection = ({ snapshot }: { snapshot: any }) => {
 
       {/* Audience segments */}
       {(audience.industries || audience.seniority || audience.geography) ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-2">
           {[
             { title: "Industries", data: audience.industries || [] },
             { title: "Seniority", data: audience.seniority || [] },
@@ -148,7 +148,7 @@ const ContentPerformanceSection = ({ stats }: { stats: PostStats | null }) => {
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
           { label: "Posts Analyzed", value: stats.postCount, icon: FileText },
           { label: "Avg Engagement", value: `${stats.avgEngagement}%`, icon: Eye },
@@ -239,7 +239,7 @@ const AuthorityGrowthSection = ({ snapshot, themes }: { snapshot: any; themes: A
       </div>
 
       {/* Trajectory + engagement */}
-      <div className="flex items-center gap-6 flex-wrap">
+      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
         {trajectory && (
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />

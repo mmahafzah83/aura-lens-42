@@ -284,7 +284,7 @@ const StrategicAdvisorPanel = ({
         </div>
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
-        <div className="flex gap-2 pt-1">
+        <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" className="text-xs gap-1.5" onClick={() => {
             const at = data.recommended_move.action_type;
             if (at === "build_framework") {

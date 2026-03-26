@@ -188,7 +188,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         className="glass-card rounded-2xl border border-primary/10 overflow-hidden"
       >
         <div className="h-1 bg-gradient-to-r from-primary/40 via-primary/60 to-primary/20" />
-        <div className="p-8 sm:p-10 space-y-6">
+        <div className="p-5 sm:p-8 md:p-10 space-y-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/15">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -205,7 +205,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                 {data.opportunityTitle}
               </h2>
 
-              <div className="flex items-center gap-5 text-sm text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-sm text-muted-foreground">
                 {data.confidence > 0 && (
                   <span className="tabular-nums font-medium text-primary">{data.confidence}% confidence</span>
                 )}
@@ -265,7 +265,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         className="space-y-5"
       >
         <p className="text-label uppercase tracking-wider text-xs font-semibold">Authority Progress</p>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
           {(data.pipeline || []).map((step, i) => {
             const Icon = step.icon;
             return (
@@ -295,12 +295,12 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
           <p className="text-label uppercase tracking-wider text-xs font-semibold">Recent Momentum</p>
           <div className="space-y-2">
             {(data.momentum || []).map((item, i) => (
-              <div key={i} className="flex items-center gap-3 py-2.5 px-4 rounded-xl glass-card border border-border/6">
+              <div key={i} className="flex items-center gap-3 py-2.5 px-3 sm:px-4 rounded-xl glass-card border border-border/6">
                 <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
                   {item.type === "signal" ? <Zap className="w-3 h-3 text-primary/50" /> : <BookOpen className="w-3 h-3 text-primary/50" />}
                 </div>
-                <p className="text-sm text-foreground truncate flex-1">{item.title}</p>
-                <span className="text-xs text-muted-foreground/50 shrink-0 flex items-center gap-1">
+                <p className="text-sm text-foreground truncate flex-1 min-w-0">{item.title}</p>
+                <span className="text-xs text-muted-foreground/50 shrink-0 hidden sm:flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   {formatSmartDate(item.created_at)}
                 </span>
