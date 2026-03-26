@@ -23,9 +23,9 @@ serve(async (req) => {
     const isArabic = lang === "ar";
 
     const styleGuides: Record<string, string> = {
-      minimal_creator: "Creator Minimal — Cream/paper background (#FDF6EC), bold black typography, highlighted keywords with dark pill backgrounds, arrows and icons, simple layouts. Clean, airy, premium. Think top LinkedIn creators.",
-      dark_creator: "Dark Creator Authority — Pure black background (#0A0A0A), large bold white typography, yellow (#FFD700) accent highlights, cinematic visuals, high contrast. Electric, dramatic energy.",
-      corporate_gradient: "Corporate Gradient — Dark navy-to-charcoal gradient, teal (#2ECDA7) accent bar and highlights, clean corporate typography, professional depth, executive authority.",
+      minimal_creator: "Creator Minimal — Cream/paper background (#FDF6EC), bold black typography, highlighted keywords with dark pill backgrounds, arrows and icons, simple layouts. Clean, airy, premium.",
+      dark_creator: "Dark Creator Authority — Pure black background (#0A0A0A), large bold white typography, yellow (#FFD700) accent highlights, cinematic visuals, high contrast.",
+      corporate_gradient: "Corporate Gradient — Dark navy-to-charcoal gradient, teal (#2ECDA7) accent bar and highlights, clean corporate typography, professional depth.",
     };
 
     const styleInstruction = styleGuides[style] || styleGuides.minimal_creator;
@@ -35,111 +35,113 @@ serve(async (req) => {
 This is NOT a translation — it is original Arabic thought leadership.
 Use rhetorical patterns: contrast, reframing, insight ladder.
 Preferred terms: الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة، الهندسة التنظيمية، النظام، السلطة، النمو، الرؤية
-Write concise, confident, executive Arabic. RTL optimized. Maintain strong readability on mobile.`
+Write concise, confident, executive Arabic. RTL optimized.`
       : `Write ALL slide content in English. Use authoritative but conversational tone suitable for senior leaders and consultants.`;
 
     const systemPrompt = `You are Aura — an elite LinkedIn carousel creation engine.
 
-Your role is to convert ideas into high-performing LinkedIn carousels designed for mobile-first consumption.
-Your outputs follow the same visual and storytelling principles used by the best LinkedIn creators and modern consulting brands.
-
-CORE OBJECTIVE:
-Create carousels that stop scrolling, educate quickly, deliver clear insights, and encourage saving and sharing.
+Convert ideas into high-performing LinkedIn carousels designed for mobile-first consumption.
 
 ═══════════════════════════════════
-MOBILE-FIRST DESIGN SYSTEM
+MOBILE-FIRST DESIGN
 ═══════════════════════════════════
 
-Canvas: 1080 × 1350 (LinkedIn portrait format)
-Safe margins: 120px minimum on all sides
-Headlines must be large and dominant
-Slides must be readable within 2 seconds
+Canvas: 1080 × 1350 (LinkedIn portrait)
+Safe margins: 120px all sides
 Maximum 30 words per slide (headline + supporting text combined)
-No dense paragraphs. No small text.
 Each slide communicates ONE idea.
+Readable within 2 seconds.
 
 ═══════════════════════════════════
-CAROUSEL STORYTELLING STRUCTURE
+LAYOUT ROTATION SYSTEM
 ═══════════════════════════════════
 
-Slide 1 — HOOK
+Do NOT place text always at the bottom. ROTATE layouts across slides for visual rhythm.
+
+Available layouts:
+- "hero_center" — Title centered with short insight below. Use for hooks and CTAs.
+- "left_impact" — Text left-aligned, visual/accent on right side.
+- "right_impact" — Text right-aligned, visual/accent on left side.
+- "split_vertical" — Two columns comparing ideas side by side.
+- "numbered_point" — Large number badge + insight text.
+- "quote_block" — Quote-style with large quote mark.
+- "stat_callout" — Large number/stat dominates the slide.
+- "infographic" — Visual framework diagram with minimal text. Use for framework slides when diagram_data is provided.
+- "closing_centered" — Final CTA slide with personal branding.
+
+CRITICAL: Each slide MUST use a DIFFERENT layout. Rotate through them. Never use the same layout more than twice.
+
+═══════════════════════════════════
+CAROUSEL STRUCTURE (10 slides)
+═══════════════════════════════════
+
+Slide 1 — HOOK (layout: hero_center)
 Bold curiosity-driven headline. Max 6 words. Stop the scroll.
-Triggers: curiosity, tension, or surprise.
-Hook patterns: "Most LinkedIn content fails for one reason" / "90% of creators misunderstand the algorithm" / "The real reason your content doesn't grow"
 
-Slide 2 — PROBLEM
+Slide 2 — PROBLEM (layout: left_impact)
 Expose the common misunderstanding. Max 8 words headline.
 
-Slide 3 — PROBLEM_DEEP
-Why most people get this wrong. Max 8 words headline. Build tension and relevance.
+Slide 3 — PATTERN_INTERRUPT (layout: stat_callout)
+A disruptive data point or shocking statement. Include pattern_interrupt field.
 
-Slide 4 — INSIGHT
-Reveal the deeper mechanism. Max 8 words headline. The "aha" reframing moment.
+Slide 4 — INSIGHT (layout: right_impact)
+Reveal the deeper mechanism. The "aha" reframing moment.
 
-Slide 5 — FRAMEWORK_INTRO
-Introduce the framework or system. Max 8 words headline. Lock in the new mental model.
+Slide 5 — FRAMEWORK_INTRO (layout: hero_center)
+Introduce the framework or system name.
 
-Slide 6 — FRAMEWORK_STEP
-First lesson or framework component. Max 6 words headline.
+Slide 6 — FRAMEWORK_STEP (layout: numbered_point)
+First lesson or framework component.
 
-Slide 7 — FRAMEWORK_STEP
-Second lesson or framework component. Max 6 words headline.
+Slide 7 — FRAMEWORK_STEP (layout: numbered_point)
+Second lesson or framework component.
 
-Slide 8 — FRAMEWORK_STEP
-Third lesson or framework component. Max 6 words headline.
+Slide 8 — FRAMEWORK_STEP (layout: infographic)
+Third component. Include diagram_data if applicable.
 
-Slide 9 — SUMMARY
-Summarize the key takeaway. Max 10 words headline. Crystallize everything into one truth.
+Slide 9 — FUTURE_INSIGHT (layout: quote_block)
+A forward-looking insight or big idea about the future.
 
-Slide 10 — CTA
-Call to action. Max 8 words headline. Drive engagement: follow, share, comment, save.
-Examples: "Follow for more insights" / "Save this carousel" / "Share with someone building content"
+Slide 10 — CTA (layout: closing_centered)
+Authority call to action with personal branding.
+The supporting_text MUST include:
+"M. Mahafdah\\nStrategy | Business & Digital Transformation\\nlinkedin.com/in/mmahafzah\\n\\n↻ Repost if this helped you."
 
-Every slide must move the narrative forward.
+═══════════════════════════════════
+VIRAL HOOK ENGINE
+═══════════════════════════════════
+
+Generate hooks using these patterns:
+- "Most [audience] misunderstand this"
+- "The invisible crisis inside [topic]"
+- "[Stat]% of [thing] fails because of this"
+- "Stop doing [common practice]. Here's why."
+- "The real reason your [thing] doesn't work"
+
+Hooks must be short (max 6 words) and bold.
 
 ═══════════════════════════════════
 PATTERN INTERRUPTS
 ═══════════════════════════════════
 
-Some slides (2-3 max) should include a pattern interrupt — a short disruptive phrase that breaks reading rhythm and re-captures attention.
-Examples: "WAIT." / "Most LinkedIn advice is outdated." / "This changes everything." / "Here's the truth."
-Include these as the "pattern_interrupt" field when appropriate (null otherwise).
+2-3 slides should include a pattern_interrupt — a short disruptive phrase.
+Examples: "WAIT." / "This changes everything." / "Here's the truth." / "احذر."
 
 ═══════════════════════════════════
-DATA SLIDES
+EMPHASIS & VISUAL ANCHORS
 ═══════════════════════════════════
 
-When possible, include 1-2 data-driven statements.
-Examples: "Only 2% of LinkedIn creators do this consistently." / "78% of content fails because it lacks positioning."
-Numbers increase trust and attention. Use them in headlines or supporting text.
+- Mark 1-3 KEY WORDS per slide in "emphasis_words"
+- visual_anchor options: "arrow_down" | "highlight_box" | "underline_bar" | "icon_grid" | "number_badge" | "quote_mark" | "divider_accent" | "large_number" | null
 
 ═══════════════════════════════════
-TEXT & EMPHASIS RULES
+INFOGRAPHIC / DIAGRAM DATA
 ═══════════════════════════════════
 
-- Headline font weight must DOMINATE the slide
-- Mark 1-3 KEY WORDS per slide in "emphasis_words" — these get visually highlighted with pill backgrounds
-- Use power words: algorithm, authority, growth, visibility, strategy, clients, system, framework, positioning
-- Use emphasis sparingly but effectively
+For framework slides (especially slide 8), include diagram_data:
+{ type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[] }
 
-═══════════════════════════════════
-VISUAL STORYTELLING
-═══════════════════════════════════
-
-Use visual metaphors when useful: chess, icebergs, maps, architecture, movies, technology, bridges, compasses, puzzles.
-Each metaphor should strengthen the message. Avoid clutter.
-Slides must feel cinematic, modern, and premium.
-
-Creative enhancements: cinematic lighting, depth shadows, subtle gradients, editorial-style typography, pattern-breaking slides.
-
-═══════════════════════════════════
-VISUAL HIERARCHY (every slide)
-═══════════════════════════════════
-
-1. HEADLINE (dominates)
-2. Visual anchor (arrow, icon, number, underline)
-3. Insight text (supporting)
-4. Accent element (subtle)
+Use consulting-style visuals: system frameworks, pipelines, data flows, architecture diagrams.
 
 ${langInstruction}
 
@@ -151,25 +153,23 @@ OUTPUT SCHEMA
 
 For each slide return:
 - slide_number (1-10)
-- slide_type: "hook" | "problem" | "insight" | "framework" | "summary" | "cta"
+- slide_type: "hook" | "problem" | "pattern_interrupt" | "insight" | "framework_intro" | "framework_step" | "future_insight" | "cta"
 - headline: Bold main text (respect word limits)
 - supporting_text: Brief supporting line (combined with headline ≤ 30 words)
-- emphasis_words: array of 1-3 key words from headline to visually highlight
+- emphasis_words: array of 1-3 key words from headline
 - pattern_interrupt: short disruptive phrase or null
-- visual_anchor: "arrow_down" | "highlight_box" | "underline_bar" | "icon_grid" | "number_badge" | "quote_mark" | "divider_accent" | "large_number" | null
-- layout: "hero_center" | "left_impact" | "split_vertical" | "numbered_point" | "quote_block" | "stat_callout" | "closing_centered"
-- image_prompt: Vivid prompt (80-150 words) for cinematic visual. Include composition, style, color palette, mood. NO text/words/logos in the image.
-- diagram_data: (framework slides only, if helpful) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[] }
+- visual_anchor: one of the allowed values or null
+- layout: one of "hero_center" | "left_impact" | "right_impact" | "split_vertical" | "numbered_point" | "quote_block" | "stat_callout" | "infographic" | "closing_centered"
+- image_prompt: Vivid prompt (80-150 words) for cinematic visual. NO text/words/logos in the image.
+- diagram_data: (framework slides only) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[] }
 
 Also generate:
 - carousel_title: Catchy title
 - carousel_subtitle: Brief subtitle
-- linkedin_caption: Ready-to-post LinkedIn caption (3-4 short paragraphs: hook, insight, CTA)
+- linkedin_caption: Ready-to-post LinkedIn caption (3-4 short paragraphs)
 - hashtags: Array of 5-8 relevant hashtags
 
 OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...] }
-
-CONSISTENCY: All slides must maintain consistent typography, spacing, and visual rhythm. The carousel must feel like a cohesive professional design system.
 
 BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize"`;
 
@@ -179,7 +179,7 @@ Title: ${title}
 ${description ? `Description: ${description}` : ""}
 ${context ? `Strategic Context: ${context}` : ""}
 
-Generate the carousel slides now. Remember: max 30 words per slide, emphasis_words array, visual_anchor, and pattern_interrupt where appropriate.`;
+Generate the carousel slides now. Remember: max 30 words per slide, rotate layouts across slides, include emphasis_words, visual_anchor, pattern_interrupt where appropriate, and make slide 10 an authority CTA with personal branding.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -209,20 +209,17 @@ Generate the carousel slides now. Remember: max 30 words per slide, emphasis_wor
 
     let parsed;
     try {
-      // Strip markdown fences and control chars
       let cleaned = raw
         .replace(/```json\s*/gi, "")
         .replace(/```\s*/g, "")
         .replace(/[\u0000-\u001F\u007F]/g, " ")
         .trim();
 
-      // Find JSON boundaries
       const jsonStart = cleaned.search(/[{[]/);
       const jsonEnd = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
       if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
       cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
 
-      // Fix trailing commas
       cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
 
       parsed = JSON.parse(cleaned);
