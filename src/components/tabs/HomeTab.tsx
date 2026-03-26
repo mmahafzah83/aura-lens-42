@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { RefreshCw, Compass } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
-import CaptureIntelligencePanel from "@/components/CaptureIntelligencePanel";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import PageHeader from "@/components/PageHeader";
 import type { Database } from "@/integrations/supabase/types";
@@ -76,18 +75,15 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       <PageHeader
         icon={Compass}
         title="Home"
-        question="What should you focus on today?"
-        processLogic="Capture → Signal → Insight → Framework → Authority → Influence"
+        question="What strategic move should you make right now?"
+        processLogic="Identity → Intelligence → Strategy → Authority → Influence"
       />
 
       {/* Strategic Advisor — AI Chief Strategy Officer */}
       <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
 
-      {/* Strategic Command Center — 3 cards + Recent Intelligence */}
+      {/* Strategic Command Center — unified opportunity + pipeline + momentum */}
       <StrategicCommandCenter onOpenChat={onOpenChat} />
-
-      {/* Quick Capture */}
-      <CaptureIntelligencePanel entries={entries} onCaptured={onRefresh ? () => onRefresh() : () => {}} />
     </div>
   );
 };
