@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Crown, ArrowRight, Loader2, Bell, Sparkles, LayoutGrid, FileText } from "lucide-react";
+import { Crown, ArrowRight, Loader2, Bell, Sparkles, FileText, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
@@ -122,7 +122,7 @@ const AuthorityOpportunities = () => {
                       })}
                       className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors bg-primary/5 hover:bg-primary/10 rounded-lg px-2.5 py-1"
                     >
-                      <FileText className="w-3 h-3" /> Draft Post
+                      <FileText className="w-3 h-3" /> Draft Content
                     </button>
                     <button
                       onClick={() => setCarouselData({

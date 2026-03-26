@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import {
   Zap, Lightbulb, ArrowRight, Loader2, RefreshCw,
-  PenLine, Layers, Search, BookOpen, Save
+  Layers
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
 
 interface AdvisorData {
   priority_signal: {
@@ -38,21 +39,8 @@ interface StrategicAdvisorPanelProps {
   refreshTrigger?: number;
 }
 
-const ACTION_ICONS: Record<string, typeof PenLine> = {
-  draft_content: PenLine,
-  build_framework: Layers,
-  develop_insight: Lightbulb,
-  explore_signal: Search,
-  plan_narrative: BookOpen,
-};
-
-const ACTION_LABELS: Record<string, string> = {
-  draft_content: "Draft Content",
-  build_framework: "Build Framework",
-  develop_insight: "Develop Insight",
-  explore_signal: "Explore Signal",
-  plan_narrative: "Plan Narrative",
-};
+const ACTION_ICONS = ADVISOR_ACTION_ICONS;
+const ACTION_LABELS = ADVISOR_ACTION_LABELS;
 
 const StrategicAdvisorPanel = ({
   context = "full",
@@ -203,13 +191,11 @@ const StrategicAdvisorPanel = ({
         {data.priority_signal.evidence_count != null && data.priority_signal.evidence_count > 0 && (
           <p className="text-meta">{data.priority_signal.evidence_count} evidence sources</p>
         )}
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}>
-            <Search className="w-3.5 h-3.5" /> Explore
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create insight from signal: ${data.priority_signal.title}`)}>
-            <Lightbulb className="w-3.5 h-3.5" /> Develop Insight
-          </Button>
+        <div className="pt-1">
+          <SignalActions
+            onExplore={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}
+            onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${data.priority_signal.title}`)}
+          />
         </div>
       </div>
 
@@ -227,13 +213,11 @@ const StrategicAdvisorPanel = ({
             <span className="text-xs text-emerald-400/80 font-medium">{data.strategic_insight.linked_framework}</span>
           </div>
         )}
-        <div className="flex gap-2 pt-1">
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}>
-            <Lightbulb className="w-3.5 h-3.5" /> Expand
-          </Button>
-          <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Build framework from: ${data.strategic_insight.title}`)}>
-            <Layers className="w-3.5 h-3.5" /> Build Framework
-          </Button>
+        <div className="pt-1">
+          <InsightActions
+            onExpand={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}
+            onBuildFramework={() => onOpenChat?.(`Build framework from: ${data.strategic_insight.title}`)}
+          />
         </div>
       </div>
 
@@ -249,9 +233,7 @@ const StrategicAdvisorPanel = ({
           <Button size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(data.recommended_move.action)}>
             <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
           </Button>
-          <Button variant="ghost" size="sm" className="text-xs gap-1.5 text-muted-foreground">
-            <Save className="w-3.5 h-3.5" /> Save for Later
-          </Button>
+          <ContentActions onSaveForLater={() => {}} />
         </div>
       </div>
     </motion.div>

@@ -5,6 +5,7 @@ import {
   ChevronRight, RefreshCw, Search, PenLine, BookOpen, Save,
   Sparkles, Send, X
 } from "lucide-react";
+import { SignalActions, InsightActions, FrameworkActions } from "@/components/ui/action-buttons";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -225,17 +226,10 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => { setExplorerSignal(signal); setExplorerOpen(true); }}>
-                      <Search className="w-3.5 h-3.5" /> Explore Signal
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create a strategic insight from signal: ${signal.signal_title}`)}>
-                      <Lightbulb className="w-3.5 h-3.5" /> Create Insight
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-xs gap-1.5 text-muted-foreground">
-                      <Save className="w-3.5 h-3.5" /> Save for Later
-                    </Button>
-                  </div>
+                  <SignalActions
+                    onExplore={() => { setExplorerSignal(signal); setExplorerOpen(true); }}
+                    onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${signal.signal_title}`)}
+                  />
                 </div>
               );
             })}
@@ -288,19 +282,13 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                   <span className="ml-auto">{formatSmartDate(insight.created_at)}</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                <InsightActions
+                  onExpand={() => onOpenChat?.(`Expand insight: ${insight.title}\n\n${insight.content}`)}
+                  onBuildFramework={() => {
                     setBuilderData({ title: insight.title, steps: [], summary: insight.content });
-                  }}>
-                    <Layers className="w-3.5 h-3.5" /> Develop Framework
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Draft LinkedIn content from insight: ${insight.title}`)}>
-                    <PenLine className="w-3.5 h-3.5" /> Draft Content
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Add more evidence to insight: ${insight.title}`)}>
-                    <BookOpen className="w-3.5 h-3.5" /> Add Evidence
-                  </Button>
-                </div>
+                  }}
+                  onDraftContent={() => setDraftData({ title: insight.title, context: insight.content })}
+                />
               </div>
             ))}
           </div>
@@ -362,21 +350,15 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
                     <span className="ml-auto">{formatSmartDate(fw.created_at)}</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                  <FrameworkActions
+                    onOpenFramework={() => {
                       setBuilderData({ title: fw.title, steps: steps.map((s: any) => typeof s === "string" ? s : s.title || s.name || ""), summary: fw.summary || "" });
-                    }}>
-                      <Layers className="w-3.5 h-3.5" /> Expand
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create a visual model for framework: ${fw.title}`)}>
-                      <BookOpen className="w-3.5 h-3.5" /> Visual Model
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => {
+                    }}
+                    onRefineFramework={() => onOpenChat?.(`Refine and improve framework: ${fw.title}`)}
+                    onDraftContent={() => {
                       setDraftData({ title: fw.title, context: fw.summary || "" });
-                    }}>
-                      <PenLine className="w-3.5 h-3.5" /> Draft Content
-                    </Button>
-                  </div>
+                    }}
+                  />
                 </div>
               );
             })}
