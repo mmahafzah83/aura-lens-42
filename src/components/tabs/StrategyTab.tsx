@@ -209,9 +209,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
             {visibleSignals.map((signal) => {
               const sources = signal.supporting_evidence_ids?.length || 0;
               return (
-                <div
+                 <div
                   key={signal.id}
-                  className="glass-card rounded-2xl p-6 border border-border/8 hover:border-amber-500/15 transition-all"
+                  className="glass-card rounded-2xl p-4 sm:p-6 border border-border/8 hover:border-amber-500/15 transition-all"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <p className="text-foreground font-semibold text-sm leading-snug">{signal.signal_title}</p>
