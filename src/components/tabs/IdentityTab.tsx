@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Brain, Settings, Sparkles } from "lucide-react";
+import { User, Brain, Settings } from "lucide-react";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
 import PageHeader from "@/components/PageHeader";
@@ -46,28 +46,6 @@ const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
       {/* Content */}
       {activeSection === "identity" && (
         <div className="space-y-6 animate-fade-in">
-          {/* Pipeline Position Indicator */}
-          <div className="glass-card rounded-2xl p-5 border border-primary/10">
-            <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">Strategic Pipeline</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {["Identity", "Intelligence", "Strategy", "Authority", "Growth"].map((stage, i) => (
-                <div key={stage} className="flex items-center gap-2">
-                  <span className={`text-[11px] font-medium px-3 py-1.5 rounded-full ${
-                    i === 0
-                      ? "bg-primary/15 text-primary border border-primary/20"
-                      : "bg-secondary/50 text-muted-foreground border border-border/10"
-                  }`}>
-                    {stage}
-                  </span>
-                  {i < 4 && <span className="text-muted-foreground/30 text-[10px]">→</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
           <ProfileIntelligence />
         </div>
       )}
