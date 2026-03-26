@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import SignalExplorer from "@/components/SignalExplorer";
 
 interface AdvisorData {
   priority_signal: {
