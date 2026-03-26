@@ -318,9 +318,9 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
             {frameworks.slice(0, 6).map((fw) => {
               const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
               return (
-                <div
+                 <div
                   key={fw.id}
-                  className="glass-card rounded-2xl p-6 border border-border/8 hover:border-emerald-500/15 transition-all"
+                  className="glass-card rounded-2xl p-4 sm:p-6 border border-border/8 hover:border-emerald-500/15 transition-all"
                 >
                   <p className="text-foreground font-semibold text-sm leading-snug mb-2">{fw.title}</p>
                   {fw.summary && (
