@@ -6,6 +6,7 @@ import {
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
   Calendar, TrendingUp, BarChart3
 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -523,17 +524,12 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
-          What should you publish to strengthen your authority?
-        </h1>
-        <p className="text-meta mt-2 text-base">Signal → Insight → Framework → Content → Audience</p>
-      </motion.div>
+      <PageHeader
+        icon={Crown}
+        title="Authority"
+        question="What should you publish to strengthen your authority?"
+        processLogic="Signal → Insight → Framework → Content → Audience"
+      />
 
       {/* Strategic Advisor — authority context */}
       <StrategicAdvisorPanel context="authority" compact />

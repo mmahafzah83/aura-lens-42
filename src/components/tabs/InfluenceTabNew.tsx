@@ -5,6 +5,7 @@ import {
   ArrowUpRight, ArrowDownRight, Sparkles, FileText,
   Zap, Eye, Lightbulb
 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
@@ -388,13 +389,12 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
-          Is your authority growing?
-        </h1>
-        <p className="text-meta mt-2 text-base">Signal → Content → Audience → Growth</p>
-      </motion.div>
+      <PageHeader
+        icon={TrendingUp}
+        title="Influence"
+        question="Is your authority turning into audience growth?"
+        processLogic="Signal → Content → Audience → Growth"
+      />
 
       {/* Strategic Advisor — influence context */}
       <StrategicAdvisorPanel context="influence" compact />

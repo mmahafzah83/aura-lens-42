@@ -3,8 +3,9 @@ import { motion } from "framer-motion";
 import {
   Zap, BookOpen, Layers, Sparkles, Search, Lightbulb, PenLine,
   Link, Mic, Type, FileUp, FileText, ImageIcon, Clock, Loader2,
-  ArrowRight, RefreshCw, Brain
+  ArrowRight, RefreshCw, Brain, Shield
 } from "lucide-react";
+import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -492,17 +493,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh }: IntelligenceTabProp
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
-          What signals are emerging from your knowledge?
-        </h1>
-        <p className="text-meta mt-2 text-base">Your signal intelligence engine</p>
-      </motion.div>
+      <PageHeader
+        icon={Shield}
+        title="Intelligence"
+        question="What signals are shaping your domain?"
+        processLogic="Sources → Signals → Clusters → Insights"
+      />
 
       {/* Tab Bar */}
       <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-fit">

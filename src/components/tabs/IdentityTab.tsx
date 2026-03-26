@@ -2,6 +2,7 @@ import { useState } from "react";
 import { User, Brain, Settings, Sparkles } from "lucide-react";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
+import PageHeader from "@/components/PageHeader";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -17,18 +18,12 @@ const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
 
   return (
     <div className="space-y-8">
-      {/* Section Header */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-          <User className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
-            Identity
-          </h2>
-          <p className="text-sm text-muted-foreground">Define who you are as a strategist</p>
-        </div>
-      </div>
+      <PageHeader
+        icon={User}
+        title="Identity"
+        question="Who are you becoming as a strategist?"
+        processLogic="Identity → Intelligence → Strategy → Authority → Growth"
+      />
 
       {/* Sub Navigation */}
       <div className="flex gap-2 border-b border-border/10 pb-0">
