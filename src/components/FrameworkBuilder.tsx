@@ -56,6 +56,9 @@ const FrameworkBuilder = ({
     );
     setCreatedId(null);
     setDiagramUrl(null);
+    setLastArchetype(null);
+    setLastStyle(null);
+    setDiagramMeta(null);
   };
 
   // Sync state when dialog opens with new data
