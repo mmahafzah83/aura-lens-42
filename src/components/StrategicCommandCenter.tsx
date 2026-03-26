@@ -162,20 +162,20 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-3"
+        className="space-y-3 overflow-hidden"
       >
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight break-words">
           {getGreeting()}{data.userName ? `, ${data.userName}` : ""}
         </h1>
         {data.identityStatement && (
-          <p className="text-base text-muted-foreground leading-relaxed max-w-2xl">
+          <p className="text-base text-muted-foreground leading-relaxed break-words">
             {data.identityStatement}
           </p>
         )}
         {data.northStar && (
-          <div className="flex items-center gap-2 text-sm text-primary/70">
-            <Target className="w-4 h-4" />
-            <span className="font-medium">{data.northStar}</span>
+          <div className="flex items-start gap-2 text-sm text-primary/70 min-w-0">
+            <Target className="w-4 h-4 shrink-0 mt-0.5" />
+            <span className="font-medium break-words min-w-0">{data.northStar}</span>
           </div>
         )}
       </motion.div>
