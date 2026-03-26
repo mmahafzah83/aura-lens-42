@@ -163,8 +163,10 @@ const VisualAnchor = ({ type, palette }: { type: string | null | undefined; pale
           marginTop: 20,
         }} />
       );
-    case "number_badge":
+     case "number_badge":
       return null; // handled separately in layout
+    case "large_number":
+      return null; // handled in slide content
     case "quote_mark":
       return (
         <div style={{ fontSize: 96, lineHeight: 0.7, color: palette.accent, opacity: 0.25, fontFamily: "Georgia, serif" }}>
