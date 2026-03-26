@@ -188,7 +188,8 @@ Generate the carousel slides now. Remember: max 30 words per slide, emphasis_wor
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
+        max_tokens: 8192,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -208,10 +209,25 @@ Generate the carousel slides now. Remember: max 30 words per slide, emphasis_wor
 
     let parsed;
     try {
-      const cleaned = raw.replace(/[\u0000-\u001F\u007F]/g, " ");
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/)?.[0] || cleaned;
-      parsed = JSON.parse(jsonMatch);
-    } catch {
+      // Strip markdown fences and control chars
+      let cleaned = raw
+        .replace(/```json\s*/gi, "")
+        .replace(/```\s*/g, "")
+        .replace(/[\u0000-\u001F\u007F]/g, " ")
+        .trim();
+
+      // Find JSON boundaries
+      const jsonStart = cleaned.search(/[{[]/);
+      const jsonEnd = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
+      if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found");
+      cleaned = cleaned.substring(jsonStart, jsonEnd + 1);
+
+      // Fix trailing commas
+      cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
+
+      parsed = JSON.parse(cleaned);
+    } catch (parseErr) {
+      console.error("Raw LLM response (first 500 chars):", raw.substring(0, 500));
       throw new Error("Failed to parse carousel response");
     }
 
