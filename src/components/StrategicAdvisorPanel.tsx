@@ -243,7 +243,16 @@ const StrategicAdvisorPanel = ({
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
         <div className="flex gap-2 pt-1">
-          <Button size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(data.recommended_move.action)}>
+          <Button size="sm" className="text-xs gap-1.5" onClick={() => {
+            const at = data.recommended_move.action_type;
+            if (at === "build_framework") {
+              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+            } else if (at === "draft_content" || at === "plan_narrative") {
+              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+            } else {
+              onOpenChat?.(data.recommended_move.action);
+            }
+          }}>
             <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
           </Button>
           <ContentActions onSaveForLater={() => {}} />
