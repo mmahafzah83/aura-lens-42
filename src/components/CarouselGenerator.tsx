@@ -943,7 +943,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <Button onClick={exportPDF} disabled={exporting} className="flex-1 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 text-xs">
+                <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs">
                   {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15">

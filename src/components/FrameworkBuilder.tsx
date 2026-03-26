@@ -292,7 +292,7 @@ const FrameworkBuilder = ({
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 text-xs"
+              className="flex-1 text-xs"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
               {createdId ? "Save Changes" : "Create Framework"}

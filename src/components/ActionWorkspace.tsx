@@ -239,7 +239,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
               <div className="flex gap-2">
                 <Button
                   onClick={handleCopy}
-                  className="flex-1 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/20 text-xs"
+                  className="flex-1 text-xs"
                 >
                   {copied ? (
                     <><Check className="w-3.5 h-3.5 mr-1.5" /> Copied!</>
