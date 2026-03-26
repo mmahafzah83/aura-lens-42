@@ -233,9 +233,7 @@ const StrategicAdvisorPanel = ({
           <Button size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(data.recommended_move.action)}>
             <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
           </Button>
-          <Button variant="ghost" size="sm" className="text-xs gap-1.5 text-muted-foreground">
-            <Save className="w-3.5 h-3.5" /> Save for Later
-          </Button>
+          <ContentActions onSaveForLater={() => {}} />
         </div>
       </div>
     </motion.div>

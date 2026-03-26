@@ -250,7 +250,7 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
                     variant="outline" size="sm" className="text-xs gap-1.5 mt-1"
                     onClick={() => onOpenChat?.(critique.challenge.question)}
                   >
-                    <HelpCircle className="w-3.5 h-3.5" /> Explore This Question
+                    <HelpCircle className="w-3.5 h-3.5" /> Discuss with Aura
                   </Button>
                 </div>
 

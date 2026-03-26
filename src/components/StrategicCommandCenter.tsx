@@ -214,19 +214,13 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                 </p>
               )}
 
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Explore this signal: ${data.opportunityTitle}`)}>
-                  <Search className="w-3.5 h-3.5" /> Explore Signal
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Create an insight from: ${data.opportunityTitle}`)}>
-                  <Lightbulb className="w-3.5 h-3.5" /> Develop Insight
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Build a framework about: ${data.opportunityTitle}`)}>
-                  <BookOpen className="w-3.5 h-3.5" /> Build Framework
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(`Draft authority content about: ${data.opportunityTitle}`)}>
-                  <PenLine className="w-3.5 h-3.5" /> Draft Content
-                </Button>
+              <div className="pt-2">
+                <SignalActions
+                  onExplore={() => onOpenChat?.(`Explore this signal in detail: ${data.opportunityTitle}`)}
+                  onCreateInsight={() => onOpenChat?.(`Create a strategic insight from: ${data.opportunityTitle}`)}
+                  onDevelopFramework={() => onOpenChat?.(`Develop a framework from: ${data.opportunityTitle}`)}
+                  onDraftContent={() => onOpenChat?.(`Draft authority content about: ${data.opportunityTitle}`)}
+                />
               </div>
             </>
           ) : (
