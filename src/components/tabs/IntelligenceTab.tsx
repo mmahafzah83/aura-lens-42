@@ -576,7 +576,13 @@ const KnowledgePanel = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
                             variant="outline"
                             size="sm"
                             className="text-xs gap-1.5"
-                            onClick={() => onOpenChat?.(`Tell me about this source: "${item.title}"`)}
+                            onClick={() => {
+                              if (item.sourceUrl) {
+                                window.open(item.sourceUrl, "_blank", "noopener,noreferrer");
+                              } else {
+                                toast.info("No source URL available for this item");
+                              }
+                            }}
                           >
                             <Eye className="w-3 h-3" /> Open
                           </Button>
