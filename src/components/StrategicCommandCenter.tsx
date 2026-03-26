@@ -7,6 +7,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { SignalActions } from "@/components/ui/action-buttons";
 import { formatSmartDate } from "@/lib/formatDate";
+import FrameworkBuilder from "@/components/FrameworkBuilder";
+import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import SignalExplorer from "@/components/SignalExplorer";
 
 /* ── Types ── */
 interface CommandData {
@@ -44,6 +47,9 @@ const EMPTY: CommandData = {
 const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
   const [data, setData] = useState<CommandData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
+  const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
+  const [explorerSignal, setExplorerSignal] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -216,10 +222,25 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
 
               <div className="pt-2">
                 <SignalActions
-                  onExplore={() => onOpenChat?.(`Explore this signal in detail: ${data.opportunityTitle}`)}
+                  onExplore={() => {
+                    // Find top signal for explorer
+                    supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(1)
+                      .then(({ data: signals }) => {
+                        if (signals?.[0]) setExplorerSignal(signals[0]);
+                        else onOpenChat?.(`Explore this signal in detail: ${data.opportunityTitle}`);
+                      });
+                  }}
                   onCreateInsight={() => onOpenChat?.(`Create a strategic insight from: ${data.opportunityTitle}`)}
-                  onDevelopFramework={() => onOpenChat?.(`Develop a framework from: ${data.opportunityTitle}`)}
-                  onDraftContent={() => onOpenChat?.(`Draft authority content about: ${data.opportunityTitle}`)}
+                  onDevelopFramework={() => setBuilderData({
+                    title: data.opportunityTitle,
+                    description: data.opportunityExplanation,
+                    steps: [],
+                  })}
+                  onDraftContent={() => setDraftData({
+                    title: data.opportunityTitle,
+                    hook: data.opportunityExplanation,
+                    context: data.opportunityExplanation,
+                  })}
                 />
               </div>
             </>
@@ -288,6 +309,26 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
           </div>
         </motion.div>
       )}
+      {/* Builder Panels */}
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
+      />
+      <LinkedInDraftPanel
+        open={!!draftData}
+        onClose={() => setDraftData(null)}
+        title={draftData?.title || ""}
+        hook={draftData?.hook}
+        context={draftData?.context}
+      />
+      <SignalExplorer
+        signal={explorerSignal}
+        open={!!explorerSignal}
+        onClose={() => setExplorerSignal(null)}
+      />
     </div>
   );
 };

@@ -8,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
+import FrameworkBuilder from "@/components/FrameworkBuilder";
+import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 
 interface AdvisorData {
   priority_signal: {
@@ -51,6 +53,8 @@ const StrategicAdvisorPanel = ({
   const [data, setData] = useState<AdvisorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
+  const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
 
   const fetchAdvisor = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -122,6 +126,7 @@ const StrategicAdvisorPanel = ({
   // Compact mode — just recommended move
   if (compact) {
     return (
+      <>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -139,16 +144,41 @@ const StrategicAdvisorPanel = ({
           size="sm"
           variant="outline"
           className="text-xs gap-1.5"
-          onClick={() => onOpenChat?.(data.recommended_move.action)}
+          onClick={() => {
+            const at = data.recommended_move.action_type;
+            if (at === "build_framework") {
+              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+            } else if (at === "draft_content" || at === "plan_narrative") {
+              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+            } else {
+              onOpenChat?.(data.recommended_move.action);
+            }
+          }}
         >
           <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
         </Button>
       </motion.div>
+      <FrameworkBuilder
+        open={!!builderData}
+        onClose={() => setBuilderData(null)}
+        initialTitle={builderData?.title || ""}
+        initialDescription={builderData?.description || ""}
+        initialSteps={builderData?.steps || []}
+      />
+      <LinkedInDraftPanel
+        open={!!draftData}
+        onClose={() => setDraftData(null)}
+        title={draftData?.title || ""}
+        hook={draftData?.hook}
+        context={draftData?.context}
+      />
+      </>
     );
   }
 
   // Full mode — all three outputs
   return (
+    <>
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
@@ -216,7 +246,15 @@ const StrategicAdvisorPanel = ({
         <div className="pt-1">
           <InsightActions
             onExpand={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}
-            onBuildFramework={() => onOpenChat?.(`Build framework from: ${data.strategic_insight.title}`)}
+            onBuildFramework={() => setBuilderData({
+              title: data.strategic_insight.title,
+              description: data.strategic_insight.interpretation,
+              steps: [],
+            })}
+            onDraftContent={() => setDraftData({
+              title: data.strategic_insight.title,
+              context: data.strategic_insight.interpretation,
+            })}
           />
         </div>
       </div>
@@ -230,13 +268,39 @@ const StrategicAdvisorPanel = ({
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
         <div className="flex gap-2 pt-1">
-          <Button size="sm" className="text-xs gap-1.5" onClick={() => onOpenChat?.(data.recommended_move.action)}>
+          <Button size="sm" className="text-xs gap-1.5" onClick={() => {
+            const at = data.recommended_move.action_type;
+            if (at === "build_framework") {
+              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+            } else if (at === "draft_content" || at === "plan_narrative") {
+              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+            } else {
+              onOpenChat?.(data.recommended_move.action);
+            }
+          }}>
             <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
           </Button>
           <ContentActions onSaveForLater={() => {}} />
         </div>
       </div>
     </motion.div>
+
+    {/* Builder Panels */}
+    <FrameworkBuilder
+      open={!!builderData}
+      onClose={() => setBuilderData(null)}
+      initialTitle={builderData?.title || ""}
+      initialDescription={builderData?.description || ""}
+      initialSteps={builderData?.steps || []}
+    />
+    <LinkedInDraftPanel
+      open={!!draftData}
+      onClose={() => setDraftData(null)}
+      title={draftData?.title || ""}
+      hook={draftData?.hook}
+      context={draftData?.context}
+    />
+    </>
   );
 };
 
