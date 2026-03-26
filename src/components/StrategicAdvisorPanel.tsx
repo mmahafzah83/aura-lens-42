@@ -225,6 +225,15 @@ const StrategicAdvisorPanel = ({
           <SignalActions
             onExplore={() => onOpenChat?.(`Explore signal: ${data.priority_signal.title}`)}
             onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${data.priority_signal.title}`)}
+            onDevelopFramework={() => setBuilderData({
+              title: data.priority_signal.title,
+              description: data.priority_signal.explanation || "",
+              steps: [],
+            })}
+            onDraftContent={() => setDraftData({
+              title: data.priority_signal.title,
+              context: data.priority_signal.explanation || "",
+            })}
           />
         </div>
       </div>

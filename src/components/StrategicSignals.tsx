@@ -323,7 +323,7 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                         onClick={() => setExplorerSignal(signal)}
                         className="flex-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium"
                       >
-                        <Search className="w-3.5 h-3.5" /> Explore Signal
+                        <Search className="w-3.5 h-3.5" /> Explore
                       </button>
                       <button
                         onClick={() => setCarouselData({
