@@ -359,9 +359,9 @@ Deno.serve(async (req) => {
     const searchQueries: string[] = [];
     if (handle) {
       searchQueries.push(
+        `site:linkedin.com/posts/${handle}`,
         `site:linkedin.com/posts "${handle}"`,
         `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
-        `site:linkedin.com/in/${handle} "/posts/"`,
       );
     }
     if (profileName) {
@@ -561,24 +561,42 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Dedup against existing posts
+    // Dedup against existing posts + confirm manual entries
     const { data: existingPosts } = await adminClient
       .from("linkedin_posts")
-      .select("linkedin_post_id, post_text")
+      .select("id, linkedin_post_id, post_text, post_url, tracking_status")
       .eq("user_id", userId);
 
-    const existingTexts = new Set((existingPosts || []).map((p: any) => p.post_text?.slice(0, 100)));
-    const existingIds = new Set((existingPosts || []).map((p: any) => p.linkedin_post_id));
+    const existingTexts = new Map<string, any>();
+    const existingUrls = new Map<string, any>();
+    for (const p of existingPosts || []) {
+      if (p.post_text) existingTexts.set(p.post_text.slice(0, 100), p);
+      if (p.linkedin_post_id) existingUrls.set(p.linkedin_post_id, p);
+      if (p.post_url) existingUrls.set(p.post_url, p);
+    }
 
     let inserted = 0;
     let duplicates = 0;
+    let confirmed = 0;
     const insertErrors: string[] = [];
 
     for (const post of discovered) {
       const textKey = post.text.slice(0, 100);
       const urlKey = post.url || `discovered-${textKey.slice(0, 50).replace(/\W/g, "-")}-${Date.now()}`;
 
-      if (existingTexts.has(textKey) || existingIds.has(urlKey)) {
+      // Check if this post already exists (by text or URL)
+      const existingByText = existingTexts.get(textKey);
+      const existingByUrl = existingUrls.get(urlKey) || (post.url ? existingUrls.get(post.url) : null);
+      const existing = existingByText || existingByUrl;
+
+      if (existing) {
+        // If it was manually ingested, confirm it via discovery
+        if (existing.tracking_status === "discovered" || existing.tracking_status === "manual") {
+          await adminClient.from("linkedin_posts")
+            .update({ tracking_status: "confirmed" })
+            .eq("id", existing.id);
+          confirmed++;
+        }
         duplicates++;
         continue;
       }
@@ -593,6 +611,7 @@ Deno.serve(async (req) => {
         media_type: post.mediaType,
         format_type: post.formatType,
         content_type: post.contentType,
+        tracking_status: "discovered",
         topic_label: null,
         engagement_score: 0,
         like_count: 0,
@@ -605,7 +624,7 @@ Deno.serve(async (req) => {
         else insertErrors.push(insertErr.message);
       } else {
         inserted++;
-        existingTexts.add(textKey);
+        existingTexts.set(textKey, { id: "new", tracking_status: "discovered" });
       }
     }
 
@@ -624,7 +643,7 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, dupes=${duplicates}`);
+    log("complete", `raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, confirmed=${confirmed}, dupes=${duplicates}`);
 
     // Auto-classify
     let classifyResult: any = null;
@@ -657,6 +676,7 @@ Deno.serve(async (req) => {
       valid_posts: discovered.length,
       discovered: discovered.length,
       inserted,
+      confirmed,
       duplicates,
       uncertain_held: reviewQueued,
       rejected_count: rejected.length,
