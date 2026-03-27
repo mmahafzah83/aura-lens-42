@@ -19,6 +19,7 @@ import StrategicAttribution from "@/components/influence/StrategicAttribution";
 import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 
 import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
+import DiscoveryHealthCard from "@/components/influence/DiscoveryHealthCard";
 import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
 import PostCleanupPanel from "@/components/influence/PostCleanupPanel";
 import PostMetricsIngestion from "@/components/influence/PostMetricsIngestion";
@@ -322,6 +323,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           </p>
           <ConnectionStatusPanel />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
+          <DiscoveryHealthCard />
           <ReviewQueuePanel onReviewComplete={loadAll} />
           <PostCleanupPanel onCleanupComplete={loadAll} />
           <ManualPostIngestion onIngestionComplete={loadAll} />
