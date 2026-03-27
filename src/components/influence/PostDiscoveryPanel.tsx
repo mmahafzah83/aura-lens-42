@@ -28,6 +28,7 @@ interface DiscoveryResult {
   valid_posts?: number;
   discovered: number;
   inserted: number;
+  confirmed?: number;
   duplicates: number;
   uncertain_held?: number;
   rejected_count?: number;
