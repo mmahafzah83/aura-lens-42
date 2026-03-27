@@ -162,22 +162,58 @@ IMPORTANT INSTRUCTIONS:
   }
 });
 
+function extractKeyTerms(stage: string): string[] {
+  const stopWords = new Set([
+    "a", "an", "the", "and", "or", "of", "for", "in", "on", "to", "with",
+    "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+    "do", "does", "did", "will", "would", "could", "should", "may", "might",
+    "shall", "can", "need", "must", "at", "by", "from", "into", "through",
+    "during", "before", "after", "above", "below", "between", "under", "over",
+    "level", "stage", "phase", "step", "tier",
+  ]);
+  // Remove parenthetical content, split, filter stop words and short words
+  const cleaned = stage.replace(/\(.*?\)/g, " ").replace(/[^a-zA-Z0-9\s-]/g, " ");
+  const words = cleaned.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+  return [...new Set(words)];
+}
+
 function validateStageCoverage(slides: any[], frameworkSteps: string[]): { coverage: number; missing: string[] } {
   // Collect all text from framework_step, framework_intro, and architecture slides
-  const frameworkText = slides
-    .filter((s: any) => ["framework_step", "architecture"].includes(s.slide_type))
+  const allText = slides
+    .filter((s: any) => ["framework_step", "framework_intro", "architecture"].includes(s.slide_type))
     .map((s: any) => `${s.headline || ""} ${s.supporting_text || ""}`.toLowerCase())
     .join(" ");
 
   const missing: string[] = [];
   for (const stage of frameworkSteps) {
     const stageLower = stage.toLowerCase();
-    // Check for exact match or significant substring (at least first 2 words)
+
+    // 1. Exact substring match
+    if (allText.includes(stageLower)) continue;
+
+    // 2. First 2-word prefix match
     const words = stageLower.split(/\s+/);
     const shortMatch = words.slice(0, Math.min(2, words.length)).join(" ");
-    if (!frameworkText.includes(stageLower) && !frameworkText.includes(shortMatch)) {
-      missing.push(stage);
+    if (allText.includes(shortMatch)) continue;
+
+    // 3. Fuzzy keyword match — extract key terms and check if majority appear
+    const keyTerms = extractKeyTerms(stage);
+    if (keyTerms.length > 0) {
+      const matched = keyTerms.filter(term => allText.includes(term));
+      // Consider covered if ≥60% of key terms found (at least 2, or all if fewer)
+      const threshold = Math.max(2, Math.ceil(keyTerms.length * 0.6));
+      if (matched.length >= Math.min(threshold, keyTerms.length)) continue;
     }
+
+    // 4. Also check parenthetical content separately (e.g. "Monitoring & Visualization")
+    const parenMatch = stage.match(/\(([^)]+)\)/);
+    if (parenMatch) {
+      const parenTerms = parenMatch[1].toLowerCase().split(/[\s,&]+/).filter(w => w.length > 2);
+      const parenMatched = parenTerms.filter(t => allText.includes(t));
+      if (parenMatched.length >= Math.ceil(parenTerms.length * 0.5)) continue;
+    }
+
+    missing.push(stage);
   }
 
   const covered = frameworkSteps.length - missing.length;
