@@ -72,7 +72,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const emptyReason = (hasData: boolean): string | null => {
     if (hasData) return null;
     if (!isConnected) return "LinkedIn not connected";
-    if (!hasSyncRun) return "No historical data yet";
+    if (!hasSyncRun) return "No successful sync has run";
     // Connected + synced but no rows
     return "Sync completed but no analytics records were stored";
   };
@@ -291,6 +291,29 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         </div>
       ) : (
         <>
+          {/* ── NO DATA BANNER ── */}
+          {isConnected && snapshots.length === 0 && posts.length === 0 && (
+            <Fade delay={0.04}>
+              <div className="glass-card rounded-2xl card-pad border border-primary/8 bg-gradient-to-br from-primary/[0.02] to-transparent space-y-3 text-center py-8">
+                <Zap className="w-6 h-6 text-primary/25 mx-auto" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground/70">LinkedIn connected — no analytics data yet</p>
+                  <p className="text-[11px] text-muted-foreground/40 mt-1.5 max-w-sm mx-auto leading-relaxed">
+                    No successful sync has run. Use the Data tab to import historical analytics, or trigger a sync from your LinkedIn connection.
+                    LinkedIn's API may require Community Management API approval for post-level data.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setView("data")}
+                  className="inline-flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Open Data Foundation
+                </button>
+              </div>
+            </Fade>
+          )}
+
           {/* ── WEEKLY INFLUENCE BRIEF ── */}
           <Fade delay={0.04}>
             <WeeklyInfluenceBrief onOpenChat={onOpenChat} />
@@ -436,8 +459,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                 <TrendingUp className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                 <p className="text-sm text-foreground/60">Audience Momentum</p>
-                <p className="text-[11px] text-muted-foreground/35">
-                  {emptyReason(false) || "No historical data yet"}
+                <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
+                  {!isConnected
+                    ? "Connect LinkedIn to begin tracking audience growth."
+                    : "No historical data yet. Import history or trigger a sync to unlock this chart."}
                 </p>
               </div>
             )}
@@ -506,8 +531,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                 <BarChart3 className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                 <p className="text-sm text-foreground/60">Content Performance</p>
-                <p className="text-[11px] text-muted-foreground/35">
-                  {emptyReason(false) || "No historical data yet"}
+                <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
+                  {!isConnected
+                    ? "Connect LinkedIn to analyze post performance."
+                    : "Import history to unlock this section. No post data has been synced yet."}
                 </p>
               </div>
             )}
@@ -553,8 +580,8 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                   <Lightbulb className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                   <p className="text-sm text-foreground/60">Theme Momentum</p>
-                  <p className="text-[11px] text-muted-foreground/35">
-                    {emptyReason(false) || "No historical data yet"}
+                  <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
+                    Import history to unlock this section
                   </p>
                 </div>
               )}
@@ -596,8 +623,8 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                   <Crown className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                   <p className="text-sm text-foreground/60">Format Intelligence</p>
-                  <p className="text-[11px] text-muted-foreground/35">
-                    {emptyReason(false) || "No historical data yet"}
+                  <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
+                    Import history to unlock this section
                   </p>
                 </div>
               )}
