@@ -630,6 +630,30 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                           <td className="text-[11px] text-muted-foreground/30 py-2.5 px-2.5 capitalize">
                             {post.format_type || post.content_type || "—"}
                           </td>
+                          <td className="py-2.5 px-2.5">
+                            {(() => {
+                              const src = post.source_type || "search_discovery";
+                              const sourceStyles: Record<string, string> = {
+                                browser_capture: "bg-emerald-500/8 text-emerald-400/70 border-emerald-500/10",
+                                manual_import: "bg-primary/5 text-primary/50 border-primary/10",
+                                manual_url: "bg-primary/5 text-primary/50 border-primary/10",
+                                search_discovery: "bg-muted-foreground/5 text-muted-foreground/30 border-border/5",
+                              };
+                              const sourceLabels: Record<string, string> = {
+                                browser_capture: "Capture",
+                                manual_import: "Import",
+                                manual_url: "Manual",
+                                search_discovery: "Search",
+                              };
+                              const enriched = (post.enriched_by || []).length > 1;
+                              return (
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${sourceStyles[src] || sourceStyles.search_discovery}`}>
+                                  {sourceLabels[src] || src}
+                                  {enriched && <span className="text-primary/40">+</span>}
+                                </span>
+                              );
+                            })()}
+                          </td>
                           <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
                             {hasRealMetrics
                               ? <span className="text-foreground/50">{post.like_count}</span>
