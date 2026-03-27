@@ -55,6 +55,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [latestSnapshot, setLatestSnapshot] = useState<any>(null);
   const [authorityScore, setAuthorityScore] = useState<any>(null);
 
+  // Connection & sync state
+  const [isConnected, setIsConnected] = useState(false);
+  const [hasSyncRun, setHasSyncRun] = useState(false);
+
   // Table sort
   const [sortKey, setSortKey] = useState<SortKey>("published_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -63,13 +67,22 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
 
   const getDaysForRange = (r: TimeRange) => r === "7d" ? 7 : r === "30d" ? 30 : r === "90d" ? 90 : 365;
 
+  /** Determine the right empty-state message for a metric area */
+  const emptyReason = (hasData: boolean): string | null => {
+    if (hasData) return null;
+    if (!isConnected) return "LinkedIn not connected";
+    if (!hasSyncRun) return "No historical data yet";
+    // Connected + synced but no rows
+    return "Sync completed but no analytics records were stored";
+  };
+
   const loadAll = async () => {
     setLoading(true);
     try {
       const days = getDaysForRange(range);
       const since = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-      const [snapRes, postRes, authRes] = await Promise.all([
+      const [snapRes, postRes, authRes, connRes, syncRes] = await Promise.all([
         supabase
           .from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
@@ -86,7 +99,19 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .select("*")
           .order("snapshot_date", { ascending: false })
           .limit(1),
+        supabase
+          .from("linkedin_connections")
+          .select("id, status")
+          .eq("status", "active")
+          .limit(1),
+        supabase
+          .from("sync_runs")
+          .select("id")
+          .limit(1),
       ]);
+
+      setIsConnected((connRes.data || []).length > 0);
+      setHasSyncRun((syncRes.data || []).length > 0);
 
       const snaps = snapRes.data || [];
       setSnapshots(snaps);
