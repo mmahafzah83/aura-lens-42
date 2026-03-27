@@ -425,6 +425,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             )}
             <p><span className="text-muted-foreground/30">Authored posts:</span> {result.valid_posts ?? result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
+            {(result.late_indexed ?? 0) > 0 && (
+              <p><span className="text-amber-500/40">Late-indexed:</span> {result.late_indexed}</p>
+            )}
             {(result.confirmed ?? 0) > 0 && (
               <p><span className="text-primary/40">Confirmed:</span> {result.confirmed}</p>
             )}
