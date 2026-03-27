@@ -70,6 +70,28 @@ function parseRelativeDate(text: string): string | null {
   return now.toISOString();
 }
 
+/* ── URL normalization ── */
+
+function normalizeLinkedInUrl(url: string): string {
+  // Remove regional subdomains (ae.linkedin.com, kw.linkedin.com, etc.)
+  let normalized = url.replace(/https?:\/\/[a-z]{2,3}\.linkedin\.com/i, "https://www.linkedin.com");
+  // Ensure www prefix
+  normalized = normalized.replace(/https?:\/\/linkedin\.com/i, "https://www.linkedin.com");
+  // Remove query params and trailing slashes
+  normalized = normalized.split("?")[0].replace(/\/+$/, "");
+  return normalized;
+}
+
+function extractPostSlug(url: string): string | null {
+  const m = url.match(/\/posts\/([^/?#]+)/);
+  return m ? m[1] : null;
+}
+
+function extractActivityId(url: string): string | null {
+  const m = url.match(/activity[:-](\d+)/);
+  return m ? m[1] : null;
+}
+
 /* ── URL validation ── */
 
 type RejectionReason =
@@ -92,7 +114,9 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
     return { valid: false, reason: "external_reference" };
   }
 
-  const path = url.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
+  // Normalize before validation
+  const normalized = normalizeLinkedInUrl(url);
+  const path = normalized.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
 
   if (/^\/in\/[^/]+\/?$/.test(path)) return { valid: false, reason: "profile_page" };
   if (/^\/pulse\//i.test(path)) return { valid: false, reason: "article_reference" };
@@ -103,6 +127,7 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
 
   const postsMatch = path.match(/^\/posts\/([^-]+)/);
   if (postsMatch) {
+    // Only accept posts authored by the connected handle
     if (handle && postsMatch[1].toLowerCase() !== handle.toLowerCase()) {
       return { valid: false, reason: "mention_by_other" };
     }
