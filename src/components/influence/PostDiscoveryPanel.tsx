@@ -28,6 +28,7 @@ interface DiscoveryResult {
   valid_posts?: number;
   discovered: number;
   inserted: number;
+  late_indexed?: number;
   confirmed?: number;
   duplicates: number;
   uncertain_held?: number;
@@ -62,10 +63,13 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   const [classifyResult, setClassifyResult] = useState<{ classified: number; labels: string[] } | null>(null);
+  const [totalDiscovered, setTotalDiscovered] = useState(0);
+  const [lateIndexedTotal, setLateIndexedTotal] = useState(0);
 
   useEffect(() => {
     loadRecentRuns();
     loadUnclassifiedCount();
+    loadStats();
   }, []);
 
   const loadRecentRuns = async () => {
@@ -85,6 +89,20 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       .is("topic_label", null)
       .not("post_text", "is", null);
     setUnclassifiedCount(count || 0);
+  };
+
+  const loadStats = async () => {
+    const { count: total } = await supabase
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .in("tracking_status", ["discovered", "confirmed", "indexed_late", "manual"]);
+    setTotalDiscovered(total || 0);
+
+    const { count: late } = await supabase
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("tracking_status", "indexed_late");
+    setLateIndexedTotal(late || 0);
   };
 
   const handleDiscover = async () => {
@@ -132,6 +150,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           mode: data.mode,
           blocked_queries: data.blocked_queries,
           candidates_confirmed: data.candidates_confirmed,
+          late_indexed: data.late_indexed,
         });
         const classifiedMsg = data.classified > 0 ? `, ${data.classified} classified` : "";
         toast({
@@ -141,6 +160,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         onDiscoveryComplete?.();
         await loadRecentRuns();
         await loadUnclassifiedCount();
+        await loadStats();
       }
     } catch (e: any) {
       setError(e.message || "Unexpected error");
@@ -231,6 +251,21 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           <span>7-day retry window</span>
         </div>
       </div>
+
+      {/* Discovery stats */}
+      {totalDiscovered > 0 && (
+        <div className="flex items-center gap-4 px-1">
+          <div className="text-[10px] text-muted-foreground/50">
+            <span className="text-primary/50 font-medium">{totalDiscovered}</span> authored posts discovered
+          </div>
+          {lateIndexedTotal > 0 && (
+            <div className="text-[10px] text-amber-500/50">
+              <Clock className="w-3 h-3 inline mr-1" />
+              {lateIndexedTotal} late-indexed
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Profile URL input */}
       {needsUrl && (
@@ -390,6 +425,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             )}
             <p><span className="text-muted-foreground/30">Authored posts:</span> {result.valid_posts ?? result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
+            {(result.late_indexed ?? 0) > 0 && (
+              <p><span className="text-amber-500/40">Late-indexed:</span> {result.late_indexed}</p>
+            )}
             {(result.confirmed ?? 0) > 0 && (
               <p><span className="text-primary/40">Confirmed:</span> {result.confirmed}</p>
             )}
