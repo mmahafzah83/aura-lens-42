@@ -1618,14 +1618,11 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">
-                    <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs min-h-[44px]">
-                      {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
+                    <Button onClick={() => { setPipelineStep("visuals"); }} className="flex-1 text-xs min-h-[44px]">
+                      <Camera className="w-3.5 h-3.5 mr-1.5" /> Generate Visuals →
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15 min-h-[44px]">
                       <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setPipelineStep("frameworks")} className="text-xs border-border/15 min-h-[44px]">
-                      <Layers className="w-3 h-3 mr-1.5" /> Frameworks
                     </Button>
                   </div>
                 </>
