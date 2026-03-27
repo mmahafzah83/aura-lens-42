@@ -221,11 +221,11 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
       className="glass-card rounded-2xl card-pad border border-border/8 space-y-4"
     >
       <div className="flex items-center gap-3">
-        <Plus className="w-4 h-4 text-primary/40" />
+        <Plus className="w-4 h-4 text-muted-foreground/30" />
         <div>
-          <h3 className="text-sm font-semibold text-foreground">Manual Post Ingestion</h3>
+          <h3 className="text-sm font-semibold text-foreground/70">Missing a post?</h3>
           <p className="text-meta mt-0.5">
-            Automated discovery may miss some recent LinkedIn posts. Use manual add for anything missing.
+            If a recent LinkedIn post has not appeared yet, you can add it manually while Aura continues automatic discovery retries.
           </p>
         </div>
       </div>
