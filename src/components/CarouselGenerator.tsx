@@ -569,6 +569,9 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const [visualPlanSummary, setVisualPlanSummary] = useState("");
   const [generatingVisualPlan, setGeneratingVisualPlan] = useState(false);
 
+  // Validation state
+  const [validation, setValidation] = useState<{ stage_coverage_pct: number; missing_stages: string[]; passed: boolean } | null>(null);
+
   const currentSlides = slides[lang];
   const isLoading = loading[lang];
 
@@ -684,6 +687,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setSlides(prev => ({ ...prev, [targetLang]: newSlides }));
       if (data.linkedin_caption) setCaption(data.linkedin_caption);
       if (data.hashtags) setHashtags(data.hashtags);
+      if (data.validation) setValidation(data.validation);
       if (targetLang === lang) setCurrentSlide(0);
       setPipelineStep("carousel");
     } catch (e: any) {
@@ -1149,6 +1153,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setSelectedFramework(null);
       setVisualPlan([]);
       setVisualPlanSummary("");
+      setValidation(null);
     }, 300);
   };
 
@@ -1526,6 +1531,23 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           {/* ═══ STEP: Carousel View ═══ */}
           {pipelineStep === "carousel" && (
             <>
+              {/* Validation Badge */}
+              {validation && (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+                  validation.passed
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                }`}>
+                  {validation.passed ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                  <span className="font-medium">Stage Coverage: {validation.stage_coverage_pct}%</span>
+                  {validation.missing_stages?.length > 0 && (
+                    <span className="text-muted-foreground ml-1">
+                      · Missing: {validation.missing_stages.join(", ")}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <LanguageToggle />
 
