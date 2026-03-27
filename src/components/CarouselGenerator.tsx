@@ -687,6 +687,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setSlides(prev => ({ ...prev, [targetLang]: newSlides }));
       if (data.linkedin_caption) setCaption(data.linkedin_caption);
       if (data.hashtags) setHashtags(data.hashtags);
+      if (data.validation) setValidation(data.validation);
       if (targetLang === lang) setCurrentSlide(0);
       setPipelineStep("carousel");
     } catch (e: any) {
