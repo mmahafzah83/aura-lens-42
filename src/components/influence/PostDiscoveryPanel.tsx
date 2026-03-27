@@ -294,12 +294,18 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           </div>
           {/* Filter summary */}
           {(result.raw_links_found ?? 0) > 0 && (
-            <div className="flex items-center gap-3 pl-6 text-[10px]">
+            <div className="flex items-center flex-wrap gap-3 pl-6 text-[10px]">
               <span className="flex items-center gap-1 text-muted-foreground/40">
                 <Filter className="w-3 h-3" />
                 {result.raw_links_found} links scanned
               </span>
-              <span className="text-primary/50 font-medium">{result.valid_posts ?? result.discovered} authored</span>
+              <span className="text-primary/50 font-medium">{result.valid_posts ?? result.discovered} authored (2+ signals)</span>
+              {(result.uncertain_held ?? 0) > 0 && (
+                <span className="flex items-center gap-1 text-amber-500/60">
+                  <Clock className="w-3 h-3" />
+                  {result.uncertain_held} held for review
+                </span>
+              )}
               {(result.rejected_count ?? 0) > 0 && (
                 <span className="text-destructive/40">{result.rejected_count} rejected</span>
               )}
@@ -316,6 +322,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             <p><span className="text-muted-foreground/30">Authored posts:</span> {result.valid_posts ?? result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
             <p><span className="text-muted-foreground/30">Duplicates:</span> {result.duplicates}</p>
+            {(result.uncertain_held ?? 0) > 0 && (
+              <p><span className="text-amber-500/40">Review queue:</span> {result.uncertain_held}</p>
+            )}
             <p><span className="text-muted-foreground/30">Errors:</span> {result.errors?.length || 0}</p>
             {(result.classified ?? 0) > 0 && (
               <p><span className="text-muted-foreground/30">Classified:</span> {result.classified}</p>
