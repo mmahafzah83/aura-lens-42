@@ -225,6 +225,7 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
               <div className="flex gap-3 ml-2">
                 {[
                   { key: "dashboard" as const, label: "Dashboard" },
+                  { key: "attribution" as const, label: "Attribution" },
                   { key: "data" as const, label: "Data" },
                 ].map(v => (
                   <button
