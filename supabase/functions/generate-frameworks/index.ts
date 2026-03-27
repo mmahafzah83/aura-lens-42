@@ -34,17 +34,30 @@ Analyze the topic and extract:
 - target_audience: Who benefits most from this content
 
 STEP 2 — FRAMEWORK GENERATION
-Generate exactly 3 strategic frameworks related to the topic. Each framework must:
-- Have a clear, memorable name (e.g., "Smart Water Transformation Model", "Utility Digital Architecture", "AI Operations Stack")
-- Include 4-6 structured steps/components
-- Be visually representable as a diagram (sequential flow, layered, circular, or grid)
-- Include a brief description of why this framework matters
+Generate exactly 3 strategic frameworks related to the topic.
 
-STEP 3 — VISUAL STRATEGY
-For each framework, suggest:
-- diagram_type: "sequential_flow" | "layered" | "circular" | "grid_2x2"
-- key_visuals: Array of 3-4 visual concepts that would complement this framework in a carousel
-- image_types: For each visual, whether it should be "PHOTO" (real-world infrastructure) or "INFOGRAPHIC" (generated diagram)
+FRAMEWORK TYPES to consider (choose the most suitable for the topic):
+- maturity_model: Staged progression from basic to advanced capability
+- transformation_roadmap: Phased journey with milestones
+- pyramid: Hierarchical layers building from foundation to peak
+- flywheel: Self-reinforcing cycle of improvement
+- capability_stack: Layered technology/capability architecture
+- layered_architecture: Technical or organizational layers
+- operating_model: How components interact in operation
+- ecosystem_map: Interconnected stakeholders and value flows
+- before_after_bridge: Current state → gap → future state transformation
+- sequential_flow: Step-by-step linear process
+- grid_2x2: 2×2 matrix with two axes
+- circular: Cyclical process or feedback loop
+
+Each framework must include:
+- A clear, memorable name (e.g., "Smart Water Transformation Model", "Utility Digital Architecture")
+- A rationale explaining why this framework is the right lens for this topic (2-3 sentences)
+- 3-7 structured steps/components
+- The framework_type from the list above
+- A recommended diagram_type for visual representation: "sequential_flow" | "layered" | "circular" | "grid_2x2" | "pyramid" | "flywheel"
+- A suitability_score from 1-10 rating how well this framework fits the topic
+- A brief description of why this framework matters
 
 ${isArabic ? `Write ALL content in professional executive Arabic used by strategy leaders in the GCC.
 Use terms like: الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة، الهندسة التنظيمية` : `Write ALL content in English. Use authoritative consulting tone.`}
@@ -68,8 +81,11 @@ OUTPUT: Valid JSON only with this structure:
       "id": "fw_1",
       "name": "Framework Name",
       "description": "Why this framework matters (1-2 sentences)",
+      "rationale": "Why this is the right lens for this topic (2-3 sentences)",
+      "framework_type": "maturity_model",
       "steps": ["Step 1 Name", "Step 2 Name", "Step 3 Name", "Step 4 Name"],
       "diagram_type": "sequential_flow",
+      "suitability_score": 8,
       "key_visuals": [
         { "concept": "Visual description", "type": "PHOTO" },
         { "concept": "Visual description", "type": "INFOGRAPHIC" }
