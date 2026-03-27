@@ -179,6 +179,30 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     .sort((a, b) => b.avgEng - a.avgEng)
     .slice(0, 5);
 
+  // Topic label breakdown
+  const topicCounts: Record<string, number> = {};
+  posts.forEach(p => {
+    if (p.topic_label) {
+      topicCounts[p.topic_label] = (topicCounts[p.topic_label] || 0) + 1;
+    }
+  });
+  const topicLabels = Object.entries(topicCounts)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  const unlabeledCount = posts.filter(p => !p.topic_label).length;
+
+  // Content type breakdown
+  const contentTypeCounts: Record<string, number> = {};
+  posts.forEach(p => {
+    if (p.content_type) {
+      contentTypeCounts[p.content_type] = (contentTypeCounts[p.content_type] || 0) + 1;
+    }
+  });
+  const contentTypes = Object.entries(contentTypeCounts)
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
+
   // Chart data
   const chartData = snapshots.map(s => ({
     date: s.snapshot_date,
@@ -570,6 +594,93 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               </div>
             )}
           </Fade>
+
+          {/* ── TOPIC LABELS + CONTENT TYPES ── */}
+          {(topicLabels.length > 0 || contentTypes.length > 0) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              {/* Topic Labels */}
+              <Fade delay={0.2}>
+                <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-primary/50" />
+                      Topic Labels
+                    </h3>
+                    <p className="text-meta mt-0.5">AI-classified topics across {posts.length} posts</p>
+                  </div>
+                  {topicLabels.length > 0 ? (
+                    <div className="space-y-2">
+                      {topicLabels.map((t, i) => {
+                        const maxCount = topicLabels[0].count;
+                        const pct = Math.round((t.count / maxCount) * 100);
+                        return (
+                          <div key={t.label} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-foreground/60 capitalize truncate max-w-[70%]">{t.label}</span>
+                              <span className="text-[10px] text-muted-foreground/30 tabular-nums">{t.count}</span>
+                            </div>
+                            <div className="h-1 rounded-full bg-secondary/15 overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.5, delay: 0.2 + i * 0.04 }}
+                                className="h-full rounded-full bg-primary/30"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {unlabeledCount > 0 && (
+                        <p className="text-[10px] text-muted-foreground/20 pt-2 border-t border-border/5">
+                          {unlabeledCount} post{unlabeledCount !== 1 ? "s" : ""} not yet classified
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/30 py-4 text-center">
+                      No topics classified yet. Run classification from Data view.
+                    </p>
+                  )}
+                </div>
+              </Fade>
+
+              {/* Content Types */}
+              <Fade delay={0.24}>
+                <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-primary/50" />
+                      Content Types
+                    </h3>
+                    <p className="text-meta mt-0.5">How your content is structured</p>
+                  </div>
+                  {contentTypes.length > 0 ? (
+                    <div className="space-y-2">
+                      {contentTypes.map((ct, i) => (
+                        <motion.div
+                          key={ct.type}
+                          initial={{ opacity: 0, x: -6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.25 + i * 0.04 }}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/8 border border-border/[0.03]"
+                        >
+                          <span className="text-xs text-foreground/60 capitalize">{ct.type}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] text-muted-foreground/30 tabular-nums">{ct.count} posts</span>
+                            <span className="text-[10px] text-foreground/40 tabular-nums">{Math.round((ct.count / posts.length) * 100)}%</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground/30 py-4 text-center">
+                      No content types detected yet.
+                    </p>
+                  )}
+                </div>
+              </Fade>
+            </div>
+          )}
 
           {/* ── STRATEGIC THEME MOMENTUM + FORMAT INTELLIGENCE ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
