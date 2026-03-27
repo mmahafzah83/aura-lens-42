@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, TrendingUp, BarChart3, Crown, Loader2,
   ArrowUpRight, ArrowDownRight, Sparkles, FileText,
-  Zap, Eye, Lightbulb, Database as DatabaseIcon
+  Zap, Eye, Lightbulb
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -400,30 +400,24 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         processLogic="Signal → Content → Audience → Growth"
       />
 
-      {/* View toggle */}
-      <div className="flex items-center gap-2 p-1 rounded-xl bg-secondary/15 border border-border/8 w-fit">
-        <button
-          onClick={() => setView("intelligence")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-            view === "intelligence"
-              ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-              : "text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <TrendingUp className="w-3.5 h-3.5" />
-          Intelligence
-        </button>
-        <button
-          onClick={() => setView("data")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
-            view === "data"
-              ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-              : "text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <DatabaseIcon className="w-3.5 h-3.5" />
-          Data Foundation
-        </button>
+      {/* View toggle — understated */}
+      <div className="flex items-center gap-4">
+        {[
+          { key: "intelligence" as const, label: "Intelligence" },
+          { key: "data" as const, label: "Data Foundation" },
+        ].map(v => (
+          <button
+            key={v.key}
+            onClick={() => setView(v.key)}
+            className={`text-xs font-medium transition-all pb-1 border-b ${
+              view === v.key
+                ? "text-foreground border-primary/40"
+                : "text-muted-foreground/40 border-transparent hover:text-muted-foreground/70"
+            }`}
+          >
+            {v.label}
+          </button>
+        ))}
       </div>
 
       {view === "intelligence" ? (
@@ -451,12 +445,10 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
           </Section>
         </>
       ) : (
-        <div className="space-y-6">
-          <div className="p-4 rounded-xl bg-gradient-to-br from-primary/[0.03] to-transparent border border-primary/8">
-            <p className="text-sm text-foreground/70 leading-relaxed">
-              Preserve your authority history. Aura is building your strategic memory — every metric stored here strengthens trend analysis over time.
-            </p>
-          </div>
+        <div className="space-y-5">
+          <p className="text-[11px] text-muted-foreground/30 tracking-wide leading-relaxed max-w-md">
+            Aura is building your strategic memory. Every metric preserved here strengthens trend analysis over time.
+          </p>
           <ConnectionStatusPanel />
           <HistoricalImportHub />
           <DailySnapshotEngine />
