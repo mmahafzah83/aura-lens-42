@@ -783,6 +783,7 @@ export type Database = {
           saves: number
           shares: number
           snapshot_date: string
+          source_type: string
           user_id: string
         }
         Insert: {
@@ -796,6 +797,7 @@ export type Database = {
           saves?: number
           shares?: number
           snapshot_date?: string
+          source_type?: string
           user_id: string
         }
         Update: {
@@ -809,6 +811,7 @@ export type Database = {
           saves?: number
           shares?: number
           snapshot_date?: string
+          source_type?: string
           user_id?: string
         }
         Relationships: [
@@ -847,6 +850,7 @@ export type Database = {
           title: string | null
           tone: string | null
           topic_label: string | null
+          tracking_status: string
           user_id: string
           visual_strategy_type: string | null
           visual_style: string | null
@@ -876,6 +880,7 @@ export type Database = {
           title?: string | null
           tone?: string | null
           topic_label?: string | null
+          tracking_status?: string
           user_id: string
           visual_strategy_type?: string | null
           visual_style?: string | null
@@ -905,6 +910,7 @@ export type Database = {
           title?: string | null
           tone?: string | null
           topic_label?: string | null
+          tracking_status?: string
           user_id?: string
           visual_strategy_type?: string | null
           visual_style?: string | null

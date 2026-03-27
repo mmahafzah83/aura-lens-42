@@ -19,6 +19,7 @@ import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 
 import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
+import PostMetricsIngestion from "@/components/influence/PostMetricsIngestion";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -287,6 +288,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <ConnectionStatusPanel />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
           <ManualPostIngestion onIngestionComplete={loadAll} />
+          <PostMetricsIngestion onComplete={loadAll} />
           <HistoricalImportHub onImportComplete={loadAll} />
           <DailySnapshotEngine />
           <DataHealthConsole />
@@ -498,6 +500,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("engagement_score")}>
                           <span className="flex items-center gap-1 justify-end">Eng % <SortIcon col="engagement_score" /></span>
                         </th>
+                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-center">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -522,7 +525,32 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {post.comment_count || 0}
                           </td>
                           <td className="text-[11px] text-foreground/60 py-2.5 px-2.5 tabular-nums text-right font-medium">
-                            {Number(post.engagement_score || 0).toFixed(1)}%
+                            {post.like_count || post.comment_count || post.engagement_score
+                              ? `${Number(post.engagement_score || 0).toFixed(1)}%`
+                              : <span className="text-muted-foreground/20">—</span>}
+                          </td>
+                          <td className="py-2.5 px-2.5 text-center">
+                            {(() => {
+                              const hasMetrics = !!(post.like_count || post.comment_count || Number(post.engagement_score) > 0);
+                              const status = (post as any).tracking_status || (hasMetrics ? "metrics_imported" : "discovered");
+                              const styles: Record<string, string> = {
+                                discovered: "bg-muted-foreground/5 text-muted-foreground/30",
+                                metrics_pending: "bg-amber-500/5 text-amber-500/50",
+                                metrics_imported: "bg-emerald-500/5 text-emerald-500/50",
+                                metrics_unavailable: "bg-muted-foreground/5 text-muted-foreground/20",
+                              };
+                              const labels: Record<string, string> = {
+                                discovered: "No metrics",
+                                metrics_pending: "Pending",
+                                metrics_imported: "Enriched",
+                                metrics_unavailable: "Unavailable",
+                              };
+                              return (
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-medium ${styles[status] || styles.discovered}`}>
+                                  {labels[status] || "No metrics"}
+                                </span>
+                              );
+                            })()}
                           </td>
                         </tr>
                       ))}
