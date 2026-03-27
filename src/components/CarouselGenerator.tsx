@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import {
   Loader2, Globe, Download, RefreshCw, Pencil, Eye, ChevronLeft, ChevronRight,
   LayoutGrid, Check, Copy, Hash, ImageIcon, Sparkles, Layers, ArrowRight,
-  Lightbulb, Target, PenLine,
+  Lightbulb, Target, PenLine, Linkedin, Share2, User, Briefcase, Zap, Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -58,7 +58,7 @@ interface TopicAnalysis {
   target_audience: string;
 }
 
-type PipelineStep = "input" | "frameworks" | "carousel";
+type PipelineStep = "input" | "frameworks" | "carousel" | "visuals";
 
 type Lang = "en" | "ar";
 type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
@@ -75,8 +75,8 @@ interface CarouselGeneratorProps {
 const CANVAS_W = 1080;
 const CANVAS_H = 1350;
 const SAFE_M = 120;
-const VISUAL_REQUEST_DELAY_MS = 5000;
-const VISUAL_RETRY_DELAYS_MS = [7000, 12000] as const;
+const VISUAL_REQUEST_DELAY_MS = 2000;
+const VISUAL_RETRY_DELAYS_MS = [4000, 8000] as const;
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /* ── Style Palettes ──────────────────── */
@@ -518,37 +518,76 @@ const SlidePreview = ({
           <div style={{
             position: "absolute", bottom: SAFE_M + 20, left: SAFE_M, right: SAFE_M,
             display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 12, zIndex: 3,
+            gap: 16, zIndex: 3,
           }}>
+            {/* Divider line */}
             <div style={{
-              width: 60, height: 2,
+              width: 80, height: 2,
               background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)`,
-              marginBottom: 8,
             }} />
-            <div style={{
-              fontSize: 22, fontWeight: 800, color: p.fg, textAlign: "center",
-            }}>
-              M. Mahafzah
+
+            {/* Name with icon */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: `linear-gradient(135deg, ${p.accent}30, ${p.accent}10)`,
+                border: `1.5px solid ${p.accent}40`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, color: p.accent,
+              }}>👤</div>
+              <div style={{
+                fontSize: 26, fontWeight: 800, color: p.fg, textAlign: "center",
+                letterSpacing: "0.02em",
+              }}>
+                M. Mahafzah
+              </div>
             </div>
-            <div style={{
-              fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.6,
-            }}>
-              Strategy | Digital & Business Transformation
+
+            {/* Role line with icon */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 14, color: p.accent }}>💼</span>
+              <div style={{
+                fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.4,
+              }}>
+                Strategy | Digital & Business Transformation
+              </div>
             </div>
-            <div style={{
-              fontSize: 14, color: p.accent, textAlign: "center", fontWeight: 600,
-            }}>
-              Focus on Utilities & Power
+
+            {/* Focus area */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 14, color: p.accent }}>⚡</span>
+              <div style={{
+                fontSize: 15, color: p.accent, textAlign: "center", fontWeight: 700,
+                letterSpacing: "0.05em",
+              }}>
+                Focus on Utilities & Power
+              </div>
             </div>
+
+            {/* Spacer */}
+            <div style={{ height: 6 }} />
+
+            {/* LinkedIn link */}
             <div style={{
-              fontSize: 13, color: p.accent, textAlign: "center", fontWeight: 500, opacity: 0.8,
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 20px", borderRadius: 20,
+              backgroundColor: `${p.accent}12`, border: `1px solid ${p.accent}25`,
             }}>
-              linkedin.com/in/mmahafzah
+              <span style={{ fontSize: 14, color: p.accent }}>🔗</span>
+              <span style={{
+                fontSize: 14, color: p.accent, fontWeight: 600,
+              }}>linkedin.com/in/mmahafzah</span>
             </div>
+
+            {/* Repost CTA */}
             <div style={{
-              fontSize: 15, color: p.muted, textAlign: "center", marginTop: 4, opacity: 0.7,
+              display: "flex", alignItems: "center", gap: 8,
+              marginTop: 4,
             }}>
-              ↻ Repost if this was helpful.
+              <span style={{ fontSize: 16, color: p.muted, opacity: 0.6 }}>↻</span>
+              <span style={{
+                fontSize: 15, color: p.muted, opacity: 0.7, fontWeight: 500,
+              }}>Repost if this was helpful</span>
             </div>
           </div>
         )}
@@ -685,10 +724,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       if (data.hashtags) setHashtags(data.hashtags);
       if (targetLang === lang) setCurrentSlide(0);
       setPipelineStep("carousel");
-      if (newSlides.length > 0) {
-        await sleep(500);
-        await generateVisuals(targetLang, newSlides);
-      }
     } catch (e: any) {
       toast.error(e.message || "Failed to generate carousel");
     } finally {
@@ -1027,30 +1062,63 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
         // CTA Authority Branding
         if (isCta) {
-          const ctaY = CANVAS_H - SAFE_M - 180;
-          const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 30, 0, CANVAS_W / 2 + 30, 0);
+          const ctaY = CANVAS_H - SAFE_M - 260;
+
+          // Divider
+          const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 40, 0, CANVAS_W / 2 + 40, 0);
           divGrd.addColorStop(0, "transparent");
           divGrd.addColorStop(0.5, p.accent);
           divGrd.addColorStop(1, "transparent");
           ctx.fillStyle = divGrd;
-          ctx.fillRect(CANVAS_W / 2 - 30, ctaY, 60, 2);
+          ctx.fillRect(CANVAS_W / 2 - 40, ctaY, 80, 2);
+
+          // Avatar circle
+          ctx.beginPath();
+          ctx.arc(CANVAS_W / 2 - 80, ctaY + 40, 18, 0, Math.PI * 2);
+          ctx.fillStyle = `${p.accent}25`;
+          ctx.fill();
+          ctx.strokeStyle = `${p.accent}40`;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = p.accent;
+          ctx.font = "400 18px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
+          ctx.fillText("👤", CANVAS_W / 2 - 80, ctaY + 46);
+
+          // Name
+          ctx.textAlign = "left";
           ctx.fillStyle = p.fg;
-          ctx.font = "800 22px Inter, Arial, sans-serif";
-          ctx.fillText("M. Mahafzah", CANVAS_W / 2, ctaY + 36);
+          ctx.font = "800 26px Inter, Arial, sans-serif";
+          ctx.fillText("M. Mahafzah", CANVAS_W / 2 - 50, ctaY + 46);
+
+          // Role
           ctx.fillStyle = p.muted;
           ctx.font = "400 16px Inter, Arial, sans-serif";
-          ctx.fillText("Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 62);
+          ctx.textAlign = "center";
+          ctx.fillText("💼  Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 86);
+
+          // Focus
+          ctx.fillStyle = p.accent;
+          ctx.font = "700 15px Inter, Arial, sans-serif";
+          ctx.fillText("⚡  Focus on Utilities & Power", CANVAS_W / 2, ctaY + 120);
+
+          // LinkedIn pill
+          roundRect(ctx, CANVAS_W / 2 - 130, ctaY + 148, 260, 36, 18);
+          ctx.fillStyle = `${p.accent}12`;
+          ctx.fill();
+          ctx.strokeStyle = `${p.accent}25`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
           ctx.fillStyle = p.accent;
           ctx.font = "600 14px Inter, Arial, sans-serif";
-          ctx.fillText("Focus on Utilities & Power", CANVAS_W / 2, ctaY + 82);
-          ctx.fillStyle = p.accent;
-          ctx.font = "600 13px Inter, Arial, sans-serif";
-          ctx.fillText("linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 102);
+          ctx.textAlign = "center";
+          ctx.fillText("🔗  linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 172);
+
+          // Repost
           ctx.fillStyle = p.muted;
           ctx.globalAlpha = 0.7;
-          ctx.font = "400 15px Inter, Arial, sans-serif";
-          ctx.fillText("↻ Repost if this was helpful.", CANVAS_W / 2, ctaY + 128);
+          ctx.font = "500 15px Inter, Arial, sans-serif";
+          ctx.fillText("↻  Repost if this was helpful", CANVAS_W / 2, ctaY + 214);
           ctx.globalAlpha = 1;
         }
 
@@ -1109,26 +1177,45 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const imagesTotal = currentSlides.filter(s => s.image_prompt).length;
 
   /* ── Pipeline Step Indicator ── */
+  const pipelineSteps: { key: PipelineStep; label: string; icon: typeof Lightbulb }[] = [
+    { key: "input", label: "Analysis", icon: Lightbulb },
+    { key: "frameworks", label: "Framework", icon: Layers },
+    { key: "carousel", label: "Carousel", icon: LayoutGrid },
+    { key: "visuals", label: "Visuals", icon: Camera },
+  ];
+  const stepOrder: PipelineStep[] = ["input", "frameworks", "carousel", "visuals"];
+  const currentStepIdx = stepOrder.indexOf(pipelineStep);
+
+  const canNavigateTo = (targetStep: PipelineStep): boolean => {
+    const targetIdx = stepOrder.indexOf(targetStep);
+    if (targetIdx >= currentStepIdx) return false; // can only go back
+    if (targetStep === "input") return false; // can't go back to loading
+    if (targetStep === "frameworks") return frameworks.length > 0;
+    if (targetStep === "carousel") return currentSlides.length > 0;
+    return false;
+  };
+
   const StepIndicator = () => (
     <div className="flex items-center gap-1 px-1">
-      {[
-        { key: "input" as PipelineStep, label: "Analysis", icon: Lightbulb },
-        { key: "frameworks" as PipelineStep, label: "Framework", icon: Layers },
-        { key: "carousel" as PipelineStep, label: "Carousel", icon: LayoutGrid },
-      ].map((step, i) => {
+      {pipelineSteps.map((step, i) => {
         const isActive = pipelineStep === step.key;
-        const isDone = (step.key === "input" && pipelineStep !== "input") ||
-          (step.key === "frameworks" && pipelineStep === "carousel");
+        const stepIdx = stepOrder.indexOf(step.key);
+        const isDone = stepIdx < currentStepIdx;
+        const canClick = canNavigateTo(step.key);
         const Icon = step.icon;
         return (
           <div key={step.key} className="flex items-center gap-1">
             {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/20" />}
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
-              isActive ? "bg-primary/15 text-primary" : isDone ? "text-primary/60" : "text-muted-foreground/30"
-            }`}>
+            <button
+              onClick={() => canClick && setPipelineStep(step.key)}
+              disabled={!canClick}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                isActive ? "bg-primary/15 text-primary" : isDone ? "text-primary/60 hover:text-primary hover:bg-primary/8 cursor-pointer" : "text-muted-foreground/30 cursor-default"
+              }`}
+            >
               {isDone ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
               {step.label}
-            </div>
+            </button>
           </div>
         );
       })}
@@ -1258,8 +1345,10 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   LinkedIn Carousel
                 </SheetTitle>
                 <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
-                  {pipelineStep === "carousel"
-                    ? `${currentSlides.length} slides · ${PALETTES[style].name} · ${imagesReady}/${imagesTotal} visuals`
+                  {pipelineStep === "visuals"
+                    ? `${imagesReady}/${imagesTotal} visuals generated`
+                    : pipelineStep === "carousel"
+                    ? `${currentSlides.length} slides · ${PALETTES[style].name}`
                     : pipelineStep === "frameworks"
                     ? `${frameworks.length} frameworks generated`
                     : "Analyzing topic…"
@@ -1278,17 +1367,8 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         </div>
 
         <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
-          {/* Visual Generation Progress */}
-          {generatingVisuals && (
-            <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                <span className="text-xs font-semibold text-foreground">Generating slide visuals…</span>
-                <span className="text-[10px] text-muted-foreground/60 ml-auto">{visualProgress}/{visualTotal}</span>
-              </div>
-              <Progress value={(visualProgress / Math.max(1, visualTotal)) * 100} className="h-1.5" />
-            </div>
-          )}
+
+
 
           {/* ═══ STEP: Generating Frameworks ═══ */}
           {(pipelineStep === "input" || generatingFrameworks) && (
@@ -1564,14 +1644,11 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">
-                    <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs min-h-[44px]">
-                      {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
+                    <Button onClick={() => { setPipelineStep("visuals"); }} className="flex-1 text-xs min-h-[44px]">
+                      <Camera className="w-3.5 h-3.5 mr-1.5" /> Generate Visuals →
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15 min-h-[44px]">
                       <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setPipelineStep("frameworks")} className="text-xs border-border/15 min-h-[44px]">
-                      <Layers className="w-3 h-3 mr-1.5" /> Frameworks
                     </Button>
                   </div>
                 </>
@@ -1583,6 +1660,95 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   </Button>
                 </div>
               )}
+            </>
+          )}
+
+          {/* ═══ STEP: Visuals ═══ */}
+          {pipelineStep === "visuals" && (
+            <>
+              {/* Visual Generation Progress */}
+              {generatingVisuals && (
+                <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                    <span className="text-xs font-semibold text-foreground">Generating slide visuals…</span>
+                    <span className="text-[10px] text-muted-foreground/60 ml-auto">{visualProgress}/{visualTotal}</span>
+                  </div>
+                  <Progress value={(visualProgress / Math.max(1, visualTotal)) * 100} className="h-1.5" />
+                </div>
+              )}
+
+              {/* Slide visual status grid */}
+              <div className="space-y-3">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
+                  <Camera className="w-3 h-3" /> Slide Visuals
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {currentSlides.map((slide, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-xl border p-3 space-y-2 ${
+                        slide.image_url
+                          ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+                          : slide.image_prompt
+                          ? "border-amber-500/20 bg-amber-500/[0.04]"
+                          : "border-border/10 bg-card/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-foreground/80">Slide {slide.slide_number}</span>
+                        {slide.image_url ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : slide.image_prompt ? (
+                          <ImageIcon className="w-3.5 h-3.5 text-amber-500/60" />
+                        ) : null}
+                      </div>
+                      <p className="text-[9px] text-muted-foreground/50 line-clamp-2">
+                        {slide.image_prompt ? slide.image_prompt.substring(0, 80) + "…" : "No visual prompt"}
+                      </p>
+                      {slide.image_url && (
+                        <img src={slide.image_url} alt={`Slide ${slide.slide_number}`} className="w-full h-20 object-cover rounded-lg" />
+                      )}
+                      {slide.image_prompt && (
+                        <button
+                          onClick={() => regenerateSlideVisual(idx)}
+                          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          {slide.image_url ? "Regenerate" : "Generate"}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={() => generateVisuals(lang, currentSlides)}
+                  disabled={generatingVisuals}
+                  className="flex-1 text-xs min-h-[44px]"
+                >
+                  {generatingVisuals ? (
+                    <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating…</>
+                  ) : (
+                    <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> Generate All Visuals</>
+                  )}
+                </Button>
+                <Button onClick={exportPDF} disabled={exporting} variant="outline" className="text-xs border-border/15 min-h-[44px]">
+                  {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
+                </Button>
+              </div>
+
+              {/* Skip visuals */}
+              <button
+                onClick={exportPDF}
+                disabled={exporting}
+                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 w-full text-center py-1 transition-colors"
+              >
+                Skip visuals → export PDF directly
+              </button>
             </>
           )}
         </div>
