@@ -572,7 +572,7 @@ Deno.serve(async (req) => {
       log("review_queue", `${reviewQueued} uncertain candidates held for review`);
     }
 
-    const syncType = mode === "retry" ? "retry_discovery" : "search_discovery";
+    const syncType = mode === "retry" ? "retry_discovery" : "search_discovery_name_based";
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
