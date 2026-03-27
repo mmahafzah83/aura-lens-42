@@ -4,7 +4,8 @@ import {
   Users, TrendingUp, Loader2, ArrowUpRight, ArrowDownRight,
   Sparkles, FileText, Zap, Eye, Crown, BarChart3,
   Lightbulb, RefreshCw, Calendar, ChevronDown, ChevronUp,
-  WifiOff, AlertCircle, CloudOff, Search, Activity, Database as DatabaseIcon
+  WifiOff, AlertCircle, CloudOff, Search, Activity, Database as DatabaseIcon,
+  Grid3X3
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -192,6 +193,23 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const contentTypes = Object.entries(contentTypeCounts)
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count);
+
+  // Engagement heatmap: topic × content_type matrix (only enriched posts)
+  const heatmapTopics = topicLabels.slice(0, 8).map(t => t.label);
+  const heatmapTypes = contentTypes.slice(0, 5).map(ct => ct.type);
+  const heatmapData: { topic: string; type: string; count: number; avgEng: number; hasMetrics: boolean }[] = [];
+  heatmapTopics.forEach(topic => {
+    heatmapTypes.forEach(type => {
+      const matching = posts.filter(p => p.topic_label === topic && p.content_type === type);
+      const withMetrics = matching.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0);
+      const avgEng = withMetrics.length > 0
+        ? Math.round(withMetrics.reduce((s, p) => s + (Number(p.engagement_score) || 0), 0) / withMetrics.length * 10) / 10
+        : 0;
+      heatmapData.push({ topic, type, count: matching.length, avgEng, hasMetrics: withMetrics.length > 0 });
+    });
+  });
+  const maxHeatmapEng = Math.max(...heatmapData.map(h => h.avgEng), 1);
+  const hasAnyHeatmapMetrics = heatmapData.some(h => h.hasMetrics);
 
   // Chart data
   const chartData = snapshots.map(s => ({
@@ -715,6 +733,118 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </div>
               </Fade>
             </div>
+          )}
+
+          {/* ── ENGAGEMENT HEATMAP ── */}
+          {heatmapTopics.length > 0 && heatmapTypes.length > 0 && (
+            <Fade delay={0.26}>
+              <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      <Grid3X3 className="w-3.5 h-3.5 text-primary/50" />
+                      Engagement Heatmap
+                    </h3>
+                    <p className="text-meta mt-0.5">
+                      {hasAnyHeatmapMetrics
+                        ? "Topic × content type performance matrix"
+                        : "Topic × content type — import metrics to reveal engagement intensity"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto -mx-2">
+                  <table className="w-full min-w-[500px]">
+                    <thead>
+                      <tr>
+                        <th className="text-[10px] text-muted-foreground/25 font-medium py-2 px-2.5 text-left w-[140px]" />
+                        {heatmapTypes.map(type => (
+                          <th key={type} className="text-[10px] uppercase tracking-widest text-muted-foreground/30 font-medium py-2 px-2 text-center capitalize">
+                            {type}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {heatmapTopics.map((topic, ti) => (
+                        <tr key={topic}>
+                          <td className="text-[11px] text-foreground/50 py-1.5 px-2.5 truncate max-w-[140px] capitalize">
+                            {topic}
+                          </td>
+                          {heatmapTypes.map(type => {
+                            const cell = heatmapData.find(h => h.topic === topic && h.type === type);
+                            if (!cell || cell.count === 0) {
+                              return (
+                                <td key={type} className="py-1.5 px-1.5 text-center">
+                                  <div className="w-full h-9 rounded-lg bg-secondary/[0.03] border border-border/[0.02]" />
+                                </td>
+                              );
+                            }
+                            const intensity = cell.hasMetrics
+                              ? Math.max(0.1, cell.avgEng / maxHeatmapEng)
+                              : 0;
+                            return (
+                              <td key={type} className="py-1.5 px-1.5 text-center">
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.8 }}
+                                  animate={{ opacity: 1, scale: 1 }}
+                                  transition={{ delay: 0.3 + ti * 0.03 }}
+                                  className="relative w-full h-9 rounded-lg border border-border/[0.04] flex items-center justify-center cursor-default group"
+                                  style={{
+                                    background: cell.hasMetrics
+                                      ? `hsla(43, 72%, 52%, ${intensity * 0.35})`
+                                      : "hsla(0, 0%, 50%, 0.03)",
+                                  }}
+                                  title={`${topic} × ${type}: ${cell.count} post${cell.count !== 1 ? "s" : ""}${cell.hasMetrics ? ` · ${cell.avgEng}% avg engagement` : " · no metrics"}`}
+                                >
+                                  <span className={`text-[10px] tabular-nums font-medium ${
+                                    cell.hasMetrics
+                                      ? "text-primary/70"
+                                      : "text-muted-foreground/20"
+                                  }`}>
+                                    {cell.hasMetrics ? `${cell.avgEng}%` : cell.count}
+                                  </span>
+                                  {/* Tooltip on hover */}
+                                  <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+                                    <div className="bg-[hsl(0,0%,7%)] border border-border/15 rounded-lg px-2.5 py-1.5 text-[10px] text-foreground/80 whitespace-nowrap shadow-lg">
+                                      {cell.count} post{cell.count !== 1 ? "s" : ""}
+                                      {cell.hasMetrics ? ` · ${cell.avgEng}% avg` : " · no metrics yet"}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-[hsla(43,72%,52%,0.08)]" />
+                      <span className="text-[9px] text-muted-foreground/25">Low</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-[hsla(43,72%,52%,0.2)]" />
+                      <span className="text-[9px] text-muted-foreground/25">Mid</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded bg-[hsla(43,72%,52%,0.35)]" />
+                      <span className="text-[9px] text-muted-foreground/25">High</span>
+                    </div>
+                  </div>
+                  {!hasAnyHeatmapMetrics && (
+                    <span className="text-[9px] text-muted-foreground/20">
+                      Post counts shown · import metrics for engagement intensity
+                    </span>
+                  )}
+                </div>
+              </div>
+            </Fade>
           )}
 
           {/* ── STRATEGIC THEME MOMENTUM + FORMAT INTELLIGENCE ── */}
