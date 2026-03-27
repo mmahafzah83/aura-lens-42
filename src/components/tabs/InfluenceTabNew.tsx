@@ -14,6 +14,7 @@ import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
 import DataHealthConsole from "@/components/influence/DataHealthConsole";
 import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
 import StrategicAttribution from "@/components/influence/StrategicAttribution";
+import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
