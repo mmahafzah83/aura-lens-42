@@ -11,10 +11,12 @@ interface Props {
 
 interface DiscoveryResult {
   profile_url?: string;
-  pages_visited?: number;
+  queries_run?: number;
+  total_results?: number;
   discovered: number;
   inserted: number;
   duplicates: number;
+  source_type?: string;
   errors?: string[];
 }
 
