@@ -423,8 +423,15 @@ Also generate:
 - linkedin_caption: Ready-to-post LinkedIn caption (3-4 short paragraphs, professional advisory tone)
 - hashtags: Array of 5-8 relevant hashtags
 - total_slides: The total number of slides generated
+- generation_checklist: {
+    "explainer_format": "Option A | Option B | Option C",
+    "stage_coverage": { "stage_name": "slide_N", ... },
+    "explainer_slide_count": number,
+    "terminology_consistent": true/false,
+    "narrative_continuous": true/false
+  }
 
-OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...], "total_slides": N }
+OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...], "total_slides": N, "generation_checklist": {...} }
 
 BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize"`;
 }
