@@ -844,6 +844,7 @@ export type Database = {
           post_text: string | null
           post_url: string | null
           published_at: string | null
+          rejection_reason: string | null
           repost_count: number
           synced_at: string
           theme: string | null
@@ -874,6 +875,7 @@ export type Database = {
           post_text?: string | null
           post_url?: string | null
           published_at?: string | null
+          rejection_reason?: string | null
           repost_count?: number
           synced_at?: string
           theme?: string | null
@@ -904,6 +906,7 @@ export type Database = {
           post_text?: string | null
           post_url?: string | null
           published_at?: string | null
+          rejection_reason?: string | null
           repost_count?: number
           synced_at?: string
           theme?: string | null

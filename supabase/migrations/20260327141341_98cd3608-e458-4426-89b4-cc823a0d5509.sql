@@ -1,0 +1,1 @@
+ALTER TABLE public.linkedin_posts ADD COLUMN IF NOT EXISTS rejection_reason text DEFAULT NULL;

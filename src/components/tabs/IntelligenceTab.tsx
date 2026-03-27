@@ -713,7 +713,7 @@ const PatternsPanel = () => {
       const [signalsRes, profileRes, postsRes] = await Promise.all([
         supabase.from("strategic_signals").select("signal_title, confidence, theme_tags, supporting_evidence_ids").eq("status", "active").order("confidence", { ascending: false }).limit(20),
         (supabase.from("diagnostic_profiles" as any) as any).select("sector_focus, identity_intelligence, brand_pillars").maybeSingle(),
-        supabase.from("linkedin_posts").select("tone, theme").limit(50),
+        supabase.from("linkedin_posts").select("tone, theme").neq("tracking_status", "rejected").limit(50),
       ]);
 
       const signals = signalsRes.data || [];
