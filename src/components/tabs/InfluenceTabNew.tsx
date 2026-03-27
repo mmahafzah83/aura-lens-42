@@ -13,6 +13,7 @@ import HistoricalImportHub from "@/components/influence/HistoricalImportHub";
 import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
 import DataHealthConsole from "@/components/influence/DataHealthConsole";
 import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
+import StrategicAttribution from "@/components/influence/StrategicAttribution";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -43,7 +44,7 @@ const Fade = ({ children, delay = 0 }: { children: React.ReactNode; delay?: numb
 const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<TimeRange>("30d");
-  const [view, setView] = useState<"dashboard" | "data">("dashboard");
+  const [view, setView] = useState<"dashboard" | "attribution" | "data">("dashboard");
 
   // Data
   const [snapshots, setSnapshots] = useState<any[]>([]);
@@ -224,6 +225,7 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
               <div className="flex gap-3 ml-2">
                 {[
                   { key: "dashboard" as const, label: "Dashboard" },
+                  { key: "attribution" as const, label: "Attribution" },
                   { key: "data" as const, label: "Data" },
                 ].map(v => (
                   <button
@@ -244,7 +246,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         </div>
       </Fade>
 
-      {view === "data" ? (
+      {view === "attribution" ? (
+        <StrategicAttribution />
+      ) : view === "data" ? (
         <div className="space-y-5">
           <p className="text-[11px] text-muted-foreground/25 tracking-wide max-w-md">
             Aura is building your strategic memory. Every metric preserved here strengthens trend analysis over time.

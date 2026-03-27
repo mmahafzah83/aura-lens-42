@@ -823,13 +823,17 @@ export type Database = {
       }
       linkedin_posts: {
         Row: {
+          carousel_structure_type: string | null
           comment_count: number
+          content_engine_output_type: string | null
           content_type: string | null
           created_at: string
+          cta_style: string | null
           engagement_score: number
           format_type: string | null
           framework_type: string | null
           hook: string | null
+          hook_style: string | null
           id: string
           like_count: number
           linkedin_post_id: string
@@ -844,16 +848,21 @@ export type Database = {
           tone: string | null
           topic_label: string | null
           user_id: string
+          visual_strategy_type: string | null
           visual_style: string | null
         }
         Insert: {
+          carousel_structure_type?: string | null
           comment_count?: number
+          content_engine_output_type?: string | null
           content_type?: string | null
           created_at?: string
+          cta_style?: string | null
           engagement_score?: number
           format_type?: string | null
           framework_type?: string | null
           hook?: string | null
+          hook_style?: string | null
           id?: string
           like_count?: number
           linkedin_post_id: string
@@ -868,16 +877,21 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           user_id: string
+          visual_strategy_type?: string | null
           visual_style?: string | null
         }
         Update: {
+          carousel_structure_type?: string | null
           comment_count?: number
+          content_engine_output_type?: string | null
           content_type?: string | null
           created_at?: string
+          cta_style?: string | null
           engagement_score?: number
           format_type?: string | null
           framework_type?: string | null
           hook?: string | null
+          hook_style?: string | null
           id?: string
           like_count?: number
           linkedin_post_id?: string
@@ -892,6 +906,7 @@ export type Database = {
           tone?: string | null
           topic_label?: string | null
           user_id?: string
+          visual_strategy_type?: string | null
           visual_style?: string | null
         }
         Relationships: []
