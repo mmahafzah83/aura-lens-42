@@ -1,10 +1,7 @@
-# Project Memory
+# Memory: index.md
+Updated: today
 
-## Core
-Dark theme, Apple-like minimal. Primary #3B82F6, bg #0F172A.
-SF Pro Display headings, Inter body. Never serif.
-Mobile-first: no horizontal scroll, stacked layouts <768px, flex-wrap all action rows.
-Aura app: EY Director executive coaching tool with bilingual AR/EN support.
+Aura app: EY Director executive coaching tool with bilingual AR/EN support, dark theme, gold accents.
 
 ## Skill Pillars
 C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Stewardship, Digital Fluency
@@ -22,9 +19,10 @@ C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Ste
 - Entries >30 days without pin → archived
 
 ## Memories
-- [Mobile-first responsive](mem://features/mobile-first) — Layout rules: clamp typography, responsive grids, stacked cards
-- [Action system](mem://features/action-system) — Canonical action buttons for Signal/Insight/Framework/Content
-- [Aura system prompt](mem://features/aura-system-prompt) — Multi-tool orchestration: Claude/Gemini/Canva
-- [Executive diagnostic](mem://features/executive-diagnostic) — Onboarding flow
-- [Framework diagrams](mem://features/framework-diagrams) — Visual framework generation
-- [Intelligence layer](mem://features/intelligence-layer) — Evidence pipeline and pattern detection
+- [Action System](mem://features/action-system.md) — Action workspace with generate-action-output edge function
+- [Aura System Prompt](mem://features/aura-system-prompt.md) — Chat-aura system prompt and persona rules
+- [Executive Diagnostic](mem://features/executive-diagnostic.md) — Onboarding diagnostic flow and profile schema
+- [Framework Diagrams](mem://features/framework-diagrams.md) — Framework diagram generation with regenerate-schematic
+- [Mobile First](mem://features/mobile-first.md) — Mobile-first responsive design rules
+- [Intelligence Layer](mem://features/intelligence-layer.md) — source_registry + evidence_fragments for structured evidence extraction
+- [Influence Data Foundation](mem://features/influence-data-foundation.md) — DB schema extensions and 5 UI panels for LinkedIn authority analytics
