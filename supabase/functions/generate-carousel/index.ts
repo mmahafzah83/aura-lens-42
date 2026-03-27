@@ -357,8 +357,8 @@ FRAMEWORK DEPTH RULE
 ═══════════════════════════════════
 
 ${frameworkDepthRule}
+${stageNamingRule}
 
-═══════════════════════════════════
 FRAMEWORK EXPLANATION RULE
 ═══════════════════════════════════
 
