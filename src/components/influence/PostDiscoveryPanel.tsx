@@ -263,8 +263,8 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             {result.profile_url && (
               <p><span className="text-muted-foreground/30">Profile:</span> {result.profile_url.replace("https://www.linkedin.com/in/", "")}</p>
             )}
-            {result.pages_visited != null && (
-              <p><span className="text-muted-foreground/30">Pages visited:</span> {result.pages_visited}</p>
+            {result.queries_run != null && (
+              <p><span className="text-muted-foreground/30">Queries run:</span> {result.queries_run}</p>
             )}
             <p><span className="text-muted-foreground/30">Posts found:</span> {result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
