@@ -115,8 +115,9 @@ const HighlightedHeadline = ({
   if (!emphasisWords || emphasisWords.length === 0) {
     return (
       <h2 style={{
-        fontSize, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.03em",
+        fontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: "-0.02em",
         textAlign: textAlign as any, color: palette.fg, margin: 0,
+        width: "100%",
       }}>
         {text}
       </h2>
