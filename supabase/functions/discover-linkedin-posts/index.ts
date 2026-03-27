@@ -658,6 +658,7 @@ Deno.serve(async (req) => {
       discovered: discovered.length,
       inserted,
       duplicates,
+      uncertain_held: reviewQueued,
       rejected_count: rejected.length,
       rejection_reasons: rejectionCounts,
       classified: classifyResult?.classified || 0,
