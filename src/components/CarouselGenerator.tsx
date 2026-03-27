@@ -533,7 +533,7 @@ const SlidePreview = ({
             <div style={{
               fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.6,
             }}>
-              Strategy | Business & Digital Transformation
+              Strategy | Digital & Business Transformation
             </div>
             <div style={{
               fontSize: 14, color: p.accent, textAlign: "center", fontWeight: 600,
