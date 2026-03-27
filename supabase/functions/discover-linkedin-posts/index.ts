@@ -210,22 +210,23 @@ Deno.serve(async (req) => {
 
     log("start", `Profile: ${profileUrl}`);
 
-    // Build activity page URLs
+    // Build activity page URLs — target pages where posts actually appear
     const base = profileUrl.replace(/\/+$/, "");
     const activityPages = [
       `${base}/recent-activity/shares/`,
       `${base}/recent-activity/all/`,
+      `${base}/detail/recent-activity/shares/`,
     ];
 
     log("pages_planned", activityPages.join(", "));
 
-    // Scrape activity pages via Firecrawl
+    // Scrape activity pages via Firecrawl with extended wait for dynamic scroll loading
     const scrapeUrl = async (url: string) => {
       try {
         const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",
           headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ url, formats: ["markdown", "links"], onlyMainContent: true, waitFor: 3000 }),
+          body: JSON.stringify({ url, formats: ["markdown", "links"], onlyMainContent: true, waitFor: 5000 }),
         });
         const data = await res.json();
         const md = data?.data?.markdown || data?.markdown || "";
