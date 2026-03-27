@@ -227,10 +227,34 @@ Prioritize executive understanding over completeness. When in doubt:
 - Each explainer slide should have a clear executive takeaway
 
 ═══════════════════════════════════
+MANDATORY PRE-GENERATION CHECKLIST
+═══════════════════════════════════
+
+Before generating ANY slides, you MUST complete this checklist internally. Include the checklist result in your JSON output as "generation_checklist".
+
+CHECKLIST ITEM 1 — EXPLAINER FORMAT CHOSEN
+State which format you chose: "Option A — Maturity Bands", "Option B — Sequential Deep-Dive", or "Option C — Transformation Arc".
+You MUST pick exactly one. Do NOT mix formats.
+
+CHECKLIST ITEM 2 — STAGE COVERAGE MAP
+List EVERY stage from the selected framework and map each one to a specific slide number.
+Example: { "Reactive & Manual": "slide_6", "Monitored & Digitized": "slide_6", "Connected & Analyzed": "slide_7", "Predictive & Optimized": "slide_8", "Autonomous & Resilient": "slide_8" }
+EVERY stage must appear. No stage may be omitted.
+
+CHECKLIST ITEM 3 — EXPLAINER SLIDE COUNT
+Count the number of framework_step slides. This number MUST be >= 3 when the framework has more than 3 stages.
+
+CHECKLIST ITEM 4 — TERMINOLOGY CONSISTENCY
+Confirm that every explainer slide uses the EXACT stage names from the framework. No renaming, no paraphrasing.
+
+CHECKLIST ITEM 5 — NARRATIVE CONTINUITY
+Confirm that no new framework, model, or architecture is introduced in the explainer slides that was not part of the selected framework.
+
+═══════════════════════════════════
 PRE-GENERATION THINKING PROCESS
 ═══════════════════════════════════
 
-Before generating slides, follow these steps internally (do NOT output them):
+Before generating slides, follow these steps internally:
 
 STEP 1 — TOPIC ANALYSIS
 Identify: core industry challenge, strategic insight, transformation opportunity.
@@ -238,18 +262,20 @@ Identify: core industry challenge, strategic insight, transformation opportunity
 STEP 2 — FRAMEWORK ASSESSMENT
 Assess the selected framework's complexity. Decide if stages need compression or expansion.
 
-STEP 3 — NARRATIVE ARCHITECTURE
-Plan the full slide sequence: hook → problem → data → reframe → framework intro → framework explainers → future insight → CTA.
-Decide how many explainer slides are needed.
+STEP 3 — COMPLETE THE MANDATORY CHECKLIST ABOVE
+Fill in all 5 checklist items. If any item fails, revise your plan before proceeding.
 
-STEP 4 — SLIDE COUNT DECISION
+STEP 4 — NARRATIVE ARCHITECTURE
+Plan the full slide sequence: hook → problem → data → reframe → framework intro → framework explainers → future insight → CTA.
+
+STEP 5 — SLIDE COUNT DECISION
 Set the total slide count based on narrative needs (8–14).
 
-STEP 5 — VISUAL PLANNING
+STEP 6 — VISUAL PLANNING
 For each slide, decide layout type and image strategy (PHOTO: vs INFOGRAPHIC:).
 
-STEP 6 — GENERATE
-Generate all slides following the structure.
+STEP 7 — GENERATE
+Generate all slides following the structure and checklist.
 
 ═══════════════════════════════════
 EY ALIGNMENT
