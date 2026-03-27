@@ -17,6 +17,7 @@ interface RejectionReasons {
   mention_by_other?: number;
   invalid_url_pattern?: number;
   failed_authorship?: number;
+  authorship_uncertain?: number;
 }
 
 interface DiscoveryResult {
@@ -28,6 +29,7 @@ interface DiscoveryResult {
   discovered: number;
   inserted: number;
   duplicates: number;
+  uncertain_held?: number;
   rejected_count?: number;
   rejection_reasons?: RejectionReasons;
   classified?: number;
