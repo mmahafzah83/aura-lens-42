@@ -387,7 +387,7 @@ const AnalyzeTab = () => {
   const loadAnalytics = async () => {
     try {
       const [postsRes, snapshotRes] = await Promise.all([
-        supabase.from("linkedin_posts").select("theme, tone, format_type, engagement_score").order("published_at", { ascending: false }).limit(100),
+        supabase.from("linkedin_posts").select("theme, tone, format_type, engagement_score").neq("tracking_status", "rejected").order("published_at", { ascending: false }).limit(100),
         supabase.from("influence_snapshots").select("followers, engagement_rate, top_topic, top_format, authority_themes").order("snapshot_date", { ascending: false }).limit(1),
       ]);
 
