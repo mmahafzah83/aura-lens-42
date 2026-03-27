@@ -262,8 +262,13 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         </div>
       ) : (
         <>
-          {/* ── CONNECTION STATUS (compact) ── */}
+          {/* ── WEEKLY INFLUENCE BRIEF ── */}
           <Fade delay={0.04}>
+            <WeeklyInfluenceBrief />
+          </Fade>
+
+          {/* ── CONNECTION STATUS (compact) ── */}
+          <Fade delay={0.06}>
             <ConnectionStatusPanel />
           </Fade>
 
