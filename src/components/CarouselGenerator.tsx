@@ -488,10 +488,11 @@ const SlidePreview = ({
               {/* Supporting text */}
               {!hasDiagram && slide.supporting_text && !isCTA && (
                 <p style={{
-                  fontSize: 28, lineHeight: 1.5,
+                  fontSize: 28, lineHeight: 1.6,
                   color: p.muted, fontWeight: 400,
-                  textAlign: textAlign as any,
+                  textAlign: isHero || isStat ? "center" : "justify" as any,
                   maxWidth: 800,
+                  margin: 0,
                   ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
                 }}>
                   {slide.supporting_text}
