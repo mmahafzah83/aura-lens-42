@@ -618,38 +618,59 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   <div>
                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                       <Sparkles className="w-3.5 h-3.5 text-primary/50" />
-                      Topic Labels
+                      Topic Breakdown
                     </h3>
                     <p className="text-meta mt-0.5">AI-classified topics across {posts.length} posts</p>
                   </div>
                   {topicLabels.length > 0 ? (
-                    <div className="space-y-2">
-                      {topicLabels.map((t, i) => {
-                        const maxCount = topicLabels[0].count;
-                        const pct = Math.round((t.count / maxCount) * 100);
-                        return (
-                          <div key={t.label} className="space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-foreground/60 capitalize truncate max-w-[70%]">{t.label}</span>
-                              <span className="text-[10px] text-muted-foreground/30 tabular-nums">{t.count}</span>
-                            </div>
-                            <div className="h-1 rounded-full bg-secondary/15 overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${pct}%` }}
-                                transition={{ duration: 0.5, delay: 0.2 + i * 0.04 }}
-                                className="h-full rounded-full bg-primary/30"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
+                    <>
+                      <div className="h-[220px] -mx-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={topicLabels}
+                            layout="vertical"
+                            margin={{ top: 0, right: 12, left: 4, bottom: 0 }}
+                          >
+                            <XAxis
+                              type="number"
+                              tick={{ fontSize: 10, fill: "hsl(0, 0%, 42%)" }}
+                              tickLine={false}
+                              axisLine={false}
+                              allowDecimals={false}
+                            />
+                            <YAxis
+                              type="category"
+                              dataKey="label"
+                              tick={{ fontSize: 10, fill: "hsl(40, 10%, 70%)" }}
+                              tickLine={false}
+                              axisLine={false}
+                              width={110}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                background: "hsl(0, 0%, 7%)",
+                                border: "1px solid hsl(0, 0%, 14%)",
+                                borderRadius: "8px",
+                                fontSize: "11px",
+                                color: "hsl(40, 10%, 92%)",
+                              }}
+                              formatter={(value: number) => [`${value} posts`, "Count"]}
+                              cursor={{ fill: "hsl(0, 0%, 100%, 0.03)" }}
+                            />
+                            <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={18}>
+                              {topicLabels.map((_, i) => (
+                                <Cell key={i} fill={`hsl(43, 72%, ${52 - i * 3}%)`} fillOpacity={0.5 - i * 0.03} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
                       {unlabeledCount > 0 && (
                         <p className="text-[10px] text-muted-foreground/20 pt-2 border-t border-border/5">
                           {unlabeledCount} post{unlabeledCount !== 1 ? "s" : ""} not yet classified
                         </p>
                       )}
-                    </div>
+                    </>
                   ) : (
                     <p className="text-[11px] text-muted-foreground/30 py-4 text-center">
                       No topics classified yet. Run classification from Data view.
