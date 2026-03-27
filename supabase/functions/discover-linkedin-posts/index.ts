@@ -79,7 +79,8 @@ type RejectionReason =
   | "external_reference"
   | "mention_by_other"
   | "invalid_url_pattern"
-  | "failed_authorship";
+  | "failed_authorship"
+  | "authorship_uncertain";
 
 interface UrlValidation {
   valid: boolean;
@@ -94,69 +95,93 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
 
   const path = url.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
 
-  // Reject profile pages
   if (/^\/in\/[^/]+\/?$/.test(path)) {
     return { valid: false, reason: "profile_page" };
   }
-
-  // Reject article/pulse pages
   if (/^\/pulse\//i.test(path)) {
     return { valid: false, reason: "article_reference" };
   }
-
-  // Reject company pages
   if (/^\/company\//i.test(path)) {
     return { valid: false, reason: "external_reference" };
   }
-
-  // Reject comment-specific URLs
   if (/commentUrn|replyUrn/i.test(url)) {
     return { valid: false, reason: "comment_thread" };
   }
 
-  // Accept /feed/update/urn:li:activity:*
   if (/^\/feed\/update\/urn:li:activity:\d+/.test(path)) {
     return { valid: true };
   }
 
-  // Accept /posts/{handle}-*  (LinkedIn post slug format)
   const postsMatch = path.match(/^\/posts\/([^-]+)/);
   if (postsMatch) {
-    // If we have a handle, verify the post belongs to this profile
     if (handle && postsMatch[1].toLowerCase() !== handle.toLowerCase()) {
       return { valid: false, reason: "mention_by_other" };
     }
     return { valid: true };
   }
 
-  // Everything else is rejected
   return { valid: false, reason: "invalid_url_pattern" };
 }
 
-/** Check if the scraped content was authored by the connected profile */
-function validateAuthorship(
+/** Multi-signal authorship scoring. Returns signals found and confidence. */
+interface AuthorshipResult {
+  confident: boolean;      // 2+ signals → true
+  uncertain: boolean;      // exactly 1 signal → true (review queue)
+  signals: string[];       // which signals matched
+  confidence: number;      // 0-1
+}
+
+function scoreAuthorship(
+  url: string,
   rawText: string,
   profileName: string,
   handle: string,
-): boolean {
-  if (!profileName && !handle) return true; // can't verify, allow
+): AuthorshipResult {
+  const signals: string[] = [];
 
-  const lower = rawText.toLowerCase().slice(0, 1500); // check header area
-
-  // Check if profile name appears near the top (author byline)
+  // Signal 1: author name appears in header area
   if (profileName) {
-    const nameParts = profileName.toLowerCase().split(/\s+/);
-    // All name parts should appear in the header
-    const allFound = nameParts.every((part) => lower.includes(part));
-    if (allFound) return true;
+    const lower = rawText.toLowerCase().slice(0, 1500);
+    const nameParts = profileName.toLowerCase().split(/\s+/).filter(p => p.length > 1);
+    if (nameParts.length > 0 && nameParts.every((part) => lower.includes(part))) {
+      signals.push("name_in_header");
+    }
   }
 
-  // Check handle
-  if (handle && lower.includes(handle.toLowerCase())) {
-    return true;
+  // Signal 2: profile handle appears in canonical post URL
+  if (handle) {
+    const urlLower = url.toLowerCase();
+    if (urlLower.includes(`/posts/${handle.toLowerCase()}`)) {
+      signals.push("handle_in_url");
+    }
   }
 
-  return false;
+  // Signal 3: snippet clearly indicates own post (first-person patterns near top)
+  const headerText = rawText.slice(0, 800).toLowerCase();
+  const firstPersonPatterns = [
+    /\bi wrote\b/i, /\bmy post\b/i, /\bi shared\b/i, /\bi published\b/i,
+    /\bhere's what i\b/i, /\bi've been\b/i, /\bi learned\b/i, /\bi believe\b/i,
+  ];
+  if (firstPersonPatterns.some(p => p.test(headerText))) {
+    signals.push("first_person_snippet");
+  }
+
+  // Signal 4: handle appears in the text byline area
+  if (handle) {
+    const bylineArea = rawText.toLowerCase().slice(0, 500);
+    if (bylineArea.includes(handle.toLowerCase())) {
+      signals.push("handle_in_byline");
+    }
+  }
+
+  const confidence = Math.min(signals.length / 2, 1);
+
+  return {
+    confident: signals.length >= 2,
+    uncertain: signals.length === 1,
+    signals,
+    confidence,
+  };
 }
 
 interface DiscoveredPost {
