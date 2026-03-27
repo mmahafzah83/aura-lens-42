@@ -756,22 +756,55 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                     <p className="text-meta mt-0.5">How your content is structured</p>
                   </div>
                   {contentTypes.length > 0 ? (
-                    <div className="space-y-2">
-                      {contentTypes.map((ct, i) => (
-                        <motion.div
-                          key={ct.type}
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.25 + i * 0.04 }}
-                          className="flex items-center justify-between p-2.5 rounded-xl bg-secondary/8 border border-border/[0.03]"
-                        >
-                          <span className="text-xs text-foreground/60 capitalize">{ct.type}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] text-muted-foreground/30 tabular-nums">{ct.count} posts</span>
-                            <span className="text-[10px] text-foreground/40 tabular-nums">{Math.round((ct.count / posts.length) * 100)}%</span>
+                    <div className="flex items-center gap-4">
+                      <div className="h-[200px] w-[200px] flex-shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={contentTypes.map((ct, i) => ({
+                                name: ct.type,
+                                value: ct.count,
+                                fill: `hsl(${43 + i * 35}, ${72 - i * 5}%, ${52 + i * 4}%)`,
+                              }))}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={45}
+                              outerRadius={75}
+                              strokeWidth={1}
+                              stroke="hsl(0, 0%, 7%)"
+                            >
+                              {contentTypes.map((_, i) => (
+                                <Cell key={i} fill={`hsl(${43 + i * 35}, ${72 - i * 5}%, ${52 + i * 4}%)`} fillOpacity={0.7 - i * 0.05} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{
+                                background: "hsl(0, 0%, 7%)",
+                                border: "1px solid hsl(0, 0%, 14%)",
+                                borderRadius: "8px",
+                                fontSize: "11px",
+                                color: "hsl(40, 10%, 92%)",
+                              }}
+                              formatter={(value: number, name: string) => [`${value} posts (${Math.round((value / posts.length) * 100)}%)`, name]}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        {contentTypes.map((ct, i) => (
+                          <div key={ct.type} className="flex items-center gap-2">
+                            <div
+                              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                              style={{ background: `hsl(${43 + i * 35}, ${72 - i * 5}%, ${52 + i * 4}%)`, opacity: 0.7 - i * 0.05 }}
+                            />
+                            <span className="text-[11px] text-foreground/60 capitalize flex-1 truncate">{ct.type}</span>
+                            <span className="text-[10px] text-muted-foreground/40 tabular-nums">{ct.count}</span>
+                            <span className="text-[10px] text-foreground/30 tabular-nums w-8 text-right">{Math.round((ct.count / posts.length) * 100)}%</span>
                           </div>
-                        </motion.div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <p className="text-[11px] text-muted-foreground/30 py-4 text-center">
