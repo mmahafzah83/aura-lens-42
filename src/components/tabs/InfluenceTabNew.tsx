@@ -546,7 +546,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedPosts.map(post => (
+                      {sortedPosts.map(post => {
+                        const hasRealMetrics = !!(post.like_count > 0 || post.comment_count > 0 || Number(post.engagement_score) > 0);
+                        const status = post.tracking_status || (hasRealMetrics ? "metrics_imported" : "discovered");
+                        return (
                         <tr key={post.id} className="border-b border-border/[0.03] hover:bg-secondary/5 transition-colors">
                           <td className="text-[11px] text-muted-foreground/40 py-2.5 px-2.5 tabular-nums whitespace-nowrap">
                             {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
@@ -560,21 +563,23 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                           <td className="text-[11px] text-muted-foreground/30 py-2.5 px-2.5 capitalize">
                             {post.format_type || post.content_type || "—"}
                           </td>
-                          <td className="text-[11px] text-foreground/50 py-2.5 px-2.5 tabular-nums text-right">
-                            {post.like_count || 0}
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
+                            {hasRealMetrics
+                              ? <span className="text-foreground/50">{post.like_count}</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
-                          <td className="text-[11px] text-foreground/50 py-2.5 px-2.5 tabular-nums text-right">
-                            {post.comment_count || 0}
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
+                            {hasRealMetrics
+                              ? <span className="text-foreground/50">{post.comment_count}</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
-                          <td className="text-[11px] text-foreground/60 py-2.5 px-2.5 tabular-nums text-right font-medium">
-                            {post.like_count || post.comment_count || post.engagement_score
-                              ? `${Number(post.engagement_score || 0).toFixed(1)}%`
-                              : <span className="text-muted-foreground/20">—</span>}
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right font-medium">
+                            {hasRealMetrics
+                              ? <span className="text-foreground/60">{Number(post.engagement_score || 0).toFixed(1)}%</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="py-2.5 px-2.5 text-center">
                             {(() => {
-                              const hasMetrics = !!(post.like_count || post.comment_count || Number(post.engagement_score) > 0);
-                              const status = (post as any).tracking_status || (hasMetrics ? "metrics_imported" : "discovered");
                               const styles: Record<string, string> = {
                                 discovered: "bg-muted-foreground/5 text-muted-foreground/30",
                                 metrics_pending: "bg-amber-500/5 text-amber-500/50",
@@ -582,20 +587,21 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                                 metrics_unavailable: "bg-muted-foreground/5 text-muted-foreground/20",
                               };
                               const labels: Record<string, string> = {
-                                discovered: "No metrics",
+                                discovered: "Discovery only",
                                 metrics_pending: "Pending",
                                 metrics_imported: "Enriched",
                                 metrics_unavailable: "Unavailable",
                               };
                               return (
                                 <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-medium ${styles[status] || styles.discovered}`}>
-                                  {labels[status] || "No metrics"}
+                                  {labels[status] || "Discovery only"}
                                 </span>
                               );
                             })()}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
