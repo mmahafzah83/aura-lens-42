@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag, Filter, ShieldX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -9,13 +9,27 @@ interface Props {
   onDiscoveryComplete?: () => void;
 }
 
+interface RejectionReasons {
+  profile_page?: number;
+  article_reference?: number;
+  comment_thread?: number;
+  external_reference?: number;
+  mention_by_other?: number;
+  invalid_url_pattern?: number;
+  failed_authorship?: number;
+}
+
 interface DiscoveryResult {
   profile_url?: string;
   queries_run?: number;
   total_results?: number;
+  raw_links_found?: number;
+  valid_posts?: number;
   discovered: number;
   inserted: number;
   duplicates: number;
+  rejected_count?: number;
+  rejection_reasons?: RejectionReasons;
   classified?: number;
   labels?: string[];
   source_type?: string;
@@ -87,9 +101,13 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           profile_url: data.profile_url,
           queries_run: data.queries_run,
           total_results: data.total_results,
+          raw_links_found: data.raw_links_found,
+          valid_posts: data.valid_posts,
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          rejected_count: data.rejected_count,
+          rejection_reasons: data.rejection_reasons,
           classified: data.classified,
           labels: data.labels,
           source_type: data.source_type,
@@ -271,6 +289,20 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             <CheckCircle2 className="w-4 h-4 text-primary/50 shrink-0" />
             <p className="text-[11px] font-medium text-foreground/70">Discovery complete</p>
           </div>
+          {/* Filter summary */}
+          {(result.raw_links_found ?? 0) > 0 && (
+            <div className="flex items-center gap-3 pl-6 text-[10px]">
+              <span className="flex items-center gap-1 text-muted-foreground/40">
+                <Filter className="w-3 h-3" />
+                {result.raw_links_found} links scanned
+              </span>
+              <span className="text-primary/50 font-medium">{result.valid_posts ?? result.discovered} authored</span>
+              {(result.rejected_count ?? 0) > 0 && (
+                <span className="text-destructive/40">{result.rejected_count} rejected</span>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] text-muted-foreground/50 pl-6">
             {result.profile_url && (
               <p><span className="text-muted-foreground/30">Profile:</span> {result.profile_url.replace("https://www.linkedin.com/in/", "")}</p>
@@ -278,7 +310,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             {result.queries_run != null && (
               <p><span className="text-muted-foreground/30">Queries run:</span> {result.queries_run}</p>
             )}
-            <p><span className="text-muted-foreground/30">Posts found:</span> {result.discovered}</p>
+            <p><span className="text-muted-foreground/30">Authored posts:</span> {result.valid_posts ?? result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
             <p><span className="text-muted-foreground/30">Duplicates:</span> {result.duplicates}</p>
             <p><span className="text-muted-foreground/30">Errors:</span> {result.errors?.length || 0}</p>
@@ -286,6 +318,29 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
               <p><span className="text-muted-foreground/30">Classified:</span> {result.classified}</p>
             )}
           </div>
+
+          {/* Rejection breakdown */}
+          {result.rejection_reasons && (result.rejected_count ?? 0) > 0 && (
+            <div className="pl-6 space-y-1 mt-1">
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/35">
+                <ShieldX className="w-3 h-3" />
+                <span className="font-medium">Rejection reasons</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pl-4">
+                {Object.entries(result.rejection_reasons)
+                  .filter(([, count]) => count > 0)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([reason, count]) => (
+                    <span
+                      key={reason}
+                      className="px-2 py-0.5 rounded-full bg-destructive/5 text-[9px] text-destructive/40 border border-destructive/8"
+                    >
+                      {reason.replace(/_/g, " ")} ({count})
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
           {result.labels && result.labels.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pl-6 mt-1">
               {[...new Set(result.labels)].map((label, i) => (

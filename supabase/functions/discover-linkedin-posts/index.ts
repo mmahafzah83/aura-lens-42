@@ -70,6 +70,95 @@ function parseRelativeDate(text: string): string | null {
   return now.toISOString();
 }
 
+/* ── URL validation ── */
+
+type RejectionReason =
+  | "profile_page"
+  | "article_reference"
+  | "comment_thread"
+  | "external_reference"
+  | "mention_by_other"
+  | "invalid_url_pattern"
+  | "failed_authorship";
+
+interface UrlValidation {
+  valid: boolean;
+  reason?: RejectionReason;
+}
+
+/** Only accept /feed/update/urn:li:activity and /posts/{handle} URLs */
+function validatePostUrl(url: string, handle: string): UrlValidation {
+  if (!url.includes("linkedin.com")) {
+    return { valid: false, reason: "external_reference" };
+  }
+
+  const path = url.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
+
+  // Reject profile pages
+  if (/^\/in\/[^/]+\/?$/.test(path)) {
+    return { valid: false, reason: "profile_page" };
+  }
+
+  // Reject article/pulse pages
+  if (/^\/pulse\//i.test(path)) {
+    return { valid: false, reason: "article_reference" };
+  }
+
+  // Reject company pages
+  if (/^\/company\//i.test(path)) {
+    return { valid: false, reason: "external_reference" };
+  }
+
+  // Reject comment-specific URLs
+  if (/commentUrn|replyUrn/i.test(url)) {
+    return { valid: false, reason: "comment_thread" };
+  }
+
+  // Accept /feed/update/urn:li:activity:*
+  if (/^\/feed\/update\/urn:li:activity:\d+/.test(path)) {
+    return { valid: true };
+  }
+
+  // Accept /posts/{handle}-*  (LinkedIn post slug format)
+  const postsMatch = path.match(/^\/posts\/([^-]+)/);
+  if (postsMatch) {
+    // If we have a handle, verify the post belongs to this profile
+    if (handle && postsMatch[1].toLowerCase() !== handle.toLowerCase()) {
+      return { valid: false, reason: "mention_by_other" };
+    }
+    return { valid: true };
+  }
+
+  // Everything else is rejected
+  return { valid: false, reason: "invalid_url_pattern" };
+}
+
+/** Check if the scraped content was authored by the connected profile */
+function validateAuthorship(
+  rawText: string,
+  profileName: string,
+  handle: string,
+): boolean {
+  if (!profileName && !handle) return true; // can't verify, allow
+
+  const lower = rawText.toLowerCase().slice(0, 1500); // check header area
+
+  // Check if profile name appears near the top (author byline)
+  if (profileName) {
+    const nameParts = profileName.toLowerCase().split(/\s+/);
+    // All name parts should appear in the header
+    const allFound = nameParts.every((part) => lower.includes(part));
+    if (allFound) return true;
+  }
+
+  // Check handle
+  if (handle && lower.includes(handle.toLowerCase())) {
+    return true;
+  }
+
+  return false;
+}
+
 interface DiscoveredPost {
   url: string | null;
   text: string;
@@ -78,6 +167,11 @@ interface DiscoveredPost {
   mediaType: string;
   formatType: string;
   contentType: string;
+}
+
+interface RejectedLink {
+  url: string;
+  reason: RejectionReason;
 }
 
 const MAX_POSTS = 50;
@@ -109,7 +203,6 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Support both authenticated user calls and service-role cron calls
     let userId: string | null = null;
 
     if (authHeader) {
@@ -122,7 +215,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For cron: if no user from auth, check body.user_id or discover all active connections
     let body: any = {};
     try { body = await req.json(); } catch { /* empty */ }
 
@@ -130,7 +222,7 @@ Deno.serve(async (req) => {
       userId = body.user_id;
     }
 
-    // Cron mode: process all active connections
+    // Cron mode
     if (!userId) {
       log("cron_mode", "No user_id provided – processing all active LinkedIn connections");
       const { data: connections } = await adminClient
@@ -168,12 +260,10 @@ Deno.serve(async (req) => {
       });
     }
 
-
     // Resolve profile URL
     let profileUrl = body?.profile_url as string | undefined;
-
-    // Resolve profile from connection if not provided
     let profileName = "";
+
     if (!profileUrl) {
       const { data: conn } = await adminClient
         .from("linkedin_connections")
@@ -203,7 +293,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Normalize: ensure https and extract handle
+    // Normalize
     if (!profileUrl.startsWith("http")) {
       profileUrl = `https://www.linkedin.com/in/${profileUrl.replace(/^\/+/, "")}`;
     }
@@ -212,7 +302,6 @@ Deno.serve(async (req) => {
       profileUrl = `https://www.linkedin.com/in/${handleMatch[1]}`;
     }
 
-    // Save profile_url back to connection
     await adminClient.from("linkedin_connections")
       .update({ profile_url: profileUrl })
       .eq("user_id", userId)
@@ -220,7 +309,6 @@ Deno.serve(async (req) => {
 
     const handle = handleMatch?.[1] || "";
 
-    // If we don't have profile name yet, fetch it
     if (!profileName) {
       const { data: conn } = await adminClient
         .from("linkedin_connections")
@@ -231,34 +319,44 @@ Deno.serve(async (req) => {
       profileName = conn?.profile_name || conn?.display_name || "";
     }
 
-    log("start", `Profile: ${profileUrl}, handle: ${handle}, name: ${profileName}, source_type: search_discovery`);
+    log("start", `Profile: ${profileUrl}, handle: ${handle}, name: ${profileName}`);
 
-    // ── Primary: Firecrawl search-based discovery ──
+    // ── Search-based discovery with filtering ──
     const errors: string[] = [];
     let pagesVisited = 0;
     const discovered: DiscoveredPost[] = [];
+    const rejected: RejectedLink[] = [];
     const seenTexts = new Set<string>();
     const seenUrls = new Set<string>();
+    let rawLinksFound = 0;
 
-    // Build comprehensive search queries
     const searchQueries: string[] = [];
     if (handle) {
       searchQueries.push(
         `site:linkedin.com/posts "${handle}"`,
-        `site:linkedin.com/pulse "${handle}"`,
+        `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
         `site:linkedin.com/in/${handle} "/posts/"`,
-        `site:linkedin.com "linkedin.com/posts" "${handle}"`,
       );
     }
     if (profileName) {
       searchQueries.push(
         `"${profileName}" site:linkedin.com/posts`,
-        `"${profileName}" LinkedIn post`,
       );
     }
     if (searchQueries.length === 0) {
       searchQueries.push(`site:linkedin.com/posts ${profileUrl}`);
     }
+
+    // Rejection reason counts
+    const rejectionCounts: Record<RejectionReason, number> = {
+      profile_page: 0,
+      article_reference: 0,
+      comment_thread: 0,
+      external_reference: 0,
+      mention_by_other: 0,
+      invalid_url_pattern: 0,
+      failed_authorship: 0,
+    };
 
     for (const searchQuery of searchQueries) {
       if (discovered.length >= MAX_POSTS) break;
@@ -284,16 +382,39 @@ Deno.serve(async (req) => {
           if (discovered.length >= MAX_POSTS) break;
 
           const url = sr.url || "";
-          if (!url.includes("linkedin.com")) continue;
+          rawLinksFound++;
+
+          // Step 1: URL pattern validation
+          const urlCheck = validatePostUrl(url, handle);
+          if (!urlCheck.valid) {
+            rejected.push({ url, reason: urlCheck.reason! });
+            rejectionCounts[urlCheck.reason!]++;
+            continue;
+          }
 
           const rawText = sr.markdown || sr.description || sr.title || "";
-          if (rawText.length < 30) continue;
+          if (rawText.length < 30) {
+            rejected.push({ url, reason: "invalid_url_pattern" });
+            rejectionCounts.invalid_url_pattern++;
+            continue;
+          }
+
+          // Step 2: Authorship validation
+          if (!validateAuthorship(rawText, profileName, handle)) {
+            rejected.push({ url, reason: "failed_authorship" });
+            rejectionCounts.failed_authorship++;
+            continue;
+          }
 
           let cleanText = cleanPostText(rawText);
           const publishedAt = parseRelativeDate(cleanText);
           cleanText = cleanText.replace(/\d+\s+(day|week|month|year)s?\s+ago/gi, "").trim();
 
-          if (cleanText.length < 50) continue;
+          if (cleanText.length < 50) {
+            rejected.push({ url, reason: "invalid_url_pattern" });
+            rejectionCounts.invalid_url_pattern++;
+            continue;
+          }
 
           const postUrl = url.split("?")[0].replace(/\/+$/, "");
           const textKey = cleanText.slice(0, 100);
@@ -318,11 +439,11 @@ Deno.serve(async (req) => {
         log("search_error", e.message);
       }
 
-      // Rate limit between queries
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
     }
 
-    log("total_discovered", `${discovered.length} posts from ${pagesVisited} search queries`);
+    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, rejected=${rejected.length}`);
+    log("rejection_breakdown", JSON.stringify(rejectionCounts));
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
@@ -331,23 +452,54 @@ Deno.serve(async (req) => {
         status: "failed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
-        records_fetched: 0,
+        records_fetched: rawLinksFound,
         records_stored: 0,
-        error_message: `No posts discovered via search for "${handle || profileName}". Queries run: ${pagesVisited}. Try Historical Import with CSV export.`,
+        error_message: `No authored posts found. ${rawLinksFound} links scanned, ${rejected.length} rejected.`,
       });
 
       return new Response(JSON.stringify({
         success: false,
-        error: "No posts found via search. Try Historical Import with a CSV export from LinkedIn.",
+        error: "No authored posts found. Try Historical Import with a CSV export from LinkedIn.",
         source_type: "search_discovery",
         profile_url: profileUrl,
         queries_run: pagesVisited,
+        raw_links_found: rawLinksFound,
+        valid_posts: 0,
+        rejected_count: rejected.length,
+        rejection_reasons: rejectionCounts,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Dedup against existing posts in DB
+    // ── Mark existing non-authored posts as external_reference ──
+    // Find posts that don't match the current handle pattern
+    if (handle) {
+      const { data: existingAll } = await adminClient
+        .from("linkedin_posts")
+        .select("id, post_url, linkedin_post_id, tracking_status")
+        .eq("user_id", userId)
+        .neq("tracking_status", "external_reference");
+
+      let markedExternal = 0;
+      for (const post of existingAll || []) {
+        const url = post.post_url || post.linkedin_post_id || "";
+        if (url.includes("linkedin.com")) {
+          const check = validatePostUrl(url, handle);
+          if (!check.valid) {
+            await adminClient.from("linkedin_posts")
+              .update({ tracking_status: "external_reference" })
+              .eq("id", post.id);
+            markedExternal++;
+          }
+        }
+      }
+      if (markedExternal > 0) {
+        log("mark_external", `Marked ${markedExternal} existing posts as external_reference`);
+      }
+    }
+
+    // Dedup against existing posts
     const { data: existingPosts } = await adminClient
       .from("linkedin_posts")
       .select("linkedin_post_id, post_text")
@@ -395,26 +547,24 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update connection
     await adminClient.from("linkedin_connections")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("user_id", userId)
       .eq("status", "active");
 
-    // Log sync run
     await adminClient.from("sync_runs").insert({
       user_id: userId,
       sync_type: "search_discovery",
       status: "completed",
       started_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
-      records_fetched: discovered.length,
+      records_fetched: rawLinksFound,
       records_stored: inserted,
     });
 
-    log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes, source_type: search_discovery`);
+    log("complete", `raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, dupes=${duplicates}`);
 
-    // Auto-classify newly inserted posts
+    // Auto-classify
     let classifyResult: any = null;
     if (inserted > 0) {
       try {
@@ -430,9 +580,6 @@ Deno.serve(async (req) => {
         if (classifyRes.ok) {
           classifyResult = await classifyRes.json();
           log("auto_classify_done", `Classified ${classifyResult?.classified || 0} posts`);
-        } else {
-          const errText = await classifyRes.text();
-          log("auto_classify_error", `HTTP ${classifyRes.status}: ${errText.slice(0, 200)}`);
         }
       } catch (e: any) {
         log("auto_classify_error", e.message);
@@ -444,11 +591,13 @@ Deno.serve(async (req) => {
       source_type: "search_discovery",
       profile_url: profileUrl,
       queries_run: pagesVisited,
-      total_results: discovered.length,
+      raw_links_found: rawLinksFound,
       valid_posts: discovered.length,
       discovered: discovered.length,
       inserted,
       duplicates,
+      rejected_count: rejected.length,
+      rejection_reasons: rejectionCounts,
       classified: classifyResult?.classified || 0,
       labels: classifyResult?.labels || [],
       errors: [...errors, ...insertErrors],
