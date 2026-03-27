@@ -696,6 +696,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Determine tracking status: indexed_late if this is a retry that found a previously missing post
+      const trackingStatus = (mode === "retry" && lateIndexedCount > 0) ? "indexed_late" : "discovered";
+
       const { error: insertErr } = await adminClient.from("linkedin_posts").insert({
         user_id: userId,
         linkedin_post_id: urlKey,
@@ -706,7 +709,7 @@ Deno.serve(async (req) => {
         media_type: post.mediaType,
         format_type: post.formatType,
         content_type: post.contentType,
-        tracking_status: "discovered",
+        tracking_status: trackingStatus,
         topic_label: null,
         engagement_score: 0,
         like_count: 0,
