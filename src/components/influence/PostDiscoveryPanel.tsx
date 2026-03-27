@@ -275,7 +275,22 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
             <p><span className="text-muted-foreground/30">Duplicates:</span> {result.duplicates}</p>
             <p><span className="text-muted-foreground/30">Errors:</span> {result.errors?.length || 0}</p>
+            {(result.classified ?? 0) > 0 && (
+              <p><span className="text-muted-foreground/30">Classified:</span> {result.classified}</p>
+            )}
           </div>
+          {result.labels && result.labels.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pl-6 mt-1">
+              {[...new Set(result.labels)].map((label, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-full bg-primary/5 text-[9px] text-primary/60 border border-primary/8"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
           {result.errors && result.errors.length > 0 && (
             <div className="pl-6 space-y-0.5">
               {result.errors.map((e, i) => (
