@@ -525,7 +525,32 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {post.comment_count || 0}
                           </td>
                           <td className="text-[11px] text-foreground/60 py-2.5 px-2.5 tabular-nums text-right font-medium">
-                            {Number(post.engagement_score || 0).toFixed(1)}%
+                            {post.like_count || post.comment_count || post.engagement_score
+                              ? `${Number(post.engagement_score || 0).toFixed(1)}%`
+                              : <span className="text-muted-foreground/20">—</span>}
+                          </td>
+                          <td className="py-2.5 px-2.5 text-center">
+                            {(() => {
+                              const hasMetrics = !!(post.like_count || post.comment_count || Number(post.engagement_score) > 0);
+                              const status = (post as any).tracking_status || (hasMetrics ? "metrics_imported" : "discovered");
+                              const styles: Record<string, string> = {
+                                discovered: "bg-muted-foreground/5 text-muted-foreground/30",
+                                metrics_pending: "bg-amber-500/5 text-amber-500/50",
+                                metrics_imported: "bg-emerald-500/5 text-emerald-500/50",
+                                metrics_unavailable: "bg-muted-foreground/5 text-muted-foreground/20",
+                              };
+                              const labels: Record<string, string> = {
+                                discovered: "No metrics",
+                                metrics_pending: "Pending",
+                                metrics_imported: "Enriched",
+                                metrics_unavailable: "Unavailable",
+                              };
+                              return (
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-medium ${styles[status] || styles.discovered}`}>
+                                  {labels[status] || "No metrics"}
+                                </span>
+                              );
+                            })()}
                           </td>
                         </tr>
                       ))}
