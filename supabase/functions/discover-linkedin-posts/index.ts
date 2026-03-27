@@ -354,6 +354,7 @@ Deno.serve(async (req) => {
     const seenTexts = new Set<string>();
     const seenUrls = new Set<string>();
     let rawLinksFound = 0;
+    const uncertainCandidates: { url: string; snippet: string; confidence: number; signals: string[] }[] = [];
 
     const searchQueries: string[] = [];
     if (handle) {
@@ -381,6 +382,7 @@ Deno.serve(async (req) => {
       mention_by_other: 0,
       invalid_url_pattern: 0,
       failed_authorship: 0,
+      authorship_uncertain: 0,
     };
 
     for (const searchQuery of searchQueries) {
@@ -424,8 +426,11 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Step 2: Authorship validation
-          if (!validateAuthorship(rawText, profileName, handle)) {
+          // Step 2: Multi-signal authorship scoring (require 2+ signals)
+          const authResult = scoreAuthorship(url, rawText, profileName, handle);
+
+          if (!authResult.confident && !authResult.uncertain) {
+            // 0 signals → hard reject
             rejected.push({ url, reason: "failed_authorship" });
             rejectionCounts.failed_authorship++;
             continue;
@@ -448,6 +453,19 @@ Deno.serve(async (req) => {
           seenUrls.add(postUrl);
           seenTexts.add(textKey);
 
+          if (authResult.uncertain) {
+            // 1 signal → review queue, do NOT insert as a post
+            uncertainCandidates.push({
+              url: postUrl,
+              snippet: cleanText.slice(0, 500),
+              confidence: authResult.confidence,
+              signals: authResult.signals,
+            });
+            rejectionCounts.authorship_uncertain++;
+            continue;
+          }
+
+          // 2+ signals → insert as valid post
           const mediaType = detectMediaType(rawText);
           discovered.push({
             url: postUrl,
@@ -467,7 +485,7 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
     }
 
-    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, rejected=${rejected.length}`);
+    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, uncertain=${uncertainCandidates.length}, rejected=${rejected.length}`);
     log("rejection_breakdown", JSON.stringify(rejectionCounts));
 
     if (discovered.length === 0) {
