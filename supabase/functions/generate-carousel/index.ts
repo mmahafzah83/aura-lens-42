@@ -134,7 +134,7 @@ MANDATORY CORRECTION RULES:
     let validationResult: { coverage: number; missing: string[] } | null = null;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      parsed = await generateCarousel(attempt);
+      parsed = await generateCarousel(attempt, validationResult?.missing);
       
       // Validate framework stage coverage
       if (frameworkSteps.length > 0 && parsed?.slides) {
@@ -142,14 +142,14 @@ MANDATORY CORRECTION RULES:
         console.log(`Attempt ${attempt} — Stage coverage: ${(validationResult.coverage * 100).toFixed(0)}%, missing: [${validationResult.missing.join(", ")}]`);
 
         if (validationResult.coverage >= 0.8) {
-          break; // Coverage is acceptable
+          break;
         }
 
         if (attempt < MAX_ATTEMPTS) {
-          console.log(`Coverage below 80%, auto-regenerating (attempt ${attempt + 1})...`);
+          console.log(`Coverage below 80%, auto-regenerating (attempt ${attempt + 1}) with ${validationResult.missing.length} missing stages...`);
         }
       } else {
-        break; // No framework to validate
+        break;
       }
     }
 
