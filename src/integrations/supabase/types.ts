@@ -869,6 +869,7 @@ export type Database = {
           created_at: string
           cta_style: string | null
           engagement_score: number
+          enriched_by: string[]
           format_type: string | null
           framework_type: string | null
           hook: string | null
@@ -882,6 +883,9 @@ export type Database = {
           published_at: string | null
           rejection_reason: string | null
           repost_count: number
+          source_metadata: Json
+          source_trust: number
+          source_type: string
           synced_at: string
           theme: string | null
           title: string | null
@@ -900,6 +904,7 @@ export type Database = {
           created_at?: string
           cta_style?: string | null
           engagement_score?: number
+          enriched_by?: string[]
           format_type?: string | null
           framework_type?: string | null
           hook?: string | null
@@ -913,6 +918,9 @@ export type Database = {
           published_at?: string | null
           rejection_reason?: string | null
           repost_count?: number
+          source_metadata?: Json
+          source_trust?: number
+          source_type?: string
           synced_at?: string
           theme?: string | null
           title?: string | null
@@ -931,6 +939,7 @@ export type Database = {
           created_at?: string
           cta_style?: string | null
           engagement_score?: number
+          enriched_by?: string[]
           format_type?: string | null
           framework_type?: string | null
           hook?: string | null
@@ -944,6 +953,9 @@ export type Database = {
           published_at?: string | null
           rejection_reason?: string | null
           repost_count?: number
+          source_metadata?: Json
+          source_trust?: number
+          source_type?: string
           synced_at?: string
           theme?: string | null
           title?: string | null
