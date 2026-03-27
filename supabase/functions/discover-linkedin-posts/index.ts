@@ -362,28 +362,33 @@ Deno.serve(async (req) => {
     const searchQueries: string[] = [];
 
     if (mode === "retry") {
-      // Retry mode: focus on very recent posts (last 7 days) with time-scoped queries
-      if (handle) {
+      // Retry mode: name-based queries with time filter
+      if (profileName) {
         searchQueries.push(
-          `site:linkedin.com/posts/${handle}`,
-          `site:linkedin.com/posts "${handle}"`,
+          `"${profileName}" site:linkedin.com/posts`,
+          `"${profileName}" "linkedin.com/posts"`,
         );
       }
-      if (profileName) {
-        searchQueries.push(`"${profileName}" site:linkedin.com/posts`);
+      // Fallback to handle if no name
+      if (!profileName && handle) {
+        searchQueries.push(`site:linkedin.com/posts/${handle}`);
       }
-      log("retry_mode", `Using ${searchQueries.length} recent-focus queries (7-day window)`);
+      log("retry_mode", `Using ${searchQueries.length} name-based recent queries (7-day window)`);
     } else {
-      // Daily or manual: full query set
-      if (handle) {
+      // Daily or manual: name-based primary, handle secondary
+      if (profileName) {
+        searchQueries.push(
+          `"${profileName}" site:linkedin.com/posts`,
+          `"${profileName}" "linkedin.com/posts"`,
+          `"${profileName}" LinkedIn post`,
+        );
+      }
+      // Handle-based as fallback only if no name
+      if (!profileName && handle) {
         searchQueries.push(
           `site:linkedin.com/posts/${handle}`,
           `site:linkedin.com/posts "${handle}"`,
-          `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
         );
-      }
-      if (profileName) {
-        searchQueries.push(`"${profileName}" site:linkedin.com/posts`);
       }
       if (searchQueries.length === 0) {
         searchQueries.push(`site:linkedin.com/posts ${profileUrl}`);
