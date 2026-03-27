@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import {
   Users, TrendingUp, Loader2, ArrowUpRight, ArrowDownRight,
   Sparkles, FileText, Zap, Eye, Crown, BarChart3,
-  Lightbulb, RefreshCw, Calendar, ChevronDown, ChevronUp
+  Lightbulb, RefreshCw, Calendar, ChevronDown, ChevronUp,
+  WifiOff, AlertCircle, CloudOff
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
