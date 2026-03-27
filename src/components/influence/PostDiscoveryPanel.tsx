@@ -108,6 +108,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          uncertain_held: data.uncertain_held,
           rejected_count: data.rejected_count,
           rejection_reasons: data.rejection_reasons,
           classified: data.classified,
