@@ -265,7 +265,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         <>
           {/* ── WEEKLY INFLUENCE BRIEF ── */}
           <Fade delay={0.04}>
-            <WeeklyInfluenceBrief />
+            <WeeklyInfluenceBrief onOpenChat={onOpenChat} />
           </Fade>
 
           {/* ── CONNECTION STATUS (compact) ── */}
