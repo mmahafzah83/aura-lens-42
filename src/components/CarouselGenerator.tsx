@@ -1636,6 +1636,95 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
               )}
             </>
           )}
+
+          {/* ═══ STEP: Visuals ═══ */}
+          {pipelineStep === "visuals" && (
+            <>
+              {/* Visual Generation Progress */}
+              {generatingVisuals && (
+                <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+                    <span className="text-xs font-semibold text-foreground">Generating slide visuals…</span>
+                    <span className="text-[10px] text-muted-foreground/60 ml-auto">{visualProgress}/{visualTotal}</span>
+                  </div>
+                  <Progress value={(visualProgress / Math.max(1, visualTotal)) * 100} className="h-1.5" />
+                </div>
+              )}
+
+              {/* Slide visual status grid */}
+              <div className="space-y-3">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
+                  <Camera className="w-3 h-3" /> Slide Visuals
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {currentSlides.map((slide, idx) => (
+                    <div
+                      key={idx}
+                      className={`rounded-xl border p-3 space-y-2 ${
+                        slide.image_url
+                          ? "border-emerald-500/20 bg-emerald-500/[0.04]"
+                          : slide.image_prompt
+                          ? "border-amber-500/20 bg-amber-500/[0.04]"
+                          : "border-border/10 bg-card/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-foreground/80">Slide {slide.slide_number}</span>
+                        {slide.image_url ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        ) : slide.image_prompt ? (
+                          <ImageIcon className="w-3.5 h-3.5 text-amber-500/60" />
+                        ) : null}
+                      </div>
+                      <p className="text-[9px] text-muted-foreground/50 line-clamp-2">
+                        {slide.image_prompt ? slide.image_prompt.substring(0, 80) + "…" : "No visual prompt"}
+                      </p>
+                      {slide.image_url && (
+                        <img src={slide.image_url} alt={`Slide ${slide.slide_number}`} className="w-full h-20 object-cover rounded-lg" />
+                      )}
+                      {slide.image_prompt && (
+                        <button
+                          onClick={() => regenerateSlideVisual(idx)}
+                          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          {slide.image_url ? "Regenerate" : "Generate"}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  onClick={() => generateVisuals(lang, currentSlides)}
+                  disabled={generatingVisuals}
+                  className="flex-1 text-xs min-h-[44px]"
+                >
+                  {generatingVisuals ? (
+                    <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating…</>
+                  ) : (
+                    <><Sparkles className="w-3.5 h-3.5 mr-1.5" /> Generate All Visuals</>
+                  )}
+                </Button>
+                <Button onClick={exportPDF} disabled={exporting} variant="outline" className="text-xs border-border/15 min-h-[44px]">
+                  {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
+                </Button>
+              </div>
+
+              {/* Skip visuals */}
+              <button
+                onClick={exportPDF}
+                disabled={exporting}
+                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 w-full text-center py-1 transition-colors"
+              >
+                Skip visuals → export PDF directly
+              </button>
+            </>
+          )}
         </div>
 
         <canvas ref={canvasRef} className="hidden" width={CANVAS_W} height={CANVAS_H} />
