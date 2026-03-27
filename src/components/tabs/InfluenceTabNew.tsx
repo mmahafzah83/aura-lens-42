@@ -22,6 +22,7 @@ import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import DiscoveryHealthCard from "@/components/influence/DiscoveryHealthCard";
 import BrowserCapturePanel from "@/components/influence/BrowserCapturePanel";
 import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
+import SourceHealthSummary from "@/components/influence/SourceHealthSummary";
 import PostCleanupPanel from "@/components/influence/PostCleanupPanel";
 import PostMetricsIngestion from "@/components/influence/PostMetricsIngestion";
 import ReviewQueuePanel from "@/components/influence/ReviewQueuePanel";
@@ -100,7 +101,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .limit(365),
         supabase
           .from("linkedin_posts")
-          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason")
+          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason, source_type, enriched_by, source_trust")
           .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false })
           .limit(200),
@@ -324,6 +325,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           </p>
           <ConnectionStatusPanel />
           <BrowserCapturePanel />
+          <SourceHealthSummary />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
           <DiscoveryHealthCard />
           <ReviewQueuePanel onReviewComplete={loadAll} />
@@ -595,19 +597,20 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 w-20 cursor-pointer" onClick={() => toggleSort("published_at")}>
                           <span className="flex items-center gap-1">Date <SortIcon col="published_at" /></span>
                         </th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Hook</th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Topic</th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Format</th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("like_count")}>
-                          <span className="flex items-center gap-1 justify-end">Reactions <SortIcon col="like_count" /></span>
-                        </th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("comment_count")}>
-                          <span className="flex items-center gap-1 justify-end">Comments <SortIcon col="comment_count" /></span>
-                        </th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("engagement_score")}>
-                          <span className="flex items-center gap-1 justify-end">Eng % <SortIcon col="engagement_score" /></span>
-                        </th>
-                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-center">Status</th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Hook</th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Topic</th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Format</th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Source</th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("like_count")}>
+                           <span className="flex items-center gap-1 justify-end">Reactions <SortIcon col="like_count" /></span>
+                         </th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("comment_count")}>
+                           <span className="flex items-center gap-1 justify-end">Comments <SortIcon col="comment_count" /></span>
+                         </th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("engagement_score")}>
+                           <span className="flex items-center gap-1 justify-end">Eng % <SortIcon col="engagement_score" /></span>
+                         </th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-center">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -627,6 +630,30 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                           </td>
                           <td className="text-[11px] text-muted-foreground/30 py-2.5 px-2.5 capitalize">
                             {post.format_type || post.content_type || "—"}
+                          </td>
+                          <td className="py-2.5 px-2.5">
+                            {(() => {
+                              const src = post.source_type || "search_discovery";
+                              const sourceStyles: Record<string, string> = {
+                                browser_capture: "bg-emerald-500/8 text-emerald-400/70 border-emerald-500/10",
+                                manual_import: "bg-primary/5 text-primary/50 border-primary/10",
+                                manual_url: "bg-primary/5 text-primary/50 border-primary/10",
+                                search_discovery: "bg-muted-foreground/5 text-muted-foreground/30 border-border/5",
+                              };
+                              const sourceLabels: Record<string, string> = {
+                                browser_capture: "Capture",
+                                manual_import: "Import",
+                                manual_url: "Manual",
+                                search_discovery: "Search",
+                              };
+                              const enriched = (post.enriched_by || []).length > 1;
+                              return (
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${sourceStyles[src] || sourceStyles.search_discovery}`}>
+                                  {sourceLabels[src] || src}
+                                  {enriched && <span className="text-primary/40">+</span>}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
                             {hasRealMetrics
