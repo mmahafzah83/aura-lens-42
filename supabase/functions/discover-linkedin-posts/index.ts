@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
       });
       const { data: { user }, error: userError } = await userClient.auth.getUser();
       if (!userError && user) {
-        userId = userId;
+        userId = user.id;
       }
     }
 
