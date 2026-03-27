@@ -73,7 +73,7 @@ IMPORTANT INSTRUCTIONS:
 
     const generateCarousel = async (attempt: number, missingStages?: string[]): Promise<unknown> => {
       let retryAddendum = "";
-      if (attempt > 1 && missingStages && missingStages.length > 0) {
+      if (attempt === 2 && missingStages && missingStages.length > 0) {
         retryAddendum = `
 
 ⚠️ CRITICAL RETRY — PREVIOUS GENERATION FAILED VALIDATION ⚠️
@@ -88,6 +88,24 @@ MANDATORY CORRECTION RULES:
 - The supporting_text MUST explain that specific stage in detail.
 - Add extra slides if needed — do NOT compress to fit a fixed slide count.
 - After fixing, verify EVERY stage from the framework appears by name in at least one framework_step slide headline or supporting_text.`;
+      } else if (attempt === 3 && missingStages && missingStages.length > 0) {
+        retryAddendum = `
+
+🚨 FINAL ATTEMPT — TWO PREVIOUS GENERATIONS FAILED 🚨
+
+You have FAILED TWICE to include all framework stages. This is your LAST chance.
+
+STILL MISSING — these stages were NOT found in ANY framework_step slide:
+${missingStages.map((s, i) => `  ${i + 1}. "${s}" — YOU MUST CREATE A DEDICATED SLIDE WITH THIS EXACT TEXT IN THE HEADLINE`).join("\n")}
+
+ABSOLUTE RULES — VIOLATION = TOTAL FAILURE:
+1. Create ONE framework_step slide PER missing stage listed above.
+2. Copy the stage name VERBATIM into the slide headline. Do not paraphrase, abbreviate, or rename.
+3. The supporting_text must contain at least 2 sentences explaining that specific stage.
+4. These slides must appear BEFORE the stat/CTA slides.
+5. Do NOT remove or modify any existing slides that already cover other stages.
+6. The total slide count WILL increase — this is expected and required.
+7. Double-check: after generating, mentally scan every framework_step slide and confirm each stage name appears word-for-word.`;
       }
 
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -129,7 +147,7 @@ MANDATORY CORRECTION RULES:
     };
 
     // Generate with validation + auto-retry
-    const MAX_ATTEMPTS = 2;
+    const MAX_ATTEMPTS = 3;
     let parsed: any;
     let validationResult: { coverage: number; missing: string[] } | null = null;
 
