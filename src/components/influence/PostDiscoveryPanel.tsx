@@ -41,7 +41,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
     const { data } = await supabase
       .from("sync_runs")
       .select("completed_at, records_fetched, records_stored, status, error_message")
-      .eq("sync_type", "discovery")
+      .in("sync_type", ["discovery", "search_discovery"])
       .order("completed_at", { ascending: false })
       .limit(1);
     if (data?.[0]) setLastRun(data[0]);
