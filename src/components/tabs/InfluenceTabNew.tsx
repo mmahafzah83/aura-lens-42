@@ -3,12 +3,17 @@ import { motion } from "framer-motion";
 import {
   Users, TrendingUp, BarChart3, Crown, Loader2,
   ArrowUpRight, ArrowDownRight, Sparkles, FileText,
-  Zap, Eye, Lightbulb
+  Zap, Eye, Lightbulb, Database as DatabaseIcon
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import ConnectionStatusPanel from "@/components/influence/ConnectionStatusPanel";
+import HistoricalImportHub from "@/components/influence/HistoricalImportHub";
+import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
+import DataHealthConsole from "@/components/influence/DataHealthConsole";
+import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
