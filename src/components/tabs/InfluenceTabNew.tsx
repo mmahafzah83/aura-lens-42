@@ -500,6 +500,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("engagement_score")}>
                           <span className="flex items-center gap-1 justify-end">Eng % <SortIcon col="engagement_score" /></span>
                         </th>
+                        <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-center">Status</th>
                       </tr>
                     </thead>
                     <tbody>
