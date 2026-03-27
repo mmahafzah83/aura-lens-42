@@ -22,6 +22,7 @@ import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
 import PostCleanupPanel from "@/components/influence/PostCleanupPanel";
 import PostMetricsIngestion from "@/components/influence/PostMetricsIngestion";
+import ReviewQueuePanel from "@/components/influence/ReviewQueuePanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
