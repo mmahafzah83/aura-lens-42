@@ -574,6 +574,28 @@ Deno.serve(async (req) => {
 
     const syncType = mode === "retry" ? "retry_discovery" : "search_discovery_name_based";
 
+    // ── Detect late-indexed posts: check if retry mode found posts that prior retries missed ──
+    let lateIndexedCount = 0;
+    if (mode === "retry" && discovered.length > 0) {
+      // Count how many prior retry runs found 0 posts in the last 7 days
+      const sevenDaysAgo = new Date(Date.now() - RETRY_WINDOW_DAYS * 86400000).toISOString();
+      const { data: priorRetries } = await adminClient
+        .from("sync_runs")
+        .select("id, records_stored")
+        .eq("user_id", userId)
+        .eq("sync_type", "retry_discovery")
+        .gte("started_at", sevenDaysAgo)
+        .order("started_at", { ascending: false })
+        .limit(20);
+
+      const hadPriorEmptyRetries = (priorRetries || []).some(r => r.records_stored === 0);
+      if (hadPriorEmptyRetries) {
+        // These posts appeared after previous retries found nothing → late-indexed
+        lateIndexedCount = discovered.length;
+        log("late_indexed", `${lateIndexedCount} posts appeared after prior empty retries → will mark as indexed_late`);
+      }
+    }
+
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: userId,
