@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
       });
       const { data: { user }, error: userError } = await userClient.auth.getUser();
       if (!userError && user) {
-        userId = user.id;
+        userId = userId;
       }
     }
 
@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
       const { data: conn } = await adminClient
         .from("linkedin_connections")
         .select("profile_url, handle, display_name, profile_name")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("status", "active")
         .single();
 
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
     // Save profile_url back to connection
     await adminClient.from("linkedin_connections")
       .update({ profile_url: profileUrl })
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "active");
 
     const handle = handleMatch?.[1] || "";
@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
       const { data: conn } = await adminClient
         .from("linkedin_connections")
         .select("profile_name, display_name")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("status", "active")
         .single();
       profileName = conn?.profile_name || conn?.display_name || "";
@@ -326,7 +326,7 @@ Deno.serve(async (req) => {
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
-        user_id: user.id,
+        user_id: userId,
         sync_type: "search_discovery",
         status: "failed",
         started_at: new Date().toISOString(),
@@ -351,7 +351,7 @@ Deno.serve(async (req) => {
     const { data: existingPosts } = await adminClient
       .from("linkedin_posts")
       .select("linkedin_post_id, post_text")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     const existingTexts = new Set((existingPosts || []).map((p: any) => p.post_text?.slice(0, 100)));
     const existingIds = new Set((existingPosts || []).map((p: any) => p.linkedin_post_id));
@@ -370,7 +370,7 @@ Deno.serve(async (req) => {
       }
 
       const { error: insertErr } = await adminClient.from("linkedin_posts").insert({
-        user_id: user.id,
+        user_id: userId,
         linkedin_post_id: urlKey,
         post_url: post.url,
         post_text: post.text,
@@ -398,12 +398,12 @@ Deno.serve(async (req) => {
     // Update connection
     await adminClient.from("linkedin_connections")
       .update({ last_synced_at: new Date().toISOString() })
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("status", "active");
 
     // Log sync run
     await adminClient.from("sync_runs").insert({
-      user_id: user.id,
+      user_id: userId,
       sync_type: "search_discovery",
       status: "completed",
       started_at: new Date().toISOString(),
