@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from "recharts";
 import ConnectionStatusPanel from "@/components/influence/ConnectionStatusPanel";
 import HistoricalImportHub from "@/components/influence/HistoricalImportHub";
 import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
