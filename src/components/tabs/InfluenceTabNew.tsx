@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   Users, TrendingUp, BarChart3, Crown, Loader2,
   ArrowUpRight, ArrowDownRight, Sparkles, FileText,
-  Zap, Eye, Lightbulb, Database as DatabaseIcon
+  Zap, Eye, Lightbulb
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
