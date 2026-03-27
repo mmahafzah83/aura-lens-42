@@ -168,8 +168,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    let body: any = {};
-    try { body = await req.json(); } catch { /* empty */ }
 
     // Resolve profile URL
     let profileUrl = body?.profile_url as string | undefined;
