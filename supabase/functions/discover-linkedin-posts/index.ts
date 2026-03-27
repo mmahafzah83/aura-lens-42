@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
     // Log sync run
     await adminClient.from("sync_runs").insert({
       user_id: user.id,
-      sync_type: "discovery",
+      sync_type: "search_discovery",
       status: "completed",
       started_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
@@ -370,12 +370,15 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes`);
+    log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes, source_type: search_discovery`);
 
     return new Response(JSON.stringify({
       success: true,
+      source_type: "search_discovery",
       profile_url: profileUrl,
-      pages_visited: pagesVisited,
+      queries_run: pagesVisited,
+      total_results: discovered.length,
+      valid_posts: discovered.length,
       discovered: discovered.length,
       inserted,
       duplicates,
