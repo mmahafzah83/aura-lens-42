@@ -51,19 +51,25 @@ Write concise, confident, executive Arabic. RTL optimized.`
 
     const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic, stepCount);
 
+    const stageList = frameworkSteps.length > 0 
+      ? `\n\nMANDATORY STAGE COVERAGE: Every one of these stages MUST appear by name in at least one framework_step slide headline or supporting_text:\n${frameworkSteps.map((s: string, i: number) => `  ${i + 1}. "${s}"`).join("\n")}\n\nIf you skip ANY stage, the output is INVALID. Group adjacent stages into the same slide if needed (e.g., "Stages 1-2: ..."), but every stage name must appear.`
+      : "";
+
     const userPrompt = `Create a LinkedIn carousel about:
 
 Title: ${title}
 ${description ? `Description: ${description}` : ""}
-${context ? `Strategic Context: ${context}` : ""}${frameworkContext}${visualPlanContext}
+${context ? `Strategic Context: ${context}` : ""}${frameworkContext}${visualPlanContext}${stageList}
 
 IMPORTANT INSTRUCTIONS:
 - First decide the optimal slide count (8-14) based on framework complexity and narrative needs.
 - Do NOT force 10 slides — use as many as the framework requires.
-- If the framework has ${stepCount} stages, allocate proper explanation slides for them.
+- If the framework has ${stepCount} stages, you MUST cover ALL ${stepCount} stages across framework_step slides. No stage may be omitted.
+- Each framework_step slide headline MUST reference the exact stage name(s) from the framework.
 - Max 30 words per slide, rotate layouts, include emphasis_words, visual_anchor.
 - The final slide MUST be an authority CTA with personal branding.
-- Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.`;
+- Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.
+- You MUST include "generation_checklist" in your JSON output with: explainer_format, stage_coverage map, explainer_slide_count, terminology_consistent, narrative_continuous.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -227,10 +233,34 @@ Prioritize executive understanding over completeness. When in doubt:
 - Each explainer slide should have a clear executive takeaway
 
 ═══════════════════════════════════
+MANDATORY PRE-GENERATION CHECKLIST
+═══════════════════════════════════
+
+Before generating ANY slides, you MUST complete this checklist internally. Include the checklist result in your JSON output as "generation_checklist".
+
+CHECKLIST ITEM 1 — EXPLAINER FORMAT CHOSEN
+State which format you chose: "Option A — Maturity Bands", "Option B — Sequential Deep-Dive", or "Option C — Transformation Arc".
+You MUST pick exactly one. Do NOT mix formats.
+
+CHECKLIST ITEM 2 — STAGE COVERAGE MAP
+List EVERY stage from the selected framework and map each one to a specific slide number.
+Example: { "Reactive & Manual": "slide_6", "Monitored & Digitized": "slide_6", "Connected & Analyzed": "slide_7", "Predictive & Optimized": "slide_8", "Autonomous & Resilient": "slide_8" }
+EVERY stage must appear. No stage may be omitted.
+
+CHECKLIST ITEM 3 — EXPLAINER SLIDE COUNT
+Count the number of framework_step slides. This number MUST be >= 3 when the framework has more than 3 stages.
+
+CHECKLIST ITEM 4 — TERMINOLOGY CONSISTENCY
+Confirm that every explainer slide uses the EXACT stage names from the framework. No renaming, no paraphrasing.
+
+CHECKLIST ITEM 5 — NARRATIVE CONTINUITY
+Confirm that no new framework, model, or architecture is introduced in the explainer slides that was not part of the selected framework.
+
+═══════════════════════════════════
 PRE-GENERATION THINKING PROCESS
 ═══════════════════════════════════
 
-Before generating slides, follow these steps internally (do NOT output them):
+Before generating slides, follow these steps internally:
 
 STEP 1 — TOPIC ANALYSIS
 Identify: core industry challenge, strategic insight, transformation opportunity.
@@ -238,18 +268,20 @@ Identify: core industry challenge, strategic insight, transformation opportunity
 STEP 2 — FRAMEWORK ASSESSMENT
 Assess the selected framework's complexity. Decide if stages need compression or expansion.
 
-STEP 3 — NARRATIVE ARCHITECTURE
-Plan the full slide sequence: hook → problem → data → reframe → framework intro → framework explainers → future insight → CTA.
-Decide how many explainer slides are needed.
+STEP 3 — COMPLETE THE MANDATORY CHECKLIST ABOVE
+Fill in all 5 checklist items. If any item fails, revise your plan before proceeding.
 
-STEP 4 — SLIDE COUNT DECISION
+STEP 4 — NARRATIVE ARCHITECTURE
+Plan the full slide sequence: hook → problem → data → reframe → framework intro → framework explainers → future insight → CTA.
+
+STEP 5 — SLIDE COUNT DECISION
 Set the total slide count based on narrative needs (8–14).
 
-STEP 5 — VISUAL PLANNING
+STEP 6 — VISUAL PLANNING
 For each slide, decide layout type and image strategy (PHOTO: vs INFOGRAPHIC:).
 
-STEP 6 — GENERATE
-Generate all slides following the structure.
+STEP 7 — GENERATE
+Generate all slides following the structure and checklist.
 
 ═══════════════════════════════════
 EY ALIGNMENT
@@ -397,8 +429,15 @@ Also generate:
 - linkedin_caption: Ready-to-post LinkedIn caption (3-4 short paragraphs, professional advisory tone)
 - hashtags: Array of 5-8 relevant hashtags
 - total_slides: The total number of slides generated
+- generation_checklist: {
+    "explainer_format": "Option A | Option B | Option C",
+    "stage_coverage": { "stage_name": "slide_N", ... },
+    "explainer_slide_count": number,
+    "terminology_consistent": true/false,
+    "narrative_continuous": true/false
+  }
 
-OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...], "total_slides": N }
+OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...], "total_slides": N, "generation_checklist": {...} }
 
 BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize"`;
 }
