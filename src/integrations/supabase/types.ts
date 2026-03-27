@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      authority_scores: {
+        Row: {
+          authority_score: number
+          consistency_score: number
+          created_at: string
+          engagement_score: number
+          id: string
+          momentum_score: number
+          snapshot_date: string
+          strategic_resonance_score: number
+          user_id: string
+        }
+        Insert: {
+          authority_score?: number
+          consistency_score?: number
+          created_at?: string
+          engagement_score?: number
+          id?: string
+          momentum_score?: number
+          snapshot_date?: string
+          strategic_resonance_score?: number
+          user_id: string
+        }
+        Update: {
+          authority_score?: number
+          consistency_score?: number
+          created_at?: string
+          engagement_score?: number
+          id?: string
+          momentum_score?: number
+          snapshot_date?: string
+          strategic_resonance_score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       authority_voice_profiles: {
         Row: {
           admired_posts: Json
@@ -123,6 +159,47 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_topics: {
+        Row: {
+          avg_engagement: number
+          created_at: string
+          id: string
+          label: string
+          parent_topic_id: string | null
+          post_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_engagement?: number
+          created_at?: string
+          id?: string
+          label: string
+          parent_topic_id?: string | null
+          post_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_engagement?: number
+          created_at?: string
+          id?: string
+          label?: string
+          parent_topic_id?: string | null
+          post_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_topics_parent_topic_id_fkey"
+            columns: ["parent_topic_id"]
+            isOneToOne: false
+            referencedRelation: "content_topics"
             referencedColumns: ["id"]
           },
         ]
@@ -442,20 +519,75 @@ export type Database = {
           },
         ]
       }
+      import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          duplicate_rows: number
+          error_details: Json | null
+          filename: string | null
+          id: string
+          import_type: string
+          imported_rows: number
+          skipped_rows: number
+          started_at: string | null
+          status: string
+          total_rows: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          duplicate_rows?: number
+          error_details?: Json | null
+          filename?: string | null
+          id?: string
+          import_type?: string
+          imported_rows?: number
+          skipped_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          duplicate_rows?: number
+          error_details?: Json | null
+          filename?: string | null
+          id?: string
+          import_type?: string
+          imported_rows?: number
+          skipped_rows?: number
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       influence_snapshots: {
         Row: {
           audience_breakdown: Json
           authority_themes: Json
           authority_trajectory: string | null
+          comments: number
           created_at: string
           engagement_rate: number
           follower_growth: number
           followers: number
           format_breakdown: Json
           id: string
+          impressions: number
           post_count: number
+          posts_count: number
+          reactions: number
           recommendations: Json
+          saves: number
+          shares: number
           snapshot_date: string
+          source_type: string
           tone_analysis: Json
           top_format: string | null
           top_topic: string | null
@@ -465,15 +597,22 @@ export type Database = {
           audience_breakdown?: Json
           authority_themes?: Json
           authority_trajectory?: string | null
+          comments?: number
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
           followers?: number
           format_breakdown?: Json
           id?: string
+          impressions?: number
           post_count?: number
+          posts_count?: number
+          reactions?: number
           recommendations?: Json
+          saves?: number
+          shares?: number
           snapshot_date?: string
+          source_type?: string
           tone_analysis?: Json
           top_format?: string | null
           top_topic?: string | null
@@ -483,15 +622,22 @@ export type Database = {
           audience_breakdown?: Json
           authority_themes?: Json
           authority_trajectory?: string | null
+          comments?: number
           created_at?: string
           engagement_rate?: number
           follower_growth?: number
           followers?: number
           format_breakdown?: Json
           id?: string
+          impressions?: number
           post_count?: number
+          posts_count?: number
+          reactions?: number
           recommendations?: Json
+          saves?: number
+          shares?: number
           snapshot_date?: string
+          source_type?: string
           tone_analysis?: Json
           top_format?: string | null
           top_topic?: string | null
@@ -568,12 +714,17 @@ export type Database = {
           connected_at: string | null
           created_at: string | null
           display_name: string | null
+          handle: string | null
           id: string
           last_synced_at: string | null
           linkedin_id: string | null
+          profile_name: string | null
+          profile_url: string | null
           refresh_token: string | null
           scopes: string[] | null
+          source_status: string
           status: string
+          timezone: string | null
           token_expires_at: string | null
           updated_at: string | null
           user_id: string
@@ -583,12 +734,17 @@ export type Database = {
           connected_at?: string | null
           created_at?: string | null
           display_name?: string | null
+          handle?: string | null
           id?: string
           last_synced_at?: string | null
           linkedin_id?: string | null
+          profile_name?: string | null
+          profile_url?: string | null
           refresh_token?: string | null
           scopes?: string[] | null
+          source_status?: string
           status?: string
+          timezone?: string | null
           token_expires_at?: string | null
           updated_at?: string | null
           user_id: string
@@ -598,69 +754,145 @@ export type Database = {
           connected_at?: string | null
           created_at?: string | null
           display_name?: string | null
+          handle?: string | null
           id?: string
           last_synced_at?: string | null
           linkedin_id?: string | null
+          profile_name?: string | null
+          profile_url?: string | null
           refresh_token?: string | null
           scopes?: string[] | null
+          source_status?: string
           status?: string
+          timezone?: string | null
           token_expires_at?: string | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: []
       }
+      linkedin_post_metrics: {
+        Row: {
+          comments: number
+          created_at: string
+          engagement_rate: number
+          id: string
+          impressions: number
+          post_id: string
+          reactions: number
+          saves: number
+          shares: number
+          snapshot_date: string
+          user_id: string
+        }
+        Insert: {
+          comments?: number
+          created_at?: string
+          engagement_rate?: number
+          id?: string
+          impressions?: number
+          post_id: string
+          reactions?: number
+          saves?: number
+          shares?: number
+          snapshot_date?: string
+          user_id: string
+        }
+        Update: {
+          comments?: number
+          created_at?: string
+          engagement_rate?: number
+          id?: string
+          impressions?: number
+          post_id?: string
+          reactions?: number
+          saves?: number
+          shares?: number
+          snapshot_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "linkedin_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "linkedin_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       linkedin_posts: {
         Row: {
           comment_count: number
+          content_type: string | null
           created_at: string
           engagement_score: number
           format_type: string | null
+          framework_type: string | null
+          hook: string | null
           id: string
           like_count: number
           linkedin_post_id: string
           media_type: string | null
           post_text: string | null
+          post_url: string | null
           published_at: string | null
           repost_count: number
           synced_at: string
           theme: string | null
+          title: string | null
           tone: string | null
+          topic_label: string | null
           user_id: string
+          visual_style: string | null
         }
         Insert: {
           comment_count?: number
+          content_type?: string | null
           created_at?: string
           engagement_score?: number
           format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
           id?: string
           like_count?: number
           linkedin_post_id: string
           media_type?: string | null
           post_text?: string | null
+          post_url?: string | null
           published_at?: string | null
           repost_count?: number
           synced_at?: string
           theme?: string | null
+          title?: string | null
           tone?: string | null
+          topic_label?: string | null
           user_id: string
+          visual_style?: string | null
         }
         Update: {
           comment_count?: number
+          content_type?: string | null
           created_at?: string
           engagement_score?: number
           format_type?: string | null
+          framework_type?: string | null
+          hook?: string | null
           id?: string
           like_count?: number
           linkedin_post_id?: string
           media_type?: string | null
           post_text?: string | null
+          post_url?: string | null
           published_at?: string | null
           repost_count?: number
           synced_at?: string
           theme?: string | null
+          title?: string | null
           tone?: string | null
+          topic_label?: string | null
           user_id?: string
+          visual_style?: string | null
         }
         Relationships: []
       }
@@ -917,6 +1149,94 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sync_errors: {
+        Row: {
+          context: Json | null
+          created_at: string
+          error_message: string
+          error_type: string
+          id: string
+          sync_run_id: string | null
+          user_id: string
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          error_message: string
+          error_type?: string
+          id?: string
+          sync_run_id?: string | null
+          user_id: string
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          error_message?: string
+          error_type?: string
+          id?: string
+          sync_run_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_errors_sync_run_id_fkey"
+            columns: ["sync_run_id"]
+            isOneToOne: false
+            referencedRelation: "sync_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_runs: {
+        Row: {
+          account_id: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          records_fetched: number
+          records_stored: number
+          started_at: string
+          status: string
+          sync_type: string
+          user_id: string
+        }
+        Insert: {
+          account_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          records_fetched?: number
+          records_stored?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          records_fetched?: number
+          records_stored?: number
+          started_at?: string
+          status?: string
+          sync_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_runs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "linkedin_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_logs: {
         Row: {
