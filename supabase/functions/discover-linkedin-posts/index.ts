@@ -54,43 +54,37 @@ interface DiscoveredPost {
   contentType: string;
 }
 
-function parsePostsFromMarkdown(markdown: string, profileUrl: string): DiscoveredPost[] {
+function parsePostsFromMarkdown(markdown: string): DiscoveredPost[] {
   const posts: DiscoveredPost[] = [];
 
-  // LinkedIn profile pages show posts as sections — try to split by post boundaries
-  // Common patterns: activity sections, separated by horizontal rules or headers
+  // Split by common post boundaries
   const sections = markdown.split(/(?=#{1,3}\s)|(?=---)|(?=\*\*\*)/);
 
   for (const section of sections) {
     const trimmed = section.trim();
     if (trimmed.length < 50) continue;
 
-    // Skip navigation/header/footer sections
+    // Skip nav/header/footer
     if (/^(Home|About|Experience|Education|Skills|Recommendations|Sign in|Join now)/i.test(trimmed)) continue;
     if (/^(People also viewed|More from|Similar profiles)/i.test(trimmed)) continue;
 
-    // Look for post-like content: has text content and potentially dates
     const hasDate = /(\d{1,2}\s+(day|week|month|year)s?\s+ago)|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}/i.test(trimmed);
     const hasEngagement = /(like|comment|repost|reaction|share)/i.test(trimmed);
 
-    // Extract text — strip markdown formatting
     let cleanText = trimmed
       .replace(/#{1,6}\s*/g, "")
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links
-      .replace(/!\[.*?\]\(.*?\)/g, "") // images
-      .replace(/\*\*|__/g, "") // bold
-      .replace(/\*|_/g, "") // italic
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+      .replace(/!\[.*?\]\(.*?\)/g, "")
+      .replace(/\*\*|__/g, "")
+      .replace(/\*|_/g, "")
       .trim();
 
-    // Must have meaningful text
     if (cleanText.length < 80) continue;
     if (!hasDate && !hasEngagement) continue;
 
-    // Try to extract a LinkedIn post URL
     const urlMatch = trimmed.match(/linkedin\.com\/(?:feed\/update|posts?)\S*/);
     const postUrl = urlMatch ? `https://www.${urlMatch[0].replace(/[)\]>]+$/, "")}` : null;
 
-    // Try to parse relative date
     let publishedAt: string | null = null;
     const relMatch = cleanText.match(/(\d+)\s+(day|week|month|year)s?\s+ago/i);
     if (relMatch) {
@@ -104,7 +98,6 @@ function parsePostsFromMarkdown(markdown: string, profileUrl: string): Discovere
       publishedAt = now.toISOString();
     }
 
-    // Remove date/engagement metadata from the clean text
     cleanText = cleanText
       .replace(/\d+\s+(day|week|month|year)s?\s+ago/gi, "")
       .replace(/\d+\s*(likes?|comments?|reposts?|reactions?|shares?)/gi, "")
@@ -114,22 +107,21 @@ function parsePostsFromMarkdown(markdown: string, profileUrl: string): Discovere
     if (cleanText.length < 50) continue;
 
     const mediaType = detectMediaType(trimmed);
-    const formatType = detectFormatType(cleanText, mediaType);
-    const contentType = detectContentType(cleanText);
-
     posts.push({
       url: postUrl,
       text: cleanText.slice(0, 5000),
       publishedAt,
       hook: extractHook(cleanText),
       mediaType,
-      formatType,
-      contentType,
+      formatType: detectFormatType(cleanText, mediaType),
+      contentType: detectContentType(cleanText),
     });
   }
 
   return posts;
 }
+
+const MAX_POSTS = 50;
 
 /* ── main ── */
 
@@ -138,17 +130,22 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const logs: { step: string; detail: string; ts: string }[] = [];
+  const log = (step: string, detail: string) => {
+    logs.push({ step, detail, ts: new Date().toISOString() });
+    console.log(`[discover] ${step}: ${detail}`);
+  };
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     if (!FIRECRAWL_API_KEY) {
       return new Response(
         JSON.stringify({ success: false, error: "Firecrawl connector not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Auth
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -167,18 +164,16 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Get body
     let body: any = {};
     try { body = await req.json(); } catch { /* empty */ }
 
-    // Get LinkedIn profile URL
+    // Resolve profile URL
     let profileUrl = body?.profile_url as string | undefined;
 
     if (!profileUrl) {
-      // Look up from connection
       const { data: conn } = await adminClient
         .from("linkedin_connections")
-        .select("profile_url, handle, display_name, linkedin_id")
+        .select("profile_url, handle, display_name")
         .eq("user_id", user.id)
         .eq("status", "active")
         .single();
@@ -197,115 +192,141 @@ Deno.serve(async (req) => {
       if (!profileUrl) {
         return new Response(JSON.stringify({
           success: false,
-          error: "No LinkedIn profile URL stored. Please provide your profile URL (e.g. https://www.linkedin.com/in/yourhandle).",
+          error: "No LinkedIn profile URL stored. Please provide your profile URL.",
           needs_profile_url: true,
-        }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
-    // Normalize URL
     if (!profileUrl.startsWith("http")) {
       profileUrl = `https://www.linkedin.com/in/${profileUrl.replace(/^\/+/, "")}`;
     }
 
-    console.log(`[discover] Scraping profile: ${profileUrl}`);
+    // Save profile_url back to connection for future use
+    await adminClient.from("linkedin_connections")
+      .update({ profile_url: profileUrl })
+      .eq("user_id", user.id)
+      .eq("status", "active");
 
-    // Also scrape /recent-activity/all/ for posts
-    const activityUrl = profileUrl.replace(/\/$/, "") + "/recent-activity/all/";
+    log("start", `Profile: ${profileUrl}`);
 
-    // Scrape both URLs via Firecrawl
-    const [profileRes, activityRes] = await Promise.all([
-      fetch("https://api.firecrawl.dev/v1/scrape", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ url: profileUrl, formats: ["markdown", "links"], onlyMainContent: true, waitFor: 3000 }),
-      }),
-      fetch("https://api.firecrawl.dev/v1/scrape", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ url: activityUrl, formats: ["markdown", "links"], onlyMainContent: true, waitFor: 3000 }),
-      }),
-    ]);
+    // Build activity page URLs
+    const base = profileUrl.replace(/\/+$/, "");
+    const activityPages = [
+      `${base}/recent-activity/shares/`,
+      `${base}/recent-activity/all/`,
+    ];
 
-    const profileData = await profileRes.json();
-    const activityData = await activityRes.json();
+    log("pages_planned", activityPages.join(", "));
 
-    const profileMarkdown = profileData?.data?.markdown || profileData?.markdown || "";
-    const activityMarkdown = activityData?.data?.markdown || activityData?.markdown || "";
-    const combinedMarkdown = profileMarkdown + "\n---\n" + activityMarkdown;
+    // Scrape activity pages via Firecrawl
+    const scrapeUrl = async (url: string) => {
+      try {
+        const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ url, formats: ["markdown", "links"], onlyMainContent: true, waitFor: 3000 }),
+        });
+        const data = await res.json();
+        const md = data?.data?.markdown || data?.markdown || "";
+        log("scrape_result", `${url} → ${md.length} chars, status=${res.status}`);
+        return { url, markdown: md, ok: res.ok, status: res.status };
+      } catch (e: any) {
+        log("scrape_error", `${url} → ${e.message}`);
+        return { url, markdown: "", ok: false, status: 0 };
+      }
+    };
 
-    console.log(`[discover] Profile markdown length: ${profileMarkdown.length}, Activity markdown length: ${activityMarkdown.length}`);
+    const scrapeResults = await Promise.all(activityPages.map(scrapeUrl));
+    const pagesVisited = scrapeResults.length;
+    const errors: string[] = [];
+
+    // Combine all markdown
+    let combinedMarkdown = "";
+    for (const r of scrapeResults) {
+      if (r.markdown.length > 0) {
+        combinedMarkdown += r.markdown + "\n---\n";
+      }
+      if (!r.ok) {
+        errors.push(`${r.url}: HTTP ${r.status}`);
+      }
+    }
 
     let discovered: DiscoveredPost[] = [];
 
-    if (combinedMarkdown.length < 100) {
-      // Fallback: use Firecrawl search to find LinkedIn posts by this user
-      console.log(`[discover] Profile scrape returned minimal content. Trying search fallback...`);
-      
-      const handle = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/)?.[1] || "";
-      const searchQuery = handle 
-        ? `site:linkedin.com/posts "${handle}"` 
-        : `site:linkedin.com/posts ${profileUrl}`;
-      
-      const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ query: searchQuery, limit: 20 }),
-      });
-      const searchData = await searchRes.json();
-      const searchResults = searchData?.data || [];
-      
-      console.log(`[discover] Search fallback returned ${searchResults.length} results`);
-      
-      for (const sr of searchResults) {
-        const url = sr.url || "";
-        if (!url.includes("linkedin.com")) continue;
-        const text = sr.markdown || sr.description || sr.title || "";
-        if (text.length < 30) continue;
-        
-        const mediaType = detectMediaType(text);
-        discovered.push({
-          url,
-          text: text.slice(0, 3000),
-          publishedAt: null,
-          hook: extractHook(text),
-          mediaType,
-          formatType: detectFormatType(text, mediaType),
-          contentType: detectContentType(text),
-        });
-      }
-      
-      if (discovered.length === 0) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Could not scrape LinkedIn profile (requires login). Search fallback returned no results. Try Historical Import instead.",
-          profile_url: profileUrl,
-        }), {
-          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      // Parse posts from scraped markdown
-      discovered = parsePostsFromMarkdown(combinedMarkdown, profileUrl);
-      console.log(`[discover] Parsed ${discovered.length} candidate posts`);
+    if (combinedMarkdown.length >= 100) {
+      discovered = parsePostsFromMarkdown(combinedMarkdown);
+      log("parsed", `${discovered.length} posts from activity pages`);
     }
+
+    // Fallback: Firecrawl search
+    if (discovered.length === 0) {
+      log("fallback", "Activity pages returned no posts. Trying search...");
+      const handle = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/)?.[1] || "";
+      const searchQuery = handle
+        ? `site:linkedin.com/posts "${handle}"`
+        : `site:linkedin.com/posts ${profileUrl}`;
+
+      try {
+        const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ query: searchQuery, limit: MAX_POSTS }),
+        });
+        const searchData = await searchRes.json();
+        const searchResults = searchData?.data || [];
+        log("search_result", `${searchResults.length} search results`);
+
+        for (const sr of searchResults) {
+          const url = sr.url || "";
+          if (!url.includes("linkedin.com")) continue;
+          const text = sr.markdown || sr.description || sr.title || "";
+          if (text.length < 30) continue;
+
+          const mediaType = detectMediaType(text);
+          discovered.push({
+            url,
+            text: text.slice(0, 3000),
+            publishedAt: null,
+            hook: extractHook(text),
+            mediaType,
+            formatType: detectFormatType(text, mediaType),
+            contentType: detectContentType(text),
+          });
+        }
+      } catch (e: any) {
+        errors.push(`search_fallback: ${e.message}`);
+        log("search_error", e.message);
+      }
+    }
+
+    // Cap at MAX_POSTS
+    discovered = discovered.slice(0, MAX_POSTS);
 
     if (discovered.length === 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        discovered: 0,
-        inserted: 0,
-        duplicates: 0,
-        message: "Scrape succeeded but no post content could be extracted. LinkedIn may require authentication to view posts.",
-        profile_url: profileUrl,
-      }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      // Record error instead of placeholder
+      await adminClient.from("sync_runs").insert({
+        user_id: user.id,
+        sync_type: "discovery",
+        status: "failed",
+        started_at: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        records_fetched: 0,
+        records_stored: 0,
+        error_message: "No posts discovered. LinkedIn may require login to view activity pages.",
       });
+
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Could not discover posts. LinkedIn activity pages may require authentication. Try Historical Import.",
+        profile_url: profileUrl,
+        pages_visited: pagesVisited,
+        errors,
+        logs,
+      }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get existing posts for dedup
+    // Dedup against existing posts
     const { data: existingPosts } = await adminClient
       .from("linkedin_posts")
       .select("linkedin_post_id, post_text")
@@ -316,6 +337,7 @@ Deno.serve(async (req) => {
 
     let inserted = 0;
     let duplicates = 0;
+    const insertErrors: string[] = [];
 
     for (const post of discovered) {
       const textKey = post.text.slice(0, 100);
@@ -345,20 +367,20 @@ Deno.serve(async (req) => {
 
       if (insertErr) {
         if (insertErr.code === "23505") duplicates++;
-        else console.error(`[discover] Insert error:`, insertErr);
+        else insertErrors.push(insertErr.message);
       } else {
         inserted++;
         existingTexts.add(textKey);
       }
     }
 
-    // Update last_synced_at
+    // Update connection
     await adminClient.from("linkedin_connections")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("user_id", user.id)
       .eq("status", "active");
 
-    // Log the discovery run
+    // Log sync run
     await adminClient.from("sync_runs").insert({
       user_id: user.id,
       sync_type: "discovery",
@@ -369,20 +391,21 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    console.log(`[discover] Done: ${discovered.length} found, ${inserted} inserted, ${duplicates} duplicates`);
+    log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes`);
 
     return new Response(JSON.stringify({
       success: true,
+      profile_url: profileUrl,
+      pages_visited: pagesVisited,
       discovered: discovered.length,
       inserted,
       duplicates,
-      profile_url: profileUrl,
-    }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      errors: [...errors, ...insertErrors],
+      logs,
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
     console.error("[discover] Error:", err);
-    return new Response(JSON.stringify({ success: false, error: err.message }), {
+    return new Response(JSON.stringify({ success: false, error: err.message, logs }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

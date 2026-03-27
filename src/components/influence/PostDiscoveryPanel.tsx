@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2, CheckCircle2, AlertCircle, Globe } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertCircle, Globe, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -9,17 +9,22 @@ interface Props {
   onDiscoveryComplete?: () => void;
 }
 
+interface DiscoveryResult {
+  profile_url?: string;
+  pages_visited?: number;
+  discovered: number;
+  inserted: number;
+  duplicates: number;
+  errors?: string[];
+}
+
 const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const { toast } = useToast();
   const [discovering, setDiscovering] = useState(false);
   const [profileUrl, setProfileUrl] = useState("");
   const [needsUrl, setNeedsUrl] = useState(true);
   const [lastRun, setLastRun] = useState<any>(null);
-  const [result, setResult] = useState<{
-    discovered: number;
-    inserted: number;
-    duplicates: number;
-  } | null>(null);
+  const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,7 +34,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const loadLastRun = async () => {
     const { data } = await supabase
       .from("sync_runs")
-      .select("completed_at, records_fetched, records_stored, status")
+      .select("completed_at, records_fetched, records_stored, status, error_message")
       .eq("sync_type", "discovery")
       .order("completed_at", { ascending: false })
       .limit(1);
@@ -62,9 +67,12 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         }
       } else {
         setResult({
+          profile_url: data.profile_url,
+          pages_visited: data.pages_visited,
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          errors: data.errors,
         });
         toast({
           title: "Posts discovered",
@@ -92,22 +100,23 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Post Discovery</h3>
             <p className="text-meta mt-0.5">
-              Scrape your LinkedIn profile to discover and store published posts
+              Crawl your LinkedIn activity pages to discover and store published posts
             </p>
           </div>
         </div>
         {lastRun && (
           <p className="text-[10px] text-muted-foreground/30">
             Last run: {formatSmartDate(lastRun.completed_at)} · {lastRun.records_stored || 0} stored
+            {lastRun.status === "failed" && " · failed"}
           </p>
         )}
       </div>
 
-      {/* Profile URL input (shown when needed) */}
+      {/* Profile URL input */}
       {needsUrl && (
         <div className="space-y-2">
           <p className="text-[11px] text-muted-foreground/50">
-            Enter your LinkedIn profile URL to begin discovery.
+            Enter your LinkedIn profile URL to crawl activity pages.
           </p>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -133,7 +142,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         {discovering ? (
           <>
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Discovering posts…
+            Crawling activity pages…
           </>
         ) : (
           <>
@@ -143,23 +152,41 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         )}
       </button>
 
-      {/* Result */}
+      {/* Discovery summary */}
       {result && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-start gap-3 p-3 rounded-lg bg-primary/[0.03] border border-primary/8"
+          className="p-3 rounded-lg bg-primary/[0.03] border border-primary/8 space-y-2"
         >
-          <CheckCircle2 className="w-4 h-4 text-primary/50 mt-0.5 shrink-0" />
-          <div className="text-[11px] text-muted-foreground/60 leading-relaxed space-y-1">
-            <p className="font-medium text-foreground/70">Discovery complete</p>
-            <p>{result.discovered} posts found · {result.inserted} new · {result.duplicates} duplicates skipped</p>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-primary/50 shrink-0" />
+            <p className="text-[11px] font-medium text-foreground/70">Discovery complete</p>
           </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] text-muted-foreground/50 pl-6">
+            {result.profile_url && (
+              <p><span className="text-muted-foreground/30">Profile:</span> {result.profile_url.replace("https://www.linkedin.com/in/", "")}</p>
+            )}
+            {result.pages_visited != null && (
+              <p><span className="text-muted-foreground/30">Pages visited:</span> {result.pages_visited}</p>
+            )}
+            <p><span className="text-muted-foreground/30">Posts found:</span> {result.discovered}</p>
+            <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
+            <p><span className="text-muted-foreground/30">Duplicates:</span> {result.duplicates}</p>
+            <p><span className="text-muted-foreground/30">Errors:</span> {result.errors?.length || 0}</p>
+          </div>
+          {result.errors && result.errors.length > 0 && (
+            <div className="pl-6 space-y-0.5">
+              {result.errors.map((e, i) => (
+                <p key={i} className="text-[9px] text-destructive/40 truncate">{e}</p>
+              ))}
+            </div>
+          )}
         </motion.div>
       )}
 
       {/* Error */}
-      {error && !needsUrl && (
+      {error && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
