@@ -70,6 +70,28 @@ function parseRelativeDate(text: string): string | null {
   return now.toISOString();
 }
 
+/* ── URL normalization ── */
+
+function normalizeLinkedInUrl(url: string): string {
+  // Remove regional subdomains (ae.linkedin.com, kw.linkedin.com, etc.)
+  let normalized = url.replace(/https?:\/\/[a-z]{2,3}\.linkedin\.com/i, "https://www.linkedin.com");
+  // Ensure www prefix
+  normalized = normalized.replace(/https?:\/\/linkedin\.com/i, "https://www.linkedin.com");
+  // Remove query params and trailing slashes
+  normalized = normalized.split("?")[0].replace(/\/+$/, "");
+  return normalized;
+}
+
+function extractPostSlug(url: string): string | null {
+  const m = url.match(/\/posts\/([^/?#]+)/);
+  return m ? m[1] : null;
+}
+
+function extractActivityId(url: string): string | null {
+  const m = url.match(/activity[:-](\d+)/);
+  return m ? m[1] : null;
+}
+
 /* ── URL validation ── */
 
 type RejectionReason =
@@ -92,7 +114,9 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
     return { valid: false, reason: "external_reference" };
   }
 
-  const path = url.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
+  // Normalize before validation
+  const normalized = normalizeLinkedInUrl(url);
+  const path = normalized.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
 
   if (/^\/in\/[^/]+\/?$/.test(path)) return { valid: false, reason: "profile_page" };
   if (/^\/pulse\//i.test(path)) return { valid: false, reason: "article_reference" };
@@ -103,6 +127,7 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
 
   const postsMatch = path.match(/^\/posts\/([^-]+)/);
   if (postsMatch) {
+    // Only accept posts authored by the connected handle
     if (handle && postsMatch[1].toLowerCase() !== handle.toLowerCase()) {
       return { valid: false, reason: "mention_by_other" };
     }
@@ -337,28 +362,33 @@ Deno.serve(async (req) => {
     const searchQueries: string[] = [];
 
     if (mode === "retry") {
-      // Retry mode: focus on very recent posts (last 7 days) with time-scoped queries
-      if (handle) {
+      // Retry mode: name-based queries with time filter
+      if (profileName) {
         searchQueries.push(
-          `site:linkedin.com/posts/${handle}`,
-          `site:linkedin.com/posts "${handle}"`,
+          `"${profileName}" site:linkedin.com/posts`,
+          `"${profileName}" "linkedin.com/posts"`,
         );
       }
-      if (profileName) {
-        searchQueries.push(`"${profileName}" site:linkedin.com/posts`);
+      // Fallback to handle if no name
+      if (!profileName && handle) {
+        searchQueries.push(`site:linkedin.com/posts/${handle}`);
       }
-      log("retry_mode", `Using ${searchQueries.length} recent-focus queries (7-day window)`);
+      log("retry_mode", `Using ${searchQueries.length} name-based recent queries (7-day window)`);
     } else {
-      // Daily or manual: full query set
-      if (handle) {
+      // Daily or manual: name-based primary, handle secondary
+      if (profileName) {
+        searchQueries.push(
+          `"${profileName}" site:linkedin.com/posts`,
+          `"${profileName}" "linkedin.com/posts"`,
+          `"${profileName}" LinkedIn post`,
+        );
+      }
+      // Handle-based as fallback only if no name
+      if (!profileName && handle) {
         searchQueries.push(
           `site:linkedin.com/posts/${handle}`,
           `site:linkedin.com/posts "${handle}"`,
-          `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
         );
-      }
-      if (profileName) {
-        searchQueries.push(`"${profileName}" site:linkedin.com/posts`);
       }
       if (searchQueries.length === 0) {
         searchQueries.push(`site:linkedin.com/posts ${profileUrl}`);
@@ -431,7 +461,8 @@ Deno.serve(async (req) => {
         for (const sr of searchResults) {
           if (discovered.length >= MAX_POSTS) break;
 
-          const url = sr.url || "";
+          // Normalize URL: remove regional subdomains, query params
+          const url = normalizeLinkedInUrl(sr.url || "");
           rawLinksFound++;
 
           // URL pattern validation
@@ -468,7 +499,9 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const postUrl = url.split("?")[0].replace(/\/+$/, "");
+          const postUrl = normalizeLinkedInUrl(url);
+          const slug = extractPostSlug(postUrl);
+          const activityId = extractActivityId(postUrl);
           const textKey = cleanText.slice(0, 100);
 
           if (seenUrls.has(postUrl) || seenTexts.has(textKey)) continue;
@@ -539,7 +572,7 @@ Deno.serve(async (req) => {
       log("review_queue", `${reviewQueued} uncertain candidates held for review`);
     }
 
-    const syncType = mode === "retry" ? "retry_discovery" : "search_discovery";
+    const syncType = mode === "retry" ? "retry_discovery" : "search_discovery_name_based";
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
