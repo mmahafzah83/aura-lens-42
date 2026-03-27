@@ -19,6 +19,7 @@ import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 
 import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
+import PostMetricsIngestion from "@/components/influence/PostMetricsIngestion";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
