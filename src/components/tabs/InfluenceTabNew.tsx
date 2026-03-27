@@ -13,6 +13,7 @@ import HistoricalImportHub from "@/components/influence/HistoricalImportHub";
 import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
 import DataHealthConsole from "@/components/influence/DataHealthConsole";
 import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
+import StrategicAttribution from "@/components/influence/StrategicAttribution";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
