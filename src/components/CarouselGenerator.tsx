@@ -398,10 +398,10 @@ const SlidePreview = ({
           flex: 1, display: "flex",
           flexDirection: isSplit ? "row" : "column",
           justifyContent: getJustify(),
-          alignItems: isSplit ? "center" : undefined,
-          padding: `${SAFE_M + 40}px ${SAFE_M}px ${isCTA ? SAFE_M + 180 : SAFE_M + 60}px`,
+          alignItems: isSplit ? "center" : (isHero || isStat || isCTA) ? "center" : isRight ? (isAr ? "flex-start" : "flex-end") : (isAr ? "flex-end" : "flex-start"),
+          padding: `${SAFE_M + 40}px ${SAFE_M}px ${isCTA ? SAFE_M + 260 : SAFE_M + 60}px`,
           position: "relative", zIndex: 2,
-          gap: 20,
+          gap: 24,
         }}>
           {/* Quote mark for quote layout */}
           {isQuote && <VisualAnchor type="quote_mark" palette={p} />}
