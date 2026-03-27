@@ -569,6 +569,9 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const [visualPlanSummary, setVisualPlanSummary] = useState("");
   const [generatingVisualPlan, setGeneratingVisualPlan] = useState(false);
 
+  // Validation state
+  const [validation, setValidation] = useState<{ stage_coverage_pct: number; missing_stages: string[]; passed: boolean } | null>(null);
+
   const currentSlides = slides[lang];
   const isLoading = loading[lang];
 
