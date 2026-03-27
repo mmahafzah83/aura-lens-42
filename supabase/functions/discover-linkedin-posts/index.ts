@@ -130,10 +130,12 @@ Deno.serve(async (req) => {
     // Resolve profile URL
     let profileUrl = body?.profile_url as string | undefined;
 
+    // Resolve profile from connection if not provided
+    let profileName = "";
     if (!profileUrl) {
       const { data: conn } = await adminClient
         .from("linkedin_connections")
-        .select("profile_url, handle, display_name")
+        .select("profile_url, handle, display_name, profile_name")
         .eq("user_id", user.id)
         .eq("status", "active")
         .single();
@@ -144,9 +146,10 @@ Deno.serve(async (req) => {
         });
       }
 
+      profileName = conn.profile_name || conn.display_name || "";
       profileUrl = conn.profile_url
         || (conn.handle ? `https://www.linkedin.com/in/${conn.handle}` : null)
-        || (conn.display_name ? `https://www.linkedin.com/in/${conn.display_name.toLowerCase().replace(/\s+/g, "-")}` : null)
+        || (profileName ? `https://www.linkedin.com/in/${profileName.toLowerCase().replace(/\s+/g, "-")}` : null)
         || null;
 
       if (!profileUrl) {
@@ -174,22 +177,46 @@ Deno.serve(async (req) => {
       .eq("status", "active");
 
     const handle = handleMatch?.[1] || "";
-    log("start", `Profile: ${profileUrl}, handle: ${handle}`);
 
-    // ── Strategy: Firecrawl search (LinkedIn blocks direct scraping with 403) ──
+    // If we don't have profile name yet, fetch it
+    if (!profileName) {
+      const { data: conn } = await adminClient
+        .from("linkedin_connections")
+        .select("profile_name, display_name")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .single();
+      profileName = conn?.profile_name || conn?.display_name || "";
+    }
+
+    log("start", `Profile: ${profileUrl}, handle: ${handle}, name: ${profileName}, source_type: search_discovery`);
+
+    // ── Primary: Firecrawl search-based discovery ──
     const errors: string[] = [];
     let pagesVisited = 0;
     const discovered: DiscoveredPost[] = [];
     const seenTexts = new Set<string>();
     const seenUrls = new Set<string>();
 
-    const searchQueries = handle
-      ? [
-          `site:linkedin.com/posts "${handle}"`,
-          `site:linkedin.com/pulse "${handle}"`,
-          `linkedin.com "${handle}" post`,
-        ]
-      : [`site:linkedin.com/posts ${profileUrl}`];
+    // Build comprehensive search queries
+    const searchQueries: string[] = [];
+    if (handle) {
+      searchQueries.push(
+        `site:linkedin.com/posts "${handle}"`,
+        `site:linkedin.com/pulse "${handle}"`,
+        `site:linkedin.com/in/${handle} "/posts/"`,
+        `site:linkedin.com "linkedin.com/posts" "${handle}"`,
+      );
+    }
+    if (profileName) {
+      searchQueries.push(
+        `"${profileName}" site:linkedin.com/posts`,
+        `"${profileName}" LinkedIn post`,
+      );
+    }
+    if (searchQueries.length === 0) {
+      searchQueries.push(`site:linkedin.com/posts ${profileUrl}`);
+    }
 
     for (const searchQuery of searchQueries) {
       if (discovered.length >= MAX_POSTS) break;
@@ -253,25 +280,26 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
     }
 
-    log("total_discovered", `${discovered.length} posts from search`);
+    log("total_discovered", `${discovered.length} posts from ${pagesVisited} search queries`);
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: user.id,
-        sync_type: "discovery",
+        sync_type: "search_discovery",
         status: "failed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: 0,
         records_stored: 0,
-        error_message: `No posts discovered via search for handle "${handle}". LinkedIn activity pages block scraping (403). Try Historical Import with CSV export.`,
+        error_message: `No posts discovered via search for "${handle || profileName}". Queries run: ${pagesVisited}. Try Historical Import with CSV export.`,
       });
 
       return new Response(JSON.stringify({
         success: false,
-        error: "No posts found via search. LinkedIn blocks activity page scraping. Try Historical Import with a CSV export from LinkedIn.",
+        error: "No posts found via search. Try Historical Import with a CSV export from LinkedIn.",
+        source_type: "search_discovery",
         profile_url: profileUrl,
-        pages_visited: pagesVisited,
+        queries_run: pagesVisited,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -334,7 +362,7 @@ Deno.serve(async (req) => {
     // Log sync run
     await adminClient.from("sync_runs").insert({
       user_id: user.id,
-      sync_type: "discovery",
+      sync_type: "search_discovery",
       status: "completed",
       started_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
@@ -342,12 +370,15 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes`);
+    log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes, source_type: search_discovery`);
 
     return new Response(JSON.stringify({
       success: true,
+      source_type: "search_discovery",
       profile_url: profileUrl,
-      pages_visited: pagesVisited,
+      queries_run: pagesVisited,
+      total_results: discovered.length,
+      valid_posts: discovered.length,
       discovered: discovered.length,
       inserted,
       duplicates,

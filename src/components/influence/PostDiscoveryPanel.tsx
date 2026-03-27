@@ -11,10 +11,12 @@ interface Props {
 
 interface DiscoveryResult {
   profile_url?: string;
-  pages_visited?: number;
+  queries_run?: number;
+  total_results?: number;
   discovered: number;
   inserted: number;
   duplicates: number;
+  source_type?: string;
   errors?: string[];
 }
 
@@ -39,7 +41,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
     const { data } = await supabase
       .from("sync_runs")
       .select("completed_at, records_fetched, records_stored, status, error_message")
-      .eq("sync_type", "discovery")
+      .in("sync_type", ["discovery", "search_discovery"])
       .order("completed_at", { ascending: false })
       .limit(1);
     if (data?.[0]) setLastRun(data[0]);
@@ -81,10 +83,12 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       } else {
         setResult({
           profile_url: data.profile_url,
-          pages_visited: data.pages_visited,
+          queries_run: data.queries_run,
+          total_results: data.total_results,
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          source_type: data.source_type,
           errors: data.errors,
         });
         toast({
@@ -259,8 +263,8 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             {result.profile_url && (
               <p><span className="text-muted-foreground/30">Profile:</span> {result.profile_url.replace("https://www.linkedin.com/in/", "")}</p>
             )}
-            {result.pages_visited != null && (
-              <p><span className="text-muted-foreground/30">Pages visited:</span> {result.pages_visited}</p>
+            {result.queries_run != null && (
+              <p><span className="text-muted-foreground/30">Queries run:</span> {result.queries_run}</p>
             )}
             <p><span className="text-muted-foreground/30">Posts found:</span> {result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
