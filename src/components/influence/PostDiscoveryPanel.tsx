@@ -252,6 +252,21 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         </div>
       </div>
 
+      {/* Discovery stats */}
+      {totalDiscovered > 0 && (
+        <div className="flex items-center gap-4 px-1">
+          <div className="text-[10px] text-muted-foreground/50">
+            <span className="text-primary/50 font-medium">{totalDiscovered}</span> authored posts discovered
+          </div>
+          {lateIndexedTotal > 0 && (
+            <div className="text-[10px] text-amber-500/50">
+              <Clock className="w-3 h-3 inline mr-1" />
+              {lateIndexedTotal} late-indexed
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Profile URL input */}
       {needsUrl && (
         <div className="space-y-2">
