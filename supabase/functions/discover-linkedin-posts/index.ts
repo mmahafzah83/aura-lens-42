@@ -741,7 +741,7 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `mode=${mode}, raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, confirmed=${confirmed}, dupes=${duplicates}, candidates_confirmed=${candidatesConfirmed}`);
+    log("complete", `mode=${mode}, raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, late_indexed=${lateIndexedCount}, confirmed=${confirmed}, dupes=${duplicates}, candidates_confirmed=${candidatesConfirmed}`);
 
     // Auto-classify new posts
     let classifyResult: any = null;
