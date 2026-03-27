@@ -548,7 +548,7 @@ const SlidePreview = ({
             <div style={{
               fontSize: 15, color: p.muted, textAlign: "center", marginTop: 4, opacity: 0.7,
             }}>
-              ↻ Repost if this helped you.
+              ↻ Repost if this was helpful.
             </div>
           </div>
         )}
