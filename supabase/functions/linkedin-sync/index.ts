@@ -599,7 +599,7 @@ Deno.serve(async (req) => {
 
     const result = await syncUserLinkedIn(user.id, adminClient);
     return new Response(JSON.stringify(result), {
-      status: result.success ? 200 : 404,
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
