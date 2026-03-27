@@ -10,7 +10,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { title, description, context, style, lang, selected_framework, visual_plan } = await req.json();
+    const body = await req.json();
+    const { title, description, context, style, lang, visual_plan } = body;
+    const selected_framework = body.selected_framework || body.framework;
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -203,48 +205,63 @@ function extractKeyTerms(stage: string): string[] {
     "do", "does", "did", "will", "would", "could", "should", "may", "might",
     "shall", "can", "need", "must", "at", "by", "from", "into", "through",
     "during", "before", "after", "above", "below", "between", "under", "over",
-    "level", "stage", "phase", "step", "tier",
+    "level", "stage", "phase", "step", "tier", "based", "driven", "focused",
+    "full", "scale", "state", "model", "management", "strategy",
   ]);
-  // Remove parenthetical content, split, filter stop words and short words
   const cleaned = stage.replace(/\(.*?\)/g, " ").replace(/[^a-zA-Z0-9\s-]/g, " ");
   const words = cleaned.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
   return [...new Set(words)];
 }
 
 function validateStageCoverage(slides: any[], frameworkSteps: string[]): { coverage: number; missing: string[] } {
-  // Collect all text from framework_step, framework_intro, and architecture slides
-  const allText = slides
+  // Collect text from ALL slides, not just framework_step — the AI may rename slide_type
+  const frameworkText = slides
     .filter((s: any) => ["framework_step", "framework_intro", "architecture"].includes(s.slide_type))
     .map((s: any) => `${s.headline || ""} ${s.supporting_text || ""}`.toLowerCase())
-    .join(" ");
+    .join(" ||| ");
+
+  // Also check ALL slides as fallback (AI might use "insight" or other types)
+  const allSlidesText = slides
+    .map((s: any) => `${s.headline || ""} ${s.supporting_text || ""}`.toLowerCase())
+    .join(" ||| ");
 
   const missing: string[] = [];
   for (const stage of frameworkSteps) {
     const stageLower = stage.toLowerCase();
 
-    // 1. Exact substring match
-    if (allText.includes(stageLower)) continue;
+    // 1. Exact substring match in framework slides
+    if (frameworkText.includes(stageLower)) continue;
 
-    // 2. First 2-word prefix match
-    const words = stageLower.split(/\s+/);
-    const shortMatch = words.slice(0, Math.min(2, words.length)).join(" ");
-    if (allText.includes(shortMatch)) continue;
-
-    // 3. Fuzzy keyword match — extract key terms and check if majority appear
+    // 2. First significant words match (first 3 non-stop words)
     const keyTerms = extractKeyTerms(stage);
+    const significantPrefix = keyTerms.slice(0, 3).filter(t => t.length > 3);
+    
+    // Check if ALL significant prefix terms appear together in framework text
+    if (significantPrefix.length >= 2) {
+      const allPrefixFound = significantPrefix.every(term => frameworkText.includes(term));
+      if (allPrefixFound) continue;
+    }
+
+    // 3. Strict keyword match — require ≥75% of key terms (was 60%)
     if (keyTerms.length > 0) {
-      const matched = keyTerms.filter(term => allText.includes(term));
-      // Consider covered if ≥60% of key terms found (at least 2, or all if fewer)
-      const threshold = Math.max(2, Math.ceil(keyTerms.length * 0.6));
+      const matched = keyTerms.filter(term => frameworkText.includes(term));
+      const threshold = Math.max(2, Math.ceil(keyTerms.length * 0.75));
       if (matched.length >= Math.min(threshold, keyTerms.length)) continue;
     }
 
-    // 4. Also check parenthetical content separately (e.g. "Monitoring & Visualization")
+    // 4. Parenthetical content check
     const parenMatch = stage.match(/\(([^)]+)\)/);
     if (parenMatch) {
-      const parenTerms = parenMatch[1].toLowerCase().split(/[\s,&]+/).filter(w => w.length > 2);
-      const parenMatched = parenTerms.filter(t => allText.includes(t));
-      if (parenMatched.length >= Math.ceil(parenTerms.length * 0.5)) continue;
+      const parenTerms = parenMatch[1].toLowerCase().split(/[\s,&]+/).filter(w => w.length > 3);
+      const parenMatched = parenTerms.filter(t => frameworkText.includes(t));
+      if (parenTerms.length > 0 && parenMatched.length >= Math.ceil(parenTerms.length * 0.6)) continue;
+    }
+
+    // 5. Last resort — check ALL slides with strict matching (≥75% keywords)
+    if (keyTerms.length > 0) {
+      const matched = keyTerms.filter(term => allSlidesText.includes(term));
+      const threshold = Math.max(2, Math.ceil(keyTerms.length * 0.75));
+      if (matched.length >= Math.min(threshold, keyTerms.length)) continue;
     }
 
     missing.push(stage);
