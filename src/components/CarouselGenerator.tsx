@@ -1062,30 +1062,63 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
         // CTA Authority Branding
         if (isCta) {
-          const ctaY = CANVAS_H - SAFE_M - 180;
-          const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 30, 0, CANVAS_W / 2 + 30, 0);
+          const ctaY = CANVAS_H - SAFE_M - 260;
+
+          // Divider
+          const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 40, 0, CANVAS_W / 2 + 40, 0);
           divGrd.addColorStop(0, "transparent");
           divGrd.addColorStop(0.5, p.accent);
           divGrd.addColorStop(1, "transparent");
           ctx.fillStyle = divGrd;
-          ctx.fillRect(CANVAS_W / 2 - 30, ctaY, 60, 2);
+          ctx.fillRect(CANVAS_W / 2 - 40, ctaY, 80, 2);
+
+          // Avatar circle
+          ctx.beginPath();
+          ctx.arc(CANVAS_W / 2 - 80, ctaY + 40, 18, 0, Math.PI * 2);
+          ctx.fillStyle = `${p.accent}25`;
+          ctx.fill();
+          ctx.strokeStyle = `${p.accent}40`;
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.fillStyle = p.accent;
+          ctx.font = "400 18px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
+          ctx.fillText("👤", CANVAS_W / 2 - 80, ctaY + 46);
+
+          // Name
+          ctx.textAlign = "left";
           ctx.fillStyle = p.fg;
-          ctx.font = "800 22px Inter, Arial, sans-serif";
-          ctx.fillText("M. Mahafzah", CANVAS_W / 2, ctaY + 36);
+          ctx.font = "800 26px Inter, Arial, sans-serif";
+          ctx.fillText("M. Mahafzah", CANVAS_W / 2 - 50, ctaY + 46);
+
+          // Role
           ctx.fillStyle = p.muted;
           ctx.font = "400 16px Inter, Arial, sans-serif";
-          ctx.fillText("Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 62);
+          ctx.textAlign = "center";
+          ctx.fillText("💼  Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 86);
+
+          // Focus
+          ctx.fillStyle = p.accent;
+          ctx.font = "700 15px Inter, Arial, sans-serif";
+          ctx.fillText("⚡  Focus on Utilities & Power", CANVAS_W / 2, ctaY + 120);
+
+          // LinkedIn pill
+          roundRect(ctx, CANVAS_W / 2 - 130, ctaY + 148, 260, 36, 18);
+          ctx.fillStyle = `${p.accent}12`;
+          ctx.fill();
+          ctx.strokeStyle = `${p.accent}25`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
           ctx.fillStyle = p.accent;
           ctx.font = "600 14px Inter, Arial, sans-serif";
-          ctx.fillText("Focus on Utilities & Power", CANVAS_W / 2, ctaY + 82);
-          ctx.fillStyle = p.accent;
-          ctx.font = "600 13px Inter, Arial, sans-serif";
-          ctx.fillText("linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 102);
+          ctx.textAlign = "center";
+          ctx.fillText("🔗  linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 172);
+
+          // Repost
           ctx.fillStyle = p.muted;
           ctx.globalAlpha = 0.7;
-          ctx.font = "400 15px Inter, Arial, sans-serif";
-          ctx.fillText("↻ Repost if this was helpful.", CANVAS_W / 2, ctaY + 128);
+          ctx.font = "500 15px Inter, Arial, sans-serif";
+          ctx.fillText("↻  Repost if this was helpful", CANVAS_W / 2, ctaY + 214);
           ctx.globalAlpha = 1;
         }
 
