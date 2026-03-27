@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { title, description, context, style, lang, selected_framework } = await req.json();
+    const { title, description, context, style, lang, selected_framework, visual_plan } = await req.json();
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -38,19 +38,32 @@ Preferred terms: الحوكمة، التحول الرقمي، الاستراتي
 Write concise, confident, executive Arabic. RTL optimized.`
       : `Write ALL slide content in English. Use authoritative but conversational tone suitable for senior leaders and consultants.`;
 
+    const frameworkSteps = selected_framework?.steps || [];
+    const stepCount = frameworkSteps.length;
+
     const frameworkContext = selected_framework
-      ? `\n\nSELECTED FRAMEWORK TO USE:\nName: ${selected_framework.name}\nDescription: ${selected_framework.description}\nSteps: ${(selected_framework.steps || []).join(" → ")}\nDiagram Type: ${selected_framework.diagram_type || "sequential_flow"}\n\nYou MUST build the carousel around this specific framework. Use it for slides 5-8 (framework intro, step explanations, architecture diagram).`
+      ? `\n\nSELECTED FRAMEWORK TO USE:\nName: ${selected_framework.name}\nDescription: ${selected_framework.description}\nSteps: ${frameworkSteps.join(" → ")}\nDiagram Type: ${selected_framework.diagram_type || "sequential_flow"}\nNumber of stages: ${stepCount}\n\nYou MUST build the carousel around this specific framework.`
       : "";
 
-    const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic);
+    const visualPlanContext = visual_plan
+      ? `\n\nVISUAL PLAN:\n${JSON.stringify(visual_plan, null, 2)}\n\nFollow this visual plan for layout types, visual decisions, and density levels per slide.`
+      : "";
 
-    const userPrompt = `Create a 10-slide LinkedIn carousel about:
+    const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic, stepCount);
+
+    const userPrompt = `Create a LinkedIn carousel about:
 
 Title: ${title}
 ${description ? `Description: ${description}` : ""}
-${context ? `Strategic Context: ${context}` : ""}${frameworkContext}
+${context ? `Strategic Context: ${context}` : ""}${frameworkContext}${visualPlanContext}
 
-Generate the carousel slides now. Remember: max 30 words per slide, rotate layouts across slides, include emphasis_words, visual_anchor, and make slide 10 an authority CTA with personal branding. Do NOT include system labels like "Hook", "Problem", "Insight" etc on the slides — these are internal only.`;
+IMPORTANT INSTRUCTIONS:
+- First decide the optimal slide count (8-14) based on framework complexity and narrative needs.
+- Do NOT force 10 slides — use as many as the framework requires.
+- If the framework has ${stepCount} stages, allocate proper explanation slides for them.
+- Max 30 words per slide, rotate layouts, include emphasis_words, visual_anchor.
+- The final slide MUST be an authority CTA with personal branding.
+- Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -115,27 +128,13 @@ function extractAndParseJson(raw: string): unknown {
 
   cleaned = cleaned.substring(jsonStart);
 
-  // Try direct parse first
-  try {
-    return JSON.parse(cleaned);
-  } catch (_) {
-    // continue to repair
-  }
+  try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
 
-  // Fix trailing commas
   cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
 
-  // Try again
-  try {
-    return JSON.parse(cleaned);
-  } catch (_) {
-    // continue to repair truncation
-  }
+  try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
 
-  // Repair truncated JSON by closing unbalanced braces/brackets
-  // First, remove any trailing incomplete string (e.g. `"some text that got cut`)
   cleaned = cleaned.replace(/,?\s*"[^"]*$/, "");
-  // Remove trailing comma after last complete value
   cleaned = cleaned.replace(/,\s*$/, "");
 
   let braces = 0, brackets = 0;
@@ -149,49 +148,108 @@ function extractAndParseJson(raw: string): unknown {
   while (brackets > 0) { cleaned += "]"; brackets--; }
   while (braces > 0) { cleaned += "}"; braces--; }
 
-  // Fix trailing commas again after repair
   cleaned = cleaned.replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
 
   return JSON.parse(cleaned);
 }
 
-function buildSystemPrompt(langInstruction: string, styleInstruction: string, isArabic: boolean): string {
+function buildSystemPrompt(langInstruction: string, styleInstruction: string, isArabic: boolean, frameworkStepCount: number): string {
+  const frameworkDepthRule = frameworkStepCount > 3
+    ? `The selected framework has ${frameworkStepCount} stages. You MUST either:
+(a) Compress into 3 strategic maturity bands (e.g., Foundation / Progression / Leadership), OR
+(b) Allocate at least 3 dedicated slides to explain the stages in grouped sequences.
+Do NOT use just 1 overview slide + 1 partial explainer for a ${frameworkStepCount}-stage model.`
+    : `The framework has ${frameworkStepCount || "few"} stages. Explain each stage clearly across dedicated slides.`;
+
   return `You are Aura — an AI-powered strategic content engine that produces consulting-quality LinkedIn carousels focused on infrastructure, utilities, AI, digital transformation, and sustainability.
 
 Content must always remain ethical, professional, and industry-focused.
 
 ═══════════════════════════════════
+DYNAMIC SLIDE COUNT
+═══════════════════════════════════
+
+Do NOT default to exactly 10 slides. Instead:
+1. Analyze the narrative structure needed.
+2. Assess framework complexity — how many stages need explanation.
+3. Determine the optimal slide count (8–14 slides).
+4. Only then generate that many slides.
+
+The goal is narrative completeness, not a fixed number.
+
+═══════════════════════════════════
+FRAMEWORK DEPTH RULE
+═══════════════════════════════════
+
+${frameworkDepthRule}
+
+═══════════════════════════════════
+FRAMEWORK EXPLANATION RULE
+═══════════════════════════════════
+
+After the framework overview slide, you MUST continue with a structured explainer sequence. Choose ONE of these valid formats:
+
+Option A — Maturity Bands:
+- Framework overview
+- Where most firms are stuck (early stages)
+- What progression looks like (middle stages)
+- What leadership must do (advanced stage + implication)
+
+Option B — Sequential Deep-Dive:
+- Overview
+- Early stages (grouped)
+- Middle stages (grouped)
+- Advanced stage + strategic implication
+
+Option C — Transformation Arc:
+- Current state
+- Transition state
+- Target state
+- Strategic action required
+
+CRITICAL: The explainer slides must feel like a CONTINUATION of the framework — same terminology, same stage labels, same visual language. Do NOT introduce new frameworks, new labels, or new architectures that feel disconnected.
+
+═══════════════════════════════════
+FRAMEWORK CONTINUITY RULE
+═══════════════════════════════════
+
+Every slide after the framework introduction must reference the same model. If the framework is "Digital Water Maturity Model" with stages A → B → C → D → E, the explainer slides must use those exact stage names.
+
+Do NOT switch to a second framework unless explicitly presented as a sub-model within the main framework.
+
+═══════════════════════════════════
+STRATEGIC CLARITY RULE
+═══════════════════════════════════
+
+Prioritize executive understanding over completeness. When in doubt:
+- Simplify 5-step models into 3 strategic bands for LinkedIn
+- Use contrast: "Where most are" vs "Where leaders are" vs "What good looks like"
+- Each explainer slide should have a clear executive takeaway
+
+═══════════════════════════════════
 PRE-GENERATION THINKING PROCESS
 ═══════════════════════════════════
 
-Before generating slides, you MUST follow these 8 steps internally (do NOT output them — use them to structure your thinking):
+Before generating slides, follow these steps internally (do NOT output them):
 
 STEP 1 — TOPIC ANALYSIS
-Analyze the topic and identify: the core industry challenge, strategic insight, transformation opportunity, and possible frameworks.
+Identify: core industry challenge, strategic insight, transformation opportunity.
 
-STEP 2 — FRAMEWORK GENERATION
-Generate 2–3 possible frameworks relevant to the topic. Frameworks should be simple and visually structured (e.g., SMART WATER TRANSFORMATION MODEL: 1. Data Foundations → 2. Connectivity & Sensors → 3. Analytics & AI → 4. Integrated Systems → 5. Intelligent Operations).
+STEP 2 — FRAMEWORK ASSESSMENT
+Assess the selected framework's complexity. Decide if stages need compression or expansion.
 
-STEP 3 — FRAMEWORK SELECTION
-Select the strongest framework for visualization and carousel storytelling.
+STEP 3 — NARRATIVE ARCHITECTURE
+Plan the full slide sequence: hook → problem → data → reframe → framework intro → framework explainers → future insight → CTA.
+Decide how many explainer slides are needed.
 
-STEP 4 — VISUAL PLANNING
-Design the carousel structure ensuring it contains: a hook slide, a statistic slide, a framework slide, framework step slides, an architecture/system diagram slide, a strategic insight slide, and a CTA slide.
+STEP 4 — SLIDE COUNT DECISION
+Set the total slide count based on narrative needs (8–14).
 
-STEP 5 — IMAGE STRATEGY
-For each slide, decide whether to use:
-• Real-world industry photos for: water utilities, water infrastructure, control rooms, pipelines, treatment plants, sensor installations
-• Generated infographic visuals for: frameworks, system architectures, digital twin models, data pipelines, flow diagrams
-Include this decision in the image_prompt field — prefix with "PHOTO:" for real-world or "INFOGRAPHIC:" for generated visuals.
+STEP 5 — VISUAL PLANNING
+For each slide, decide layout type and image strategy (PHOTO: vs INFOGRAPHIC:).
 
-STEP 6 — VISUAL FRAMEWORK GENERATION
-Framework slides must display structured diagrams (e.g., Sensors → Data Platform → AI → Operations, or layered: Sensors / SCADA / GIS / Billing → Unified Digital Platform).
-
-STEP 7 — CAROUSEL GENERATION
-Generate the 10-slide carousel following the structure below.
-
-STEP 8 — CTA STRUCTURE
-Final slide must include proper branding (see slide 10 spec below).
+STEP 6 — GENERATE
+Generate all slides following the structure.
 
 ═══════════════════════════════════
 EY ALIGNMENT
@@ -217,6 +275,7 @@ Headline: 6-10 words maximum.
 Explanation text: 12-18 words.
 Maximum 30 words per slide (headline + supporting text combined)
 Each slide communicates ONE idea.
+Strong spacing between headline and body text.
 Readable within 2 seconds.
 Avoid dense paragraphs.
 
@@ -254,42 +313,28 @@ Available layouts:
 - "infographic" — Visual framework diagram with minimal text.
 - "closing_centered" — Final CTA slide with personal branding.
 
-CRITICAL: Each slide MUST use a DIFFERENT layout. Rotate through them. Never use the same layout more than twice.
+CRITICAL: Each slide MUST use a DIFFERENT layout. Rotate through them. Never use the same layout more than twice in the entire carousel.
 
 ═══════════════════════════════════
-CAROUSEL STRUCTURE (10 slides)
+CAROUSEL STRUCTURE (flexible)
 ═══════════════════════════════════
 
-Slide 1 — Opening hook (layout: hero_center)
-Bold curiosity-driven headline. Max 6 words. Stop the scroll.
+Opening slides (2-4 slides):
+- Hook slide (hero_center): Bold curiosity-driven headline. Max 6 words.
+- Problem framing (left_impact): Expose a common misunderstanding.
+- Data point (stat_callout): A compelling statistic.
+- Reframing insight (right_impact): The deeper "aha" moment.
 
-Slide 2 — Problem framing (layout: left_impact)
-Expose a common misunderstanding or challenge.
+Framework section (3-6 slides):
+- Framework introduction (infographic): Introduce visually with diagram_data.
+- Framework explainers: Use the explainer format chosen above.
+  Each explainer slide uses clear stage labels from the framework.
+- Architecture diagram (infographic): System architecture with diagram_data.
 
-Slide 3 — Data point (layout: stat_callout)
-A compelling statistic or data-driven statement.
-
-Slide 4 — Reframing insight (layout: right_impact)
-The deeper mechanism or "aha" moment.
-
-Slide 5 — Framework introduction (layout: infographic)
-Introduce the framework visually with diagram_data.
-
-Slide 6 — Framework component 1 (layout: numbered_point)
-First lesson or component with real-world example.
-
-Slide 7 — Framework component 2 (layout: split_vertical)
-Second component comparing before/after or old/new approach.
-
-Slide 8 — Architecture diagram (layout: infographic)
-System architecture with diagram_data showing flow or layers.
-
-Slide 9 — Forward-looking insight (layout: quote_block)
-A big idea about the future.
-
-Slide 10 — Authority CTA (layout: closing_centered)
-The supporting_text MUST include:
-"M. Mahafzah\\nStrategy | Digital & Business Transformation\\nFocus on Utilities & Power\\n\\nhttps://www.linkedin.com/in/mmahafzah/\\n\\n↻ Repost if this was helpful."
+Closing slides (2-3 slides):
+- Forward-looking insight (quote_block): A big idea about the future.
+- Authority CTA (closing_centered): The supporting_text MUST include:
+  "M. Mahafzah\\nStrategy | Digital & Business Transformation\\nFocus on Utilities & Power\\n\\nhttps://www.linkedin.com/in/mmahafzah/\\n\\n↻ Repost if this was helpful."
 
 ═══════════════════════════════════
 EMPHASIS & VISUAL ANCHORS
@@ -304,11 +349,6 @@ INFOGRAPHIC / DIAGRAM DATA
 
 For framework/architecture slides, include diagram_data:
 { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[] }
-
-Examples:
-- Sensors → Data Platform → AI Analytics → Operational Action
-- Data Foundations → Analytics & AI → Integrated Systems → Intelligent Operations
-- Sensors / SCADA / GIS / Billing → Unified Digital Platform
 
 Use consulting-style visuals: system frameworks, pipelines, infrastructure networks, process flows, architecture diagrams.
 
@@ -341,13 +381,13 @@ OUTPUT SCHEMA
 ═══════════════════════════════════
 
 For each slide return:
-- slide_number (1-10)
+- slide_number (sequential, starting from 1)
 - slide_type: "hook" | "problem" | "stat" | "insight" | "framework_intro" | "framework_step" | "architecture" | "future_insight" | "cta"
 - headline: Bold main text (6-10 words, NO system labels)
 - supporting_text: Brief explanation (12-18 words, NO system labels)
 - emphasis_words: array of 1-3 key words from headline
 - visual_anchor: one of the allowed values or null
-- layout: one of "hero_center" | "left_impact" | "right_impact" | "split_vertical" | "numbered_point" | "quote_block" | "stat_callout" | "infographic" | "closing_centered"
+- layout: one of the available layouts
 - image_prompt: Vivid prompt (80-150 words) prefixed with "PHOTO:" or "INFOGRAPHIC:". NO text/words/logos in the image.
 - diagram_data: (framework/architecture slides only) { type: "sequential_flow" | "layered" | "circular" | "grid_2x2", nodes: string[] }
 
@@ -356,8 +396,9 @@ Also generate:
 - carousel_subtitle: Brief subtitle
 - linkedin_caption: Ready-to-post LinkedIn caption (3-4 short paragraphs, professional advisory tone)
 - hashtags: Array of 5-8 relevant hashtags
+- total_slides: The total number of slides generated
 
-OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...] }
+OUTPUT: Valid JSON only: { "slides": [...], "carousel_title": "...", "carousel_subtitle": "...", "linkedin_caption": "...", "hashtags": [...], "total_slides": N }
 
 BANNED WORDS: "delve," "tapestry," "landscape," "synergy," "leverage" (verb), "holistic," "robust," "utilize"`;
 }
