@@ -308,8 +308,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Normalize profile URL → strip query params, fragments, trailing slashes
+    // and extract the base /in/{handle} path regardless of what the user pastes
     if (!profileUrl.startsWith("http")) {
       profileUrl = `https://www.linkedin.com/in/${profileUrl.replace(/^\/+/, "")}`;
+    }
+    // Strip anything after the handle (activity sub-pages, query strings, fragments)
+    const handleMatch = profileUrl.match(/linkedin\.com\/in\/([^\/?#]+)/);
+    if (handleMatch) {
+      profileUrl = `https://www.linkedin.com/in/${handleMatch[1]}`;
     }
 
     // Save profile_url back to connection
@@ -320,12 +327,11 @@ Deno.serve(async (req) => {
 
     log("start", `Profile: ${profileUrl}`);
 
-    // Build activity page URLs — pages where posts actually appear
+    // Build activity page URLs — posts only appear on these, NOT the profile root
     const base = profileUrl.replace(/\/+$/, "");
     const activityPages = [
-      `${base}/recent-activity/shares/`,
       `${base}/recent-activity/all/`,
-      `${base}/detail/recent-activity/shares/`,
+      `${base}/recent-activity/shares/`,
     ];
 
     log("pages_planned", activityPages.join(", "));
