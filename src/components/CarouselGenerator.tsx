@@ -528,7 +528,7 @@ const SlidePreview = ({
             <div style={{
               fontSize: 22, fontWeight: 800, color: p.fg, textAlign: "center",
             }}>
-              M. Mahafdah
+              M. Mahafzah
             </div>
             <div style={{
               fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.6,
