@@ -150,6 +150,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           mode: data.mode,
           blocked_queries: data.blocked_queries,
           candidates_confirmed: data.candidates_confirmed,
+          late_indexed: data.late_indexed,
         });
         const classifiedMsg = data.classified > 0 ? `, ${data.classified} classified` : "";
         toast({
