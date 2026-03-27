@@ -448,6 +448,54 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
             })()}
           </Fade>
 
+          {/* ── ANALYTICS ENRICHMENT PROGRESS ── */}
+          {posts.length > 0 && (() => {
+            const totalDiscovered = posts.length;
+            const enrichedPosts = posts.filter(p =>
+              p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0
+            ).length;
+            const pct = Math.round((enrichedPosts / totalDiscovered) * 100);
+            return (
+              <Fade delay={0.12}>
+                <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-primary/40" />
+                      <h3 className="text-xs font-semibold text-foreground/80">Analytics Enrichment</h3>
+                    </div>
+                    <span className="text-xs tabular-nums font-semibold text-foreground/60">
+                      {enrichedPosts}/{totalDiscovered} posts
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="h-2 w-full rounded-full bg-secondary/20 overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{
+                          background: pct === 0
+                            ? "hsl(var(--muted-foreground) / 0.15)"
+                            : pct < 50
+                              ? "linear-gradient(90deg, hsl(43, 72%, 52% / 0.6), hsl(43, 72%, 52% / 0.8))"
+                              : "linear-gradient(90deg, hsl(43, 72%, 52% / 0.7), hsl(43, 72%, 52%))"
+                        }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.max(pct, pct === 0 ? 0 : 3)}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/35">
+                      {pct === 0
+                        ? "No posts enriched yet — import metrics from the Data tab to activate performance insights."
+                        : pct === 100
+                          ? "All discovered posts have analytics data."
+                          : `${pct}% of discovered posts have performance metrics.`}
+                    </p>
+                  </div>
+                </div>
+              </Fade>
+            );
+          })()}
+
           {/* ── AUDIENCE MOMENTUM CHART ── */}
           <Fade delay={0.14}>
             {chartData.length > 1 ? (
