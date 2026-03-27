@@ -488,26 +488,45 @@ Deno.serve(async (req) => {
     log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, uncertain=${uncertainCandidates.length}, rejected=${rejected.length}`);
     log("rejection_breakdown", JSON.stringify(rejectionCounts));
 
+    // ── Insert uncertain candidates into review queue ──
+    let reviewQueued = 0;
+    for (const uc of uncertainCandidates) {
+      const { error: rqErr } = await adminClient.from("discovery_review_queue").upsert({
+        user_id: userId,
+        candidate_url: uc.url,
+        snippet: uc.snippet,
+        confidence: uc.confidence,
+        rejection_reason: "authorship_uncertain",
+        authorship_signals: uc.signals,
+        reviewed: false,
+      }, { onConflict: "user_id,candidate_url" });
+      if (!rqErr) reviewQueued++;
+    }
+    if (reviewQueued > 0) {
+      log("review_queue", `${reviewQueued} uncertain candidates held for review`);
+    }
+
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: userId,
         sync_type: "search_discovery",
-        status: "failed",
+        status: uncertainCandidates.length > 0 ? "completed" : "failed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: rawLinksFound,
         records_stored: 0,
-        error_message: `No authored posts found. ${rawLinksFound} links scanned, ${rejected.length} rejected.`,
+        error_message: `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`,
       });
 
       return new Response(JSON.stringify({
-        success: false,
-        error: "No authored posts found. Try Historical Import with a CSV export from LinkedIn.",
+        success: uncertainCandidates.length > 0,
+        error: uncertainCandidates.length > 0 ? undefined : "No authored posts found. Try Historical Import with a CSV export from LinkedIn.",
         source_type: "search_discovery",
         profile_url: profileUrl,
         queries_run: pagesVisited,
         raw_links_found: rawLinksFound,
         valid_posts: 0,
+        uncertain_held: reviewQueued,
         rejected_count: rejected.length,
         rejection_reasons: rejectionCounts,
         errors,
