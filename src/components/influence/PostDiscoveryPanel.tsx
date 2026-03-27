@@ -13,7 +13,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const { toast } = useToast();
   const [discovering, setDiscovering] = useState(false);
   const [profileUrl, setProfileUrl] = useState("");
-  const [needsUrl, setNeedsUrl] = useState(false);
+  const [needsUrl, setNeedsUrl] = useState(true);
   const [lastRun, setLastRun] = useState<any>(null);
   const [result, setResult] = useState<{
     discovered: number;

@@ -184,13 +184,14 @@ Deno.serve(async (req) => {
         .single();
 
       if (!conn) {
-        return new Response(JSON.stringify({ success: false, error: "No active LinkedIn connection found" }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        return new Response(JSON.stringify({ success: false, error: "No active LinkedIn connection found", needs_profile_url: true }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
       profileUrl = conn.profile_url
         || (conn.handle ? `https://www.linkedin.com/in/${conn.handle}` : null)
+        || (conn.display_name ? `https://www.linkedin.com/in/${conn.display_name.toLowerCase().replace(/\s+/g, '-')}` : null)
         || null;
 
       if (!profileUrl) {
@@ -199,7 +200,7 @@ Deno.serve(async (req) => {
           error: "No LinkedIn profile URL stored. Please provide your profile URL (e.g. https://www.linkedin.com/in/yourhandle).",
           needs_profile_url: true,
         }), {
-          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
