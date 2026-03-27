@@ -71,7 +71,25 @@ IMPORTANT INSTRUCTIONS:
 - Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.
 - You MUST include "generation_checklist" in your JSON output with: explainer_format, stage_coverage map, explainer_slide_count, terminology_consistent, narrative_continuous.`;
 
-    const generateCarousel = async (attempt: number): Promise<unknown> => {
+    const generateCarousel = async (attempt: number, missingStages?: string[]): Promise<unknown> => {
+      let retryAddendum = "";
+      if (attempt > 1 && missingStages && missingStages.length > 0) {
+        retryAddendum = `
+
+⚠️ CRITICAL RETRY — PREVIOUS GENERATION FAILED VALIDATION ⚠️
+
+The following stages were MISSING from your framework_step slides:
+${missingStages.map((s, i) => `  ${i + 1}. "${s}"`).join("\n")}
+
+MANDATORY CORRECTION RULES:
+- Each missing stage listed above MUST get its OWN dedicated framework_step slide.
+- Do NOT merge these stages with other stages.
+- The slide headline MUST contain the EXACT stage name (e.g., "${missingStages[0]}").
+- The supporting_text MUST explain that specific stage in detail.
+- Add extra slides if needed — do NOT compress to fit a fixed slide count.
+- After fixing, verify EVERY stage from the framework appears by name in at least one framework_step slide headline or supporting_text.`;
+      }
+
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -83,9 +101,7 @@ IMPORTANT INSTRUCTIONS:
           max_tokens: 16384,
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: attempt > 1
-              ? userPrompt + `\n\nIMPORTANT: This is retry attempt ${attempt}. The previous generation FAILED validation because not all framework stages were covered in framework_step slides. You MUST cover ALL stages this time. Every stage name must appear in at least one framework_step slide.`
-              : userPrompt },
+            { role: "user", content: userPrompt + retryAddendum },
           ],
           response_format: { type: "json_object" },
         }),
@@ -118,7 +134,7 @@ IMPORTANT INSTRUCTIONS:
     let validationResult: { coverage: number; missing: string[] } | null = null;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      parsed = await generateCarousel(attempt);
+      parsed = await generateCarousel(attempt, validationResult?.missing);
       
       // Validate framework stage coverage
       if (frameworkSteps.length > 0 && parsed?.slides) {
@@ -126,14 +142,14 @@ IMPORTANT INSTRUCTIONS:
         console.log(`Attempt ${attempt} — Stage coverage: ${(validationResult.coverage * 100).toFixed(0)}%, missing: [${validationResult.missing.join(", ")}]`);
 
         if (validationResult.coverage >= 0.8) {
-          break; // Coverage is acceptable
+          break;
         }
 
         if (attempt < MAX_ATTEMPTS) {
-          console.log(`Coverage below 80%, auto-regenerating (attempt ${attempt + 1})...`);
+          console.log(`Coverage below 80%, auto-regenerating (attempt ${attempt + 1}) with ${validationResult.missing.length} missing stages...`);
         }
       } else {
-        break; // No framework to validate
+        break;
       }
     }
 
