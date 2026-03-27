@@ -320,10 +320,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       ) : view === "data" ? (
         <div className="space-y-5">
           <p className="text-[11px] text-muted-foreground/25 tracking-wide max-w-md">
-            Aura is building your strategic memory. Every metric preserved here strengthens trend analysis over time.
+            Uses your logged-in LinkedIn session via the Aura browser extension. More reliable for fresh posts than search discovery.
           </p>
-          <ConnectionStatusPanel />
           <BrowserCapturePanel />
+          <ConnectionStatusPanel />
           <SourceHealthSummary />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
           <DiscoveryHealthCard />
