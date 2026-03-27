@@ -239,14 +239,64 @@ Deno.serve(async (req) => {
     console.log(`[discover] Profile markdown length: ${profileMarkdown.length}, Activity markdown length: ${activityMarkdown.length}`);
 
     if (combinedMarkdown.length < 100) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Could not scrape LinkedIn profile. The page may require login or be restricted.",
-        profile_url: profileUrl,
-      }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      // Fallback: use Firecrawl search to find LinkedIn posts by this user
+      console.log(`[discover] Profile scrape returned minimal content. Trying search fallback...`);
+      
+      const handle = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/)?.[1] || "";
+      const searchQuery = handle 
+        ? `site:linkedin.com/posts "${handle}"` 
+        : `site:linkedin.com/posts ${profileUrl}`;
+      
+      const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery, limit: 20 }),
       });
-    }
+      const searchData = await searchRes.json();
+      const searchResults = searchData?.data || [];
+      
+      console.log(`[discover] Search fallback returned ${searchResults.length} results`);
+      
+      if (searchResults.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Could not scrape LinkedIn profile — the page requires login. Search fallback also returned no results. Try the Historical Import or paste post URLs manually.",
+          profile_url: profileUrl,
+          needs_profile_url: false,
+        }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      
+      // Parse search results into posts
+      for (const sr of searchResults) {
+        const url = sr.url || "";
+        if (!url.includes("linkedin.com")) continue;
+        const text = sr.markdown || sr.description || sr.title || "";
+        if (text.length < 30) continue;
+        
+        const mediaType = detectMediaType(text);
+        discovered.push({
+          url,
+          text: text.slice(0, 3000),
+          publishedAt: null,
+          hook: extractHook(text),
+          mediaType,
+          formatType: detectFormatType(text, mediaType),
+          contentType: detectContentType(text),
+        });
+      }
+      
+      if (discovered.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Search found LinkedIn results but no parseable post content. Try Historical Import instead.",
+          profile_url: profileUrl,
+        }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
 
     // Parse posts
     const discovered = parsePostsFromMarkdown(combinedMarkdown, profileUrl);
