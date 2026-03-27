@@ -160,6 +160,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         onDiscoveryComplete?.();
         await loadRecentRuns();
         await loadUnclassifiedCount();
+        await loadStats();
       }
     } catch (e: any) {
       setError(e.message || "Unexpected error");
