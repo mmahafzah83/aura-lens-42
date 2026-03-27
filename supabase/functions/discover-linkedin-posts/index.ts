@@ -574,6 +574,28 @@ Deno.serve(async (req) => {
 
     const syncType = mode === "retry" ? "retry_discovery" : "search_discovery_name_based";
 
+    // ── Detect late-indexed posts: check if retry mode found posts that prior retries missed ──
+    let lateIndexedCount = 0;
+    if (mode === "retry" && discovered.length > 0) {
+      // Count how many prior retry runs found 0 posts in the last 7 days
+      const sevenDaysAgo = new Date(Date.now() - RETRY_WINDOW_DAYS * 86400000).toISOString();
+      const { data: priorRetries } = await adminClient
+        .from("sync_runs")
+        .select("id, records_stored")
+        .eq("user_id", userId)
+        .eq("sync_type", "retry_discovery")
+        .gte("started_at", sevenDaysAgo)
+        .order("started_at", { ascending: false })
+        .limit(20);
+
+      const hadPriorEmptyRetries = (priorRetries || []).some(r => r.records_stored === 0);
+      if (hadPriorEmptyRetries) {
+        // These posts appeared after previous retries found nothing → late-indexed
+        lateIndexedCount = discovered.length;
+        log("late_indexed", `${lateIndexedCount} posts appeared after prior empty retries → will mark as indexed_late`);
+      }
+    }
+
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: userId,
@@ -674,6 +696,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // Determine tracking status: indexed_late if this is a retry that found a previously missing post
+      const trackingStatus = (mode === "retry" && lateIndexedCount > 0) ? "indexed_late" : "discovered";
+
       const { error: insertErr } = await adminClient.from("linkedin_posts").insert({
         user_id: userId,
         linkedin_post_id: urlKey,
@@ -684,7 +709,7 @@ Deno.serve(async (req) => {
         media_type: post.mediaType,
         format_type: post.formatType,
         content_type: post.contentType,
-        tracking_status: "discovered",
+        tracking_status: trackingStatus,
         topic_label: null,
         engagement_score: 0,
         like_count: 0,
@@ -716,7 +741,7 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `mode=${mode}, raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, confirmed=${confirmed}, dupes=${duplicates}, candidates_confirmed=${candidatesConfirmed}`);
+    log("complete", `mode=${mode}, raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, late_indexed=${lateIndexedCount}, confirmed=${confirmed}, dupes=${duplicates}, candidates_confirmed=${candidatesConfirmed}`);
 
     // Auto-classify new posts
     let classifyResult: any = null;
@@ -750,6 +775,7 @@ Deno.serve(async (req) => {
       valid_posts: discovered.length,
       discovered: discovered.length,
       inserted,
+      late_indexed: lateIndexedCount,
       confirmed,
       duplicates,
       uncertain_held: reviewQueued,
