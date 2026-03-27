@@ -1530,6 +1530,23 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           {/* ═══ STEP: Carousel View ═══ */}
           {pipelineStep === "carousel" && (
             <>
+              {/* Validation Badge */}
+              {validation && (
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs ${
+                  validation.passed
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                }`}>
+                  {validation.passed ? <Check className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                  <span className="font-medium">Stage Coverage: {validation.stage_coverage_pct}%</span>
+                  {validation.missing_stages?.length > 0 && (
+                    <span className="text-muted-foreground ml-1">
+                      · Missing: {validation.missing_stages.join(", ")}
+                    </span>
+                  )}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <LanguageToggle />
 
