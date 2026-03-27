@@ -359,9 +359,9 @@ Deno.serve(async (req) => {
     const searchQueries: string[] = [];
     if (handle) {
       searchQueries.push(
+        `site:linkedin.com/posts/${handle}`,
         `site:linkedin.com/posts "${handle}"`,
         `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
-        `site:linkedin.com/in/${handle} "/posts/"`,
       );
     }
     if (profileName) {
