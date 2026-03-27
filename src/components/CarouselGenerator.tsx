@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import {
   Loader2, Globe, Download, RefreshCw, Pencil, Eye, ChevronLeft, ChevronRight,
   LayoutGrid, Check, Copy, Hash, ImageIcon, Sparkles, Layers, ArrowRight,
-  Lightbulb, Target, PenLine,
+  Lightbulb, Target, PenLine, Linkedin, Share2, User, Briefcase, Zap, Camera,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
