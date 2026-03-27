@@ -518,37 +518,76 @@ const SlidePreview = ({
           <div style={{
             position: "absolute", bottom: SAFE_M + 20, left: SAFE_M, right: SAFE_M,
             display: "flex", flexDirection: "column", alignItems: "center",
-            gap: 12, zIndex: 3,
+            gap: 16, zIndex: 3,
           }}>
+            {/* Divider line */}
             <div style={{
-              width: 60, height: 2,
+              width: 80, height: 2,
               background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)`,
-              marginBottom: 8,
             }} />
-            <div style={{
-              fontSize: 22, fontWeight: 800, color: p.fg, textAlign: "center",
-            }}>
-              M. Mahafzah
+
+            {/* Name with icon */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: "50%",
+                background: `linear-gradient(135deg, ${p.accent}30, ${p.accent}10)`,
+                border: `1.5px solid ${p.accent}40`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, color: p.accent,
+              }}>👤</div>
+              <div style={{
+                fontSize: 26, fontWeight: 800, color: p.fg, textAlign: "center",
+                letterSpacing: "0.02em",
+              }}>
+                M. Mahafzah
+              </div>
             </div>
-            <div style={{
-              fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.6,
-            }}>
-              Strategy | Digital & Business Transformation
+
+            {/* Role line with icon */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 14, color: p.accent }}>💼</span>
+              <div style={{
+                fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.4,
+              }}>
+                Strategy | Digital & Business Transformation
+              </div>
             </div>
-            <div style={{
-              fontSize: 14, color: p.accent, textAlign: "center", fontWeight: 600,
-            }}>
-              Focus on Utilities & Power
+
+            {/* Focus area */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 14, color: p.accent }}>⚡</span>
+              <div style={{
+                fontSize: 15, color: p.accent, textAlign: "center", fontWeight: 700,
+                letterSpacing: "0.05em",
+              }}>
+                Focus on Utilities & Power
+              </div>
             </div>
+
+            {/* Spacer */}
+            <div style={{ height: 6 }} />
+
+            {/* LinkedIn link */}
             <div style={{
-              fontSize: 13, color: p.accent, textAlign: "center", fontWeight: 500, opacity: 0.8,
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "8px 20px", borderRadius: 20,
+              backgroundColor: `${p.accent}12`, border: `1px solid ${p.accent}25`,
             }}>
-              linkedin.com/in/mmahafzah
+              <span style={{ fontSize: 14, color: p.accent }}>🔗</span>
+              <span style={{
+                fontSize: 14, color: p.accent, fontWeight: 600,
+              }}>linkedin.com/in/mmahafzah</span>
             </div>
+
+            {/* Repost CTA */}
             <div style={{
-              fontSize: 15, color: p.muted, textAlign: "center", marginTop: 4, opacity: 0.7,
+              display: "flex", alignItems: "center", gap: 8,
+              marginTop: 4,
             }}>
-              ↻ Repost if this was helpful.
+              <span style={{ fontSize: 16, color: p.muted, opacity: 0.6 }}>↻</span>
+              <span style={{
+                fontSize: 15, color: p.muted, opacity: 0.7, fontWeight: 500,
+              }}>Repost if this was helpful</span>
             </div>
           </div>
         )}
