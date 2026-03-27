@@ -3,6 +3,7 @@ import {
   Loader2, Globe, Download, RefreshCw, Pencil, Eye, ChevronLeft, ChevronRight,
   LayoutGrid, Check, Copy, Hash, ImageIcon, Sparkles, Layers, ArrowRight,
   Lightbulb, Target, PenLine, Linkedin, Share2, User, Briefcase, Zap, Camera,
+  Map, BarChart3, Image as ImageLucide,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -15,7 +16,7 @@ import jsPDF from "jspdf";
 
 /* ── Types ──────────────────────────── */
 interface DiagramData {
-  type: "sequential_flow" | "layered" | "circular" | "grid_2x2";
+  type: "sequential_flow" | "layered" | "circular" | "grid_2x2" | "pyramid" | "flywheel";
   nodes: string[];
   connections?: string[];
 }
@@ -46,8 +47,11 @@ interface Framework {
   id: string;
   name: string;
   description: string;
+  rationale?: string;
+  framework_type?: string;
   steps: string[];
-  diagram_type: "sequential_flow" | "layered" | "circular" | "grid_2x2";
+  diagram_type: "sequential_flow" | "layered" | "circular" | "grid_2x2" | "pyramid" | "flywheel";
+  suitability_score?: number;
   key_visuals: FrameworkVisual[];
 }
 
@@ -58,7 +62,19 @@ interface TopicAnalysis {
   target_audience: string;
 }
 
-type PipelineStep = "input" | "frameworks" | "carousel" | "visuals";
+interface VisualPlanItem {
+  slide_number: number;
+  slide_purpose: string;
+  layout_type: string;
+  text_position: string;
+  visual_type: string;
+  image_decision: "real_image" | "generated_diagram" | "none";
+  density_level: "light" | "medium" | "dense";
+  image_category?: string | null;
+  diagram_category?: string | null;
+}
+
+type PipelineStep = "input" | "frameworks" | "visual_plan" | "carousel" | "visuals";
 
 type Lang = "en" | "ar";
 type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
@@ -105,6 +121,33 @@ const PALETTES: Record<Style, {
   },
 };
 
+/* ── Framework type labels ── */
+const FRAMEWORK_TYPE_LABELS: Record<string, string> = {
+  maturity_model: "Maturity Model",
+  transformation_roadmap: "Transformation Roadmap",
+  pyramid: "Pyramid",
+  flywheel: "Flywheel",
+  capability_stack: "Capability Stack",
+  layered_architecture: "Layered Architecture",
+  operating_model: "Operating Model",
+  ecosystem_map: "Ecosystem Map",
+  before_after_bridge: "Before / After / Bridge",
+  sequential_flow: "Sequential Flow",
+  grid_2x2: "2×2 Matrix",
+  circular: "Circular Process",
+};
+
+const VISUAL_TYPE_ICONS: Record<string, typeof ImageLucide> = {
+  text_only: PenLine,
+  split_text_image: ImageLucide,
+  infographic: BarChart3,
+  framework_visual: Layers,
+  stat_slide: BarChart3,
+  architecture_diagram: Map,
+  conceptual_visual: Sparkles,
+  cta_slide: Share2,
+};
+
 /* ── Highlight Headline with emphasis words ── */
 const HighlightedHeadline = ({
   text, emphasisWords = [], palette, fontSize, textAlign, isAr,
@@ -116,8 +159,7 @@ const HighlightedHeadline = ({
     return (
       <h2 style={{
         fontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: "-0.02em",
-        textAlign: textAlign as any, color: palette.fg, margin: 0,
-        width: "100%",
+        textAlign: textAlign as any, color: palette.fg, margin: 0, width: "100%",
       }}>
         {text}
       </h2>
@@ -125,11 +167,8 @@ const HighlightedHeadline = ({
   }
 
   const parts: { text: string; highlight: boolean }[] = [];
-  let remaining = text;
   const lowerEmphasis = emphasisWords.map(w => w.toLowerCase());
-
-  // Simple word-by-word splitting
-  const words = remaining.split(/(\s+)/);
+  const words = text.split(/(\s+)/);
   for (const word of words) {
     if (lowerEmphasis.includes(word.toLowerCase().replace(/[.,!?;:]/g, ""))) {
       parts.push({ text: word, highlight: true });
@@ -145,12 +184,9 @@ const HighlightedHeadline = ({
     }}>
       {parts.map((part, i) => part.highlight ? (
         <span key={i} style={{
-          backgroundColor: palette.emphBg,
-          color: palette.emphFg,
-          padding: "2px 10px",
-          borderRadius: 4,
-          boxDecorationBreak: "clone" as any,
-          WebkitBoxDecorationBreak: "clone" as any,
+          backgroundColor: palette.emphBg, color: palette.emphFg,
+          padding: "2px 10px", borderRadius: 4,
+          boxDecorationBreak: "clone" as any, WebkitBoxDecorationBreak: "clone" as any,
         }}>{part.text}</span>
       ) : (
         <span key={i}>{part.text}</span>
@@ -162,45 +198,17 @@ const HighlightedHeadline = ({
 /* ── Visual Anchor Elements ── */
 const VisualAnchor = ({ type, palette }: { type: string | null | undefined; palette: typeof PALETTES.minimal_creator }) => {
   if (!type) return null;
-
   switch (type) {
     case "arrow_down":
-      return (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}>
-          <div style={{ fontSize: 48, color: palette.accent, lineHeight: 1 }}>↓</div>
-        </div>
-      );
+      return <div style={{ display: "flex", justifyContent: "center", marginTop: 24 }}><div style={{ fontSize: 48, color: palette.accent, lineHeight: 1 }}>↓</div></div>;
     case "underline_bar":
-      return (
-        <div style={{
-          width: 80, height: 6, backgroundColor: palette.accent,
-          borderRadius: 3, marginTop: 20,
-        }} />
-      );
+      return <div style={{ width: 80, height: 6, backgroundColor: palette.accent, borderRadius: 3, marginTop: 20 }} />;
     case "highlight_box":
-      return (
-        <div style={{
-          width: 48, height: 48, border: `3px solid ${palette.accent}`,
-          borderRadius: 8, marginTop: 20, opacity: 0.5,
-        }} />
-      );
+      return <div style={{ width: 48, height: 48, border: `3px solid ${palette.accent}`, borderRadius: 8, marginTop: 20, opacity: 0.5 }} />;
     case "divider_accent":
-      return (
-        <div style={{
-          width: 120, height: 2, background: `linear-gradient(90deg, ${palette.accent}, transparent)`,
-          marginTop: 20,
-        }} />
-      );
-     case "number_badge":
-      return null; // handled separately in layout
-    case "large_number":
-      return null; // handled in slide content
+      return <div style={{ width: 120, height: 2, background: `linear-gradient(90deg, ${palette.accent}, transparent)`, marginTop: 20 }} />;
     case "quote_mark":
-      return (
-        <div style={{ fontSize: 96, lineHeight: 0.7, color: palette.accent, opacity: 0.25, fontFamily: "Georgia, serif" }}>
-          "
-        </div>
-      );
+      return <div style={{ fontSize: 96, lineHeight: 0.7, color: palette.accent, opacity: 0.25, fontFamily: "Georgia, serif" }}>"</div>;
     default:
       return null;
   }
@@ -221,16 +229,14 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
               backgroundColor: `${palette.accent}15`, color: palette.fg,
               fontSize: 20, fontWeight: 800, textAlign: "center", width: "100%", maxWidth: 420,
             }}>{n}</div>
-            {i < nodes.length - 1 && (
-              <span style={{ fontSize: 28, color: palette.accent, fontWeight: 700 }}>↓</span>
-            )}
+            {i < nodes.length - 1 && <span style={{ fontSize: 28, color: palette.accent, fontWeight: 700 }}>↓</span>}
           </div>
         ))}
       </div>
     );
   }
 
-  if (data.type === "layered") {
+  if (data.type === "layered" || data.type === "pyramid") {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
         {nodes.map((n, i) => (
@@ -260,7 +266,7 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
     );
   }
 
-  if (data.type === "circular") {
+  if (data.type === "circular" || data.type === "flywheel") {
     const count = nodes.length;
     const radius = 140;
     return (
@@ -309,11 +315,9 @@ const SlidePreview = ({
   const isLeft = layout === "left_impact";
   const isRight = layout === "right_impact";
   const isSplit = layout === "split_vertical";
-  const isInfographic = layout === "infographic";
   const isCTA = layout === "closing_centered" || slideType === "cta";
   const isFrameworkStep = slideType === "framework_step" || slideType === "framework";
 
-  // Determine text alignment based on layout
   const getTextAlign = (): string => {
     if (isHero || isStat || isCTA) return "center";
     if (isRight) return isAr ? "left" : "right";
@@ -321,7 +325,6 @@ const SlidePreview = ({
   };
   const textAlign = getTextAlign();
 
-  // Determine content vertical position based on layout
   const getJustify = (): string => {
     if (isHero || isStat || isCTA) return "center";
     if (isLeft || isRight) return "center";
@@ -340,7 +343,6 @@ const SlidePreview = ({
         fontFamily: isAr ? "'Noto Sans Arabic', sans-serif" : "'Inter', system-ui, sans-serif",
         direction: isAr ? "rtl" : "ltr",
       }}>
-        {/* Background image */}
         {hasImage && (
           <div style={{
             position: "absolute", inset: 0,
@@ -357,8 +359,6 @@ const SlidePreview = ({
               : `linear-gradient(180deg, ${p.bg}30 0%, ${p.bg}BB 35%, ${p.bg}F0 100%)`,
           }} />
         )}
-
-        {/* Subtle ambient glow (no image) */}
         {!hasImage && (
           <div style={{
             position: "absolute", inset: 0,
@@ -366,14 +366,12 @@ const SlidePreview = ({
           }} />
         )}
 
-        {/* Top accent bar */}
         <div style={{
           height: 5, width: "100%",
           background: `linear-gradient(90deg, ${p.accent}, ${p.accent}40, transparent)`,
           position: "relative", zIndex: 2,
         }} />
 
-        {/* Slide number badge */}
         <div style={{
           position: "absolute", top: SAFE_M - 40, [isAr ? "right" : "left"]: SAFE_M,
           width: 52, height: 52, borderRadius: 14,
@@ -385,7 +383,6 @@ const SlidePreview = ({
           {slide.slide_number}
         </div>
 
-        {/* Slide type label */}
         <div style={{
           position: "absolute", top: SAFE_M - 28, [isAr ? "left" : "right"]: SAFE_M,
           fontSize: 12, textTransform: "uppercase", letterSpacing: 6,
@@ -394,7 +391,6 @@ const SlidePreview = ({
           {(slideType || "").replace(/_/g, " ")}
         </div>
 
-        {/* Main content area */}
         <div style={{
           flex: 1, display: "flex",
           flexDirection: isSplit ? "row" : "column",
@@ -404,10 +400,8 @@ const SlidePreview = ({
           position: "relative", zIndex: 2,
           gap: 24,
         }}>
-          {/* Quote mark for quote layout */}
           {isQuote && <VisualAnchor type="quote_mark" palette={p} />}
 
-          {/* Stat callout — large number */}
           {isStat && slide.pattern_interrupt && (
             <div style={{
               fontSize: 120, fontWeight: 900, color: p.accent,
@@ -417,7 +411,6 @@ const SlidePreview = ({
             </div>
           )}
 
-          {/* Numbered point badge */}
           {isNumbered && isFrameworkStep && (
             <div style={{
               width: 80, height: 80, borderRadius: "50%",
@@ -431,70 +424,40 @@ const SlidePreview = ({
             </div>
           )}
 
-          {/* Visual anchor (before headline) */}
           {!isQuote && !isNumbered && !isStat && slide.visual_anchor !== "arrow_down" && (
             <VisualAnchor type={slide.visual_anchor || "underline_bar"} palette={p} />
           )}
 
-          {/* Pattern interrupt (non-stat) */}
           {slide.pattern_interrupt && !isStat && (
             <div style={{
               fontSize: 32, fontWeight: 900, letterSpacing: 6,
               textTransform: "uppercase", color: p.accent,
-              textAlign: textAlign as any,
-              marginBottom: 8,
+              textAlign: textAlign as any, marginBottom: 8,
             }}>
               {slide.pattern_interrupt}
             </div>
           )}
 
-          {/* Split layout — left column */}
           {isSplit ? (
             <>
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 16 }}>
-                <HighlightedHeadline
-                  text={slide.headline}
-                  emphasisWords={slide.emphasis_words}
-                  palette={p}
-                  fontSize={52}
-                  textAlign={isAr ? "right" : "left"}
-                  isAr={isAr}
-                />
+                <HighlightedHeadline text={slide.headline} emphasisWords={slide.emphasis_words} palette={p} fontSize={52} textAlign={isAr ? "right" : "left"} isAr={isAr} />
               </div>
-              <div style={{
-                width: 2, backgroundColor: `${p.accent}30`,
-                alignSelf: "stretch", margin: "0 16px",
-              }} />
+              <div style={{ width: 2, backgroundColor: `${p.accent}30`, alignSelf: "stretch", margin: "0 16px" }} />
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <p style={{
-                  fontSize: 26, lineHeight: 1.6, color: p.muted, fontWeight: 400,
-                  textAlign: "justify" as any,
-                  margin: 0,
-                }}>
+                <p style={{ fontSize: 26, lineHeight: 1.6, color: p.muted, fontWeight: 400, textAlign: "justify" as any, margin: 0 }}>
                   {slide.supporting_text}
                 </p>
               </div>
             </>
           ) : (
             <>
-              {/* Headline with emphasis highlighting */}
-              <HighlightedHeadline
-                text={slide.headline}
-                emphasisWords={slide.emphasis_words}
-                palette={p}
-                fontSize={isHero || isCTA ? 76 : isStat ? 56 : 60}
-                textAlign={textAlign}
-                isAr={isAr}
-              />
-
-              {/* Supporting text */}
+              <HighlightedHeadline text={slide.headline} emphasisWords={slide.emphasis_words} palette={p} fontSize={isHero || isCTA ? 76 : isStat ? 56 : 60} textAlign={textAlign} isAr={isAr} />
               {!hasDiagram && slide.supporting_text && !isCTA && (
                 <p style={{
-                  fontSize: 28, lineHeight: 1.6,
-                  color: p.muted, fontWeight: 400,
+                  fontSize: 28, lineHeight: 1.6, color: p.muted, fontWeight: 400,
                   textAlign: isHero || isStat ? "center" : "justify" as any,
-                  maxWidth: 800,
-                  margin: 0,
+                  maxWidth: 800, margin: 0,
                   ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
                 }}>
                   {slide.supporting_text}
@@ -503,17 +466,13 @@ const SlidePreview = ({
             </>
           )}
 
-          {/* Diagram */}
           {hasDiagram && slide.diagram_data && (
             <div style={{ marginTop: 16 }}>
               <DiagramOverlay data={slide.diagram_data} palette={p} isAr={isAr} />
             </div>
           )}
 
-          {/* Visual anchor (after content — arrow down) */}
-          {slide.visual_anchor === "arrow_down" && (
-            <VisualAnchor type="arrow_down" palette={p} />
-          )}
+          {slide.visual_anchor === "arrow_down" && <VisualAnchor type="arrow_down" palette={p} />}
         </div>
 
         {/* CTA Authority Branding Block */}
@@ -523,13 +482,7 @@ const SlidePreview = ({
             display: "flex", flexDirection: "column", alignItems: "center",
             gap: 16, zIndex: 3,
           }}>
-            {/* Divider line */}
-            <div style={{
-              width: 80, height: 2,
-              background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)`,
-            }} />
-
-            {/* Name with icon */}
+            <div style={{ width: 80, height: 2, background: `linear-gradient(90deg, transparent, ${p.accent}, transparent)` }} />
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: "50%",
@@ -538,64 +491,38 @@ const SlidePreview = ({
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 18, color: p.accent,
               }}>👤</div>
-              <div style={{
-                fontSize: 26, fontWeight: 800, color: p.fg, textAlign: "center",
-                letterSpacing: "0.02em",
-              }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: p.fg, textAlign: "center", letterSpacing: "0.02em" }}>
                 M. Mahafzah
               </div>
             </div>
-
-            {/* Role line with icon */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, color: p.accent }}>💼</span>
-              <div style={{
-                fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.4,
-              }}>
+              <div style={{ fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.4 }}>
                 Strategy | Digital & Business Transformation
               </div>
             </div>
-
-            {/* Focus area */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, color: p.accent }}>⚡</span>
-              <div style={{
-                fontSize: 15, color: p.accent, textAlign: "center", fontWeight: 700,
-                letterSpacing: "0.05em",
-              }}>
+              <div style={{ fontSize: 15, color: p.accent, textAlign: "center", fontWeight: 700, letterSpacing: "0.05em" }}>
                 Focus on Utilities & Power
               </div>
             </div>
-
-            {/* Spacer */}
             <div style={{ height: 6 }} />
-
-            {/* LinkedIn link */}
             <div style={{
               display: "flex", alignItems: "center", gap: 8,
               padding: "8px 20px", borderRadius: 20,
               backgroundColor: `${p.accent}12`, border: `1px solid ${p.accent}25`,
             }}>
               <span style={{ fontSize: 14, color: p.accent }}>🔗</span>
-              <span style={{
-                fontSize: 14, color: p.accent, fontWeight: 600,
-              }}>linkedin.com/in/mmahafzah</span>
+              <span style={{ fontSize: 14, color: p.accent, fontWeight: 600 }}>linkedin.com/in/mmahafzah</span>
             </div>
-
-            {/* Repost CTA */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 8,
-              marginTop: 4,
-            }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 16, color: p.muted, opacity: 0.6 }}>↻</span>
-              <span style={{
-                fontSize: 15, color: p.muted, opacity: 0.7, fontWeight: 500,
-              }}>Repost if this was helpful</span>
+              <span style={{ fontSize: 15, color: p.muted, opacity: 0.7, fontWeight: 500 }}>Repost if this was helpful</span>
             </div>
           </div>
         )}
 
-        {/* Footer (non-CTA) */}
         {!isCTA && (
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
@@ -637,6 +564,11 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const [generatingFrameworks, setGeneratingFrameworks] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
+  // Visual plan state
+  const [visualPlan, setVisualPlan] = useState<VisualPlanItem[]>([]);
+  const [visualPlanSummary, setVisualPlanSummary] = useState("");
+  const [generatingVisualPlan, setGeneratingVisualPlan] = useState(false);
+
   const currentSlides = slides[lang];
   const isLoading = loading[lang];
 
@@ -658,7 +590,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     throw new Error(lastMessage);
   }, [style]);
 
-  /* ── Step 1-3: Generate frameworks ── */
+  /* ── Step 1: Generate frameworks ── */
   const generateFrameworksStep = useCallback(async () => {
     setGeneratingFrameworks(true);
     try {
@@ -676,6 +608,32 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setGeneratingFrameworks(false);
     }
   }, [title, description, context, lang]);
+
+  /* ── Step 2: Generate visual plan ── */
+  const generateVisualPlanStep = useCallback(async () => {
+    setGeneratingVisualPlan(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-visual-plan", {
+        body: {
+          title, description, context, lang,
+          framework: selectedFramework ? {
+            name: selectedFramework.name,
+            steps: selectedFramework.steps,
+            framework_type: selectedFramework.framework_type || selectedFramework.diagram_type,
+          } : undefined,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data.visual_plan) setVisualPlan(data.visual_plan);
+      if (data.plan_summary) setVisualPlanSummary(data.plan_summary);
+      setPipelineStep("visual_plan");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate visual plan");
+    } finally {
+      setGeneratingVisualPlan(false);
+    }
+  }, [title, description, context, lang, selectedFramework]);
 
   /* ── Generate slide visuals ── */
   const generateVisuals = useCallback(async (targetLang: Lang, slideList: Slide[]) => {
@@ -704,7 +662,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     toast.success("Slide visuals generated");
   }, [invokeSlideVisual]);
 
-  /* ── Generate carousel (Step 6) ── */
+  /* ── Step 3: Generate carousel ── */
   const generate = useCallback(async (targetLang: Lang) => {
     setLoading(prev => ({ ...prev, [targetLang]: true }));
     try {
@@ -717,6 +675,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             steps: selectedFramework.steps,
             diagram_type: selectedFramework.diagram_type,
           } : undefined,
+          visual_plan: visualPlan.length > 0 ? visualPlan : undefined,
         },
       });
       if (error) throw error;
@@ -732,7 +691,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     } finally {
       setLoading(prev => ({ ...prev, [targetLang]: false }));
     }
-  }, [title, description, context, style, lang, selectedFramework, generateVisuals]);
+  }, [title, description, context, style, lang, selectedFramework, visualPlan]);
 
   // Auto-start pipeline on open
   if (open && title && !hasStarted) {
@@ -768,7 +727,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     }
   };
 
-  /* ── PDF Export (1080×1350) — Layout-Aware ── */
+  /* ── PDF Export ── */
   const exportPDF = async () => {
     if (currentSlides.length === 0) return;
     setExporting(true);
@@ -795,7 +754,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         const isLeft = layout === "left_impact";
         const isRight = layout === "right_impact";
         const isSplitL = layout === "split_vertical";
-        const isInfographicL = layout === "infographic";
 
         // Background gradient
         const grd = ctx.createLinearGradient(0, 0, CANVAS_W, CANVAS_H);
@@ -823,7 +781,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             overlayGrd.addColorStop(1, `${p.bg}F5`);
             ctx.fillStyle = overlayGrd;
             ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-          } catch { /* Image failed to load */ }
+          } catch { /* skip */ }
         }
 
         // Top accent bar
@@ -902,127 +860,143 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.fillStyle = p.accent;
           ctx.font = "900 36px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
-          const stepNum = slide.slide_number >= 6 && slide.slide_number <= 8 ? slide.slide_number - 5 : slide.slide_number;
-          ctx.fillText(String(stepNum), circX, circY + 13);
+          const num = slide.slide_number >= 6 && slide.slide_number <= 8 ? slide.slide_number - 5 : slide.slide_number;
+          ctx.fillText(String(num), circX, circY + 12);
           ctx.fillStyle = p.fg;
-          ctx.font = "900 56px Inter, Arial, sans-serif";
-          const nAlign = isAr ? "right" : "left";
-          const nHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
-          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], nHx, contentTop + contentH * 0.5, textW, 64, p, nAlign);
+          ctx.font = "900 52px Inter, Arial, sans-serif";
+          const nAlign = isHero ? "center" : (isAr ? "right" : "left");
+          const nHx = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], nHx, contentTop + contentH * 0.5, textW, 60, p, nAlign);
           ctx.fillStyle = p.muted;
-          ctx.font = "400 26px Inter, Arial, sans-serif";
+          ctx.font = "400 24px Inter, Arial, sans-serif";
           ctx.textAlign = nAlign as CanvasTextAlign;
-          wrapText(ctx, slide.supporting_text, nHx, contentTop + contentH * 0.7, textW - 40, 36);
+          wrapText(ctx, slide.supporting_text, nHx, contentTop + contentH * 0.7, textW - 40, 32);
         } else if (isSplitL) {
           const midX = CANVAS_W / 2;
-          ctx.strokeStyle = `${p.accent}30`;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(midX, contentTop + 40);
-          ctx.lineTo(midX, contentBottom - 40);
-          ctx.stroke();
           ctx.fillStyle = p.fg;
-          ctx.font = "900 48px Inter, Arial, sans-serif";
-          const sLeftAlign = isAr ? "right" : "left";
-          const sLeftX = isAr ? midX - 30 : SAFE_M;
-          ctx.textAlign = sLeftAlign as CanvasTextAlign;
-          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], sLeftX, contentTop + contentH * 0.4, midX - SAFE_M - 40, 56, p, sLeftAlign);
+          ctx.font = "900 52px Inter, Arial, sans-serif";
+          ctx.textAlign = isAr ? "right" : "left";
+          const splitHx = isAr ? midX - 20 : SAFE_M;
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], splitHx, contentTop + contentH * 0.4, midX - SAFE_M - 20, 60, p, isAr ? "right" : "left");
+          ctx.fillStyle = `${p.accent}30`;
+          ctx.fillRect(midX, contentTop + 20, 2, contentH - 40);
           ctx.fillStyle = p.muted;
-          ctx.font = "400 26px Inter, Arial, sans-serif";
-          const sRightAlign = isAr ? "right" : "left";
-          const sRightX = isAr ? CANVAS_W - SAFE_M : midX + 30;
-          ctx.textAlign = sRightAlign as CanvasTextAlign;
-          wrapText(ctx, slide.supporting_text, sRightX, contentTop + contentH * 0.4, midX - SAFE_M - 40, 36);
+          ctx.font = "400 24px Inter, Arial, sans-serif";
+          ctx.textAlign = isAr ? "right" : "left";
+          const splitSx = isAr ? CANVAS_W - SAFE_M : midX + 20;
+          wrapText(ctx, slide.supporting_text, splitSx, contentTop + contentH * 0.4, midX - SAFE_M - 20, 32);
         } else if (isLeft || isRight) {
-          const align = isRight ? (isAr ? "left" : "right") : (isAr ? "right" : "left");
-          const hx = align === "right" ? CANVAS_W - SAFE_M : SAFE_M;
+          const hAlign = isRight ? (isAr ? "left" : "right") : (isAr ? "right" : "left");
+          const hx = isRight ? (isAr ? SAFE_M : CANVAS_W - SAFE_M) : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
           ctx.fillStyle = p.accent;
-          const barX2 = align === "right" ? CANVAS_W - SAFE_M - 80 : SAFE_M;
-          ctx.fillRect(barX2, contentTop + contentH * 0.32, 80, 6);
-          if (slide.pattern_interrupt) {
-            ctx.fillStyle = p.accent;
-            ctx.font = "900 28px Inter, Arial, sans-serif";
-            ctx.textAlign = align as CanvasTextAlign;
-            ctx.fillText(slide.pattern_interrupt, hx, contentTop + contentH * 0.4);
-          }
+          ctx.fillRect(isRight ? (isAr ? SAFE_M : CANVAS_W - SAFE_M - 80) : (isAr ? CANVAS_W - SAFE_M - 80 : SAFE_M), contentTop + contentH * 0.3, 80, 6);
           ctx.fillStyle = p.fg;
-          ctx.font = "900 60px Inter, Arial, sans-serif";
-          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], hx, contentTop + contentH * 0.5, textW * 0.75, 68, p, align);
+          ctx.font = "900 56px Inter, Arial, sans-serif";
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], hx, contentTop + contentH * 0.45, textW * 0.7, 64, p, hAlign);
           ctx.fillStyle = p.muted;
-          ctx.font = "400 26px Inter, Arial, sans-serif";
-          ctx.textAlign = align as CanvasTextAlign;
-          wrapText(ctx, slide.supporting_text, hx, contentTop + contentH * 0.72, textW * 0.75, 36);
-        } else if (isInfographicL) {
+          ctx.font = "400 24px Inter, Arial, sans-serif";
+          ctx.textAlign = hAlign as CanvasTextAlign;
+          wrapText(ctx, slide.supporting_text, hx, contentTop + contentH * 0.68, textW * 0.7, 32);
+        } else if (slide.diagram_data && slide.diagram_data.nodes?.length > 0) {
           ctx.fillStyle = p.fg;
           ctx.font = "900 48px Inter, Arial, sans-serif";
-          const iAlign = isAr ? "right" : "left";
-          const iHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
-          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], iHx, contentTop + contentH * 0.18, textW, 56, p, iAlign);
-          if (slide.diagram_data?.nodes?.length) {
-            const nodes = slide.diagram_data.nodes;
-            const dType = slide.diagram_data.type;
-            if (dType === "sequential_flow") {
-              const stepH = 52;
-              const gap = 16;
-              const startY = contentTop + contentH * 0.35;
-              nodes.forEach((n, ni) => {
-                const ny = startY + ni * (stepH + gap);
-                ctx.strokeStyle = p.accent;
-                ctx.lineWidth = 2;
-                roundRect(ctx, SAFE_M + 40, ny, textW - 80, stepH, 12);
-                ctx.stroke();
-                ctx.fillStyle = `${p.accent}15`;
-                roundRect(ctx, SAFE_M + 40, ny, textW - 80, stepH, 12);
-                ctx.fill();
-                ctx.fillStyle = p.fg;
-                ctx.font = "800 20px Inter, Arial, sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(n, CANVAS_W / 2, ny + 33);
-                if (ni < nodes.length - 1) {
-                  ctx.fillStyle = p.accent;
-                  ctx.font = "700 28px Inter, Arial, sans-serif";
-                  ctx.fillText("↓", CANVAS_W / 2, ny + stepH + 12);
-                }
-              });
-            } else if (dType === "layered") {
-              const startY2 = contentTop + contentH * 0.35;
-              nodes.forEach((n, ni) => {
-                const ny = startY2 + ni * 56;
-                const alpha = Math.max(12, 35 - ni * 6);
-                ctx.fillStyle = `${p.accent}${alpha.toString(16).padStart(2, "0")}`;
-                roundRect(ctx, SAFE_M + 20, ny, textW - 40, 46, 10);
-                ctx.fill();
-                ctx.strokeStyle = `${p.accent}40`;
-                ctx.lineWidth = 1.5;
-                roundRect(ctx, SAFE_M + 20, ny, textW - 40, 46, 10);
-                ctx.stroke();
-                ctx.fillStyle = p.fg;
-                ctx.font = "700 20px Inter, Arial, sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(n, CANVAS_W / 2, ny + 30);
-              });
-            } else if (dType === "grid_2x2") {
-              const gStartY = contentTop + contentH * 0.38;
-              const cellW = (textW - 60) / 2;
-              const cellH = 80;
-              nodes.slice(0, 4).forEach((n, ni) => {
-                const col = ni % 2;
-                const row = Math.floor(ni / 2);
-                const cx = SAFE_M + 10 + col * (cellW + 20);
-                const cy = gStartY + row * (cellH + 16);
-                ctx.strokeStyle = `${p.accent}40`;
-                ctx.lineWidth = 2;
-                roundRect(ctx, cx, cy, cellW, cellH, 12);
-                ctx.stroke();
-                ctx.fillStyle = `${p.accent}10`;
-                roundRect(ctx, cx, cy, cellW, cellH, 12);
-                ctx.fill();
-                ctx.fillStyle = p.fg;
-                ctx.font = "800 18px Inter, Arial, sans-serif";
-                ctx.textAlign = "center";
-                ctx.fillText(n, cx + cellW / 2, cy + cellH / 2 + 6);
-              });
-            }
+          ctx.textAlign = "center";
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], CANVAS_W / 2, contentTop + contentH * 0.15, textW, 56, p, "center");
+
+          const dType = slide.diagram_data.type;
+          const nodes = slide.diagram_data.nodes;
+
+          if (dType === "sequential_flow") {
+            const startY = contentTop + contentH * 0.3;
+            const stepH = Math.min(60, (contentH * 0.55) / nodes.length);
+            nodes.forEach((n, ni) => {
+              const ny = startY + ni * (stepH + 20);
+              ctx.strokeStyle = p.accent;
+              ctx.lineWidth = 2;
+              roundRect(ctx, SAFE_M + 40, ny, textW - 80, stepH, 12);
+              ctx.stroke();
+              ctx.fillStyle = `${p.accent}15`;
+              roundRect(ctx, SAFE_M + 40, ny, textW - 80, stepH, 12);
+              ctx.fill();
+              ctx.fillStyle = p.fg;
+              ctx.font = "800 20px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText(n, CANVAS_W / 2, ny + stepH / 2 + 7);
+              if (ni < nodes.length - 1) {
+                ctx.fillStyle = p.accent;
+                ctx.font = "700 28px Inter, Arial, sans-serif";
+                ctx.fillText("↓", CANVAS_W / 2, ny + stepH + 14);
+              }
+            });
+          } else if (dType === "layered" || dType === "pyramid") {
+            const startY = contentTop + contentH * 0.3;
+            const layerH = Math.min(56, (contentH * 0.55) / nodes.length);
+            nodes.forEach((n, ni) => {
+              const ny = startY + ni * (layerH + 10);
+              const opacity = Math.max(12, 35 - ni * 6);
+              ctx.fillStyle = `${p.accent}${opacity.toString(16).padStart(2, "0")}`;
+              roundRect(ctx, SAFE_M + 20, ny, textW - 40, layerH, 10);
+              ctx.fill();
+              ctx.strokeStyle = `${p.accent}40`;
+              ctx.lineWidth = 1.5;
+              roundRect(ctx, SAFE_M + 20, ny, textW - 40, layerH, 10);
+              ctx.stroke();
+              ctx.fillStyle = p.fg;
+              ctx.font = "700 20px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText(n, CANVAS_W / 2, ny + layerH / 2 + 7);
+            });
+          } else if (dType === "circular" || dType === "flywheel") {
+            const centerX = CANVAS_W / 2;
+            const centerY = contentTop + contentH * 0.55;
+            const radius = Math.min(200, contentH * 0.25);
+            nodes.forEach((n, ni) => {
+              const angle = (2 * Math.PI * ni) / nodes.length - Math.PI / 2;
+              const nx = centerX + radius * Math.cos(angle);
+              const ny = centerY + radius * Math.sin(angle);
+              ctx.beginPath();
+              ctx.arc(nx, ny, 45, 0, Math.PI * 2);
+              ctx.fillStyle = `${p.accent}15`;
+              ctx.fill();
+              ctx.strokeStyle = p.accent;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+              ctx.fillStyle = p.fg;
+              ctx.font = "700 14px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              const words = n.split(" ");
+              if (words.length > 2) {
+                ctx.fillText(words.slice(0, 2).join(" "), nx, ny - 4);
+                ctx.fillText(words.slice(2).join(" "), nx, ny + 14);
+              } else {
+                ctx.fillText(n, nx, ny + 5);
+              }
+            });
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 8, 0, Math.PI * 2);
+            ctx.fillStyle = p.accent;
+            ctx.fill();
+          } else if (dType === "grid_2x2") {
+            const gStartY = contentTop + contentH * 0.38;
+            const cellW = (textW - 60) / 2;
+            const cellH = 80;
+            nodes.slice(0, 4).forEach((n, ni) => {
+              const col = ni % 2;
+              const row = Math.floor(ni / 2);
+              const cx = SAFE_M + 10 + col * (cellW + 20);
+              const cy = gStartY + row * (cellH + 16);
+              ctx.strokeStyle = `${p.accent}40`;
+              ctx.lineWidth = 2;
+              roundRect(ctx, cx, cy, cellW, cellH, 12);
+              ctx.stroke();
+              ctx.fillStyle = `${p.accent}10`;
+              roundRect(ctx, cx, cy, cellW, cellH, 12);
+              ctx.fill();
+              ctx.fillStyle = p.fg;
+              ctx.font = "800 18px Inter, Arial, sans-serif";
+              ctx.textAlign = "center";
+              ctx.fillText(n, cx + cellW / 2, cy + cellH / 2 + 6);
+            });
           }
           ctx.fillStyle = p.muted;
           ctx.font = "400 24px Inter, Arial, sans-serif";
@@ -1066,8 +1040,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         // CTA Authority Branding
         if (isCta) {
           const ctaY = CANVAS_H - SAFE_M - 260;
-
-          // Divider
           const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 40, 0, CANVAS_W / 2 + 40, 0);
           divGrd.addColorStop(0, "transparent");
           divGrd.addColorStop(0.5, p.accent);
@@ -1075,7 +1047,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.fillStyle = divGrd;
           ctx.fillRect(CANVAS_W / 2 - 40, ctaY, 80, 2);
 
-          // Avatar circle
           ctx.beginPath();
           ctx.arc(CANVAS_W / 2 - 80, ctaY + 40, 18, 0, Math.PI * 2);
           ctx.fillStyle = `${p.accent}25`;
@@ -1088,24 +1059,20 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.textAlign = "center";
           ctx.fillText("👤", CANVAS_W / 2 - 80, ctaY + 46);
 
-          // Name
           ctx.textAlign = "left";
           ctx.fillStyle = p.fg;
           ctx.font = "800 26px Inter, Arial, sans-serif";
           ctx.fillText("M. Mahafzah", CANVAS_W / 2 - 50, ctaY + 46);
 
-          // Role
           ctx.fillStyle = p.muted;
           ctx.font = "400 16px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
           ctx.fillText("💼  Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 86);
 
-          // Focus
           ctx.fillStyle = p.accent;
           ctx.font = "700 15px Inter, Arial, sans-serif";
           ctx.fillText("⚡  Focus on Utilities & Power", CANVAS_W / 2, ctaY + 120);
 
-          // LinkedIn pill
           roundRect(ctx, CANVAS_W / 2 - 130, ctaY + 148, 260, 36, 18);
           ctx.fillStyle = `${p.accent}12`;
           ctx.fill();
@@ -1117,7 +1084,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.textAlign = "center";
           ctx.fillText("🔗  linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 172);
 
-          // Repost
           ctx.fillStyle = p.muted;
           ctx.globalAlpha = 0.7;
           ctx.font = "500 15px Inter, Arial, sans-serif";
@@ -1173,6 +1139,8 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setTopicAnalysis(null);
       setFrameworks([]);
       setSelectedFramework(null);
+      setVisualPlan([]);
+      setVisualPlanSummary("");
     }, 300);
   };
 
@@ -1183,23 +1151,25 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const pipelineSteps: { key: PipelineStep; label: string; icon: typeof Lightbulb }[] = [
     { key: "input", label: "Analysis", icon: Lightbulb },
     { key: "frameworks", label: "Framework", icon: Layers },
+    { key: "visual_plan", label: "Visual Plan", icon: Map },
     { key: "carousel", label: "Carousel", icon: LayoutGrid },
     { key: "visuals", label: "Visuals", icon: Camera },
   ];
-  const stepOrder: PipelineStep[] = ["input", "frameworks", "carousel", "visuals"];
+  const stepOrder: PipelineStep[] = ["input", "frameworks", "visual_plan", "carousel", "visuals"];
   const currentStepIdx = stepOrder.indexOf(pipelineStep);
 
   const canNavigateTo = (targetStep: PipelineStep): boolean => {
     const targetIdx = stepOrder.indexOf(targetStep);
-    if (targetIdx >= currentStepIdx) return false; // can only go back
-    if (targetStep === "input") return false; // can't go back to loading
+    if (targetIdx >= currentStepIdx) return false;
+    if (targetStep === "input") return false;
     if (targetStep === "frameworks") return frameworks.length > 0;
+    if (targetStep === "visual_plan") return visualPlan.length > 0;
     if (targetStep === "carousel") return currentSlides.length > 0;
     return false;
   };
 
   const StepIndicator = () => (
-    <div className="flex items-center gap-1 px-1">
+    <div className="flex items-center gap-0.5 px-1 overflow-x-auto scrollbar-hide">
       {pipelineSteps.map((step, i) => {
         const isActive = pipelineStep === step.key;
         const stepIdx = stepOrder.indexOf(step.key);
@@ -1207,12 +1177,12 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         const canClick = canNavigateTo(step.key);
         const Icon = step.icon;
         return (
-          <div key={step.key} className="flex items-center gap-1">
-            {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/20" />}
+          <div key={step.key} className="flex items-center gap-0.5 flex-shrink-0">
+            {i > 0 && <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/20 flex-shrink-0" />}
             <button
               onClick={() => canClick && setPipelineStep(step.key)}
               disabled={!canClick}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+              className={`flex items-center gap-1 px-1.5 py-1 rounded-lg text-[9px] font-semibold transition-colors whitespace-nowrap ${
                 isActive ? "bg-primary/15 text-primary" : isDone ? "text-primary/60 hover:text-primary hover:bg-primary/8 cursor-pointer" : "text-muted-foreground/30 cursor-default"
               }`}
             >
@@ -1225,10 +1195,28 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     </div>
   );
 
+  /* ── Language Toggle ── */
+  const LanguageToggle = () => (
+    <div className="flex rounded-lg border border-border/20 overflow-hidden">
+      {(["en", "ar"] as Lang[]).map(l => (
+        <button
+          key={l}
+          onClick={() => { setLang(l); setCurrentSlide(0); setEditingIdx(null); }}
+          className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
+            lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
+          }`}
+        >
+          <Globe className="w-3 h-3" />
+          {l === "en" ? "EN" : "AR"}
+          {loading[l] && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+        </button>
+      ))}
+    </div>
+  );
+
   /* ── Framework Selection UI ── */
   const FrameworkSelectionPanel = () => (
     <div className="space-y-4">
-      {/* Topic Analysis Summary */}
       {topicAnalysis && (
         <div className="rounded-xl border border-primary/[0.08] bg-card/60 p-4 space-y-3">
           <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
@@ -1251,7 +1239,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         </div>
       )}
 
-      {/* Framework Cards */}
       <div className="space-y-3">
         <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
           <Layers className="w-3 h-3" /> Select a Framework
@@ -1273,8 +1260,23 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                 <Target className={`w-4 h-4 ${selectedFramework?.id === fw.id ? "text-primary" : "text-muted-foreground/50"}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">{fw.name}</p>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <p className="text-sm font-bold text-foreground">{fw.name}</p>
+                  {fw.suitability_score && (
+                    <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                      {fw.suitability_score}/10
+                    </span>
+                  )}
+                </div>
+                {fw.framework_type && (
+                  <span className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">
+                    {FRAMEWORK_TYPE_LABELS[fw.framework_type] || fw.framework_type.replace(/_/g, " ")}
+                  </span>
+                )}
                 <p className="text-xs text-muted-foreground/60 mt-0.5">{fw.description}</p>
+                {fw.rationale && (
+                  <p className="text-[10px] text-muted-foreground/40 mt-1 italic">{fw.rationale}</p>
+                )}
                 <div className="flex flex-wrap gap-1 mt-2">
                   {fw.steps.map((step, si) => (
                     <div key={si} className="flex items-center gap-1">
@@ -1297,17 +1299,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         ))}
       </div>
 
-      {/* Action Buttons */}
       <div className="flex gap-2 pt-2">
         <Button
-          onClick={() => generate(lang)}
-          disabled={!selectedFramework || isLoading}
+          onClick={() => { if (selectedFramework) generateVisualPlanStep(); }}
+          disabled={!selectedFramework || generatingVisualPlan}
           className="flex-1 text-xs min-h-[44px]"
         >
-          {isLoading ? (
+          {generatingVisualPlan ? (
             <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating…</>
           ) : (
-            <><PenLine className="w-3.5 h-3.5 mr-1.5" /> Generate Carousel</>
+            <><Map className="w-3.5 h-3.5 mr-1.5" /> Generate Visual Plan →</>
           )}
         </Button>
         <Button
@@ -1322,14 +1323,117 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         </Button>
       </div>
 
-      {/* Skip framework - generate directly */}
       <button
         onClick={() => generate(lang)}
         disabled={isLoading}
         className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 w-full text-center py-1 transition-colors"
       >
-        Skip framework selection → generate directly
+        Skip framework → generate carousel directly
       </button>
+    </div>
+  );
+
+  /* ── Visual Plan Panel ── */
+  const VisualPlanPanel = () => (
+    <div className="space-y-4">
+      {visualPlanSummary && (
+        <div className="rounded-xl border border-primary/[0.08] bg-card/60 p-4">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5 mb-2">
+            <Map className="w-3 h-3" /> Visual Strategy
+          </p>
+          <p className="text-xs text-foreground/70 leading-relaxed">{visualPlanSummary}</p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
+          <LayoutGrid className="w-3 h-3" /> Slide Visual Plan ({visualPlan.length} slides)
+        </p>
+        <div className="space-y-2">
+          {visualPlan.map((item) => {
+            const VisualIcon = VISUAL_TYPE_ICONS[item.visual_type] || ImageLucide;
+            const isRealImage = item.image_decision === "real_image";
+            const isDiagram = item.image_decision === "generated_diagram";
+            return (
+              <div
+                key={item.slide_number}
+                className="rounded-xl border border-border/15 bg-card/40 p-3 space-y-1.5"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-primary bg-primary/10 w-6 h-6 rounded-lg flex items-center justify-center">
+                      {item.slide_number}
+                    </span>
+                    <span className="text-xs font-semibold text-foreground/80">
+                      {item.layout_type.replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <VisualIcon className="w-3 h-3 text-muted-foreground/40" />
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                      item.density_level === "light" ? "bg-emerald-500/10 text-emerald-500/70" :
+                      item.density_level === "dense" ? "bg-amber-500/10 text-amber-500/70" :
+                      "bg-primary/8 text-primary/60"
+                    }`}>
+                      {item.density_level}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground/50">{item.slide_purpose}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[9px] text-muted-foreground/40">
+                    {item.visual_type.replace(/_/g, " ")}
+                  </span>
+                  {isRealImage && (
+                    <span className="text-[9px] bg-blue-500/10 text-blue-500/60 px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <ImageLucide className="w-2.5 h-2.5" /> Real Image
+                      {item.image_category && <> · {item.image_category.replace(/_/g, " ")}</>}
+                    </span>
+                  )}
+                  {isDiagram && (
+                    <span className="text-[9px] bg-purple-500/10 text-purple-500/60 px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <Layers className="w-2.5 h-2.5" /> AI Diagram
+                      {item.diagram_category && <> · {item.diagram_category.replace(/_/g, " ")}</>}
+                    </span>
+                  )}
+                  {item.image_decision === "none" && (
+                    <span className="text-[9px] bg-muted/10 text-muted-foreground/40 px-1.5 py-0.5 rounded">
+                      Text only
+                    </span>
+                  )}
+                  <span className="text-[9px] text-muted-foreground/30">
+                    text: {item.text_position.replace(/_/g, " ")}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Button
+          onClick={() => generate(lang)}
+          disabled={isLoading}
+          className="flex-1 text-xs min-h-[44px]"
+        >
+          {isLoading ? (
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating…</>
+          ) : (
+            <><PenLine className="w-3.5 h-3.5 mr-1.5" /> Generate Carousel →</>
+          )}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={generateVisualPlanStep}
+          disabled={generatingVisualPlan}
+          className="text-xs border-border/15 min-h-[44px]"
+        >
+          <RefreshCw className={`w-3 h-3 mr-1.5 ${generatingVisualPlan ? "animate-spin" : ""}`} />
+          Regenerate
+        </Button>
+      </div>
     </div>
   );
 
@@ -1352,6 +1456,8 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                     ? `${imagesReady}/${imagesTotal} visuals generated`
                     : pipelineStep === "carousel"
                     ? `${currentSlides.length} slides · ${PALETTES[style].name}`
+                    : pipelineStep === "visual_plan"
+                    ? `${visualPlan.length} slides planned`
                     : pipelineStep === "frameworks"
                     ? `${frameworks.length} frameworks generated`
                     : "Analyzing topic…"
@@ -1364,14 +1470,11 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
 
         <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
 
-        {/* Pipeline Step Indicator */}
         <div className="px-4 pt-3 pb-1">
           <StepIndicator />
         </div>
 
         <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
-
-
 
           {/* ═══ STEP: Generating Frameworks ═══ */}
           {(pipelineStep === "input" || generatingFrameworks) && (
@@ -1386,47 +1489,37 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           {/* ═══ STEP: Framework Selection ═══ */}
           {pipelineStep === "frameworks" && !generatingFrameworks && (
             <>
-              {/* Language Toggle */}
               <div className="flex flex-wrap gap-2">
-                <div className="flex rounded-lg border border-border/20 overflow-hidden">
-                  {(["en", "ar"] as Lang[]).map(l => (
-                    <button
-                      key={l}
-                      onClick={() => { setLang(l); }}
-                      className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
-                        lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
-                      }`}
-                    >
-                      <Globe className="w-3 h-3" />
-                      {l === "en" ? "EN" : "AR"}
-                    </button>
-                  ))}
-                </div>
+                <LanguageToggle />
               </div>
               <FrameworkSelectionPanel />
             </>
           )}
 
+          {/* ═══ STEP: Visual Plan ═══ */}
+          {pipelineStep === "visual_plan" && !generatingVisualPlan && (
+            <>
+              <div className="flex flex-wrap gap-2">
+                <LanguageToggle />
+              </div>
+              <VisualPlanPanel />
+            </>
+          )}
+
+          {pipelineStep === "visual_plan" && generatingVisualPlan && (
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
+              <p className="text-xs text-muted-foreground/60">
+                {lang === "ar" ? "جارٍ إنشاء الخطة المرئية..." : "Generating visual plan…"}
+              </p>
+            </div>
+          )}
+
           {/* ═══ STEP: Carousel View ═══ */}
           {pipelineStep === "carousel" && (
             <>
-              {/* Controls Row */}
               <div className="flex flex-wrap gap-2">
-                <div className="flex rounded-lg border border-border/20 overflow-hidden">
-                  {(["en", "ar"] as Lang[]).map(l => (
-                    <button
-                      key={l}
-                      onClick={() => { setLang(l); setCurrentSlide(0); setEditingIdx(null); }}
-                      className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
-                        lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
-                      }`}
-                    >
-                      <Globe className="w-3 h-3" />
-                      {l === "en" ? "EN" : "AR"}
-                      {loading[l] && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
-                    </button>
-                  ))}
-                </div>
+                <LanguageToggle />
 
                 <div className="flex rounded-lg border border-border/20 overflow-hidden flex-wrap">
                   {(Object.keys(PALETTES) as Style[]).map(s => (
@@ -1452,7 +1545,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                 </button>
               </div>
 
-              {/* Content */}
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
@@ -1517,7 +1609,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                               <button
                                 onClick={() => regenerateSlideVisual(currentSlide)}
                                 className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors min-h-[36px]"
-                                title="Regenerate visual"
                               >
                                 <ImageIcon className="w-3 h-3" />
                                 {currentSlides[currentSlide].image_url ? "Regen" : "Generate"}
@@ -1669,7 +1760,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           {/* ═══ STEP: Visuals ═══ */}
           {pipelineStep === "visuals" && (
             <>
-              {/* Visual Generation Progress */}
               {generatingVisuals && (
                 <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
                   <div className="flex items-center gap-2">
@@ -1681,7 +1771,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                 </div>
               )}
 
-              {/* Slide visual status grid */}
               <div className="space-y-3">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
                   <Camera className="w-3 h-3" /> Slide Visuals
@@ -1726,7 +1815,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex gap-2 pt-2">
                 <Button
                   onClick={() => generateVisuals(lang, currentSlides)}
@@ -1744,7 +1832,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                 </Button>
               </div>
 
-              {/* Skip visuals */}
               <button
                 onClick={exportPDF}
                 disabled={exporting}
@@ -1843,20 +1930,19 @@ function drawHeadlineWithEmphasis(
       const wordW = ctx.measureText(w.text).width;
       if (w.highlight) {
         ctx.fillStyle = p.emphBg;
-        roundRect(ctx, cx - 6, cy - lineHeight * 0.7, wordW + 12, lineHeight * 0.9, 4);
+        roundRect(ctx, cx - 4, cy - lineHeight * 0.7, wordW + 8, lineHeight * 0.95, 4);
         ctx.fill();
         ctx.fillStyle = p.emphFg;
       } else {
         ctx.fillStyle = p.fg;
       }
-      ctx.font = savedFont;
-      ctx.textAlign = "left";
       ctx.fillText(w.text, cx, cy);
       cx += wordW + ctx.measureText(" ").width;
     });
   });
 
   ctx.font = savedFont;
+  ctx.fillStyle = p.fg;
 }
 
 export default CarouselGenerator;
