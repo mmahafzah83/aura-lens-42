@@ -16,6 +16,8 @@ interface DiscoveryResult {
   discovered: number;
   inserted: number;
   duplicates: number;
+  classified?: number;
+  labels?: string[];
   source_type?: string;
   errors?: string[];
 }
