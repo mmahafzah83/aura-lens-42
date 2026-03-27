@@ -2,81 +2,50 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      width: 320px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0a0a0f;
-      color: #e2e2e8;
-      padding: 16px;
-    }
-    h1 { font-size: 14px; font-weight: 600; color: #f0f0f5; margin-bottom: 4px; }
-    .subtitle { font-size: 10px; color: #666; margin-bottom: 16px; }
-    .section { margin-bottom: 12px; }
-    .section-title { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-    .status-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 6px 0; border-bottom: 1px solid #1a1a25; }
-    .status-row:last-child { border-bottom: none; }
-    .status-label { color: #888; }
-    .status-value { color: #ccc; font-weight: 500; }
-    .status-value.ok { color: #4ade80; }
-    .status-value.warn { color: #fbbf24; }
-    .status-value.error { color: #f87171; }
-    input {
-      width: 100%;
-      padding: 8px 10px;
-      background: #12121a;
-      border: 1px solid #222;
-      border-radius: 6px;
-      color: #e2e2e8;
-      font-size: 11px;
-      margin-bottom: 8px;
-      outline: none;
-    }
-    input:focus { border-color: #444; }
-    input::placeholder { color: #444; }
-    button {
-      width: 100%;
-      padding: 8px;
-      background: #1e1e2e;
-      color: #ccc;
-      border: 1px solid #2a2a3a;
-      border-radius: 6px;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    button:hover { background: #2a2a3a; color: #fff; }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    button.primary { background: #1a3a5c; border-color: #2a5a8c; color: #7db8e8; }
-    button.primary:hover { background: #2a5a8c; }
-    .msg { font-size: 10px; padding: 6px 8px; border-radius: 4px; margin-top: 8px; }
-    .msg.success { background: #0a2a1a; color: #4ade80; border: 1px solid #1a4a2a; }
-    .msg.error { background: #2a0a0a; color: #f87171; border: 1px solid #4a1a1a; }
-    .divider { height: 1px; background: #1a1a25; margin: 12px 0; }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <h1>Aura · LinkedIn Capture</h1>
-  <p class="subtitle">Real-time analytics ingestion</p>
+  <p class="subtitle">Browser-based analytics ingestion</p>
 
-  <div id="setup" style="display:none;">
+  <!-- LOGIN VIEW -->
+  <div id="view-login" class="view" style="display:none;">
     <div class="section">
       <div class="section-title">Connect to Aura</div>
-      <input type="url" id="auraUrl" placeholder="Your Aura URL (e.g. https://aura-lens-42.lovable.app)">
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Password">
+      <input type="email" id="email" placeholder="Email" autocomplete="email">
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
       <button class="primary" id="connectBtn">Connect</button>
     </div>
-    <div id="setupMsg"></div>
+    <div id="loginMsg"></div>
   </div>
 
-  <div id="connected" style="display:none;">
+  <!-- CONNECTED VIEW -->
+  <div id="view-connected" class="view" style="display:none;">
+
+    <!-- Page Detection -->
+    <div class="section" id="pageDetection">
+      <div class="section-title">Current Page</div>
+      <div class="page-badge" id="pageBadge">
+        <span class="badge-icon" id="badgeIcon">—</span>
+        <div>
+          <div class="badge-label" id="badgeLabel">Checking…</div>
+          <div class="badge-desc" id="badgeDesc">Detecting LinkedIn page type</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Status -->
     <div class="section">
       <div class="section-title">Connection</div>
       <div class="status-row">
         <span class="status-label">Status</span>
         <span class="status-value ok" id="connStatus">Connected</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Handle</span>
+        <span class="status-value" id="handleDisplay">—</span>
       </div>
       <div class="status-row">
         <span class="status-label">Last capture</span>
@@ -94,13 +63,43 @@
 
     <div class="divider"></div>
 
+    <!-- Actions -->
     <div class="section">
       <div class="section-title">Actions</div>
-      <button class="primary" id="captureBtn">Capture Current Page</button>
+      <button class="primary" id="captureBtn" disabled>
+        <span id="captureBtnText">Capture This Page</span>
+      </button>
       <div style="height:6px"></div>
-      <button id="disconnectBtn">Disconnect</button>
+      <button id="guidedBtn">
+        <span id="guidedBtnText">Run Guided Capture</span>
+      </button>
+      <div style="height:6px"></div>
+      <button class="ghost" id="disconnectBtn">Disconnect</button>
     </div>
+
     <div id="captureMsg"></div>
+
+    <!-- Guided Progress -->
+    <div id="guidedProgress" style="display:none;">
+      <div class="divider"></div>
+      <div class="section">
+        <div class="section-title">Guided Capture</div>
+        <div id="guidedSteps"></div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p class="progress-label" id="progressLabel">Starting…</p>
+      </div>
+    </div>
+
+    <!-- Recent Captures -->
+    <div id="recentCaptures" style="display:none;">
+      <div class="divider"></div>
+      <div class="section">
+        <div class="section-title">Recent Captures</div>
+        <div id="captureHistory"></div>
+      </div>
+    </div>
   </div>
 
   <script src="popup.js"></script>
