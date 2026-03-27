@@ -213,11 +213,11 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Search className="w-4 h-4 text-primary/40" />
+          <Search className="w-4 h-4 text-muted-foreground/30" />
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Post Discovery</h3>
+            <h3 className="text-sm font-semibold text-foreground/70">Historical Discovery</h3>
             <p className="text-meta mt-0.5">
-              Automated search-based discovery with retry scheduling
+              Search-based recovery of older and previously unindexed posts
             </p>
           </div>
         </div>
@@ -236,26 +236,22 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         )}
       </div>
 
+      {/* Indexing note */}
+      <p className="text-[10px] text-muted-foreground/35 leading-relaxed px-1">
+        May lag behind recent posts due to search indexing delays. Aura scans periodically to recover older posts that were not captured in real time.
+      </p>
+
       {/* Schedule status */}
       <div className="flex items-center gap-4 px-1">
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
-          <Timer className="w-3 h-3 text-primary/30" />
-          <span>Retry: every 6h</span>
+          <CalendarClock className="w-3 h-3 text-muted-foreground/25" />
+          <span>Daily scan: 6 AM UTC</span>
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
-          <CalendarClock className="w-3 h-3 text-primary/30" />
-          <span>Full scan: daily 6 AM UTC</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
-          <RefreshCw className="w-3 h-3 text-primary/30" />
-          <span>7-day retry window</span>
+          <Timer className="w-3 h-3 text-muted-foreground/25" />
+          <span>Retry: every 6h · 7-day window</span>
         </div>
       </div>
-
-      {/* Indexing note */}
-      <p className="text-[10px] text-muted-foreground/35 leading-relaxed px-1">
-        New LinkedIn posts may take time to appear in search indexing. Aura retries discovery automatically every 6 hours for recent posts.
-      </p>
 
       {/* Discovery stats */}
       {totalDiscovered > 0 && (

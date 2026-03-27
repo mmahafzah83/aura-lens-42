@@ -124,10 +124,10 @@ const DiscoveryHealthCard = () => {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Activity className="w-4 h-4 text-primary/40" />
+          <Activity className="w-4 h-4 text-muted-foreground/30" />
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Discovery Health</h3>
-            <p className="text-meta mt-0.5">Operational status of automated post discovery</p>
+            <h3 className="text-sm font-semibold text-foreground/70">Historical Discovery Health</h3>
+            <p className="text-meta mt-0.5">Search-based post recovery — secondary to real-time capture</p>
           </div>
         </div>
       </div>
