@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag, Filter, ShieldX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatSmartDate } from "@/lib/formatDate";
