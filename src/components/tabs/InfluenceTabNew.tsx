@@ -17,6 +17,7 @@ import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
 import StrategicAttribution from "@/components/influence/StrategicAttribution";
 import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 import DataDebugPanel from "@/components/influence/DataDebugPanel";
+import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -284,6 +285,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
             Aura is building your strategic memory. Every metric preserved here strengthens trend analysis over time.
           </p>
           <ConnectionStatusPanel />
+          <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
           <HistoricalImportHub onImportComplete={loadAll} />
           <DailySnapshotEngine />
           <DataHealthConsole />
