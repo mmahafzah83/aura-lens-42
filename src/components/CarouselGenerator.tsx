@@ -115,8 +115,9 @@ const HighlightedHeadline = ({
   if (!emphasisWords || emphasisWords.length === 0) {
     return (
       <h2 style={{
-        fontSize, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.03em",
+        fontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: "-0.02em",
         textAlign: textAlign as any, color: palette.fg, margin: 0,
+        width: "100%",
       }}>
         {text}
       </h2>
@@ -139,8 +140,8 @@ const HighlightedHeadline = ({
 
   return (
     <h2 style={{
-      fontSize, fontWeight: 900, lineHeight: 1.1, letterSpacing: "-0.03em",
-      textAlign: textAlign as any, color: palette.fg, margin: 0,
+      fontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: "-0.02em",
+      textAlign: textAlign as any, color: palette.fg, margin: 0, width: "100%",
     }}>
       {parts.map((part, i) => part.highlight ? (
         <span key={i} style={{
@@ -398,10 +399,10 @@ const SlidePreview = ({
           flex: 1, display: "flex",
           flexDirection: isSplit ? "row" : "column",
           justifyContent: getJustify(),
-          alignItems: isSplit ? "center" : undefined,
-          padding: `${SAFE_M + 40}px ${SAFE_M}px ${isCTA ? SAFE_M + 180 : SAFE_M + 60}px`,
+          alignItems: isSplit ? "center" : (isHero || isStat || isCTA) ? "center" : isRight ? (isAr ? "flex-start" : "flex-end") : (isAr ? "flex-end" : "flex-start"),
+          padding: `${SAFE_M + 40}px ${SAFE_M}px ${isCTA ? SAFE_M + 260 : SAFE_M + 60}px`,
           position: "relative", zIndex: 2,
-          gap: 20,
+          gap: 24,
         }}>
           {/* Quote mark for quote layout */}
           {isQuote && <VisualAnchor type="quote_mark" palette={p} />}
@@ -466,8 +467,9 @@ const SlidePreview = ({
               }} />
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 <p style={{
-                  fontSize: 26, lineHeight: 1.5, color: p.muted, fontWeight: 400,
-                  textAlign: isAr ? "right" : "left",
+                  fontSize: 26, lineHeight: 1.6, color: p.muted, fontWeight: 400,
+                  textAlign: "justify" as any,
+                  margin: 0,
                 }}>
                   {slide.supporting_text}
                 </p>
@@ -488,10 +490,11 @@ const SlidePreview = ({
               {/* Supporting text */}
               {!hasDiagram && slide.supporting_text && !isCTA && (
                 <p style={{
-                  fontSize: 28, lineHeight: 1.5,
+                  fontSize: 28, lineHeight: 1.6,
                   color: p.muted, fontWeight: 400,
-                  textAlign: textAlign as any,
+                  textAlign: isHero || isStat ? "center" : "justify" as any,
                   maxWidth: 800,
+                  margin: 0,
                   ...(isHero ? { marginLeft: "auto", marginRight: "auto" } : {}),
                 }}>
                   {slide.supporting_text}
