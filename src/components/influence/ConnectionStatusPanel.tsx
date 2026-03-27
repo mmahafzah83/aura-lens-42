@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 
 const ConnectionStatusPanel = () => {
+  const { toast } = useToast();
   const [connection, setConnection] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [latestSnapshot, setLatestSnapshot] = useState<string | null>(null);
 
   useEffect(() => { loadConnection(); }, []);
