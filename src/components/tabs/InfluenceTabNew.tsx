@@ -246,7 +246,9 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         </div>
       </Fade>
 
-      {view === "data" ? (
+      {view === "attribution" ? (
+        <StrategicAttribution />
+      ) : view === "data" ? (
         <div className="space-y-5">
           <p className="text-[11px] text-muted-foreground/25 tracking-wide max-w-md">
             Aura is building your strategic memory. Every metric preserved here strengthens trend analysis over time.
