@@ -538,6 +538,11 @@ const SlidePreview = ({
             <div style={{
               fontSize: 14, color: p.accent, textAlign: "center", fontWeight: 600,
             }}>
+              Focus on Utilities & Power
+            </div>
+            <div style={{
+              fontSize: 13, color: p.accent, textAlign: "center", fontWeight: 500, opacity: 0.8,
+            }}>
               linkedin.com/in/mmahafzah
             </div>
             <div style={{
