@@ -1107,7 +1107,15 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, CANVAS_W, CANVAS_H);
       }
 
-      pdf.save(`carousel-${lang}-${style}.pdf`);
+      const today = new Date().toISOString().slice(0, 10);
+      const topicSlug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9\u0600-\u06FF\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .slice(0, 60);
+      const pdfName = `${today}_${topicSlug}_${style}_${lang}_v01.pdf`;
+      pdf.save(pdfName);
       toast.success("Carousel PDF exported");
     } catch (e: any) {
       toast.error("Export failed: " + (e.message || "Unknown error"));
