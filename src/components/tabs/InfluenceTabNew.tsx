@@ -194,6 +194,23 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     .map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Engagement heatmap: topic × content_type matrix (only enriched posts)
+  const heatmapTopics = topicLabels.slice(0, 8).map(t => t.label);
+  const heatmapTypes = contentTypes.slice(0, 5).map(ct => ct.type);
+  const heatmapData: { topic: string; type: string; count: number; avgEng: number; hasMetrics: boolean }[] = [];
+  heatmapTopics.forEach(topic => {
+    heatmapTypes.forEach(type => {
+      const matching = posts.filter(p => p.topic_label === topic && p.content_type === type);
+      const withMetrics = matching.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0);
+      const avgEng = withMetrics.length > 0
+        ? Math.round(withMetrics.reduce((s, p) => s + (Number(p.engagement_score) || 0), 0) / withMetrics.length * 10) / 10
+        : 0;
+      heatmapData.push({ topic, type, count: matching.length, avgEng, hasMetrics: withMetrics.length > 0 });
+    });
+  });
+  const maxHeatmapEng = Math.max(...heatmapData.map(h => h.avgEng), 1);
+  const hasAnyHeatmapMetrics = heatmapData.some(h => h.hasMetrics);
+
   // Chart data
   const chartData = snapshots.map(s => ({
     date: s.snapshot_date,
