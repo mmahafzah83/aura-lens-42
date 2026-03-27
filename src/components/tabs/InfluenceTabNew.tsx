@@ -43,7 +43,7 @@ const Fade = ({ children, delay = 0 }: { children: React.ReactNode; delay?: numb
    MAIN INFLUENCE DASHBOARD
    ═══════════════════════════════════════════ */
 
-const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
+const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<TimeRange>("30d");
   const [view, setView] = useState<"dashboard" | "attribution" | "data">("dashboard");
