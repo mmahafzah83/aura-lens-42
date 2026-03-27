@@ -1367,17 +1367,8 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         </div>
 
         <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
-          {/* Visual Generation Progress */}
-          {generatingVisuals && (
-            <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.04] p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-                <span className="text-xs font-semibold text-foreground">Generating slide visuals…</span>
-                <span className="text-[10px] text-muted-foreground/60 ml-auto">{visualProgress}/{visualTotal}</span>
-              </div>
-              <Progress value={(visualProgress / Math.max(1, visualTotal)) * 100} className="h-1.5" />
-            </div>
-          )}
+
+
 
           {/* ═══ STEP: Generating Frameworks ═══ */}
           {(pipelineStep === "input" || generatingFrameworks) && (
