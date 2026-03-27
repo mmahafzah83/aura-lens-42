@@ -4,7 +4,7 @@ import {
   Users, TrendingUp, Loader2, ArrowUpRight, ArrowDownRight,
   Sparkles, FileText, Zap, Eye, Crown, BarChart3,
   Lightbulb, RefreshCw, Calendar, ChevronDown, ChevronUp,
-  WifiOff, AlertCircle, CloudOff
+  WifiOff, AlertCircle, CloudOff, Search, Activity, Database as DatabaseIcon
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -95,7 +95,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .limit(365),
         supabase
           .from("linkedin_posts")
-          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type")
+          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status")
           .order("published_at", { ascending: false })
           .limit(200),
         supabase
@@ -128,24 +128,14 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     setLoading(false);
   };
 
-  // Derived metrics
+  // Derived metrics — only from posts with real metrics
+  const enrichedPostsList = posts.filter(p =>
+    p.tracking_status === "metrics_imported" || p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0
+  );
   const currentFollowers = latestSnapshot?.followers || 0;
   const periodGrowth = snapshots.length >= 2
     ? (snapshots[snapshots.length - 1]?.followers || 0) - (snapshots[0]?.followers || 0)
     : 0;
-  const avgEngagement = posts.length > 0
-    ? Math.round(posts.reduce((s, p) => s + (Number(p.engagement_score) || 0), 0) / posts.length * 10) / 10
-    : 0;
-
-  // Publishing cadence: posts per week in range
-  const daysInRange = getDaysForRange(range);
-  const weeksInRange = Math.max(1, daysInRange / 7);
-  const postsInRange = posts.filter(p => {
-    if (!p.published_at) return false;
-    const d = new Date(p.published_at).getTime();
-    return d >= Date.now() - daysInRange * 86400000;
-  }).length;
-  const cadence = Math.round((postsInRange / weeksInRange) * 10) / 10;
 
   // Top post
   const topPost = posts.length > 0
@@ -353,79 +343,88 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
             <ConnectionStatusPanel />
           </Fade>
 
-          {/* ── AUTHORITY SNAPSHOT CARDS ── */}
+          {/* ── TWO-LAYER COVERAGE SUMMARY ── */}
           <Fade delay={0.08}>
             {(() => {
-              const snapshotReason = emptyReason(snapshots.length > 0);
-              const postReason = emptyReason(posts.length > 0);
-
-              const metricValue = (hasData: boolean, value: string, reason: string | null) =>
-                hasData ? value : null;
-
-              const cards = [
-                {
-                  label: "Followers",
-                  value: metricValue(snapshots.length > 0, currentFollowers.toLocaleString(), snapshotReason),
-                  empty: snapshotReason,
-                  icon: Users,
-                },
-                {
-                  label: `${range} Growth`,
-                  value: metricValue(snapshots.length >= 2, `${periodGrowth >= 0 ? "+" : ""}${periodGrowth}`, snapshotReason),
-                  empty: snapshotReason,
-                  icon: periodGrowth >= 0 ? ArrowUpRight : ArrowDownRight,
-                  accent: periodGrowth > 0 && snapshots.length >= 2,
-                },
-                {
-                  label: "Avg Engagement",
-                  value: metricValue(posts.length > 0, `${avgEngagement}%`, postReason),
-                  empty: postReason,
-                  icon: Eye,
-                },
-                {
-                  label: "Weekly Cadence",
-                  value: metricValue(posts.length > 0, `${cadence}/wk`, postReason),
-                  empty: postReason,
-                  icon: Calendar,
-                },
-                {
-                  label: "Top Asset",
-                  value: topPost ? (topPost.hook || topPost.title || topPost.post_text?.slice(0, 20) || "—") : null,
-                  empty: postReason,
-                  icon: Crown,
-                  truncate: true,
-                },
-                {
-                  label: "Authority Score",
-                  value: authorityScore ? `${Math.round(Number(authorityScore.authority_score))}` : null,
-                  empty: emptyReason(!!authorityScore),
-                  icon: Sparkles,
-                },
-              ];
+              const totalDiscovered = posts.length;
+              const enrichedPosts = posts.filter(p =>
+                p.tracking_status === "metrics_imported" ||
+                (p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0)
+              ).length;
+              const classifiedPosts = posts.filter(p => p.topic_label).length;
+              const hasFollowerHistory = snapshots.length >= 2;
+              const followerDataPoints = snapshots.length;
 
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {cards.map((card, i) => (
-                    <motion.div
-                      key={card.label}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.1 + i * 0.04 }}
-                      className="p-4 rounded-xl bg-secondary/8 border border-border/5 space-y-2"
-                    >
-                      <card.icon className={`w-3.5 h-3.5 ${card.accent ? "text-primary/60" : "text-muted-foreground/25"}`} />
-                      {card.value !== null ? (
-                        <p className={`text-lg font-bold tabular-nums text-foreground ${card.truncate ? "truncate text-sm" : ""}`}>
-                          {card.value}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Layer 1: Post Discovery */}
+                  <div className="p-5 rounded-2xl bg-secondary/8 border border-border/5 space-y-4">
+                    <div className="flex items-center gap-2.5">
+                      <Search className="w-4 h-4 text-primary/40" />
+                      <div>
+                        <h3 className="text-xs font-semibold text-foreground/80">Post Discovery</h3>
+                        <p className="text-[10px] text-muted-foreground/30">What content exists</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <p className="text-lg font-bold tabular-nums text-foreground">{totalDiscovered}</p>
+                        <p className="text-[10px] text-muted-foreground/35">Discovered</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-lg font-bold tabular-nums text-foreground">{classifiedPosts}</p>
+                        <p className="text-[10px] text-muted-foreground/35">Classified</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-lg font-bold tabular-nums text-foreground/50">
+                          {totalDiscovered > 0 ? Math.round((classifiedPosts / totalDiscovered) * 100) : 0}%
                         </p>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground/40 leading-relaxed pt-1">
-                          {card.empty}
+                        <p className="text-[10px] text-muted-foreground/35">Coverage</p>
+                      </div>
+                    </div>
+                    {totalDiscovered === 0 && (
+                      <p className="text-[10px] text-muted-foreground/25 leading-relaxed">
+                        Use the Data tab to discover posts via search or manual entry.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Layer 2: Performance Analytics */}
+                  <div className="p-5 rounded-2xl bg-secondary/8 border border-border/5 space-y-4">
+                    <div className="flex items-center gap-2.5">
+                      <Activity className="w-4 h-4 text-primary/40" />
+                      <div>
+                        <h3 className="text-xs font-semibold text-foreground/80">Performance Analytics</h3>
+                        <p className="text-[10px] text-muted-foreground/30">Metrics & follower history</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="space-y-1">
+                        <p className="text-lg font-bold tabular-nums text-foreground">{enrichedPosts}</p>
+                        <p className="text-[10px] text-muted-foreground/35">With metrics</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-lg font-bold tabular-nums text-foreground">{followerDataPoints}</p>
+                        <p className="text-[10px] text-muted-foreground/35">Follower snapshots</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className={`text-lg font-bold tabular-nums ${hasFollowerHistory ? "text-foreground" : "text-muted-foreground/30"}`}>
+                          {hasFollowerHistory ? `${currentFollowers.toLocaleString()}` : "—"}
                         </p>
-                      )}
-                      <p className="text-[10px] text-muted-foreground/35">{card.label}</p>
-                    </motion.div>
-                  ))}
+                        <p className="text-[10px] text-muted-foreground/35">Followers</p>
+                      </div>
+                    </div>
+                    {enrichedPosts === 0 && totalDiscovered > 0 && (
+                      <p className="text-[10px] text-muted-foreground/25 leading-relaxed">
+                        {totalDiscovered} post{totalDiscovered !== 1 ? "s" : ""} discovered but none have metrics yet. Import analytics from the Data tab.
+                      </p>
+                    )}
+                    {!hasFollowerHistory && (
+                      <p className="text-[10px] text-muted-foreground/25 leading-relaxed">
+                        No follower history imported. Use the Data tab to add historical snapshots.
+                      </p>
+                    )}
+                  </div>
                 </div>
               );
             })()}
@@ -501,9 +500,18 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <Fade delay={0.18}>
             {sortedPosts.length > 0 ? (
               <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">Content Performance</h3>
-                  <p className="text-meta mt-0.5">{posts.length} published assets analyzed</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Content Performance</h3>
+                    <p className="text-meta mt-0.5">
+                      {posts.length} discovered · {posts.filter(p => p.tracking_status === "metrics_imported" || p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics
+                    </p>
+                  </div>
+                  {posts.length > 0 && posts.filter(p => p.tracking_status === "metrics_imported" || p.like_count > 0 || p.comment_count > 0).length === 0 && (
+                    <span className="text-[10px] text-muted-foreground/25 bg-secondary/15 px-2.5 py-1 rounded-full">
+                      Discovery only — no analytics imported yet
+                    </span>
+                  )}
                 </div>
                 <div className="overflow-x-auto -mx-2">
                   <table className="w-full text-left min-w-[600px]">
@@ -528,7 +536,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {sortedPosts.map(post => (
+                      {sortedPosts.map(post => {
+                        const hasRealMetrics = !!(post.like_count > 0 || post.comment_count > 0 || Number(post.engagement_score) > 0);
+                        const status = post.tracking_status || (hasRealMetrics ? "metrics_imported" : "discovered");
+                        return (
                         <tr key={post.id} className="border-b border-border/[0.03] hover:bg-secondary/5 transition-colors">
                           <td className="text-[11px] text-muted-foreground/40 py-2.5 px-2.5 tabular-nums whitespace-nowrap">
                             {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
@@ -542,21 +553,23 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                           <td className="text-[11px] text-muted-foreground/30 py-2.5 px-2.5 capitalize">
                             {post.format_type || post.content_type || "—"}
                           </td>
-                          <td className="text-[11px] text-foreground/50 py-2.5 px-2.5 tabular-nums text-right">
-                            {post.like_count || 0}
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
+                            {hasRealMetrics
+                              ? <span className="text-foreground/50">{post.like_count}</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
-                          <td className="text-[11px] text-foreground/50 py-2.5 px-2.5 tabular-nums text-right">
-                            {post.comment_count || 0}
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
+                            {hasRealMetrics
+                              ? <span className="text-foreground/50">{post.comment_count}</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
-                          <td className="text-[11px] text-foreground/60 py-2.5 px-2.5 tabular-nums text-right font-medium">
-                            {post.like_count || post.comment_count || post.engagement_score
-                              ? `${Number(post.engagement_score || 0).toFixed(1)}%`
-                              : <span className="text-muted-foreground/20">—</span>}
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right font-medium">
+                            {hasRealMetrics
+                              ? <span className="text-foreground/60">{Number(post.engagement_score || 0).toFixed(1)}%</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="py-2.5 px-2.5 text-center">
                             {(() => {
-                              const hasMetrics = !!(post.like_count || post.comment_count || Number(post.engagement_score) > 0);
-                              const status = (post as any).tracking_status || (hasMetrics ? "metrics_imported" : "discovered");
                               const styles: Record<string, string> = {
                                 discovered: "bg-muted-foreground/5 text-muted-foreground/30",
                                 metrics_pending: "bg-amber-500/5 text-amber-500/50",
@@ -564,20 +577,21 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                                 metrics_unavailable: "bg-muted-foreground/5 text-muted-foreground/20",
                               };
                               const labels: Record<string, string> = {
-                                discovered: "No metrics",
+                                discovered: "Discovery only",
                                 metrics_pending: "Pending",
                                 metrics_imported: "Enriched",
                                 metrics_unavailable: "Unavailable",
                               };
                               return (
                                 <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-medium ${styles[status] || styles.discovered}`}>
-                                  {labels[status] || "No metrics"}
+                                  {labels[status] || "Discovery only"}
                                 </span>
                               );
                             })()}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
