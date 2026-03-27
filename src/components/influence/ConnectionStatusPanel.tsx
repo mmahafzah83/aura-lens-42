@@ -36,10 +36,24 @@ const ConnectionStatusPanel = () => {
 
   const handleSync = async () => {
     setSyncing(true);
+    setSyncError(null);
     try {
-      await supabase.functions.invoke("linkedin-sync", { body: {} });
+      const { data, error } = await supabase.functions.invoke("linkedin-sync", { body: {} });
+      if (error || !data?.success) {
+        const msg = data?.error || error?.message || "Sync failed";
+        const isPermission = msg.includes("Community Management") || msg.includes("ACCESS_DENIED");
+        setSyncError(isPermission
+          ? "LinkedIn API requires Community Management API approval. Use Historical Import to add data manually."
+          : msg
+        );
+        toast({ title: "Sync incomplete", description: isPermission ? "LinkedIn permissions insufficient. Use Historical Import instead." : msg, variant: "destructive" });
+      } else {
+        setSyncError(null);
+      }
       await loadConnection();
-    } catch { /* silent */ }
+    } catch (e: any) {
+      setSyncError(e?.message || "Sync failed unexpectedly");
+    }
     setSyncing(false);
   };
 
