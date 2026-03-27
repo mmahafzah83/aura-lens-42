@@ -113,7 +113,13 @@ const ConnectionStatusPanel = () => {
         )}
       </div>
 
-      {isConnected && latestSnapshot && (
+      {syncError && (
+        <p className="text-[11px] text-destructive/70 mt-3 leading-relaxed">
+          ⚠ {syncError}
+        </p>
+      )}
+
+      {isConnected && latestSnapshot && !syncError && (
         <p className="text-[10px] text-muted-foreground/30 mt-3 tracking-wide">
           Latest snapshot: {latestSnapshot} · Connected {connection?.connected_at ? formatSmartDate(connection.connected_at) : ""}
         </p>
