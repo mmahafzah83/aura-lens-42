@@ -663,7 +663,7 @@ Deno.serve(async (req) => {
     // Dedup against existing posts + confirm manual entries
     const { data: existingPosts } = await adminClient
       .from("linkedin_posts")
-      .select("id, linkedin_post_id, post_text, post_url, tracking_status")
+      .select("id, linkedin_post_id, post_text, post_url, tracking_status, enriched_by, source_trust, hook, format_type, content_type, media_type, published_at")
       .eq("user_id", userId);
 
     const existingTexts = new Map<string, any>();
