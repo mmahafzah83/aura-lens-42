@@ -90,6 +90,20 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
     setUnclassifiedCount(count || 0);
   };
 
+  const loadStats = async () => {
+    const { count: total } = await supabase
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .in("tracking_status", ["discovered", "confirmed", "indexed_late", "manual"]);
+    setTotalDiscovered(total || 0);
+
+    const { count: late } = await supabase
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("tracking_status", "indexed_late");
+    setLateIndexedTotal(late || 0);
+  };
+
   const handleDiscover = async () => {
     setDiscovering(true);
     setResult(null);
