@@ -499,7 +499,9 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const postUrl = url.split("?")[0].replace(/\/+$/, "");
+          const postUrl = normalizeLinkedInUrl(url);
+          const slug = extractPostSlug(postUrl);
+          const activityId = extractActivityId(postUrl);
           const textKey = cleanText.slice(0, 100);
 
           if (seenUrls.has(postUrl) || seenTexts.has(textKey)) continue;
