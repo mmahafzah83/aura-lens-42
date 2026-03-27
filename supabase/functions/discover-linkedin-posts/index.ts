@@ -372,6 +372,31 @@ Deno.serve(async (req) => {
 
     log("complete", `${discovered.length} found, ${inserted} inserted, ${duplicates} dupes, source_type: search_discovery`);
 
+    // Auto-classify newly inserted posts
+    let classifyResult: any = null;
+    if (inserted > 0) {
+      try {
+        log("auto_classify", `Triggering classification for ${inserted} new posts`);
+        const classifyRes = await fetch(`${SUPABASE_URL}/functions/v1/classify-posts`, {
+          method: "POST",
+          headers: {
+            Authorization: authHeader!,
+            "Content-Type": "application/json",
+            apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+          },
+        });
+        if (classifyRes.ok) {
+          classifyResult = await classifyRes.json();
+          log("auto_classify_done", `Classified ${classifyResult?.classified || 0} posts`);
+        } else {
+          const errText = await classifyRes.text();
+          log("auto_classify_error", `HTTP ${classifyRes.status}: ${errText.slice(0, 200)}`);
+        }
+      } catch (e: any) {
+        log("auto_classify_error", e.message);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       source_type: "search_discovery",
@@ -382,6 +407,8 @@ Deno.serve(async (req) => {
       discovered: discovered.length,
       inserted,
       duplicates,
+      classified: classifyResult?.classified || 0,
+      labels: classifyResult?.labels || [],
       errors: [...errors, ...insertErrors],
       logs,
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
