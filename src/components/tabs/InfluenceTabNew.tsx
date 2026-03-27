@@ -179,6 +179,30 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     .sort((a, b) => b.avgEng - a.avgEng)
     .slice(0, 5);
 
+  // Topic label breakdown
+  const topicCounts: Record<string, number> = {};
+  posts.forEach(p => {
+    if (p.topic_label) {
+      topicCounts[p.topic_label] = (topicCounts[p.topic_label] || 0) + 1;
+    }
+  });
+  const topicLabels = Object.entries(topicCounts)
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  const unlabeledCount = posts.filter(p => !p.topic_label).length;
+
+  // Content type breakdown
+  const contentTypeCounts: Record<string, number> = {};
+  posts.forEach(p => {
+    if (p.content_type) {
+      contentTypeCounts[p.content_type] = (contentTypeCounts[p.content_type] || 0) + 1;
+    }
+  });
+  const contentTypes = Object.entries(contentTypeCounts)
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
+
   // Chart data
   const chartData = snapshots.map(s => ({
     date: s.snapshot_date,
