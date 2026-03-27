@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 import { Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
 
 const ConnectionStatusPanel = () => {
+  const { toast } = useToast();
   const [connection, setConnection] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [latestSnapshot, setLatestSnapshot] = useState<string | null>(null);
 
   useEffect(() => { loadConnection(); }, []);
@@ -33,10 +36,24 @@ const ConnectionStatusPanel = () => {
 
   const handleSync = async () => {
     setSyncing(true);
+    setSyncError(null);
     try {
-      await supabase.functions.invoke("linkedin-sync", { body: {} });
+      const { data, error } = await supabase.functions.invoke("linkedin-sync", { body: {} });
+      if (error || !data?.success) {
+        const msg = data?.error || error?.message || "Sync failed";
+        const isPermission = msg.includes("Community Management") || msg.includes("ACCESS_DENIED");
+        setSyncError(isPermission
+          ? "LinkedIn API requires Community Management API approval. Use Historical Import to add data manually."
+          : msg
+        );
+        toast({ title: "Sync incomplete", description: isPermission ? "LinkedIn permissions insufficient. Use Historical Import instead." : msg, variant: "destructive" });
+      } else {
+        setSyncError(null);
+      }
       await loadConnection();
-    } catch { /* silent */ }
+    } catch (e: any) {
+      setSyncError(e?.message || "Sync failed unexpectedly");
+    }
     setSyncing(false);
   };
 
@@ -96,7 +113,13 @@ const ConnectionStatusPanel = () => {
         )}
       </div>
 
-      {isConnected && latestSnapshot && (
+      {syncError && (
+        <p className="text-[11px] text-destructive/70 mt-3 leading-relaxed">
+          ⚠ {syncError}
+        </p>
+      )}
+
+      {isConnected && latestSnapshot && !syncError && (
         <p className="text-[10px] text-muted-foreground/30 mt-3 tracking-wide">
           Latest snapshot: {latestSnapshot} · Connected {connection?.connected_at ? formatSmartDate(connection.connected_at) : ""}
         </p>
