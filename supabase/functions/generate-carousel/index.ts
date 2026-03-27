@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { title, description, context, style, lang } = await req.json();
+    const { title, description, context, style, lang, selected_framework } = await req.json();
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -38,13 +38,15 @@ Preferred terms: الحوكمة، التحول الرقمي، الاستراتي
 Write concise, confident, executive Arabic. RTL optimized.`
       : `Write ALL slide content in English. Use authoritative but conversational tone suitable for senior leaders and consultants.`;
 
-    const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic);
+    const frameworkContext = selected_framework
+      ? `\n\nSELECTED FRAMEWORK TO USE:\nName: ${selected_framework.name}\nDescription: ${selected_framework.description}\nSteps: ${(selected_framework.steps || []).join(" → ")}\nDiagram Type: ${selected_framework.diagram_type || "sequential_flow"}\n\nYou MUST build the carousel around this specific framework. Use it for slides 5-8 (framework intro, step explanations, architecture diagram).`
+      : "";
 
     const userPrompt = `Create a 10-slide LinkedIn carousel about:
 
 Title: ${title}
 ${description ? `Description: ${description}` : ""}
-${context ? `Strategic Context: ${context}` : ""}
+${context ? `Strategic Context: ${context}` : ""}${frameworkContext}
 
 Generate the carousel slides now. Remember: max 30 words per slide, rotate layouts across slides, include emphasis_words, visual_anchor, and make slide 10 an authority CTA with personal branding. Do NOT include system labels like "Hook", "Problem", "Insight" etc on the slides — these are internal only.`;
 
