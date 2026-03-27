@@ -329,9 +329,19 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <DiscoveryHealthCard />
           <ReviewQueuePanel onReviewComplete={loadAll} />
           <PostCleanupPanel onCleanupComplete={loadAll} />
-          <ManualPostIngestion onIngestionComplete={loadAll} />
-          <PostMetricsIngestion onComplete={loadAll} />
-          <HistoricalImportHub onImportComplete={loadAll} />
+
+          {/* ── Fallback Tools ── */}
+          <div className="space-y-3 pt-4 border-t border-border/5">
+            <div>
+              <h3 className="text-[11px] font-semibold text-muted-foreground/40 tracking-wide uppercase">Fallback Tools</h3>
+              <p className="text-[10px] text-muted-foreground/25 mt-1 leading-relaxed max-w-sm">
+                Use only if browser capture missed something. For historical backfill, missing analytics, or rare same-day corrections.
+              </p>
+            </div>
+            <ManualPostIngestion onIngestionComplete={loadAll} />
+            <PostMetricsIngestion onComplete={loadAll} />
+            <HistoricalImportHub onImportComplete={loadAll} />
+          </div>
           <DailySnapshotEngine />
           <DataHealthConsole />
           <SourceReviewPanel />
