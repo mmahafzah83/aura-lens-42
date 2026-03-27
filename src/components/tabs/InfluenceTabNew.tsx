@@ -325,10 +325,20 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <BrowserCapturePanel />
           <ConnectionStatusPanel />
           <SourceHealthSummary />
-          <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
-          <DiscoveryHealthCard />
-          <ReviewQueuePanel onReviewComplete={loadAll} />
           <PostCleanupPanel onCleanupComplete={loadAll} />
+
+          {/* ── Background Support: Historical Discovery ── */}
+          <div className="space-y-3 pt-4 border-t border-border/5">
+            <div>
+              <h3 className="text-[11px] font-semibold text-muted-foreground/40 tracking-wide uppercase">Background Support</h3>
+              <p className="text-[10px] text-muted-foreground/25 mt-1 leading-relaxed max-w-sm">
+                Search-based discovery runs in the background to recover older publicly-indexed posts. Not the primary source — browser capture is more reliable for fresh content.
+              </p>
+            </div>
+            <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
+            <DiscoveryHealthCard />
+            <ReviewQueuePanel onReviewComplete={loadAll} />
+          </div>
 
           {/* ── Fallback Tools ── */}
           <div className="space-y-3 pt-4 border-t border-border/5">
