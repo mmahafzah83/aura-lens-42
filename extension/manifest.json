@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Aura LinkedIn Capture",
+  "version": "1.0.0",
+  "description": "Capture LinkedIn analytics data for Aura strategic intelligence",
+  "permissions": ["activeTab", "storage", "tabs"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.linkedin.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
