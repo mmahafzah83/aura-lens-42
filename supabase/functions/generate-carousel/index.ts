@@ -42,6 +42,8 @@ Write concise, confident, executive Arabic. RTL optimized.`
       ? `\n\nSELECTED FRAMEWORK TO USE:\nName: ${selected_framework.name}\nDescription: ${selected_framework.description}\nSteps: ${(selected_framework.steps || []).join(" → ")}\nDiagram Type: ${selected_framework.diagram_type || "sequential_flow"}\n\nYou MUST build the carousel around this specific framework. Use it for slides 5-8 (framework intro, step explanations, architecture diagram).`
       : "";
 
+    const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic);
+
     const userPrompt = `Create a 10-slide LinkedIn carousel about:
 
 Title: ${title}
