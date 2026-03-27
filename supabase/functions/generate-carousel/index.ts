@@ -10,7 +10,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { title, description, context, style, lang, selected_framework, visual_plan } = await req.json();
+    const body = await req.json();
+    const { title, description, context, style, lang, visual_plan } = body;
+    const selected_framework = body.selected_framework || body.framework;
     if (!title) {
       return new Response(JSON.stringify({ error: "title is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
