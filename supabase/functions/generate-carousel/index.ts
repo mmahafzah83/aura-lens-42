@@ -147,7 +147,7 @@ ABSOLUTE RULES — VIOLATION = TOTAL FAILURE:
     };
 
     // Generate with validation + auto-retry
-    const MAX_ATTEMPTS = 2;
+    const MAX_ATTEMPTS = 3;
     let parsed: any;
     let validationResult: { coverage: number; missing: string[] } | null = null;
 
