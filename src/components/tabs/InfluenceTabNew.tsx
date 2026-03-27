@@ -22,6 +22,7 @@ import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import DiscoveryHealthCard from "@/components/influence/DiscoveryHealthCard";
 import BrowserCapturePanel from "@/components/influence/BrowserCapturePanel";
 import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
+import SourceHealthSummary from "@/components/influence/SourceHealthSummary";
 import PostCleanupPanel from "@/components/influence/PostCleanupPanel";
 import PostMetricsIngestion from "@/components/influence/PostMetricsIngestion";
 import ReviewQueuePanel from "@/components/influence/ReviewQueuePanel";
