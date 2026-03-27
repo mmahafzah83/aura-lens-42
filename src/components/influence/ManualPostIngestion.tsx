@@ -62,17 +62,34 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
       .maybeSingle();
 
     if (existing) {
-      // Update existing
-      await supabase.from("linkedin_posts").update({
-        ...(form.title && { title: form.title }),
-        ...(form.hook && { hook: form.hook }),
-        ...(form.topic_label && { topic_label: form.topic_label }),
-        ...(form.format_type && { format_type: form.format_type }),
-        ...(form.content_type && { content_type: form.content_type }),
-      }).eq("id", existing.id);
+      // Enrich existing record — manual_url has trust 2, only overwrite empty fields
+      const updates: Record<string, any> = {};
+      if (form.title) updates.title = form.title;
+      if (form.hook) updates.hook = form.hook;
+      if (form.topic_label) updates.topic_label = form.topic_label;
+      if (form.format_type) updates.format_type = form.format_type;
+      if (form.content_type) updates.content_type = form.content_type;
+
+      // Fetch current enriched_by to merge
+      const { data: current } = await supabase
+        .from("linkedin_posts")
+        .select("enriched_by, source_trust")
+        .eq("id", existing.id)
+        .single();
+
+      const currentEnriched: string[] = (current?.enriched_by as string[]) || [];
+      updates.enriched_by = [...new Set([...currentEnriched, "manual_url"])];
+
+      // Upgrade source_type if manual_url has higher trust
+      if ((current?.source_trust || 1) < 2) {
+        updates.source_type = "manual_url";
+        updates.source_trust = 2;
+      }
+
+      await supabase.from("linkedin_posts").update(updates).eq("id", existing.id);
 
       setResult({ inserted: 0, duplicates: 1, errors: [] });
-      toast({ title: "Post updated", description: "Existing post metadata updated." });
+      toast({ title: "Post enriched", description: "Existing post updated with manual data." });
     } else {
       const { error } = await supabase.from("linkedin_posts").insert({
         user_id: user.id,
@@ -84,6 +101,11 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
         format_type: form.format_type || null,
         content_type: form.content_type || null,
         media_type: "text",
+        source_type: "manual_url",
+        source_trust: 2,
+        enriched_by: ["manual_url"],
+        source_metadata: { added_at: new Date().toISOString() },
+        tracking_status: "manual",
         engagement_score: 0,
         like_count: 0,
         comment_count: 0,

@@ -663,7 +663,7 @@ Deno.serve(async (req) => {
     // Dedup against existing posts + confirm manual entries
     const { data: existingPosts } = await adminClient
       .from("linkedin_posts")
-      .select("id, linkedin_post_id, post_text, post_url, tracking_status")
+      .select("id, linkedin_post_id, post_text, post_url, tracking_status, enriched_by, source_trust, hook, format_type, content_type, media_type, published_at")
       .eq("user_id", userId);
 
     const existingTexts = new Map<string, any>();
@@ -688,12 +688,36 @@ Deno.serve(async (req) => {
       const existing = existingByText || existingByUrl;
 
       if (existing) {
+        // Enrich existing record: add search_discovery to enriched_by, confirm if needed
+        const updates: Record<string, any> = {};
         if (existing.tracking_status === "discovered" || existing.tracking_status === "manual") {
-          await adminClient.from("linkedin_posts")
-            .update({ tracking_status: "confirmed" })
-            .eq("id", existing.id);
+          updates.tracking_status = "confirmed";
           confirmed++;
         }
+        // Only overwrite fields if discovery has higher or equal trust AND field is empty
+        if (!existing.post_text && post.text) updates.post_text = post.text;
+        if (!existing.hook && post.hook) updates.hook = post.hook;
+        if (!existing.format_type && post.formatType) updates.format_type = post.formatType;
+        if (!existing.content_type && post.contentType) updates.content_type = post.contentType;
+        if (!existing.media_type && post.mediaType) updates.media_type = post.mediaType;
+        if (!existing.published_at && post.publishedAt) updates.published_at = post.publishedAt;
+
+        // Add search_discovery to enriched_by array
+        updates.enriched_by = adminClient.rpc ? undefined : undefined; // handled via raw SQL below
+
+        if (Object.keys(updates).length > 0) {
+          await adminClient.from("linkedin_posts")
+            .update(updates)
+            .eq("id", existing.id);
+          // Append to enriched_by
+          await adminClient.rpc("array_append_unique", undefined).catch(() => {});
+        }
+
+        // Use direct SQL-style update for enriched_by via update
+        await adminClient.from("linkedin_posts")
+          .update({ enriched_by: [...new Set([...(existing.enriched_by || []), "search_discovery"])] })
+          .eq("id", existing.id);
+
         duplicates++;
         continue;
       }
@@ -712,6 +736,10 @@ Deno.serve(async (req) => {
         format_type: post.formatType,
         content_type: post.contentType,
         tracking_status: trackingStatus,
+        source_type: "search_discovery",
+        source_trust: 1,
+        enriched_by: ["search_discovery"],
+        source_metadata: { discovery_mode: mode, discovered_at: new Date().toISOString() },
         topic_label: null,
         engagement_score: 0,
         like_count: 0,
@@ -724,7 +752,7 @@ Deno.serve(async (req) => {
         else insertErrors.push(insertErr.message);
       } else {
         inserted++;
-        existingTexts.set(textKey, { id: "new", tracking_status: "discovered" });
+        existingTexts.set(textKey, { id: "new", tracking_status: "discovered", enriched_by: ["search_discovery"] });
       }
     }
 
