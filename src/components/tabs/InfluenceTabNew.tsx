@@ -4,7 +4,7 @@ import {
   Users, TrendingUp, Loader2, ArrowUpRight, ArrowDownRight,
   Sparkles, FileText, Zap, Eye, Crown, BarChart3,
   Lightbulb, RefreshCw, Calendar, ChevronDown, ChevronUp,
-  WifiOff, AlertCircle, CloudOff, Search, Activity, Database
+  WifiOff, AlertCircle, CloudOff, Search, Activity, Database as DatabaseIcon
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatSmartDate } from "@/lib/formatDate";
