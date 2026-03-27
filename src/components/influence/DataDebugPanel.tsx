@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bug, AlertTriangle, RefreshCw, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Bug, AlertTriangle, RefreshCw, CheckCircle2, ShieldCheck, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 /* ── Schema Audit Report ── */
@@ -48,7 +48,9 @@ const DataDebugPanel = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [showAudit, setShowAudit] = useState(false);
-  const [showScoping, setShowScoping] = useState(true);
+  const [showScoping, setShowScoping] = useState(false);
+  const [showSyncDiag, setShowSyncDiag] = useState(true);
+  const [syncDiag, setSyncDiag] = useState<any>(null);
 
   const load = async () => {
     setLoading(true);
@@ -57,13 +59,14 @@ const DataDebugPanel = () => {
     const uid = session.user.id;
     setUserId(uid);
 
-    const [connections, snapshots, posts, postMetrics, authScores, syncRuns] = await Promise.all([
+    const [connections, snapshots, posts, postMetrics, authScores, syncRuns, syncErrors] = await Promise.all([
       supabase.from("linkedin_connections").select("*", { count: "exact" }).eq("user_id", uid),
       supabase.from("influence_snapshots").select("*", { count: "exact" }).eq("user_id", uid).order("snapshot_date", { ascending: false }),
       supabase.from("linkedin_posts").select("*", { count: "exact" }).eq("user_id", uid).order("published_at", { ascending: false }),
       supabase.from("linkedin_post_metrics").select("*", { count: "exact" }).eq("user_id", uid).order("snapshot_date", { ascending: false }),
       supabase.from("authority_scores").select("*", { count: "exact" }).eq("user_id", uid).order("snapshot_date", { ascending: false }),
       supabase.from("sync_runs").select("*", { count: "exact" }).eq("user_id", uid).order("created_at", { ascending: false }),
+      supabase.from("sync_errors").select("*", { count: "exact" }).eq("user_id", uid).order("created_at", { ascending: false }).limit(5),
     ]);
 
     const conn = connections.data?.[0] || null;
@@ -72,10 +75,32 @@ const DataDebugPanel = () => {
     const latestSnapshotDate = snapshots.data?.[0]?.snapshot_date || "—";
     const latestPublishedAt = posts.data?.[0]?.published_at || "—";
 
-    // Count sync_runs by account_id match
     const syncRunsByAccount = conn?.id
       ? (syncRuns.data || []).filter((r: any) => r.account_id === conn.id).length
       : 0;
+
+    // Build sync diagnostic
+    const latestRun = (syncRuns.data || [])[0] || null;
+    const latestError = (syncErrors.data || [])[0] || null;
+    const allSnapshots = snapshots.data || [];
+    const zeroSnapshots = allSnapshots.filter((s: any) =>
+      s.followers === 0 && s.reactions === 0 && s.comments === 0 && s.impressions === 0 && s.post_count === 0
+    );
+
+    setSyncDiag({
+      provider: "LinkedIn REST API v2",
+      lastRunAt: latestRun?.started_at || "Never",
+      lastRunStatus: latestRun?.status || "No runs",
+      lastRunError: latestRun?.error_message || null,
+      recordsFetched: latestRun?.records_fetched ?? "—",
+      recordsStored: latestRun?.records_stored ?? "—",
+      syncRunsTotal: syncRuns.count ?? 0,
+      syncErrorsTotal: syncErrors.count ?? 0,
+      recentErrors: (syncErrors.data || []).slice(0, 3),
+      totalSnapshots: snapshots.count ?? 0,
+      zeroSnapshotCount: zeroSnapshots.length,
+      hasRealData: allSnapshots.some((s: any) => s.followers > 0 || s.reactions > 0 || s.post_count > 0),
+    });
 
     setData({
       connectionsCount: connections.count ?? 0,
@@ -89,7 +114,7 @@ const DataDebugPanel = () => {
       accountId,
       latestSnapshotDate,
       latestPublishedAt,
-      snapshotRows: (snapshots.data || []).slice(0, 10),
+      snapshotRows: allSnapshots.slice(0, 10),
       postRows: (posts.data || []).slice(0, 10),
       postMetricRows: (postMetrics.data || []).slice(0, 10),
     });
@@ -151,6 +176,9 @@ const DataDebugPanel = () => {
           <span className="text-xs font-mono font-bold text-yellow-500/80">DATA DEBUG PANEL (admin-only)</span>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setShowSyncDiag(!showSyncDiag)} className="text-[10px] font-mono text-yellow-500/50 hover:text-yellow-500/80 underline">
+            {showSyncDiag ? "hide sync" : "show sync"}
+          </button>
           <button onClick={() => setShowScoping(!showScoping)} className="text-[10px] font-mono text-yellow-500/50 hover:text-yellow-500/80 underline">
             {showScoping ? "hide scoping" : "show scoping"}
           </button>
@@ -184,7 +212,7 @@ const DataDebugPanel = () => {
 
       {!loading && data && (
         <>
-          {/* Identity & Scoping Summary */}
+          {/* Auth & Scoping Summary */}
           <div className="mb-4 p-3 rounded border border-border/30 bg-muted/20 space-y-2">
             <p className="text-[10px] font-mono font-bold text-foreground/60 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-primary/50" /> AUTH & SCOPING SUMMARY
@@ -193,28 +221,6 @@ const DataDebugPanel = () => {
               <div><span className="text-muted-foreground/50">auth user_id:</span> <span className="text-foreground/80 break-all">{userId}</span></div>
               <div><span className="text-muted-foreground/50">linkedin account_id:</span> <span className="text-foreground/80 break-all">{data.accountId}</span></div>
               <div><span className="text-muted-foreground/50">handle:</span> <span className="text-foreground/80">{data.handle}</span></div>
-            </div>
-            <div className="border-t border-border/10 pt-2 mt-1">
-              <p className="text-[9px] font-mono text-muted-foreground/40 mb-1">Rows matched by user_id (all dashboard queries):</p>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-[9px] font-mono">
-                <span className="text-foreground/60">connections: <span className="text-foreground">{data.connectionsCount}</span></span>
-                <span className="text-foreground/60">snapshots: <span className="text-foreground">{data.snapshotsCount}</span></span>
-                <span className="text-foreground/60">posts: <span className="text-foreground">{data.postsCount}</span></span>
-                <span className="text-foreground/60">post_metrics: <span className="text-foreground">{data.postMetricsCount}</span></span>
-                <span className="text-foreground/60">auth_scores: <span className="text-foreground">{data.authorityScoresCount}</span></span>
-                <span className="text-foreground/60">sync_runs: <span className="text-foreground">{data.syncRunsCount}</span></span>
-              </div>
-            </div>
-            <div className="border-t border-border/10 pt-2 mt-1">
-              <p className="text-[9px] font-mono text-muted-foreground/40 mb-1">Rows matched by account_id (sync_runs only):</p>
-              <span className="text-[9px] font-mono text-foreground/60">sync_runs where account_id = linkedin_connections.id: <span className="text-foreground">{data.syncRunsByAccountId}</span></span>
-            </div>
-            <div className="border-t border-border/10 pt-2 mt-1">
-              <p className="text-[9px] font-mono text-muted-foreground/40">
-                ✓ No tables use handle as a filter key. All dashboard queries are scoped by user_id via RLS policies.
-                No account_id joins needed — all analytics tables have direct user_id columns.
-                No orphan rows possible: RLS enforces auth.uid() = user_id on every SELECT.
-              </p>
             </div>
           </div>
 
@@ -225,7 +231,7 @@ const DataDebugPanel = () => {
             <StatCard label="linkedin_posts" value={data.postsCount} empty={data.postsCount === 0} />
             <StatCard label="linkedin_post_metrics" value={data.postMetricsCount} empty={data.postMetricsCount === 0} />
             <StatCard label="authority_scores" value={data.authorityScoresCount} empty={data.authorityScoresCount === 0} />
-            <StatCard label="account handle" value={data.handle} />
+            <StatCard label="sync_runs" value={data.syncRunsCount} empty={data.syncRunsCount === 0} />
             <StatCard label="latest snapshot_date" value={data.latestSnapshotDate} />
           </div>
 
@@ -233,6 +239,98 @@ const DataDebugPanel = () => {
           <RawTable title="linkedin_posts (latest 10)" rows={data.postRows} />
           <RawTable title="linkedin_post_metrics (latest 10)" rows={data.postMetricRows} />
         </>
+      )}
+
+      {/* Sync Diagnostic Summary */}
+      {showSyncDiag && syncDiag && (
+        <div className="mt-4 border-t border-yellow-500/20 pt-4">
+          <p className="text-[10px] font-mono font-bold text-yellow-500/70 mb-2 flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5" /> SYNC PIPELINE DIAGNOSTIC
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+            <div className="p-2 rounded border border-border/30 bg-muted/20">
+              <p className="text-[9px] font-mono text-muted-foreground/50">Provider</p>
+              <p className="text-[10px] font-mono text-foreground/80">{syncDiag.provider}</p>
+            </div>
+            <div className="p-2 rounded border border-border/30 bg-muted/20">
+              <p className="text-[9px] font-mono text-muted-foreground/50">Last Fetch Attempt</p>
+              <p className="text-[10px] font-mono text-foreground/80">{syncDiag.lastRunAt}</p>
+            </div>
+            <div className={`p-2 rounded border ${syncDiag.lastRunStatus === "completed" ? "border-primary/30 bg-primary/5" : syncDiag.lastRunStatus === "failed" ? "border-destructive/30 bg-destructive/5" : "border-border/30 bg-muted/20"}`}>
+              <p className="text-[9px] font-mono text-muted-foreground/50">Fetch Result</p>
+              <p className={`text-[10px] font-mono ${syncDiag.lastRunStatus === "completed" ? "text-primary/80" : syncDiag.lastRunStatus === "failed" ? "text-destructive/80" : "text-foreground/80"}`}>
+                {syncDiag.lastRunStatus}
+              </p>
+            </div>
+            <div className="p-2 rounded border border-border/30 bg-muted/20">
+              <p className="text-[9px] font-mono text-muted-foreground/50">Records Fetched</p>
+              <p className="text-[10px] font-mono text-foreground/80">{syncDiag.recordsFetched}</p>
+            </div>
+            <div className="p-2 rounded border border-border/30 bg-muted/20">
+              <p className="text-[9px] font-mono text-muted-foreground/50">Records Stored</p>
+              <p className="text-[10px] font-mono text-foreground/80">{syncDiag.recordsStored}</p>
+            </div>
+            <div className="p-2 rounded border border-border/30 bg-muted/20">
+              <p className="text-[9px] font-mono text-muted-foreground/50">Total Runs / Errors</p>
+              <p className="text-[10px] font-mono text-foreground/80">{syncDiag.syncRunsTotal} / {syncDiag.syncErrorsTotal}</p>
+            </div>
+          </div>
+
+          {/* Zero snapshot warning */}
+          {syncDiag.zeroSnapshotCount > 0 && (
+            <div className="flex items-start gap-2 p-2 rounded border border-yellow-500/20 bg-yellow-500/5 mb-3">
+              <AlertTriangle className="w-3.5 h-3.5 text-yellow-500/70 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-[10px] font-mono text-yellow-500/70 font-bold">
+                  {syncDiag.zeroSnapshotCount} placeholder zero snapshot(s) detected
+                </p>
+                <p className="text-[9px] font-mono text-foreground/50">
+                  These were written before the sync pipeline was repaired. The updated sync now rejects zero-data writes and records errors instead.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Real data check */}
+          <div className={`flex items-center gap-2 p-2 rounded border mb-3 ${syncDiag.hasRealData ? "border-primary/20 bg-primary/5" : "border-destructive/20 bg-destructive/5"}`}>
+            {syncDiag.hasRealData ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary/60" />
+                <p className="text-[10px] font-mono text-primary/70">At least one snapshot contains verified non-zero data.</p>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-destructive/60" />
+                <p className="text-[10px] font-mono text-destructive/70">No snapshots contain real data. All values are zero/default. LinkedIn API may require Community Management API approval.</p>
+              </>
+            )}
+          </div>
+
+          {/* Failure reason */}
+          {syncDiag.lastRunError && (
+            <div className="p-2 rounded border border-destructive/20 bg-destructive/5 mb-3">
+              <p className="text-[9px] font-mono text-muted-foreground/50 mb-0.5">Last Run Failure</p>
+              <p className="text-[10px] font-mono text-destructive/70">{syncDiag.lastRunError}</p>
+            </div>
+          )}
+
+          {/* Recent sync errors */}
+          {syncDiag.recentErrors?.length > 0 && (
+            <div className="mb-3">
+              <p className="text-[9px] font-mono text-muted-foreground/50 mb-1">Recent sync_errors:</p>
+              {syncDiag.recentErrors.map((err: any, i: number) => (
+                <div key={i} className="p-2 rounded border border-destructive/15 bg-destructive/[0.03] mb-1">
+                  <div className="flex items-center gap-2 text-[9px] font-mono">
+                    <span className="text-destructive/50">{err.error_type}</span>
+                    <span className="text-muted-foreground/30">·</span>
+                    <span className="text-muted-foreground/40">{err.created_at?.slice(0, 19)}</span>
+                  </div>
+                  <p className="text-[9px] font-mono text-foreground/60 mt-0.5">{err.error_message?.slice(0, 200)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Scoping Audit */}
@@ -246,7 +344,6 @@ const DataDebugPanel = () => {
                   <th className="px-2 py-1.5 text-left text-muted-foreground/50">Component</th>
                   <th className="px-2 py-1.5 text-left text-muted-foreground/50">Table</th>
                   <th className="px-2 py-1.5 text-left text-muted-foreground/50">Filter Method</th>
-                  <th className="px-2 py-1.5 text-left text-muted-foreground/50">Explicit?</th>
                   <th className="px-2 py-1.5 text-left text-muted-foreground/50">Status</th>
                 </tr>
               </thead>
@@ -256,7 +353,6 @@ const DataDebugPanel = () => {
                     <td className="px-2 py-1 text-foreground/70 whitespace-nowrap">{row.component}</td>
                     <td className="px-2 py-1 text-primary/60 whitespace-nowrap">{row.table}</td>
                     <td className="px-2 py-1 text-foreground/50">{row.filterBy}</td>
-                    <td className="px-2 py-1 text-foreground/40">{row.explicit ? "Yes" : "No (RLS)"}</td>
                     <td className="px-2 py-1 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-primary/50" />
@@ -268,9 +364,6 @@ const DataDebugPanel = () => {
               </tbody>
             </table>
           </div>
-          <p className="text-[9px] font-mono text-muted-foreground/30 mt-2">
-            All queries scoped by user_id via RLS. No account_id or handle joins needed. No backfill required — all tables use user_id directly.
-          </p>
         </div>
       )}
 
@@ -305,9 +398,6 @@ const DataDebugPanel = () => {
               </tbody>
             </table>
           </div>
-          <p className="text-[9px] font-mono text-muted-foreground/30 mt-2">
-            All 14 component→table mappings verified. All queried columns exist in the real schema. No mismatches found.
-          </p>
         </div>
       )}
     </div>
