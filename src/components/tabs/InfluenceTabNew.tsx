@@ -21,6 +21,7 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 interface InfluenceTabNewProps {
   entries: Entry[];
+  onOpenChat?: (msg?: string) => void;
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
