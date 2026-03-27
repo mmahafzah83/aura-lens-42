@@ -156,10 +156,17 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           </div>
         </div>
         {lastRun && (
-          <p className="text-[10px] text-muted-foreground/30">
-            Last run: {formatSmartDate(lastRun.completed_at)} · {lastRun.records_stored || 0} stored
-            {lastRun.status === "failed" && " · failed"}
-          </p>
+          <div className="text-right">
+            <p className="text-[10px] text-muted-foreground/30">
+              Last run: {formatSmartDate(lastRun.completed_at)} · {lastRun.records_stored || 0} stored
+              {lastRun.status === "failed" && " · failed"}
+            </p>
+            {lastRun.records_stored > 0 && (
+              <p className="text-[9px] text-primary/40 mt-0.5">
+                {lastRun.records_stored} new post{lastRun.records_stored !== 1 ? "s" : ""} found
+              </p>
+            )}
+          </div>
         )}
       </div>
 
