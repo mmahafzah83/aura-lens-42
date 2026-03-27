@@ -1153,6 +1153,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setSelectedFramework(null);
       setVisualPlan([]);
       setVisualPlanSummary("");
+      setValidation(null);
     }, 300);
   };
 
