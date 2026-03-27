@@ -280,25 +280,26 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
     }
 
-    log("total_discovered", `${discovered.length} posts from search`);
+    log("total_discovered", `${discovered.length} posts from ${pagesVisited} search queries`);
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: user.id,
-        sync_type: "discovery",
+        sync_type: "search_discovery",
         status: "failed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: 0,
         records_stored: 0,
-        error_message: `No posts discovered via search for handle "${handle}". LinkedIn activity pages block scraping (403). Try Historical Import with CSV export.`,
+        error_message: `No posts discovered via search for "${handle || profileName}". Queries run: ${pagesVisited}. Try Historical Import with CSV export.`,
       });
 
       return new Response(JSON.stringify({
         success: false,
-        error: "No posts found via search. LinkedIn blocks activity page scraping. Try Historical Import with a CSV export from LinkedIn.",
+        error: "No posts found via search. Try Historical Import with a CSV export from LinkedIn.",
+        source_type: "search_discovery",
         profile_url: profileUrl,
-        pages_visited: pagesVisited,
+        queries_run: pagesVisited,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
