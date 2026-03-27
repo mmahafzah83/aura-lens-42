@@ -14,11 +14,11 @@ function extractHook(text: string): string | null {
   return firstLine.length > 10 ? firstLine.slice(0, 200) : null;
 }
 
-function detectMediaType(markdown: string): string {
-  if (/!\[.*?\]\(.*?\)/.test(markdown)) return "image";
-  if (/\[.*?video.*?\]/i.test(markdown) || /youtube|vimeo|loom/i.test(markdown)) return "video";
-  if (/carousel|slide/i.test(markdown)) return "carousel";
-  if (/pdf|document/i.test(markdown)) return "document";
+function detectMediaType(text: string): string {
+  if (/!\[.*?\]\(.*?\)/.test(text)) return "image";
+  if (/\[.*?video.*?\]/i.test(text) || /youtube|vimeo|loom/i.test(text)) return "video";
+  if (/carousel|slide/i.test(text)) return "carousel";
+  if (/pdf|document/i.test(text)) return "document";
   return "text";
 }
 
@@ -54,22 +54,43 @@ interface DiscoveredPost {
   contentType: string;
 }
 
-function parsePostsFromMarkdown(markdown: string): DiscoveredPost[] {
-  const posts: DiscoveredPost[] = [];
+/* ── Extract post URLs from links array ── */
+function extractPostUrls(links: string[]): string[] {
+  const postUrls: string[] = [];
+  const seen = new Set<string>();
+  for (const link of links) {
+    // Match LinkedIn post/update URLs
+    if (/linkedin\.com\/(feed\/update|posts\/|pulse\/)/.test(link)) {
+      const clean = link.split("?")[0].replace(/\/+$/, "");
+      if (!seen.has(clean)) {
+        seen.add(clean);
+        postUrls.push(clean);
+      }
+    }
+  }
+  return postUrls;
+}
 
-  // Split by common post boundaries
-  const sections = markdown.split(/(?=#{1,3}\s)|(?=---)|(?=\*\*\*)/);
+/* ── Parse posts from markdown content ── */
+function parsePostsFromMarkdown(markdown: string, allLinks: string[]): DiscoveredPost[] {
+  const posts: DiscoveredPost[] = [];
+  const postUrls = extractPostUrls(allLinks);
+
+  // Strategy 1: Split by post boundaries and extract
+  const sections = markdown.split(/(?=#{1,3}\s)|(?=---)|(?=\*\*\*)|(?=\n\n\n)/);
 
   for (const section of sections) {
     const trimmed = section.trim();
     if (trimmed.length < 50) continue;
 
-    // Skip nav/header/footer
+    // Skip nav/header/footer noise
     if (/^(Home|About|Experience|Education|Skills|Recommendations|Sign in|Join now)/i.test(trimmed)) continue;
-    if (/^(People also viewed|More from|Similar profiles)/i.test(trimmed)) continue;
+    if (/^(People also viewed|More from|Similar profiles|Messaging|Notifications)/i.test(trimmed)) continue;
 
     const hasDate = /(\d{1,2}\s+(day|week|month|year)s?\s+ago)|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}/i.test(trimmed);
-    const hasEngagement = /(like|comment|repost|reaction|share)/i.test(trimmed);
+    const hasEngagement = /(like|comment|repost|reaction|share)\b/i.test(trimmed);
+
+    if (!hasDate && !hasEngagement) continue;
 
     let cleanText = trimmed
       .replace(/#{1,6}\s*/g, "")
@@ -80,10 +101,15 @@ function parsePostsFromMarkdown(markdown: string): DiscoveredPost[] {
       .trim();
 
     if (cleanText.length < 80) continue;
-    if (!hasDate && !hasEngagement) continue;
 
-    const urlMatch = trimmed.match(/linkedin\.com\/(?:feed\/update|posts?)\S*/);
-    const postUrl = urlMatch ? `https://www.${urlMatch[0].replace(/[)\]>]+$/, "")}` : null;
+    // Try to match a post URL from this section
+    const urlMatch = trimmed.match(/linkedin\.com\/(?:feed\/update|posts?\/)\S*/);
+    let postUrl = urlMatch ? `https://www.${urlMatch[0].replace(/[)\]>]+$/, "")}` : null;
+
+    // If no URL in section text, try to assign from extracted links
+    if (!postUrl && postUrls.length > 0) {
+      postUrl = postUrls.shift() || null;
+    }
 
     let publishedAt: string | null = null;
     const relMatch = cleanText.match(/(\d+)\s+(day|week|month|year)s?\s+ago/i);
@@ -118,10 +144,94 @@ function parsePostsFromMarkdown(markdown: string): DiscoveredPost[] {
     });
   }
 
+  // Strategy 2: If we found post URLs but no parsed posts, create entries from the URLs
+  // (the search fallback will scrape them individually)
+  if (posts.length === 0 && postUrls.length > 0) {
+    for (const url of postUrls) {
+      posts.push({
+        url,
+        text: "",
+        publishedAt: null,
+        hook: null,
+        mediaType: "text",
+        formatType: "narrative",
+        contentType: "insight",
+      });
+    }
+  }
+
   return posts;
 }
 
 const MAX_POSTS = 50;
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
+const RATE_LIMIT_DELAY_MS = 1500;
+
+/* ── Scrape with retry and headless browser ── */
+async function scrapeWithRetry(
+  url: string,
+  apiKey: string,
+  log: (step: string, detail: string) => void,
+): Promise<{ url: string; markdown: string; links: string[]; html: string; ok: boolean; status: number }> {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        log("retry", `Attempt ${attempt + 1} for ${url}`);
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+      }
+
+      const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          url,
+          formats: ["markdown", "links", "html"],
+          onlyMainContent: true,
+          waitFor: 7000,
+          actions: [
+            { type: "scroll", direction: "down", amount: 3 },
+            { type: "wait", milliseconds: 2000 },
+            { type: "scroll", direction: "down", amount: 3 },
+            { type: "wait", milliseconds: 2000 },
+            { type: "scroll", direction: "down", amount: 3 },
+            { type: "wait", milliseconds: 1000 },
+          ],
+        }),
+      });
+
+      const data = await res.json();
+      const md = data?.data?.markdown || data?.markdown || "";
+      const links = data?.data?.links || data?.links || [];
+      const html = data?.data?.html || data?.html || "";
+
+      log("scrape_result", `${url} → ${md.length} chars md, ${links.length} links, ${html.length} chars html, status=${res.status}, attempt=${attempt + 1}`);
+
+      // If we got meaningful content, return it
+      if (md.length > 200 || links.length > 5) {
+        return { url, markdown: md, links, html, ok: res.ok, status: res.status };
+      }
+
+      // If partial load and we have retries left, continue
+      if (attempt < MAX_RETRIES) {
+        log("partial_load", `Only ${md.length} chars from ${url}, retrying...`);
+        continue;
+      }
+
+      return { url, markdown: md, links, html, ok: res.ok, status: res.status };
+    } catch (e: any) {
+      log("scrape_error", `${url} → ${e.message} (attempt ${attempt + 1})`);
+      if (attempt === MAX_RETRIES) {
+        return { url, markdown: "", links: [], html: "", ok: false, status: 0 };
+      }
+    }
+  }
+
+  return { url, markdown: "", links: [], html: "", ok: false, status: 0 };
+}
 
 /* ── main ── */
 
@@ -142,7 +252,7 @@ Deno.serve(async (req) => {
     if (!FIRECRAWL_API_KEY) {
       return new Response(
         JSON.stringify({ success: false, error: "Firecrawl connector not configured" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -186,7 +296,7 @@ Deno.serve(async (req) => {
 
       profileUrl = conn.profile_url
         || (conn.handle ? `https://www.linkedin.com/in/${conn.handle}` : null)
-        || (conn.display_name ? `https://www.linkedin.com/in/${conn.display_name.toLowerCase().replace(/\s+/g, '-')}` : null)
+        || (conn.display_name ? `https://www.linkedin.com/in/${conn.display_name.toLowerCase().replace(/\s+/g, "-")}` : null)
         || null;
 
       if (!profileUrl) {
@@ -202,7 +312,7 @@ Deno.serve(async (req) => {
       profileUrl = `https://www.linkedin.com/in/${profileUrl.replace(/^\/+/, "")}`;
     }
 
-    // Save profile_url back to connection for future use
+    // Save profile_url back to connection
     await adminClient.from("linkedin_connections")
       .update({ profile_url: profileUrl })
       .eq("user_id", user.id)
@@ -210,7 +320,7 @@ Deno.serve(async (req) => {
 
     log("start", `Profile: ${profileUrl}`);
 
-    // Build activity page URLs — target pages where posts actually appear
+    // Build activity page URLs — pages where posts actually appear
     const base = profileUrl.replace(/\/+$/, "");
     const activityPages = [
       `${base}/recent-activity/shares/`,
@@ -220,47 +330,89 @@ Deno.serve(async (req) => {
 
     log("pages_planned", activityPages.join(", "));
 
-    // Scrape activity pages via Firecrawl with extended wait for dynamic scroll loading
-    const scrapeUrl = async (url: string) => {
-      try {
-        const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ url, formats: ["markdown", "links"], onlyMainContent: true, waitFor: 5000 }),
-        });
-        const data = await res.json();
-        const md = data?.data?.markdown || data?.markdown || "";
-        log("scrape_result", `${url} → ${md.length} chars, status=${res.status}`);
-        return { url, markdown: md, ok: res.ok, status: res.status };
-      } catch (e: any) {
-        log("scrape_error", `${url} → ${e.message}`);
-        return { url, markdown: "", ok: false, status: 0 };
+    // Scrape activity pages sequentially with rate limiting
+    const scrapeResults: Awaited<ReturnType<typeof scrapeWithRetry>>[] = [];
+    for (let i = 0; i < activityPages.length; i++) {
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
       }
-    };
+      const result = await scrapeWithRetry(activityPages[i], FIRECRAWL_API_KEY, log);
+      scrapeResults.push(result);
+    }
 
-    const scrapeResults = await Promise.all(activityPages.map(scrapeUrl));
     const pagesVisited = scrapeResults.length;
     const errors: string[] = [];
 
-    // Combine all markdown
+    // Combine all markdown and links
     let combinedMarkdown = "";
+    let allLinks: string[] = [];
+    let debugHtml = "";
+
     for (const r of scrapeResults) {
       if (r.markdown.length > 0) {
         combinedMarkdown += r.markdown + "\n---\n";
       }
+      if (r.links.length > 0) {
+        allLinks = allLinks.concat(r.links);
+      }
       if (!r.ok) {
         errors.push(`${r.url}: HTTP ${r.status}`);
       }
+      // Keep HTML snapshot for debugging
+      if (r.html.length > debugHtml.length) {
+        debugHtml = r.html;
+      }
     }
+
+    log("combined", `${combinedMarkdown.length} chars md, ${allLinks.length} total links`);
 
     let discovered: DiscoveredPost[] = [];
 
-    if (combinedMarkdown.length >= 100) {
-      discovered = parsePostsFromMarkdown(combinedMarkdown);
+    // Phase 1: Parse posts from scraped content + extracted links
+    if (combinedMarkdown.length >= 100 || allLinks.length > 0) {
+      discovered = parsePostsFromMarkdown(combinedMarkdown, allLinks);
+      // Filter out entries with empty text (URL-only stubs)
+      discovered = discovered.filter((p) => p.text.length >= 50 || p.url);
       log("parsed", `${discovered.length} posts from activity pages`);
     }
 
-    // Fallback: Firecrawl search
+    // Phase 2: Scrape individual post URLs that had no text
+    const urlOnlyPosts = discovered.filter((p) => p.text.length < 50 && p.url);
+    if (urlOnlyPosts.length > 0) {
+      log("scrape_individual", `Scraping ${urlOnlyPosts.length} individual post URLs for content`);
+      for (const post of urlOnlyPosts.slice(0, 10)) {
+        await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
+        try {
+          const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ url: post.url, formats: ["markdown"], onlyMainContent: true, waitFor: 3000 }),
+          });
+          const data = await res.json();
+          const md = data?.data?.markdown || data?.markdown || "";
+          if (md.length >= 50) {
+            const cleanText = md
+              .replace(/#{1,6}\s*/g, "")
+              .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+              .replace(/!\[.*?\]\(.*?\)/g, "")
+              .replace(/\*\*|__/g, "")
+              .replace(/\*|_/g, "")
+              .trim();
+            post.text = cleanText.slice(0, 5000);
+            post.hook = extractHook(cleanText);
+            post.mediaType = detectMediaType(md);
+            post.formatType = detectFormatType(cleanText, post.mediaType);
+            post.contentType = detectContentType(cleanText);
+          }
+        } catch (e: any) {
+          log("individual_scrape_error", `${post.url}: ${e.message}`);
+        }
+      }
+      // Remove posts that still have no text
+      discovered = discovered.filter((p) => p.text.length >= 50);
+    }
+
+    // Phase 3: Fallback — Firecrawl search
     if (discovered.length === 0) {
       log("fallback", "Activity pages returned no posts. Trying search...");
       const handle = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/)?.[1] || "";
@@ -305,7 +457,9 @@ Deno.serve(async (req) => {
     discovered = discovered.slice(0, MAX_POSTS);
 
     if (discovered.length === 0) {
-      // Record error instead of placeholder
+      // Record raw HTML snapshot for debugging (truncated)
+      const htmlSnippet = debugHtml.slice(0, 2000);
+
       await adminClient.from("sync_runs").insert({
         user_id: user.id,
         sync_type: "discovery",
@@ -314,7 +468,7 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
         records_fetched: 0,
         records_stored: 0,
-        error_message: "No posts discovered. LinkedIn may require login to view activity pages.",
+        error_message: `No posts discovered. Pages scraped: ${pagesVisited}. Combined markdown: ${combinedMarkdown.length} chars. Links found: ${allLinks.length}. LinkedIn may require login.`,
       });
 
       return new Response(JSON.stringify({
@@ -322,6 +476,9 @@ Deno.serve(async (req) => {
         error: "Could not discover posts. LinkedIn activity pages may require authentication. Try Historical Import.",
         profile_url: profileUrl,
         pages_visited: pagesVisited,
+        markdown_length: combinedMarkdown.length,
+        links_found: allLinks.length,
+        html_snapshot: htmlSnippet,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
