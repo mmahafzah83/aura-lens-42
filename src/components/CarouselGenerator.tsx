@@ -724,10 +724,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       if (data.hashtags) setHashtags(data.hashtags);
       if (targetLang === lang) setCurrentSlide(0);
       setPipelineStep("carousel");
-      if (newSlides.length > 0) {
-        await sleep(500);
-        await generateVisuals(targetLang, newSlides);
-      }
     } catch (e: any) {
       toast.error(e.message || "Failed to generate carousel");
     } finally {
