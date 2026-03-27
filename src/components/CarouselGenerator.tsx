@@ -556,7 +556,7 @@ const SlidePreview = ({
             alignItems: "center", fontSize: 14, color: p.muted, opacity: 0.3,
             borderTop: `1px solid ${p.muted}15`, zIndex: 3,
           }}>
-            <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafdah</span>
+            <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafzah</span>
             <span style={{ letterSpacing: 3, textTransform: "uppercase", fontSize: 11 }}>Save ↗</span>
           </div>
         )}
