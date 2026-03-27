@@ -567,6 +567,7 @@ const SlidePreview = ({
 
 /* ── Main Component ──────────────────── */
 const CarouselGenerator = ({ open, onClose, title, description, context }: CarouselGeneratorProps) => {
+  const [pipelineStep, setPipelineStep] = useState<PipelineStep>("input");
   const [slides, setSlides] = useState<Record<Lang, Slide[]>>({ en: [], ar: [] });
   const [lang, setLang] = useState<Lang>("en");
   const [style, setStyle] = useState<Style>("minimal_creator");
@@ -582,49 +583,60 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const [visualTotal, setVisualTotal] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Framework pipeline state
+  const [topicAnalysis, setTopicAnalysis] = useState<TopicAnalysis | null>(null);
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const [selectedFramework, setSelectedFramework] = useState<Framework | null>(null);
+  const [generatingFrameworks, setGeneratingFrameworks] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+
   const currentSlides = slides[lang];
   const isLoading = loading[lang];
 
   const invokeSlideVisual = useCallback(async (slide: Slide) => {
     let lastMessage = "Failed to generate visual";
-
     for (let attempt = 0; attempt <= VISUAL_RETRY_DELAYS_MS.length; attempt++) {
       const { data, error } = await supabase.functions.invoke("generate-slide-visual", {
         body: { image_prompt: slide.image_prompt, slide_number: slide.slide_number, style },
       });
-
       if (!error && data?.image_url) return data.image_url as string;
-
       const status = (error as any)?.context?.status ?? (error as any)?.status;
       const message = data?.error || error?.message || "Failed to generate visual";
       const normalized = String(message).toLowerCase();
-      const shouldRetry =
-        status === 429 ||
-        normalized.includes("rate limit") ||
-        normalized.includes("no image generated");
-
+      const shouldRetry = status === 429 || normalized.includes("rate limit") || normalized.includes("no image generated");
       lastMessage = message;
-
-      if (shouldRetry && attempt < VISUAL_RETRY_DELAYS_MS.length) {
-        await sleep(VISUAL_RETRY_DELAYS_MS[attempt]);
-        continue;
-      }
-
+      if (shouldRetry && attempt < VISUAL_RETRY_DELAYS_MS.length) { await sleep(VISUAL_RETRY_DELAYS_MS[attempt]); continue; }
       throw new Error(message);
     }
-
     throw new Error(lastMessage);
   }, [style]);
+
+  /* ── Step 1-3: Generate frameworks ── */
+  const generateFrameworksStep = useCallback(async () => {
+    setGeneratingFrameworks(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-frameworks", {
+        body: { title, description, context, lang },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data.topic_analysis) setTopicAnalysis(data.topic_analysis);
+      if (data.frameworks) { setFrameworks(data.frameworks); setSelectedFramework(null); }
+      setPipelineStep("frameworks");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate frameworks");
+    } finally {
+      setGeneratingFrameworks(false);
+    }
+  }, [title, description, context, lang]);
 
   /* ── Generate slide visuals ── */
   const generateVisuals = useCallback(async (targetLang: Lang, slideList: Slide[]) => {
     const slidesWithPrompts = slideList.filter(s => s.image_prompt && !s.image_url);
     if (slidesWithPrompts.length === 0) return;
-
     setGeneratingVisuals(true);
     setVisualTotal(slidesWithPrompts.length);
     setVisualProgress(0);
-
     for (let i = 0; i < slidesWithPrompts.length; i++) {
       const slide = slidesWithPrompts[i];
       try {
@@ -638,23 +650,27 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       } catch (e: any) {
         console.warn(`Failed to generate visual for slide ${slide.slide_number}:`, e);
       }
-
       setVisualProgress(i + 1);
-
-      if (i < slidesWithPrompts.length - 1) {
-        await sleep(VISUAL_REQUEST_DELAY_MS);
-      }
+      if (i < slidesWithPrompts.length - 1) await sleep(VISUAL_REQUEST_DELAY_MS);
     }
-
     setGeneratingVisuals(false);
     toast.success("Slide visuals generated");
   }, [invokeSlideVisual]);
 
+  /* ── Generate carousel (Step 6) ── */
   const generate = useCallback(async (targetLang: Lang) => {
     setLoading(prev => ({ ...prev, [targetLang]: true }));
     try {
       const { data, error } = await supabase.functions.invoke("generate-carousel", {
-        body: { title, description, context, style, lang: targetLang },
+        body: {
+          title, description, context, style, lang: targetLang,
+          selected_framework: selectedFramework ? {
+            name: selectedFramework.name,
+            description: selectedFramework.description,
+            steps: selectedFramework.steps,
+            diagram_type: selectedFramework.diagram_type,
+          } : undefined,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -663,7 +679,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       if (data.linkedin_caption) setCaption(data.linkedin_caption);
       if (data.hashtags) setHashtags(data.hashtags);
       if (targetLang === lang) setCurrentSlide(0);
-
+      setPipelineStep("carousel");
       if (newSlides.length > 0) {
         await sleep(500);
         await generateVisuals(targetLang, newSlides);
@@ -673,17 +689,12 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     } finally {
       setLoading(prev => ({ ...prev, [targetLang]: false }));
     }
-  }, [title, description, context, style, lang, generateVisuals]);
+  }, [title, description, context, style, lang, selectedFramework, generateVisuals]);
 
-  const generateBoth = useCallback(async () => {
-    await generate("en");
-    await generate("ar");
-  }, [generate]);
-
-  const [hasGenerated, setHasGenerated] = useState(false);
-  if (open && title && !hasGenerated && !loading.en && !loading.ar && currentSlides.length === 0) {
-    setHasGenerated(true);
-    setTimeout(() => generateBoth(), 0);
+  // Auto-start pipeline on open
+  if (open && title && !hasStarted) {
+    setHasStarted(true);
+    setTimeout(() => generateFrameworksStep(), 0);
   }
 
   const updateSlide = (idx: number, field: keyof Slide, value: string) => {
@@ -696,12 +707,10 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const regenerateSlideVisual = async (idx: number) => {
     const slide = currentSlides[idx];
     if (!slide?.image_prompt) return;
-
     setSlides(prev => ({
       ...prev,
       [lang]: prev[lang].map((s, i) => i === idx ? { ...s, image_url: undefined } : s),
     }));
-
     try {
       const imageUrl = await invokeSlideVisual(slide);
       if (imageUrl) {
@@ -765,16 +774,13 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             ctx.globalAlpha = isHero ? 0.4 : 0.25;
             ctx.drawImage(img, 0, 0, CANVAS_W, CANVAS_H);
             ctx.globalAlpha = 1;
-
             const overlayGrd = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
             overlayGrd.addColorStop(0, `${p.bg}60`);
             overlayGrd.addColorStop(0.5, `${p.bg}CC`);
             overlayGrd.addColorStop(1, `${p.bg}F5`);
             ctx.fillStyle = overlayGrd;
             ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
-          } catch {
-            // Image failed to load
-          }
+          } catch { /* Image failed to load */ }
         }
 
         // Top accent bar
@@ -795,7 +801,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         ctx.textAlign = "center";
         ctx.fillText(String(slide.slide_number), badgeX + 26, SAFE_M - 8);
 
-        // Slide type label (opposite corner)
+        // Slide type label
         ctx.fillStyle = p.muted;
         ctx.globalAlpha = 0.3;
         ctx.font = "700 12px Inter, Arial, sans-serif";
@@ -804,58 +810,43 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         ctx.fillText((slideType).replace(/_/g, " ").toUpperCase(), labelX, SAFE_M - 18);
         ctx.globalAlpha = 1;
 
-        // Content area calculations
+        // Content area
         const contentTop = SAFE_M + 60;
         const contentBottom = isCta ? CANVAS_H - SAFE_M - 220 : CANVAS_H - SAFE_M - 80;
         const contentH = contentBottom - contentTop;
         const textX = SAFE_M;
         const textW = CANVAS_W - SAFE_M * 2;
 
-        // ── Layout-specific rendering ──
-
+        // Layout-specific rendering
         if (isStat && slide.pattern_interrupt) {
-          // Large stat number centered
           ctx.fillStyle = p.accent;
           ctx.font = "900 120px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
           ctx.fillText(slide.pattern_interrupt, CANVAS_W / 2, contentTop + contentH * 0.35);
-
-          // Headline below
           ctx.fillStyle = p.fg;
           ctx.font = "900 56px Inter, Arial, sans-serif";
           drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], CANVAS_W / 2, contentTop + contentH * 0.55, textW, 64, p, "center");
-
-          // Supporting text
           ctx.fillStyle = p.muted;
           ctx.font = "400 26px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
           wrapText(ctx, slide.supporting_text, CANVAS_W / 2, contentTop + contentH * 0.72, textW - 60, 36);
-
         } else if (isQuote) {
-          // Quote mark
           ctx.fillStyle = p.accent;
           ctx.globalAlpha = 0.25;
           ctx.font = "400 160px Georgia, serif";
           ctx.textAlign = isAr ? "right" : "left";
-          const qmX = isAr ? CANVAS_W - SAFE_M : SAFE_M;
-          ctx.fillText("\u201C", qmX, contentTop + contentH * 0.35);
+          ctx.fillText("\u201C", isAr ? CANVAS_W - SAFE_M : SAFE_M, contentTop + contentH * 0.35);
           ctx.globalAlpha = 1;
-
-          // Headline
           ctx.fillStyle = p.fg;
           ctx.font = "900 56px Inter, Arial, sans-serif";
           const qAlign = isAr ? "right" : "left";
           const qHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
           drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], qHx, contentTop + contentH * 0.5, textW, 64, p, qAlign);
-
-          // Supporting text
           ctx.fillStyle = p.muted;
           ctx.font = "400 26px Inter, Arial, sans-serif";
           ctx.textAlign = qAlign as CanvasTextAlign;
           wrapText(ctx, slide.supporting_text, qHx, contentTop + contentH * 0.7, textW - 40, 36);
-
         } else if (isNumbered) {
-          // Number circle
           const circY = contentTop + contentH * 0.25;
           const circX = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M - 40 : SAFE_M + 40);
           ctx.beginPath();
@@ -870,22 +861,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.textAlign = "center";
           const stepNum = slide.slide_number >= 6 && slide.slide_number <= 8 ? slide.slide_number - 5 : slide.slide_number;
           ctx.fillText(String(stepNum), circX, circY + 13);
-
-          // Headline
           ctx.fillStyle = p.fg;
           ctx.font = "900 56px Inter, Arial, sans-serif";
           const nAlign = isAr ? "right" : "left";
           const nHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
           drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], nHx, contentTop + contentH * 0.5, textW, 64, p, nAlign);
-
-          // Supporting text
           ctx.fillStyle = p.muted;
           ctx.font = "400 26px Inter, Arial, sans-serif";
           ctx.textAlign = nAlign as CanvasTextAlign;
           wrapText(ctx, slide.supporting_text, nHx, contentTop + contentH * 0.7, textW - 40, 36);
-
         } else if (isSplitL) {
-          // Vertical divider
           const midX = CANVAS_W / 2;
           ctx.strokeStyle = `${p.accent}30`;
           ctx.lineWidth = 2;
@@ -893,142 +878,119 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           ctx.moveTo(midX, contentTop + 40);
           ctx.lineTo(midX, contentBottom - 40);
           ctx.stroke();
-
-          // Left column: headline
           ctx.fillStyle = p.fg;
           ctx.font = "900 48px Inter, Arial, sans-serif";
           const sLeftAlign = isAr ? "right" : "left";
           const sLeftX = isAr ? midX - 30 : SAFE_M;
           ctx.textAlign = sLeftAlign as CanvasTextAlign;
           drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], sLeftX, contentTop + contentH * 0.4, midX - SAFE_M - 40, 56, p, sLeftAlign);
-
-          // Right column: supporting text
           ctx.fillStyle = p.muted;
           ctx.font = "400 26px Inter, Arial, sans-serif";
           const sRightAlign = isAr ? "right" : "left";
           const sRightX = isAr ? CANVAS_W - SAFE_M : midX + 30;
           ctx.textAlign = sRightAlign as CanvasTextAlign;
           wrapText(ctx, slide.supporting_text, sRightX, contentTop + contentH * 0.4, midX - SAFE_M - 40, 36);
-
         } else if (isLeft || isRight) {
-          // Text on one side
           const align = isRight ? (isAr ? "left" : "right") : (isAr ? "right" : "left");
           const hx = align === "right" ? CANVAS_W - SAFE_M : SAFE_M;
-
-          // Accent bar
           ctx.fillStyle = p.accent;
-          const barX = align === "right" ? CANVAS_W - SAFE_M - 80 : SAFE_M;
-          ctx.fillRect(barX, contentTop + contentH * 0.32, 80, 6);
-
-          // Pattern interrupt
+          const barX2 = align === "right" ? CANVAS_W - SAFE_M - 80 : SAFE_M;
+          ctx.fillRect(barX2, contentTop + contentH * 0.32, 80, 6);
           if (slide.pattern_interrupt) {
             ctx.fillStyle = p.accent;
             ctx.font = "900 28px Inter, Arial, sans-serif";
             ctx.textAlign = align as CanvasTextAlign;
             ctx.fillText(slide.pattern_interrupt, hx, contentTop + contentH * 0.4);
           }
-
-          // Headline
           ctx.fillStyle = p.fg;
           ctx.font = "900 60px Inter, Arial, sans-serif";
           drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], hx, contentTop + contentH * 0.5, textW * 0.75, 68, p, align);
-
-          // Supporting
           ctx.fillStyle = p.muted;
           ctx.font = "400 26px Inter, Arial, sans-serif";
           ctx.textAlign = align as CanvasTextAlign;
           wrapText(ctx, slide.supporting_text, hx, contentTop + contentH * 0.72, textW * 0.75, 36);
-
-        } else if (isInfographicL && slide.diagram_data && slide.diagram_data.nodes?.length > 0) {
-          // Draw headline
+        } else if (isInfographicL) {
           ctx.fillStyle = p.fg;
           ctx.font = "900 48px Inter, Arial, sans-serif";
-          ctx.textAlign = "center";
-          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], CANVAS_W / 2, contentTop + 60, textW, 56, p, "center");
-
-          // Draw diagram nodes
-          const nodes = slide.diagram_data.nodes;
-          const dType = slide.diagram_data.type;
-          const dStartY = contentTop + 140;
-          const dHeight = contentH - 180;
-
-          if (dType === "sequential_flow") {
-            const nodeH = 56;
-            const gap = Math.min(40, (dHeight - nodes.length * nodeH) / (nodes.length));
-            nodes.forEach((n, ni) => {
-              const ny = dStartY + ni * (nodeH + gap);
-              const nw = Math.min(420, textW - 80);
-              const nx = (CANVAS_W - nw) / 2;
-              ctx.strokeStyle = p.accent;
-              ctx.lineWidth = 2;
-              roundRect(ctx, nx, ny, nw, nodeH, 12);
-              ctx.stroke();
-              ctx.fillStyle = `${p.accent}15`;
-              roundRect(ctx, nx, ny, nw, nodeH, 12);
-              ctx.fill();
-              ctx.fillStyle = p.fg;
-              ctx.font = "800 20px Inter, Arial, sans-serif";
-              ctx.textAlign = "center";
-              ctx.fillText(n, CANVAS_W / 2, ny + 35);
-              if (ni < nodes.length - 1) {
-                ctx.fillStyle = p.accent;
-                ctx.font = "700 28px Inter, Arial, sans-serif";
-                ctx.fillText("↓", CANVAS_W / 2, ny + nodeH + gap / 2 + 8);
-              }
-            });
-          } else if (dType === "grid_2x2") {
-            const cols = 2;
-            const rows = Math.ceil(nodes.length / cols);
-            const cellW = (textW - 40) / cols;
-            const cellH = Math.min(80, (dHeight - 40) / rows);
-            nodes.slice(0, 4).forEach((n, ni) => {
-              const col = ni % cols;
-              const row = Math.floor(ni / cols);
-              const cx = SAFE_M + 20 + col * cellW;
-              const cy = dStartY + row * (cellH + 16);
-              ctx.strokeStyle = `${p.accent}40`;
-              ctx.lineWidth = 2;
-              roundRect(ctx, cx, cy, cellW - 16, cellH, 12);
-              ctx.stroke();
-              ctx.fillStyle = `${p.accent}10`;
-              roundRect(ctx, cx, cy, cellW - 16, cellH, 12);
-              ctx.fill();
-              ctx.fillStyle = p.fg;
-              ctx.font = "800 18px Inter, Arial, sans-serif";
-              ctx.textAlign = "center";
-              ctx.fillText(n, cx + (cellW - 16) / 2, cy + cellH / 2 + 6);
-            });
-          } else {
-            // Layered / circular fallback — simple list
-            const nodeH = 48;
-            const gap = 12;
-            nodes.forEach((n, ni) => {
-              const ny = dStartY + ni * (nodeH + gap);
-              const nw = textW - 40;
-              const nx = SAFE_M + 20;
-              ctx.fillStyle = `${p.accent}${Math.max(12, 35 - ni * 6).toString(16).padStart(2, "0")}`;
-              roundRect(ctx, nx, ny, nw, nodeH, 10);
-              ctx.fill();
-              ctx.strokeStyle = `${p.accent}40`;
-              ctx.lineWidth = 1.5;
-              roundRect(ctx, nx, ny, nw, nodeH, 10);
-              ctx.stroke();
-              ctx.fillStyle = p.fg;
-              ctx.font = "700 20px Inter, Arial, sans-serif";
-              ctx.textAlign = "center";
-              ctx.fillText(n, CANVAS_W / 2, ny + 31);
-            });
+          const iAlign = isAr ? "right" : "left";
+          const iHx = isAr ? CANVAS_W - SAFE_M : SAFE_M;
+          drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], iHx, contentTop + contentH * 0.18, textW, 56, p, iAlign);
+          if (slide.diagram_data?.nodes?.length) {
+            const nodes = slide.diagram_data.nodes;
+            const dType = slide.diagram_data.type;
+            if (dType === "sequential_flow") {
+              const stepH = 52;
+              const gap = 16;
+              const startY = contentTop + contentH * 0.35;
+              nodes.forEach((n, ni) => {
+                const ny = startY + ni * (stepH + gap);
+                ctx.strokeStyle = p.accent;
+                ctx.lineWidth = 2;
+                roundRect(ctx, SAFE_M + 40, ny, textW - 80, stepH, 12);
+                ctx.stroke();
+                ctx.fillStyle = `${p.accent}15`;
+                roundRect(ctx, SAFE_M + 40, ny, textW - 80, stepH, 12);
+                ctx.fill();
+                ctx.fillStyle = p.fg;
+                ctx.font = "800 20px Inter, Arial, sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(n, CANVAS_W / 2, ny + 33);
+                if (ni < nodes.length - 1) {
+                  ctx.fillStyle = p.accent;
+                  ctx.font = "700 28px Inter, Arial, sans-serif";
+                  ctx.fillText("↓", CANVAS_W / 2, ny + stepH + 12);
+                }
+              });
+            } else if (dType === "layered") {
+              const startY2 = contentTop + contentH * 0.35;
+              nodes.forEach((n, ni) => {
+                const ny = startY2 + ni * 56;
+                const alpha = Math.max(12, 35 - ni * 6);
+                ctx.fillStyle = `${p.accent}${alpha.toString(16).padStart(2, "0")}`;
+                roundRect(ctx, SAFE_M + 20, ny, textW - 40, 46, 10);
+                ctx.fill();
+                ctx.strokeStyle = `${p.accent}40`;
+                ctx.lineWidth = 1.5;
+                roundRect(ctx, SAFE_M + 20, ny, textW - 40, 46, 10);
+                ctx.stroke();
+                ctx.fillStyle = p.fg;
+                ctx.font = "700 20px Inter, Arial, sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(n, CANVAS_W / 2, ny + 30);
+              });
+            } else if (dType === "grid_2x2") {
+              const gStartY = contentTop + contentH * 0.38;
+              const cellW = (textW - 60) / 2;
+              const cellH = 80;
+              nodes.slice(0, 4).forEach((n, ni) => {
+                const col = ni % 2;
+                const row = Math.floor(ni / 2);
+                const cx = SAFE_M + 10 + col * (cellW + 20);
+                const cy = gStartY + row * (cellH + 16);
+                ctx.strokeStyle = `${p.accent}40`;
+                ctx.lineWidth = 2;
+                roundRect(ctx, cx, cy, cellW, cellH, 12);
+                ctx.stroke();
+                ctx.fillStyle = `${p.accent}10`;
+                roundRect(ctx, cx, cy, cellW, cellH, 12);
+                ctx.fill();
+                ctx.fillStyle = p.fg;
+                ctx.font = "800 18px Inter, Arial, sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(n, cx + cellW / 2, cy + cellH / 2 + 6);
+              });
+            }
           }
-
+          ctx.fillStyle = p.muted;
+          ctx.font = "400 24px Inter, Arial, sans-serif";
+          ctx.textAlign = isAr ? "right" : "left";
+          wrapText(ctx, slide.supporting_text, isAr ? CANVAS_W - SAFE_M : SAFE_M, contentTop + contentH * 0.85, textW - 40, 32);
         } else {
           // Hero center / default
-          // Accent bar
           ctx.fillStyle = p.accent;
           const divX = isHero ? (CANVAS_W - 80) / 2 : SAFE_M;
           const divY = isHero ? contentTop + contentH * 0.3 : contentTop + contentH * 0.35;
           ctx.fillRect(divX, divY, 80, 6);
-
-          // Pattern interrupt
           if (slide.pattern_interrupt && !isStat) {
             ctx.fillStyle = p.accent;
             ctx.font = "900 32px Inter, Arial, sans-serif";
@@ -1036,8 +998,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             const piX = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
             ctx.fillText(slide.pattern_interrupt, piX, divY + 50);
           }
-
-          // Headline
           ctx.fillStyle = p.fg;
           const fontSize = isHero || isCta ? 72 : 56;
           ctx.font = `900 ${fontSize}px Inter, Arial, sans-serif`;
@@ -1045,8 +1005,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           const hx = isHero ? CANVAS_W / 2 : (isAr ? CANVAS_W - SAFE_M : SAFE_M);
           const hy = isHero ? contentTop + contentH * 0.45 : contentTop + contentH * 0.5;
           drawHeadlineWithEmphasis(ctx, slide.headline, slide.emphasis_words || [], hx, hy, textW, fontSize * 1.12, p, hAlign);
-
-          // Supporting text
           if (!isCta) {
             ctx.fillStyle = p.muted;
             ctx.font = "400 26px Inter, Arial, sans-serif";
@@ -1054,8 +1012,6 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             const sy = isHero ? contentTop + contentH * 0.65 : contentTop + contentH * 0.72;
             wrapText(ctx, slide.supporting_text, hx, sy, textW - 40, 36);
           }
-
-          // Arrow down visual anchor
           if (slide.visual_anchor === "arrow_down") {
             ctx.fillStyle = p.accent;
             ctx.font = "400 48px Inter, Arial, sans-serif";
@@ -1064,45 +1020,42 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
           }
         }
 
-        // ── CTA Authority Branding ──
+        // CTA Authority Branding
         if (isCta) {
           const ctaY = CANVAS_H - SAFE_M - 180;
-          // Divider line
           const divGrd = ctx.createLinearGradient(CANVAS_W / 2 - 30, 0, CANVAS_W / 2 + 30, 0);
           divGrd.addColorStop(0, "transparent");
           divGrd.addColorStop(0.5, p.accent);
           divGrd.addColorStop(1, "transparent");
           ctx.fillStyle = divGrd;
           ctx.fillRect(CANVAS_W / 2 - 30, ctaY, 60, 2);
-
           ctx.textAlign = "center";
-          // Name
           ctx.fillStyle = p.fg;
           ctx.font = "800 22px Inter, Arial, sans-serif";
-          ctx.fillText("M. Mahafdah", CANVAS_W / 2, ctaY + 36);
-          // Title
+          ctx.fillText("M. Mahafzah", CANVAS_W / 2, ctaY + 36);
           ctx.fillStyle = p.muted;
           ctx.font = "400 16px Inter, Arial, sans-serif";
-          ctx.fillText("Strategy | Business & Digital Transformation", CANVAS_W / 2, ctaY + 62);
-          // LinkedIn
+          ctx.fillText("Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 62);
           ctx.fillStyle = p.accent;
           ctx.font = "600 14px Inter, Arial, sans-serif";
-          ctx.fillText("linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 86);
-          // Repost
+          ctx.fillText("Focus on Utilities & Power", CANVAS_W / 2, ctaY + 82);
+          ctx.fillStyle = p.accent;
+          ctx.font = "600 13px Inter, Arial, sans-serif";
+          ctx.fillText("linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 102);
           ctx.fillStyle = p.muted;
           ctx.globalAlpha = 0.7;
           ctx.font = "400 15px Inter, Arial, sans-serif";
-          ctx.fillText("↻ Repost if this helped you.", CANVAS_W / 2, ctaY + 112);
+          ctx.fillText("↻ Repost if this was helpful.", CANVAS_W / 2, ctaY + 128);
           ctx.globalAlpha = 1;
         }
 
-        // ── Footer (non-CTA) ──
+        // Footer (non-CTA)
         if (!isCta) {
           ctx.globalAlpha = 0.3;
           ctx.fillStyle = p.muted;
           ctx.font = "700 13px Inter, Arial, sans-serif";
           ctx.textAlign = isAr ? "right" : "left";
-          ctx.fillText("M. Mahafdah", isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
+          ctx.fillText("M. Mahafzah", isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
           ctx.textAlign = isAr ? "left" : "right";
           ctx.font = "400 11px Inter, Arial, sans-serif";
           ctx.fillText("SAVE ↗", isAr ? SAFE_M : CANVAS_W - SAFE_M, CANVAS_H - 28);
@@ -1134,17 +1087,156 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       setCurrentSlide(0);
       setEditingIdx(null);
       setGridView(false);
-      setHasGenerated(false);
+      setHasStarted(false);
       setCaption("");
       setHashtags([]);
       setGeneratingVisuals(false);
       setVisualProgress(0);
       setVisualTotal(0);
+      setPipelineStep("input");
+      setTopicAnalysis(null);
+      setFrameworks([]);
+      setSelectedFramework(null);
     }, 300);
   };
 
   const imagesReady = currentSlides.filter(s => s.image_url).length;
   const imagesTotal = currentSlides.filter(s => s.image_prompt).length;
+
+  /* ── Pipeline Step Indicator ── */
+  const StepIndicator = () => (
+    <div className="flex items-center gap-1 px-1">
+      {[
+        { key: "input" as PipelineStep, label: "Analysis", icon: Lightbulb },
+        { key: "frameworks" as PipelineStep, label: "Framework", icon: Layers },
+        { key: "carousel" as PipelineStep, label: "Carousel", icon: LayoutGrid },
+      ].map((step, i) => {
+        const isActive = pipelineStep === step.key;
+        const isDone = (step.key === "input" && pipelineStep !== "input") ||
+          (step.key === "frameworks" && pipelineStep === "carousel");
+        const Icon = step.icon;
+        return (
+          <div key={step.key} className="flex items-center gap-1">
+            {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/20" />}
+            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+              isActive ? "bg-primary/15 text-primary" : isDone ? "text-primary/60" : "text-muted-foreground/30"
+            }`}>
+              {isDone ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
+              {step.label}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  /* ── Framework Selection UI ── */
+  const FrameworkSelectionPanel = () => (
+    <div className="space-y-4">
+      {/* Topic Analysis Summary */}
+      {topicAnalysis && (
+        <div className="rounded-xl border border-primary/[0.08] bg-card/60 p-4 space-y-3">
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
+            <Lightbulb className="w-3 h-3" /> Topic Analysis
+          </p>
+          <div className="space-y-2">
+            <div>
+              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Challenge</span>
+              <p className="text-xs text-foreground/80">{topicAnalysis.core_challenge}</p>
+            </div>
+            <div>
+              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Strategic Insight</span>
+              <p className="text-xs text-foreground/80">{topicAnalysis.strategic_insight}</p>
+            </div>
+            <div>
+              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider">Transformation Theme</span>
+              <p className="text-xs text-foreground/80">{topicAnalysis.transformation_theme}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Framework Cards */}
+      <div className="space-y-3">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
+          <Layers className="w-3 h-3" /> Select a Framework
+        </p>
+        {frameworks.map((fw) => (
+          <button
+            key={fw.id}
+            onClick={() => setSelectedFramework(fw)}
+            className={`w-full text-left rounded-xl border p-4 transition-all ${
+              selectedFramework?.id === fw.id
+                ? "border-primary/40 bg-primary/[0.06] ring-1 ring-primary/20"
+                : "border-border/20 bg-card/40 hover:border-primary/20 hover:bg-card/60"
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                selectedFramework?.id === fw.id ? "bg-primary/20" : "bg-muted/20"
+              }`}>
+                <Target className={`w-4 h-4 ${selectedFramework?.id === fw.id ? "text-primary" : "text-muted-foreground/50"}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{fw.name}</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">{fw.description}</p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {fw.steps.map((step, si) => (
+                    <div key={si} className="flex items-center gap-1">
+                      <span className="text-[9px] bg-primary/8 text-primary/70 px-1.5 py-0.5 rounded font-medium">
+                        {si + 1}. {step}
+                      </span>
+                      {si < fw.steps.length - 1 && <ArrowRight className="w-2.5 h-2.5 text-muted-foreground/20" />}
+                    </div>
+                  ))}
+                </div>
+                <span className="text-[9px] text-muted-foreground/40 mt-1.5 block capitalize">
+                  {(fw.diagram_type || "").replace(/_/g, " ")} diagram
+                </span>
+              </div>
+              {selectedFramework?.id === fw.id && (
+                <Check className="w-4 h-4 text-primary flex-shrink-0 mt-1" />
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 pt-2">
+        <Button
+          onClick={() => generate(lang)}
+          disabled={!selectedFramework || isLoading}
+          className="flex-1 text-xs min-h-[44px]"
+        >
+          {isLoading ? (
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Generating…</>
+          ) : (
+            <><PenLine className="w-3.5 h-3.5 mr-1.5" /> Generate Carousel</>
+          )}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={generateFrameworksStep}
+          disabled={generatingFrameworks}
+          className="text-xs border-border/15 min-h-[44px]"
+        >
+          <RefreshCw className={`w-3 h-3 mr-1.5 ${generatingFrameworks ? "animate-spin" : ""}`} />
+          Regenerate
+        </Button>
+      </div>
+
+      {/* Skip framework - generate directly */}
+      <button
+        onClick={() => generate(lang)}
+        disabled={isLoading}
+        className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 w-full text-center py-1 transition-colors"
+      >
+        Skip framework selection → generate directly
+      </button>
+    </div>
+  );
 
   return (
     <Sheet open={open} onOpenChange={v => !v && handleClose()}>
@@ -1161,7 +1253,12 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   LinkedIn Carousel
                 </SheetTitle>
                 <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
-                  {currentSlides.length} slides · {PALETTES[style].name} · {imagesReady}/{imagesTotal} visuals
+                  {pipelineStep === "carousel"
+                    ? `${currentSlides.length} slides · ${PALETTES[style].name} · ${imagesReady}/${imagesTotal} visuals`
+                    : pipelineStep === "frameworks"
+                    ? `${frameworks.length} frameworks generated`
+                    : "Analyzing topic…"
+                  }
                 </SheetDescription>
               </div>
             </div>
@@ -1169,6 +1266,11 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
         </div>
 
         <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
+
+        {/* Pipeline Step Indicator */}
+        <div className="px-4 pt-3 pb-1">
+          <StepIndicator />
+        </div>
 
         <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
           {/* Visual Generation Progress */}
@@ -1183,263 +1285,300 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
             </div>
           )}
 
-          {/* Controls Row */}
-          <div className="flex flex-wrap gap-2">
-            {/* Language Toggle */}
-            <div className="flex rounded-lg border border-border/20 overflow-hidden">
-              {(["en", "ar"] as Lang[]).map(l => (
-                <button
-                  key={l}
-                  onClick={() => { setLang(l); setCurrentSlide(0); setEditingIdx(null); }}
-                  className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
-                    lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
-                  }`}
-                >
-                  <Globe className="w-3 h-3" />
-                  {l === "en" ? "EN" : "AR"}
-                  {loading[l] && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
-                </button>
-              ))}
-            </div>
-
-            {/* Style Selector */}
-            <div className="flex rounded-lg border border-border/20 overflow-hidden flex-wrap">
-              {(Object.keys(PALETTES) as Style[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStyle(s)}
-                  className={`text-[10px] px-2.5 py-1.5 transition-colors min-h-[36px] whitespace-nowrap ${
-                    style === s ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
-                  }`}
-                >
-                  {PALETTES[s].name}
-                </button>
-              ))}
-            </div>
-
-            {/* Grid toggle */}
-            <button
-              onClick={() => setGridView(!gridView)}
-              className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors min-h-[36px] ${
-                gridView ? "bg-primary/15 text-primary border-primary/20" : "border-border/20 text-muted-foreground/50"
-              }`}
-            >
-              <LayoutGrid className="w-3 h-3" />
-            </button>
-          </div>
-
-          {/* Content */}
-          {isLoading ? (
+          {/* ═══ STEP: Generating Frameworks ═══ */}
+          {(pipelineStep === "input" || generatingFrameworks) && (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
               <p className="text-xs text-muted-foreground/60">
-                {lang === "ar" ? "جارٍ إنشاء الشرائح..." : "Generating carousel slides…"}
+                {lang === "ar" ? "جارٍ تحليل الموضوع وإنشاء الأطر..." : "Analyzing topic & generating frameworks…"}
               </p>
             </div>
-          ) : currentSlides.length > 0 ? (
+          )}
+
+          {/* ═══ STEP: Framework Selection ═══ */}
+          {pipelineStep === "frameworks" && !generatingFrameworks && (
             <>
-              {gridView ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {currentSlides.map((slide, idx) => (
+              {/* Language Toggle */}
+              <div className="flex flex-wrap gap-2">
+                <div className="flex rounded-lg border border-border/20 overflow-hidden">
+                  {(["en", "ar"] as Lang[]).map(l => (
                     <button
-                      key={idx}
-                      onClick={() => { setCurrentSlide(idx); setGridView(false); }}
-                      className={`rounded-xl overflow-hidden border-2 transition-colors relative ${
-                        currentSlide === idx ? "border-primary/40" : "border-transparent hover:border-primary/15"
+                      key={l}
+                      onClick={() => { setLang(l); }}
+                      className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
+                        lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
                       }`}
                     >
-                      <SlidePreview slide={slide} style={style} lang={lang} width={160} />
-                      {!slide.image_url && slide.image_prompt && (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
-                          <ImageIcon className="w-3 h-3 text-amber-500/60" />
-                        </div>
-                      )}
-                      {slide.image_url && (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                          <Check className="w-3 h-3 text-emerald-500" />
-                        </div>
-                      )}
+                      <Globe className="w-3 h-3" />
+                      {l === "en" ? "EN" : "AR"}
                     </button>
                   ))}
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {/* Slide Preview */}
-                  <div className="flex justify-center">
-                    <div className="rounded-xl overflow-hidden shadow-2xl border border-primary/[0.08]">
-                      <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} />
-                    </div>
-                  </div>
+              </div>
+              <FrameworkSelectionPanel />
+            </>
+          )}
 
-                  {/* Navigation */}
-                  <div className="flex items-center justify-center gap-3">
-                    <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="h-10 w-10 p-0">
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <span className="text-xs text-muted-foreground/60 font-medium min-w-[60px] text-center">
-                      {currentSlide + 1} / {currentSlides.length}
-                    </span>
-                    <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.min(currentSlides.length - 1, currentSlide + 1))} disabled={currentSlide === currentSlides.length - 1} className="h-10 w-10 p-0">
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+          {/* ═══ STEP: Carousel View ═══ */}
+          {pipelineStep === "carousel" && (
+            <>
+              {/* Controls Row */}
+              <div className="flex flex-wrap gap-2">
+                <div className="flex rounded-lg border border-border/20 overflow-hidden">
+                  {(["en", "ar"] as Lang[]).map(l => (
+                    <button
+                      key={l}
+                      onClick={() => { setLang(l); setCurrentSlide(0); setEditingIdx(null); }}
+                      className={`text-[10px] px-3 py-1.5 flex items-center gap-1 transition-colors min-h-[36px] ${
+                        lang === l ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
+                      }`}
+                    >
+                      <Globe className="w-3 h-3" />
+                      {l === "en" ? "EN" : "AR"}
+                      {loading[l] && <Loader2 className="w-2.5 h-2.5 animate-spin" />}
+                    </button>
+                  ))}
+                </div>
 
-                  {/* Slide Editor */}
-                  <div className="rounded-xl border border-primary/[0.08] bg-card/60 overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
-                        Slide {currentSlide + 1} · {(currentSlides[currentSlide].slide_type || "").replace(/_/g, " ")}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {currentSlides[currentSlide].image_prompt && (
-                          <button
-                            onClick={() => regenerateSlideVisual(currentSlide)}
-                            className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors min-h-[36px]"
-                            title="Regenerate visual"
-                          >
-                            <ImageIcon className="w-3 h-3" />
-                            {currentSlides[currentSlide].image_url ? "Regen" : "Generate"}
-                          </button>
-                        )}
+                <div className="flex rounded-lg border border-border/20 overflow-hidden flex-wrap">
+                  {(Object.keys(PALETTES) as Style[]).map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setStyle(s)}
+                      className={`text-[10px] px-2.5 py-1.5 transition-colors min-h-[36px] whitespace-nowrap ${
+                        style === s ? "bg-primary/15 text-primary font-semibold" : "text-muted-foreground/50 hover:text-foreground/70"
+                      }`}
+                    >
+                      {PALETTES[s].name}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setGridView(!gridView)}
+                  className={`text-[10px] px-2.5 py-1.5 rounded-lg border transition-colors min-h-[36px] ${
+                    gridView ? "bg-primary/15 text-primary border-primary/20" : "border-border/20 text-muted-foreground/50"
+                  }`}
+                >
+                  <LayoutGrid className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Content */}
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
+                  <p className="text-xs text-muted-foreground/60">
+                    {lang === "ar" ? "جارٍ إنشاء الشرائح..." : "Generating carousel slides…"}
+                  </p>
+                </div>
+              ) : currentSlides.length > 0 ? (
+                <>
+                  {gridView ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {currentSlides.map((slide, idx) => (
                         <button
-                          onClick={() => setEditingIdx(editingIdx === currentSlide ? null : currentSlide)}
-                          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors min-h-[36px]"
+                          key={idx}
+                          onClick={() => { setCurrentSlide(idx); setGridView(false); }}
+                          className={`rounded-xl overflow-hidden border-2 transition-colors relative ${
+                            currentSlide === idx ? "border-primary/40" : "border-transparent hover:border-primary/15"
+                          }`}
                         >
-                          {editingIdx === currentSlide ? <><Eye className="w-3 h-3" /> Preview</> : <><Pencil className="w-3 h-3" /> Edit</>}
+                          <SlidePreview slide={slide} style={style} lang={lang} width={160} />
+                          {!slide.image_url && slide.image_prompt && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                              <ImageIcon className="w-3 h-3 text-amber-500/60" />
+                            </div>
+                          )}
+                          {slide.image_url && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            </div>
+                          )}
                         </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex justify-center">
+                        <div className="rounded-xl overflow-hidden shadow-2xl border border-primary/[0.08]">
+                          <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-3">
+                        <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))} disabled={currentSlide === 0} className="h-10 w-10 p-0">
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <span className="text-xs text-muted-foreground/60 font-medium min-w-[60px] text-center">
+                          {currentSlide + 1} / {currentSlides.length}
+                        </span>
+                        <Button size="sm" variant="ghost" onClick={() => setCurrentSlide(Math.min(currentSlides.length - 1, currentSlide + 1))} disabled={currentSlide === currentSlides.length - 1} className="h-10 w-10 p-0">
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+
+                      {/* Slide Editor */}
+                      <div className="rounded-xl border border-primary/[0.08] bg-card/60 overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
+                          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
+                            Slide {currentSlide + 1} · {(currentSlides[currentSlide].slide_type || "").replace(/_/g, " ")}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {currentSlides[currentSlide].image_prompt && (
+                              <button
+                                onClick={() => regenerateSlideVisual(currentSlide)}
+                                className="text-[10px] text-amber-500/70 hover:text-amber-500 flex items-center gap-1 transition-colors min-h-[36px]"
+                                title="Regenerate visual"
+                              >
+                                <ImageIcon className="w-3 h-3" />
+                                {currentSlides[currentSlide].image_url ? "Regen" : "Generate"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setEditingIdx(editingIdx === currentSlide ? null : currentSlide)}
+                              className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors min-h-[36px]"
+                            >
+                              {editingIdx === currentSlide ? <><Eye className="w-3 h-3" /> Preview</> : <><Pencil className="w-3 h-3" /> Edit</>}
+                            </button>
+                          </div>
+                        </div>
+
+                        {editingIdx === currentSlide ? (
+                          <div className="p-4 space-y-3">
+                            <div>
+                              <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Headline</label>
+                              <Input
+                                value={currentSlides[currentSlide].headline}
+                                onChange={e => updateSlide(currentSlide, "headline", e.target.value)}
+                                className="mt-1 text-sm"
+                                dir={lang === "ar" ? "rtl" : "ltr"}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Supporting Text</label>
+                              <Textarea
+                                value={currentSlides[currentSlide].supporting_text}
+                                onChange={e => updateSlide(currentSlide, "supporting_text", e.target.value)}
+                                className="mt-1 text-sm min-h-[80px]"
+                                dir={lang === "ar" ? "rtl" : "ltr"}
+                              />
+                            </div>
+                            {currentSlides[currentSlide].image_prompt && (
+                              <div>
+                                <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Image Prompt</label>
+                                <Textarea
+                                  value={currentSlides[currentSlide].image_prompt || ""}
+                                  onChange={e => updateSlide(currentSlide, "image_prompt" as keyof Slide, e.target.value)}
+                                  className="mt-1 text-xs min-h-[60px] text-muted-foreground/70"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-4" dir={lang === "ar" ? "rtl" : "ltr"}>
+                            <p className="text-sm font-bold text-foreground mb-1">{currentSlides[currentSlide].headline}</p>
+                            <p className="text-xs text-muted-foreground/60 leading-relaxed">{currentSlides[currentSlide].supporting_text}</p>
+                            {currentSlides[currentSlide].emphasis_words && currentSlides[currentSlide].emphasis_words!.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {currentSlides[currentSlide].emphasis_words!.map((w, i) => (
+                                  <span key={i} className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
+                                    {w}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {currentSlides[currentSlide].image_url && (
+                              <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-500/70">
+                                <Check className="w-3 h-3" /> Visual generated
+                              </div>
+                            )}
+                            {!currentSlides[currentSlide].image_url && currentSlides[currentSlide].image_prompt && (
+                              <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-500/60">
+                                <ImageIcon className="w-3 h-3" /> Visual pending
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Thumbnail strip */}
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                        {currentSlides.map((slide, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => { setCurrentSlide(idx); setEditingIdx(null); }}
+                            className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors ${
+                              currentSlide === idx ? "border-primary/50" : "border-transparent opacity-60 hover:opacity-100"
+                            }`}
+                          >
+                            <SlidePreview slide={slide} style={style} lang={lang} width={48} />
+                          </button>
+                        ))}
                       </div>
                     </div>
+                  )}
 
-                    {editingIdx === currentSlide ? (
+                  {/* LinkedIn Caption & Hashtags */}
+                  {(caption || hashtags.length > 0) && (
+                    <div className="rounded-xl border border-primary/[0.08] bg-card/60 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
+                        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
+                          <Hash className="w-3 h-3" /> Authority Package
+                        </p>
+                        <button onClick={copyCaption} className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors min-h-[36px]">
+                          <Copy className="w-3 h-3" /> Copy All
+                        </button>
+                      </div>
                       <div className="p-4 space-y-3">
-                        <div>
-                          <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Headline</label>
-                          <Input
-                            value={currentSlides[currentSlide].headline}
-                            onChange={e => updateSlide(currentSlide, "headline", e.target.value)}
-                            className="mt-1 text-sm"
-                            dir={lang === "ar" ? "rtl" : "ltr"}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Supporting Text</label>
-                          <Textarea
-                            value={currentSlides[currentSlide].supporting_text}
-                            onChange={e => updateSlide(currentSlide, "supporting_text", e.target.value)}
-                            className="mt-1 text-sm min-h-[80px]"
-                            dir={lang === "ar" ? "rtl" : "ltr"}
-                          />
-                        </div>
-                        {currentSlides[currentSlide].image_prompt && (
+                        {caption && (
                           <div>
-                            <label className="text-[10px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Image Prompt</label>
+                            <label className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-semibold">LinkedIn Caption</label>
                             <Textarea
-                              value={currentSlides[currentSlide].image_prompt || ""}
-                              onChange={e => updateSlide(currentSlide, "image_prompt" as keyof Slide, e.target.value)}
-                              className="mt-1 text-xs min-h-[60px] text-muted-foreground/70"
+                              value={caption}
+                              onChange={e => setCaption(e.target.value)}
+                              className="mt-1 text-xs min-h-[100px] text-muted-foreground/80"
                             />
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <div className="p-4" dir={lang === "ar" ? "rtl" : "ltr"}>
-                        <p className="text-sm font-bold text-foreground mb-1">{currentSlides[currentSlide].headline}</p>
-                        <p className="text-xs text-muted-foreground/60 leading-relaxed">{currentSlides[currentSlide].supporting_text}</p>
-                        {currentSlides[currentSlide].emphasis_words && currentSlides[currentSlide].emphasis_words!.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {currentSlides[currentSlide].emphasis_words!.map((w, i) => (
-                              <span key={i} className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-semibold">
-                                {w}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {currentSlides[currentSlide].image_url && (
-                          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-500/70">
-                            <Check className="w-3 h-3" /> Visual generated
-                          </div>
-                        )}
-                        {!currentSlides[currentSlide].image_url && currentSlides[currentSlide].image_prompt && (
-                          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-amber-500/60">
-                            <ImageIcon className="w-3 h-3" /> Visual pending
+                        {hashtags.length > 0 && (
+                          <div>
+                            <label className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Hashtags</label>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {hashtags.map((h, i) => (
+                                <span key={i} className="text-[10px] bg-primary/8 text-primary/70 px-2 py-0.5 rounded-full border border-primary/10">
+                                  {h.startsWith("#") ? h : `#${h}`}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
-                  {/* Thumbnail strip */}
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-                    {currentSlides.map((slide, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => { setCurrentSlide(idx); setEditingIdx(null); }}
-                        className={`flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors ${
-                          currentSlide === idx ? "border-primary/50" : "border-transparent opacity-60 hover:opacity-100"
-                        }`}
-                      >
-                        <SlidePreview slide={slide} style={style} lang={lang} width={48} />
-                      </button>
-                    ))}
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs min-h-[44px]">
+                      {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15 min-h-[44px]">
+                      <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setPipelineStep("frameworks")} className="text-xs border-border/15 min-h-[44px]">
+                      <Layers className="w-3 h-3 mr-1.5" /> Frameworks
+                    </Button>
                   </div>
+                </>
+              ) : (
+                <div className="text-center py-16">
+                  <p className="text-xs text-muted-foreground/40">No carousel generated yet.</p>
+                  <Button size="sm" variant="outline" onClick={() => generate(lang)} className="mt-3 text-xs min-h-[44px]">
+                    Generate Carousel
+                  </Button>
                 </div>
               )}
-
-              {/* LinkedIn Caption & Hashtags */}
-              {(caption || hashtags.length > 0) && (
-                <div className="rounded-xl border border-primary/[0.08] bg-card/60 overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold flex items-center gap-1.5">
-                      <Hash className="w-3 h-3" /> Authority Package
-                    </p>
-                    <button onClick={copyCaption} className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors min-h-[36px]">
-                      <Copy className="w-3 h-3" /> Copy All
-                    </button>
-                  </div>
-                  <div className="p-4 space-y-3">
-                    {caption && (
-                      <div>
-                        <label className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-semibold">LinkedIn Caption</label>
-                        <Textarea
-                          value={caption}
-                          onChange={e => setCaption(e.target.value)}
-                          className="mt-1 text-xs min-h-[100px] text-muted-foreground/80"
-                        />
-                      </div>
-                    )}
-                    {hashtags.length > 0 && (
-                      <div>
-                        <label className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-semibold">Hashtags</label>
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {hashtags.map((h, i) => (
-                            <span key={i} className="text-[10px] bg-primary/8 text-primary/70 px-2 py-0.5 rounded-full border border-primary/10">
-                              {h.startsWith("#") ? h : `#${h}`}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-2">
-                <Button onClick={exportPDF} disabled={exporting} className="flex-1 text-xs min-h-[44px]">
-                  {exporting ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Exporting…</> : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => generate(lang)} disabled={isLoading} className="text-xs border-border/15 min-h-[44px]">
-                  <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
-                </Button>
-              </div>
             </>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-xs text-muted-foreground/40">No carousel generated yet.</p>
-              <Button size="sm" variant="outline" onClick={generateBoth} className="mt-3 text-xs min-h-[44px]">
-                Generate Carousel
-              </Button>
-            </div>
           )}
         </div>
 
@@ -1448,107 +1587,3 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     </Sheet>
   );
 };
-
-/* ── Canvas utilities ── */
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-  const words = text.split(" ");
-  let line = "";
-  let cy = y;
-
-  for (const word of words) {
-    const testLine = line + (line ? " " : "") + word;
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      ctx.fillText(line, x, cy);
-      line = word;
-      cy += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line) ctx.fillText(line, x, cy);
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function drawHeadlineWithEmphasis(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  emphasisWords: string[],
-  x: number, y: number,
-  maxWidth: number, lineHeight: number,
-  p: { emphBg: string; emphFg: string; fg: string },
-  align: string,
-) {
-  if (!emphasisWords || emphasisWords.length === 0) {
-    ctx.textAlign = align as CanvasTextAlign;
-    wrapText(ctx, text, x, y, maxWidth, lineHeight);
-    return;
-  }
-
-  const lowerEmph = emphasisWords.map(w => w.toLowerCase());
-  const words = text.split(" ");
-  let line: { text: string; highlight: boolean }[][] = [[]];
-  let testStr = "";
-
-  // Word-wrap into lines
-  for (const word of words) {
-    const test = testStr + (testStr ? " " : "") + word;
-    if (ctx.measureText(test).width > maxWidth && testStr) {
-      line.push([]);
-      testStr = word;
-    } else {
-      testStr = test;
-    }
-    const isEmph = lowerEmph.includes(word.toLowerCase().replace(/[.,!?;:]/g, ""));
-    line[line.length - 1].push({ text: word, highlight: isEmph });
-  }
-
-  // Render each line
-  ctx.textAlign = "left"; // manual positioning
-  const savedFont = ctx.font;
-
-  line.forEach((lineWords, li) => {
-    const cy = y + li * lineHeight;
-    const fullLine = lineWords.map(w => w.text).join(" ");
-    const lineW = ctx.measureText(fullLine).width;
-    let startX: number;
-    if (align === "center") startX = x - lineW / 2;
-    else if (align === "right") startX = x - lineW;
-    else startX = x;
-
-    let cx = startX;
-    lineWords.forEach((w, wi) => {
-      const wordW = ctx.measureText(w.text).width;
-      if (w.highlight) {
-        // Draw background pill
-        ctx.fillStyle = p.emphBg;
-        roundRect(ctx, cx - 6, cy - lineHeight * 0.7, wordW + 12, lineHeight * 0.9, 4);
-        ctx.fill();
-        ctx.fillStyle = p.emphFg;
-      } else {
-        ctx.fillStyle = p.fg;
-      }
-      ctx.font = savedFont;
-      ctx.textAlign = "left";
-      ctx.fillText(w.text, cx, cy);
-      cx += wordW + ctx.measureText(" ").width;
-    });
-  });
-
-  // Restore
-  ctx.font = savedFont;
-}
-
-export default CarouselGenerator;
