@@ -461,7 +461,8 @@ Deno.serve(async (req) => {
         for (const sr of searchResults) {
           if (discovered.length >= MAX_POSTS) break;
 
-          const url = sr.url || "";
+          // Normalize URL: remove regional subdomains, query params
+          const url = normalizeLinkedInUrl(sr.url || "");
           rawLinksFound++;
 
           // URL pattern validation
