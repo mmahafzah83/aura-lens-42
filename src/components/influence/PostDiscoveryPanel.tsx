@@ -9,13 +9,27 @@ interface Props {
   onDiscoveryComplete?: () => void;
 }
 
+interface RejectionReasons {
+  profile_page?: number;
+  article_reference?: number;
+  comment_thread?: number;
+  external_reference?: number;
+  mention_by_other?: number;
+  invalid_url_pattern?: number;
+  failed_authorship?: number;
+}
+
 interface DiscoveryResult {
   profile_url?: string;
   queries_run?: number;
   total_results?: number;
+  raw_links_found?: number;
+  valid_posts?: number;
   discovered: number;
   inserted: number;
   duplicates: number;
+  rejected_count?: number;
+  rejection_reasons?: RejectionReasons;
   classified?: number;
   labels?: string[];
   source_type?: string;
