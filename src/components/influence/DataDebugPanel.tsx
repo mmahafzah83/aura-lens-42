@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bug, AlertTriangle, RefreshCw, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Bug, AlertTriangle, RefreshCw, CheckCircle2, ShieldCheck, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 /* ── Schema Audit Report ── */
