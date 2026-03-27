@@ -51,7 +51,7 @@ Write concise, confident, executive Arabic. RTL optimized.`
       ? `\n\nVISUAL PLAN:\n${JSON.stringify(visual_plan, null, 2)}\n\nFollow this visual plan for layout types, visual decisions, and density levels per slide.`
       : "";
 
-    const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic, stepCount);
+    const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic, stepCount, frameworkSteps);
 
     const stageList = frameworkSteps.length > 0 
       ? `\n\nMANDATORY STAGE COVERAGE: Every one of these stages MUST appear by name in at least one framework_step slide headline or supporting_text:\n${frameworkSteps.map((s: string, i: number) => `  ${i + 1}. "${s}"`).join("\n")}\n\nIf you skip ANY stage, the output is INVALID. Group adjacent stages into the same slide if needed (e.g., "Stages 1-2: ..."), but every stage name must appear.`
@@ -309,13 +309,32 @@ function extractAndParseJson(raw: string): unknown {
   return JSON.parse(cleaned);
 }
 
-function buildSystemPrompt(langInstruction: string, styleInstruction: string, isArabic: boolean, frameworkStepCount: number): string {
+function buildSystemPrompt(langInstruction: string, styleInstruction: string, isArabic: boolean, frameworkStepCount: number, frameworkSteps: string[] = []): string {
   const frameworkDepthRule = frameworkStepCount > 3
     ? `The selected framework has ${frameworkStepCount} stages. You MUST either:
 (a) Compress into 3 strategic maturity bands (e.g., Foundation / Progression / Leadership), OR
 (b) Allocate at least 3 dedicated slides to explain the stages in grouped sequences.
 Do NOT use just 1 overview slide + 1 partial explainer for a ${frameworkStepCount}-stage model.`
     : `The framework has ${frameworkStepCount || "few"} stages. Explain each stage clearly across dedicated slides.`;
+
+  const stageNamingRule = frameworkSteps.length > 0
+    ? `
+═══════════════════════════════════
+STAGE NAMING LOCK (NON-NEGOTIABLE)
+═══════════════════════════════════
+
+The framework has these EXACT stage names. You MUST use these names VERBATIM in slide headlines and supporting text. Do NOT rename, rephrase, abbreviate, merge, or reinterpret them:
+
+${frameworkSteps.map((s: string, i: number) => `  Stage ${i + 1}: "${s}"`).join("\n")}
+
+RULES:
+- Each stage name above MUST appear word-for-word in at least one framework_step slide headline or supporting_text.
+- Do NOT invent new stage names. Do NOT collapse multiple stages into one unless you include BOTH original names.
+- The generation_checklist.stage_coverage must map each of these exact stage names to a slide number.
+- If you rename ANY stage, the output is INVALID and will be rejected.`
+    : "";
+
+
 
   return `You are Aura — an AI-powered strategic content engine that produces consulting-quality LinkedIn carousels focused on infrastructure, utilities, AI, digital transformation, and sustainability.
 
@@ -338,8 +357,8 @@ FRAMEWORK DEPTH RULE
 ═══════════════════════════════════
 
 ${frameworkDepthRule}
+${stageNamingRule}
 
-═══════════════════════════════════
 FRAMEWORK EXPLANATION RULE
 ═══════════════════════════════════
 
