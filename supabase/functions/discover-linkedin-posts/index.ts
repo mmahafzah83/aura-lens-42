@@ -107,22 +107,66 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Support both authenticated user calls and service-role cron calls
+    let userId: string | null = null;
+
+    if (authHeader) {
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
       });
-    }
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      if (!userError && user) {
+        userId = user.id;
+      }
     }
 
-    const adminClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // For cron: if no user from auth, check body.user_id or discover all active connections
+    let body: any = {};
+    try { body = await req.json(); } catch { /* empty */ }
+
+    if (!userId && body?.user_id) {
+      userId = body.user_id;
+    }
+
+    // Cron mode: process all active connections
+    if (!userId) {
+      log("cron_mode", "No user_id provided – processing all active LinkedIn connections");
+      const { data: connections } = await adminClient
+        .from("linkedin_connections")
+        .select("user_id, handle, profile_url, profile_name, display_name")
+        .eq("status", "active");
+
+      if (!connections || connections.length === 0) {
+        return new Response(JSON.stringify({ success: true, message: "No active connections to process" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const results: any[] = [];
+      for (const conn of connections) {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/discover-linkedin-posts`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+              apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+            },
+            body: JSON.stringify({ user_id: conn.user_id }),
+          });
+          const data = await res.json();
+          results.push({ user_id: conn.user_id, ...data });
+        } catch (e: any) {
+          results.push({ user_id: conn.user_id, error: e.message });
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, cron: true, results }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     let body: any = {};
     try { body = await req.json(); } catch { /* empty */ }
