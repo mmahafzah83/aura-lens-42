@@ -44,7 +44,7 @@ const Fade = ({ children, delay = 0 }: { children: React.ReactNode; delay?: numb
 const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<TimeRange>("30d");
-  const [view, setView] = useState<"dashboard" | "data">("dashboard");
+  const [view, setView] = useState<"dashboard" | "attribution" | "data">("dashboard");
 
   // Data
   const [snapshots, setSnapshots] = useState<any[]>([]);
