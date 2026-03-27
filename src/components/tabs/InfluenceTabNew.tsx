@@ -18,6 +18,7 @@ import StrategicAttribution from "@/components/influence/StrategicAttribution";
 import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 
 import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
+import ManualPostIngestion from "@/components/influence/ManualPostIngestion";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -285,6 +286,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           </p>
           <ConnectionStatusPanel />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
+          <ManualPostIngestion onIngestionComplete={loadAll} />
           <HistoricalImportHub onImportComplete={loadAll} />
           <DailySnapshotEngine />
           <DataHealthConsole />
