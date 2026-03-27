@@ -75,8 +75,8 @@ interface CarouselGeneratorProps {
 const CANVAS_W = 1080;
 const CANVAS_H = 1350;
 const SAFE_M = 120;
-const VISUAL_REQUEST_DELAY_MS = 5000;
-const VISUAL_RETRY_DELAYS_MS = [7000, 12000] as const;
+const VISUAL_REQUEST_DELAY_MS = 2000;
+const VISUAL_RETRY_DELAYS_MS = [4000, 8000] as const;
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /* ── Style Palettes ──────────────────── */
