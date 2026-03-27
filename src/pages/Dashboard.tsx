@@ -395,7 +395,7 @@ const Dashboard = () => {
 
             {activeTab === "influence" && (
               <div className="animate-tab-spring">
-                <InfluenceTabNew entries={entries} />
+                <InfluenceTabNew entries={entries} onOpenChat={openChat} />
               </div>
             )}
           </div>

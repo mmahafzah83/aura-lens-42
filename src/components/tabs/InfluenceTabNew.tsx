@@ -14,12 +14,14 @@ import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
 import DataHealthConsole from "@/components/influence/DataHealthConsole";
 import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
 import StrategicAttribution from "@/components/influence/StrategicAttribution";
+import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 interface InfluenceTabNewProps {
   entries: Entry[];
+  onOpenChat?: (msg?: string) => void;
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
@@ -41,7 +43,7 @@ const Fade = ({ children, delay = 0 }: { children: React.ReactNode; delay?: numb
    MAIN INFLUENCE DASHBOARD
    ═══════════════════════════════════════════ */
 
-const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
+const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState<TimeRange>("30d");
   const [view, setView] = useState<"dashboard" | "attribution" | "data">("dashboard");
@@ -261,8 +263,13 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         </div>
       ) : (
         <>
-          {/* ── CONNECTION STATUS (compact) ── */}
+          {/* ── WEEKLY INFLUENCE BRIEF ── */}
           <Fade delay={0.04}>
+            <WeeklyInfluenceBrief onOpenChat={onOpenChat} />
+          </Fade>
+
+          {/* ── CONNECTION STATUS (compact) ── */}
+          <Fade delay={0.06}>
             <ConnectionStatusPanel />
           </Fade>
 
