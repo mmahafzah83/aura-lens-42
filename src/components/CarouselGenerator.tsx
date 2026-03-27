@@ -466,8 +466,9 @@ const SlidePreview = ({
               }} />
               <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 <p style={{
-                  fontSize: 26, lineHeight: 1.5, color: p.muted, fontWeight: 400,
-                  textAlign: isAr ? "right" : "left",
+                  fontSize: 26, lineHeight: 1.6, color: p.muted, fontWeight: 400,
+                  textAlign: "justify" as any,
+                  margin: 0,
                 }}>
                   {slide.supporting_text}
                 </p>
