@@ -125,10 +125,12 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
 
   if (/^\/feed\/update\/urn:li:activity:\d+/.test(path)) return { valid: true };
 
-  const postsMatch = path.match(/^\/posts\/([^-]+)/);
+  // LinkedIn post slugs: /posts/{handle}_{topic}-activity-{id}-{hash}
+  // Extract the handle portion before the first underscore
+  const postsMatch = path.match(/^\/posts\/([^_/?#]+)/);
   if (postsMatch) {
-    // Only accept posts authored by the connected handle
-    if (handle && postsMatch[1].toLowerCase() !== handle.toLowerCase()) {
+    const urlHandle = postsMatch[1].toLowerCase();
+    if (handle && urlHandle !== handle.toLowerCase()) {
       return { valid: false, reason: "mention_by_other" };
     }
     return { valid: true };
