@@ -261,6 +261,42 @@ export type Database = {
         }
         Relationships: []
       }
+      discovery_review_queue: {
+        Row: {
+          authorship_signals: Json
+          candidate_url: string
+          confidence: number
+          created_at: string
+          id: string
+          rejection_reason: string
+          reviewed: boolean
+          snippet: string | null
+          user_id: string
+        }
+        Insert: {
+          authorship_signals?: Json
+          candidate_url: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          rejection_reason?: string
+          reviewed?: boolean
+          snippet?: string | null
+          user_id: string
+        }
+        Update: {
+          authorship_signals?: Json
+          candidate_url?: string
+          confidence?: number
+          created_at?: string
+          id?: string
+          rejection_reason?: string
+          reviewed?: boolean
+          snippet?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       document_chunks: {
         Row: {
           chunk_index: number
