@@ -62,10 +62,13 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   const [classifyResult, setClassifyResult] = useState<{ classified: number; labels: string[] } | null>(null);
+  const [totalDiscovered, setTotalDiscovered] = useState(0);
+  const [lateIndexedTotal, setLateIndexedTotal] = useState(0);
 
   useEffect(() => {
     loadRecentRuns();
     loadUnclassifiedCount();
+    loadStats();
   }, []);
 
   const loadRecentRuns = async () => {
