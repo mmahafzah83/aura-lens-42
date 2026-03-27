@@ -531,8 +531,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                 <BarChart3 className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                 <p className="text-sm text-foreground/60">Content Performance</p>
-                <p className="text-[11px] text-muted-foreground/35">
-                  {emptyReason(false) || "No historical data yet"}
+                <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
+                  {!isConnected
+                    ? "Connect LinkedIn to analyze post performance."
+                    : "Import history to unlock this section. No post data has been synced yet."}
                 </p>
               </div>
             )}
