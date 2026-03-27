@@ -162,6 +162,29 @@ IMPORTANT INSTRUCTIONS:
   }
 });
 
+function validateStageCoverage(slides: any[], frameworkSteps: string[]): { coverage: number; missing: string[] } {
+  // Collect all text from framework_step, framework_intro, and architecture slides
+  const frameworkText = slides
+    .filter((s: any) => ["framework_step", "architecture"].includes(s.slide_type))
+    .map((s: any) => `${s.headline || ""} ${s.supporting_text || ""}`.toLowerCase())
+    .join(" ");
+
+  const missing: string[] = [];
+  for (const stage of frameworkSteps) {
+    const stageLower = stage.toLowerCase();
+    // Check for exact match or significant substring (at least first 2 words)
+    const words = stageLower.split(/\s+/);
+    const shortMatch = words.slice(0, Math.min(2, words.length)).join(" ");
+    if (!frameworkText.includes(stageLower) && !frameworkText.includes(shortMatch)) {
+      missing.push(stage);
+    }
+  }
+
+  const covered = frameworkSteps.length - missing.length;
+  const coverage = frameworkSteps.length > 0 ? covered / frameworkSteps.length : 1;
+  return { coverage, missing };
+}
+
 function extractAndParseJson(raw: string): unknown {
   let cleaned = raw
     .replace(/```json\s*/gi, "")
