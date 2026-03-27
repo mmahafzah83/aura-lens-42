@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag, Filter, ShieldX, Clock } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag, Filter, ShieldX, Clock, Timer, CalendarClock, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -37,6 +37,18 @@ interface DiscoveryResult {
   labels?: string[];
   source_type?: string;
   errors?: string[];
+  mode?: string;
+  blocked_queries?: number;
+  candidates_confirmed?: number;
+}
+
+interface SyncRun {
+  completed_at: string;
+  records_fetched: number;
+  records_stored: number;
+  status: string;
+  sync_type: string;
+  error_message: string | null;
 }
 
 const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
@@ -45,25 +57,25 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const [classifying, setClassifying] = useState(false);
   const [profileUrl, setProfileUrl] = useState("");
   const [needsUrl, setNeedsUrl] = useState(true);
-  const [lastRun, setLastRun] = useState<any>(null);
+  const [recentRuns, setRecentRuns] = useState<SyncRun[]>([]);
   const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   const [classifyResult, setClassifyResult] = useState<{ classified: number; labels: string[] } | null>(null);
 
   useEffect(() => {
-    loadLastRun();
+    loadRecentRuns();
     loadUnclassifiedCount();
   }, []);
 
-  const loadLastRun = async () => {
+  const loadRecentRuns = async () => {
     const { data } = await supabase
       .from("sync_runs")
-      .select("completed_at, records_fetched, records_stored, status, error_message")
-      .in("sync_type", ["discovery", "search_discovery"])
+      .select("completed_at, records_fetched, records_stored, status, sync_type, error_message")
+      .in("sync_type", ["discovery", "search_discovery", "retry_discovery"])
       .order("completed_at", { ascending: false })
-      .limit(1);
-    if (data?.[0]) setLastRun(data[0]);
+      .limit(5);
+    if (data) setRecentRuns(data as SyncRun[]);
   };
 
   const loadUnclassifiedCount = async () => {
@@ -117,6 +129,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           labels: data.labels,
           source_type: data.source_type,
           errors: data.errors,
+          mode: data.mode,
+          blocked_queries: data.blocked_queries,
+          candidates_confirmed: data.candidates_confirmed,
         });
         const classifiedMsg = data.classified > 0 ? `, ${data.classified} classified` : "";
         toast({
@@ -124,7 +139,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           description: `${data.inserted} new posts added, ${data.duplicates} duplicates skipped${classifiedMsg}.`,
         });
         onDiscoveryComplete?.();
-        await loadLastRun();
+        await loadRecentRuns();
         await loadUnclassifiedCount();
       }
     } catch (e: any) {
@@ -161,6 +176,14 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
     setClassifying(false);
   };
 
+  const lastRun = recentRuns[0] || null;
+
+  const syncTypeLabel = (t: string) => {
+    if (t === "retry_discovery") return "Retry";
+    if (t === "search_discovery") return "Search";
+    return "Discovery";
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -174,14 +197,14 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           <div>
             <h3 className="text-sm font-semibold text-foreground">Post Discovery</h3>
             <p className="text-meta mt-0.5">
-              Crawl your LinkedIn activity pages to discover and store published posts
+              Automated search-based discovery with retry scheduling
             </p>
           </div>
         </div>
         {lastRun && (
           <div className="text-right">
             <p className="text-[10px] text-muted-foreground/30">
-              Last run: {formatSmartDate(lastRun.completed_at)} · {lastRun.records_stored || 0} stored
+              Last: {formatSmartDate(lastRun.completed_at)} · {syncTypeLabel(lastRun.sync_type)}
               {lastRun.status === "failed" && " · failed"}
             </p>
             {lastRun.records_stored > 0 && (
@@ -193,11 +216,27 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         )}
       </div>
 
+      {/* Schedule status */}
+      <div className="flex items-center gap-4 px-1">
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+          <Timer className="w-3 h-3 text-primary/30" />
+          <span>Retry: every 6h</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+          <CalendarClock className="w-3 h-3 text-primary/30" />
+          <span>Full scan: daily 6 AM UTC</span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+          <RefreshCw className="w-3 h-3 text-primary/30" />
+          <span>7-day retry window</span>
+        </div>
+      </div>
+
       {/* Profile URL input */}
       {needsUrl && (
         <div className="space-y-2">
           <p className="text-[11px] text-muted-foreground/50">
-            Enter your LinkedIn profile URL to crawl activity pages.
+            Enter your LinkedIn profile URL. Once set, discovery runs automatically.
           </p>
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -224,12 +263,12 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           {discovering ? (
             <>
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Crawling activity pages…
+              Searching…
             </>
           ) : (
             <>
               <Search className="w-3.5 h-3.5" />
-              Discover Posts
+              Discover Now
             </>
           )}
         </button>
@@ -254,6 +293,32 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           </button>
         )}
       </div>
+
+      {/* Recent runs log */}
+      {recentRuns.length > 1 && (
+        <div className="space-y-1">
+          <p className="text-[10px] text-muted-foreground/30 font-medium">Recent runs</p>
+          <div className="space-y-0.5">
+            {recentRuns.slice(0, 5).map((run, i) => (
+              <div key={i} className="flex items-center gap-3 text-[9px] text-muted-foreground/40">
+                <span className="w-14 shrink-0">{formatSmartDate(run.completed_at)}</span>
+                <span className={`px-1.5 py-0.5 rounded text-[8px] font-medium ${
+                  run.sync_type === "retry_discovery" 
+                    ? "bg-amber-500/5 text-amber-500/50" 
+                    : "bg-primary/5 text-primary/50"
+                }`}>
+                  {syncTypeLabel(run.sync_type)}
+                </span>
+                <span>{run.records_stored} new</span>
+                <span className="text-muted-foreground/25">{run.records_fetched} scanned</span>
+                {run.status === "failed" && (
+                  <span className="text-destructive/40">failed</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Classification result */}
       {classifyResult && (
@@ -294,7 +359,6 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             <CheckCircle2 className="w-4 h-4 text-primary/50 shrink-0" />
             <p className="text-[11px] font-medium text-foreground/70">Discovery complete</p>
           </div>
-          {/* Filter summary */}
           {(result.raw_links_found ?? 0) > 0 && (
             <div className="flex items-center flex-wrap gap-3 pl-6 text-[10px]">
               <span className="flex items-center gap-1 text-muted-foreground/40">
@@ -310,6 +374,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
               )}
               {(result.rejected_count ?? 0) > 0 && (
                 <span className="text-destructive/40">{result.rejected_count} rejected</span>
+              )}
+              {(result.blocked_queries ?? 0) > 0 && (
+                <span className="text-amber-500/40">{result.blocked_queries} blocked</span>
               )}
             </div>
           )}
@@ -327,6 +394,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
               <p><span className="text-primary/40">Confirmed:</span> {result.confirmed}</p>
             )}
             <p><span className="text-muted-foreground/30">Duplicates:</span> {result.duplicates}</p>
+            {(result.candidates_confirmed ?? 0) > 0 && (
+              <p><span className="text-primary/40">Review → confirmed:</span> {result.candidates_confirmed}</p>
+            )}
             {(result.uncertain_held ?? 0) > 0 && (
               <p><span className="text-amber-500/40">Review queue:</span> {result.uncertain_held}</p>
             )}
