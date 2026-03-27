@@ -580,8 +580,8 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                   <Lightbulb className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                   <p className="text-sm text-foreground/60">Theme Momentum</p>
-                  <p className="text-[11px] text-muted-foreground/35">
-                    {emptyReason(false) || "No historical data yet"}
+                  <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
+                    Import history to unlock this section
                   </p>
                 </div>
               )}
