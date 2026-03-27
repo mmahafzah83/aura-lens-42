@@ -323,6 +323,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
             Aura is building your strategic memory. Every metric preserved here strengthens trend analysis over time.
           </p>
           <ConnectionStatusPanel />
+          <BrowserCapturePanel />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
           <DiscoveryHealthCard />
           <ReviewQueuePanel onReviewComplete={loadAll} />
