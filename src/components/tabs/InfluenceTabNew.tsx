@@ -459,8 +459,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
                 <TrendingUp className="w-6 h-6 text-muted-foreground/15 mx-auto" />
                 <p className="text-sm text-foreground/60">Audience Momentum</p>
-                <p className="text-[11px] text-muted-foreground/35">
-                  {emptyReason(false) || "No historical data yet"}
+                <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
+                  {!isConnected
+                    ? "Connect LinkedIn to begin tracking audience growth."
+                    : "No historical data yet. Import history or trigger a sync to unlock this chart."}
                 </p>
               </div>
             )}
