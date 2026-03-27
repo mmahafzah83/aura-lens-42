@@ -510,9 +510,18 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <Fade delay={0.18}>
             {sortedPosts.length > 0 ? (
               <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">Content Performance</h3>
-                  <p className="text-meta mt-0.5">{posts.length} published assets analyzed</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">Content Performance</h3>
+                    <p className="text-meta mt-0.5">
+                      {posts.length} discovered · {posts.filter(p => p.tracking_status === "metrics_imported" || p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics
+                    </p>
+                  </div>
+                  {posts.length > 0 && posts.filter(p => p.tracking_status === "metrics_imported" || p.like_count > 0 || p.comment_count > 0).length === 0 && (
+                    <span className="text-[10px] text-muted-foreground/25 bg-secondary/15 px-2.5 py-1 rounded-full">
+                      Discovery only — no analytics imported yet
+                    </span>
+                  )}
                 </div>
                 <div className="overflow-x-auto -mx-2">
                   <table className="w-full text-left min-w-[600px]">
