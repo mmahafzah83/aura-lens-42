@@ -643,7 +643,7 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, dupes=${duplicates}`);
+    log("complete", `raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, confirmed=${confirmed}, dupes=${duplicates}`);
 
     // Auto-classify
     let classifyResult: any = null;
