@@ -1312,8 +1312,10 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
                   LinkedIn Carousel
                 </SheetTitle>
                 <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
-                  {pipelineStep === "carousel"
-                    ? `${currentSlides.length} slides · ${PALETTES[style].name} · ${imagesReady}/${imagesTotal} visuals`
+                  {pipelineStep === "visuals"
+                    ? `${imagesReady}/${imagesTotal} visuals generated`
+                    : pipelineStep === "carousel"
+                    ? `${currentSlides.length} slides · ${PALETTES[style].name}`
                     : pipelineStep === "frameworks"
                     ? `${frameworks.length} frameworks generated`
                     : "Analyzing topic…"
