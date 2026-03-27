@@ -325,6 +325,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           </p>
           <ConnectionStatusPanel />
           <BrowserCapturePanel />
+          <SourceHealthSummary />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
           <DiscoveryHealthCard />
           <ReviewQueuePanel onReviewComplete={loadAll} />
