@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
         const classifyRes = await fetch(`${SUPABASE_URL}/functions/v1/classify-posts`, {
           method: "POST",
           headers: {
-            Authorization: authHeader!,
+            Authorization: authHeader || `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
             "Content-Type": "application/json",
             apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
           },
