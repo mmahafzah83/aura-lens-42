@@ -87,7 +87,6 @@ interface UrlValidation {
   reason?: RejectionReason;
 }
 
-/** Only accept /feed/update/urn:li:activity and /posts/{handle} URLs */
 function validatePostUrl(url: string, handle: string): UrlValidation {
   if (!url.includes("linkedin.com")) {
     return { valid: false, reason: "external_reference" };
@@ -95,22 +94,12 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
 
   const path = url.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
 
-  if (/^\/in\/[^/]+\/?$/.test(path)) {
-    return { valid: false, reason: "profile_page" };
-  }
-  if (/^\/pulse\//i.test(path)) {
-    return { valid: false, reason: "article_reference" };
-  }
-  if (/^\/company\//i.test(path)) {
-    return { valid: false, reason: "external_reference" };
-  }
-  if (/commentUrn|replyUrn/i.test(url)) {
-    return { valid: false, reason: "comment_thread" };
-  }
+  if (/^\/in\/[^/]+\/?$/.test(path)) return { valid: false, reason: "profile_page" };
+  if (/^\/pulse\//i.test(path)) return { valid: false, reason: "article_reference" };
+  if (/^\/company\//i.test(path)) return { valid: false, reason: "external_reference" };
+  if (/commentUrn|replyUrn/i.test(url)) return { valid: false, reason: "comment_thread" };
 
-  if (/^\/feed\/update\/urn:li:activity:\d+/.test(path)) {
-    return { valid: true };
-  }
+  if (/^\/feed\/update\/urn:li:activity:\d+/.test(path)) return { valid: true };
 
   const postsMatch = path.match(/^\/posts\/([^-]+)/);
   if (postsMatch) {
@@ -123,23 +112,16 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
   return { valid: false, reason: "invalid_url_pattern" };
 }
 
-/** Multi-signal authorship scoring. Returns signals found and confidence. */
 interface AuthorshipResult {
-  confident: boolean;      // 2+ signals → true
-  uncertain: boolean;      // exactly 1 signal → true (review queue)
-  signals: string[];       // which signals matched
-  confidence: number;      // 0-1
+  confident: boolean;
+  uncertain: boolean;
+  signals: string[];
+  confidence: number;
 }
 
-function scoreAuthorship(
-  url: string,
-  rawText: string,
-  profileName: string,
-  handle: string,
-): AuthorshipResult {
+function scoreAuthorship(url: string, rawText: string, profileName: string, handle: string): AuthorshipResult {
   const signals: string[] = [];
 
-  // Signal 1: author name appears in header area
   if (profileName) {
     const lower = rawText.toLowerCase().slice(0, 1500);
     const nameParts = profileName.toLowerCase().split(/\s+/).filter(p => p.length > 1);
@@ -148,15 +130,12 @@ function scoreAuthorship(
     }
   }
 
-  // Signal 2: profile handle appears in canonical post URL
   if (handle) {
-    const urlLower = url.toLowerCase();
-    if (urlLower.includes(`/posts/${handle.toLowerCase()}`)) {
+    if (url.toLowerCase().includes(`/posts/${handle.toLowerCase()}`)) {
       signals.push("handle_in_url");
     }
   }
 
-  // Signal 3: snippet clearly indicates own post (first-person patterns near top)
   const headerText = rawText.slice(0, 800).toLowerCase();
   const firstPersonPatterns = [
     /\bi wrote\b/i, /\bmy post\b/i, /\bi shared\b/i, /\bi published\b/i,
@@ -166,7 +145,6 @@ function scoreAuthorship(
     signals.push("first_person_snippet");
   }
 
-  // Signal 4: handle appears in the text byline area
   if (handle) {
     const bylineArea = rawText.toLowerCase().slice(0, 500);
     if (bylineArea.includes(handle.toLowerCase())) {
@@ -175,7 +153,6 @@ function scoreAuthorship(
   }
 
   const confidence = Math.min(signals.length / 2, 1);
-
   return {
     confident: signals.length >= 2,
     uncertain: signals.length === 1,
@@ -201,6 +178,7 @@ interface RejectedLink {
 
 const MAX_POSTS = 50;
 const RATE_LIMIT_DELAY_MS = 1500;
+const RETRY_WINDOW_DAYS = 7;
 
 /* ── main ── */
 
@@ -235,21 +213,21 @@ Deno.serve(async (req) => {
         global: { headers: { Authorization: authHeader } },
       });
       const { data: { user }, error: userError } = await userClient.auth.getUser();
-      if (!userError && user) {
-        userId = user.id;
-      }
+      if (!userError && user) userId = user.id;
     }
 
     let body: any = {};
     try { body = await req.json(); } catch { /* empty */ }
 
-    if (!userId && body?.user_id) {
-      userId = body.user_id;
-    }
+    if (!userId && body?.user_id) userId = body.user_id;
 
-    // Cron mode
+    // Determine mode: "retry" (6h recent-post), "daily" (full), or "manual" (user-triggered)
+    const mode: string = body?.mode || "manual";
+    log("mode", mode);
+
+    // ── Cron mode: no user_id → fan out to all active connections ──
     if (!userId) {
-      log("cron_mode", "No user_id provided – processing all active LinkedIn connections");
+      log("cron_mode", `Fan-out mode=${mode} for all active connections`);
       const { data: connections } = await adminClient
         .from("linkedin_connections")
         .select("user_id, handle, profile_url, profile_name, display_name")
@@ -271,7 +249,7 @@ Deno.serve(async (req) => {
               Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
               apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
             },
-            body: JSON.stringify({ user_id: conn.user_id }),
+            body: JSON.stringify({ user_id: conn.user_id, mode }),
           });
           const data = await res.json();
           results.push({ user_id: conn.user_id, ...data });
@@ -280,12 +258,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      return new Response(JSON.stringify({ success: true, cron: true, results }), {
+      return new Response(JSON.stringify({ success: true, cron: true, mode, results }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Resolve profile URL
+    // ── Resolve profile ──
     let profileUrl = body?.profile_url as string | undefined;
     let profileName = "";
 
@@ -344,9 +322,9 @@ Deno.serve(async (req) => {
       profileName = conn?.profile_name || conn?.display_name || "";
     }
 
-    log("start", `Profile: ${profileUrl}, handle: ${handle}, name: ${profileName}`);
+    log("start", `Profile: ${profileUrl}, handle: ${handle}, name: ${profileName}, mode: ${mode}`);
 
-    // ── Search-based discovery with filtering ──
+    // ── Build search queries based on mode ──
     const errors: string[] = [];
     let pagesVisited = 0;
     const discovered: DiscoveredPost[] = [];
@@ -357,20 +335,34 @@ Deno.serve(async (req) => {
     const uncertainCandidates: { url: string; snippet: string; confidence: number; signals: string[] }[] = [];
 
     const searchQueries: string[] = [];
-    if (handle) {
-      searchQueries.push(
-        `site:linkedin.com/posts/${handle}`,
-        `site:linkedin.com/posts "${handle}"`,
-        `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
-      );
-    }
-    if (profileName) {
-      searchQueries.push(
-        `"${profileName}" site:linkedin.com/posts`,
-      );
-    }
-    if (searchQueries.length === 0) {
-      searchQueries.push(`site:linkedin.com/posts ${profileUrl}`);
+
+    if (mode === "retry") {
+      // Retry mode: focus on very recent posts (last 7 days) with time-scoped queries
+      if (handle) {
+        searchQueries.push(
+          `site:linkedin.com/posts/${handle}`,
+          `site:linkedin.com/posts "${handle}"`,
+        );
+      }
+      if (profileName) {
+        searchQueries.push(`"${profileName}" site:linkedin.com/posts`);
+      }
+      log("retry_mode", `Using ${searchQueries.length} recent-focus queries (7-day window)`);
+    } else {
+      // Daily or manual: full query set
+      if (handle) {
+        searchQueries.push(
+          `site:linkedin.com/posts/${handle}`,
+          `site:linkedin.com/posts "${handle}"`,
+          `site:linkedin.com/feed/update "urn:li:activity" "${handle}"`,
+        );
+      }
+      if (profileName) {
+        searchQueries.push(`"${profileName}" site:linkedin.com/posts`);
+      }
+      if (searchQueries.length === 0) {
+        searchQueries.push(`site:linkedin.com/posts ${profileUrl}`);
+      }
     }
 
     // Rejection reason counts
@@ -385,6 +377,18 @@ Deno.serve(async (req) => {
       authorship_uncertain: 0,
     };
 
+    // ── Load known candidate URLs from review queue for confirmation ──
+    const { data: pendingCandidates } = await adminClient
+      .from("discovery_review_queue")
+      .select("id, candidate_url")
+      .eq("user_id", userId)
+      .eq("reviewed", false);
+    const candidateUrlSet = new Set((pendingCandidates || []).map(c => c.candidate_url));
+    const candidateIdMap = new Map((pendingCandidates || []).map(c => [c.candidate_url, c.id]));
+    let candidatesConfirmed = 0;
+
+    let blockedQueries = 0;
+
     for (const searchQuery of searchQueries) {
       if (discovered.length >= MAX_POSTS) break;
 
@@ -392,15 +396,34 @@ Deno.serve(async (req) => {
       pagesVisited++;
 
       try {
+        const searchPayload: any = {
+          query: searchQuery,
+          limit: MAX_POSTS,
+          scrapeOptions: { formats: ["markdown"] },
+        };
+        // For retry mode, use Firecrawl time filter for recent results
+        if (mode === "retry") {
+          searchPayload.tbs = "qdr:w"; // last week
+        }
+
         const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
           method: "POST",
           headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: searchQuery,
-            limit: MAX_POSTS,
-            scrapeOptions: { formats: ["markdown"] },
-          }),
+          body: JSON.stringify(searchPayload),
         });
+
+        if (!searchRes.ok) {
+          const errBody = await searchRes.text();
+          if (searchRes.status === 429 || searchRes.status === 403) {
+            blockedQueries++;
+            errors.push(`Query blocked (${searchRes.status}): ${searchQuery}`);
+            log("search_blocked", `Status ${searchRes.status} for "${searchQuery}"`);
+            continue;
+          }
+          errors.push(`Search failed (${searchRes.status}): ${errBody.slice(0, 200)}`);
+          continue;
+        }
+
         const searchData = await searchRes.json();
         const searchResults = searchData?.data || [];
         log("search_result", `${searchResults.length} results for "${searchQuery}"`);
@@ -411,7 +434,7 @@ Deno.serve(async (req) => {
           const url = sr.url || "";
           rawLinksFound++;
 
-          // Step 1: URL pattern validation
+          // URL pattern validation
           const urlCheck = validatePostUrl(url, handle);
           if (!urlCheck.valid) {
             rejected.push({ url, reason: urlCheck.reason! });
@@ -426,11 +449,10 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Step 2: Multi-signal authorship scoring (require 2+ signals)
+          // Multi-signal authorship scoring
           const authResult = scoreAuthorship(url, rawText, profileName, handle);
 
           if (!authResult.confident && !authResult.uncertain) {
-            // 0 signals → hard reject
             rejected.push({ url, reason: "failed_authorship" });
             rejectionCounts.failed_authorship++;
             continue;
@@ -453,8 +475,19 @@ Deno.serve(async (req) => {
           seenUrls.add(postUrl);
           seenTexts.add(textKey);
 
+          // Check if this matches a known candidate URL → auto-confirm
+          if (candidateUrlSet.has(postUrl) && authResult.confident) {
+            candidatesConfirmed++;
+            const cId = candidateIdMap.get(postUrl);
+            if (cId) {
+              await adminClient.from("discovery_review_queue")
+                .update({ reviewed: true, rejection_reason: "discovered_successfully" })
+                .eq("id", cId);
+            }
+            // Fall through to insert as discovered post
+          }
+
           if (authResult.uncertain) {
-            // 1 signal → review queue, do NOT insert as a post
             uncertainCandidates.push({
               url: postUrl,
               snippet: cleanText.slice(0, 500),
@@ -465,7 +498,7 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // 2+ signals → insert as valid post
+          // 2+ signals → valid post
           const mediaType = detectMediaType(rawText);
           discovered.push({
             url: postUrl,
@@ -485,7 +518,7 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
     }
 
-    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, uncertain=${uncertainCandidates.length}, rejected=${rejected.length}`);
+    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, uncertain=${uncertainCandidates.length}, rejected=${rejected.length}, blocked=${blockedQueries}, candidates_confirmed=${candidatesConfirmed}`);
     log("rejection_breakdown", JSON.stringify(rejectionCounts));
 
     // ── Insert uncertain candidates into review queue ──
@@ -506,36 +539,45 @@ Deno.serve(async (req) => {
       log("review_queue", `${reviewQueued} uncertain candidates held for review`);
     }
 
+    const syncType = mode === "retry" ? "retry_discovery" : "search_discovery";
+
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: userId,
-        sync_type: "search_discovery",
-        status: uncertainCandidates.length > 0 ? "completed" : "failed",
+        sync_type: syncType,
+        status: uncertainCandidates.length > 0 ? "completed" : (mode === "retry" ? "completed" : "failed"),
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: rawLinksFound,
         records_stored: 0,
-        error_message: `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`,
+        error_message: mode === "retry"
+          ? `Retry scan: ${rawLinksFound} scanned, 0 new posts. Will retry again in 6h.`
+          : `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`,
       });
 
       return new Response(JSON.stringify({
-        success: uncertainCandidates.length > 0,
-        error: uncertainCandidates.length > 0 ? undefined : "No authored posts found. Try Historical Import with a CSV export from LinkedIn.",
-        source_type: "search_discovery",
+        success: true,
+        mode,
+        source_type: syncType,
         profile_url: profileUrl,
         queries_run: pagesVisited,
         raw_links_found: rawLinksFound,
         valid_posts: 0,
+        discovered: 0,
+        inserted: 0,
+        confirmed: 0,
+        duplicates: 0,
         uncertain_held: reviewQueued,
         rejected_count: rejected.length,
         rejection_reasons: rejectionCounts,
+        blocked_queries: blockedQueries,
+        candidates_confirmed: candidatesConfirmed,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // ── Mark existing non-authored posts as external_reference ──
-    // Find posts that don't match the current handle pattern
     if (handle) {
       const { data: existingAll } = await adminClient
         .from("linkedin_posts")
@@ -584,13 +626,11 @@ Deno.serve(async (req) => {
       const textKey = post.text.slice(0, 100);
       const urlKey = post.url || `discovered-${textKey.slice(0, 50).replace(/\W/g, "-")}-${Date.now()}`;
 
-      // Check if this post already exists (by text or URL)
       const existingByText = existingTexts.get(textKey);
       const existingByUrl = existingUrls.get(urlKey) || (post.url ? existingUrls.get(post.url) : null);
       const existing = existingByText || existingByUrl;
 
       if (existing) {
-        // If it was manually ingested, confirm it via discovery
         if (existing.tracking_status === "discovered" || existing.tracking_status === "manual") {
           await adminClient.from("linkedin_posts")
             .update({ tracking_status: "confirmed" })
@@ -635,7 +675,7 @@ Deno.serve(async (req) => {
 
     await adminClient.from("sync_runs").insert({
       user_id: userId,
-      sync_type: "search_discovery",
+      sync_type: syncType,
       status: "completed",
       started_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
@@ -643,9 +683,9 @@ Deno.serve(async (req) => {
       records_stored: inserted,
     });
 
-    log("complete", `raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, confirmed=${confirmed}, dupes=${duplicates}`);
+    log("complete", `mode=${mode}, raw=${rawLinksFound}, valid=${discovered.length}, inserted=${inserted}, confirmed=${confirmed}, dupes=${duplicates}, candidates_confirmed=${candidatesConfirmed}`);
 
-    // Auto-classify
+    // Auto-classify new posts
     let classifyResult: any = null;
     if (inserted > 0) {
       try {
@@ -669,7 +709,8 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      source_type: "search_discovery",
+      mode,
+      source_type: syncType,
       profile_url: profileUrl,
       queries_run: pagesVisited,
       raw_links_found: rawLinksFound,
@@ -681,6 +722,8 @@ Deno.serve(async (req) => {
       uncertain_held: reviewQueued,
       rejected_count: rejected.length,
       rejection_reasons: rejectionCounts,
+      blocked_queries: blockedQueries,
+      candidates_confirmed: candidatesConfirmed,
       classified: classifyResult?.classified || 0,
       labels: classifyResult?.labels || [],
       errors: [...errors, ...insertErrors],
