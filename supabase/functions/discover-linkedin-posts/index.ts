@@ -238,19 +238,59 @@ Deno.serve(async (req) => {
 
     console.log(`[discover] Profile markdown length: ${profileMarkdown.length}, Activity markdown length: ${activityMarkdown.length}`);
 
-    if (combinedMarkdown.length < 100) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Could not scrape LinkedIn profile. The page may require login or be restricted.",
-        profile_url: profileUrl,
-      }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    let discovered: DiscoveredPost[] = [];
 
-    // Parse posts
-    const discovered = parsePostsFromMarkdown(combinedMarkdown, profileUrl);
-    console.log(`[discover] Parsed ${discovered.length} candidate posts`);
+    if (combinedMarkdown.length < 100) {
+      // Fallback: use Firecrawl search to find LinkedIn posts by this user
+      console.log(`[discover] Profile scrape returned minimal content. Trying search fallback...`);
+      
+      const handle = profileUrl.match(/linkedin\.com\/in\/([^\/\?]+)/)?.[1] || "";
+      const searchQuery = handle 
+        ? `site:linkedin.com/posts "${handle}"` 
+        : `site:linkedin.com/posts ${profileUrl}`;
+      
+      const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ query: searchQuery, limit: 20 }),
+      });
+      const searchData = await searchRes.json();
+      const searchResults = searchData?.data || [];
+      
+      console.log(`[discover] Search fallback returned ${searchResults.length} results`);
+      
+      for (const sr of searchResults) {
+        const url = sr.url || "";
+        if (!url.includes("linkedin.com")) continue;
+        const text = sr.markdown || sr.description || sr.title || "";
+        if (text.length < 30) continue;
+        
+        const mediaType = detectMediaType(text);
+        discovered.push({
+          url,
+          text: text.slice(0, 3000),
+          publishedAt: null,
+          hook: extractHook(text),
+          mediaType,
+          formatType: detectFormatType(text, mediaType),
+          contentType: detectContentType(text),
+        });
+      }
+      
+      if (discovered.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: "Could not scrape LinkedIn profile (requires login). Search fallback returned no results. Try Historical Import instead.",
+          profile_url: profileUrl,
+        }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      // Parse posts from scraped markdown
+      discovered = parsePostsFromMarkdown(combinedMarkdown, profileUrl);
+      console.log(`[discover] Parsed ${discovered.length} candidate posts`);
+    }
 
     if (discovered.length === 0) {
       return new Response(JSON.stringify({
@@ -261,7 +301,7 @@ Deno.serve(async (req) => {
         message: "Scrape succeeded but no post content could be extracted. LinkedIn may require authentication to view posts.",
         profile_url: profileUrl,
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -278,7 +318,6 @@ Deno.serve(async (req) => {
     let duplicates = 0;
 
     for (const post of discovered) {
-      // Dedup by URL or text prefix
       const textKey = post.text.slice(0, 100);
       const urlKey = post.url || `discovered-${textKey.slice(0, 50).replace(/\W/g, "-")}-${Date.now()}`;
 
@@ -305,7 +344,6 @@ Deno.serve(async (req) => {
       });
 
       if (insertErr) {
-        // likely duplicate constraint
         if (insertErr.code === "23505") duplicates++;
         else console.error(`[discover] Insert error:`, insertErr);
       } else {
@@ -314,7 +352,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update last_synced_at on connection
+    // Update last_synced_at
     await adminClient.from("linkedin_connections")
       .update({ last_synced_at: new Date().toISOString() })
       .eq("user_id", user.id)
@@ -340,7 +378,7 @@ Deno.serve(async (req) => {
       duplicates,
       profile_url: profileUrl,
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
     console.error("[discover] Error:", err);
