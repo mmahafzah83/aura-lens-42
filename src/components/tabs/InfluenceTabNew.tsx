@@ -286,6 +286,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           </p>
           <ConnectionStatusPanel />
           <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
+          <ManualPostIngestion onIngestionComplete={loadAll} />
           <HistoricalImportHub onImportComplete={loadAll} />
           <DailySnapshotEngine />
           <DataHealthConsole />
