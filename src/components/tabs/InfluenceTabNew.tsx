@@ -3,12 +3,17 @@ import { motion } from "framer-motion";
 import {
   Users, TrendingUp, BarChart3, Crown, Loader2,
   ArrowUpRight, ArrowDownRight, Sparkles, FileText,
-  Zap, Eye, Lightbulb
+  Zap, Eye, Lightbulb, Database as DatabaseIcon
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import ConnectionStatusPanel from "@/components/influence/ConnectionStatusPanel";
+import HistoricalImportHub from "@/components/influence/HistoricalImportHub";
+import DailySnapshotEngine from "@/components/influence/DailySnapshotEngine";
+import DataHealthConsole from "@/components/influence/DataHealthConsole";
+import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -326,6 +331,7 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
   const [postStats, setPostStats] = useState<PostStats | null>(null);
   const [authorityThemes, setAuthorityThemes] = useState<AuthorityTheme[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"intelligence" | "data">("intelligence");
 
   useEffect(() => {
     loadAll();
@@ -341,7 +347,6 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
       const snap = snapshotRes.data?.[0] || null;
       setSnapshot(snap);
 
-      // Process post stats
       const posts = postsRes.data || [];
       const themeCounts: Record<string, number> = {};
       const formatCounts: Record<string, number> = {};
@@ -364,7 +369,6 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         formats,
       });
 
-      // Authority themes from snapshot
       const rawThemes = (snap?.authority_themes || []) as any[];
       setAuthorityThemes(
         rawThemes.slice(0, 6).map((t: any) => ({
@@ -396,30 +400,70 @@ const InfluenceTabNew = ({ entries }: InfluenceTabNewProps) => {
         processLogic="Signal → Content → Audience → Growth"
       />
 
-      {/* Strategic Advisor — influence context */}
-      <StrategicAdvisorPanel context="influence" compact />
-
-      {/* Flow: Audience → Content Performance → Authority Growth */}
-      <Section index={0}>
-        <AudienceSection snapshot={snapshot} />
-      </Section>
-
-      {/* Flow arrow */}
-      <div className="flex justify-center">
-        <div className="w-px h-6 bg-gradient-to-b from-primary/20 to-primary/5" />
+      {/* View toggle */}
+      <div className="flex items-center gap-2 p-1 rounded-xl bg-secondary/15 border border-border/8 w-fit">
+        <button
+          onClick={() => setView("intelligence")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+            view === "intelligence"
+              ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+              : "text-muted-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <TrendingUp className="w-3.5 h-3.5" />
+          Intelligence
+        </button>
+        <button
+          onClick={() => setView("data")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium transition-all ${
+            view === "data"
+              ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
+              : "text-muted-foreground/60 hover:text-foreground"
+          }`}
+        >
+          <DatabaseIcon className="w-3.5 h-3.5" />
+          Data Foundation
+        </button>
       </div>
 
-      <Section index={1}>
-        <ContentPerformanceSection stats={postStats} />
-      </Section>
+      {view === "intelligence" ? (
+        <>
+          <StrategicAdvisorPanel context="influence" compact />
 
-      <div className="flex justify-center">
-        <div className="w-px h-6 bg-gradient-to-b from-primary/20 to-primary/5" />
-      </div>
+          <Section index={0}>
+            <AudienceSection snapshot={snapshot} />
+          </Section>
 
-      <Section index={2}>
-        <AuthorityGrowthSection snapshot={snapshot} themes={authorityThemes} />
-      </Section>
+          <div className="flex justify-center">
+            <div className="w-px h-6 bg-gradient-to-b from-primary/20 to-primary/5" />
+          </div>
+
+          <Section index={1}>
+            <ContentPerformanceSection stats={postStats} />
+          </Section>
+
+          <div className="flex justify-center">
+            <div className="w-px h-6 bg-gradient-to-b from-primary/20 to-primary/5" />
+          </div>
+
+          <Section index={2}>
+            <AuthorityGrowthSection snapshot={snapshot} themes={authorityThemes} />
+          </Section>
+        </>
+      ) : (
+        <div className="space-y-6">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-primary/[0.03] to-transparent border border-primary/8">
+            <p className="text-sm text-foreground/70 leading-relaxed">
+              Preserve your authority history. Aura is building your strategic memory — every metric stored here strengthens trend analysis over time.
+            </p>
+          </div>
+          <ConnectionStatusPanel />
+          <HistoricalImportHub />
+          <DailySnapshotEngine />
+          <DataHealthConsole />
+          <SourceReviewPanel />
+        </div>
+      )}
     </div>
   );
 };
