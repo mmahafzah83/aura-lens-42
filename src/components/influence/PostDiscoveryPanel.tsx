@@ -252,6 +252,11 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         </div>
       </div>
 
+      {/* Indexing note */}
+      <p className="text-[10px] text-muted-foreground/35 leading-relaxed px-1">
+        New LinkedIn posts may take time to appear in search indexing. Aura retries discovery automatically every 6 hours for recent posts.
+      </p>
+
       {/* Discovery stats */}
       {totalDiscovered > 0 && (
         <div className="flex items-center gap-4 px-1">
