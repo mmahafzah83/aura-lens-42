@@ -775,6 +775,7 @@ Deno.serve(async (req) => {
       valid_posts: discovered.length,
       discovered: discovered.length,
       inserted,
+      late_indexed: lateIndexedCount,
       confirmed,
       duplicates,
       uncertain_held: reviewQueued,
