@@ -81,9 +81,8 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const emptyReason = (hasData: boolean): string | null => {
     if (hasData) return null;
     if (!isConnected) return "LinkedIn not connected";
-    if (!hasSyncRun) return "No successful sync has run";
-    // Connected + synced but no rows
-    return "Sync completed but no analytics records were stored";
+    if (!hasSyncRun) return "No browser capture has run yet";
+    return "No analytics records captured yet";
   };
 
   const loadAll = async () => {
