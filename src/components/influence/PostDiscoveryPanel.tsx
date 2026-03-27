@@ -83,10 +83,12 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       } else {
         setResult({
           profile_url: data.profile_url,
-          pages_visited: data.pages_visited,
+          queries_run: data.queries_run,
+          total_results: data.total_results,
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          source_type: data.source_type,
           errors: data.errors,
         });
         toast({
