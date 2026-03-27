@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2, CheckCircle2, AlertCircle, Globe, FileText } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -21,14 +21,18 @@ interface DiscoveryResult {
 const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
   const { toast } = useToast();
   const [discovering, setDiscovering] = useState(false);
+  const [classifying, setClassifying] = useState(false);
   const [profileUrl, setProfileUrl] = useState("");
   const [needsUrl, setNeedsUrl] = useState(true);
   const [lastRun, setLastRun] = useState<any>(null);
   const [result, setResult] = useState<DiscoveryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unclassifiedCount, setUnclassifiedCount] = useState(0);
+  const [classifyResult, setClassifyResult] = useState<{ classified: number; labels: string[] } | null>(null);
 
   useEffect(() => {
     loadLastRun();
+    loadUnclassifiedCount();
   }, []);
 
   const loadLastRun = async () => {
@@ -39,6 +43,15 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       .order("completed_at", { ascending: false })
       .limit(1);
     if (data?.[0]) setLastRun(data[0]);
+  };
+
+  const loadUnclassifiedCount = async () => {
+    const { count } = await supabase
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .is("topic_label", null)
+      .not("post_text", "is", null);
+    setUnclassifiedCount(count || 0);
   };
 
   const handleDiscover = async () => {
@@ -80,11 +93,40 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         });
         onDiscoveryComplete?.();
         await loadLastRun();
+        await loadUnclassifiedCount();
       }
     } catch (e: any) {
       setError(e.message || "Unexpected error");
     }
     setDiscovering(false);
+  };
+
+  const handleClassify = async () => {
+    setClassifying(true);
+    setClassifyResult(null);
+    setError(null);
+
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke("classify-posts");
+
+      if (fnErr) {
+        setError(fnErr.message || "Classification failed");
+        toast({ title: "Classification failed", description: fnErr.message, variant: "destructive" });
+      } else if (!data?.success) {
+        setError(data?.error || "Classification failed");
+      } else {
+        setClassifyResult({ classified: data.classified, labels: data.labels || [] });
+        toast({
+          title: "Posts classified",
+          description: `${data.classified} posts labeled with AI.`,
+        });
+        await loadUnclassifiedCount();
+        onDiscoveryComplete?.();
+      }
+    } catch (e: any) {
+      setError(e.message || "Unexpected error");
+    }
+    setClassifying(false);
   };
 
   return (
@@ -133,24 +175,74 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         </div>
       )}
 
-      {/* Action button */}
-      <button
-        onClick={handleDiscover}
-        disabled={discovering || (needsUrl && !profileUrl.trim())}
-        className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press disabled:opacity-30"
-      >
-        {discovering ? (
-          <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Crawling activity pages…
-          </>
-        ) : (
-          <>
-            <Search className="w-3.5 h-3.5" />
-            Discover Posts
-          </>
+      {/* Action buttons */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleDiscover}
+          disabled={discovering || (needsUrl && !profileUrl.trim())}
+          className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press disabled:opacity-30"
+        >
+          {discovering ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Crawling activity pages…
+            </>
+          ) : (
+            <>
+              <Search className="w-3.5 h-3.5" />
+              Discover Posts
+            </>
+          )}
+        </button>
+
+        {unclassifiedCount > 0 && (
+          <button
+            onClick={handleClassify}
+            disabled={classifying}
+            className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
+          >
+            {classifying ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Classifying…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                Classify {unclassifiedCount} post{unclassifiedCount !== 1 ? "s" : ""}
+              </>
+            )}
+          </button>
         )}
-      </button>
+      </div>
+
+      {/* Classification result */}
+      {classifyResult && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="p-3 rounded-lg bg-primary/[0.03] border border-primary/8 space-y-2"
+        >
+          <div className="flex items-center gap-2">
+            <Tag className="w-4 h-4 text-primary/50 shrink-0" />
+            <p className="text-[11px] font-medium text-foreground/70">
+              {classifyResult.classified} posts classified
+            </p>
+          </div>
+          {classifyResult.labels.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pl-6">
+              {[...new Set(classifyResult.labels)].map((label, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-0.5 rounded-full bg-primary/5 text-[9px] text-primary/60 border border-primary/8"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Discovery summary */}
       {result && (
