@@ -51,19 +51,25 @@ Write concise, confident, executive Arabic. RTL optimized.`
 
     const systemPrompt = buildSystemPrompt(langInstruction, styleInstruction, isArabic, stepCount);
 
+    const stageList = frameworkSteps.length > 0 
+      ? `\n\nMANDATORY STAGE COVERAGE: Every one of these stages MUST appear by name in at least one framework_step slide headline or supporting_text:\n${frameworkSteps.map((s: string, i: number) => `  ${i + 1}. "${s}"`).join("\n")}\n\nIf you skip ANY stage, the output is INVALID. Group adjacent stages into the same slide if needed (e.g., "Stages 1-2: ..."), but every stage name must appear.`
+      : "";
+
     const userPrompt = `Create a LinkedIn carousel about:
 
 Title: ${title}
 ${description ? `Description: ${description}` : ""}
-${context ? `Strategic Context: ${context}` : ""}${frameworkContext}${visualPlanContext}
+${context ? `Strategic Context: ${context}` : ""}${frameworkContext}${visualPlanContext}${stageList}
 
 IMPORTANT INSTRUCTIONS:
 - First decide the optimal slide count (8-14) based on framework complexity and narrative needs.
 - Do NOT force 10 slides — use as many as the framework requires.
-- If the framework has ${stepCount} stages, allocate proper explanation slides for them.
+- If the framework has ${stepCount} stages, you MUST cover ALL ${stepCount} stages across framework_step slides. No stage may be omitted.
+- Each framework_step slide headline MUST reference the exact stage name(s) from the framework.
 - Max 30 words per slide, rotate layouts, include emphasis_words, visual_anchor.
 - The final slide MUST be an authority CTA with personal branding.
-- Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.`;
+- Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.
+- You MUST include "generation_checklist" in your JSON output with: explainer_format, stage_coverage map, explainer_slide_count, terminology_consistent, narrative_continuous.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
