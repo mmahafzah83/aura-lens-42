@@ -128,24 +128,14 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     setLoading(false);
   };
 
-  // Derived metrics
+  // Derived metrics — only from posts with real metrics
+  const enrichedPostsList = posts.filter(p =>
+    p.tracking_status === "metrics_imported" || p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0
+  );
   const currentFollowers = latestSnapshot?.followers || 0;
   const periodGrowth = snapshots.length >= 2
     ? (snapshots[snapshots.length - 1]?.followers || 0) - (snapshots[0]?.followers || 0)
     : 0;
-  const avgEngagement = posts.length > 0
-    ? Math.round(posts.reduce((s, p) => s + (Number(p.engagement_score) || 0), 0) / posts.length * 10) / 10
-    : 0;
-
-  // Publishing cadence: posts per week in range
-  const daysInRange = getDaysForRange(range);
-  const weeksInRange = Math.max(1, daysInRange / 7);
-  const postsInRange = posts.filter(p => {
-    if (!p.published_at) return false;
-    const d = new Date(p.published_at).getTime();
-    return d >= Date.now() - daysInRange * 86400000;
-  }).length;
-  const cadence = Math.round((postsInRange / weeksInRange) * 10) / 10;
 
   // Top post
   const topPost = posts.length > 0
