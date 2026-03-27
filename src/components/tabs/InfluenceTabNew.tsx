@@ -16,7 +16,7 @@ import DataHealthConsole from "@/components/influence/DataHealthConsole";
 import SourceReviewPanel from "@/components/influence/SourceReviewPanel";
 import StrategicAttribution from "@/components/influence/StrategicAttribution";
 import WeeklyInfluenceBrief from "@/components/influence/WeeklyInfluenceBrief";
-import DataDebugPanel from "@/components/influence/DataDebugPanel";
+
 import PostDiscoveryPanel from "@/components/influence/PostDiscoveryPanel";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -218,7 +218,6 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <DataDebugPanel />
 
       {/* ── HERO + Controls ── */}
       <Fade>
