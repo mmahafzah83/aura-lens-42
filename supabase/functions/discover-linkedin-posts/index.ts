@@ -79,7 +79,8 @@ type RejectionReason =
   | "external_reference"
   | "mention_by_other"
   | "invalid_url_pattern"
-  | "failed_authorship";
+  | "failed_authorship"
+  | "authorship_uncertain";
 
 interface UrlValidation {
   valid: boolean;
@@ -94,69 +95,93 @@ function validatePostUrl(url: string, handle: string): UrlValidation {
 
   const path = url.replace(/https?:\/\/(www\.)?linkedin\.com/, "").split("?")[0].replace(/\/+$/, "");
 
-  // Reject profile pages
   if (/^\/in\/[^/]+\/?$/.test(path)) {
     return { valid: false, reason: "profile_page" };
   }
-
-  // Reject article/pulse pages
   if (/^\/pulse\//i.test(path)) {
     return { valid: false, reason: "article_reference" };
   }
-
-  // Reject company pages
   if (/^\/company\//i.test(path)) {
     return { valid: false, reason: "external_reference" };
   }
-
-  // Reject comment-specific URLs
   if (/commentUrn|replyUrn/i.test(url)) {
     return { valid: false, reason: "comment_thread" };
   }
 
-  // Accept /feed/update/urn:li:activity:*
   if (/^\/feed\/update\/urn:li:activity:\d+/.test(path)) {
     return { valid: true };
   }
 
-  // Accept /posts/{handle}-*  (LinkedIn post slug format)
   const postsMatch = path.match(/^\/posts\/([^-]+)/);
   if (postsMatch) {
-    // If we have a handle, verify the post belongs to this profile
     if (handle && postsMatch[1].toLowerCase() !== handle.toLowerCase()) {
       return { valid: false, reason: "mention_by_other" };
     }
     return { valid: true };
   }
 
-  // Everything else is rejected
   return { valid: false, reason: "invalid_url_pattern" };
 }
 
-/** Check if the scraped content was authored by the connected profile */
-function validateAuthorship(
+/** Multi-signal authorship scoring. Returns signals found and confidence. */
+interface AuthorshipResult {
+  confident: boolean;      // 2+ signals → true
+  uncertain: boolean;      // exactly 1 signal → true (review queue)
+  signals: string[];       // which signals matched
+  confidence: number;      // 0-1
+}
+
+function scoreAuthorship(
+  url: string,
   rawText: string,
   profileName: string,
   handle: string,
-): boolean {
-  if (!profileName && !handle) return true; // can't verify, allow
+): AuthorshipResult {
+  const signals: string[] = [];
 
-  const lower = rawText.toLowerCase().slice(0, 1500); // check header area
-
-  // Check if profile name appears near the top (author byline)
+  // Signal 1: author name appears in header area
   if (profileName) {
-    const nameParts = profileName.toLowerCase().split(/\s+/);
-    // All name parts should appear in the header
-    const allFound = nameParts.every((part) => lower.includes(part));
-    if (allFound) return true;
+    const lower = rawText.toLowerCase().slice(0, 1500);
+    const nameParts = profileName.toLowerCase().split(/\s+/).filter(p => p.length > 1);
+    if (nameParts.length > 0 && nameParts.every((part) => lower.includes(part))) {
+      signals.push("name_in_header");
+    }
   }
 
-  // Check handle
-  if (handle && lower.includes(handle.toLowerCase())) {
-    return true;
+  // Signal 2: profile handle appears in canonical post URL
+  if (handle) {
+    const urlLower = url.toLowerCase();
+    if (urlLower.includes(`/posts/${handle.toLowerCase()}`)) {
+      signals.push("handle_in_url");
+    }
   }
 
-  return false;
+  // Signal 3: snippet clearly indicates own post (first-person patterns near top)
+  const headerText = rawText.slice(0, 800).toLowerCase();
+  const firstPersonPatterns = [
+    /\bi wrote\b/i, /\bmy post\b/i, /\bi shared\b/i, /\bi published\b/i,
+    /\bhere's what i\b/i, /\bi've been\b/i, /\bi learned\b/i, /\bi believe\b/i,
+  ];
+  if (firstPersonPatterns.some(p => p.test(headerText))) {
+    signals.push("first_person_snippet");
+  }
+
+  // Signal 4: handle appears in the text byline area
+  if (handle) {
+    const bylineArea = rawText.toLowerCase().slice(0, 500);
+    if (bylineArea.includes(handle.toLowerCase())) {
+      signals.push("handle_in_byline");
+    }
+  }
+
+  const confidence = Math.min(signals.length / 2, 1);
+
+  return {
+    confident: signals.length >= 2,
+    uncertain: signals.length === 1,
+    signals,
+    confidence,
+  };
 }
 
 interface DiscoveredPost {
@@ -329,6 +354,7 @@ Deno.serve(async (req) => {
     const seenTexts = new Set<string>();
     const seenUrls = new Set<string>();
     let rawLinksFound = 0;
+    const uncertainCandidates: { url: string; snippet: string; confidence: number; signals: string[] }[] = [];
 
     const searchQueries: string[] = [];
     if (handle) {
@@ -356,6 +382,7 @@ Deno.serve(async (req) => {
       mention_by_other: 0,
       invalid_url_pattern: 0,
       failed_authorship: 0,
+      authorship_uncertain: 0,
     };
 
     for (const searchQuery of searchQueries) {
@@ -399,8 +426,11 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // Step 2: Authorship validation
-          if (!validateAuthorship(rawText, profileName, handle)) {
+          // Step 2: Multi-signal authorship scoring (require 2+ signals)
+          const authResult = scoreAuthorship(url, rawText, profileName, handle);
+
+          if (!authResult.confident && !authResult.uncertain) {
+            // 0 signals → hard reject
             rejected.push({ url, reason: "failed_authorship" });
             rejectionCounts.failed_authorship++;
             continue;
@@ -423,6 +453,19 @@ Deno.serve(async (req) => {
           seenUrls.add(postUrl);
           seenTexts.add(textKey);
 
+          if (authResult.uncertain) {
+            // 1 signal → review queue, do NOT insert as a post
+            uncertainCandidates.push({
+              url: postUrl,
+              snippet: cleanText.slice(0, 500),
+              confidence: authResult.confidence,
+              signals: authResult.signals,
+            });
+            rejectionCounts.authorship_uncertain++;
+            continue;
+          }
+
+          // 2+ signals → insert as valid post
           const mediaType = detectMediaType(rawText);
           discovered.push({
             url: postUrl,
@@ -442,29 +485,48 @@ Deno.serve(async (req) => {
       await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS));
     }
 
-    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, rejected=${rejected.length}`);
+    log("filter_summary", `raw=${rawLinksFound}, valid=${discovered.length}, uncertain=${uncertainCandidates.length}, rejected=${rejected.length}`);
     log("rejection_breakdown", JSON.stringify(rejectionCounts));
+
+    // ── Insert uncertain candidates into review queue ──
+    let reviewQueued = 0;
+    for (const uc of uncertainCandidates) {
+      const { error: rqErr } = await adminClient.from("discovery_review_queue").upsert({
+        user_id: userId,
+        candidate_url: uc.url,
+        snippet: uc.snippet,
+        confidence: uc.confidence,
+        rejection_reason: "authorship_uncertain",
+        authorship_signals: uc.signals,
+        reviewed: false,
+      }, { onConflict: "user_id,candidate_url" });
+      if (!rqErr) reviewQueued++;
+    }
+    if (reviewQueued > 0) {
+      log("review_queue", `${reviewQueued} uncertain candidates held for review`);
+    }
 
     if (discovered.length === 0) {
       await adminClient.from("sync_runs").insert({
         user_id: userId,
         sync_type: "search_discovery",
-        status: "failed",
+        status: uncertainCandidates.length > 0 ? "completed" : "failed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: rawLinksFound,
         records_stored: 0,
-        error_message: `No authored posts found. ${rawLinksFound} links scanned, ${rejected.length} rejected.`,
+        error_message: `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`,
       });
 
       return new Response(JSON.stringify({
-        success: false,
-        error: "No authored posts found. Try Historical Import with a CSV export from LinkedIn.",
+        success: uncertainCandidates.length > 0,
+        error: uncertainCandidates.length > 0 ? undefined : "No authored posts found. Try Historical Import with a CSV export from LinkedIn.",
         source_type: "search_discovery",
         profile_url: profileUrl,
         queries_run: pagesVisited,
         raw_links_found: rawLinksFound,
         valid_posts: 0,
+        uncertain_held: reviewQueued,
         rejected_count: rejected.length,
         rejection_reasons: rejectionCounts,
         errors,
@@ -596,6 +658,7 @@ Deno.serve(async (req) => {
       discovered: discovered.length,
       inserted,
       duplicates,
+      uncertain_held: reviewQueued,
       rejected_count: rejected.length,
       rejection_reasons: rejectionCounts,
       classified: classifyResult?.classified || 0,

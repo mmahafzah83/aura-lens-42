@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag, Filter, ShieldX } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertCircle, Globe, Sparkles, Tag, Filter, ShieldX, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -17,6 +17,7 @@ interface RejectionReasons {
   mention_by_other?: number;
   invalid_url_pattern?: number;
   failed_authorship?: number;
+  authorship_uncertain?: number;
 }
 
 interface DiscoveryResult {
@@ -28,6 +29,7 @@ interface DiscoveryResult {
   discovered: number;
   inserted: number;
   duplicates: number;
+  uncertain_held?: number;
   rejected_count?: number;
   rejection_reasons?: RejectionReasons;
   classified?: number;
@@ -106,6 +108,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          uncertain_held: data.uncertain_held,
           rejected_count: data.rejected_count,
           rejection_reasons: data.rejection_reasons,
           classified: data.classified,
@@ -291,12 +294,18 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           </div>
           {/* Filter summary */}
           {(result.raw_links_found ?? 0) > 0 && (
-            <div className="flex items-center gap-3 pl-6 text-[10px]">
+            <div className="flex items-center flex-wrap gap-3 pl-6 text-[10px]">
               <span className="flex items-center gap-1 text-muted-foreground/40">
                 <Filter className="w-3 h-3" />
                 {result.raw_links_found} links scanned
               </span>
-              <span className="text-primary/50 font-medium">{result.valid_posts ?? result.discovered} authored</span>
+              <span className="text-primary/50 font-medium">{result.valid_posts ?? result.discovered} authored (2+ signals)</span>
+              {(result.uncertain_held ?? 0) > 0 && (
+                <span className="flex items-center gap-1 text-amber-500/60">
+                  <Clock className="w-3 h-3" />
+                  {result.uncertain_held} held for review
+                </span>
+              )}
               {(result.rejected_count ?? 0) > 0 && (
                 <span className="text-destructive/40">{result.rejected_count} rejected</span>
               )}
@@ -313,6 +322,9 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             <p><span className="text-muted-foreground/30">Authored posts:</span> {result.valid_posts ?? result.discovered}</p>
             <p><span className="text-muted-foreground/30">New inserted:</span> {result.inserted}</p>
             <p><span className="text-muted-foreground/30">Duplicates:</span> {result.duplicates}</p>
+            {(result.uncertain_held ?? 0) > 0 && (
+              <p><span className="text-amber-500/40">Review queue:</span> {result.uncertain_held}</p>
+            )}
             <p><span className="text-muted-foreground/30">Errors:</span> {result.errors?.length || 0}</p>
             {(result.classified ?? 0) > 0 && (
               <p><span className="text-muted-foreground/30">Classified:</span> {result.classified}</p>
