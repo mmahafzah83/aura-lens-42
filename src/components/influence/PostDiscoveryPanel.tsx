@@ -90,12 +90,15 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           discovered: data.discovered,
           inserted: data.inserted,
           duplicates: data.duplicates,
+          classified: data.classified,
+          labels: data.labels,
           source_type: data.source_type,
           errors: data.errors,
         });
+        const classifiedMsg = data.classified > 0 ? `, ${data.classified} classified` : "";
         toast({
           title: "Posts discovered",
-          description: `${data.inserted} new posts added, ${data.duplicates} duplicates skipped.`,
+          description: `${data.inserted} new posts added, ${data.duplicates} duplicates skipped${classifiedMsg}.`,
         });
         onDiscoveryComplete?.();
         await loadLastRun();
