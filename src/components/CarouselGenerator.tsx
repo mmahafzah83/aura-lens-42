@@ -58,7 +58,7 @@ interface TopicAnalysis {
   target_audience: string;
 }
 
-type PipelineStep = "input" | "frameworks" | "carousel";
+type PipelineStep = "input" | "frameworks" | "carousel" | "visuals";
 
 type Lang = "en" | "ar";
 type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
