@@ -1144,26 +1144,45 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
   const imagesTotal = currentSlides.filter(s => s.image_prompt).length;
 
   /* ── Pipeline Step Indicator ── */
+  const pipelineSteps: { key: PipelineStep; label: string; icon: typeof Lightbulb }[] = [
+    { key: "input", label: "Analysis", icon: Lightbulb },
+    { key: "frameworks", label: "Framework", icon: Layers },
+    { key: "carousel", label: "Carousel", icon: LayoutGrid },
+    { key: "visuals", label: "Visuals", icon: Camera },
+  ];
+  const stepOrder: PipelineStep[] = ["input", "frameworks", "carousel", "visuals"];
+  const currentStepIdx = stepOrder.indexOf(pipelineStep);
+
+  const canNavigateTo = (targetStep: PipelineStep): boolean => {
+    const targetIdx = stepOrder.indexOf(targetStep);
+    if (targetIdx >= currentStepIdx) return false; // can only go back
+    if (targetStep === "input") return false; // can't go back to loading
+    if (targetStep === "frameworks") return frameworks.length > 0;
+    if (targetStep === "carousel") return currentSlides.length > 0;
+    return false;
+  };
+
   const StepIndicator = () => (
     <div className="flex items-center gap-1 px-1">
-      {[
-        { key: "input" as PipelineStep, label: "Analysis", icon: Lightbulb },
-        { key: "frameworks" as PipelineStep, label: "Framework", icon: Layers },
-        { key: "carousel" as PipelineStep, label: "Carousel", icon: LayoutGrid },
-      ].map((step, i) => {
+      {pipelineSteps.map((step, i) => {
         const isActive = pipelineStep === step.key;
-        const isDone = (step.key === "input" && pipelineStep !== "input") ||
-          (step.key === "frameworks" && pipelineStep === "carousel");
+        const stepIdx = stepOrder.indexOf(step.key);
+        const isDone = stepIdx < currentStepIdx;
+        const canClick = canNavigateTo(step.key);
         const Icon = step.icon;
         return (
           <div key={step.key} className="flex items-center gap-1">
             {i > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground/20" />}
-            <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
-              isActive ? "bg-primary/15 text-primary" : isDone ? "text-primary/60" : "text-muted-foreground/30"
-            }`}>
+            <button
+              onClick={() => canClick && setPipelineStep(step.key)}
+              disabled={!canClick}
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                isActive ? "bg-primary/15 text-primary" : isDone ? "text-primary/60 hover:text-primary hover:bg-primary/8 cursor-pointer" : "text-muted-foreground/30 cursor-default"
+              }`}
+            >
               {isDone ? <Check className="w-3 h-3" /> : <Icon className="w-3 h-3" />}
               {step.label}
-            </div>
+            </button>
           </div>
         );
       })}
