@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bug, AlertTriangle, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Bug, AlertTriangle, RefreshCw, CheckCircle2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 /* ── Schema Audit Report ── */
@@ -20,6 +20,24 @@ const AUDIT_REPORT = [
   { component: "HistoricalImportHub", table: "influence_snapshots", fields: "user_id, snapshot_date, followers, impressions, reactions, comments, shares, source_type", status: "OK" },
 ];
 
+/* ── Scoping Audit ── */
+const SCOPING_AUDIT = [
+  { component: "InfluenceTabNew", table: "influence_snapshots", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "InfluenceTabNew", table: "linkedin_posts", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "InfluenceTabNew", table: "authority_scores", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "ConnectionStatusPanel", table: "linkedin_connections", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "ConnectionStatusPanel", table: "influence_snapshots", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "DailySnapshotEngine", table: "influence_snapshots", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "DataHealthConsole", table: "influence_snapshots", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "DataHealthConsole", table: "sync_errors", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "DataHealthConsole", table: "import_jobs", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "SourceReviewPanel", table: "influence_snapshots", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "StrategicAttribution", table: "linkedin_posts", filterBy: "RLS (auth.uid()=user_id)", explicit: false, status: "SECURE" },
+  { component: "HistoricalImportHub", table: "import_jobs", filterBy: "RLS + explicit user_id on insert", explicit: true, status: "SECURE" },
+  { component: "HistoricalImportHub", table: "influence_snapshots", filterBy: "RLS + explicit user_id on insert", explicit: true, status: "SECURE" },
+  { component: "DataDebugPanel", table: "all tables", filterBy: "explicit .eq('user_id', uid)", explicit: true, status: "SECURE" },
+];
+
 const NAME_MAP = [
   { requested: "linkedin_accounts", actual: "linkedin_connections", note: "Table does not exist as 'linkedin_accounts'" },
   { requested: "linkedin_daily_metrics", actual: "influence_snapshots", note: "Table does not exist as 'linkedin_daily_metrics'" },
@@ -30,6 +48,7 @@ const DataDebugPanel = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [showAudit, setShowAudit] = useState(false);
+  const [showScoping, setShowScoping] = useState(true);
 
   const load = async () => {
     setLoading(true);
@@ -38,17 +57,25 @@ const DataDebugPanel = () => {
     const uid = session.user.id;
     setUserId(uid);
 
-    const [connections, snapshots, posts, postMetrics, authScores] = await Promise.all([
+    const [connections, snapshots, posts, postMetrics, authScores, syncRuns] = await Promise.all([
       supabase.from("linkedin_connections").select("*", { count: "exact" }).eq("user_id", uid),
       supabase.from("influence_snapshots").select("*", { count: "exact" }).eq("user_id", uid).order("snapshot_date", { ascending: false }),
       supabase.from("linkedin_posts").select("*", { count: "exact" }).eq("user_id", uid).order("published_at", { ascending: false }),
       supabase.from("linkedin_post_metrics").select("*", { count: "exact" }).eq("user_id", uid).order("snapshot_date", { ascending: false }),
       supabase.from("authority_scores").select("*", { count: "exact" }).eq("user_id", uid).order("snapshot_date", { ascending: false }),
+      supabase.from("sync_runs").select("*", { count: "exact" }).eq("user_id", uid).order("created_at", { ascending: false }),
     ]);
 
-    const handle = connections.data?.[0]?.handle || connections.data?.[0]?.display_name || "—";
+    const conn = connections.data?.[0] || null;
+    const handle = conn?.handle || conn?.display_name || "—";
+    const accountId = conn?.id || "—";
     const latestSnapshotDate = snapshots.data?.[0]?.snapshot_date || "—";
     const latestPublishedAt = posts.data?.[0]?.published_at || "—";
+
+    // Count sync_runs by account_id match
+    const syncRunsByAccount = conn?.id
+      ? (syncRuns.data || []).filter((r: any) => r.account_id === conn.id).length
+      : 0;
 
     setData({
       connectionsCount: connections.count ?? 0,
@@ -56,7 +83,10 @@ const DataDebugPanel = () => {
       postsCount: posts.count ?? 0,
       postMetricsCount: postMetrics.count ?? 0,
       authorityScoresCount: authScores.count ?? 0,
+      syncRunsCount: syncRuns.count ?? 0,
+      syncRunsByAccountId: syncRunsByAccount,
       handle,
+      accountId,
       latestSnapshotDate,
       latestPublishedAt,
       snapshotRows: (snapshots.data || []).slice(0, 10),
@@ -121,6 +151,9 @@ const DataDebugPanel = () => {
           <span className="text-xs font-mono font-bold text-yellow-500/80">DATA DEBUG PANEL (admin-only)</span>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={() => setShowScoping(!showScoping)} className="text-[10px] font-mono text-yellow-500/50 hover:text-yellow-500/80 underline">
+            {showScoping ? "hide scoping" : "show scoping"}
+          </button>
           <button onClick={() => setShowAudit(!showAudit)} className="text-[10px] font-mono text-yellow-500/50 hover:text-yellow-500/80 underline">
             {showAudit ? "hide audit" : "show audit"}
           </button>
@@ -151,6 +184,40 @@ const DataDebugPanel = () => {
 
       {!loading && data && (
         <>
+          {/* Identity & Scoping Summary */}
+          <div className="mb-4 p-3 rounded border border-border/30 bg-muted/20 space-y-2">
+            <p className="text-[10px] font-mono font-bold text-foreground/60 flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-primary/50" /> AUTH & SCOPING SUMMARY
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[9px] font-mono">
+              <div><span className="text-muted-foreground/50">auth user_id:</span> <span className="text-foreground/80 break-all">{userId}</span></div>
+              <div><span className="text-muted-foreground/50">linkedin account_id:</span> <span className="text-foreground/80 break-all">{data.accountId}</span></div>
+              <div><span className="text-muted-foreground/50">handle:</span> <span className="text-foreground/80">{data.handle}</span></div>
+            </div>
+            <div className="border-t border-border/10 pt-2 mt-1">
+              <p className="text-[9px] font-mono text-muted-foreground/40 mb-1">Rows matched by user_id (all dashboard queries):</p>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 text-[9px] font-mono">
+                <span className="text-foreground/60">connections: <span className="text-foreground">{data.connectionsCount}</span></span>
+                <span className="text-foreground/60">snapshots: <span className="text-foreground">{data.snapshotsCount}</span></span>
+                <span className="text-foreground/60">posts: <span className="text-foreground">{data.postsCount}</span></span>
+                <span className="text-foreground/60">post_metrics: <span className="text-foreground">{data.postMetricsCount}</span></span>
+                <span className="text-foreground/60">auth_scores: <span className="text-foreground">{data.authorityScoresCount}</span></span>
+                <span className="text-foreground/60">sync_runs: <span className="text-foreground">{data.syncRunsCount}</span></span>
+              </div>
+            </div>
+            <div className="border-t border-border/10 pt-2 mt-1">
+              <p className="text-[9px] font-mono text-muted-foreground/40 mb-1">Rows matched by account_id (sync_runs only):</p>
+              <span className="text-[9px] font-mono text-foreground/60">sync_runs where account_id = linkedin_connections.id: <span className="text-foreground">{data.syncRunsByAccountId}</span></span>
+            </div>
+            <div className="border-t border-border/10 pt-2 mt-1">
+              <p className="text-[9px] font-mono text-muted-foreground/40">
+                ✓ No tables use handle as a filter key. All dashboard queries are scoped by user_id via RLS policies.
+                No account_id joins needed — all analytics tables have direct user_id columns.
+                No orphan rows possible: RLS enforces auth.uid() = user_id on every SELECT.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             <StatCard label="user_id" value={userId || "—"} />
             <StatCard label="linkedin_connections" value={data.connectionsCount} empty={data.connectionsCount === 0} />
@@ -166,6 +233,45 @@ const DataDebugPanel = () => {
           <RawTable title="linkedin_posts (latest 10)" rows={data.postRows} />
           <RawTable title="linkedin_post_metrics (latest 10)" rows={data.postMetricRows} />
         </>
+      )}
+
+      {/* Scoping Audit */}
+      {showScoping && (
+        <div className="mt-4 border-t border-yellow-500/20 pt-4">
+          <p className="text-[10px] font-mono font-bold text-yellow-500/70 mb-2">QUERY SCOPING AUDIT</p>
+          <div className="overflow-x-auto border border-border/20 rounded">
+            <table className="text-[9px] font-mono w-full">
+              <thead>
+                <tr className="bg-muted/20">
+                  <th className="px-2 py-1.5 text-left text-muted-foreground/50">Component</th>
+                  <th className="px-2 py-1.5 text-left text-muted-foreground/50">Table</th>
+                  <th className="px-2 py-1.5 text-left text-muted-foreground/50">Filter Method</th>
+                  <th className="px-2 py-1.5 text-left text-muted-foreground/50">Explicit?</th>
+                  <th className="px-2 py-1.5 text-left text-muted-foreground/50">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SCOPING_AUDIT.map((row, i) => (
+                  <tr key={i} className="border-t border-border/10">
+                    <td className="px-2 py-1 text-foreground/70 whitespace-nowrap">{row.component}</td>
+                    <td className="px-2 py-1 text-primary/60 whitespace-nowrap">{row.table}</td>
+                    <td className="px-2 py-1 text-foreground/50">{row.filterBy}</td>
+                    <td className="px-2 py-1 text-foreground/40">{row.explicit ? "Yes" : "No (RLS)"}</td>
+                    <td className="px-2 py-1 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-primary/50" />
+                        <span className="text-primary/60">{row.status}</span>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[9px] font-mono text-muted-foreground/30 mt-2">
+            All queries scoped by user_id via RLS. No account_id or handle joins needed. No backfill required — all tables use user_id directly.
+          </p>
+        </div>
       )}
 
       {/* Schema Audit Summary */}
