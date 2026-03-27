@@ -100,7 +100,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .limit(365),
         supabase
           .from("linkedin_posts")
-          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason")
+          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason, source_type, enriched_by, source_trust")
           .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false })
           .limit(200),
