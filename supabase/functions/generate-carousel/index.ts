@@ -71,39 +71,79 @@ IMPORTANT INSTRUCTIONS:
 - Do NOT include system labels like "Hook", "Problem", "Insight" on slides — these are internal only.
 - You MUST include "generation_checklist" in your JSON output with: explainer_format, stage_coverage map, explainer_slide_count, terminology_consistent, narrative_continuous.`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        max_tokens: 16384,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    const generateCarousel = async (attempt: number): Promise<unknown> => {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          max_tokens: 16384,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: attempt > 1
+              ? userPrompt + `\n\nIMPORTANT: This is retry attempt ${attempt}. The previous generation FAILED validation because not all framework stages were covered in framework_step slides. You MUST cover ALL stages this time. Every stage name must appear in at least one framework_step slide.`
+              : userPrompt },
+          ],
+          response_format: { type: "json_object" },
+        }),
+      });
 
-    if (!res.ok) {
-      if (res.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (res.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`AI error: ${res.status}`);
+      if (!res.ok) {
+        if (res.status === 429) throw Object.assign(new Error("Rate limit exceeded"), { status: 429 });
+        if (res.status === 402) throw Object.assign(new Error("AI credits exhausted"), { status: 402 });
+        throw new Error(`AI error: ${res.status}`);
+      }
+
+      const data = await res.json();
+      const raw = data.choices?.[0]?.message?.content || "{}";
+
+      let parsed: any;
+      try {
+        parsed = extractAndParseJson(raw);
+      } catch (parseErr) {
+        console.error("Raw LLM response (first 500 chars):", raw.substring(0, 500));
+        console.error("Raw LLM response (last 300 chars):", raw.substring(raw.length - 300));
+        throw new Error("Failed to parse carousel response");
+      }
+
+      return parsed;
+    };
+
+    // Generate with validation + auto-retry
+    const MAX_ATTEMPTS = 2;
+    let parsed: any;
+    let validationResult: { coverage: number; missing: string[] } | null = null;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      parsed = await generateCarousel(attempt);
+      
+      // Validate framework stage coverage
+      if (frameworkSteps.length > 0 && parsed?.slides) {
+        validationResult = validateStageCoverage(parsed.slides, frameworkSteps);
+        console.log(`Attempt ${attempt} — Stage coverage: ${(validationResult.coverage * 100).toFixed(0)}%, missing: [${validationResult.missing.join(", ")}]`);
+
+        if (validationResult.coverage >= 0.8) {
+          break; // Coverage is acceptable
+        }
+
+        if (attempt < MAX_ATTEMPTS) {
+          console.log(`Coverage below 80%, auto-regenerating (attempt ${attempt + 1})...`);
+        }
+      } else {
+        break; // No framework to validate
+      }
     }
 
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content || "{}";
-
-    let parsed;
-    try {
-      parsed = extractAndParseJson(raw);
-    } catch (parseErr) {
-      console.error("Raw LLM response (first 500 chars):", raw.substring(0, 500));
-      console.error("Raw LLM response (last 300 chars):", raw.substring(raw.length - 300));
-      throw new Error("Failed to parse carousel response");
+    // Attach validation metadata
+    if (validationResult) {
+      parsed.validation = {
+        stage_coverage_pct: Math.round(validationResult.coverage * 100),
+        missing_stages: validationResult.missing,
+        passed: validationResult.coverage >= 0.8,
+      };
     }
 
     return new Response(JSON.stringify(parsed), {
