@@ -355,6 +355,39 @@
       return true;
     }
 
+    // Collect post URLs from activity feed or profile page
+    if (msg.action === "collect_post_urls") {
+      try {
+        const urls = [];
+        const seen = new Set();
+        const links = document.querySelectorAll(
+          "a[href*='/posts/'], a[href*='/feed/update/urn']"
+        );
+        for (const link of links) {
+          const href = normalizeUrl(link.href);
+          if (!seen.has(href) && href.includes("linkedin.com")) {
+            seen.add(href);
+            urls.push(href);
+          }
+        }
+        sendResponse({ success: true, urls });
+      } catch (e) {
+        sendResponse({ success: false, error: e.message, urls: [] });
+      }
+      return true;
+    }
+
+    // Scroll to load more content
+    if (msg.action === "scroll_page") {
+      try {
+        window.scrollBy(0, window.innerHeight * 2);
+        sendResponse({ success: true, scrollY: window.scrollY, docHeight: document.body.scrollHeight });
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+      return true;
+    }
+
     if (msg.action === "capture") {
       try {
         const pageType = detectPageType();

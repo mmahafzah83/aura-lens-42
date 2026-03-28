@@ -198,59 +198,127 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true; // async
   }
 
-  // Guided capture orchestration
+  // Guided capture orchestration — profile → activity → individual posts → optional analytics
   if (msg.action === "guided_capture") {
     (async () => {
       const results = [];
-      const steps = [
-        { url: "https://www.linkedin.com/analytics/creator/", label: "Creator Analytics", delay: 4000 },
-        { url: "https://www.linkedin.com/analytics/audience/", label: "Audience Analytics", delay: 4000 },
-        { url: "https://www.linkedin.com/analytics/content/", label: "Post Analytics", delay: 5000 },
-      ];
-
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) {
         sendResponse({ success: false, error: "No active tab" });
         return;
       }
 
-      for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
-        try {
-          // Navigate
-          await chrome.tabs.update(tab.id, { url: step.url });
-          // Wait for page load
-          await new Promise(r => setTimeout(r, step.delay));
-          // Capture
-          const captureResult = await chrome.tabs.sendMessage(tab.id, { action: "capture" });
+      // Resolve profile handle
+      const { auraHandle } = await chrome.storage.local.get("auraHandle");
+      let handle = msg.handle || auraHandle;
 
+      // Step 1: Open profile page to confirm handle
+      const stepProfile = { label: "Profile Page", success: false, records: 0 };
+      try {
+        if (!handle) {
+          // Try to detect from current tab URL
+          const currentUrl = tab.url || "";
+          const m = currentUrl.match(/linkedin\.com\/in\/([^/]+)/);
+          if (m) handle = m[1];
+        }
+
+        if (handle) {
+          await chrome.tabs.update(tab.id, { url: `https://www.linkedin.com/in/${handle}/` });
+          await waitForLoad(tab.id, 4000);
+          const profileCapture = await chrome.tabs.sendMessage(tab.id, { action: "capture" });
+          if (profileCapture?.success && profileCapture.detectedHandle) {
+            handle = profileCapture.detectedHandle;
+            await chrome.storage.local.set({ auraHandle: handle });
+          }
+          stepProfile.success = true;
+          stepProfile.records = 0; // profile page itself doesn't produce records
+        } else {
+          stepProfile.error = "No LinkedIn handle found. Visit your profile first.";
+        }
+      } catch (e) {
+        stepProfile.error = e.message;
+      }
+      results.push(stepProfile);
+
+      if (!handle) {
+        sendResponse({ success: false, error: "Could not determine your LinkedIn profile. Please navigate to your LinkedIn profile first.", steps: results, totalRecords: 0 });
+        return;
+      }
+
+      // Step 2: Open activity feed, scroll, and collect post URLs
+      const stepActivity = { label: "Activity Feed", success: false, records: 0 };
+      let postUrls = [];
+      try {
+        await chrome.tabs.update(tab.id, { url: `https://www.linkedin.com/in/${handle}/recent-activity/all/` });
+        await waitForLoad(tab.id, 5000);
+
+        // Scroll 3 times to load more posts
+        for (let scroll = 0; scroll < 3; scroll++) {
+          await chrome.tabs.sendMessage(tab.id, { action: "scroll_page" });
+          await new Promise(r => setTimeout(r, 2000));
+        }
+
+        // Collect discovered post URLs
+        const collectResult = await chrome.tabs.sendMessage(tab.id, { action: "collect_post_urls" });
+        postUrls = collectResult?.urls || [];
+
+        stepActivity.success = true;
+        stepActivity.records = postUrls.length;
+        stepActivity.detail = `${postUrls.length} post URLs discovered`;
+      } catch (e) {
+        stepActivity.error = e.message;
+      }
+      results.push(stepActivity);
+
+      // Step 3: Visit each post and capture content + metrics
+      const MAX_POSTS = 15; // cap to avoid long sessions
+      const postsToCapture = postUrls.slice(0, MAX_POSTS);
+      const stepPosts = { label: "Post Capture", success: false, records: 0 };
+      let totalPostRecords = 0;
+      let capturedCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < postsToCapture.length; i++) {
+        try {
+          await chrome.tabs.update(tab.id, { url: postsToCapture[i] });
+          await waitForLoad(tab.id, 3500);
+
+          const captureResult = await chrome.tabs.sendMessage(tab.id, { action: "capture" });
           if (captureResult?.success && captureResult.payload) {
             const auraResult = await sendToAura(captureResult.payload);
             await updateStats(captureResult.payload, auraResult);
-            results.push({
-              step: i + 1,
-              label: step.label,
-              success: true,
-              records: auraResult?.total_stored || 0,
-              details: auraResult,
-            });
-          } else {
-            results.push({
-              step: i + 1,
-              label: step.label,
-              success: false,
-              error: captureResult?.error || "No data extracted",
-            });
+            const stored = auraResult?.total_stored || 0;
+            totalPostRecords += stored;
+            capturedCount++;
           }
-        } catch (e) {
-          results.push({
-            step: i + 1,
-            label: step.label,
-            success: false,
-            error: e.message,
-          });
+        } catch {
+          errorCount++;
         }
       }
+
+      stepPosts.success = capturedCount > 0;
+      stepPosts.records = totalPostRecords;
+      stepPosts.detail = `${capturedCount}/${postsToCapture.length} posts captured` + (errorCount > 0 ? `, ${errorCount} errors` : "");
+      results.push(stepPosts);
+
+      // Step 4 (optional): Creator Analytics for follower snapshot
+      const stepAnalytics = { label: "Creator Analytics", success: false, records: 0 };
+      try {
+        await chrome.tabs.update(tab.id, { url: "https://www.linkedin.com/analytics/creator/" });
+        await waitForLoad(tab.id, 4000);
+        const analyticsCapture = await chrome.tabs.sendMessage(tab.id, { action: "capture" });
+        if (analyticsCapture?.success && analyticsCapture.payload) {
+          const auraResult = await sendToAura(analyticsCapture.payload);
+          await updateStats(analyticsCapture.payload, auraResult);
+          stepAnalytics.success = true;
+          stepAnalytics.records = auraResult?.total_stored || 0;
+        } else {
+          stepAnalytics.error = analyticsCapture?.error || "No analytics data";
+        }
+      } catch (e) {
+        stepAnalytics.error = e.message;
+      }
+      results.push(stepAnalytics);
 
       const totalRecords = results.reduce((sum, r) => sum + (r.records || 0), 0);
       const successCount = results.filter(r => r.success).length;
@@ -258,10 +326,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         success: successCount > 0,
         steps: results,
         totalRecords,
-        summary: `${successCount}/${steps.length} steps completed · ${totalRecords} records captured`,
+        summary: `${successCount}/${results.length} steps · ${totalRecords} records · ${capturedCount} posts captured`,
       });
     })();
-    return true; // async
+    return true;
   }
 });
 

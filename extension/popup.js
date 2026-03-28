@@ -222,7 +222,7 @@ $("guidedBtn").addEventListener("click", async () => {
 
   progressEl.style.display = "block";
 
-  const stepLabels = ["Creator Analytics", "Audience Analytics", "Post Analytics"];
+  const stepLabels = ["Profile Page", "Activity Feed", "Post Capture", "Creator Analytics"];
   stepsEl.innerHTML = stepLabels.map((label, i) =>
     `<div class="guided-step" id="gstep-${i}">
       <span class="step-icon pending" id="gicon-${i}">○</span>
