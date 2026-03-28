@@ -115,12 +115,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
 
       const since = new Date(Date.now() - getDays(range) * 86400000).toISOString().split("T")[0];
 
-      // Primary query: influence_dashboard_view
+      // Primary query: influence_dashboard_view (exact columns)
       const [viewRes, snapRes, syncRes, syncErrRes, lastCapRes, capSnapRes] = await Promise.all([
         supabase
-          .from("influence_dashboard_view" as any)
-          .select("*")
+          .from("influence_dashboard_view")
+          .select("id, user_id, post_url, post_text, hook, topic_label, format_type, media_type, published_at, impressions, like_count, comment_count, repost_count, engagement_rate, followers, snapshot_date, tracking_status")
           .eq("user_id", uid)
+          .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false }),
         supabase.from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
@@ -138,20 +139,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       ]);
 
       if (viewRes.error) {
-        setQueryError(viewRes.error.message);
+        setQueryError(`influence_dashboard_view: ${viewRes.error.message}`);
         setLoading(false);
         return;
       }
 
       const viewData = (viewRes.data || []) as any[];
-      setPosts(viewData.map((p: any) => ({
-        ...p,
-        like_count: p.reactions ?? p.like_count ?? 0,
-        comment_count: p.comments ?? p.comment_count ?? 0,
-        repost_count: p.shares ?? p.repost_count ?? 0,
-        _impressions: p.impressions ?? 0,
-        _saves: p.saves ?? 0,
-      })));
+      setPosts(viewData);
       setTotalPostCount(viewData.length);
       setCapturePostCount(viewData.filter((p: any) => p.source_type === "browser_capture").length);
 
