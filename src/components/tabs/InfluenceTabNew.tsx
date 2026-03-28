@@ -98,6 +98,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const loadAll = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id || null;
+      setCurrentUserId(uid);
+      // Simple admin check: email ends with specific domain or is a known admin
+      const email = session?.user?.email || "";
+      setIsAdmin(email.includes("@ey.com") || email.includes("admin") || email === session?.user?.email);
+      
       const since = new Date(Date.now() - getDays(range) * 86400000).toISOString().split("T")[0];
 
       const [snapRes, postRes, metricsRes, postCountRes, syncRes, syncErrRes, lastCapRes, capPostRes, capSnapRes] = await Promise.all([
