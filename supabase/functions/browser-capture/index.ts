@@ -197,6 +197,10 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
     const startedAt = new Date().toISOString();
 
+    if (payload._author_url) {
+      console.log("[browser-capture] author_url:", payload._author_url, "user_id:", userId);
+    }
+
     // ── Follower Snapshot ──
     if ((payload.type === "follower_snapshot" || payload.type === "full_sync") && payload.follower_snapshot) {
       const snap = payload.follower_snapshot;
