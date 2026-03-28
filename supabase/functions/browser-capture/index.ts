@@ -57,6 +57,7 @@ const PayloadSchema = z.object({
   follower_snapshot: FollowerSnapshotSchema.optional(),
   posts: z.array(PostSchema).optional(),
   post_metrics: z.array(PostMetricSchema).optional(),
+  _author_url: z.string().url().optional().nullable(),
 });
 
 /* ── Enrichment helpers ── */
@@ -196,6 +197,10 @@ Deno.serve(async (req) => {
     const errors: string[] = [];
     const startedAt = new Date().toISOString();
 
+    if (payload._author_url) {
+      console.log("[browser-capture] author_url:", payload._author_url, "user_id:", userId);
+    }
+
     // ── Follower Snapshot ──
     if ((payload.type === "follower_snapshot" || payload.type === "full_sync") && payload.follower_snapshot) {
       const snap = payload.follower_snapshot;
@@ -246,8 +251,10 @@ Deno.serve(async (req) => {
           })
           .select("id")
           .single();
-        if (insErr) errors.push(`follower_snapshot: ${insErr.message}`);
-        else results.follower_snapshot = { action: "inserted", id: inserted?.id };
+        if (insErr) {
+            console.error("[browser-capture] follower_snapshot insert failed:", JSON.stringify(insErr));
+            errors.push(`follower_snapshot: ${insErr.message}`);
+          } else results.follower_snapshot = { action: "inserted", id: inserted?.id };
       }
     }
 
@@ -321,6 +328,7 @@ Deno.serve(async (req) => {
             source_metadata: { captured_at: new Date().toISOString() },
           });
           if (insErr) {
+            console.error("[browser-capture] post insert failed:", JSON.stringify({ code: insErr.code, message: insErr.message, postUrl }));
             if (insErr.code === "23505") postsDuplicate++;
             else errors.push(`post: ${insErr.message}`);
           } else postsInserted++;
@@ -394,8 +402,10 @@ Deno.serve(async (req) => {
             saves: metric.saves,
             engagement_rate: metric.engagement_rate || metricEngagement,
           });
-          if (insErr) errors.push(`metric: ${insErr.message}`);
-          else metricsInserted++;
+          if (insErr) {
+            console.error("[browser-capture] metric insert failed:", JSON.stringify({ code: insErr.code, message: insErr.message, postId: post.id }));
+            errors.push(`metric: ${insErr.message}`);
+          } else metricsInserted++;
         }
       }
       results.post_metrics = { inserted: metricsInserted, updated: metricsUpdated };
