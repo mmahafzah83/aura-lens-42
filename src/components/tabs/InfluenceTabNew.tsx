@@ -311,7 +311,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Followers", value: currentFollowers > 0 ? currentFollowers.toLocaleString() : "—", icon: Users, sub: periodGrowth !== 0 ? `${periodGrowth > 0 ? "+" : ""}${periodGrowth}` : null },
-              { label: "Posts tracked", value: posts.length.toString(), icon: FileText, sub: null },
+              { label: "Posts tracked", value: totalPostCount.toString(), icon: FileText, sub: null },
               { label: "Engagement rate", value: latestEngRate > 0 ? `${latestEngRate.toFixed(1)}%` : "—", icon: Activity, sub: null },
               { label: "Total reactions", value: totalReactions > 0 ? totalReactions.toLocaleString() : "—", icon: Zap, sub: null },
             ].map((m, i) => (
