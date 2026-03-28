@@ -91,7 +91,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       const days = getDaysForRange(range);
       const since = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-      const [snapRes, postRes, authRes, connRes, syncRes] = await Promise.all([
+      const [snapRes, postRes, authRes, connRes, syncRes, metricsRes] = await Promise.all([
         supabase
           .from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
@@ -100,7 +100,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .limit(365),
         supabase
           .from("linkedin_posts")
-          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason, source_type, enriched_by, source_trust")
+          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason, source_type, enriched_by, source_trust, post_url")
           .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false })
           .limit(200),
@@ -118,6 +118,11 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .from("sync_runs")
           .select("id")
           .limit(1),
+        supabase
+          .from("linkedin_post_metrics")
+          .select("post_id, impressions, reactions, comments, shares, saves, engagement_rate, snapshot_date, source_type")
+          .order("snapshot_date", { ascending: false })
+          .limit(1000),
       ]);
 
       setIsConnected((connRes.data || []).length > 0);
@@ -126,7 +131,31 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       const snaps = snapRes.data || [];
       setSnapshots(snaps);
       setLatestSnapshot(snaps.length > 0 ? snaps[snaps.length - 1] : null);
-      setPosts(postRes.data || []);
+
+      // Build latest metrics map per post (latest snapshot_date wins)
+      const metricsMap: Record<string, any> = {};
+      (metricsRes.data || []).forEach((m: any) => {
+        if (!metricsMap[m.post_id]) metricsMap[m.post_id] = m;
+      });
+
+      // Merge metrics into posts
+      const rawPosts = postRes.data || [];
+      const mergedPosts = rawPosts.map((p: any) => {
+        const m = metricsMap[p.id];
+        if (!m) return p;
+        return {
+          ...p,
+          like_count: m.reactions ?? p.like_count,
+          comment_count: m.comments ?? p.comment_count,
+          repost_count: m.shares ?? p.repost_count,
+          engagement_score: m.engagement_rate ?? p.engagement_score,
+          _impressions: m.impressions ?? 0,
+          _saves: m.saves ?? 0,
+          _metrics_source: m.source_type,
+        };
+      });
+
+      setPosts(mergedPosts);
       setAuthorityScore(authRes.data?.[0] || null);
     } catch (e) {
       console.error("Influence load error:", e);
