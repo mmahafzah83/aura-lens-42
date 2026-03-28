@@ -27,7 +27,7 @@ interface InfluenceTabNewProps {
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
-type SortKey = "published_at" | "engagement_score" | "like_count" | "comment_count";
+type SortKey = "published_at" | "engagement_rate" | "like_count" | "comment_count";
 type SortDir = "asc" | "desc";
 
 /* ── Utility components ── */
