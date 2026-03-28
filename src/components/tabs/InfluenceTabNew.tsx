@@ -496,7 +496,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       {themes.length > 0 && (
         <Fade delay={0.16}>
           <div>
-            <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${posts.length} posts`} />
+            <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${totalPostCount} posts`} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="glass-card rounded-2xl card-pad border border-border/8">
                 <div className="h-[240px] -mx-2">
