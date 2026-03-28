@@ -516,7 +516,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {hasReal ? <span className="text-foreground/50">{post.comment_count || 0}</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right font-medium">
-                            {hasReal ? <span className="text-foreground/60">{Number(post.engagement_score || 0).toFixed(1)}%</span> : <span className="text-muted-foreground/15">—</span>}
+                            {hasReal ? <span className="text-foreground/60">{Number(post.engagement_rate || 0).toFixed(1)}%</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="py-2.5 px-2 text-center">
                             <span className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-medium ${statusStyles[status] || statusStyles.discovered}`}>
