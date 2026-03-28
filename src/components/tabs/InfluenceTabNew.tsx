@@ -200,12 +200,12 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     if (theme) {
       if (!themeCounts[theme]) themeCounts[theme] = { count: 0, totalEng: 0 };
       themeCounts[theme].count++;
-      themeCounts[theme].totalEng += Number(p.engagement_score) || 0;
+      themeCounts[theme].totalEng += Number(p.engagement_rate) || 0;
     }
-    const fmt = p.format_type || p.content_type || p.media_type || "text";
+    const fmt = p.format_type || p.media_type || "text";
     if (!formatCounts[fmt]) formatCounts[fmt] = { count: 0, totalEng: 0 };
     formatCounts[fmt].count++;
-    formatCounts[fmt].totalEng += Number(p.engagement_score) || 0;
+    formatCounts[fmt].totalEng += Number(p.engagement_rate) || 0;
   });
   const themes = Object.entries(themeCounts)
     .map(([t, d]) => ({ theme: t, count: d.count, avgEng: Math.round(d.totalEng / d.count * 10) / 10 }))
