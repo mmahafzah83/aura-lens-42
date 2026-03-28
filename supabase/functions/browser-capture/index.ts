@@ -397,8 +397,10 @@ Deno.serve(async (req) => {
             saves: metric.saves,
             engagement_rate: metric.engagement_rate || metricEngagement,
           });
-          if (insErr) errors.push(`metric: ${insErr.message}`);
-          else metricsInserted++;
+          if (insErr) {
+            console.error("[browser-capture] metric insert failed:", JSON.stringify({ code: insErr.code, message: insErr.message, postId: post.id }));
+            errors.push(`metric: ${insErr.message}`);
+          } else metricsInserted++;
         }
       }
       results.post_metrics = { inserted: metricsInserted, updated: metricsUpdated };
