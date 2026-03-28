@@ -1,0 +1,1 @@
+ALTER VIEW public.influence_dashboard_view SET (security_invoker = true);
