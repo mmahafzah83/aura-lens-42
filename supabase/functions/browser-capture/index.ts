@@ -246,8 +246,10 @@ Deno.serve(async (req) => {
           })
           .select("id")
           .single();
-        if (insErr) errors.push(`follower_snapshot: ${insErr.message}`);
-        else results.follower_snapshot = { action: "inserted", id: inserted?.id };
+        if (insErr) {
+            console.error("[browser-capture] follower_snapshot insert failed:", JSON.stringify(insErr));
+            errors.push(`follower_snapshot: ${insErr.message}`);
+          } else results.follower_snapshot = { action: "inserted", id: inserted?.id };
       }
     }
 
