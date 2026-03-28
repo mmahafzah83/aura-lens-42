@@ -87,6 +87,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [debugData, setDebugData] = useState<any>({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [queryError, setQueryError] = useState<string | null>(null);
 
   const [sortKey, setSortKey] = useState<SortKey>("published_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -97,52 +98,66 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
 
   const loadAll = async () => {
     setLoading(true);
+    setQueryError(null);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const uid = session?.user?.id || null;
+      const user = session?.user;
+      const uid = user?.id || null;
       setCurrentUserId(uid);
-      // Simple admin check: email ends with specific domain or is a known admin
-      const email = session?.user?.email || "";
-      setIsAdmin(email.includes("@ey.com") || email.includes("admin") || email === session?.user?.email);
-      
+      const email = user?.email || "";
+      setIsAdmin(email.includes("@ey.com") || email.includes("admin") || email === user?.email);
+
+      if (!uid) {
+        setQueryError("Not authenticated. Please sign in.");
+        setLoading(false);
+        return;
+      }
+
       const since = new Date(Date.now() - getDays(range) * 86400000).toISOString().split("T")[0];
 
-      const [snapRes, postRes, metricsRes, postCountRes, syncRes, syncErrRes, lastCapRes, capPostRes, capSnapRes] = await Promise.all([
+      // Primary query: influence_dashboard_view
+      const [viewRes, snapRes, syncRes, syncErrRes, lastCapRes, capSnapRes] = await Promise.all([
+        supabase
+          .from("influence_dashboard_view" as any)
+          .select("*")
+          .eq("user_id", uid)
+          .order("published_at", { ascending: false }),
         supabase.from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
           .gte("snapshot_date", range === "all" ? "2020-01-01" : since)
           .order("snapshot_date", { ascending: true }).limit(365),
-        supabase.from("linkedin_posts")
-          .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, source_type, post_url")
-          .neq("tracking_status", "rejected")
-          .order("published_at", { ascending: false }).limit(500),
-        supabase.from("linkedin_post_metrics")
-          .select("post_id, impressions, reactions, comments, shares, saves, engagement_rate, source_type")
-          .order("snapshot_date", { ascending: false }),
-        supabase.from("linkedin_posts")
-          .select("id", { count: "exact", head: true })
-          .neq("tracking_status", "rejected"),
-        supabase.from("sync_runs")
-          .select("id").limit(100),
-        supabase.from("sync_errors")
-          .select("id").limit(100),
+        supabase.from("sync_runs").select("id").limit(100),
+        supabase.from("sync_errors").select("id").limit(100),
         supabase.from("sync_runs")
           .select("completed_at")
           .eq("sync_type", "browser_capture").eq("status", "completed")
           .order("completed_at", { ascending: false }).limit(1),
-        supabase.from("linkedin_posts")
-          .select("id", { count: "exact", head: true })
-          .eq("source_type", "browser_capture"),
         supabase.from("influence_snapshots")
           .select("id", { count: "exact", head: true })
           .eq("source_type", "browser_capture"),
       ]);
 
-      setTotalPostCount(postCountRes.count || 0);
+      if (viewRes.error) {
+        setQueryError(viewRes.error.message);
+        setLoading(false);
+        return;
+      }
+
+      const viewData = (viewRes.data || []) as any[];
+      setPosts(viewData.map((p: any) => ({
+        ...p,
+        like_count: p.reactions ?? p.like_count ?? 0,
+        comment_count: p.comments ?? p.comment_count ?? 0,
+        repost_count: p.shares ?? p.repost_count ?? 0,
+        _impressions: p.impressions ?? 0,
+        _saves: p.saves ?? 0,
+      })));
+      setTotalPostCount(viewData.length);
+      setCapturePostCount(viewData.filter((p: any) => p.source_type === "browser_capture").length);
+
       setSyncRunCount((syncRes.data || []).length);
       setSyncErrorCount((syncErrRes.data || []).length);
       setLastCaptureTime(lastCapRes.data?.[0]?.completed_at || null);
-      setCapturePostCount(capPostRes.count || 0);
       setCaptureSnapCount(capSnapRes.count || 0);
       setHasExtension((lastCapRes.data || []).length > 0);
 
@@ -150,58 +165,24 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       setSnapshots(snaps);
       setLatestSnapshot(snaps.length > 0 ? snaps[snaps.length - 1] : null);
 
-      const metricsMap: Record<string, any> = {};
-      (metricsRes.data || []).forEach((m: any) => {
-        if (!metricsMap[m.post_id]) metricsMap[m.post_id] = m;
-      });
-
-      const mergedPosts = (postRes.data || []).map((p: any) => {
-        const m = metricsMap[p.id];
-        if (!m) return { ...p, _impressions: 0, _saves: 0 };
-        return {
-          ...p,
-          like_count: m.reactions ?? p.like_count,
-          comment_count: m.comments ?? p.comment_count,
-          repost_count: m.shares ?? p.repost_count,
-          engagement_score: m.engagement_rate ?? p.engagement_score,
-          _impressions: m.impressions ?? 0,
-          _saves: m.saves ?? 0,
-        };
-      });
-      setPosts(mergedPosts);
-
-      // Debug data collection
-      const [totalSnapsRes, totalMetricsRes, latestCaptureSnap, latestCapturePost, latestMetricRow] = await Promise.all([
-        supabase.from("influence_snapshots").select("id", { count: "exact", head: true }),
-        supabase.from("linkedin_post_metrics").select("id", { count: "exact", head: true }),
-        supabase.from("influence_snapshots")
-          .select("snapshot_date, source_type, followers, engagement_rate")
-          .eq("source_type", "browser_capture")
-          .order("snapshot_date", { ascending: false }).limit(1),
-        supabase.from("linkedin_posts")
-          .select("post_url, published_at, source_type, tracking_status")
-          .eq("source_type", "browser_capture")
-          .order("created_at", { ascending: false }).limit(1),
-        supabase.from("linkedin_post_metrics")
-          .select("post_id, impressions, reactions, comments, shares, engagement_rate, source_type, snapshot_date")
-          .order("created_at", { ascending: false }).limit(1),
-      ]);
-
+      // Debug data
       setDebugData({
-        snapshotTotal: totalSnapsRes.count || 0,
-        postTotal: postCountRes.count || 0,
-        metricsTotal: totalMetricsRes.count || 0,
-        latestCaptureSnapshot: latestCaptureSnap.data?.[0] || null,
-        latestCapturePost: latestCapturePost.data?.[0] || null,
-        latestMetricRow: latestMetricRow.data?.[0] || null,
+        snapshotTotal: snaps.length,
+        postTotal: viewData.length,
+        metricsTotal: viewData.filter((p: any) => p.metrics_date).length,
+        latestCaptureSnapshot: snaps.filter((s: any) => s.source_type === "browser_capture").slice(-1)[0] || null,
+        latestCapturePost: viewData.filter((p: any) => p.source_type === "browser_capture")[0] || null,
+        latestMetricRow: viewData.find((p: any) => p.metrics_date) || null,
         snapshotsInRange: snaps.length,
-        postsInRange: mergedPosts.length,
-        metricsInRange: (metricsRes.data || []).length,
+        postsInRange: viewData.length,
+        metricsInRange: viewData.filter((p: any) => p.metrics_date).length,
         rangeFilter: range === "all" ? "2020-01-01" : since,
-        postFilter: 'tracking_status != "rejected"',
+        postFilter: 'influence_dashboard_view (excludes rejected)',
+        querySource: "influence_dashboard_view",
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Influence load error:", e);
+      setQueryError(e?.message || "Unknown error loading influence data");
     }
     setLoading(false);
   };
