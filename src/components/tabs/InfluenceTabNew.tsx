@@ -199,7 +199,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
 
   const topicLabels = Object.entries(
     posts.reduce((acc, p) => { if (p.topic_label) acc[p.topic_label] = (acc[p.topic_label] || 0) + 1; return acc; }, {} as Record<string, number>)
-  ).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count).slice(0, 10);
+  ).map(([label, count]) => ({ label, count: count as number })).sort((a, b) => b.count - a.count).slice(0, 10);
 
   const chartData = snapshots.map(s => ({ date: s.snapshot_date, followers: s.followers || 0 }));
 
