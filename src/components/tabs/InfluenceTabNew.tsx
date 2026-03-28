@@ -5,7 +5,7 @@ import {
   Sparkles, FileText, Eye, Crown, BarChart3,
   ChevronDown, ChevronUp,
   Activity, Settings2, Monitor, Wifi, WifiOff,
-  CheckCircle2, AlertTriangle
+  CheckCircle2, AlertTriangle, Bug
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from "recharts";
