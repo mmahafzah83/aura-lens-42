@@ -639,7 +639,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   )}
                 </div>
                 <div className="overflow-x-auto -mx-2">
-                  <table className="w-full text-left min-w-[600px]">
+                  <table className="w-full text-left min-w-[700px]">
                     <thead>
                       <tr className="border-b border-border/5">
                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 w-20 cursor-pointer" onClick={() => toggleSort("published_at")}>
@@ -647,13 +647,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                         </th>
                          <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Hook</th>
                          <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Topic</th>
-                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Format</th>
                          <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5">Source</th>
+                         <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right">Impr.</th>
                          <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("like_count")}>
-                           <span className="flex items-center gap-1 justify-end">Reactions <SortIcon col="like_count" /></span>
+                           <span className="flex items-center gap-1 justify-end">React. <SortIcon col="like_count" /></span>
                          </th>
                          <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("comment_count")}>
-                           <span className="flex items-center gap-1 justify-end">Comments <SortIcon col="comment_count" /></span>
+                           <span className="flex items-center gap-1 justify-end">Comm. <SortIcon col="comment_count" /></span>
                          </th>
                          <th className="text-[10px] uppercase tracking-widest text-muted-foreground/25 font-medium py-2 px-2.5 text-right cursor-pointer" onClick={() => toggleSort("engagement_score")}>
                            <span className="flex items-center gap-1 justify-end">Eng % <SortIcon col="engagement_score" /></span>
