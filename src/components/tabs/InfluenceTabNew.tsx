@@ -70,6 +70,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [syncRunCount, setSyncRunCount] = useState(0);
   const [syncErrorCount, setSyncErrorCount] = useState(0);
   const [lastCaptureTime, setLastCaptureTime] = useState<string | null>(null);
+  const [totalPostCount, setTotalPostCount] = useState(0);
 
   const [sortKey, setSortKey] = useState<SortKey>("published_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
