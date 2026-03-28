@@ -169,6 +169,37 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         };
       });
       setPosts(mergedPosts);
+
+      // Debug data collection
+      const [totalSnapsRes, totalMetricsRes, latestCaptureSnap, latestCapturePost, latestMetricRow] = await Promise.all([
+        supabase.from("influence_snapshots").select("id", { count: "exact", head: true }),
+        supabase.from("linkedin_post_metrics").select("id", { count: "exact", head: true }),
+        supabase.from("influence_snapshots")
+          .select("snapshot_date, source_type, followers, engagement_rate")
+          .eq("source_type", "browser_capture")
+          .order("snapshot_date", { ascending: false }).limit(1),
+        supabase.from("linkedin_posts")
+          .select("post_url, published_at, source_type, tracking_status")
+          .eq("source_type", "browser_capture")
+          .order("created_at", { ascending: false }).limit(1),
+        supabase.from("linkedin_post_metrics")
+          .select("post_id, impressions, reactions, comments, shares, engagement_rate, source_type, snapshot_date")
+          .order("created_at", { ascending: false }).limit(1),
+      ]);
+
+      setDebugData({
+        snapshotTotal: totalSnapsRes.count || 0,
+        postTotal: postCountRes.count || 0,
+        metricsTotal: totalMetricsRes.count || 0,
+        latestCaptureSnapshot: latestCaptureSnap.data?.[0] || null,
+        latestCapturePost: latestCapturePost.data?.[0] || null,
+        latestMetricRow: latestMetricRow.data?.[0] || null,
+        snapshotsInRange: snaps.length,
+        postsInRange: mergedPosts.length,
+        metricsInRange: (metricsRes.data || []).length,
+        rangeFilter: range === "all" ? "2020-01-01" : since,
+        postFilter: 'tracking_status != "rejected"',
+      });
     } catch (e) {
       console.error("Influence load error:", e);
     }
