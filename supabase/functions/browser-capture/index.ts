@@ -57,6 +57,7 @@ const PayloadSchema = z.object({
   follower_snapshot: FollowerSnapshotSchema.optional(),
   posts: z.array(PostSchema).optional(),
   post_metrics: z.array(PostMetricSchema).optional(),
+  _author_url: z.string().url().optional().nullable(),
 });
 
 /* ── Enrichment helpers ── */

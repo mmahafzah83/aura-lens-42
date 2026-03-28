@@ -389,20 +389,34 @@
           return true;
         }
 
-        // Detect user handle from any post URLs
+        // Detect user handle and profile URL
         let detectedHandle = null;
+        let authorUrl = null;
         if (result.posts) {
           for (const p of result.posts) {
             const m = p.post_url?.match(/\/posts\/([^_]+)_/);
             if (m) { detectedHandle = m[1]; break; }
           }
         }
+        // Try to extract author profile URL from page
+        const profileLink = document.querySelector("a[href*='/in/'][class*='app-aware-link']") ||
+          document.querySelector(".feed-shared-actor__container-link[href*='/in/']") ||
+          document.querySelector("a[href*='/in/'].update-components-actor__container-link");
+        if (profileLink) {
+          authorUrl = normalizeUrl(profileLink.href);
+        } else if (detectedHandle) {
+          authorUrl = `https://www.linkedin.com/in/${detectedHandle}`;
+        }
+
+        // Attach author_url to the payload for user association
+        result._author_url = authorUrl;
 
         sendResponse({
           success: true,
           payload: result,
           pageType,
           detectedHandle,
+          authorUrl,
           extractedAt: new Date().toISOString(),
         });
       } catch (e) {
