@@ -186,7 +186,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const latestEngRate = latestSnapshot ? Number(latestSnapshot.engagement_rate) || 0 : 0;
   const periodGrowth = snapshots.length >= 2
     ? (snapshots[snapshots.length - 1]?.followers || 0) - (snapshots[0]?.followers || 0) : 0;
-  const postsWithMetrics = posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0 || p._impressions > 0).length;
+  const postsWithMetrics = posts.filter(p => (p.like_count || 0) > 0 || (p.comment_count || 0) > 0 || Number(p.engagement_rate) > 0 || (p.impressions || 0) > 0).length;
 
   const hasPosts = totalPostCount > 0;
   const hasMetrics = postsWithMetrics > 0;
