@@ -278,6 +278,17 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     );
   }
 
+  if (queryError) {
+    return (
+      <div className="space-y-4 p-4">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-5 py-4">
+          <p className="text-sm text-destructive font-medium">Query Error</p>
+          <p className="text-xs text-destructive/80 mt-1">{queryError}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-12 max-w-4xl mx-auto">
 
