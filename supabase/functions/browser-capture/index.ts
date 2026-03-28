@@ -323,6 +323,7 @@ Deno.serve(async (req) => {
             source_metadata: { captured_at: new Date().toISOString() },
           });
           if (insErr) {
+            console.error("[browser-capture] post insert failed:", JSON.stringify({ code: insErr.code, message: insErr.message, postUrl }));
             if (insErr.code === "23505") postsDuplicate++;
             else errors.push(`post: ${insErr.message}`);
           } else postsInserted++;
