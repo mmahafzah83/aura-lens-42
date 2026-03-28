@@ -324,13 +324,34 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         </div>
       </Fade>
 
+      {/* ── DATA READINESS INDICATOR ── */}
+      {(!hasPosts || (hasPosts && !hasMetrics)) && (
+        <Fade delay={0.06}>
+          <div className="glass-card rounded-2xl card-pad border border-primary/8 bg-gradient-to-br from-primary/[0.02] to-transparent flex items-start gap-3 py-5">
+            <Zap className="w-5 h-5 text-primary/30 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground/70">
+                {!hasPosts
+                  ? "Capture your first LinkedIn post to activate performance analytics."
+                  : "Post metrics not captured yet. Open the post and run Capture This Page."}
+              </p>
+              <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
+                {!hasPosts
+                  ? "Use the Aura browser extension on any LinkedIn analytics page, post, or activity feed."
+                  : `${posts.length} post${posts.length !== 1 ? "s" : ""} discovered — metrics like impressions, reactions, and comments require individual post capture.`}
+              </p>
+            </div>
+          </div>
+        </Fade>
+      )}
+
       {/* ═══════════════════════════════════════
-         2. AUDIENCE MOMENTUM
+         2. AUDIENCE MOMENTUM (only if data exists)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.08}>
-        <div>
-          <SectionHeading icon={TrendingUp} title="Audience Momentum" subtitle="Follower trajectory over time" />
-          {chartData.length > 1 ? (
+      {hasFollowerData && (
+        <Fade delay={0.08}>
+          <div>
+            <SectionHeading icon={TrendingUp} title="Audience Momentum" subtitle="Follower trajectory over time" />
             <div className="glass-card rounded-2xl card-pad border border-border/8">
               <div className="h-[200px] -mx-2">
                 <ResponsiveContainer width="100%" height="100%">
@@ -349,18 +370,9 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </ResponsiveContainer>
               </div>
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <TrendingUp className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
-                {snapshots.length === 0
-                  ? "No follower data captured yet. Use browser capture to start tracking."
-                  : "Need at least two data points to show a trend."}
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
          3. CONTENT PERFORMANCE
