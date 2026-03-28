@@ -348,42 +348,23 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         <StrategicAttribution />
       ) : view === "data" ? (
         <div className="space-y-5">
-          <p className="text-[11px] text-muted-foreground/25 tracking-wide max-w-md">
-            Uses your logged-in LinkedIn session via the Aura browser extension. More reliable for fresh posts than search discovery.
-          </p>
+          {/* Primary: LinkedIn Capture */}
+          <div className="space-y-2">
+            <h2
+              className="text-lg font-semibold text-foreground tracking-tight"
+              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            >
+              LinkedIn Capture
+            </h2>
+            <p className="text-[11px] text-muted-foreground/30 leading-relaxed max-w-lg">
+              Analytics captured from your logged-in LinkedIn session via the Aura browser extension.
+              LinkedIn does not expose personal analytics through its public API — browser capture is the primary and most reliable source.
+            </p>
+          </div>
           <BrowserCapturePanel />
           <ConnectionStatusPanel />
           <SourceHealthSummary />
           <PostCleanupPanel onCleanupComplete={loadAll} />
-
-          {/* ── Background Support: Historical Discovery ── */}
-          <div className="space-y-3 pt-4 border-t border-border/5">
-            <div>
-              <h3 className="text-[11px] font-semibold text-muted-foreground/40 tracking-wide uppercase">Background Support</h3>
-              <p className="text-[10px] text-muted-foreground/25 mt-1 leading-relaxed max-w-sm">
-                Search-based discovery runs in the background to recover older publicly-indexed posts. Not the primary source — browser capture is more reliable for fresh content.
-              </p>
-            </div>
-            <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
-            <DiscoveryHealthCard />
-            <ReviewQueuePanel onReviewComplete={loadAll} />
-          </div>
-
-          {/* ── Fallback Tools ── */}
-          <div className="space-y-3 pt-4 border-t border-border/5">
-            <div>
-              <h3 className="text-[11px] font-semibold text-muted-foreground/40 tracking-wide uppercase">Fallback Tools</h3>
-              <p className="text-[10px] text-muted-foreground/25 mt-1 leading-relaxed max-w-sm">
-                Use only if browser capture missed something. For historical backfill, missing analytics, or rare same-day corrections.
-              </p>
-            </div>
-            <ManualPostIngestion onIngestionComplete={loadAll} />
-            <PostMetricsIngestion onComplete={loadAll} />
-            <HistoricalImportHub onImportComplete={loadAll} />
-          </div>
-          <DailySnapshotEngine />
-          <DataHealthConsole />
-          <SourceReviewPanel />
         </div>
       ) : (
         <>
