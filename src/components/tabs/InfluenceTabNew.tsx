@@ -196,7 +196,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const themeCounts: Record<string, { count: number; totalEng: number }> = {};
   const formatCounts: Record<string, { count: number; totalEng: number }> = {};
   posts.forEach(p => {
-    const theme = p.theme || p.topic_label;
+    const theme = p.topic_label;
     if (theme) {
       if (!themeCounts[theme]) themeCounts[theme] = { count: 0, totalEng: 0 };
       themeCounts[theme].count++;
