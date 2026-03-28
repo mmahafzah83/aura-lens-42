@@ -483,14 +483,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       )}
 
       {/* ═══════════════════════════════════════
-         4. THEME INTELLIGENCE
+         4. THEME INTELLIGENCE (only if themes exist)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.16}>
-        <div>
-          <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${posts.length} posts`} />
-          {themes.length > 0 ? (
+      {themes.length > 0 && (
+        <Fade delay={0.16}>
+          <div>
+            <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${posts.length} posts`} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {/* Bar chart */}
               <div className="glass-card rounded-2xl card-pad border border-border/8">
                 <div className="h-[240px] -mx-2">
                   <ResponsiveContainer width="100%" height="100%">
@@ -512,7 +511,6 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   </p>
                 )}
               </div>
-              {/* Theme momentum bars */}
               <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-3">
                 <p className="text-[10px] text-muted-foreground/30 uppercase tracking-wider font-medium">Theme Momentum</p>
                 {themes.map((t, i) => {
@@ -537,24 +535,17 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 })}
               </div>
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <Sparkles className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
-                No topics classified yet. Capture posts to build theme intelligence.
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
-         5. FORMAT INTELLIGENCE
+         5. FORMAT INTELLIGENCE (only if formats exist)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.2}>
-        <div>
-          <SectionHeading icon={Crown} title="Format Intelligence" subtitle="Which formats perform best" />
-          {formats.length > 0 ? (
+      {formats.length > 0 && (
+        <Fade delay={0.2}>
+          <div>
+            <SectionHeading icon={Crown} title="Format Intelligence" subtitle="Which formats perform best" />
             <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-2">
               {formats.map((f, i) => (
                 <motion.div
@@ -575,16 +566,9 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </motion.div>
               ))}
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <Crown className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
-                No format data yet. Capture posts to build format intelligence.
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
          6. SYSTEM HEALTH (collapsible)
