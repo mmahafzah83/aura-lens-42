@@ -84,7 +84,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       const days = getDaysForRange(range);
       const since = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-      const [snapRes, postRes, authRes, connRes, syncRes, metricsRes, syncErrorRes, lastCaptureRes] = await Promise.all([
+      // Separate count query for accurate "posts tracked" (not capped by limit)
+      const postCountQuery = supabase
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .neq("tracking_status", "rejected");
+
+      const [snapRes, postRes, authRes, connRes, syncRes, metricsRes, syncErrorRes, lastCaptureRes, postCountRes] = await Promise.all([
         supabase
           .from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
@@ -96,7 +102,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason, source_type, enriched_by, source_trust, post_url")
           .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false })
-          .limit(200),
+          .limit(500),
         supabase
           .from("authority_scores")
           .select("*")
@@ -115,8 +121,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         supabase
           .from("linkedin_post_metrics")
           .select("post_id, impressions, reactions, comments, shares, saves, engagement_rate, snapshot_date, source_type")
-          .order("snapshot_date", { ascending: false })
-          .limit(1000),
+          .order("snapshot_date", { ascending: false }),
         supabase
           .from("sync_errors")
           .select("id")
@@ -128,6 +133,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .eq("status", "completed")
           .order("completed_at", { ascending: false })
           .limit(1),
+        postCountQuery,
       ]);
 
       setIsConnected((connRes.data || []).length > 0);
