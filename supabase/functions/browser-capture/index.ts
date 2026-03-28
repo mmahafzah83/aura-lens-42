@@ -59,7 +59,104 @@ const PayloadSchema = z.object({
   post_metrics: z.array(PostMetricSchema).optional(),
 });
 
-/* ── Helpers ── */
+/* ── Enrichment helpers ── */
+
+/** Infer topic_label from post text using keyword matching */
+function inferTopicLabel(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const t = text.toLowerCase();
+
+  const topics: [string, string[]][] = [
+    ["digital transformation", ["digital transformation", "digitalization", "digital strategy", "tech adoption"]],
+    ["leadership", ["leadership", "leading teams", "executive presence", "c-suite", "ceo", "cfo", "cto"]],
+    ["strategy", ["strategy", "strategic", "competitive advantage", "market positioning", "growth strategy"]],
+    ["consulting", ["consulting", "advisory", "client engagement", "professional services"]],
+    ["AI & technology", ["artificial intelligence", " ai ", "machine learning", "generative ai", "chatgpt", "automation", "data analytics"]],
+    ["sustainability", ["sustainability", "esg", "climate", "net zero", "green", "carbon"]],
+    ["innovation", ["innovation", "disruption", "startup", "venture", "emerging tech"]],
+    ["talent & culture", ["talent", "hiring", "culture", "retention", "employee experience", "workforce"]],
+    ["finance & deals", ["m&a", "merger", "acquisition", "valuation", "ipo", "private equity", "capital"]],
+    ["risk & governance", ["risk", "governance", "compliance", "regulation", "audit", "cybersecurity"]],
+    ["operations", ["operations", "supply chain", "efficiency", "lean", "process improvement", "transformation"]],
+    ["personal brand", ["personal brand", "thought leadership", "linkedin", "content strategy", "authority"]],
+  ];
+
+  for (const [label, keywords] of topics) {
+    for (const kw of keywords) {
+      if (t.includes(kw)) return label;
+    }
+  }
+  return null;
+}
+
+/** Infer format_type from post text structure */
+function inferFormatType(text: string | null | undefined, mediaType: string): string | null {
+  if (mediaType === "carousel") return "carousel";
+  if (mediaType === "video") return "video";
+  if (mediaType === "document") return "document";
+  if (!text) return null;
+
+  const lines = text.split("\n").filter(l => l.trim().length > 0);
+
+  // Numbered list pattern
+  const numberedLines = lines.filter(l => /^\s*\d+[\.\)]\s/.test(l));
+  if (numberedLines.length >= 3) return "listicle";
+
+  // Short punchy lines = opinion/hot-take
+  if (lines.length <= 5 && text.length < 300) return "hot_take";
+
+  // Long-form with paragraphs
+  if (lines.length >= 8 || text.length > 800) return "long_form";
+
+  // Story pattern (first person narrative)
+  const storySignals = ["i remember", "last week", "years ago", "true story", "here's what happened", "i was"];
+  if (storySignals.some(s => text.toLowerCase().includes(s))) return "story";
+
+  // Framework pattern
+  const frameworkSignals = ["step 1", "phase 1", "pillar", "principle", "framework", "model", "matrix"];
+  if (frameworkSignals.some(s => text.toLowerCase().includes(s))) return "framework";
+
+  return "post";
+}
+
+/** Infer media_type from post text if not provided */
+function inferMediaType(text: string | null | undefined, currentMediaType: string): string {
+  if (currentMediaType && currentMediaType !== "text") return currentMediaType;
+  if (!text) return "text";
+  const t = text.toLowerCase();
+
+  // Carousel signals
+  if (t.includes("swipe") || t.includes("slide ") || t.includes("carousel")) return "carousel";
+
+  return "text";
+}
+
+/** Compute engagement_score from reactions, comments, shares */
+function computeEngagementScore(
+  reactions: number,
+  comments: number,
+  shares: number,
+  impressions: number
+): number {
+  // If we have impressions, compute real engagement rate
+  if (impressions > 0) {
+    const totalEngagements = reactions + comments * 2 + shares * 3;
+    return Math.round((totalEngagements / impressions) * 100 * 10) / 10;
+  }
+  // Otherwise compute a weighted composite score
+  const weighted = reactions + comments * 3 + shares * 5;
+  return Math.round(weighted * 10) / 10;
+}
+
+/** Extract first line as hook if not provided */
+function extractHook(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const firstLine = text.split("\n").find(l => l.trim().length > 0);
+  if (!firstLine) return null;
+  return firstLine.trim().slice(0, 200);
+}
+
+/* ── URL normalization ── */
 
 function normalizeUrl(url: string): string {
   let n = url.replace(/https?:\/\/[a-z]{2,3}\.linkedin\.com/i, "https://www.linkedin.com");
@@ -102,7 +199,6 @@ Deno.serve(async (req) => {
     // ── Follower Snapshot ──
     if ((payload.type === "follower_snapshot" || payload.type === "full_sync") && payload.follower_snapshot) {
       const snap = payload.follower_snapshot;
-      // Dedup: one per day
       const { data: existing } = await adminClient
         .from("influence_snapshots")
         .select("id")
@@ -155,11 +251,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Posts ──
+    // ── Posts (with auto-enrichment) ──
     let postsInserted = 0, postsEnriched = 0, postsDuplicate = 0;
     if ((payload.type === "posts" || payload.type === "full_sync") && payload.posts) {
       for (const post of payload.posts) {
         const postUrl = normalizeUrl(post.post_url);
+        const postText = post.post_text || null;
+
+        // Auto-infer fields if not provided by the extension
+        const inferredMediaType = inferMediaType(postText, post.media_type || "text");
+        const inferredFormatType = post.format_type || inferFormatType(postText, inferredMediaType);
+        const inferredTopicLabel = post.topic_label || inferTopicLabel(postText);
+        const inferredHook = post.hook || extractHook(postText);
+        const computedEngagement = post.engagement_score > 0
+          ? post.engagement_score
+          : computeEngagementScore(post.like_count, post.comment_count, post.repost_count, 0);
 
         const { data: existing } = await adminClient
           .from("linkedin_posts")
@@ -169,27 +275,25 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (existing) {
-          // Enrich: browser_capture has trust 3, always enriches
           const updates: Record<string, any> = {
             source_type: "browser_capture",
             source_trust: 3,
             enriched_by: [...new Set([...(existing.enriched_by as string[] || []), "browser_capture"])],
             source_metadata: { last_capture: new Date().toISOString() },
+            like_count: post.like_count,
+            comment_count: post.comment_count,
+            repost_count: post.repost_count,
+            engagement_score: computedEngagement,
           };
-          // Browser capture overwrites all fields (highest trust)
-          if (post.post_text) updates.post_text = post.post_text;
-          if (post.hook) updates.hook = post.hook;
+          if (postText) updates.post_text = postText;
+          if (inferredHook) updates.hook = inferredHook;
           if (post.title) updates.title = post.title;
-          if (post.format_type) updates.format_type = post.format_type;
+          if (inferredFormatType) updates.format_type = inferredFormatType;
           if (post.content_type) updates.content_type = post.content_type;
           if (post.published_at) updates.published_at = post.published_at;
-          if (post.media_type) updates.media_type = post.media_type;
-          if (post.topic_label) updates.topic_label = post.topic_label;
-          updates.like_count = post.like_count;
-          updates.comment_count = post.comment_count;
-          updates.repost_count = post.repost_count;
-          updates.engagement_score = post.engagement_score;
-          if (existing.tracking_status !== "confirmed") updates.tracking_status = "confirmed";
+          updates.media_type = inferredMediaType;
+          if (inferredTopicLabel) updates.topic_label = inferredTopicLabel;
+          updates.tracking_status = "confirmed";
 
           await adminClient.from("linkedin_posts").update(updates).eq("id", existing.id);
           postsEnriched++;
@@ -198,18 +302,18 @@ Deno.serve(async (req) => {
             user_id: userId,
             linkedin_post_id: postUrl,
             post_url: postUrl,
-            post_text: post.post_text || null,
+            post_text: postText,
             title: post.title || null,
-            hook: post.hook || null,
+            hook: inferredHook,
             published_at: post.published_at || null,
-            media_type: post.media_type,
-            format_type: post.format_type || null,
+            media_type: inferredMediaType,
+            format_type: inferredFormatType,
             content_type: post.content_type || null,
-            topic_label: post.topic_label || null,
+            topic_label: inferredTopicLabel,
             like_count: post.like_count,
             comment_count: post.comment_count,
             repost_count: post.repost_count,
-            engagement_score: post.engagement_score,
+            engagement_score: computedEngagement,
             tracking_status: "confirmed",
             source_type: "browser_capture",
             source_trust: 3,
@@ -231,10 +335,9 @@ Deno.serve(async (req) => {
       for (const metric of payload.post_metrics) {
         const postUrl = normalizeUrl(metric.post_url);
 
-        // Find the post
         const { data: post } = await adminClient
           .from("linkedin_posts")
-          .select("id")
+          .select("id, like_count, comment_count, repost_count")
           .eq("user_id", userId)
           .eq("post_url", postUrl)
           .maybeSingle();
@@ -243,6 +346,18 @@ Deno.serve(async (req) => {
           errors.push(`metric: no post found for ${postUrl}`);
           continue;
         }
+
+        // Also update the post's engagement_score from latest metrics
+        const metricEngagement = computeEngagementScore(
+          metric.reactions, metric.comments, metric.shares, metric.impressions
+        );
+        await adminClient.from("linkedin_posts").update({
+          like_count: metric.reactions,
+          comment_count: metric.comments,
+          repost_count: metric.shares,
+          engagement_score: metricEngagement,
+          tracking_status: "metrics_imported",
+        }).eq("id", post.id);
 
         // Dedup: one metric per post per day
         const { data: existingMetric } = await adminClient
@@ -262,7 +377,7 @@ Deno.serve(async (req) => {
               comments: metric.comments,
               shares: metric.shares,
               saves: metric.saves,
-              engagement_rate: metric.engagement_rate,
+              engagement_rate: metric.engagement_rate || metricEngagement,
             })
             .eq("id", existingMetric.id);
           metricsUpdated++;
@@ -277,7 +392,7 @@ Deno.serve(async (req) => {
             comments: metric.comments,
             shares: metric.shares,
             saves: metric.saves,
-            engagement_rate: metric.engagement_rate,
+            engagement_rate: metric.engagement_rate || metricEngagement,
           });
           if (insErr) errors.push(`metric: ${insErr.message}`);
           else metricsInserted++;
@@ -300,7 +415,6 @@ Deno.serve(async (req) => {
       error_message: errors.length > 0 ? errors.join("; ").slice(0, 1000) : null,
     });
 
-    // Log errors
     if (errors.length > 0) {
       for (const err of errors.slice(0, 10)) {
         await adminClient.from("sync_errors").insert({
