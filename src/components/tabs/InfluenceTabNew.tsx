@@ -499,7 +499,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {post.hook || post.post_text?.slice(0, 50) || "—"}
                           </td>
                           <td className="text-[11px] text-muted-foreground/35 py-2.5 px-2 capitalize truncate max-w-[80px]">
-                            {post.theme || post.topic_label || "—"}
+                            {post.topic_label || "—"}
                           </td>
                           <td className="py-2.5 px-2">
                             <span className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${sourceStyles[src] || sourceStyles.search_discovery}`}>
