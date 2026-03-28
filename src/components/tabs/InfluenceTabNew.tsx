@@ -375,12 +375,12 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       )}
 
       {/* ═══════════════════════════════════════
-         3. CONTENT PERFORMANCE
+         3. CONTENT PERFORMANCE (only if posts exist)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.12}>
-        <div>
-          <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${posts.length} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
-          {sortedPosts.length > 0 ? (
+      {hasPosts && (
+        <Fade delay={0.12}>
+          <div>
+            <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${posts.length} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
             <div className="glass-card rounded-2xl card-pad border border-border/8">
               <div className="overflow-x-auto -mx-2">
                 <table className="w-full text-left min-w-[700px]">
@@ -478,16 +478,9 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </table>
               </div>
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <BarChart3 className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
-                No posts tracked yet. Use browser capture to start collecting post data.
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
          4. THEME INTELLIGENCE
