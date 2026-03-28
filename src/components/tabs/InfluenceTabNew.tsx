@@ -496,7 +496,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                           </td>
                           <td className="text-[11px] text-foreground/70 py-2.5 px-2 max-w-[160px] truncate">
-                            {post.hook || post.title || post.post_text?.slice(0, 50) || "—"}
+                            {post.hook || post.post_text?.slice(0, 50) || "—"}
                           </td>
                           <td className="text-[11px] text-muted-foreground/35 py-2.5 px-2 capitalize truncate max-w-[80px]">
                             {post.theme || post.topic_label || "—"}
