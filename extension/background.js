@@ -150,6 +150,23 @@ async function isDuplicate(payload) {
   return false;
 }
 
+/* ── Wait for tab load ── */
+function waitForLoad(tabId, extraDelay = 2000) {
+  return new Promise((resolve) => {
+    const onUpdated = (id, info) => {
+      if (id === tabId && info.status === "complete") {
+        chrome.tabs.onUpdated.removeListener(onUpdated);
+        setTimeout(resolve, extraDelay);
+      }
+    };
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      resolve();
+    }, 15000);
+  });
+}
+
 /* ── Badge Updates ── */
 const BADGE_MAP = {
   creator_analytics: { text: "A", color: "#3B82F6" },
