@@ -365,6 +365,35 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <ConnectionStatusPanel />
           <SourceHealthSummary />
           <PostCleanupPanel onCleanupComplete={loadAll} />
+
+          {/* ── Background Support: Historical Discovery ── */}
+          <div className="space-y-3 pt-4 border-t border-border/5">
+            <div>
+              <h3 className="text-[11px] font-semibold text-muted-foreground/40 tracking-wide uppercase">Background Support</h3>
+              <p className="text-[10px] text-muted-foreground/25 mt-1 leading-relaxed max-w-sm">
+                Search-based discovery recovers older publicly-indexed posts. Not a substitute for browser capture — search indexing lags behind recent activity.
+              </p>
+            </div>
+            <PostDiscoveryPanel onDiscoveryComplete={loadAll} />
+            <DiscoveryHealthCard />
+            <ReviewQueuePanel onReviewComplete={loadAll} />
+          </div>
+
+          {/* ── Fallback Tools ── */}
+          <div className="space-y-3 pt-4 border-t border-border/5">
+            <div>
+              <h3 className="text-[11px] font-semibold text-muted-foreground/40 tracking-wide uppercase">Fallback Tools</h3>
+              <p className="text-[10px] text-muted-foreground/25 mt-1 leading-relaxed max-w-sm">
+                Use only if browser capture missed something. For historical backfill, missing analytics, or rare same-day corrections.
+              </p>
+            </div>
+            <ManualPostIngestion onIngestionComplete={loadAll} />
+            <PostMetricsIngestion onComplete={loadAll} />
+            <HistoricalImportHub onImportComplete={loadAll} />
+          </div>
+          <DailySnapshotEngine />
+          <DataHealthConsole />
+          <SourceReviewPanel />
         </div>
       ) : (
         <>
