@@ -223,6 +223,11 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     engagement: Number(s.engagement_rate) || 0,
   }));
 
+  // Data readiness flags
+  const hasPosts = posts.length > 0;
+  const hasMetrics = posts.some(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0 || p._impressions > 0);
+  const hasFollowerData = chartData.length > 1;
+
   // Sorted posts
   const sortedPosts = [...posts].sort((a, b) => {
     const aVal = sortKey === "published_at" ? new Date(a[sortKey] || 0).getTime() : (Number(a[sortKey]) || 0);
@@ -319,13 +324,34 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         </div>
       </Fade>
 
+      {/* ── DATA READINESS INDICATOR ── */}
+      {(!hasPosts || (hasPosts && !hasMetrics)) && (
+        <Fade delay={0.06}>
+          <div className="glass-card rounded-2xl card-pad border border-primary/8 bg-gradient-to-br from-primary/[0.02] to-transparent flex items-start gap-3 py-5">
+            <Zap className="w-5 h-5 text-primary/30 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground/70">
+                {!hasPosts
+                  ? "Capture your first LinkedIn post to activate performance analytics."
+                  : "Post metrics not captured yet. Open the post and run Capture This Page."}
+              </p>
+              <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
+                {!hasPosts
+                  ? "Use the Aura browser extension on any LinkedIn analytics page, post, or activity feed."
+                  : `${posts.length} post${posts.length !== 1 ? "s" : ""} discovered — metrics like impressions, reactions, and comments require individual post capture.`}
+              </p>
+            </div>
+          </div>
+        </Fade>
+      )}
+
       {/* ═══════════════════════════════════════
-         2. AUDIENCE MOMENTUM
+         2. AUDIENCE MOMENTUM (only if data exists)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.08}>
-        <div>
-          <SectionHeading icon={TrendingUp} title="Audience Momentum" subtitle="Follower trajectory over time" />
-          {chartData.length > 1 ? (
+      {hasFollowerData && (
+        <Fade delay={0.08}>
+          <div>
+            <SectionHeading icon={TrendingUp} title="Audience Momentum" subtitle="Follower trajectory over time" />
             <div className="glass-card rounded-2xl card-pad border border-border/8">
               <div className="h-[200px] -mx-2">
                 <ResponsiveContainer width="100%" height="100%">
@@ -344,26 +370,17 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </ResponsiveContainer>
               </div>
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <TrendingUp className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
-                {snapshots.length === 0
-                  ? "No follower data captured yet. Use browser capture to start tracking."
-                  : "Need at least two data points to show a trend."}
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
-         3. CONTENT PERFORMANCE
+         3. CONTENT PERFORMANCE (only if posts exist)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.12}>
-        <div>
-          <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${posts.length} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
-          {sortedPosts.length > 0 ? (
+      {hasPosts && (
+        <Fade delay={0.12}>
+          <div>
+            <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${posts.length} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
             <div className="glass-card rounded-2xl card-pad border border-border/8">
               <div className="overflow-x-auto -mx-2">
                 <table className="w-full text-left min-w-[700px]">
@@ -461,26 +478,18 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </table>
               </div>
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <BarChart3 className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 max-w-xs mx-auto leading-relaxed">
-                No posts tracked yet. Use browser capture to start collecting post data.
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
-         4. THEME INTELLIGENCE
+         4. THEME INTELLIGENCE (only if themes exist)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.16}>
-        <div>
-          <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${posts.length} posts`} />
-          {themes.length > 0 ? (
+      {themes.length > 0 && (
+        <Fade delay={0.16}>
+          <div>
+            <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${posts.length} posts`} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {/* Bar chart */}
               <div className="glass-card rounded-2xl card-pad border border-border/8">
                 <div className="h-[240px] -mx-2">
                   <ResponsiveContainer width="100%" height="100%">
@@ -502,7 +511,6 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   </p>
                 )}
               </div>
-              {/* Theme momentum bars */}
               <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-3">
                 <p className="text-[10px] text-muted-foreground/30 uppercase tracking-wider font-medium">Theme Momentum</p>
                 {themes.map((t, i) => {
@@ -527,24 +535,17 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 })}
               </div>
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <Sparkles className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
-                No topics classified yet. Capture posts to build theme intelligence.
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
-         5. FORMAT INTELLIGENCE
+         5. FORMAT INTELLIGENCE (only if formats exist)
          ═══════════════════════════════════════ */}
-      <Fade delay={0.2}>
-        <div>
-          <SectionHeading icon={Crown} title="Format Intelligence" subtitle="Which formats perform best" />
-          {formats.length > 0 ? (
+      {formats.length > 0 && (
+        <Fade delay={0.2}>
+          <div>
+            <SectionHeading icon={Crown} title="Format Intelligence" subtitle="Which formats perform best" />
             <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-2">
               {formats.map((f, i) => (
                 <motion.div
@@ -565,16 +566,9 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                 </motion.div>
               ))}
             </div>
-          ) : (
-            <div className="glass-card rounded-2xl card-pad border border-border/8 text-center py-10 space-y-2">
-              <Crown className="w-6 h-6 text-muted-foreground/15 mx-auto" />
-              <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
-                No format data yet. Capture posts to build format intelligence.
-              </p>
-            </div>
-          )}
-        </div>
-      </Fade>
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════
          6. SYSTEM HEALTH (collapsible)
