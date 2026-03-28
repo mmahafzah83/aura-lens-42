@@ -548,7 +548,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   </p>
                 )}
                 {syncErrorCount > 0 && (
-                  <p className="text-[10px] text-amber-500/50 flex items-center gap-1.5">
+                  <p className="text-[10px] text-destructive/50 flex items-center gap-1.5">
                     <AlertTriangle className="w-3 h-3" />
                     {syncErrorCount} error{syncErrorCount !== 1 ? "s" : ""} logged — review sync history for details.
                   </p>
