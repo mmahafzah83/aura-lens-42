@@ -267,12 +267,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       let postUrls = [];
       try {
         await chrome.tabs.update(tab.id, { url: `https://www.linkedin.com/in/${handle}/recent-activity/all/` });
-        await waitForLoad(tab.id, 5000);
+        await waitForLoad(tab.id, 3000);
 
-        // Scroll 3 times to load more posts
-        for (let scroll = 0; scroll < 3; scroll++) {
+        // Scroll up to 10 times, stop early if no new posts appear
+        let prevCount = 0;
+        let noNewRounds = 0;
+        for (let scroll = 0; scroll < 10; scroll++) {
           await chrome.tabs.sendMessage(tab.id, { action: "scroll_page" });
-          await new Promise(r => setTimeout(r, 2000));
+          await new Promise(r => setTimeout(r, 1200));
+
+          const interim = await chrome.tabs.sendMessage(tab.id, { action: "collect_post_urls" });
+          const currentCount = interim?.urls?.length || 0;
+
+          if (currentCount <= prevCount) {
+            noNewRounds++;
+            if (noNewRounds >= 2) break; // no new posts after 2 consecutive scrolls
+          } else {
+            noNewRounds = 0;
+          }
+          prevCount = currentCount;
         }
 
         // Collect discovered post URLs
