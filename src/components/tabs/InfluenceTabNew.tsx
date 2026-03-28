@@ -143,6 +143,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       setSyncRunCount(runs.length);
       setSyncErrorCount((syncErrorRes.data || []).length);
       setLastCaptureTime(lastCaptureRes.data?.[0]?.completed_at || null);
+      setTotalPostCount(postCountRes.count || 0);
 
       const snaps = snapRes.data || [];
       setSnapshots(snaps);
