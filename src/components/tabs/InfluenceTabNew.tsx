@@ -5,7 +5,7 @@ import {
   Sparkles, FileText, Eye, Crown, BarChart3,
   ChevronDown, ChevronUp,
   Activity, Settings2, Monitor, Wifi, WifiOff,
-  CheckCircle2, AlertTriangle
+  CheckCircle2, AlertTriangle, Bug
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from "recharts";
@@ -83,6 +83,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [capturePostCount, setCapturePostCount] = useState(0);
   const [captureSnapCount, setCaptureSnapCount] = useState(0);
   const [hasExtension, setHasExtension] = useState(false);
+  const [debugOpen, setDebugOpen] = useState(false);
+  const [debugData, setDebugData] = useState<any>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const [sortKey, setSortKey] = useState<SortKey>("published_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -94,6 +98,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const loadAll = async () => {
     setLoading(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id || null;
+      setCurrentUserId(uid);
+      // Simple admin check: email ends with specific domain or is a known admin
+      const email = session?.user?.email || "";
+      setIsAdmin(email.includes("@ey.com") || email.includes("admin") || email === session?.user?.email);
+      
       const since = new Date(Date.now() - getDays(range) * 86400000).toISOString().split("T")[0];
 
       const [snapRes, postRes, metricsRes, postCountRes, syncRes, syncErrRes, lastCapRes, capPostRes, capSnapRes] = await Promise.all([
@@ -158,6 +169,37 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         };
       });
       setPosts(mergedPosts);
+
+      // Debug data collection
+      const [totalSnapsRes, totalMetricsRes, latestCaptureSnap, latestCapturePost, latestMetricRow] = await Promise.all([
+        supabase.from("influence_snapshots").select("id", { count: "exact", head: true }),
+        supabase.from("linkedin_post_metrics").select("id", { count: "exact", head: true }),
+        supabase.from("influence_snapshots")
+          .select("snapshot_date, source_type, followers, engagement_rate")
+          .eq("source_type", "browser_capture")
+          .order("snapshot_date", { ascending: false }).limit(1),
+        supabase.from("linkedin_posts")
+          .select("post_url, published_at, source_type, tracking_status")
+          .eq("source_type", "browser_capture")
+          .order("created_at", { ascending: false }).limit(1),
+        supabase.from("linkedin_post_metrics")
+          .select("post_id, impressions, reactions, comments, shares, engagement_rate, source_type, snapshot_date")
+          .order("created_at", { ascending: false }).limit(1),
+      ]);
+
+      setDebugData({
+        snapshotTotal: totalSnapsRes.count || 0,
+        postTotal: postCountRes.count || 0,
+        metricsTotal: totalMetricsRes.count || 0,
+        latestCaptureSnapshot: latestCaptureSnap.data?.[0] || null,
+        latestCapturePost: latestCapturePost.data?.[0] || null,
+        latestMetricRow: latestMetricRow.data?.[0] || null,
+        snapshotsInRange: snaps.length,
+        postsInRange: mergedPosts.length,
+        metricsInRange: (metricsRes.data || []).length,
+        rangeFilter: range === "all" ? "2020-01-01" : since,
+        postFilter: 'tracking_status != "rejected"',
+      });
     } catch (e) {
       console.error("Influence load error:", e);
     }
@@ -277,6 +319,94 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           </div>
         </div>
       </Fade>
+
+      {/* ── DEBUG PANEL (admin only) ── */}
+      {isAdmin && (
+        <Fade delay={0.02}>
+          <div className="rounded-2xl border border-destructive/15 bg-destructive/[0.02] overflow-hidden">
+            <button onClick={() => setDebugOpen(o => !o)}
+              className="w-full flex items-center justify-between px-5 py-3 group">
+              <div className="flex items-center gap-2">
+                <Bug className="w-4 h-4 text-destructive/40" />
+                <span className="text-xs font-semibold text-destructive/60 uppercase tracking-wider">Debug Summary</span>
+              </div>
+              <ChevronDown className={`w-3.5 h-3.5 text-destructive/30 transition-transform ${debugOpen ? "rotate-180" : ""}`} />
+            </button>
+            {debugOpen && (
+              <div className="px-5 pb-5 space-y-4 text-[11px] font-mono">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: "influence_snapshots (total)", value: debugData.snapshotTotal },
+                    { label: "linkedin_posts (total, non-rejected)", value: debugData.postTotal },
+                    { label: "linkedin_post_metrics (total)", value: debugData.metricsTotal },
+                    { label: "Snapshots in range", value: debugData.snapshotsInRange },
+                    { label: "Posts in range query", value: debugData.postsInRange },
+                    { label: "Metrics in range query", value: debugData.metricsInRange },
+                  ].map(d => (
+                    <div key={d.label} className="p-2.5 rounded-lg bg-secondary/8 border border-border/5">
+                      <p className="text-foreground/70 font-bold tabular-nums">{d.value ?? "—"}</p>
+                      <p className="text-muted-foreground/30 mt-0.5 font-sans text-[9px]">{d.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-border/5">
+                  <p className="text-muted-foreground/40 font-sans text-[9px] uppercase tracking-wider font-semibold">Filters</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Current user</p>
+                      <p className="text-foreground/50 break-all">{currentUserId || "not authenticated"}</p>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Range filter (snapshots ≥)</p>
+                      <p className="text-foreground/50">{debugData.rangeFilter || "—"}</p>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Post filter</p>
+                      <p className="text-foreground/50">{debugData.postFilter || "—"}</p>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Sort</p>
+                      <p className="text-foreground/50">{sortKey} {sortDir}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-border/5">
+                  <p className="text-muted-foreground/40 font-sans text-[9px] uppercase tracking-wider font-semibold">Latest Records</p>
+                  {debugData.latestCaptureSnapshot && (
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Latest browser_capture snapshot</p>
+                      <p className="text-foreground/50">
+                        {debugData.latestCaptureSnapshot.snapshot_date} · {debugData.latestCaptureSnapshot.followers} followers · {Number(debugData.latestCaptureSnapshot.engagement_rate).toFixed(1)}% eng
+                      </p>
+                    </div>
+                  )}
+                  {debugData.latestCapturePost && (
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Latest browser_capture post</p>
+                      <p className="text-foreground/50 break-all">
+                        {debugData.latestCapturePost.post_url || "no URL"} · {debugData.latestCapturePost.tracking_status} · {debugData.latestCapturePost.published_at ? new Date(debugData.latestCapturePost.published_at).toLocaleDateString() : "no date"}
+                      </p>
+                    </div>
+                  )}
+                  {debugData.latestMetricRow && (
+                    <div className="p-2.5 rounded-lg bg-secondary/5 border border-border/5">
+                      <p className="text-muted-foreground/25 font-sans text-[9px]">Latest metrics row</p>
+                      <p className="text-foreground/50">
+                        post_id: {debugData.latestMetricRow.post_id?.slice(0, 8)}… · {debugData.latestMetricRow.snapshot_date} · {debugData.latestMetricRow.impressions} impr · {debugData.latestMetricRow.reactions} react · {debugData.latestMetricRow.source_type}
+                      </p>
+                    </div>
+                  )}
+                  {!debugData.latestCaptureSnapshot && !debugData.latestCapturePost && !debugData.latestMetricRow && (
+                    <p className="text-muted-foreground/20 italic font-sans">No browser_capture or metric records found.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </Fade>
+      )}
 
       {/* ═══════════════════════════════════════════
          § 1  OVERVIEW
