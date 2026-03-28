@@ -507,7 +507,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             </span>
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right">
-                            {post._impressions > 0 ? <span className="text-foreground/40">{post._impressions.toLocaleString()}</span> : <span className="text-muted-foreground/15">—</span>}
+                            {(post.impressions || 0) > 0 ? <span className="text-foreground/40">{(post.impressions || 0).toLocaleString()}</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right">
                             {hasReal ? <span className="text-foreground/50">{post.like_count}</span> : <span className="text-muted-foreground/15">—</span>}
