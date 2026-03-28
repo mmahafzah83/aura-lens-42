@@ -487,7 +487,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   </thead>
                   <tbody>
                     {sortedPosts.map(post => {
-                      const hasReal = !!(post.like_count > 0 || post.comment_count > 0 || Number(post.engagement_score) > 0);
+                      const hasReal = !!((post.like_count || 0) > 0 || (post.comment_count || 0) > 0 || Number(post.engagement_rate) > 0);
                       const status = post.tracking_status || (hasReal ? "metrics_imported" : "discovered");
                       const src = post.source_type || "search_discovery";
                       return (
