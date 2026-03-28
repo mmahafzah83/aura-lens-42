@@ -855,6 +855,13 @@ export type Database = {
             foreignKeyName: "linkedin_post_metrics_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "influence_dashboard_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "linkedin_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "linkedin_posts"
             referencedColumns: ["id"]
           },
@@ -1339,7 +1346,40 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      influence_dashboard_view: {
+        Row: {
+          comment_count: number | null
+          comments: number | null
+          content_type: string | null
+          created_at: string | null
+          engagement_rate: number | null
+          engagement_score: number | null
+          format_type: string | null
+          hook: string | null
+          id: string | null
+          impressions: number | null
+          like_count: number | null
+          linkedin_post_id: string | null
+          media_type: string | null
+          metrics_date: string | null
+          metrics_source_type: string | null
+          post_text: string | null
+          post_url: string | null
+          published_at: string | null
+          reactions: number | null
+          repost_count: number | null
+          saves: number | null
+          shares: number | null
+          source_type: string | null
+          theme: string | null
+          title: string | null
+          tone: string | null
+          topic_label: string | null
+          tracking_status: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       search_vault:
