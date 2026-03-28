@@ -223,6 +223,11 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
     engagement: Number(s.engagement_rate) || 0,
   }));
 
+  // Data readiness flags
+  const hasPosts = posts.length > 0;
+  const hasMetrics = posts.some(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0 || p._impressions > 0);
+  const hasFollowerData = chartData.length > 1;
+
   // Sorted posts
   const sortedPosts = [...posts].sort((a, b) => {
     const aVal = sortKey === "published_at" ? new Date(a[sortKey] || 0).getTime() : (Number(a[sortKey]) || 0);
