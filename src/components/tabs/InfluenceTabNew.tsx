@@ -734,12 +734,14 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {(() => {
                               const styles: Record<string, string> = {
                                 discovered: "bg-muted-foreground/5 text-muted-foreground/30",
+                                confirmed: "bg-emerald-500/5 text-emerald-500/40",
                                 metrics_pending: "bg-amber-500/5 text-amber-500/50",
                                 metrics_imported: "bg-emerald-500/5 text-emerald-500/50",
                                 metrics_unavailable: "bg-muted-foreground/5 text-muted-foreground/20",
                               };
                               const labels: Record<string, string> = {
                                 discovered: "Discovery only",
+                                confirmed: "Captured",
                                 metrics_pending: "Pending",
                                 metrics_imported: "Enriched",
                                 metrics_unavailable: "Unavailable",
