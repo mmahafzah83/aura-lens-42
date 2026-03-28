@@ -158,7 +158,8 @@ const StrategicAttribution = () => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase.from("linkedin_posts") as any)
+      const { data } = await supabase
+        .from("linkedin_posts")
         .select("id, hook, title, post_text, theme, topic_label, framework_type, format_type, content_type, visual_style, media_type, engagement_score, like_count, comment_count, repost_count, published_at, carousel_structure_type, hook_style, cta_style, content_engine_output_type, visual_strategy_type")
         .order("published_at", { ascending: false })
         .limit(500);

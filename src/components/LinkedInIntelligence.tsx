@@ -36,7 +36,8 @@ const LinkedInIntelligence = () => {
       setConnected(connData?.connected || false);
 
       // Get latest snapshot
-      const { data: snapshots } = await (supabase.from("influence_snapshots" as any) as any)
+      const { data: snapshots } = await supabase
+        .from("influence_snapshots")
         .select("*")
         .order("snapshot_date", { ascending: false })
         .limit(1);
