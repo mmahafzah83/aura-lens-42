@@ -670,14 +670,11 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                           <td className="text-[11px] text-muted-foreground/40 py-2.5 px-2.5 tabular-nums whitespace-nowrap">
                             {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                           </td>
-                          <td className="text-[11px] text-foreground/70 py-2.5 px-2.5 max-w-[180px] truncate">
+                          <td className="text-[11px] text-foreground/70 py-2.5 px-2.5 max-w-[160px] truncate">
                             {post.hook || post.title || post.post_text?.slice(0, 50) || "—"}
                           </td>
-                          <td className="text-[11px] text-muted-foreground/35 py-2.5 px-2.5 capitalize truncate max-w-[100px]">
+                          <td className="text-[11px] text-muted-foreground/35 py-2.5 px-2.5 capitalize truncate max-w-[90px]">
                             {post.theme || post.topic_label || "—"}
-                          </td>
-                          <td className="text-[11px] text-muted-foreground/30 py-2.5 px-2.5 capitalize">
-                            {post.format_type || post.content_type || "—"}
                           </td>
                           <td className="py-2.5 px-2.5">
                             {(() => {
@@ -702,6 +699,11 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                                 </span>
                               );
                             })()}
+                          </td>
+                          <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
+                            {post._impressions > 0
+                              ? <span className="text-foreground/40">{post._impressions.toLocaleString()}</span>
+                              : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="text-[11px] py-2.5 px-2.5 tabular-nums text-right">
                             {hasRealMetrics
