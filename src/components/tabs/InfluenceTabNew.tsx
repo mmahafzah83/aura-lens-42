@@ -346,7 +346,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
                 {!hasPosts
                   ? "Use the Aura browser extension on any LinkedIn analytics page, post, or activity feed."
-                  : `${posts.length} post${posts.length !== 1 ? "s" : ""} discovered — metrics like impressions, reactions, and comments require individual post capture.`}
+                  : `${totalPostCount} post${totalPostCount !== 1 ? "s" : ""} discovered — metrics like impressions, reactions, and comments require individual post capture.`}
               </p>
             </div>
           </div>
