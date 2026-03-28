@@ -232,7 +232,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   }));
 
   // Data readiness flags
-  const hasPosts = posts.length > 0;
+  const hasPosts = totalPostCount > 0;
   const hasMetrics = posts.some(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0 || p._impressions > 0);
   const hasFollowerData = chartData.length > 1;
 
