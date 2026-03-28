@@ -472,7 +472,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                         { key: null, label: "Impr.", align: "right", sortable: false, w: "" },
                         { key: "like_count" as SortKey, label: "React.", align: "right", sortable: true, w: "" },
                         { key: "comment_count" as SortKey, label: "Comm.", align: "right", sortable: true, w: "" },
-                        { key: "engagement_score" as SortKey, label: "Eng %", align: "right", sortable: true, w: "" },
+                        { key: "engagement_rate" as SortKey, label: "Eng %", align: "right", sortable: true, w: "" },
                         { key: null, label: "Status", align: "center", sortable: false, w: "w-[72px]" },
                       ].map((col, i) => (
                         <th key={i}
