@@ -388,7 +388,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       {hasPosts && (
         <Fade delay={0.12}>
           <div>
-            <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${posts.length} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
+            <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${totalPostCount} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
             <div className="glass-card rounded-2xl card-pad border border-border/8">
               <div className="overflow-x-auto -mx-2">
                 <table className="w-full text-left min-w-[700px]">
