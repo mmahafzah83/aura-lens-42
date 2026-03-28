@@ -70,6 +70,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const [syncRunCount, setSyncRunCount] = useState(0);
   const [syncErrorCount, setSyncErrorCount] = useState(0);
   const [lastCaptureTime, setLastCaptureTime] = useState<string | null>(null);
+  const [totalPostCount, setTotalPostCount] = useState(0);
 
   const [sortKey, setSortKey] = useState<SortKey>("published_at");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -84,7 +85,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       const days = getDaysForRange(range);
       const since = new Date(Date.now() - days * 86400000).toISOString().split("T")[0];
 
-      const [snapRes, postRes, authRes, connRes, syncRes, metricsRes, syncErrorRes, lastCaptureRes] = await Promise.all([
+      // Separate count query for accurate "posts tracked" (not capped by limit)
+      const postCountQuery = supabase
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .neq("tracking_status", "rejected");
+
+      const [snapRes, postRes, authRes, connRes, syncRes, metricsRes, syncErrorRes, lastCaptureRes, postCountRes] = await Promise.all([
         supabase
           .from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
@@ -96,7 +103,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .select("id, post_text, hook, title, theme, tone, format_type, content_type, topic_label, engagement_score, like_count, comment_count, repost_count, published_at, media_type, tracking_status, rejection_reason, source_type, enriched_by, source_trust, post_url")
           .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false })
-          .limit(200),
+          .limit(500),
         supabase
           .from("authority_scores")
           .select("*")
@@ -115,8 +122,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         supabase
           .from("linkedin_post_metrics")
           .select("post_id, impressions, reactions, comments, shares, saves, engagement_rate, snapshot_date, source_type")
-          .order("snapshot_date", { ascending: false })
-          .limit(1000),
+          .order("snapshot_date", { ascending: false }),
         supabase
           .from("sync_errors")
           .select("id")
@@ -128,6 +134,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .eq("status", "completed")
           .order("completed_at", { ascending: false })
           .limit(1),
+        postCountQuery,
       ]);
 
       setIsConnected((connRes.data || []).length > 0);
@@ -136,6 +143,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       setSyncRunCount(runs.length);
       setSyncErrorCount((syncErrorRes.data || []).length);
       setLastCaptureTime(lastCaptureRes.data?.[0]?.completed_at || null);
+      setTotalPostCount(postCountRes.count || 0);
 
       const snaps = snapRes.data || [];
       setSnapshots(snaps);
@@ -224,7 +232,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   }));
 
   // Data readiness flags
-  const hasPosts = posts.length > 0;
+  const hasPosts = totalPostCount > 0;
   const hasMetrics = posts.some(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0 || p._impressions > 0);
   const hasFollowerData = chartData.length > 1;
 
@@ -303,7 +311,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Followers", value: currentFollowers > 0 ? currentFollowers.toLocaleString() : "—", icon: Users, sub: periodGrowth !== 0 ? `${periodGrowth > 0 ? "+" : ""}${periodGrowth}` : null },
-              { label: "Posts tracked", value: posts.length.toString(), icon: FileText, sub: null },
+              { label: "Posts tracked", value: totalPostCount.toString(), icon: FileText, sub: null },
               { label: "Engagement rate", value: latestEngRate > 0 ? `${latestEngRate.toFixed(1)}%` : "—", icon: Activity, sub: null },
               { label: "Total reactions", value: totalReactions > 0 ? totalReactions.toLocaleString() : "—", icon: Zap, sub: null },
             ].map((m, i) => (
@@ -338,7 +346,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
               <p className="text-[11px] text-muted-foreground/35 leading-relaxed">
                 {!hasPosts
                   ? "Use the Aura browser extension on any LinkedIn analytics page, post, or activity feed."
-                  : `${posts.length} post${posts.length !== 1 ? "s" : ""} discovered — metrics like impressions, reactions, and comments require individual post capture.`}
+                  : `${totalPostCount} post${totalPostCount !== 1 ? "s" : ""} discovered — metrics like impressions, reactions, and comments require individual post capture.`}
               </p>
             </div>
           </div>
@@ -380,7 +388,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       {hasPosts && (
         <Fade delay={0.12}>
           <div>
-            <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${posts.length} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
+            <SectionHeading icon={BarChart3} title="Content Performance" subtitle={`${totalPostCount} posts tracked · ${posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0).length} with metrics`} />
             <div className="glass-card rounded-2xl card-pad border border-border/8">
               <div className="overflow-x-auto -mx-2">
                 <table className="w-full text-left min-w-[700px]">
@@ -488,7 +496,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       {themes.length > 0 && (
         <Fade delay={0.16}>
           <div>
-            <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${posts.length} posts`} />
+            <SectionHeading icon={Sparkles} title="Theme Intelligence" subtitle={`Topic distribution across ${totalPostCount} posts`} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="glass-card rounded-2xl card-pad border border-border/8">
                 <div className="h-[240px] -mx-2">
