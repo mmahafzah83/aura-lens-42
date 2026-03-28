@@ -27,7 +27,7 @@ interface InfluenceTabNewProps {
 }
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
-type SortKey = "published_at" | "engagement_score" | "like_count" | "comment_count";
+type SortKey = "published_at" | "engagement_rate" | "like_count" | "comment_count";
 type SortDir = "asc" | "desc";
 
 /* ── Utility components ── */
@@ -115,12 +115,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
 
       const since = new Date(Date.now() - getDays(range) * 86400000).toISOString().split("T")[0];
 
-      // Primary query: influence_dashboard_view
+      // Primary query: influence_dashboard_view (exact columns)
       const [viewRes, snapRes, syncRes, syncErrRes, lastCapRes, capSnapRes] = await Promise.all([
         supabase
-          .from("influence_dashboard_view" as any)
-          .select("*")
+          .from("influence_dashboard_view")
+          .select("id, user_id, post_url, post_text, hook, topic_label, format_type, media_type, published_at, impressions, like_count, comment_count, repost_count, engagement_rate, followers, snapshot_date, tracking_status")
           .eq("user_id", uid)
+          .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false }),
         supabase.from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
@@ -138,20 +139,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       ]);
 
       if (viewRes.error) {
-        setQueryError(viewRes.error.message);
+        setQueryError(`influence_dashboard_view: ${viewRes.error.message}`);
         setLoading(false);
         return;
       }
 
       const viewData = (viewRes.data || []) as any[];
-      setPosts(viewData.map((p: any) => ({
-        ...p,
-        like_count: p.reactions ?? p.like_count ?? 0,
-        comment_count: p.comments ?? p.comment_count ?? 0,
-        repost_count: p.shares ?? p.repost_count ?? 0,
-        _impressions: p.impressions ?? 0,
-        _saves: p.saves ?? 0,
-      })));
+      setPosts(viewData);
       setTotalPostCount(viewData.length);
       setCapturePostCount(viewData.filter((p: any) => p.source_type === "browser_capture").length);
 
@@ -188,11 +182,12 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   };
 
   /* ── Derived ── */
-  const currentFollowers = latestSnapshot?.followers || 0;
+  const viewFollowers = posts.length > 0 ? Math.max(...posts.map(p => p.followers || 0)) : 0;
+  const currentFollowers = latestSnapshot?.followers || viewFollowers || 0;
   const latestEngRate = latestSnapshot ? Number(latestSnapshot.engagement_rate) || 0 : 0;
   const periodGrowth = snapshots.length >= 2
     ? (snapshots[snapshots.length - 1]?.followers || 0) - (snapshots[0]?.followers || 0) : 0;
-  const postsWithMetrics = posts.filter(p => p.like_count > 0 || p.comment_count > 0 || Number(p.engagement_score) > 0 || p._impressions > 0).length;
+  const postsWithMetrics = posts.filter(p => (p.like_count || 0) > 0 || (p.comment_count || 0) > 0 || Number(p.engagement_rate) > 0 || (p.impressions || 0) > 0).length;
 
   const hasPosts = totalPostCount > 0;
   const hasMetrics = postsWithMetrics > 0;
@@ -202,16 +197,16 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   const themeCounts: Record<string, { count: number; totalEng: number }> = {};
   const formatCounts: Record<string, { count: number; totalEng: number }> = {};
   posts.forEach(p => {
-    const theme = p.theme || p.topic_label;
+    const theme = p.topic_label;
     if (theme) {
       if (!themeCounts[theme]) themeCounts[theme] = { count: 0, totalEng: 0 };
       themeCounts[theme].count++;
-      themeCounts[theme].totalEng += Number(p.engagement_score) || 0;
+      themeCounts[theme].totalEng += Number(p.engagement_rate) || 0;
     }
-    const fmt = p.format_type || p.content_type || p.media_type || "text";
+    const fmt = p.format_type || p.media_type || "text";
     if (!formatCounts[fmt]) formatCounts[fmt] = { count: 0, totalEng: 0 };
     formatCounts[fmt].count++;
-    formatCounts[fmt].totalEng += Number(p.engagement_score) || 0;
+    formatCounts[fmt].totalEng += Number(p.engagement_rate) || 0;
   });
   const themes = Object.entries(themeCounts)
     .map(([t, d]) => ({ theme: t, count: d.count, avgEng: Math.round(d.totalEng / d.count * 10) / 10 }))
@@ -478,7 +473,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                         { key: null, label: "Impr.", align: "right", sortable: false, w: "" },
                         { key: "like_count" as SortKey, label: "React.", align: "right", sortable: true, w: "" },
                         { key: "comment_count" as SortKey, label: "Comm.", align: "right", sortable: true, w: "" },
-                        { key: "engagement_score" as SortKey, label: "Eng %", align: "right", sortable: true, w: "" },
+                        { key: "engagement_rate" as SortKey, label: "Eng %", align: "right", sortable: true, w: "" },
                         { key: null, label: "Status", align: "center", sortable: false, w: "w-[72px]" },
                       ].map((col, i) => (
                         <th key={i}
@@ -493,7 +488,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                   </thead>
                   <tbody>
                     {sortedPosts.map(post => {
-                      const hasReal = !!(post.like_count > 0 || post.comment_count > 0 || Number(post.engagement_score) > 0);
+                      const hasReal = !!((post.like_count || 0) > 0 || (post.comment_count || 0) > 0 || Number(post.engagement_rate) > 0);
                       const status = post.tracking_status || (hasReal ? "metrics_imported" : "discovered");
                       const src = post.source_type || "search_discovery";
                       return (
@@ -502,10 +497,10 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             {post.published_at ? new Date(post.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                           </td>
                           <td className="text-[11px] text-foreground/70 py-2.5 px-2 max-w-[160px] truncate">
-                            {post.hook || post.title || post.post_text?.slice(0, 50) || "—"}
+                            {post.hook || post.post_text?.slice(0, 50) || "—"}
                           </td>
                           <td className="text-[11px] text-muted-foreground/35 py-2.5 px-2 capitalize truncate max-w-[80px]">
-                            {post.theme || post.topic_label || "—"}
+                            {post.topic_label || "—"}
                           </td>
                           <td className="py-2.5 px-2">
                             <span className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-medium border ${sourceStyles[src] || sourceStyles.search_discovery}`}>
@@ -513,16 +508,16 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
                             </span>
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right">
-                            {post._impressions > 0 ? <span className="text-foreground/40">{post._impressions.toLocaleString()}</span> : <span className="text-muted-foreground/15">—</span>}
+                            {(post.impressions || 0) > 0 ? <span className="text-foreground/40">{(post.impressions || 0).toLocaleString()}</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right">
-                            {hasReal ? <span className="text-foreground/50">{post.like_count}</span> : <span className="text-muted-foreground/15">—</span>}
+                            {hasReal ? <span className="text-foreground/50">{post.like_count || 0}</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right">
-                            {hasReal ? <span className="text-foreground/50">{post.comment_count}</span> : <span className="text-muted-foreground/15">—</span>}
+                            {hasReal ? <span className="text-foreground/50">{post.comment_count || 0}</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="text-[11px] py-2.5 px-2 tabular-nums text-right font-medium">
-                            {hasReal ? <span className="text-foreground/60">{Number(post.engagement_score || 0).toFixed(1)}%</span> : <span className="text-muted-foreground/15">—</span>}
+                            {hasReal ? <span className="text-foreground/60">{Number(post.engagement_rate || 0).toFixed(1)}%</span> : <span className="text-muted-foreground/15">—</span>}
                           </td>
                           <td className="py-2.5 px-2 text-center">
                             <span className={`inline-block px-2 py-0.5 rounded-full text-[8px] font-medium ${statusStyles[status] || statusStyles.discovered}`}>
