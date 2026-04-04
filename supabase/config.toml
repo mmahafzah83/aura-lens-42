@@ -74,3 +74,6 @@ verify_jwt = false
 
 [functions.ingest-capture]
 verify_jwt = false
+
+[functions.detect-signals]
+verify_jwt = false
