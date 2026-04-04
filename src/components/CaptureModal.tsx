@@ -365,8 +365,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               console.log("detect-signals result:", result);
               if (result?.is_new) {
                 setTimeout(() => {
-                  toast({ title: "🔍 New signal detected", description: "A new strategic signal was identified from your capture." });
-                }, 2000);
+                  toast.success("🔍 New signal detected — check Intelligence tab.");
+                }, 3000);
               }
             })
             .catch((err) => console.warn("detect-signals background error:", err));
