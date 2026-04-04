@@ -379,16 +379,16 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             {duplicateInfo && (
               <div className="flex items-center gap-2 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2">
                 <p className="text-xs text-accent-foreground flex-1">
-                  You already captured this URL on {duplicateInfo.date}. View it?
+                  You already captured this URL on {duplicateInfo.date}.
                 </p>
-                <button
-                  onClick={() => {
-                    onOpenChange(false);
-                  }}
-                  className="text-xs text-accent-foreground hover:text-foreground underline flex items-center gap-1"
+                <a
+                  href={content.trim()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:text-primary/80 underline flex items-center gap-1 shrink-0"
                 >
-                  <ExternalLink className="w-3 h-3" /> View
-                </button>
+                  <ExternalLink className="w-3 h-3" /> View original
+                </a>
               </div>
             )}
           </div>
