@@ -60,6 +60,8 @@ const getStrategicValue = (confidence: number, sources: number) => {
    Signals Sub-Tab
    ═══════════════════════════════════════════ */
 
+type SortMode = "latest" | "confidence";
+
 const SignalsPanel = ({
   onOpenChat,
 }: {
@@ -73,15 +75,18 @@ const SignalsPanel = ({
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("latest");
 
-  useEffect(() => { loadSignals(); }, []);
+  useEffect(() => { loadSignals(); }, [sortMode]);
 
   const loadSignals = async () => {
+    setLoading(true);
+    const orderCol = sortMode === "latest" ? "created_at" : "confidence";
     const { data } = await supabase
       .from("strategic_signals")
       .select("*")
       .eq("status", "active")
-      .order("confidence", { ascending: false })
+      .order(orderCol, { ascending: false })
       .limit(20);
     setSignals((data || []) as unknown as Signal[]);
     setLoading(false);
