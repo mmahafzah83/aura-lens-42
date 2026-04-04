@@ -7,6 +7,123 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type SignalCandidate = {
+  id: string;
+  confidence: number | null;
+  signal_title: string | null;
+  theme_tags: string[] | null;
+  fragment_count: number | null;
+  supporting_evidence_ids: string[] | null;
+  created_at?: string | null;
+};
+
+const STOP_WORDS = new Set([
+  "the", "and", "for", "with", "from", "that", "this", "into", "about", "your", "their", "have", "been",
+  "will", "what", "when", "where", "how", "why", "are", "was", "were", "is", "a", "an", "of", "in", "on",
+  "to", "by", "or", "as", "at", "it", "its", "than", "through", "across", "over", "under", "between",
+  "drive", "drives", "driven", "power", "powers", "cornerstone", "cornerstones", "success", "strategy",
+  "strategic", "signal", "signals", "market", "opportunity", "opportunities",
+]);
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stemWord(word: string): string {
+  if (word.endsWith("ies") && word.length > 4) return `${word.slice(0, -3)}y`;
+  if (word.endsWith("s") && !word.endsWith("ss") && word.length > 4) return word.slice(0, -1);
+  return word;
+}
+
+function uniqueValues(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function normalizeTag(tag: string): string {
+  return normalizeText(tag);
+}
+
+function normalizeThemeTags(tags: string[]): string[] {
+  return uniqueValues(tags.map(normalizeTag).filter(Boolean));
+}
+
+function extractTopicKeywords(value: string): string[] {
+  return uniqueValues(
+    normalizeText(value)
+      .split(" ")
+      .map(stemWord)
+      .filter((word) => word.length > 2 && !STOP_WORDS.has(word)),
+  );
+}
+
+function buildTopicTerms(title: string, tags: string[]): Set<string> {
+  const keywords = uniqueValues([
+    ...extractTopicKeywords(title),
+    ...tags.flatMap((tag) => extractTopicKeywords(tag)),
+  ]);
+
+  const terms = new Set<string>(keywords);
+
+  for (let i = 0; i < keywords.length - 1; i += 1) {
+    terms.add(`${keywords[i]} ${keywords[i + 1]}`);
+  }
+
+  for (const tag of tags) {
+    const normalized = normalizeTag(tag);
+    if (normalized) terms.add(normalized);
+  }
+
+  return terms;
+}
+
+function getTitleMatchDetails(newTitle: string, newTags: string[], existingTitle: string, existingTags: string[]) {
+  const newTerms = buildTopicTerms(newTitle, newTags);
+  const existingTerms = buildTopicTerms(existingTitle, existingTags);
+
+  const phraseMatches = [...newTerms].filter((term) => term.includes(" ") && existingTerms.has(term));
+  const keywordMatches = [...newTerms].filter((term) => !term.includes(" ") && existingTerms.has(term));
+
+  return {
+    phraseMatches,
+    keywordMatches,
+    isMatch: phraseMatches.length > 0 || keywordMatches.length >= 2,
+  };
+}
+
+function findBestMatchingSignal(candidates: SignalCandidate[] | null, signalTitle: string, themeTags: string[]) {
+  if (!candidates?.length) return null;
+
+  const normalizedNewTags = normalizeThemeTags(themeTags);
+  let bestMatch: { candidate: SignalCandidate; score: number } | null = null;
+
+  for (const candidate of candidates) {
+    const existingTags = normalizeThemeTags(candidate.theme_tags || []);
+    const tagOverlap = normalizedNewTags.filter((tag) => existingTags.includes(tag)).length;
+    const titleMatch = getTitleMatchDetails(signalTitle, normalizedNewTags, candidate.signal_title || "", existingTags);
+    const isDuplicate = tagOverlap >= 2 || titleMatch.isMatch;
+
+    if (!isDuplicate) continue;
+
+    const score =
+      (tagOverlap * 100) +
+      (titleMatch.phraseMatches.length * 25) +
+      (titleMatch.keywordMatches.length * 5) +
+      (candidate.fragment_count || 0);
+
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = { candidate, score };
+    }
+  }
+
+  return bestMatch?.candidate || null;
+}
+
 function parseAiJson(raw: string): any {
   try {
     return JSON.parse(raw);
@@ -133,45 +250,21 @@ Return valid JSON:
     const signalSummary = signal.summary || "";
     const confidenceNormalized = Math.min(1, Math.max(0, (signal.confidence_score || 50) / 100));
     const rationale = signal.rationale || "";
-    const themeTags: string[] = Array.isArray(signal.theme_tags) && signal.theme_tags.length > 0
-      ? [signalType, ...signal.theme_tags.filter((t: string) => t !== signalType)]
-      : [signalType];
+    const themeTags: string[] = normalizeThemeTags(
+      Array.isArray(signal.theme_tags) && signal.theme_tags.length > 0
+        ? [signalType, ...signal.theme_tags]
+        : [signalType],
+    );
+    const incomingEvidenceIds = [entry_id];
 
     // 4. Deduplication: find existing signals to reinforce
-    // Strategy A: overlapping theme_tags (≥2 in common)
-    // Strategy B: similar title keyword match
     const { data: candidates } = await admin
       .from("strategic_signals")
-      .select("id, confidence, signal_title, theme_tags, fragment_count, supporting_evidence_ids")
+      .select("id, confidence, signal_title, theme_tags, fragment_count, supporting_evidence_ids, created_at")
       .eq("user_id", user_id)
       .eq("status", "active");
 
-    let matchedSignal: typeof candidates extends (infer T)[] | null ? T : never = null as any;
-
-    if (candidates && candidates.length > 0) {
-      // Check theme_tags overlap (≥2 tags in common)
-      for (const c of candidates) {
-        const existingTags: string[] = (c.theme_tags as string[]) || [];
-        const overlap = themeTags.filter(t => existingTags.includes(t)).length;
-        if (overlap >= 2) {
-          matchedSignal = c;
-          break;
-        }
-      }
-
-      // If no tag match, try title keyword similarity
-      if (!matchedSignal) {
-        const titleWords = signalTitle.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
-        for (const c of candidates) {
-          const existingTitle = (c.signal_title || "").toLowerCase();
-          const matchCount = titleWords.filter((w: string) => existingTitle.includes(w)).length;
-          if (matchCount >= 2) {
-            matchedSignal = c;
-            break;
-          }
-        }
-      }
-    }
+    const matchedSignal = findBestMatchingSignal((candidates as SignalCandidate[] | null) || null, signalTitle, themeTags);
 
     let signalId: string;
     let isNew: boolean;
@@ -180,21 +273,19 @@ Return valid JSON:
     if (matchedSignal) {
       // Reinforce existing signal
       const existingEvidence: string[] = (matchedSignal.supporting_evidence_ids as string[]) || [];
-      const newEvidence = existingEvidence.includes(entry_id)
-        ? existingEvidence
-        : [...existingEvidence, entry_id];
-      const newFragmentCount = newEvidence.length;
+      const mergedEvidence = uniqueValues([...existingEvidence, ...incomingEvidenceIds]);
+      const addedEvidenceCount = mergedEvidence.length - existingEvidence.length;
       const newConfidence = Math.min(1, (matchedSignal.confidence || 0) + 0.02);
-      // Merge theme_tags (deduplicated)
-      const existingTags: string[] = (matchedSignal.theme_tags as string[]) || [];
-      const mergedTags = [...new Set([...existingTags, ...themeTags])];
+      const mergedTags = normalizeThemeTags([...(matchedSignal.theme_tags || []), ...themeTags]);
+      const currentFragmentCount = Math.max(matchedSignal.fragment_count || 0, existingEvidence.length);
+      const newFragmentCount = currentFragmentCount + Math.max(0, addedEvidenceCount);
 
       const { error: updErr } = await admin
         .from("strategic_signals")
         .update({
           confidence: newConfidence,
           fragment_count: newFragmentCount,
-          supporting_evidence_ids: newEvidence,
+          supporting_evidence_ids: mergedEvidence,
           theme_tags: mergedTags,
           updated_at: new Date().toISOString(),
         })
