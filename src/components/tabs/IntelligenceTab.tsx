@@ -282,7 +282,7 @@ const SignalsPanel = ({
               onClick={() => setSortMode("confidence")}
               className={`px-3 py-1.5 font-medium transition-colors ${sortMode === "confidence" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
-              Highest confidence
+              Top Confidence
             </button>
           </div>
           <Button variant="outline" size="sm" onClick={runPatternScan} disabled={scanning} className="gap-1.5 text-xs">
