@@ -53,11 +53,12 @@ Deno.serve(async (req) => {
       if (existing && existing.length > 0) {
         return new Response(JSON.stringify({
           error: "duplicate_url",
+          processing_status: "duplicate",
           message: `You already captured this URL on ${new Date(existing[0].created_at).toLocaleDateString()}.`,
           existing_id: existing[0].id,
           created_at: existing[0].created_at,
         }), {
-          status: 409,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

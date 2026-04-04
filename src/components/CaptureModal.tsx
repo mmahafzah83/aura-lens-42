@@ -275,10 +275,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         }),
       });
 
-      const data = await resp.json();
+      const data = await resp.json().catch(() => null);
 
-      // Duplicate URL (409)
-      if (resp.status === 409 && data?.error === "duplicate_url") {
+      if (data?.error === "duplicate_url") {
         setDuplicateInfo({
           id: data.existing_id,
           date: new Date(data.created_at).toLocaleDateString(),
@@ -287,11 +286,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         return;
       }
 
-      // Server error (500)
       if (!resp.ok) {
         toast({
           title: "Capture Failed",
-          description: data?.error || data?.error_message || `Server error (${resp.status})`,
+          description: data?.error_message || data?.message || data?.error || `Server error (${resp.status})`,
           variant: "destructive",
         });
         setSaving(false);
