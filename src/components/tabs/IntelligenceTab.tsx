@@ -305,10 +305,28 @@ const SignalsPanel = ({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveClusterTag(null)}
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer ${
+                !activeClusterTag
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-secondary/20 text-muted-foreground border border-border/10 hover:border-border/20"
+              }`}
+            >
+              All signals
+            </button>
             {clusters.map(c => (
-              <span key={c.name} className="text-xs px-3 py-1.5 rounded-full bg-primary/8 text-primary/80 border border-primary/12 font-medium">
-                {c.name} <span className="text-primary/50 ml-1">({c.signalCount})</span>
-              </span>
+              <button
+                key={c.name}
+                onClick={() => setActiveClusterTag(activeClusterTag === c.name ? null : c.name)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer ${
+                  activeClusterTag === c.name
+                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    : "bg-primary/8 text-primary/80 border border-primary/12 hover:border-primary/25"
+                }`}
+              >
+                {c.name} <span className={activeClusterTag === c.name ? "text-amber-400/60 ml-1" : "text-primary/50 ml-1"}>({c.signalCount})</span>
+              </button>
             ))}
           </div>
         </div>
