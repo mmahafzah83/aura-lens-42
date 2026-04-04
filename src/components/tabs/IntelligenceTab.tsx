@@ -216,6 +216,11 @@ const SignalsPanel = ({
     }));
   }, [signals]);
 
+  const filteredSignals = useMemo(() => {
+    if (!activeClusterTag) return signals;
+    return signals.filter(s => (s.theme_tags || []).includes(activeClusterTag));
+  }, [signals, activeClusterTag]);
+
   if (loading) {
     return (
       <div className="space-y-4">
