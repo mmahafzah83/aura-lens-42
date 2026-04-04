@@ -60,6 +60,8 @@ const getStrategicValue = (confidence: number, sources: number) => {
    Signals Sub-Tab
    ═══════════════════════════════════════════ */
 
+type SortMode = "latest" | "confidence";
+
 const SignalsPanel = ({
   onOpenChat,
 }: {
@@ -73,15 +75,18 @@ const SignalsPanel = ({
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [sortMode, setSortMode] = useState<SortMode>("latest");
 
-  useEffect(() => { loadSignals(); }, []);
+  useEffect(() => { loadSignals(); }, [sortMode]);
 
   const loadSignals = async () => {
+    setLoading(true);
+    const orderCol = sortMode === "latest" ? "created_at" : "confidence";
     const { data } = await supabase
       .from("strategic_signals")
       .select("*")
       .eq("status", "active")
-      .order("confidence", { ascending: false })
+      .order(orderCol, { ascending: false })
       .limit(20);
     setSignals((data || []) as unknown as Signal[]);
     setLoading(false);
@@ -173,13 +178,29 @@ const SignalsPanel = ({
 
   return (
     <div className="space-y-6">
-      {/* Header row with scan button */}
+      {/* Header row with sort + scan */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{signals.length} active signal{signals.length !== 1 ? "s" : ""}</p>
-        <Button variant="outline" size="sm" onClick={runPatternScan} disabled={scanning} className="gap-1.5 text-xs">
-          {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-          {scanning ? "Scanning…" : "Detect Patterns"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border/20 bg-card/40 text-xs overflow-hidden">
+            <button
+              onClick={() => setSortMode("latest")}
+              className={`px-3 py-1.5 font-medium transition-colors ${sortMode === "latest" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Latest
+            </button>
+            <button
+              onClick={() => setSortMode("confidence")}
+              className={`px-3 py-1.5 font-medium transition-colors ${sortMode === "confidence" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Highest confidence
+            </button>
+          </div>
+          <Button variant="outline" size="sm" onClick={runPatternScan} disabled={scanning} className="gap-1.5 text-xs">
+            {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+            {scanning ? "Scanning…" : "Detect Patterns"}
+          </Button>
+        </div>
       </div>
 
       {/* Signal Clusters */}
