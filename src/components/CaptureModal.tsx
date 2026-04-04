@@ -365,7 +365,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               console.log("detect-signals result:", result);
               if (result?.is_new) {
                 setTimeout(() => {
-                  toast.success("🔍 New signal detected — check Intelligence tab.");
+                  toast({ title: "🔍 New signal detected", description: "Check Intelligence tab." });
                 }, 3000);
               }
             })
