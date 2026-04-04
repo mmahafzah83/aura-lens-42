@@ -60,10 +60,23 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
-    await (supabase.from("diagnostic_profiles" as any) as any)
-      .update({ firm, level, core_practice: corePractice, sector_focus: sectorFocus, north_star_goal: northStar, brand_pillars: brandPillars, generated_skills: skills, skill_ratings: ratings })
-      .eq("user_id", user.id);
-    toast({ title: "Profile Updated", description: "Your executive profile has been saved." });
+    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .upsert({
+        user_id: user.id,
+        firm,
+        level,
+        core_practice: corePractice,
+        sector_focus: sectorFocus,
+        north_star_goal: northStar,
+        brand_pillars: brandPillars,
+        generated_skills: skills,
+        skill_ratings: ratings,
+      }, { onConflict: "user_id" });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile Updated", description: "Your executive profile has been saved." });
+    }
     setSaving(false);
   };
 
