@@ -366,16 +366,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               <p className="text-xs text-destructive">{urlError}</p>
             )}
             {duplicateInfo && (
-              <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
-                <p className="text-xs text-amber-400 flex-1">
+              <div className="flex items-center gap-2 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2">
+                <p className="text-xs text-accent-foreground flex-1">
                   You already captured this URL on {duplicateInfo.date}. View it?
                 </p>
                 <button
                   onClick={() => {
                     onOpenChange(false);
-                    // Navigate or scroll to the capture — for now just close
                   }}
-                  className="text-xs text-amber-400 hover:text-amber-300 underline flex items-center gap-1"
+                  className="text-xs text-accent-foreground hover:text-foreground underline flex items-center gap-1"
                 >
                   <ExternalLink className="w-3 h-3" /> View
                 </button>
