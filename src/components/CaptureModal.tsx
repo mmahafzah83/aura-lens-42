@@ -253,29 +253,32 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("ingest-capture", {
-        body: {
-          type: captureType,
-          content: captureContent,
-          metadata: captureMetadata,
-          source_url: captureType === "link" ? content.trim() : image_url,
-        },
-      });
-
-      if (error) {
-        // Try to parse the error body for structured errors
-        let errMsg = error.message;
-        try {
-          const parsed = JSON.parse(error.message);
-          errMsg = parsed.error || parsed.message || error.message;
-        } catch {}
-        toast({ title: "Capture Failed", description: errMsg, variant: "destructive" });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({ title: "Error", description: "Session expired. Please log in again.", variant: "destructive" });
         setSaving(false);
         return;
       }
 
-      // Handle duplicate URL (409 comes back as data with error field)
-      if (data?.error === "duplicate_url") {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          type: captureType,
+          content: captureContent,
+          metadata: captureMetadata,
+          source_url: captureType === "link" ? content.trim() : image_url,
+        }),
+      });
+
+      const data = await resp.json();
+
+      // Duplicate URL (409)
+      if (resp.status === 409 && data?.error === "duplicate_url") {
         setDuplicateInfo({
           id: data.existing_id,
           date: new Date(data.created_at).toLocaleDateString(),
@@ -284,7 +287,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         return;
       }
 
-      // Handle processing failure
+      // Server error (500)
+      if (!resp.ok) {
+        toast({
+          title: "Capture Failed",
+          description: data?.error || data?.error_message || `Server error (${resp.status})`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
+      // Processing failure returned in body
       if (data?.processing_status === "failed") {
         toast({
           title: "Processing Failed",
@@ -295,13 +309,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         return;
       }
 
-      // Success
+      // Success (201)
       toast({
         title: "Captured. Processing complete.",
         description: "Your capture has been saved and processed.",
       });
 
-      // Reset state
       setContent("");
       setVoiceAnalysis(null);
       setImageFile(null);

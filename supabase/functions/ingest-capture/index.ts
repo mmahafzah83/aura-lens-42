@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       .single();
 
     return new Response(JSON.stringify(finalCapture), {
-      status: 200,
+      status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {
