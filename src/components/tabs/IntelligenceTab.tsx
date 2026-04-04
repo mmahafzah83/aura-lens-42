@@ -259,11 +259,6 @@ const SignalsPanel = ({
     );
   }
 
-  const filteredSignals = useMemo(() => {
-    if (!activeClusterTag) return signals;
-    return signals.filter(s => (s.theme_tags || []).includes(activeClusterTag));
-  }, [signals, activeClusterTag]);
-
   const visible = showAll ? filteredSignals : filteredSignals.slice(0, 8);
 
   return (
