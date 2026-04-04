@@ -254,7 +254,12 @@ const SignalsPanel = ({
     );
   }
 
-  const visible = showAll ? signals : signals.slice(0, 8);
+  const filteredSignals = useMemo(() => {
+    if (!activeClusterTag) return signals;
+    return signals.filter(s => (s.theme_tags || []).includes(activeClusterTag));
+  }, [signals, activeClusterTag]);
+
+  const visible = showAll ? filteredSignals : filteredSignals.slice(0, 8);
 
   return (
     <div className="space-y-6">
