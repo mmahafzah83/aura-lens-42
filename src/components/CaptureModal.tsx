@@ -272,9 +272,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           type: captureType,
           content: captureContent,
           metadata: captureMetadata,
-          source_url: captureType === "link" ? content.trim() : image_url,
+          ...(captureType === "link" && { source_url: content.trim() }),
+          ...(captureType === "image" && image_url && { source_url: image_url }),
         }),
       });
+
+      console.log("Response status:", resp.status);
 
       const data = await resp.json().catch(() => null);
 

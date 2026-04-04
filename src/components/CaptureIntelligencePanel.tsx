@@ -182,15 +182,22 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
     const captureType = mode === "link" ? "url" : mode === "text" ? "note" : mode;
 
     try {
+      const captureContent = content.trim();
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ type: captureType, content: content.trim(), metadata: {} }),
+        body: JSON.stringify({
+          type: captureType,
+          content: captureContent,
+          metadata: {},
+          ...(captureType === "url" && { source_url: captureContent }),
+        }),
       });
+
+      console.log("Response status:", resp.status);
 
       const data = await resp.json().catch(() => null);
 
