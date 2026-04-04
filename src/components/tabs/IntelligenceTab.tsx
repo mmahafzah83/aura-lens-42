@@ -267,7 +267,7 @@ const SignalsPanel = ({
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
                     <span className="tabular-nums font-medium text-amber-400">{conf}% confidence</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sv.class}`}>{sv.label} value</span>
-                    <span>{sources} source{sources !== 1 ? "s" : ""}</span>
+                    <span>{sources} evidence fragment{sources !== 1 ? "s" : ""}</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatSmartDate(signal.created_at)}</span>
                   </div>
 
