@@ -317,6 +317,9 @@ const SignalsPanel = ({
                       </div>
                     )}
 
+                    {/* Evidence Fragments Sources Panel */}
+                    <EvidenceSourcesPanel evidenceIds={signal.supporting_evidence_ids || []} />
+
                     {/* Standardized Signal Actions */}
                     <SignalActions
                       onExplore={() => setExplorerSignal(signal)}
