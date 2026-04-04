@@ -265,7 +265,11 @@ const SignalsPanel = ({
     <div className="space-y-6">
       {/* Header row with sort + scan */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{signals.length} active signal{signals.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-muted-foreground">
+          {activeClusterTag
+            ? `Showing ${filteredSignals.length} of ${signals.length} signals`
+            : `${signals.length} active signal${signals.length !== 1 ? "s" : ""}`}
+        </p>
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-lg border border-border/20 bg-card/40 text-xs overflow-hidden">
             <button
