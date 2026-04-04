@@ -227,7 +227,7 @@ Return valid JSON:
       isNew = true;
     }
 
-    return new Response(JSON.stringify({ success: true, signal_id: signalId, is_new: isNew }), {
+    return new Response(JSON.stringify({ success: true, signal_id: signalId, is_new: isNew, reinforced }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
