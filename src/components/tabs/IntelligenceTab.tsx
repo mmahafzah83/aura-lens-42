@@ -57,8 +57,87 @@ const getStrategicValue = (confidence: number, sources: number) => {
 };
 
 /* ═══════════════════════════════════════════
-   Signals Sub-Tab
+   Evidence Sources Panel (inline in expanded card)
    ═══════════════════════════════════════════ */
+
+const EvidenceSourcesPanel = ({ evidenceIds }: { evidenceIds: string[] }) => {
+  const [fragments, setFragments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!evidenceIds || evidenceIds.length === 0) {
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("evidence_fragments")
+        .select("id, title, content, fragment_type, metadata, tags")
+        .in("id", evidenceIds)
+        .limit(20);
+      setFragments(data || []);
+      setLoading(false);
+    })();
+  }, [evidenceIds]);
+
+  if (loading) {
+    return (
+      <div className="rounded-xl bg-card/40 p-4 border border-border/10 space-y-2 animate-pulse">
+        <div className="h-3 bg-muted/20 rounded w-1/3" />
+        <div className="h-3 bg-muted/15 rounded w-full" />
+        <div className="h-3 bg-muted/15 rounded w-2/3" />
+      </div>
+    );
+  }
+
+  if (fragments.length === 0) {
+    return (
+      <div className="rounded-xl bg-card/40 p-4 border border-border/10">
+        <div className="flex items-center gap-2 mb-1">
+          <FileText className="w-3.5 h-3.5 text-muted-foreground/50" />
+          <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/60 font-semibold">Evidence Sources</p>
+        </div>
+        <p className="text-xs text-muted-foreground/70 italic">Source details not available for this signal</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl bg-card/40 p-4 border border-border/10">
+      <div className="flex items-center gap-2 mb-3">
+        <FileText className="w-3.5 h-3.5 text-primary/70" />
+        <p className="text-[10px] uppercase tracking-[0.15em] text-primary/60 font-semibold">
+          Evidence Sources ({fragments.length})
+        </p>
+      </div>
+      <div className="space-y-2">
+        {fragments.map((f) => {
+          const sourceUrl = (f.metadata as any)?.source_url;
+          return (
+            <div key={f.id} className="rounded-lg bg-background/40 border border-border/8 p-3">
+              <p className="text-xs text-foreground/80 leading-relaxed line-clamp-2 mb-1">
+                {f.content?.slice(0, 200) || f.title}
+              </p>
+              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                {f.title && <span className="font-medium truncate max-w-[200px]">{f.title}</span>}
+                {f.fragment_type && (
+                  <span className="px-1.5 py-0.5 rounded bg-muted/20 text-muted-foreground/70">{f.fragment_type}</span>
+                )}
+                {sourceUrl && (
+                  <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:text-primary truncate max-w-[180px]">
+                    {new URL(sourceUrl).hostname}
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+
 
 type SortMode = "latest" | "confidence";
 
@@ -267,7 +346,7 @@ const SignalsPanel = ({
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mb-3">
                     <span className="tabular-nums font-medium text-amber-400">{conf}% confidence</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${sv.class}`}>{sv.label} value</span>
-                    <span>{sources} source{sources !== 1 ? "s" : ""}</span>
+                    <span>{sources} evidence fragment{sources !== 1 ? "s" : ""}</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{formatSmartDate(signal.created_at)}</span>
                   </div>
 
@@ -316,6 +395,9 @@ const SignalsPanel = ({
                         )}
                       </div>
                     )}
+
+                    {/* Evidence Fragments Sources Panel */}
+                    <EvidenceSourcesPanel evidenceIds={signal.supporting_evidence_ids || []} />
 
                     {/* Standardized Signal Actions */}
                     <SignalActions
