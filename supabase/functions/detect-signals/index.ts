@@ -85,7 +85,8 @@ Return valid JSON:
   "title": "Bold 5-10 word signal title",
   "summary": "2-3 sentence explanation of the signal and why it matters",
   "confidence_score": 0-100,
-  "rationale": "1-2 sentences explaining your classification reasoning"
+  "rationale": "1-2 sentences explaining your classification reasoning",
+  "theme_tags": ["tag1", "tag2", "tag3"]
 }`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
