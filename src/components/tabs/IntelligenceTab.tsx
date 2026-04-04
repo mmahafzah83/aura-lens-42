@@ -155,6 +155,7 @@ const SignalsPanel = ({
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("latest");
+  const [activeClusterTag, setActiveClusterTag] = useState<string | null>(null);
 
   useEffect(() => { loadSignals(); }, [sortMode]);
 
@@ -215,6 +216,11 @@ const SignalsPanel = ({
     }));
   }, [signals]);
 
+  const filteredSignals = useMemo(() => {
+    if (!activeClusterTag) return signals;
+    return signals.filter(s => (s.theme_tags || []).includes(activeClusterTag));
+  }, [signals, activeClusterTag]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -253,13 +259,17 @@ const SignalsPanel = ({
     );
   }
 
-  const visible = showAll ? signals : signals.slice(0, 8);
+  const visible = showAll ? filteredSignals : filteredSignals.slice(0, 8);
 
   return (
     <div className="space-y-6">
       {/* Header row with sort + scan */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{signals.length} active signal{signals.length !== 1 ? "s" : ""}</p>
+        <p className="text-sm text-muted-foreground">
+          {activeClusterTag
+            ? `Showing ${filteredSignals.length} of ${signals.length} signals`
+            : `${signals.length} active signal${signals.length !== 1 ? "s" : ""}`}
+        </p>
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-lg border border-border/20 bg-card/40 text-xs overflow-hidden">
             <button
@@ -295,10 +305,28 @@ const SignalsPanel = ({
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveClusterTag(null)}
+              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer ${
+                !activeClusterTag
+                  ? "bg-primary/15 text-primary border border-primary/30"
+                  : "bg-secondary/20 text-muted-foreground border border-border/10 hover:border-border/20"
+              }`}
+            >
+              All signals
+            </button>
             {clusters.map(c => (
-              <span key={c.name} className="text-xs px-3 py-1.5 rounded-full bg-primary/8 text-primary/80 border border-primary/12 font-medium">
-                {c.name} <span className="text-primary/50 ml-1">({c.signalCount})</span>
-              </span>
+              <button
+                key={c.name}
+                onClick={() => setActiveClusterTag(activeClusterTag === c.name ? null : c.name)}
+                className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer ${
+                  activeClusterTag === c.name
+                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                    : "bg-primary/8 text-primary/80 border border-primary/12 hover:border-primary/25"
+                }`}
+              >
+                {c.name} <span className={activeClusterTag === c.name ? "text-amber-400/60 ml-1" : "text-primary/50 ml-1"}>({c.signalCount})</span>
+              </button>
             ))}
           </div>
         </div>
