@@ -1,16 +1,17 @@
-import { useState, useRef } from "react";
-import { Link, Mic, Type, FileUp, Loader2, Square, X, ArrowRight } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Link, Mic, Type, FileUp, Loader2, Square, X, ArrowRight, ImageIcon, StickyNote, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { formatSmartDate } from "@/lib/formatDate";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
-type Entry = Database["public"]["Tables"]["entries"]["Row"];
-
+type Capture = Database["public"]["Tables"]["captures"]["Row"];
 type InputMode = "link" | "voice" | "text" | "document";
 
 interface CaptureIntelligencePanelProps {
-  entries: Entry[];
+  entries?: any[];
   onCaptured: () => void;
 }
 
@@ -21,21 +22,63 @@ const INPUT_MODES: { key: InputMode; icon: typeof Link; label: string; placehold
   { key: "document", icon: FileUp, label: "Upload Doc", placeholder: "Upload PDF, DOCX, or image" },
 ];
 
-const TYPE_ICONS: Record<string, typeof Link> = { link: Link, voice: Mic, text: Type, image: Type, document: FileUp };
+const TYPE_ICONS: Record<string, typeof Link> = {
+  url: Link,
+  link: Link,
+  document: FileUp,
+  voice: Mic,
+  image: ImageIcon,
+  note: StickyNote,
+  text: Type,
+};
 
-const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePanelProps) => {
+function statusColor(status: string) {
+  if (status === "completed") return "bg-emerald-500/15 text-emerald-400 border-emerald-500/20";
+  if (status === "pending") return "bg-amber-500/15 text-amber-400 border-amber-500/20";
+  return "bg-destructive/15 text-destructive border-destructive/20";
+}
+
+function captureTitle(c: Capture): string {
+  if (c.type === "url" && c.source_url) return c.source_url;
+  return (c.raw_content || c.extracted_text || "Untitled capture").slice(0, 60);
+}
+
+const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps) => {
   const [mode, setMode] = useState<InputMode>("text");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
+
+  const [captures, setCaptures] = useState<Capture[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const { toast } = useToast();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const recentCaptures = entries.slice(0, 5);
+  const loadCaptures = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    const { data, error } = await supabase
+      .from("captures")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      setFetchError(error.message);
+    } else {
+      setCaptures(data ?? []);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadCaptures();
+  }, [loadCaptures]);
 
   /* ── Voice Recording ── */
   const startRecording = async () => {
@@ -118,10 +161,8 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
       const result = await resp.json();
       if (result.success) {
         toast({ title: "Document Indexed", description: `${result.chunks} chunks created.` });
-        supabase.functions.invoke("extract-evidence", {
-          body: { source_type: "document", source_id: (doc as any).id, user_id: session?.user?.id },
-        }).catch(console.error);
         onCaptured();
+        loadCaptures();
       } else {
         toast({ title: "Processing failed", description: result.error, variant: "destructive" });
       }
@@ -131,49 +172,48 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
     setUploadingDoc(false);
   };
 
-  /* ── Save Capture (link / text / voice) ── */
+  /* ── Save Capture via ingest-capture Edge Function ── */
   const handleSave = async () => {
     if (!content.trim()) return;
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setSaving(false); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setSaving(false); return; }
 
-    let summary: string | null = null;
-    let title: string | null = null;
-    let skill_pillar: string | null = null;
-    let has_strategic_insight = false;
+    const captureType = mode === "link" ? "url" : mode === "text" ? "note" : mode;
 
-    if (mode === "link") {
-      toast({ title: "Analyzing", description: "Extracting strategic intelligence…" });
-      try {
-        const { data } = await supabase.functions.invoke("summarize-link", { body: { url: content.trim() } });
-        if (data && !data.error) { title = data.title; summary = data.summary; skill_pillar = data.skill_pillar; has_strategic_insight = data.has_strategic_insight === true; }
-      } catch {}
-    }
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ type: captureType, content: content.trim(), metadata: {} }),
+      });
 
-    const fullText = `${title || ""} ${summary || ""} ${content}`.toLowerCase();
-    const isExpertFramework = /expert\s*system|framework|step[s]?\s*(1|one)|methodology|playbook|blueprint/i.test(fullText);
-    const framework_tag = isExpertFramework ? "#ExpertFramework" : null;
+      const data = await resp.json().catch(() => null);
 
-    const { data: insertData, error } = await supabase.from("entries").insert({
-      user_id: user.id, type: mode === "text" ? "text" : mode, content: content.trim(),
-      summary, title, skill_pillar, has_strategic_insight, framework_tag,
-    } as any).select("id").single();
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else if (insertData?.id) {
-      supabase.functions.invoke("generate-embedding", {
-        body: { text: `${title || ""} ${summary || ""} ${content}`, table: "entries", record_id: insertData.id },
-      }).catch(console.error);
-      if (isExpertFramework) {
-        supabase.functions.invoke("extract-framework", { body: { entry_id: insertData.id, title, summary, content: content.trim() } }).catch(console.error);
+      if (data?.error === "duplicate_url") {
+        toast({
+          title: "Duplicate URL",
+          description: `You already captured this URL on ${new Date(data.created_at).toLocaleDateString()}.`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
       }
-      supabase.functions.invoke("deconstruct-upload", { body: { entry_id: insertData.id } }).catch(console.error);
-      supabase.functions.invoke("extract-evidence", { body: { source_type: "entry", source_id: insertData.id, user_id: user.id } }).catch(console.error);
-      toast({ title: "Captured", description: summary ? "Saved with executive briefing." : "Saved successfully." });
-      setContent("");
-      onCaptured();
+
+      if (!resp.ok) {
+        toast({ title: "Capture failed", description: data?.error_message || data?.message || resp.statusText, variant: "destructive" });
+      } else {
+        toast({ title: "Captured", description: "Processing complete." });
+        setContent("");
+        onCaptured();
+        loadCaptures();
+      }
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     }
     setSaving(false);
   };
@@ -279,21 +319,72 @@ const CaptureIntelligencePanel = ({ entries, onCaptured }: CaptureIntelligencePa
         </button>
       )}
 
-      {/* Recent Captures */}
-      {recentCaptures.length > 0 && (
+      {/* Error State */}
+      {fetchError && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-5 py-4">
+          <p className="text-sm text-destructive">{fetchError}</p>
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && !fetchError && (
+        <div className="pt-6 border-t border-border/10 space-y-3">
+          <Skeleton className="h-4 w-32" />
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 py-3 px-4 rounded-lg bg-secondary/20">
+              <Skeleton className="w-8 h-8 rounded-md" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !fetchError && captures.length === 0 && (
+        <div className="pt-6 border-t border-border/10 flex flex-col items-center gap-4 py-8">
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <Plus className="w-6 h-6 text-primary/60" />
+          </div>
+          <p className="text-body text-muted-foreground text-center max-w-xs">
+            Your intelligence starts here. Capture something you read today.
+          </p>
+          <button
+            onClick={() => setMode("link")}
+            className="px-6 py-2.5 rounded-xl bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors border border-primary/15"
+          >
+            Start Capturing
+          </button>
+        </div>
+      )}
+
+      {/* Captures List */}
+      {!loading && !fetchError && captures.length > 0 && (
         <div className="pt-6 border-t border-border/10 space-y-3">
           <p className="text-label">Recent Captures</p>
-          {recentCaptures.map((entry) => {
-            const Icon = TYPE_ICONS[entry.type] || Type;
+          {captures.map((c) => {
+            const Icon = TYPE_ICONS[c.type] || Type;
             return (
-              <div key={entry.id} className="flex items-center gap-3 py-3 px-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
+              <div key={c.id} className="flex items-center gap-3 py-3 px-4 rounded-lg bg-secondary/20 hover:bg-secondary/30 transition-colors">
                 <div className="w-8 h-8 rounded-md bg-primary/8 flex items-center justify-center shrink-0">
                   <Icon className="w-4 h-4 text-primary/60" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-body text-foreground truncate" dir="auto">{entry.title || entry.content.slice(0, 60)}</p>
+                  <p className="text-body text-foreground truncate" dir="auto">
+                    {captureTitle(c)}
+                  </p>
+                  <span className="text-meta">
+                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                  </span>
                 </div>
-                <span className="text-meta shrink-0">{formatSmartDate(entry.created_at)}</span>
+                <Badge
+                  className={`text-[10px] border ${statusColor(c.processing_status)}`}
+                  variant="outline"
+                >
+                  {c.processing_status}
+                </Badge>
               </div>
             );
           })}
