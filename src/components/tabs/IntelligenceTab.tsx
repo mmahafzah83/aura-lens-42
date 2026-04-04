@@ -155,6 +155,7 @@ const SignalsPanel = ({
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>("latest");
+  const [activeClusterTag, setActiveClusterTag] = useState<string | null>(null);
 
   useEffect(() => { loadSignals(); }, [sortMode]);
 
