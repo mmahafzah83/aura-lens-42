@@ -316,13 +316,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         ? (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })()
         : (captureContent || "").slice(0, 60) || "Untitled";
 
-      const { error: entryError } = await supabase.from("entries").insert({
+      const { data: entryRow, error: entryError } = await supabase.from("entries").insert({
         user_id: session.user.id,
         type: captureType === "link" ? "link" : captureType,
         title: entryTitle,
         content: captureContent,
         summary: captureContent.slice(0, 300),
-      });
+      }).select("id").single();
 
       if (entryError) {
         console.warn("Failed to insert entry:", entryError.message);
@@ -343,6 +343,33 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       setDuplicateInfo(null);
       onCaptured();
       onOpenChange(false);
+
+      // Fire-and-forget: detect signals in background
+      if (entryRow?.id) {
+        const entryId = entryRow.id;
+        const userId = session.user.id;
+        const accessToken = session.access_token;
+        setTimeout(() => {
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-signals`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ entry_id: entryId, user_id: userId }),
+          })
+            .then((r) => r.json())
+            .then((result) => {
+              console.log("detect-signals result:", result);
+              if (result?.is_new) {
+                setTimeout(() => {
+                  toast({ title: "🔍 New signal detected", description: "A new strategic signal was identified from your capture." });
+                }, 2000);
+              }
+            })
+            .catch((err) => console.warn("detect-signals background error:", err));
+        }, 0);
+      }
     } catch (err: any) {
       toast({
         title: "Capture Failed",
