@@ -133,8 +133,24 @@ const SignalsPanel = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="w-5 h-5 animate-spin text-primary/40" />
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="glass-card rounded-2xl p-5 border border-border/8 space-y-3 animate-pulse">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-muted/30 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-muted/30 rounded w-3/4" />
+                <div className="h-3 bg-muted/20 rounded w-full" />
+                <div className="h-3 bg-muted/20 rounded w-1/2" />
+                <div className="flex gap-2 mt-2">
+                  <div className="h-5 w-20 bg-muted/20 rounded-full" />
+                  <div className="h-5 w-16 bg-muted/20 rounded-full" />
+                  <div className="h-5 w-24 bg-muted/20 rounded-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
