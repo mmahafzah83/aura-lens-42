@@ -85,7 +85,8 @@ Return valid JSON:
   "title": "Bold 5-10 word signal title",
   "summary": "2-3 sentence explanation of the signal and why it matters",
   "confidence_score": 0-100,
-  "rationale": "1-2 sentences explaining your classification reasoning"
+  "rationale": "1-2 sentences explaining your classification reasoning",
+  "theme_tags": ["tag1", "tag2", "tag3"]
 }`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -132,30 +133,77 @@ Return valid JSON:
     const signalSummary = signal.summary || "";
     const confidenceNormalized = Math.min(1, Math.max(0, (signal.confidence_score || 50) / 100));
     const rationale = signal.rationale || "";
+    const themeTags: string[] = Array.isArray(signal.theme_tags) && signal.theme_tags.length > 0
+      ? [signalType, ...signal.theme_tags.filter((t: string) => t !== signalType)]
+      : [signalType];
 
-    // 4. Check for similar existing signal (same user, same type, similar title)
-    const { data: existing } = await admin
+    // 4. Deduplication: find existing signals to reinforce
+    // Strategy A: overlapping theme_tags (≥2 in common)
+    // Strategy B: similar title keyword match
+    const { data: candidates } = await admin
       .from("strategic_signals")
-      .select("id, confidence, signal_title")
+      .select("id, confidence, signal_title, theme_tags, fragment_count, supporting_evidence_ids")
       .eq("user_id", user_id)
-      .eq("status", "active")
-      .ilike("signal_title", `%${signalTitle.split(" ").slice(0, 3).join("%")}%`)
-      .limit(1);
+      .eq("status", "active");
+
+    let matchedSignal: typeof candidates extends (infer T)[] | null ? T : never = null as any;
+
+    if (candidates && candidates.length > 0) {
+      // Check theme_tags overlap (≥2 tags in common)
+      for (const c of candidates) {
+        const existingTags: string[] = (c.theme_tags as string[]) || [];
+        const overlap = themeTags.filter(t => existingTags.includes(t)).length;
+        if (overlap >= 2) {
+          matchedSignal = c;
+          break;
+        }
+      }
+
+      // If no tag match, try title keyword similarity
+      if (!matchedSignal) {
+        const titleWords = signalTitle.toLowerCase().split(/\s+/).filter((w: string) => w.length > 3);
+        for (const c of candidates) {
+          const existingTitle = (c.signal_title || "").toLowerCase();
+          const matchCount = titleWords.filter((w: string) => existingTitle.includes(w)).length;
+          if (matchCount >= 2) {
+            matchedSignal = c;
+            break;
+          }
+        }
+      }
+    }
 
     let signalId: string;
     let isNew: boolean;
+    let reinforced = false;
 
-    if (existing && existing.length > 0) {
-      // Update existing — bump confidence by 0.1 (max 1.0)
-      const newConfidence = Math.min(1, (existing[0].confidence || 0) + 0.1);
+    if (matchedSignal) {
+      // Reinforce existing signal
+      const existingEvidence: string[] = (matchedSignal.supporting_evidence_ids as string[]) || [];
+      const newEvidence = existingEvidence.includes(entry_id)
+        ? existingEvidence
+        : [...existingEvidence, entry_id];
+      const newFragmentCount = newEvidence.length;
+      const newConfidence = Math.min(1, (matchedSignal.confidence || 0) + 0.02);
+      // Merge theme_tags (deduplicated)
+      const existingTags: string[] = (matchedSignal.theme_tags as string[]) || [];
+      const mergedTags = [...new Set([...existingTags, ...themeTags])];
+
       const { error: updErr } = await admin
         .from("strategic_signals")
-        .update({ confidence: newConfidence })
-        .eq("id", existing[0].id);
+        .update({
+          confidence: newConfidence,
+          fragment_count: newFragmentCount,
+          supporting_evidence_ids: newEvidence,
+          theme_tags: mergedTags,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", matchedSignal.id);
 
       if (updErr) throw new Error(`Update error: ${updErr.message}`);
-      signalId = existing[0].id;
+      signalId = matchedSignal.id;
       isNew = false;
+      reinforced = true;
     } else {
       // Insert new signal
       const { data: row, error: insErr } = await admin
@@ -165,7 +213,7 @@ Return valid JSON:
           signal_title: signalTitle,
           explanation: signalSummary,
           strategic_implications: rationale,
-          theme_tags: [signalType],
+          theme_tags: themeTags,
           confidence: confidenceNormalized,
           status: "active",
           supporting_evidence_ids: [entry_id],
@@ -179,7 +227,7 @@ Return valid JSON:
       isNew = true;
     }
 
-    return new Response(JSON.stringify({ success: true, signal_id: signalId, is_new: isNew }), {
+    return new Response(JSON.stringify({ success: true, signal_id: signalId, is_new: isNew, reinforced }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
