@@ -89,6 +89,45 @@ export type Database = {
         }
         Relationships: []
       }
+      captures: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          extracted_text: string | null
+          id: string
+          metadata: Json | null
+          processing_status: string
+          raw_content: string | null
+          source_url: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          extracted_text?: string | null
+          id?: string
+          metadata?: Json | null
+          processing_status?: string
+          raw_content?: string | null
+          source_url?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          extracted_text?: string | null
+          id?: string
+          metadata?: Json | null
+          processing_status?: string
+          raw_content?: string | null
+          source_url?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_conversations: {
         Row: {
           created_at: string

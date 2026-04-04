@@ -71,3 +71,6 @@ verify_jwt = false
 
 [functions.linkedin-sync]
 verify_jwt = false
+
+[functions.ingest-capture]
+verify_jwt = false
