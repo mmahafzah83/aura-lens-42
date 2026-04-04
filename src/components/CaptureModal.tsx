@@ -311,6 +311,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         return;
       }
 
+      // Also insert into entries table so Knowledge tab picks it up
+      const entryTitle = captureType === "link"
+        ? (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })()
+        : (captureContent || "").slice(0, 60) || "Untitled";
+
+      const { error: entryError } = await supabase.from("entries").insert({
+        user_id: session.user.id,
+        type: captureType === "link" ? "link" : captureType,
+        title: entryTitle,
+        content: captureContent,
+        summary: captureContent.slice(0, 300),
+      });
+
+      if (entryError) {
+        console.warn("Failed to insert entry:", entryError.message);
+      }
+
       // Success (201)
       toast({
         title: "Captured. Processing complete.",
