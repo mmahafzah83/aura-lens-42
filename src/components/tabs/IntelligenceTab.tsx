@@ -282,7 +282,7 @@ const SignalsPanel = ({
               onClick={() => setSortMode("confidence")}
               className={`px-3 py-1.5 font-medium transition-colors ${sortMode === "confidence" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"}`}
             >
-              Highest confidence
+              Top Confidence
             </button>
           </div>
           <Button variant="outline" size="sm" onClick={runPatternScan} disabled={scanning} className="gap-1.5 text-xs">
@@ -406,23 +406,42 @@ const SignalsPanel = ({
                   className="overflow-hidden"
                 >
                   <div className="px-5 pb-5 space-y-4 border-t border-border/8 pt-4">
-                    {/* Strategic Implication */}
-                    {signal.strategic_implications && (
-                      <div className="rounded-xl bg-card/60 p-4 border border-primary/[0.06]">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Target className="w-3.5 h-3.5 text-primary/70" />
-                          <p className="text-[10px] uppercase tracking-[0.15em] text-primary/60 font-semibold">Strategic Implication</p>
-                        </div>
-                        <p className="text-xs text-foreground/80 leading-relaxed">{signal.strategic_implications}</p>
-                        {signal.skill_pillars?.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3">
-                            {signal.skill_pillars.map((p, j) => (
-                              <span key={j} className="text-[9px] bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">{p}</span>
-                            ))}
-                          </div>
-                        )}
+                    {/* Why this signal? */}
+                    <div className="rounded-xl bg-card/60 p-4 border border-border/10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <p className="text-[10px] uppercase tracking-[0.15em] text-amber-400/80 font-semibold">Why this signal?</p>
                       </div>
-                    )}
+
+                      {signal.explanation && (
+                        <p className="text-xs text-foreground/80 leading-relaxed mb-3">{signal.explanation}</p>
+                      )}
+
+                      {signal.strategic_implications && (
+                        <div className="rounded-lg bg-background/40 border border-border/8 p-3 mb-3">
+                          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/60 font-semibold mb-1.5">Strategic Implication</p>
+                          <p className="text-xs text-foreground/70 leading-relaxed">{signal.strategic_implications}</p>
+                        </div>
+                      )}
+
+                      {signal.theme_tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {signal.theme_tags.map(tag => (
+                            <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-primary/8 text-primary/70 border border-primary/10">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {signal.skill_pillars?.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {signal.skill_pillars.map((p, j) => (
+                            <span key={j} className="text-[9px] bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">{p}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     {/* Evidence Fragments Sources Panel */}
                     <EvidenceSourcesPanel evidenceIds={signal.supporting_evidence_ids || []} />
