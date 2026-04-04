@@ -325,7 +325,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       }).select("id").single();
 
       if (entryError) {
-        console.warn("Failed to insert entry:", entryError.message);
+        console.error("Failed to insert entry:", entryError.message, entryError);
+      } else {
+        console.log("Entry inserted successfully, id:", entryRow?.id);
       }
 
       // Success (201)
