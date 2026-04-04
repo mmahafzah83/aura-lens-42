@@ -3,14 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DocumentUpload from "@/components/DocumentUpload";
 
 type CaptureType = "link" | "voice" | "text" | "image" | "document";
-
-const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
 
 interface CaptureModalProps {
   open: boolean;
@@ -18,6 +16,15 @@ interface CaptureModalProps {
   onCaptured: () => void;
   onOpenChat?: (prefill: string) => void;
 }
+
+const isValidUrl = (s: string) => {
+  try {
+    const u = new URL(s);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 
 const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureModalProps) => {
   const [captureType, setCaptureType] = useState<CaptureType>("link");
@@ -36,6 +43,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     has_strategic_insight: boolean;
   } | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; date: string } | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -57,7 +66,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     reader.onload = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
 
-    // Analyze with AI
     setAnalyzing(true);
     toast({ title: "Analyzing", description: "AI is reading your screenshot…" });
 
@@ -181,6 +189,17 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const handleSave = async () => {
     if (captureType === "image" && !imageFile) return;
     if (captureType !== "image" && !content.trim()) return;
+
+    // URL validation for link type
+    if (captureType === "link") {
+      if (!isValidUrl(content.trim())) {
+        setUrlError("Please enter a valid URL starting with http:// or https://");
+        return;
+      }
+      setUrlError(null);
+    }
+
+    setDuplicateInfo(null);
     setSaving(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -190,15 +209,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       return;
     }
 
-    let summary: string | null = null;
-    let title: string | null = null;
-    let skill_pillar: string | null = null;
-    let has_strategic_insight = false;
+    let captureContent = content.trim();
+    let captureMetadata: Record<string, any> = {};
     let image_url: string | null = null;
-    let entryContent = content.trim();
 
+    // Handle image upload first
     if (captureType === "image" && imageFile) {
-      // Upload image to storage
       const filePath = `${user.id}/${Date.now()}-${imageFile.name}`;
       const { error: uploadError } = await supabase.storage
         .from("capture-images")
@@ -214,112 +230,95 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       image_url = urlData.publicUrl;
 
       if (imageAnalysis) {
-        entryContent = imageAnalysis.transcribed_text || imageFile.name;
-        title = imageAnalysis.title;
-        summary = imageAnalysis.summary;
-        skill_pillar = imageAnalysis.skill_pillar;
-        has_strategic_insight = imageAnalysis.has_strategic_insight;
+        captureContent = imageAnalysis.transcribed_text || imageFile.name;
+        captureMetadata = {
+          title: imageAnalysis.title,
+          summary: imageAnalysis.summary,
+          skill_pillar: imageAnalysis.skill_pillar,
+          has_strategic_insight: imageAnalysis.has_strategic_insight,
+          image_url,
+        };
       } else {
-        entryContent = imageFile.name;
+        captureContent = imageFile.name;
+        captureMetadata = { image_url };
       }
     }
 
-    if (captureType === "link") {
-      toast({ title: "Analyzing", description: "AI is extracting strategic intelligence..." });
-      try {
-        const { data: fnData, error: fnError } = await supabase.functions.invoke("summarize-link", {
-          body: { url: content.trim() },
+    // Voice metadata
+    if (captureType === "voice" && voiceAnalysis) {
+      captureMetadata = {
+        summary: voiceAnalysis.summary,
+        skill_pillar: voiceAnalysis.skill_pillar,
+      };
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ingest-capture", {
+        body: {
+          type: captureType,
+          content: captureContent,
+          metadata: captureMetadata,
+          source_url: captureType === "link" ? content.trim() : image_url,
+        },
+      });
+
+      if (error) {
+        // Try to parse the error body for structured errors
+        let errMsg = error.message;
+        try {
+          const parsed = JSON.parse(error.message);
+          errMsg = parsed.error || parsed.message || error.message;
+        } catch {}
+        toast({ title: "Capture Failed", description: errMsg, variant: "destructive" });
+        setSaving(false);
+        return;
+      }
+
+      // Handle duplicate URL (409 comes back as data with error field)
+      if (data?.error === "duplicate_url") {
+        setDuplicateInfo({
+          id: data.existing_id,
+          date: new Date(data.created_at).toLocaleDateString(),
         });
-        if (!fnError && !fnData?.error) {
-          title = fnData?.title || null;
-          summary = fnData?.summary || null;
-          skill_pillar = fnData?.skill_pillar || null;
-          has_strategic_insight = fnData?.has_strategic_insight === true;
-        }
-      } catch (err) {
-        console.error("Summary fetch error:", err);
+        setSaving(false);
+        return;
       }
-    }
 
-    if (captureType === "voice") {
-      if (voiceAnalysis?.summary) {
-        summary = voiceAnalysis.summary;
-        has_strategic_insight = true;
+      // Handle processing failure
+      if (data?.processing_status === "failed") {
+        toast({
+          title: "Processing Failed",
+          description: data.error_message || "An error occurred during processing.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
       }
-      if (voiceAnalysis?.skill_pillar) {
-        skill_pillar = voiceAnalysis.skill_pillar;
-      } else {
-        const lower = content.toLowerCase();
-        if (lower.includes("advisory") || lower.includes("c-suite")) skill_pillar = "C-Suite Advisory";
-        else if (lower.includes("architecture") || lower.includes("strategy")) skill_pillar = "Strategic Architecture";
-        else if (lower.includes("foresight") || lower.includes("trend")) skill_pillar = "Industry Foresight";
-        else if (lower.includes("transform") || lower.includes("change")) skill_pillar = "Transformation Stewardship";
-        else if (lower.includes("digital") || lower.includes("tech") || lower.includes("ai")) skill_pillar = "Digital Fluency";
-        else skill_pillar = "Strategic Architecture";
-      }
-    }
 
-    // Detect expert framework content
-    const fullText = `${title || ""} ${summary || ""} ${entryContent}`.toLowerCase();
-    const isExpertFramework = /expert\s*system|framework|step[s]?\s*(1|one)|branding\s*(system|model|framework)|methodology|playbook|blueprint|principle[s]?\s*of/i.test(fullText);
-    const framework_tag = isExpertFramework ? "#ExpertFramework" : null;
+      // Success
+      toast({
+        title: "Captured. Processing complete.",
+        description: "Your capture has been saved and processed.",
+      });
 
-    const { data: insertData, error } = await supabase.from("entries").insert({
-      user_id: user.id,
-      type: captureType,
-      content: entryContent,
-      summary,
-      title,
-      skill_pillar,
-      has_strategic_insight,
-      image_url,
-      framework_tag,
-    } as any).select("id").single();
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      // Generate embedding in background (non-blocking)
-      if (insertData?.id) {
-        supabase.functions.invoke("generate-embedding", {
-          body: { text: `${title || ""} ${summary || ""} ${entryContent}`, table: "entries", record_id: insertData.id },
-        }).catch((e) => console.error("Embedding error:", e));
-
-        // If expert framework, extract and save to master_frameworks
-        if (isExpertFramework) {
-          toast({ title: "Expert Framework Detected", description: "Extracting framework steps…" });
-          supabase.functions.invoke("extract-framework", {
-            body: { entry_id: insertData.id, title, summary, content: entryContent },
-          }).then(({ data, error: fwErr }) => {
-            if (!fwErr && data?.success) {
-              toast({ title: "Framework Saved", description: `"${data.framework_title}" added to your expert vault (${data.steps_count} steps).` });
-            }
-          }).catch((e) => console.error("Framework extraction error:", e));
-        }
-
-        // Auto-deconstruct: extract learned intelligence from every capture
-        supabase.functions.invoke("deconstruct-upload", {
-          body: { entry_id: insertData.id },
-        }).then(({ data: deconData }) => {
-          if (deconData?.extracted > 0) {
-            toast({ title: "Intelligence Extracted", description: `${deconData.extracted} insights added to your Learning Vault.` });
-          }
-        }).catch((e) => console.error("Deconstruct error:", e));
-
-        // Evidence pipeline: extract structured fragments for pattern detection
-        supabase.functions.invoke("extract-evidence", {
-          body: { source_type: "entry", source_id: insertData.id, user_id: user.id },
-        }).catch((e) => console.error("Evidence extraction error:", e));
-      }
-      toast({ title: "Captured", description: summary ? "Entry saved with executive briefing." : "Entry saved successfully." });
+      // Reset state
       setContent("");
       setVoiceAnalysis(null);
       setImageFile(null);
       setImagePreview(null);
       setImageAnalysis(null);
+      setUrlError(null);
+      setDuplicateInfo(null);
       onCaptured();
       onOpenChange(false);
+    } catch (err: any) {
+      toast({
+        title: "Capture Failed",
+        description: err.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
     }
+
     setSaving(false);
   };
 
@@ -342,7 +341,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           {types.map(({ key, icon: Icon, label }) => (
             <button
               key={key}
-              onClick={() => { if (!isRecording && !isTranscribing && !analyzing) { setCaptureType(key); if (key !== "image") clearImage(); } }}
+              onClick={() => { if (!isRecording && !isTranscribing && !analyzing) { setCaptureType(key); if (key !== "image") clearImage(); setUrlError(null); setDuplicateInfo(null); } }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                 captureType === key
                   ? "bg-primary text-primary-foreground"
@@ -356,12 +355,33 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         </div>
 
         {captureType === "link" && (
-          <Input
-            placeholder="Paste a URL..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="bg-secondary border-border/30"
-          />
+          <div className="space-y-2">
+            <Input
+              placeholder="Paste a URL..."
+              value={content}
+              onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
+              className={`bg-secondary border-border/30 ${urlError ? "border-destructive" : ""}`}
+            />
+            {urlError && (
+              <p className="text-xs text-destructive">{urlError}</p>
+            )}
+            {duplicateInfo && (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2">
+                <p className="text-xs text-amber-400 flex-1">
+                  You already captured this URL on {duplicateInfo.date}. View it?
+                </p>
+                <button
+                  onClick={() => {
+                    onOpenChange(false);
+                    // Navigate or scroll to the capture — for now just close
+                  }}
+                  className="text-xs text-amber-400 hover:text-amber-300 underline flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" /> View
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {captureType === "text" && (
@@ -508,14 +528,21 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           </div>
         )}
 
+        {/* Processing spinner */}
+        {saving && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Processing your capture…</span>
+          </div>
+        )}
+
         {captureType !== "document" && (
           <Button
             onClick={handleSave}
             disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
             className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-            {saving && captureType === "link" ? "Extracting Intelligence…" : saving ? "Saving…" : "Save Entry"}
+            {saving ? null : "Save Capture"}
           </Button>
         )}
       </DialogContent>
