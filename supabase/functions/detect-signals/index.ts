@@ -52,14 +52,21 @@ function daysBetween(a: Date, b: Date): number {
   return Math.max(0, Math.floor(Math.abs(a.getTime() - b.getTime()) / 86400000));
 }
 
-function calcConfidence(aiBase: number, fragmentCount: number, uniqueOrgs: number, updatedAt: string): { confidence: number; explanation: string } {
+function calcConfidence(aiBase: number, fragmentCount: number, uniqueOrgs: number, updatedAt: string): { confidence: number; confidence_explanation: string } {
   const sourceWeight = Math.min(fragmentCount / 5, 1.4);
   const diversityBonus = uniqueOrgs >= 3 ? 1.15 : uniqueOrgs === 2 ? 1.05 : 1.0;
   const daysSinceUpdate = daysBetween(new Date(), new Date(updatedAt));
   const recency = daysSinceUpdate <= 7 ? 1.0 : daysSinceUpdate <= 14 ? 0.9 : daysSinceUpdate <= 30 ? 0.8 : daysSinceUpdate <= 60 ? 0.65 : 0.5;
   const confidence = Math.min(aiBase * sourceWeight * diversityBonus * recency, 1.0);
-  const explanation = `Based on ${fragmentCount} sources from ${uniqueOrgs} organisations, updated ${daysSinceUpdate === 0 ? "today" : daysSinceUpdate + " days ago"}.`;
-  return { confidence, explanation };
+  const confidence_explanation = `Based on ${fragmentCount} sources from ${uniqueOrgs} organisations, updated ${daysSinceUpdate === 0 ? "today" : daysSinceUpdate + " days ago"}.`;
+  return { confidence, confidence_explanation };
+}
+
+function calcPriorityScore(confidence: number, updatedAt: string, profileRelevance: number): number {
+  const daysSinceUpdate = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
+  const momentum = daysSinceUpdate <= 2 ? 0.8 : daysSinceUpdate <= 7 ? 0.5 : 0.2;
+  const contentGap = 1.0; // no content_items table yet
+  return (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15);
 }
 
 function parseAiJson(raw: string): any {
@@ -70,6 +77,13 @@ function parseAiJson(raw: string): any {
 }
 
 function unique<T>(arr: T[]): T[] { return [...new Set(arr)]; }
+
+/* ── Relevance terms (hardened filter) ── */
+const RELEVANCE_TERMS = [
+  "digital transformation", "water utility", "utilities", "infrastructure",
+  "cybersecurity", "ai", "workforce", "change management",
+  "saudi arabia", "gcc", "cdo", "chief digital",
+];
 
 /* ── main ── */
 
@@ -93,7 +107,7 @@ Deno.serve(async (req) => {
 
     // Fetch entry
     const { data: entry, error: eErr } = await admin
-      .from("entries").select("id, title, content, type, skill_pillar, summary")
+      .from("entries").select("id, title, content, type, skill_pillar, summary, created_at")
       .eq("id", entry_id).eq("user_id", user_id).maybeSingle();
     if (eErr) throw new Error(`Entry fetch: ${eErr.message}`);
     if (!entry) return new Response(JSON.stringify({ error: "Entry not found" }), {
@@ -106,20 +120,22 @@ Deno.serve(async (req) => {
       .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars")
       .eq("user_id", user_id).maybeSingle();
 
-    /* ── Step 1: Relevance filter ── */
-    const profileTerms: string[] = [];
-    if (profile) {
-      [profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.firm]
-        .filter(Boolean).forEach(v => profileTerms.push(...keywords(v!)));
-      if (Array.isArray(profile.brand_pillars)) {
-        profile.brand_pillars.filter(Boolean).forEach((p: string) => profileTerms.push(...keywords(p)));
-      }
-    }
+    /* ── Step 1: Relevance filter (hardened) ── */
+    const contentLower = normalizeText((entry.content || "") + " " + (entry.title || ""));
+    const hasRelevance = RELEVANCE_TERMS.some(term => contentLower.includes(term));
 
-    if (profileTerms.length > 0) {
-      const contentLower = normalizeText((entry.content || "") + " " + (entry.title || ""));
-      const hasRelevance = profileTerms.some(term => contentLower.includes(term));
-      if (!hasRelevance) {
+    // Also check profile terms as secondary filter
+    if (!hasRelevance) {
+      const profileTerms: string[] = [];
+      if (profile) {
+        [profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.firm]
+          .filter(Boolean).forEach(v => profileTerms.push(...keywords(v!)));
+        if (Array.isArray(profile.brand_pillars)) {
+          profile.brand_pillars.filter(Boolean).forEach((p: string) => profileTerms.push(...keywords(p)));
+        }
+      }
+      const hasProfileRelevance = profileTerms.length > 0 && profileTerms.some(term => contentLower.includes(term));
+      if (!hasProfileRelevance) {
         return new Response(JSON.stringify({ skipped: true, reason: "not relevant to profile" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -176,7 +192,7 @@ ${identityCtx}`;
     const whatItMeans = signal.what_it_means_for_you || "";
     const captureDomain = extractDomain(entry.content || "");
 
-    /* ── Step 3: Dedup check — fetch all active signals ── */
+    /* ── Step 3: Dedup check ── */
     const { data: existingSignals } = await admin
       .from("strategic_signals")
       .select("id, signal_title, theme_tags, confidence, fragment_count, supporting_evidence_ids, unique_orgs, updated_at")
@@ -199,29 +215,45 @@ ${identityCtx}`;
 
     async function reinforceSignal(signalRow: any): Promise<string> {
       const existingEvidence: string[] = signalRow.supporting_evidence_ids || [];
-      if (existingEvidence.includes(entry_id)) return signalRow.id; // already linked
+      if (existingEvidence.includes(entry_id)) return signalRow.id;
 
       const mergedEvidence = unique([...existingEvidence, entry_id]);
       const newFragCount = (signalRow.fragment_count || 0) + 1;
 
-      // Check if domain is new
+      // Domain tracking: check if capture domain is new to this signal
       let newUniqueOrgs = signalRow.unique_orgs || 1;
       if (captureDomain) {
-        // We can't easily check all domains from evidence, so just increment if domain looks new
-        // A simple heuristic: increment if unique_orgs < fragment_count
-        if (newUniqueOrgs < newFragCount) newUniqueOrgs += 1;
+        // Fetch all linked entries to check their domains
+        const { data: linkedEntries } = await admin
+          .from("entries")
+          .select("content")
+          .in("id", existingEvidence);
+        
+        const existingDomains = new Set<string>();
+        (linkedEntries || []).forEach(e => {
+          const d = extractDomain(e.content || "");
+          if (d) existingDomains.add(d);
+        });
+        
+        if (!existingDomains.has(captureDomain)) {
+          newUniqueOrgs = existingDomains.size + 1; // all existing + new one
+        } else {
+          newUniqueOrgs = Math.max(existingDomains.size, 1);
+        }
       }
 
       const now = new Date().toISOString();
-      const { confidence, explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
+      const priorityScore = calcPriorityScore(confidence, now, 1.0);
 
       await admin.from("strategic_signals").update({
         supporting_evidence_ids: mergedEvidence,
         fragment_count: newFragCount,
         unique_orgs: newUniqueOrgs,
         confidence,
-        confidence_explanation: explanation,
+        confidence_explanation,
         what_it_means_for_you: whatItMeans,
+        priority_score: priorityScore,
         updated_at: now,
       }).eq("id", signalRow.id);
 
@@ -233,14 +265,14 @@ ${identityCtx}`;
     let isNew: boolean;
 
     if (matches.length > 0) {
-      // Step 4a — reinforce the best match (highest fragment_count)
       const best = matches.sort((a, b) => (b.fragment_count || 0) - (a.fragment_count || 0))[0];
       primarySignalId = await reinforceSignal(best);
       isNew = false;
     } else {
-      // Step 4b — create new
       const now = new Date().toISOString();
-      const { confidence, explanation } = calcConfidence(aiBaseConfidence, 1, 1, now);
+      const initialUniqueOrgs = captureDomain ? 1 : 1;
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
+      const priorityScore = calcPriorityScore(confidence, now, 1.0);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
@@ -249,12 +281,13 @@ ${identityCtx}`;
         strategic_implications: whatItMeans,
         theme_tags: newTags,
         confidence,
-        confidence_explanation: explanation,
+        confidence_explanation,
         what_it_means_for_you: whatItMeans,
+        priority_score: priorityScore,
         status: "active",
         supporting_evidence_ids: [entry_id],
         fragment_count: 1,
-        unique_orgs: 1,
+        unique_orgs: initialUniqueOrgs,
       }).select("id").single();
 
       if (insErr) throw new Error(`Insert: ${insErr.message}`);
@@ -270,23 +303,6 @@ ${identityCtx}`;
     );
     for (const otherSig of otherMatches) {
       await reinforceSignal(otherSig);
-    }
-
-    /* ── Step 7: Priority score for all touched signals ── */
-    for (const sigId of touchedSignalIds) {
-      const { data: sig } = await admin
-        .from("strategic_signals")
-        .select("confidence, updated_at, id")
-        .eq("id", sigId).single();
-      if (!sig) continue;
-
-      const daysSinceNew = daysBetween(new Date(), new Date(sig.updated_at));
-      const momentum = daysSinceNew <= 2 ? 0.8 : daysSinceNew <= 7 ? 0.5 : 0.2;
-      const contentGap = 1.0; // no content_items table, default to gap
-      const profileRelevance = (profile?.sector_focus && normalizeText(entry.content || "").includes(normalizeText(profile.sector_focus))) ? 1.0 : 0.7;
-      const priorityScore = (profileRelevance * 0.35) + (sig.confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15);
-
-      await admin.from("strategic_signals").update({ priority_score: priorityScore }).eq("id", sigId);
     }
 
     return new Response(JSON.stringify({
