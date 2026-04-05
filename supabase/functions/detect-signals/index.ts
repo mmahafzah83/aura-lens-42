@@ -244,7 +244,7 @@ ${identityCtx}`;
 
       const now = new Date().toISOString();
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
-      const priorityScore = calcPriorityScore(confidence, now, 1.0);
+      const priorityScore = calcPriorityScore(confidence, now, 1.0, newFragCount);
 
       await admin.from("strategic_signals").update({
         supporting_evidence_ids: mergedEvidence,
@@ -272,7 +272,7 @@ ${identityCtx}`;
       const now = new Date().toISOString();
       const initialUniqueOrgs = captureDomain ? 1 : 1;
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
-      const priorityScore = calcPriorityScore(confidence, now, 1.0);
+      const priorityScore = calcPriorityScore(confidence, now, 1.0, 1);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
