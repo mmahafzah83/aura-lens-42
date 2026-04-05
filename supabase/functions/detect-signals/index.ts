@@ -62,11 +62,11 @@ function calcConfidence(aiBase: number, fragmentCount: number, uniqueOrgs: numbe
   return { confidence, confidence_explanation };
 }
 
-function calcPriorityScore(confidence: number, updatedAt: string, profileRelevance: number): number {
+function calcPriorityScore(confidence: number, updatedAt: string, profileRelevance: number, fragmentCount: number): number {
   const daysSinceUpdate = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
   const momentum = daysSinceUpdate <= 2 ? 0.8 : daysSinceUpdate <= 7 ? 0.5 : 0.2;
   const contentGap = 1.0; // no content_items table yet
-  return (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15);
+  return (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
 }
 
 function parseAiJson(raw: string): any {
@@ -244,7 +244,7 @@ ${identityCtx}`;
 
       const now = new Date().toISOString();
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
-      const priorityScore = calcPriorityScore(confidence, now, 1.0);
+      const priorityScore = calcPriorityScore(confidence, now, 1.0, newFragCount);
 
       await admin.from("strategic_signals").update({
         supporting_evidence_ids: mergedEvidence,
@@ -272,7 +272,7 @@ ${identityCtx}`;
       const now = new Date().toISOString();
       const initialUniqueOrgs = captureDomain ? 1 : 1;
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
-      const priorityScore = calcPriorityScore(confidence, now, 1.0);
+      const priorityScore = calcPriorityScore(confidence, now, 1.0, 1);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
