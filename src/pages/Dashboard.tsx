@@ -377,7 +377,7 @@ const Dashboard = () => {
 
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
-                <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} />
+                <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onOpenCapture={() => setCaptureOpen(true)} />
               </div>
             )}
 
