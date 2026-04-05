@@ -62,11 +62,11 @@ function calcConfidence(aiBase: number, fragmentCount: number, uniqueOrgs: numbe
   return { confidence, confidence_explanation };
 }
 
-function calcPriorityScore(confidence: number, updatedAt: string, profileRelevance: number): number {
+function calcPriorityScore(confidence: number, updatedAt: string, profileRelevance: number, fragmentCount: number): number {
   const daysSinceUpdate = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
   const momentum = daysSinceUpdate <= 2 ? 0.8 : daysSinceUpdate <= 7 ? 0.5 : 0.2;
   const contentGap = 1.0; // no content_items table yet
-  return (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15);
+  return (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
 }
 
 function parseAiJson(raw: string): any {
