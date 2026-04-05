@@ -1214,6 +1214,7 @@ export type Database = {
       strategic_signals: {
         Row: {
           confidence: number
+          confidence_explanation: string | null
           consulting_opportunity: Json | null
           content_opportunity: Json | null
           created_at: string
@@ -1221,17 +1222,21 @@ export type Database = {
           fragment_count: number
           framework_opportunity: Json | null
           id: string
+          priority_score: number
           signal_title: string
           skill_pillars: string[]
           status: string
           strategic_implications: string
           supporting_evidence_ids: string[]
           theme_tags: string[]
+          unique_orgs: number
           updated_at: string
           user_id: string
+          what_it_means_for_you: string | null
         }
         Insert: {
           confidence?: number
+          confidence_explanation?: string | null
           consulting_opportunity?: Json | null
           content_opportunity?: Json | null
           created_at?: string
@@ -1239,17 +1244,21 @@ export type Database = {
           fragment_count?: number
           framework_opportunity?: Json | null
           id?: string
+          priority_score?: number
           signal_title: string
           skill_pillars?: string[]
           status?: string
           strategic_implications: string
           supporting_evidence_ids?: string[]
           theme_tags?: string[]
+          unique_orgs?: number
           updated_at?: string
           user_id: string
+          what_it_means_for_you?: string | null
         }
         Update: {
           confidence?: number
+          confidence_explanation?: string | null
           consulting_opportunity?: Json | null
           content_opportunity?: Json | null
           created_at?: string
@@ -1257,14 +1266,17 @@ export type Database = {
           fragment_count?: number
           framework_opportunity?: Json | null
           id?: string
+          priority_score?: number
           signal_title?: string
           skill_pillars?: string[]
           status?: string
           strategic_implications?: string
           supporting_evidence_ids?: string[]
           theme_tags?: string[]
+          unique_orgs?: number
           updated_at?: string
           user_id?: string
+          what_it_means_for_you?: string | null
         }
         Relationships: []
       }
