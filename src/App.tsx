@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import Onboarding from "./pages/Onboarding";
 import LinkedInCallback from "./pages/LinkedInCallback";
 import NotFound from "./pages/NotFound";
 
