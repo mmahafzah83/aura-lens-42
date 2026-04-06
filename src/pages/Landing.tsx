@@ -74,8 +74,7 @@ const Landing = () => {
   const testimonials = [
     { q: "I used to spend hours trying to write a LinkedIn post. Now I just capture what I read and Aura does the rest.", a: "— Sarah M. · Senior Consultant · Big Four · Riyadh" },
     { q: "It finally helped me see what I should be known for. I was an expert in too many things and known for none.", a: "— Khalid A. · VP Digital · Utilities · Dubai" },
-    { q: "I used to spend hours trying to write a LinkedIn post. Now I just capture what I read and Aura does the rest.", a: "— Sarah M. · Senior Consultant · Big Four · Riyadh" },
-    { q: "It finally helped me see what I should be known for. I was an expert in too many things and known for none.", a: "— Khalid A. · VP Digital · Utilities · Dubai" },
+    { q: "I finally know what topics to own. Aura showed me exactly where I can be the authority in my field.", a: "— Nour K. · Transformation Director · Abu Dhabi" },
   ];
 
   const stepData = [
@@ -144,7 +143,7 @@ const Landing = () => {
         }} />
         <div className="relative z-10 max-w-2xl mx-auto">
           <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals in the GCC</p>
-          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
+          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 font-sans">
             Everything you read.<br />Turned into <span style={{ color: "#C5A55A" }}>authority</span>.
           </h1>
           <p className="text-[14px] sm:text-[16px] leading-relaxed max-w-lg mx-auto mb-10" style={{ color: "#666" }}>
