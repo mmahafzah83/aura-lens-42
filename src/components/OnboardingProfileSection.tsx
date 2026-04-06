@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Pencil, Check, X, RefreshCw, Loader2, ChevronDown } from "lucide-react";
+import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 
 const ROLES = [
   "Senior consultant or advisor",
@@ -143,8 +144,23 @@ const OnboardingProfileSection = () => {
     { key: "firm", label: "Firm", value: profile.firm },
   ];
 
+  const handleCompletenessAction = (action: string) => {
+    if (action === "edit_name") { setEditingField("first_name"); setEditValue(profile?.first_name || ""); }
+    else if (action === "edit_role") { setEditingField("role"); setEditValue(profile?.level || ""); }
+    else if (action === "edit_industry") { setEditingField("industry"); setEditValue(profile?.sector_focus || ""); }
+    else if (action === "edit_career_target") { setEditingField("career_target"); setEditValue(profile?.north_star_goal || ""); }
+    else if (action === "edit_firm") { setEditingField("firm"); setEditValue(profile?.firm || ""); }
+    else if (action === "edit_core_practice") { setEditingField("core_practice"); setEditValue(profile?.core_practice || ""); }
+    else if (action === "edit_strength") { setChangingAnswer("strength"); }
+    else if (action === "edit_pillars") { setShowFullEdit(true); setFullEditData({ ...profile! }); }
+    // open_audit, open_brand, go_capture, go_signals are external navigations — bubble up
+  };
+
   return (
     <div className="space-y-8">
+      {/* Profile Completeness */}
+      <ProfileCompletenessCard onAction={handleCompletenessAction} />
+
       {/* Section 1: Your Profile */}
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Your profile</h2>
