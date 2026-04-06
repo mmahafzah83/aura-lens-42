@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { User, Brain, Settings } from "lucide-react";
+import { User, Brain, Settings, ClipboardList } from "lucide-react";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
+import OnboardingProfileSection from "@/components/OnboardingProfileSection";
 import PageHeader from "@/components/PageHeader";
 
 interface IdentityTabProps {
@@ -9,11 +10,12 @@ interface IdentityTabProps {
 }
 
 const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
-  const [activeSection, setActiveSection] = useState<"identity" | "profile">("identity");
+  const [activeSection, setActiveSection] = useState<"profile" | "identity" | "settings">("profile");
 
   const sections = [
+    { key: "profile" as const, label: "Your Profile", icon: ClipboardList },
     { key: "identity" as const, label: "Strategic Identity", icon: Brain },
-    { key: "profile" as const, label: "Profile Settings", icon: Settings },
+    { key: "settings" as const, label: "Profile Settings", icon: Settings },
   ];
 
   return (
@@ -44,13 +46,19 @@ const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
       </div>
 
       {/* Content */}
+      {activeSection === "profile" && (
+        <div className="space-y-6 animate-fade-in">
+          <OnboardingProfileSection />
+        </div>
+      )}
+
       {activeSection === "identity" && (
         <div className="space-y-6 animate-fade-in">
           <ProfileIntelligence />
         </div>
       )}
 
-      {activeSection === "profile" && (
+      {activeSection === "settings" && (
         <div className="animate-fade-in">
           <ProfileManagement onResetDiagnostic={onResetDiagnostic} />
         </div>
