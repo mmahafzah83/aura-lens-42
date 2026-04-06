@@ -396,7 +396,7 @@ const Dashboard = () => {
 
             {activeTab === "identity" && (
               <div className="animate-tab-spring">
-                <IdentityTab onResetDiagnostic={() => setShowDiagnostic(true)} />
+                <IdentityTab onResetDiagnostic={() => setShowDiagnostic(true)} onSwitchTab={switchTab} />
               </div>
             )}
 
