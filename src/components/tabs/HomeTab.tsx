@@ -23,6 +23,7 @@ interface HomeTabProps {
   entries?: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
+  onNavigateToSignal?: (signalId: string) => void;
 }
 
 const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
@@ -61,7 +62,7 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
   return { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd };
 };
 
-const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
+const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: HomeTabProps) => {
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
   const [auraScore, setAuraScore] = useState<AuraScore | null>(null);
 
@@ -137,7 +138,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       />
 
       {/* Strategic Command Center — welcome + opportunity + pipeline + momentum */}
-      <StrategicCommandCenter onOpenChat={onOpenChat} />
+      <StrategicCommandCenter onOpenChat={onOpenChat} onNavigateToSignal={onNavigateToSignal} />
 
       {/* Strategic Advisor — AI Chief Strategy Officer */}
       <StrategicAdvisorPanel context="full" onOpenChat={onOpenChat} />
