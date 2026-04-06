@@ -610,9 +610,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                       style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
                     >
                       {msg.role === "assistant" ? (
-                        <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-primary [&_code]:text-xs [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        </div>
+                        <AuraResponseBlock content={msg.content} />
                       ) : (
                         msg.content
                       )}
