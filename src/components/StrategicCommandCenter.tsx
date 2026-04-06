@@ -233,10 +233,9 @@ const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat
                 </p>
               )}
 
-              <div className="pt-2">
+              <div className="pt-2 flex flex-wrap gap-2">
                 <SignalActions
                   onExplore={() => {
-                    // Find top signal for explorer
                     supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(1)
                       .then(({ data: signals }) => {
                         if (signals?.[0]) setExplorerSignal(signals[0]);
@@ -255,6 +254,19 @@ const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat
                     context: data.opportunityExplanation,
                   })}
                 />
+                {onNavigateToSignal && (
+                  <button
+                    onClick={() => {
+                      supabase.from("strategic_signals").select("id").eq("status", "active").order("confidence", { ascending: false }).limit(1)
+                        .then(({ data: signals }) => {
+                          if (signals?.[0]) onNavigateToSignal(signals[0].id);
+                        });
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-lg border border-primary/20 text-primary/70 hover:text-primary hover:border-primary/40 transition-all"
+                  >
+                    View signal →
+                  </button>
+                )}
               </div>
             </>
           ) : (
