@@ -33,10 +33,10 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    // Load identity intelligence for authority themes
+    // Load identity intelligence + brand assessment for authority themes
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal")
+      .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, audit_interpretation, brand_assessment_results")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -49,14 +49,38 @@ VOICE PROFILE:
 - Admired Posts: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => p.content?.substring(0, 200)).join("\n---\n")}
 ` : "No voice profile set — use analytical, calm authority tone.";
 
-    const identityContext = profile ? `
+    // Build identity context from brand assessment + profile
+    const brandResults = profile?.brand_assessment_results as any;
+    const auditInterp = profile?.audit_interpretation as any;
+    let identityContext = "";
+
+    if (brandResults && brandResults.primary_archetype) {
+      const zoneOfGenius = typeof auditInterp === "string"
+        ? (auditInterp.match(/zone of genius[:\s]*([^\n]+)/i)?.[1] || "")
+        : (auditInterp?.zone_of_genius || "");
+      const pillars = brandResults.content_pillars
+        ? (Array.isArray(brandResults.content_pillars) ? brandResults.content_pillars.join(", ") : brandResults.content_pillars)
+        : "";
+
+      identityContext = `
+IDENTITY CONTEXT — always apply this to every piece of content you generate:
+The user's brand archetype is ${brandResults.primary_archetype}. Their positioning statement is ${brandResults.positioning_statement || "not yet defined"}. Their Zone of Genius is ${zoneOfGenius || "not yet identified"}. Their top content pillars are ${pillars || "not yet defined"}. Their role is ${profile?.level || "strategy professional"} in ${profile?.sector_focus || "their field"} targeting ${profile?.north_star_goal || "thought leadership"}.
+Every piece of content must: (1) Sound like their archetype — if they are The Expert, write with rigour and depth. If they are The Challenger, write with a contrarian edge. If they are The Visionary, write with forward-looking perspective. (2) Reinforce their positioning statement — content should always move the reader toward seeing the user through the lens of their positioning. (3) Stay within or adjacent to their content pillars — do not generate content on topics unrelated to their pillars without explicit user request.
+- Practice: ${profile?.core_practice || "strategy"}
+- Brand Pillars: ${(profile?.brand_pillars || []).join(", ")}
+- Authority Themes: ${JSON.stringify((profile?.identity_intelligence as any)?.authority_themes || [])}
+`;
+    } else if (profile) {
+      identityContext = `
 IDENTITY:
-- Practice: ${profile.core_practice || "strategy"}
+- Role: ${profile.level || "strategy professional"}
 - Sector: ${profile.sector_focus || "general"}
 - North Star: ${profile.north_star_goal || "thought leadership"}
+- Practice: ${profile.core_practice || "strategy"}
 - Brand Pillars: ${(profile.brand_pillars || []).join(", ")}
 - Authority Themes: ${JSON.stringify((profile.identity_intelligence as any)?.authority_themes || [])}
-` : "";
+`;
+    }
 
     if (action === "generate_content") {
       const { content_type, topic, context, language } = params;
