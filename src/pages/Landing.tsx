@@ -5,17 +5,23 @@ import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap } from "lucide-
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 
-/* ── Intersection Observer hook ── */
-const useReveal = (threshold = 0.15) => {
-  const ref = useRef<HTMLDivElement>(null);
+/* ── Scroll-based reveal hook (works in iframes) ── */
+const useReveal = () => {
+  const ref = useRef<any>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
+    const check = () => {
+      const el = ref.current;
+      if (!el || visible) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 50) {
+        setVisible(true);
+      }
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
+  }, [visible]);
   return { ref, visible };
 };
 
@@ -54,10 +60,10 @@ const Landing = () => {
   }, [paused]);
 
   /* reveal hooks */
-  const pullQuote = useReveal(0.2);
-  const diffQuote = useReveal(0.2);
-  const stats = useReveal(0.3);
-  const steps = [useReveal(0.15), useReveal(0.15), useReveal(0.15), useReveal(0.15), useReveal(0.15)];
+  const pullQuote = useReveal();
+  const diffQuote = useReveal();
+  const stats = useReveal();
+  const steps = [useReveal(), useReveal(), useReveal(), useReveal(), useReveal()];
 
   const scrollToHowItWorks = () => {
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
@@ -216,9 +222,9 @@ const Landing = () => {
       </section>
 
       {/* Section 4 — Pull quote (scroll reveal) */}
-      <section className="px-5 sm:px-10 py-14 max-w-2xl mx-auto">
+      <section ref={pullQuote.ref} className="px-5 sm:px-10 py-14 max-w-2xl mx-auto">
         <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>The problem</p>
-        <div ref={pullQuote.ref} className="relative pl-5">
+        <div className="relative pl-5">
           {/* Animated gold line */}
           <div style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
@@ -243,7 +249,7 @@ const Landing = () => {
       </section>
 
       {/* Section 5 — What makes Aura different (carbon fiber bg + glassmorphism) */}
-      <section className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section ref={diffQuote.ref} className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${carbonBg})`,
           backgroundSize: "cover",
@@ -255,7 +261,7 @@ const Landing = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(10,10,10,0.80)" }} />
         <div className="relative max-w-2xl mx-auto">
           <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>What makes Aura different</p>
-          <div ref={diffQuote.ref} className="relative pl-5 mb-10">
+          <div className="relative pl-5 mb-10">
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
               background: "#C5A55A",
