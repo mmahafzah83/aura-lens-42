@@ -20,7 +20,13 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
   return (
     <div>
       <div className="text-sm font-semibold leading-relaxed" style={{ color: "#C5A55A" }}>
-        {bluf || content.slice(0, 200)}
+        <ReactMarkdown
+          components={{
+            p: ({ children }) => <span>{children}</span>,
+          }}
+        >
+          {bluf || content.slice(0, 200)}
+        </ReactMarkdown>
       </div>
       {hasMore && !expanded && (
         <button
