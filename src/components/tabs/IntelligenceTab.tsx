@@ -699,6 +699,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, initia
           return (
             <motion.div
               key={signal.id}
+              id={`signal-${signal.id}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.03 }}
