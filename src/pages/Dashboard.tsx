@@ -119,6 +119,9 @@ const Dashboard = () => {
             setShowOnboarding(true);
           }
           checkStrategicNudge(session.access_token);
+        } else if (profile && (profile as any).onboarding_completed) {
+          // New onboarding completed but old diagnostic not done — skip diagnostic, go to home
+          checkStrategicNudge(session.access_token);
         } else {
           setShowDiagnostic(true);
         }
