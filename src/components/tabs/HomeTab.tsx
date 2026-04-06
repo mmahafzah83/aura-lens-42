@@ -54,6 +54,42 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
 const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
 
+  // On mount: update last_visit_at + trigger industry trends if stale (>6h)
+  useEffect(() => {
+    const run = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Update last_visit_at
+      await supabase
+        .from("diagnostic_profiles")
+        .update({ last_visit_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+
+      // Check staleness of industry_trends
+      const { data: latest } = await supabase
+        .from("industry_trends" as any)
+        .select("fetched_at")
+        .eq("user_id", user.id)
+        .order("fetched_at", { ascending: false })
+        .limit(1);
+
+      const latestRow = (latest as any)?.[0];
+      const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
+      const isStale = !latestRow || new Date(latestRow.fetched_at).getTime() < sixHoursAgo;
+
+      if (isStale) {
+        const session = (await supabase.auth.getSession()).data.session;
+        if (session) {
+          supabase.functions.invoke("fetch-industry-trends", {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          }).catch(console.error);
+        }
+      }
+    };
+    run();
+  }, []);
+
   return (
     <div
       ref={containerRef}
