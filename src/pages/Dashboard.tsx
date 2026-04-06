@@ -103,9 +103,16 @@ const Dashboard = () => {
         setUser({ email: session.user.email });
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed")
+          .select("completed, onboarding_completed")
           .eq("user_id", session.user.id)
           .maybeSingle();
+        
+        // Gate: onboarding must be completed first
+        if (!profile || !(profile as any).onboarding_completed) {
+          navigate("/onboarding");
+          return;
+        }
+        
         if (profile && (profile as any).completed) {
           const onboardKey = `aura_onboarded_${session.user.id}`;
           if (!localStorage.getItem(onboardKey)) {

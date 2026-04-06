@@ -14,12 +14,25 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const checkOnboardingAndRedirect = async (session: any) => {
+    const { data: profile } = await supabase
+      .from("diagnostic_profiles")
+      .select("onboarding_completed")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
+    if (!profile || !(profile as any).onboarding_completed) {
+      navigate("/onboarding");
+    } else {
+      navigate("/home");
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (session) navigate("/home");
+      if (session) checkOnboardingAndRedirect(session);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/home");
+      if (session) checkOnboardingAndRedirect(session);
     });
     return () => subscription.unsubscribe();
   }, [navigate]);

@@ -259,6 +259,8 @@ export type Database = {
           leadership_style: string | null
           level: string | null
           north_star_goal: string | null
+          onboarding_completed: boolean
+          primary_strength: string | null
           sector_focus: string | null
           skill_ratings: Json
           user_id: string
@@ -279,6 +281,8 @@ export type Database = {
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
+          onboarding_completed?: boolean
+          primary_strength?: string | null
           sector_focus?: string | null
           skill_ratings?: Json
           user_id: string
@@ -299,6 +303,8 @@ export type Database = {
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
+          onboarding_completed?: boolean
+          primary_strength?: string | null
           sector_focus?: string | null
           skill_ratings?: Json
           user_id?: string
