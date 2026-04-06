@@ -34,17 +34,16 @@ const Landing = () => {
 
       {/* Section 2 — Hero */}
       <section className="relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
-        {/* Parallax hero background */}
+        {/* Hero background image */}
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundAttachment: "fixed",
         }} />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(13,13,13,0.80)" }} />
-        {/* Diagonal gold lines */}
+        {/* Gradient overlay — dark top/bottom, 60% transparent middle */}
         <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: "repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(197,165,90,0.08) 40px, rgba(197,165,90,0.08) 41px)",
+          background: "linear-gradient(to bottom, rgba(13,13,13,0.95) 0%, rgba(13,13,13,0.60) 40%, rgba(13,13,13,0.60) 60%, rgba(13,13,13,0.95) 100%)",
         }} />
         <div className="relative z-10 max-w-2xl mx-auto">
           <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals in the GCC</p>
@@ -58,8 +57,8 @@ const Landing = () => {
           {/* Capture orb */}
           <style>{`
             @keyframes aura-breathe {
-              0%, 100% { box-shadow: 0 0 30px rgba(197,165,90,0.25), 0 0 60px rgba(197,165,90,0.1); transform: scale(1); }
-              50% { box-shadow: 0 0 45px rgba(197,165,90,0.4), 0 0 80px rgba(197,165,90,0.15); transform: scale(1.05); }
+              0%, 100% { box-shadow: 0 0 30px rgba(197,165,90,0.3), 0 0 60px rgba(197,165,90,0.12), 0 0 100px rgba(197,165,90,0.06); transform: scale(1); }
+              50% { box-shadow: 0 0 50px rgba(197,165,90,0.5), 0 0 90px rgba(197,165,90,0.2), 0 0 130px rgba(197,165,90,0.08); transform: scale(1.05); }
             }
             @keyframes orb-float-1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
             @keyframes orb-float-2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
