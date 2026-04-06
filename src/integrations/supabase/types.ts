@@ -1178,6 +1178,30 @@ export type Database = {
         }
         Relationships: []
       }
+      score_snapshots: {
+        Row: {
+          components: Json
+          created_at: string
+          id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          components?: Json
+          created_at?: string
+          id?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          components?: Json
+          created_at?: string
+          id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       signal_topic_preferences: {
         Row: {
           id: string
