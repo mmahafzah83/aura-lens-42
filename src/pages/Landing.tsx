@@ -160,7 +160,7 @@ const Landing = () => {
           backgroundAttachment: "fixed",
         }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(10,10,10,0.80)" }} />
-        <div className="max-w-2xl mx-auto">
+        <div className="relative max-w-2xl mx-auto">
           <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>What makes Aura different</p>
           <div className="pl-5 mb-10" style={{ borderLeft: "2px solid #C5A55A" }}>
             <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#f0f0f0" }}>
