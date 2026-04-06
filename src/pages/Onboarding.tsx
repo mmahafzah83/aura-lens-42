@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Link2, FileText, Loader2, Check } from "lucide-react";
+import { Link2, FileText, Loader2 } from "lucide-react";
 
 const STEPS = [
   { label: "You", pct: 25 },
@@ -13,11 +13,21 @@ const STEPS = [
 
 const STEP_NAMES = ["Your foundation", "Your strengths", "Feed Aura", "Complete"];
 
-const ROLES = [
-  "Senior consultant or advisor",
-  "Executive or director",
-  "Independent expert or founder",
-  "Other professional",
+const ROLE_CHIPS = [
+  "Senior Consultant", "Director", "VP", "Partner",
+  "Managing Director", "Advisor", "Founder", "C-Suite",
+];
+
+const INDUSTRIES = [
+  "Utilities and infrastructure",
+  "Energy and resources",
+  "Financial services",
+  "Government and public sector",
+  "Technology and digital",
+  "Healthcare",
+  "Consulting (cross-industry)",
+  "Education",
+  "Other",
 ];
 
 const STRENGTHS = [
@@ -30,7 +40,10 @@ const STRENGTHS = [
 const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [role, setRole] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [role, setRole] = useState("");
+  const [industry, setIndustry] = useState<string | null>(null);
+  const [industryOther, setIndustryOther] = useState("");
   const [strength, setStrength] = useState<string | null>(null);
   const [captureType, setCaptureType] = useState<"link" | "note">("link");
   const [captureValue, setCaptureValue] = useState("");
@@ -49,7 +62,6 @@ const Onboarding = () => {
       setUserId(session.user.id);
       setAccessToken(session.access_token);
 
-      // Check if already onboarded
       const { data: profile } = await supabase
         .from("diagnostic_profiles")
         .select("onboarding_completed")
@@ -63,10 +75,17 @@ const Onboarding = () => {
     });
   }, [navigate]);
 
-  const saveRole = async () => {
-    if (!role || !userId) return;
+  const resolvedIndustry = industry === "Other" ? industryOther.trim() : industry;
+
+  const saveScreen1 = async () => {
+    if (!userId) return;
     await supabase.from("diagnostic_profiles").upsert(
-      { user_id: userId, level: role } as any,
+      {
+        user_id: userId,
+        first_name: firstName.trim() || null,
+        level: role.trim() || null,
+        sector_focus: resolvedIndustry || null,
+      } as any,
       { onConflict: "user_id" }
     );
     setStep(1);
@@ -109,14 +128,8 @@ const Onboarding = () => {
     }
   };
 
-  const calculateScore = () => {
-    // Simple placeholder — will show 0 for brand new users
-    return { score: 0, tier: "Dormant" };
-  };
-
   useEffect(() => {
     if (step === 3 && userId) {
-      // Calculate aura score
       (async () => {
         try {
           const now = new Date();
@@ -165,6 +178,7 @@ const Onboarding = () => {
   }
 
   const currentPct = STEPS[step].pct;
+  const canContinueScreen1 = firstName.trim().length > 0 || role.trim().length > 0;
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#0d0d0d", color: "#f0f0f0" }}>
@@ -218,39 +232,96 @@ const Onboarding = () => {
 
       {/* Content */}
       <div className="flex-1 px-5 pb-8 overflow-y-auto">
-        {/* Screen 1 */}
+        {/* Screen 1 — Name + Job title + Industry */}
         {step === 0 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#C5A55A" }}>Step 1 — Your foundation</p>
             <h1 className="text-xl font-medium" style={{ color: "#f0f0f0" }}>Tell Aura who you are</h1>
             <p className="text-sm" style={{ color: "#666" }}>This takes 60 seconds. It shapes everything Aura generates for you.</p>
-            <p className="text-xs font-medium mt-4" style={{ color: "#999" }}>What best describes your role?</p>
-            <div className="space-y-2">
-              {ROLES.map(r => (
-                <button
-                  key={r}
-                  onClick={() => setRole(r)}
-                  className="w-full text-left px-4 py-3 rounded-lg text-sm transition-all"
-                  style={{
-                    background: "#141414",
-                    border: `1px solid ${role === r ? "#C5A55A" : "#252525"}`,
-                    color: role === r ? "#C5A55A" : "#f0f0f0",
-                  }}
-                >
-                  {r}
-                </button>
-              ))}
+
+            {/* Name */}
+            <div className="space-y-1">
+              <p className="text-xs font-medium" style={{ color: "#999" }}>What is your name?</p>
+              <input
+                type="text"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                placeholder="Your first name"
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none"
+                style={{ background: "#141414", border: "1px solid #252525", color: "#f0f0f0" }}
+              />
             </div>
+
+            {/* Job title */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium" style={{ color: "#999" }}>What is your current job title?</p>
+              <input
+                type="text"
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                placeholder="e.g. Director of Digital Transformation, EY"
+                className="w-full px-4 py-3 rounded-lg text-sm outline-none"
+                style={{ background: "#141414", border: "1px solid #252525", color: "#f0f0f0" }}
+              />
+              <div className="flex flex-wrap gap-2">
+                {ROLE_CHIPS.map(chip => (
+                  <button
+                    key={chip}
+                    onClick={() => setRole(chip)}
+                    className="px-3 py-1.5 rounded-full text-xs transition-all"
+                    style={{
+                      background: role === chip ? "#1e1a10" : "#141414",
+                      border: `1px solid ${role === chip ? "#C5A55A" : "#252525"}`,
+                      color: role === chip ? "#C5A55A" : "#666",
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Industry */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium" style={{ color: "#999" }}>What industry do you work in?</p>
+              <div className="flex flex-wrap gap-2">
+                {INDUSTRIES.map(ind => (
+                  <button
+                    key={ind}
+                    onClick={() => setIndustry(industry === ind ? null : ind)}
+                    className="px-3 py-1.5 rounded-full text-xs transition-all"
+                    style={{
+                      background: industry === ind ? "#1e1a10" : "#141414",
+                      border: `1px solid ${industry === ind ? "#C5A55A" : "#252525"}`,
+                      color: industry === ind ? "#C5A55A" : "#666",
+                    }}
+                  >
+                    {ind}
+                  </button>
+                ))}
+              </div>
+              {industry === "Other" && (
+                <input
+                  type="text"
+                  value={industryOther}
+                  onChange={e => setIndustryOther(e.target.value)}
+                  placeholder="Your industry"
+                  className="w-full px-4 py-3 rounded-lg text-sm outline-none mt-2"
+                  style={{ background: "#141414", border: "1px solid #252525", color: "#f0f0f0" }}
+                />
+              )}
+            </div>
+
             <div className="rounded-lg p-3 text-xs" style={{ background: "#141414", border: "1px solid #252525", color: "#3a3a3a" }}>
               Why this matters: Aura uses your role to filter signals, set the right tone for your content, and benchmark you against your career target.
             </div>
             <button
-              onClick={saveRole}
-              disabled={!role}
+              onClick={saveScreen1}
+              disabled={!canContinueScreen1}
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
-                background: role ? "#C5A55A" : "#252525",
-                color: role ? "#0d0d0d" : "#666",
+                background: canContinueScreen1 ? "#C5A55A" : "#252525",
+                color: canContinueScreen1 ? "#0d0d0d" : "#666",
               }}
             >
               Continue →
@@ -265,7 +336,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {/* Screen 2 */}
+        {/* Screen 2 — Strengths */}
         {step === 1 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
             <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #C5A55A33", color: "#C5A55A" }}>
@@ -315,7 +386,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {/* Screen 3 */}
+        {/* Screen 3 — First capture */}
         {step === 2 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
             <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #C5A55A33", color: "#C5A55A" }}>
@@ -398,7 +469,7 @@ const Onboarding = () => {
           </div>
         )}
 
-        {/* Screen 4 */}
+        {/* Screen 4 — Ready */}
         {step === 3 && (
           <div className="mt-10 space-y-6 max-w-lg mx-auto flex flex-col items-center text-center">
             <div className="text-[56px] font-medium" style={{ color: "#C5A55A" }}>
