@@ -58,15 +58,40 @@ function calcConfidence(aiBase: number, fragmentCount: number, uniqueOrgs: numbe
   const daysSinceUpdate = daysBetween(new Date(), new Date(updatedAt));
   const recency = daysSinceUpdate <= 7 ? 1.0 : daysSinceUpdate <= 14 ? 0.9 : daysSinceUpdate <= 30 ? 0.8 : daysSinceUpdate <= 60 ? 0.65 : 0.5;
   const confidence = Math.min(aiBase * sourceWeight * diversityBonus * recency, 1.0);
-  const confidence_explanation = `Based on ${fragmentCount} sources from ${uniqueOrgs} organisations, updated ${daysSinceUpdate === 0 ? "today" : daysSinceUpdate + " days ago"}.`;
+  const srcLabel = fragmentCount === 1 ? "source" : "sources";
+  const orgLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
+  const confidence_explanation = `Based on ${fragmentCount} ${srcLabel} from ${uniqueOrgs} ${orgLabel}, updated ${daysSinceUpdate === 0 ? "today" : daysSinceUpdate + " days ago"}.`;
   return { confidence, confidence_explanation };
 }
 
-function calcPriorityScore(confidence: number, updatedAt: string, profileRelevance: number, fragmentCount: number): number {
+async function calcPriorityScore(
+  confidence: number,
+  updatedAt: string,
+  profileRelevance: number,
+  fragmentCount: number,
+  admin: any,
+  userId: string,
+  themeTags: string[],
+): Promise<number> {
   const daysSinceUpdate = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
   const momentum = daysSinceUpdate <= 2 ? 0.8 : daysSinceUpdate <= 7 ? 0.5 : 0.2;
-  const contentGap = 1.0; // no content_items table yet
-  return (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
+  const contentGap = 1.0;
+  let base = (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
+
+  // Topic preference adjustment
+  if (themeTags.length > 0) {
+    const { data: prefs } = await admin
+      .from("signal_topic_preferences")
+      .select("preference_score")
+      .eq("user_id", userId)
+      .in("theme_tag", themeTags);
+    if (prefs && prefs.length > 0) {
+      const avgPref = prefs.reduce((sum: number, p: any) => sum + (p.preference_score || 0), 0) / prefs.length;
+      base = Math.min(Math.max(base + (avgPref * 0.10), 0.0), 1.0);
+    }
+  }
+
+  return base;
 }
 
 function parseAiJson(raw: string): any {
@@ -124,7 +149,6 @@ Deno.serve(async (req) => {
     const contentLower = normalizeText((entry.content || "") + " " + (entry.title || ""));
     const hasRelevance = RELEVANCE_TERMS.some(term => contentLower.includes(term));
 
-    // Also check profile terms as secondary filter
     if (!hasRelevance) {
       const profileTerms: string[] = [];
       if (profile) {
@@ -220,10 +244,8 @@ ${identityCtx}`;
       const mergedEvidence = unique([...existingEvidence, entry_id]);
       const newFragCount = (signalRow.fragment_count || 0) + 1;
 
-      // Domain tracking: check if capture domain is new to this signal
       let newUniqueOrgs = signalRow.unique_orgs || 1;
       if (captureDomain) {
-        // Fetch all linked entries to check their domains
         const { data: linkedEntries } = await admin
           .from("entries")
           .select("content")
@@ -236,7 +258,7 @@ ${identityCtx}`;
         });
         
         if (!existingDomains.has(captureDomain)) {
-          newUniqueOrgs = existingDomains.size + 1; // all existing + new one
+          newUniqueOrgs = existingDomains.size + 1;
         } else {
           newUniqueOrgs = Math.max(existingDomains.size, 1);
         }
@@ -244,7 +266,7 @@ ${identityCtx}`;
 
       const now = new Date().toISOString();
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
-      const priorityScore = calcPriorityScore(confidence, now, 1.0, newFragCount);
+      const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
 
       await admin.from("strategic_signals").update({
         supporting_evidence_ids: mergedEvidence,
@@ -272,7 +294,7 @@ ${identityCtx}`;
       const now = new Date().toISOString();
       const initialUniqueOrgs = captureDomain ? 1 : 1;
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
-      const priorityScore = calcPriorityScore(confidence, now, 1.0, 1);
+      const priorityScore = await calcPriorityScore(confidence, now, 1.0, 1, admin, user_id, newTags);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
