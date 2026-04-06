@@ -280,7 +280,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
         </div>
       )}
 
-      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
+      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => { setRadarKey(k => k + 1); setAuditCompleted(true); }} onNavigate={onNavigate} />
+      <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
     </div>
   );
 };
