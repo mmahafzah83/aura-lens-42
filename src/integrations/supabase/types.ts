@@ -250,6 +250,7 @@ export type Database = {
           core_practice: string | null
           created_at: string
           firm: string | null
+          first_name: string | null
           generated_skills: Json
           id: string
           identity_intelligence: Json
@@ -269,6 +270,7 @@ export type Database = {
           core_practice?: string | null
           created_at?: string
           firm?: string | null
+          first_name?: string | null
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
@@ -288,6 +290,7 @@ export type Database = {
           core_practice?: string | null
           created_at?: string
           firm?: string | null
+          first_name?: string | null
           generated_skills?: Json
           id?: string
           identity_intelligence?: Json
