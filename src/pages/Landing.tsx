@@ -6,13 +6,13 @@ import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 
 /* ── Intersection Observer hook ── */
-const useReveal = (threshold = 0.15) => {
+const useReveal = (threshold = 0.05) => {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold, rootMargin: "0px 0px -50px 0px" });
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
@@ -54,10 +54,10 @@ const Landing = () => {
   }, [paused]);
 
   /* reveal hooks */
-  const pullQuote = useReveal(0.2);
-  const diffQuote = useReveal(0.2);
-  const stats = useReveal(0.3);
-  const steps = [useReveal(0.15), useReveal(0.15), useReveal(0.15), useReveal(0.15), useReveal(0.15)];
+  const pullQuote = useReveal(0.05);
+  const diffQuote = useReveal(0.05);
+  const stats = useReveal(0.05);
+  const steps = [useReveal(0.05), useReveal(0.05), useReveal(0.05), useReveal(0.05), useReveal(0.05)];
 
   const scrollToHowItWorks = () => {
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
@@ -216,9 +216,9 @@ const Landing = () => {
       </section>
 
       {/* Section 4 — Pull quote (scroll reveal) */}
-      <section className="px-5 sm:px-10 py-14 max-w-2xl mx-auto">
+      <section ref={pullQuote.ref} className="px-5 sm:px-10 py-14 max-w-2xl mx-auto">
         <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>The problem</p>
-        <div ref={pullQuote.ref} className="relative pl-5">
+        <div className="relative pl-5">
           {/* Animated gold line */}
           <div style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
