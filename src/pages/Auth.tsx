@@ -16,10 +16,10 @@ const Auth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (session) navigate("/");
+      if (session) navigate("/home");
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/");
+      if (session) navigate("/home");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
