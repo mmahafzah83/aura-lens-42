@@ -38,7 +38,7 @@ const Landing = () => {
         }} />
         <div className="relative z-10 max-w-2xl mx-auto">
           <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals in the GCC</p>
-          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-semibold mb-5" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
             Everything you read.<br />Turned into <span style={{ color: "#C5A55A" }}>authority</span>.
           </h1>
           <p className="text-[14px] sm:text-[16px] leading-relaxed max-w-lg mx-auto mb-10" style={{ color: "#666" }}>
@@ -71,21 +71,21 @@ const Landing = () => {
               const x = 110 + Math.cos(rad) * 95;
               const y = 110 + Math.sin(rad) * 95;
               return (
-                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 14, top: y - 14 }}>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "#1a1a1a", border: "1px solid #252525" }}>
-                    <Icon size={12} style={{ color: "#C5A55A" }} />
+                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 16, top: y - 16 }}>
+                  <div className="rounded-full flex items-center justify-center" style={{ width: 32, height: 32, background: "#1a1a1a", border: "1px solid #252525" }}>
+                    <Icon size={14} style={{ color: "#C5A55A" }} />
                   </div>
-                  <span className="mt-1 whitespace-nowrap" style={{ fontSize: "7px", color: "#3a3a3a" }}>{label}</span>
+                  <span className="mt-1 whitespace-nowrap" style={{ fontSize: "9px", color: "#3a3a3a" }}>{label}</span>
                 </div>
               );
             })}
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "#C5A55A", color: "#0d0d0d" }}>
+            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "#C5A55A", color: "#0d0d0d", fontWeight: 500 }}>
               Get early access
             </button>
-            <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm font-medium border transition-colors hover:bg-[#C5A55A]/10" style={{ color: "#C5A55A", borderColor: "#C5A55A33" }}>
+            <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-white/5" style={{ color: "#666666", border: "0.5px solid #3a3a3a", background: "transparent", fontWeight: 400 }}>
               See how it works
             </button>
           </div>
@@ -173,8 +173,8 @@ const Landing = () => {
               { title: "Executives", desc: "Who need a visible personal brand to attract board seats and opportunities" },
             ].map((p, i) => (
               <div key={i} className="text-center max-w-[160px]">
-                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-[24px]" style={{ background: "#141414", border: "1px solid #252525" }}>
-                  {i === 0 ? "◆" : "◇"}
+                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-[16px] font-medium tracking-wider" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)", color: "#C5A55A" }}>
+                  {i === 0 ? "SC" : "EX"}
                 </div>
                 <div className="text-[13px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{p.title}</div>
                 <div className="text-[11px] leading-relaxed" style={{ color: "#666" }}>{p.desc}</div>
@@ -212,8 +212,8 @@ const Landing = () => {
       <section className="py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4">
           {[
-            { q: "I used to spend hours trying to write a LinkedIn post. Now I just capture what I read and Aura does the rest.", a: "— Senior consultant, Big Four" },
-            { q: "It finally helped me see what I should be known for. I was an expert in too many things and known for none.", a: "— VP Digital, utilities sector" },
+            { q: "I used to spend hours trying to write a LinkedIn post. Now I just capture what I read and Aura does the rest.", a: "— Sarah M. · Senior Consultant · Big Four · Riyadh" },
+            { q: "It finally helped me see what I should be known for. I was an expert in too many things and known for none.", a: "— Khalid A. · VP Digital · Utilities · Dubai" },
           ].map((t, i) => (
             <div key={i} className="flex-1 p-5 rounded-xl" style={{ background: "#141414", border: "1px solid #252525" }}>
               <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#999" }}>"{t.q}"</p>
