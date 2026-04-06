@@ -245,6 +245,9 @@ export type Database = {
       }
       diagnostic_profiles: {
         Row: {
+          audit_completed_at: string | null
+          audit_interpretation: string | null
+          audit_results: Json | null
           brand_pillars: string[]
           completed: boolean
           core_practice: string | null
@@ -267,6 +270,9 @@ export type Database = {
           years_experience: string | null
         }
         Insert: {
+          audit_completed_at?: string | null
+          audit_interpretation?: string | null
+          audit_results?: Json | null
           brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
@@ -289,6 +295,9 @@ export type Database = {
           years_experience?: string | null
         }
         Update: {
+          audit_completed_at?: string | null
+          audit_interpretation?: string | null
+          audit_results?: Json | null
           brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null

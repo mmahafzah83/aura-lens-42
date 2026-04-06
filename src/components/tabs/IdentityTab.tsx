@@ -3,20 +3,32 @@ import { User, Brain, Settings, ClipboardList } from "lucide-react";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
 import OnboardingProfileSection from "@/components/OnboardingProfileSection";
+import AuditRadarWidget from "@/components/AuditRadarWidget";
+import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import PageHeader from "@/components/PageHeader";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
+  onSwitchTab?: (tab: string) => void;
 }
 
-const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
+const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
   const [activeSection, setActiveSection] = useState<"profile" | "identity" | "settings">("profile");
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const sections = [
     { key: "profile" as const, label: "Your Profile", icon: ClipboardList },
     { key: "identity" as const, label: "Strategic Identity", icon: Brain },
     { key: "settings" as const, label: "Profile Settings", icon: Settings },
   ];
+
+  const handleNavigate = (target: string) => {
+    if (target === "settings" || target === "identity" || target === "profile") {
+      setActiveSection(target);
+    } else if (target === "intelligence" && onSwitchTab) {
+      onSwitchTab("intelligence");
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -54,15 +66,22 @@ const IdentityTab = ({ onResetDiagnostic }: IdentityTabProps) => {
 
       {activeSection === "identity" && (
         <div className="space-y-6 animate-fade-in">
+          <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
           <ProfileIntelligence />
         </div>
       )}
 
       {activeSection === "settings" && (
         <div className="animate-fade-in">
-          <ProfileManagement onResetDiagnostic={onResetDiagnostic} />
+          <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
         </div>
       )}
+
+      <ObjectiveAuditModal
+        open={auditOpen}
+        onOpenChange={setAuditOpen}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 };
