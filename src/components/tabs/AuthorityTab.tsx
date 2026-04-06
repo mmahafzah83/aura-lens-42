@@ -521,6 +521,12 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
 
 const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
+  const [brandDone, setBrandDone] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.from("diagnostic_profiles").select("brand_assessment_completed_at").limit(1).maybeSingle()
+      .then(({ data }) => setBrandDone(!!data?.brand_assessment_completed_at));
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -530,6 +536,19 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         question="What should you publish to strengthen your authority?"
         processLogic="Signal → Insight → Framework → Content → Audience"
       />
+
+      {/* Brand calibration nudge */}
+      {brandDone === false && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
+          <Target className="w-4 h-4 text-primary shrink-0" />
+          <p className="text-xs text-muted-foreground flex-1">
+            Complete your Brand Assessment to get content fully calibrated to your positioning.
+          </p>
+          <a href="/dashboard?tab=me&subtab=settings" className="text-xs text-primary font-medium whitespace-nowrap hover:underline">
+            Start →
+          </a>
+        </div>
+      )}
 
       {/* Strategic Advisor — authority context */}
       <StrategicAdvisorPanel context="authority" compact />
