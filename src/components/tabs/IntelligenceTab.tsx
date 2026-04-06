@@ -31,9 +31,19 @@ interface Signal {
   status: string;
   created_at: string;
   updated_at: string;
+  user_signal_feedback?: string | null;
 }
 
 /* ── Helpers ── */
+
+function formatTag(tag: string): string {
+  const s = tag.replace(/_/g, " ");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function plural(count: number, singular: string, pluralForm?: string): string {
+  return count === 1 ? `${count} ${singular}` : `${count} ${pluralForm || singular + "s"}`;
+}
 
 function relativeTime(dateStr: string): string {
   const ms = Date.now() - new Date(dateStr).getTime();
@@ -43,14 +53,16 @@ function relativeTime(dateStr: string): string {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
+  if (days === 0) return "today";
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   const weeks = Math.floor(days / 7);
   return `${weeks}w ago`;
 }
 
-function extractDomain(content: string): string | null {
-  const m = content.match(/https?:\/\/([^\/\s]+)/);
+function extractDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = url.match(/https?:\/\/([^\/\s]+)/);
   if (!m) return null;
   return m[1].replace(/^www\./, "");
 }
@@ -96,12 +108,12 @@ interface SourceEntry {
   id: string;
   title: string | null;
   content: string;
+  source_url: string | null;
   created_at: string;
 }
 
 const SourceRow = ({
   entry,
-  signalId,
   onRemove,
 }: {
   entry: SourceEntry;
@@ -110,9 +122,9 @@ const SourceRow = ({
 }) => {
   const daysSince = Math.floor((Date.now() - new Date(entry.created_at).getTime()) / 86400000);
   const isRecent = daysSince <= 14;
-  const domain = extractDomain(entry.content);
+  const domain = extractDomain(entry.source_url) || extractDomain(entry.content);
   const displayTitle = entry.title || entry.content.slice(0, 60);
-  const sourceUrl = entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null;
+  const sourceUrl = entry.source_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null);
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", borderBottom: "1px solid #1f1f1f" }}>
@@ -163,11 +175,15 @@ const ExpandedDetail = ({
   onOpenChat,
   onArchive,
   onDraft,
+  onLove,
+  onNotForMe,
 }: {
   signal: Signal;
   onOpenChat?: (msg?: string) => void;
   onArchive: (id: string) => void;
   onDraft: (signal: Signal) => void;
+  onLove: (signal: Signal) => void;
+  onNotForMe: (signal: Signal) => void;
 }) => {
   const [sources, setSources] = useState<SourceEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,11 +193,11 @@ const ExpandedDetail = ({
     (async () => {
       const { data } = await supabase
         .from("entries")
-        .select("id, title, content, created_at")
+        .select("id, title, content, source_url, created_at")
         .in("id", signal.supporting_evidence_ids)
         .order("created_at", { ascending: false })
         .limit(20);
-      setSources((data || []) as SourceEntry[]);
+      setSources((data || []) as unknown as SourceEntry[]);
       setLoading(false);
     })();
   }, [signal.supporting_evidence_ids]);
@@ -189,7 +205,6 @@ const ExpandedDetail = ({
   const handleRemove = async (entryId: string) => {
     const newIds = signal.supporting_evidence_ids.filter(id => id !== entryId);
     const newCount = Math.max(signal.fragment_count - 1, 0);
-    // Check confidence drop
     const oldConf = signal.confidence;
     const sourceWeight = Math.min(newCount / 5, 1.4);
     const diversityBonus = signal.unique_orgs >= 3 ? 1.15 : signal.unique_orgs === 2 ? 1.05 : 1.0;
@@ -213,6 +228,8 @@ const ExpandedDetail = ({
     setSources(prev => prev.filter(s => s.id !== entryId));
     toast("Source removed from this signal");
   };
+
+  const isLoved = signal.user_signal_feedback === "love";
 
   return (
     <motion.div
@@ -252,7 +269,7 @@ const ExpandedDetail = ({
               <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#3a3a3a" }} />
             </div>
           ) : sources.length === 0 ? (
-            <p style={{ color: "#3a3a3a", fontSize: 12 }}>Source details not available for this signal</p>
+            <p style={{ color: "#3a3a3a", fontSize: 12 }}>No sources linked yet — add captures to build this signal.</p>
           ) : (
             <div>
               {sources.map(s => (
@@ -262,39 +279,66 @@ const ExpandedDetail = ({
           )}
         </div>
 
-        {/* Action buttons */}
-        <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
-          {signal.confidence >= 0.60 && (
-            <button
-              onClick={() => onDraft(signal)}
-              style={{
-                width: "100%", padding: "12px 16px", borderRadius: 10,
-                background: "#C5A55A", color: "#0d0d0d", fontWeight: 500,
-                fontSize: 14, border: "none", cursor: "pointer",
-              }}
-            >
-              Draft content
-            </button>
-          )}
+        {/* ── Action buttons ── */}
+        {/* Row 1 */}
+        <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+          <button
+            onClick={() => onDraft(signal)}
+            style={{
+              flex: 1, padding: "12px 16px", borderRadius: 10,
+              background: "#C5A55A", color: "#0d0d0d", fontWeight: 500,
+              fontSize: 14, border: "none", cursor: "pointer",
+              opacity: signal.confidence >= 0.60 ? 1 : 0.35,
+              pointerEvents: signal.confidence >= 0.60 ? "auto" : "none",
+            }}
+          >
+            Draft content
+          </button>
           <button
             onClick={() => onOpenChat?.(`Help me think through this signal:\n\n${signal.signal_title}\n\n${signal.explanation}`)}
             style={{
-              width: "100%", padding: "10px 16px", borderRadius: 10,
+              flex: 1, padding: "10px 16px", borderRadius: 10,
               background: "transparent", color: "#888888",
               fontSize: 13, border: "1px solid #2a2a2a", cursor: "pointer",
             }}
           >
             Ask Aura
           </button>
+        </div>
+
+        {/* Row 2 — small feedback buttons */}
+        <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
+          <button
+            onClick={() => onLove(signal)}
+            style={{
+              padding: "6px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
+              background: isLoved ? "rgba(226,75,74,0.08)" : "transparent",
+              color: "#E24B4A",
+              border: `1px solid ${isLoved ? "#E24B4A" : "#F7C1C1"}`,
+              fontWeight: isLoved ? 600 : 400,
+            }}
+          >
+            {isLoved ? "Loved" : "Love this"}
+          </button>
+          <button
+            onClick={() => onNotForMe(signal)}
+            style={{
+              padding: "6px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
+              background: "transparent", color: "#666666",
+              border: "1px solid #252525",
+            }}
+          >
+            Not for me
+          </button>
           <button
             onClick={() => onArchive(signal.id)}
             style={{
-              width: "100%", padding: "10px 16px", borderRadius: 10,
+              padding: "6px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
               background: "transparent", color: "#3a3a3a",
-              fontSize: 13, border: "none", cursor: "pointer",
+              border: "1px solid #1f1f1f",
             }}
           >
-            Done with this
+            Done
           </button>
         </div>
       </div>
@@ -332,10 +376,105 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
 
   useEffect(() => { loadSignals(); }, [loadSignals]);
 
+  /* ── Archive ── */
   const handleArchive = async (id: string) => {
     await supabase.from("strategic_signals").update({ status: "archived" }).eq("id", id);
     setSignals(prev => prev.filter(s => s.id !== id));
     toast("Signal archived. It will return if you capture more on this topic.");
+  };
+
+  /* ── Love / Unlove ── */
+  const handleLove = async (signal: Signal) => {
+    const isAlreadyLoved = signal.user_signal_feedback === "love";
+
+    if (isAlreadyLoved) {
+      // Unlove
+      const newPriority = Math.max(signal.priority_score - 0.10, 0);
+      await supabase.from("strategic_signals").update({
+        user_signal_feedback: null,
+        priority_score: newPriority,
+      }).eq("id", signal.id);
+
+      // Decrement tag preferences
+      for (const tag of signal.theme_tags || []) {
+        const { data: existing } = await supabase
+          .from("signal_topic_preferences" as any)
+          .select("id, preference_score")
+          .eq("theme_tag", tag)
+          .maybeSingle();
+        if (existing) {
+          await supabase.from("signal_topic_preferences" as any)
+            .update({ preference_score: Math.max((existing as any).preference_score - 0.15, -1.0), updated_at: new Date().toISOString() })
+            .eq("id", (existing as any).id);
+        }
+      }
+
+      setSignals(prev => prev.map(s => s.id === signal.id ? { ...s, user_signal_feedback: null, priority_score: newPriority } : s));
+      toast("Love removed");
+    } else {
+      // Love
+      const newPriority = Math.min(signal.priority_score + 0.10, 1.0);
+      await supabase.from("strategic_signals").update({
+        user_signal_feedback: "love",
+        priority_score: newPriority,
+      }).eq("id", signal.id);
+
+      // Upsert tag preferences
+      for (const tag of signal.theme_tags || []) {
+        const { data: existing } = await supabase
+          .from("signal_topic_preferences" as any)
+          .select("id, preference_score")
+          .eq("theme_tag", tag)
+          .maybeSingle();
+        if (existing) {
+          await supabase.from("signal_topic_preferences" as any)
+            .update({ preference_score: Math.min((existing as any).preference_score + 0.15, 1.0), updated_at: new Date().toISOString() })
+            .eq("id", (existing as any).id);
+        } else {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await supabase.from("signal_topic_preferences" as any)
+              .insert({ user_id: session.user.id, theme_tag: tag, preference_score: 0.15 });
+          }
+        }
+      }
+
+      setSignals(prev => prev.map(s => s.id === signal.id ? { ...s, user_signal_feedback: "love", priority_score: newPriority } : s)
+        .sort((a, b) => b.priority_score - a.priority_score));
+      toast("Signal boosted — Aura will surface more like this");
+    }
+  };
+
+  /* ── Not for me ── */
+  const handleNotForMe = async (signal: Signal) => {
+    await supabase.from("strategic_signals").update({
+      user_signal_feedback: "not_relevant",
+      priority_score: 0.05,
+    }).eq("id", signal.id);
+
+    // Decrement tag preferences
+    for (const tag of signal.theme_tags || []) {
+      const { data: existing } = await supabase
+        .from("signal_topic_preferences" as any)
+        .select("id, preference_score")
+        .eq("theme_tag", tag)
+        .maybeSingle();
+      if (existing) {
+        await supabase.from("signal_topic_preferences" as any)
+          .update({ preference_score: Math.max((existing as any).preference_score - 0.20, -1.0), updated_at: new Date().toISOString() })
+          .eq("id", (existing as any).id);
+      } else {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase.from("signal_topic_preferences" as any)
+            .insert({ user_id: session.user.id, theme_tag: tag, preference_score: -0.20 });
+        }
+      }
+    }
+
+    setSignals(prev => prev.map(s => s.id === signal.id ? { ...s, user_signal_feedback: "not_relevant", priority_score: 0.05 } : s)
+      .sort((a, b) => b.priority_score - a.priority_score));
+    toast("Got it — Aura will show fewer signals like this");
   };
 
   /* ── Derived data ── */
@@ -419,7 +558,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
           {[
             { value: `${topConfPct}%`, label: "top signal", gold: true },
             { value: `${signals.length}`, label: "active", gold: false },
-            { value: `${totalOrgs}`, label: "organisations tracked", gold: false },
+            { value: `${totalOrgs}`, label: totalOrgs === 1 ? "organisation tracked" : "organisations tracked", gold: false },
           ].map(card => (
             <div
               key={card.label}
@@ -466,7 +605,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                   border: `1px solid ${isActive ? "#C5A55A" : "#252525"}`,
                 }}
               >
-                {c.name} ({c.count})
+                {formatTag(c.name)} ({c.count})
               </button>
             );
           })}
@@ -485,7 +624,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
           const isTop = i === 0 && !activeTag;
           const typeStyle = getTypeStyle(signal.theme_tags?.find(t => t in TYPE_STYLES) || "market_trend");
           const confStyle = getConfidenceStyle(signal.confidence);
-          const sourcesLabel = `${signal.fragment_count} source${signal.fragment_count !== 1 ? "s" : ""} · ${signal.unique_orgs} org${signal.unique_orgs !== 1 ? "s" : ""}`;
+          const sourcesLabel = `${plural(signal.fragment_count, "source")} · ${plural(signal.unique_orgs, "organisation")}`;
           const needsMore = signal.confidence < 0.60;
           const moreSources = Math.ceil((0.60 - signal.confidence) / 0.184);
 
@@ -557,10 +696,21 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                       )}
                     </div>
 
+                    {/* Tag pills */}
+                    {signal.theme_tags && signal.theme_tags.length > 0 && (
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
+                        {signal.theme_tags.slice(0, 4).map(tag => (
+                          <span key={tag} style={{ fontSize: 10, color: "#555555", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
+                            {formatTag(tag)}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Building nudge */}
                     {needsMore && (
                       <p style={{ color: "#C5A55A", fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
-                        Add {moreSources > 0 ? moreSources : 1} more source{moreSources !== 1 ? "s" : ""} on this topic to unlock drafting.{" "}
+                        Add {moreSources > 0 ? moreSources : 1} more {moreSources === 1 ? "source" : "sources"} on this topic to unlock drafting.{" "}
                         <button
                           onClick={(e) => { e.stopPropagation(); onOpenCapture?.(); }}
                           style={{ color: "#C5A55A", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 11 }}
@@ -593,6 +743,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                     onOpenChat={onOpenChat}
                     onArchive={handleArchive}
                     onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
+                    onLove={handleLove}
+                    onNotForMe={handleNotForMe}
                   />
                 )}
               </AnimatePresence>

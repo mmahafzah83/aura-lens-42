@@ -1139,6 +1139,30 @@ export type Database = {
         }
         Relationships: []
       }
+      signal_topic_preferences: {
+        Row: {
+          id: string
+          preference_score: number | null
+          theme_tag: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          preference_score?: number | null
+          theme_tag: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          preference_score?: number | null
+          theme_tag?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       skill_targets: {
         Row: {
           created_at: string
@@ -1232,6 +1256,7 @@ export type Database = {
           unique_orgs: number
           updated_at: string
           user_id: string
+          user_signal_feedback: string | null
           what_it_means_for_you: string | null
         }
         Insert: {
@@ -1254,6 +1279,7 @@ export type Database = {
           unique_orgs?: number
           updated_at?: string
           user_id: string
+          user_signal_feedback?: string | null
           what_it_means_for_you?: string | null
         }
         Update: {
@@ -1276,6 +1302,7 @@ export type Database = {
           unique_orgs?: number
           updated_at?: string
           user_id?: string
+          user_signal_feedback?: string | null
           what_it_means_for_you?: string | null
         }
         Relationships: []
