@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap } from "lucide-react";
+import heroBg from "@/assets/hero-bg.jpg";
+import networkBg from "@/assets/network-bg.jpg";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -32,6 +34,14 @@ const Landing = () => {
 
       {/* Section 2 — Hero */}
       <section className="relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
+        {/* Parallax hero background */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: `url(${heroBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(13,13,13,0.80)" }} />
         {/* Diagonal gold lines */}
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: "repeating-linear-gradient(135deg, transparent, transparent 40px, rgba(197,165,90,0.08) 40px, rgba(197,165,90,0.08) 41px)",
@@ -142,8 +152,15 @@ const Landing = () => {
       </section>
 
       {/* Section 5 — What makes Aura different */}
-      <section className="py-16 px-5 sm:px-10" style={{ background: "#0a0a0a", borderTop: "1px solid #1a1a1a" }}>
-        <div className="max-w-2xl mx-auto">
+      <section className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: `url(${networkBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundAttachment: "fixed",
+        }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(10,10,10,0.80)" }} />
+        <div className="relative max-w-2xl mx-auto">
           <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>What makes Aura different</p>
           <div className="pl-5 mb-10" style={{ borderLeft: "2px solid #C5A55A" }}>
             <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#f0f0f0" }}>
