@@ -248,6 +248,9 @@ export type Database = {
           audit_completed_at: string | null
           audit_interpretation: string | null
           audit_results: Json | null
+          brand_assessment_answers: Json | null
+          brand_assessment_completed_at: string | null
+          brand_assessment_results: Json | null
           brand_pillars: string[]
           completed: boolean
           core_practice: string | null
@@ -273,6 +276,9 @@ export type Database = {
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_results?: Json | null
+          brand_assessment_answers?: Json | null
+          brand_assessment_completed_at?: string | null
+          brand_assessment_results?: Json | null
           brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
@@ -298,6 +304,9 @@ export type Database = {
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_results?: Json | null
+          brand_assessment_answers?: Json | null
+          brand_assessment_completed_at?: string | null
+          brand_assessment_results?: Json | null
           brand_pillars?: string[]
           completed?: boolean
           core_practice?: string | null
