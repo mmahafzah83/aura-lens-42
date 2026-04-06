@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EVIDENCE_MATRIX, calculateScore } from "@/components/diagnostic/EvidenceMatrix";
+import { EVIDENCE_MATRIX, calculateScore, calculateTotalScore } from "@/components/diagnostic/EvidenceMatrix";
 
 interface ObjectiveAuditModalProps {
   open: boolean;
