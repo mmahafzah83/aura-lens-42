@@ -92,9 +92,7 @@ const Landing = () => {
           0%, 100% { box-shadow: 0 0 30px rgba(197,165,90,0.3), 0 0 60px rgba(197,165,90,0.12), 0 0 100px rgba(197,165,90,0.06); transform: scale(1); }
           50% { box-shadow: 0 0 50px rgba(197,165,90,0.5), 0 0 90px rgba(197,165,90,0.2), 0 0 130px rgba(197,165,90,0.08); transform: scale(1.05); }
         }
-        @keyframes orb-float-1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        @keyframes orb-float-2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes orb-float-3 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        @keyframes orb-float { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(4px); } }
         .orb-icon { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; will-change: transform; }
         .orb-icon:hover { transform: scale(1.2) !important; box-shadow: 0 0 16px rgba(197,165,90,0.35); border-color: rgba(197,165,90,0.5) !important; }
         @keyframes ring-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
@@ -142,7 +140,7 @@ const Landing = () => {
           background: "linear-gradient(to bottom, rgba(13,13,13,0.95) 0%, rgba(13,13,13,0.60) 40%, rgba(13,13,13,0.60) 60%, rgba(13,13,13,0.95) 100%)",
         }} />
         <div className="relative z-10 max-w-2xl mx-auto">
-          <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals in the GCC</p>
+          <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals worldwide</p>
           <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 font-sans">
             Everything you read.<br />Turned into <span style={{ color: "#C5A55A" }}>authority</span>.
           </h1>
@@ -167,22 +165,20 @@ const Landing = () => {
               }} />
             ))}
             {[
-              { Icon: LinkIcon, label: "link", angle: 0, float: 1 },
-              { Icon: FileText, label: "document", angle: 60, float: 2 },
-              { Icon: Mic, label: "voice", angle: 120, float: 3 },
-              { Icon: StickyNote, label: "note", angle: 180, float: 1 },
-              { Icon: Image, label: "image", angle: 240, float: 2 },
-              { Icon: Zap, label: "quick capture", angle: 300, float: 3 },
-            ].map(({ Icon, label, angle, float }) => {
+              { Icon: LinkIcon, label: "link", angle: 0, delay: 0 },
+              { Icon: FileText, label: "document", angle: 60, delay: 0.5 },
+              { Icon: Mic, label: "voice", angle: 120, delay: 1 },
+              { Icon: StickyNote, label: "note", angle: 180, delay: 1.5 },
+              { Icon: Image, label: "image", angle: 240, delay: 2 },
+              { Icon: Zap, label: "quick capture", angle: 300, delay: 2.5 },
+            ].map(({ Icon, label, angle, delay }) => {
               const rad = (angle - 90) * (Math.PI / 180);
               const x = 110 + Math.cos(rad) * 95;
               const y = 110 + Math.sin(rad) * 95;
-              const durations = [3.2, 3.8, 2.9];
-              const delays = [0, 0.5, 1.1];
               return (
-                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 16, top: y - 16, animation: `orb-float-${float} ${durations[float - 1]}s ease-in-out infinite`, animationDelay: `${delays[float - 1]}s`, willChange: "transform" }}>
-                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 32, height: 32, background: "#1a1a1a", border: "1px solid #252525" }}>
-                    <Icon size={14} style={{ color: "#C5A55A" }} />
+                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 18, top: y - 18, animation: "orb-float 3s ease-in-out infinite", animationDelay: `${delay}s`, willChange: "transform" }}>
+                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid #C5A55A", borderRadius: "50%" }}>
+                    <Icon size={16} style={{ color: "#C5A55A" }} />
                   </div>
                   <span className="mt-1 whitespace-nowrap" style={{ fontSize: "9px", color: "#3a3a3a" }}>{label}</span>
                 </div>
@@ -204,17 +200,21 @@ const Landing = () => {
       {/* Section 3 — Stats */}
       <section ref={stats.ref} className="flex items-center justify-center gap-0 py-10 px-5">
         {[
-          { num: 47, label: "Sources captured" },
-          { num: 7, label: "Signals detected" },
-          { num: 90, label: "Authority score" },
+          { num: 47, label: "Sources captured", sub: "articles, links and documents added" },
+          { num: 7, label: "Signals detected", sub: "strategic patterns identified" },
+          { num: 90, label: "Authority score", sub: "out of 100 — tracks your growth" },
         ].map((s, i) => (
           <div key={i} className="flex items-center">
-            {i > 0 && <div className="w-px h-10 mx-6 sm:mx-10" style={{ background: "#252525" }} />}
+            {i > 0 && <div className="w-px h-14 mx-6 sm:mx-10" style={{ background: "#252525" }} />}
             <div className="text-center">
-              <div className="font-semibold" style={{ fontSize: 28, color: "#C5A55A", fontFamily: "'Playfair Display', serif" }}>
-                <Counter target={s.num} visible={stats.visible} />
+              <div className="flex items-center justify-center gap-1">
+                <span style={{ fontSize: 14, color: "#C5A55A" }}>↑</span>
+                <span className="font-semibold" style={{ fontSize: 40, color: "#C5A55A", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
+                  <Counter target={s.num} visible={stats.visible} />+
+                </span>
               </div>
               <div className="mt-1 uppercase tracking-[0.15em]" style={{ fontSize: 9, color: "#3a3a3a" }}>{s.label}</div>
+              <div className="mt-0.5" style={{ fontSize: 10, color: "#3a3a3a" }}>{s.sub}</div>
             </div>
           </div>
         ))}
@@ -313,16 +313,17 @@ const Landing = () => {
 
       {/* Section 6 — Built for */}
       <section className="py-16 px-5 sm:px-10">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <p className="text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "#3a3a3a" }}>Built for</p>
-          <div className="flex justify-center gap-6 sm:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { title: "Senior consultants", desc: "Who want to be seen as the go-to expert in their practice area" },
-              { title: "Executives", desc: "Who need a visible personal brand to attract board seats and opportunities" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, title: "Executives and leaders", desc: "Who need a consistent personal brand to attract opportunities and board visibility" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>, title: "Independent experts", desc: "Coaches, advisors, and founders who want to build influence without a marketing team" },
             ].map((p, i) => (
-              <div key={i} className="text-center max-w-[160px]">
-                <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center text-[16px] font-medium tracking-wider" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)", color: "#C5A55A" }}>
-                  {i === 0 ? "SC" : "EX"}
+              <div key={i} className="text-center p-5 rounded-[10px]" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)" }}>
+                <div className="w-[44px] h-[44px] rounded-full mx-auto mb-4 flex items-center justify-center" style={{ border: "1px solid rgba(197,165,90,0.3)" }}>
+                  {p.icon}
                 </div>
                 <div className="text-[13px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{p.title}</div>
                 <div className="text-[11px] leading-relaxed" style={{ color: "#666" }}>{p.desc}</div>
@@ -402,7 +403,7 @@ const Landing = () => {
       {/* Section 10 — Footer */}
       <footer className="py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
         <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "#C5A55A", fontFamily: "'Playfair Display', serif" }}>AURA</span>
-        <p className="mt-2 text-[11px]" style={{ color: "#3a3a3a" }}>Strategic intelligence for GCC professionals.</p>
+        <p className="mt-2 text-[11px]" style={{ color: "#3a3a3a" }}>Strategic intelligence for senior professionals.</p>
       </footer>
     </div>
   );
