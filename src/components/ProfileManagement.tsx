@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
 interface Skill {
   name: string;
@@ -33,6 +34,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [auditCompleted, setAuditCompleted] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
   const { toast } = useToast();
 
@@ -51,6 +54,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
+        setAuditCompleted(!!profile.audit_completed_at);
       }
       setLoading(false);
     };
