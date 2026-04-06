@@ -15,9 +15,10 @@ interface Skill {
 
 interface ProfileManagementProps {
   onResetDiagnostic?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
-const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
+const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [firm, setFirm] = useState("");
@@ -239,7 +240,7 @@ const ProfileManagement = ({ onResetDiagnostic }: ProfileManagementProps) => {
         </div>
       )}
 
-      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => setRadarKey(k => k + 1)} />
+      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
     </div>
   );
 };
