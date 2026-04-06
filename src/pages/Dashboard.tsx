@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Mic, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
@@ -42,8 +42,31 @@ const Dashboard = () => {
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [focusSignalId, setFocusSignalId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
+
+  // Handle ?tab=intelligence&signal=xxx URL params
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    const signalParam = searchParams.get("signal");
+    if (tabParam && NAV_ITEMS.some(n => n.value === tabParam)) {
+      setActiveTab(tabParam as TabValue);
+    }
+    if (signalParam) {
+      setFocusSignalId(signalParam);
+      setActiveTab("intelligence");
+      // Clear params after consuming
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
+  const navigateToSignal = useCallback((signalId: string) => {
+    setFocusSignalId(signalId);
+    setActiveTab("intelligence");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const checkStrategicNudge = useCallback(async (accessToken: string) => {
     try {
