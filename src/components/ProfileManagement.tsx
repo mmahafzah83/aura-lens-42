@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
 interface Skill {
   name: string;
@@ -33,6 +34,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
+  const [auditCompleted, setAuditCompleted] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
   const { toast } = useToast();
 
@@ -51,6 +54,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
+        setAuditCompleted(!!profile.audit_completed_at);
       }
       setLoading(false);
     };
@@ -148,6 +152,24 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
             <ClipboardCheck className="w-4 h-4" />
             Start Objective Audit
           </Button>
+
+          {/* Brand Assessment button */}
+          <div className="relative group">
+            <Button
+              variant="outline"
+              onClick={() => auditCompleted && setBrandOpen(true)}
+              disabled={!auditCompleted}
+              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-[#252525] text-[#3a3a3a] cursor-not-allowed"}`}
+            >
+              <Compass className="w-4 h-4" />
+              Start Brand Assessment
+            </Button>
+            {!auditCompleted && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-[#252525] rounded-lg text-[10px] text-[#888] w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="space-y-5">
@@ -220,6 +242,24 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
             Start Objective Audit
           </Button>
 
+          {/* Brand Assessment button */}
+          <div className="relative group">
+            <Button
+              variant="outline"
+              onClick={() => auditCompleted && setBrandOpen(true)}
+              disabled={!auditCompleted}
+              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-[#252525] text-[#3a3a3a] cursor-not-allowed"}`}
+            >
+              <Compass className="w-4 h-4" />
+              Start Brand Assessment
+            </Button>
+            {!auditCompleted && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-[#252525] rounded-lg text-[10px] text-[#888] w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
+              </div>
+            )}
+          </div>
+
           {onResetDiagnostic && (
             <Button
               variant="outline"
@@ -240,7 +280,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
         </div>
       )}
 
-      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
+      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => { setRadarKey(k => k + 1); setAuditCompleted(true); }} onNavigate={onNavigate} />
+      <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
     </div>
   );
 };
