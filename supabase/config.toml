@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.fetch-industry-trends]
 verify_jwt = false
+
+[functions.calculate-aura-score]
+verify_jwt = false

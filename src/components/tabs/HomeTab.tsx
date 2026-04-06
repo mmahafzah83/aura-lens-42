@@ -9,6 +9,16 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
+export interface AuraScore {
+  aura_score: number;
+  capture_score: number;
+  signal_score: number;
+  content_score: number;
+  score_status: string;
+  score_description: string;
+  score_trend: number | null;
+}
+
 interface HomeTabProps {
   entries?: Entry[];
   onOpenChat?: (msg?: string) => void;
@@ -53,8 +63,8 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
 
 const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
+  const [auraScore, setAuraScore] = useState<AuraScore | null>(null);
 
-  // On mount: update last_visit_at + trigger industry trends if stale (>6h)
   useEffect(() => {
     const run = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,6 +75,18 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
         .from("diagnostic_profiles")
         .update({ last_visit_at: new Date().toISOString() } as any)
         .eq("user_id", user.id);
+
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) return;
+
+      // Fetch Aura Score
+      supabase.functions.invoke("calculate-aura-score", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).then(({ data }) => {
+        if (data && typeof data.aura_score === "number") {
+          setAuraScore(data as AuraScore);
+        }
+      }).catch(console.error);
 
       // Check staleness of industry_trends
       const { data: latest } = await supabase
@@ -79,12 +101,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       const isStale = !latestRow || new Date(latestRow.fetched_at).getTime() < sixHoursAgo;
 
       if (isStale) {
-        const session = (await supabase.auth.getSession()).data.session;
-        if (session) {
-          supabase.functions.invoke("fetch-industry-trends", {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          }).catch(console.error);
-        }
+        supabase.functions.invoke("fetch-industry-trends", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }).catch(console.error);
       }
     };
     run();
