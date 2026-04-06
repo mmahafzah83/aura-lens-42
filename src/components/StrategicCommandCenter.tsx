@@ -56,7 +56,20 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
   const loadData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+      let userName = user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+
+      // Prefer first_name from diagnostic_profiles
+      if (user) {
+        const { data: nameRow } = await supabase
+          .from("diagnostic_profiles")
+          .select("first_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if ((nameRow as any)?.first_name) {
+          userName = (nameRow as any).first_name;
+        }
+      }
+      if (!userName) userName = "";
 
       const [signalsRes, profileRes, frameworksRes, intelligenceRes, suggestionsRes] = await Promise.all([
         supabase.from("strategic_signals").select("signal_title, confidence, supporting_evidence_ids, strategic_implications, explanation, content_opportunity").eq("status", "active").order("confidence", { ascending: false }).limit(5),
