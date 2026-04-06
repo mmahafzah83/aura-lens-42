@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ThumbsUp, ThumbsDown, Archive } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -407,12 +408,26 @@ const ExpandedDetail = ({
    ═══════════════════════════════════════════ */
 
 const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: IntelligenceTabProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
+
+  // Auto-expand signal from URL param
+  useEffect(() => {
+    const signalParam = searchParams.get("signal");
+    if (signalParam && signals.length > 0) {
+      const found = signals.find(s => s.id === signalParam);
+      if (found) {
+        setExpandedId(signalParam);
+        searchParams.delete("signal");
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [signals, searchParams]);
 
   const loadSignals = useCallback(async () => {
     setLoading(true);
