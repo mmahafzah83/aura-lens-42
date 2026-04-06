@@ -1,9 +1,10 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { RefreshCw, Compass } from "lucide-react";
 import StrategicCommandCenter from "@/components/StrategicCommandCenter";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import StrategicCompanion from "@/components/StrategicCompanion";
 import PageHeader from "@/components/PageHeader";
+import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
