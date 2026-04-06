@@ -13,11 +13,9 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
   // Split into sentences, take first 2 as BLUF
   const sentences = content.replace(/\n+/g, " ").match(/[^.!?]*[.!?]+/g) || [content];
   const bluf = sentences.slice(0, 2).join(" ").trim();
-  const rest = sentences.length > 2 ? sentences.slice(2).join(" ").trim() : "";
-  // For markdown: find where BLUF ends in original content
   const blufEndIndex = content.indexOf(sentences[1]?.trim() || "") + (sentences[1]?.trim().length || content.length);
-  const blufMd = content.slice(0, Math.min(blufEndIndex, content.length)).trim();
   const restMd = content.slice(blufEndIndex).trim();
+  const hasMore = restMd.length > 20;
   const hasMore = restMd.length > 20;
 
   return (
