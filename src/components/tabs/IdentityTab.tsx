@@ -4,7 +4,9 @@ import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
 import OnboardingProfileSection from "@/components/OnboardingProfileSection";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
+import BrandArchetypeWidget from "@/components/BrandArchetypeWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import PageHeader from "@/components/PageHeader";
 
 interface IdentityTabProps {
@@ -15,6 +17,7 @@ interface IdentityTabProps {
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
   const [activeSection, setActiveSection] = useState<"profile" | "identity" | "settings">("profile");
   const [auditOpen, setAuditOpen] = useState(false);
+  const [brandOpen, setBrandOpen] = useState(false);
 
   const sections = [
     { key: "profile" as const, label: "Your Profile", icon: ClipboardList },
@@ -66,6 +69,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
 
       {activeSection === "identity" && (
         <div className="space-y-6 animate-fade-in">
+          <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
           <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
           <ProfileIntelligence />
         </div>
@@ -80,6 +84,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
       <ObjectiveAuditModal
         open={auditOpen}
         onOpenChange={setAuditOpen}
+        onNavigate={handleNavigate}
+      />
+      <BrandAssessmentModal
+        open={brandOpen}
+        onOpenChange={setBrandOpen}
         onNavigate={handleNavigate}
       />
     </div>
