@@ -125,9 +125,21 @@ export const EVIDENCE_MATRIX: SkillEvidence[] = [
 ];
 
 export function calculateScore(checks: boolean[]): number {
-  const count = checks.filter(Boolean).length;
-  if (count === 0) return 10;
-  if (count === 1) return 40;
-  if (count === 2) return 70;
-  return 100;
+  const [base, intermediate, advanced] = checks;
+
+  if (base && intermediate && advanced) return 100;
+  if (base && intermediate) return 66;
+  if (base && advanced) return 70;
+  if (base) return 33;
+  if (intermediate && advanced) return 70;
+  if (intermediate) return 50;
+  if (advanced) return 70;
+  return 0;
+}
+
+export function calculateTotalScore(allChecks: Record<string, boolean[]>): number {
+  const entries = Object.values(allChecks);
+  if (entries.length === 0) return 0;
+  const sum = entries.reduce((acc, checks) => acc + calculateScore(checks), 0);
+  return Math.round(sum / entries.length);
 }

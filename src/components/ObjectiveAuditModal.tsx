@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { ChevronLeft, ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EVIDENCE_MATRIX, calculateScore } from "@/components/diagnostic/EvidenceMatrix";
+import { EVIDENCE_MATRIX, calculateScore, calculateTotalScore } from "@/components/diagnostic/EvidenceMatrix";
 
 interface ObjectiveAuditModalProps {
   open: boolean;
@@ -89,10 +89,13 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete }: ObjectiveAuditM
           </DialogTitle>
         </DialogHeader>
 
-        <Progress value={progress} className="h-1.5 mb-4" />
-        <p className="text-[10px] text-muted-foreground mb-4">
-          Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} — Answer honestly. Only verified evidence counts.
-        </p>
+        <Progress value={progress} className="h-1.5 mb-2" />
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[10px] text-muted-foreground">
+            Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} · <span className="text-primary font-semibold">Running score: {calculateTotalScore(checks)}%</span>
+          </p>
+          <p className="text-[10px] text-muted-foreground">Answer honestly. Only verified evidence counts.</p>
+        </div>
 
         <div className="space-y-4">
           <div className="flex items-center gap-2">
