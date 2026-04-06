@@ -46,9 +46,24 @@ const Landing = () => {
           </p>
 
           {/* Capture orb */}
+          <style>{`
+            @keyframes aura-breathe {
+              0%, 100% { box-shadow: 0 0 30px rgba(197,165,90,0.25), 0 0 60px rgba(197,165,90,0.1); transform: scale(1); }
+              50% { box-shadow: 0 0 45px rgba(197,165,90,0.4), 0 0 80px rgba(197,165,90,0.15); transform: scale(1.05); }
+            }
+            @keyframes orb-float-1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+            @keyframes orb-float-2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+            @keyframes orb-float-3 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            .orb-icon { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
+            .orb-icon:hover { transform: scale(1.2) !important; box-shadow: 0 0 16px rgba(197,165,90,0.35); border-color: rgba(197,165,90,0.5) !important; }
+            @keyframes ring-pulse {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.5; }
+            }
+          `}</style>
           <div className="relative w-[220px] h-[220px] mx-auto mb-10">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #C5A55A, #a88c3a)", boxShadow: "0 0 40px rgba(197,165,90,0.3)" }}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #C5A55A, #a88c3a)", animation: "aura-breathe 3s ease-in-out infinite" }}>
                 <span className="text-[10px] font-bold text-[#0d0d0d] tracking-wider">AURA</span>
               </div>
             </div>
@@ -57,22 +72,26 @@ const Landing = () => {
                 width: r * 2, height: r * 2,
                 left: `calc(50% - ${r}px)`, top: `calc(50% - ${r}px)`,
                 border: `1px solid rgba(197,165,90,${0.12 - i * 0.03})`,
+                animation: `ring-pulse ${4 + i * 0.7}s ease-in-out infinite`,
+                animationDelay: `${i * 0.3}s`,
               }} />
             ))}
             {[
-              { Icon: LinkIcon, label: "link", angle: 0 },
-              { Icon: FileText, label: "document", angle: 60 },
-              { Icon: Mic, label: "voice", angle: 120 },
-              { Icon: StickyNote, label: "note", angle: 180 },
-              { Icon: Image, label: "image", angle: 240 },
-              { Icon: Zap, label: "quick capture", angle: 300 },
-            ].map(({ Icon, label, angle }) => {
+              { Icon: LinkIcon, label: "link", angle: 0, float: 1 },
+              { Icon: FileText, label: "document", angle: 60, float: 2 },
+              { Icon: Mic, label: "voice", angle: 120, float: 3 },
+              { Icon: StickyNote, label: "note", angle: 180, float: 1 },
+              { Icon: Image, label: "image", angle: 240, float: 2 },
+              { Icon: Zap, label: "quick capture", angle: 300, float: 3 },
+            ].map(({ Icon, label, angle, float }) => {
               const rad = (angle - 90) * (Math.PI / 180);
               const x = 110 + Math.cos(rad) * 95;
               const y = 110 + Math.sin(rad) * 95;
+              const durations = [3.2, 3.8, 2.9];
+              const delays = [0, 0.5, 1.1];
               return (
-                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 16, top: y - 16 }}>
-                  <div className="rounded-full flex items-center justify-center" style={{ width: 32, height: 32, background: "#1a1a1a", border: "1px solid #252525" }}>
+                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 16, top: y - 16, animation: `orb-float-${float} ${durations[float - 1]}s ease-in-out infinite`, animationDelay: `${delays[float - 1]}s` }}>
+                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 32, height: 32, background: "#1a1a1a", border: "1px solid #252525" }}>
                     <Icon size={14} style={{ color: "#C5A55A" }} />
                   </div>
                   <span className="mt-1 whitespace-nowrap" style={{ fontSize: "9px", color: "#3a3a3a" }}>{label}</span>
