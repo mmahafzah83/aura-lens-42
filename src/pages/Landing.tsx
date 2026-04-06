@@ -243,7 +243,7 @@ const Landing = () => {
       </section>
 
       {/* Section 5 — What makes Aura different (carbon fiber bg + glassmorphism) */}
-      <section className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section ref={diffQuote.ref} className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${carbonBg})`,
           backgroundSize: "cover",
@@ -255,7 +255,7 @@ const Landing = () => {
         <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(10,10,10,0.80)" }} />
         <div className="relative max-w-2xl mx-auto">
           <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>What makes Aura different</p>
-          <div ref={diffQuote.ref} className="relative pl-5 mb-10">
+          <div className="relative pl-5 mb-10">
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
               background: "#C5A55A",
