@@ -388,7 +388,7 @@ const Dashboard = () => {
           <div className="tab-content-spring">
             {activeTab === "home" && (
               <div className="animate-tab-spring">
-                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} />
+                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} />
               </div>
             )}
 
@@ -400,7 +400,7 @@ const Dashboard = () => {
 
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
-                <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onOpenCapture={() => setCaptureOpen(true)} />
+                <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onOpenCapture={() => setCaptureOpen(true)} initialSignalId={focusSignalId} />
               </div>
             )}
 
