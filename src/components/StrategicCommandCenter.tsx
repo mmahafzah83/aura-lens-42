@@ -44,7 +44,7 @@ const EMPTY: CommandData = {
 };
 
 /* ── Main Component ── */
-const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat?: (msg?: string) => void; onNavigateToSignal?: (signalId: string) => void }) => {
+const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
   const [data, setData] = useState<CommandData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
@@ -56,20 +56,7 @@ const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat
   const loadData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      let userName = user?.user_metadata?.full_name || user?.user_metadata?.name || "";
-
-      // Prefer first_name from diagnostic_profiles
-      if (user) {
-        const { data: nameRow } = await supabase
-          .from("diagnostic_profiles")
-          .select("first_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if ((nameRow as any)?.first_name) {
-          userName = (nameRow as any).first_name;
-        }
-      }
-      if (!userName) userName = "";
+      const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
 
       const [signalsRes, profileRes, frameworksRes, intelligenceRes, suggestionsRes] = await Promise.all([
         supabase.from("strategic_signals").select("signal_title, confidence, supporting_evidence_ids, strategic_implications, explanation, content_opportunity").eq("status", "active").order("confidence", { ascending: false }).limit(5),
@@ -233,9 +220,10 @@ const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat
                 </p>
               )}
 
-              <div className="pt-2 flex flex-wrap gap-2">
+              <div className="pt-2">
                 <SignalActions
                   onExplore={() => {
+                    // Find top signal for explorer
                     supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(1)
                       .then(({ data: signals }) => {
                         if (signals?.[0]) setExplorerSignal(signals[0]);
@@ -254,19 +242,6 @@ const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat
                     context: data.opportunityExplanation,
                   })}
                 />
-                {onNavigateToSignal && (
-                  <button
-                    onClick={() => {
-                      supabase.from("strategic_signals").select("id").eq("status", "active").order("confidence", { ascending: false }).limit(1)
-                        .then(({ data: signals }) => {
-                          if (signals?.[0]) onNavigateToSignal(signals[0].id);
-                        });
-                    }}
-                    className="text-xs px-3 py-1.5 rounded-lg border border-primary/20 text-primary/70 hover:text-primary hover:border-primary/40 transition-all"
-                  >
-                    View signal →
-                  </button>
-                )}
               </div>
             </>
           ) : (

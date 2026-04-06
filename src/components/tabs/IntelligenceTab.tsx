@@ -14,7 +14,6 @@ interface IntelligenceTabProps {
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
   onOpenCapture?: () => void;
-  initialSignalId?: string | null;
 }
 
 interface Signal {
@@ -407,24 +406,13 @@ const ExpandedDetail = ({
    Main Intelligence Tab
    ═══════════════════════════════════════════ */
 
-const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, initialSignalId }: IntelligenceTabProps) => {
+const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: IntelligenceTabProps) => {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(initialSignalId || null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
-
-  // Auto-expand and scroll to signal when initialSignalId changes
-  useEffect(() => {
-    if (initialSignalId) {
-      setExpandedId(initialSignalId);
-      setTimeout(() => {
-        const el = document.getElementById(`signal-${initialSignalId}`);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 400);
-    }
-  }, [initialSignalId]);
 
   const loadSignals = useCallback(async () => {
     setLoading(true);
@@ -699,7 +687,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, initia
           return (
             <motion.div
               key={signal.id}
-              id={`signal-${signal.id}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: i * 0.03 }}

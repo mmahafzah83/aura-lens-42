@@ -1,1 +1,0 @@
-ALTER TABLE public.diagnostic_profiles ADD COLUMN IF NOT EXISTS first_name text;

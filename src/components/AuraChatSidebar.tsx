@@ -19,8 +19,8 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
 
   return (
     <div>
-      <div className="text-sm font-semibold leading-relaxed prose prose-sm prose-invert max-w-none [&_p]:my-0 [&_strong]:text-[#C5A55A] [&_em]:text-[#C5A55A]/80" style={{ color: "#C5A55A" }}>
-        <ReactMarkdown>{bluf || content.slice(0, 200)}</ReactMarkdown>
+      <div className="text-sm font-semibold leading-relaxed" style={{ color: "#C5A55A" }}>
+        {bluf || content.slice(0, 200)}
       </div>
       {hasMore && !expanded && (
         <button
