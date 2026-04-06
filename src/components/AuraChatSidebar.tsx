@@ -6,6 +6,40 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 
+/* ── BLUF Response Block — shows first 2 sentences prominently, rest expandable ── */
+const AuraResponseBlock = ({ content }: { content: string }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  // Split into sentences, take first 2 as BLUF
+  const sentences = content.replace(/\n+/g, " ").match(/[^.!?]*[.!?]+/g) || [content];
+  const bluf = sentences.slice(0, 2).join(" ").trim();
+  const blufEndIndex = content.indexOf(sentences[1]?.trim() || "") + (sentences[1]?.trim().length || content.length);
+  const restMd = content.slice(blufEndIndex).trim();
+  const hasMore = restMd.length > 20;
+
+  return (
+    <div>
+      <div className="text-sm font-semibold leading-relaxed" style={{ color: "#C5A55A" }}>
+        {bluf || content.slice(0, 200)}
+      </div>
+      {hasMore && !expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="mt-2 text-xs flex items-center gap-1 transition-colors"
+          style={{ color: "#666666", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+        >
+          Read full analysis ▾
+        </button>
+      )}
+      {hasMore && expanded && (
+        <div className="mt-3 prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-primary [&_code]:text-xs [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded">
+          <ReactMarkdown>{restMd}</ReactMarkdown>
+        </div>
+      )}
+    </div>
+  );
+};
+
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-aura`;
@@ -610,9 +644,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                       style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
                     >
                       {msg.role === "assistant" ? (
-                        <div className="prose prose-sm prose-invert max-w-none [&_p]:my-1.5 [&_ul]:my-1.5 [&_ol]:my-1.5 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-primary [&_code]:text-xs [&_code]:bg-background/50 [&_code]:px-1 [&_code]:rounded">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
-                        </div>
+                        <AuraResponseBlock content={msg.content} />
                       ) : (
                         msg.content
                       )}

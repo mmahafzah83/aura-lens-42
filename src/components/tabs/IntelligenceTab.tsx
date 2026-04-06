@@ -240,11 +240,11 @@ const ExpandedDetail = ({
       transition={{ duration: 0.25 }}
       style={{ overflow: "hidden" }}
     >
-      <div style={{ padding: "0 16px 16px", borderTop: "1px solid #1f1f1f" }}>
+      <div style={{ padding: "0 16px 16px", paddingBottom: 84, borderTop: "1px solid #1f1f1f" }}>
         {/* Confidence explanation */}
         {signal.confidence_explanation && (
           <p style={{ color: "#3a3a3a", fontSize: 12, margin: "14px 0 0", lineHeight: 1.5 }}>
-            {signal.confidence_explanation}
+            {signal.confidence_explanation.replace(/(\d+)\s+sources/g, (_, n) => `${n} ${Number(n) === 1 ? 'source' : 'sources'}`).replace(/(\d+)\s+organisations/g, (_, n) => `${n} ${Number(n) === 1 ? 'organisation' : 'organisations'}`)}
           </p>
         )}
 
@@ -295,7 +295,7 @@ const ExpandedDetail = ({
             Draft content
           </button>
           <button
-            onClick={() => onOpenChat?.(`Help me think through this signal:\n\n${signal.signal_title}\n\n${signal.explanation}`)}
+            onClick={() => onOpenChat?.(`Analyse this signal for me:\n\nSignal: ${signal.signal_title}\nSummary: ${signal.explanation}\n${signal.what_it_means_for_you ? `Relevance: ${signal.what_it_means_for_you}` : ""}`)}
             style={{
               padding: "10px 16px", borderRadius: 10,
               background: "transparent", color: "#888888",
@@ -752,14 +752,19 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                       )}
                     </div>
 
-                    {/* Tag pills */}
+                    {/* Tag pills — max 3 collapsed, all when expanded */}
                     {signal.theme_tags && signal.theme_tags.length > 0 && (
                       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
-                        {signal.theme_tags.slice(0, 4).map(tag => (
+                        {signal.theme_tags.slice(0, isExpanded ? signal.theme_tags.length : 3).map(tag => (
                           <span key={tag} style={{ fontSize: 10, color: "#555555", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
                             {formatTag(tag)}
                           </span>
                         ))}
+                        {!isExpanded && signal.theme_tags.length > 3 && (
+                          <span style={{ fontSize: 10, color: "#3a3a3a", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
+                            +{signal.theme_tags.length - 3} more
+                          </span>
+                        )}
                       </div>
                     )}
 
