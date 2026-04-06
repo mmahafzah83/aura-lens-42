@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
+import { ChevronDown } from "lucide-react";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
