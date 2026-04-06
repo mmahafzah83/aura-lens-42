@@ -9,6 +9,16 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
+export interface AuraScore {
+  aura_score: number;
+  capture_score: number;
+  signal_score: number;
+  content_score: number;
+  score_status: string;
+  score_description: string;
+  score_trend: number | null;
+}
+
 interface HomeTabProps {
   entries?: Entry[];
   onOpenChat?: (msg?: string) => void;
