@@ -7,7 +7,7 @@ import carbonBg from "@/assets/carbon-bg.jpg";
 
 /* ── Intersection Observer hook ── */
 const useReveal = (threshold = 0.05) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
@@ -16,7 +16,7 @@ const useReveal = (threshold = 0.05) => {
     obs.observe(el);
     return () => obs.disconnect();
   }, [threshold]);
-  return { ref, visible };
+  return { ref: ref as React.RefObject<any>, visible };
 };
 
 /* ── Animated counter ── */
