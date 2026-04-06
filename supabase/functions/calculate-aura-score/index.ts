@@ -74,15 +74,18 @@ serve(async (req) => {
 
     // --- score_description ---
     let scoreDescription: string;
-    const minScore = Math.min(captureScore, signalScore, contentScore);
-    if (captureScore === signalScore && signalScore === contentScore) {
-      scoreDescription = "Keep going — you're building strong momentum.";
-    } else if (contentScore <= minScore) {
-      scoreDescription = "Signals are strong. Publishing content will push you toward Authority.";
-    } else if (captureScore <= minScore) {
-      scoreDescription = "You haven't captured recently. Feed Aura to keep your intelligence fresh.";
+    const range = Math.max(captureScore, signalScore, contentScore) - Math.min(captureScore, signalScore, contentScore);
+    if (range <= 10) {
+      scoreDescription = "Strong across the board — keep your current pace.";
     } else {
-      scoreDescription = "Capture more sources to strengthen your signals.";
+      const minScore = Math.min(captureScore, signalScore, contentScore);
+      if (signalScore <= minScore) {
+        scoreDescription = "Your signals need more diverse sources — capture from different organisations to strengthen confidence.";
+      } else if (captureScore <= minScore) {
+        scoreDescription = "You haven't captured recently — feed Aura to keep your intelligence fresh.";
+      } else {
+        scoreDescription = "Signals are strong but you haven't published — draft content to push toward Authority.";
+      }
     }
 
     // --- score_trend: compare to 7 days ago snapshot ---

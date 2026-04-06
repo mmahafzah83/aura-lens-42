@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Mic, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
@@ -43,7 +43,22 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
+
+  // Handle ?tab=intelligence&signal=xxx from URL
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && NAV_ITEMS.some(n => n.value === tabParam)) {
+      setActiveTab(tabParam as TabValue);
+    }
+  }, []);
+
+  const navigateToSignal = (signalId: string) => {
+    setSearchParams({ signal: signalId });
+    setActiveTab("intelligence");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const checkStrategicNudge = useCallback(async (accessToken: string) => {
     try {
@@ -365,7 +380,7 @@ const Dashboard = () => {
           <div className="tab-content-spring">
             {activeTab === "home" && (
               <div className="animate-tab-spring">
-                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} />
+                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} />
               </div>
             )}
 

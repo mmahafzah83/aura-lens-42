@@ -39,6 +39,7 @@ interface HomeTabProps {
   entries?: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
+  onNavigateToSignal?: (signalId: string) => void;
 }
 
 const PLACEHOLDERS = [
@@ -58,7 +59,19 @@ function getRelativeTime(date: string): string {
   return `${days}d ago`;
 }
 
-const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
+function getTrendDate(publishedAt: string | null): string {
+  if (!publishedAt) return "Recent";
+  const now = new Date();
+  const pub = new Date(publishedAt);
+  const diffMs = now.getTime() - pub.getTime();
+  const days = Math.floor(diffMs / 86400000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days <= 6) return `${days} days ago`;
+  return "1 week ago";
+}
+
+const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: HomeTabProps) => {
   const [auraScore, setAuraScore] = useState<AuraScore | null>(null);
   const [userName, setUserName] = useState("");
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
@@ -83,13 +96,18 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
     // Fetch profile name
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("firm, level, last_visit_at")
+      .select("firm, level, last_visit_at, first_name")
       .eq("user_id", user.id)
       .single();
 
-    const email = user.email || "";
-    const firstName = email.split("@")[0].split(".")[0];
-    setUserName(firstName.charAt(0).toUpperCase() + firstName.slice(1));
+    const profileFirstName = (profile as any)?.first_name;
+    if (profileFirstName) {
+      setUserName(profileFirstName);
+    } else {
+      const email = user.email || "";
+      const fallback = email.split("@")[0].split(".")[0];
+      setUserName(fallback.charAt(0).toUpperCase() + fallback.slice(1));
+    }
 
     // Fetch Aura Score
     supabase.functions.invoke("calculate-aura-score", {
@@ -127,8 +145,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
       type: "trend" as const,
       title: t.headline,
       description: t.insight,
-      sourceLabel: `From the web · ${getRelativeTime(t.fetched_at)}`,
-      timeAgo: getRelativeTime(t.fetched_at),
+      sourceLabel: `From the web · ${getTrendDate(t.published_at)}`,
+      timeAgo: getTrendDate(t.published_at),
       url: t.url,
       status: t.status,
     }));
@@ -426,7 +444,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
                   Draft content now
                 </button>
                 <button
-                  onClick={() => onOpenChat?.(`Tell me more about my signal: ${topSignal.signal_title}`)}
+                  onClick={() => onNavigateToSignal?.(topSignal.id)}
                   style={{
                     flex: 1,
                     background: "transparent",
@@ -577,7 +595,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh }: HomeTabProps) => {
                               Draft content
                             </button>
                             <button
-                              onClick={() => onOpenChat?.(`Tell me about my signal: ${item.title}`)}
+                              onClick={() => item.signalId && onNavigateToSignal?.(item.signalId)}
                               style={{
                                 fontSize: 10,
                                 fontWeight: 500,
