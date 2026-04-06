@@ -5,18 +5,24 @@ import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap } from "lucide-
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 
-/* ── Intersection Observer hook ── */
-const useReveal = (threshold = 0.05) => {
-  const ref = useRef<HTMLElement>(null);
+/* ── Scroll-based reveal hook (works in iframes) ── */
+const useReveal = () => {
+  const ref = useRef<any>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold, rootMargin: "0px 0px -50px 0px" });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return { ref: ref as React.RefObject<any>, visible };
+    const check = () => {
+      const el = ref.current;
+      if (!el || visible) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 50) {
+        setVisible(true);
+      }
+    };
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    return () => window.removeEventListener("scroll", check);
+  }, [visible]);
+  return { ref, visible };
 };
 
 /* ── Animated counter ── */
@@ -54,10 +60,10 @@ const Landing = () => {
   }, [paused]);
 
   /* reveal hooks */
-  const pullQuote = useReveal(0.05);
-  const diffQuote = useReveal(0.05);
-  const stats = useReveal(0.05);
-  const steps = [useReveal(0.05), useReveal(0.05), useReveal(0.05), useReveal(0.05), useReveal(0.05)];
+  const pullQuote = useReveal();
+  const diffQuote = useReveal();
+  const stats = useReveal();
+  const steps = [useReveal(), useReveal(), useReveal(), useReveal(), useReveal()];
 
   const scrollToHowItWorks = () => {
     document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
