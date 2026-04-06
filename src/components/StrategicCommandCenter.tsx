@@ -44,7 +44,7 @@ const EMPTY: CommandData = {
 };
 
 /* ── Main Component ── */
-const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
+const StrategicCommandCenter = ({ onOpenChat, onNavigateToSignal }: { onOpenChat?: (msg?: string) => void; onNavigateToSignal?: (signalId: string) => void }) => {
   const [data, setData] = useState<CommandData>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
