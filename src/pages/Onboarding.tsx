@@ -171,9 +171,20 @@ const Onboarding = () => {
       {/* Progress bar */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs tracking-wide" style={{ color: "#C5A55A" }}>
-            {step < 4 ? `Step ${step + 1} of 4 · ${STEP_NAMES[step]}` : "Complete ✓"}
-          </span>
+          <div className="flex items-center gap-2">
+            {step > 0 && (
+              <button
+                onClick={() => setStep(step - 1)}
+                className="text-base leading-none"
+                style={{ color: "#3a3a3a", background: "transparent", border: "none", padding: "4px 8px", cursor: "pointer" }}
+              >
+                ←
+              </button>
+            )}
+            <span className="text-xs tracking-wide" style={{ color: "#C5A55A" }}>
+              {step < 4 ? `Step ${step + 1} of 4 · ${STEP_NAMES[step]}` : "Complete ✓"}
+            </span>
+          </div>
           <span className="text-xs" style={{ color: "#3a3a3a" }}>
             {step === 0 ? "~3 min left" : step === 1 ? "~2 min left" : step === 2 ? "~1 min left" : "Done"}
           </span>
