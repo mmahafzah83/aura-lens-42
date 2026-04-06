@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Archive } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
@@ -280,8 +281,7 @@ const ExpandedDetail = ({
         </div>
 
         {/* ── Action buttons ── */}
-        {/* Row 1 */}
-        <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+        <div style={{ marginTop: 20, display: "flex", gap: 8, alignItems: "center" }}>
           <button
             onClick={() => onDraft(signal)}
             style={{
@@ -297,49 +297,105 @@ const ExpandedDetail = ({
           <button
             onClick={() => onOpenChat?.(`Help me think through this signal:\n\n${signal.signal_title}\n\n${signal.explanation}`)}
             style={{
-              flex: 1, padding: "10px 16px", borderRadius: 10,
+              padding: "10px 16px", borderRadius: 10,
               background: "transparent", color: "#888888",
               fontSize: 13, border: "1px solid #2a2a2a", cursor: "pointer",
+              whiteSpace: "nowrap",
             }}
           >
             Ask Aura
           </button>
-        </div>
 
-        {/* Row 2 — small feedback buttons */}
-        <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
-          <button
-            onClick={() => onLove(signal)}
-            style={{
-              padding: "6px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
-              background: isLoved ? "rgba(226,75,74,0.08)" : "transparent",
-              color: "#E24B4A",
-              border: `1px solid ${isLoved ? "#E24B4A" : "#F7C1C1"}`,
-              fontWeight: isLoved ? 600 : 400,
-            }}
-          >
-            {isLoved ? "Loved" : "Love this"}
-          </button>
-          <button
-            onClick={() => onNotForMe(signal)}
-            style={{
-              padding: "6px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
-              background: "transparent", color: "#666666",
-              border: "1px solid #252525",
-            }}
-          >
-            Not for me
-          </button>
-          <button
-            onClick={() => onArchive(signal.id)}
-            style={{
-              padding: "6px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
-              background: "transparent", color: "#3a3a3a",
-              border: "1px solid #1f1f1f",
-            }}
-          >
-            Done
-          </button>
+          {/* Icon feedback group */}
+          <TooltipProvider delayDuration={300}>
+            <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+              {/* Thumbs up */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onLove(signal)}
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%", border: "none",
+                      background: "transparent", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#1a1a1a"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  >
+                    <ThumbsUp
+                      size={16}
+                      fill={isLoved ? "#7ab648" : "none"}
+                      color={isLoved ? "#7ab648" : "#666666"}
+                      style={{ transition: "color 0.15s" }}
+                      onMouseEnter={e => { if (!isLoved) (e.currentTarget as unknown as SVGElement).style.color = "#7ab648"; }}
+                      onMouseLeave={e => { if (!isLoved) (e.currentTarget as unknown as SVGElement).style.color = "#666666"; }}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" style={{ background: "#1a1a1a", color: "#f0f0f0", fontSize: 11, padding: "4px 8px", borderRadius: 6, border: "none" }}>
+                  {isLoved ? "Remove love" : "Love this signal"}
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Thumbs down */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => { if (signal.user_signal_feedback !== "not_relevant") onNotForMe(signal); }}
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%", border: "none",
+                      background: "transparent", cursor: signal.user_signal_feedback === "not_relevant" ? "default" : "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#1a1a1a"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  >
+                    <ThumbsDown
+                      size={16}
+                      fill={signal.user_signal_feedback === "not_relevant" ? "#E24B4A" : "none"}
+                      color={signal.user_signal_feedback === "not_relevant" ? "#E24B4A" : "#666666"}
+                      style={{ transition: "color 0.15s" }}
+                      onMouseEnter={e => { if (signal.user_signal_feedback !== "not_relevant") (e.currentTarget as unknown as SVGElement).style.color = "#E24B4A"; }}
+                      onMouseLeave={e => { if (signal.user_signal_feedback !== "not_relevant") (e.currentTarget as unknown as SVGElement).style.color = "#666666"; }}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" style={{ background: "#1a1a1a", color: "#f0f0f0", fontSize: 11, padding: "4px 8px", borderRadius: 6, border: "none" }}>
+                  Not for me
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Archive */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onArchive(signal.id)}
+                    style={{
+                      width: 32, height: 32, borderRadius: "50%", border: "none",
+                      background: "transparent", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#1a1a1a"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                  >
+                    <Archive
+                      size={16}
+                      color="#666666"
+                      style={{ transition: "color 0.15s" }}
+                      onMouseEnter={e => { (e.currentTarget as unknown as SVGElement).style.color = "#C5A55A"; }}
+                      onMouseLeave={e => { (e.currentTarget as unknown as SVGElement).style.color = "#666666"; }}
+                    />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" style={{ background: "#1a1a1a", color: "#f0f0f0", fontSize: 11, padding: "4px 8px", borderRadius: 6, border: "none" }}>
+                  Done with this
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
       </div>
     </motion.div>
