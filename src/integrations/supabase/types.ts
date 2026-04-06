@@ -254,6 +254,7 @@ export type Database = {
           id: string
           identity_intelligence: Json
           last_active_at: string | null
+          last_visit_at: string | null
           leadership_style: string | null
           level: string | null
           north_star_goal: string | null
@@ -272,6 +273,7 @@ export type Database = {
           id?: string
           identity_intelligence?: Json
           last_active_at?: string | null
+          last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           id?: string
           identity_intelligence?: Json
           last_active_at?: string | null
+          last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
@@ -638,6 +641,42 @@ export type Database = {
           started_at?: string | null
           status?: string
           total_rows?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      industry_trends: {
+        Row: {
+          fetched_at: string
+          headline: string
+          id: string
+          insight: string
+          published_at: string | null
+          source: string
+          status: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          fetched_at?: string
+          headline: string
+          id?: string
+          insight: string
+          published_at?: string | null
+          source: string
+          status?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          fetched_at?: string
+          headline?: string
+          id?: string
+          insight?: string
+          published_at?: string | null
+          source?: string
+          status?: string
+          url?: string
           user_id?: string
         }
         Relationships: []
