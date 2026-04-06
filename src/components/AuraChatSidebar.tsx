@@ -16,7 +16,6 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
   const blufEndIndex = content.indexOf(sentences[1]?.trim() || "") + (sentences[1]?.trim().length || content.length);
   const restMd = content.slice(blufEndIndex).trim();
   const hasMore = restMd.length > 20;
-  const hasMore = restMd.length > 20;
 
   return (
     <div>
