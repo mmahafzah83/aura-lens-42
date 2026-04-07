@@ -1,27 +1,54 @@
 
 
-## Remove Voice Mode from Capture Panel & Rename to "Capture"
+## Plan: Daily Auto-Refresh Trends — Top 5 Live Intelligence
 
-**Single file change:** `src/components/CaptureIntelligencePanel.tsx`
+### Current behavior
+- Trends are fetched on Home page visit if the latest trend is older than 6 hours
+- Shows up to 4 trends with status "new"
+- Edge function `fetch-industry-trends` inserts new trends but never cleans up old ones
+- Trends accumulate indefinitely in the database
 
-### What changes
+### Changes needed
 
-1. **Remove `"voice"` from `InputMode` type** (line 11)
-2. **Remove voice entry from `INPUT_MODES` array** (line 20)
-3. **Remove voice-related state**: `isRecording`, `isTranscribing`
-4. **Remove voice-related refs**: `mediaRecorderRef`, `chunksRef`
-5. **Remove `startRecording` and `stopRecording` functions**
-6. **Remove the voice recording UI block** (the `mode === "voice"` conditional render)
-7. **Change grid from `grid-cols-4` to `grid-cols-3`**
-8. **Rename header** from "Capture Intelligence" to "Capture"
-9. **Remove unused imports**: `Mic`, `Square` (if not used elsewhere in file)
+**1. Set up a daily cron job (morning refresh)**
 
-### What stays unchanged
-- Link, Text, and Document capture modes — all untouched
-- All backend edge functions (`ingest-capture`, `transcribe-voice`) — untouched
-- Voice recording in the CaptureModal (attach) component — untouched
-- All data, database tables, processing pipelines — no impact
+Run `fetch-industry-trends` automatically every day at 6:00 AM UTC via `pg_cron` + `pg_net`. This ensures fresh trends are ready before the user opens the app.
 
-### Impact assessment
-Voice capture via the separate CaptureModal/attach flow remains fully functional. This only removes the redundant voice button from the Capture panel on the Home page.
+Enable extensions `pg_cron` and `pg_net`, then schedule the job using the insert tool (not migration).
+
+**2. Update the edge function `fetch-industry-trends`**
+
+Before inserting new trends, mark stale trends. The logic:
+- Query all existing "new" status trends for the user
+- After fetching fresh AI results, compare: if an existing trend's URL matches a new one, keep it (it's still valid)
+- Mark non-matching old "new" trends as "expired" (so they disappear from the feed)
+- Insert only genuinely new URLs
+- Cap total active ("new") trends at 5 per user
+
+**3. Update HomeTab.tsx**
+
+- Change the trend query limit from 4 to 5
+- Change staleness check from 6 hours to 18 hours (since cron runs daily, we only need a fallback)
+- Increase the timeline slice from 6 to 8 to accommodate 5 trends + signals
+
+**4. No database schema changes needed**
+
+The existing `industry_trends` table already has the `status` field ("new", "dismissed", "added") — we just add "expired" as a new status value used by the edge function.
+
+### Technical details
+
+**Cron schedule**: `0 6 * * *` (6:00 AM UTC daily)
+
+The cron job calls the edge function without a specific user context, so the edge function needs a small update: when called without auth (from cron), iterate over all users who have a `diagnostic_profiles` record and fetch trends for each. Rate-limited to avoid overloading.
+
+Alternatively (simpler): keep the user-triggered approach but make the staleness window 24 hours so it refreshes once per day on first visit. This avoids the complexity of a cron job iterating all users.
+
+**Recommended approach**: Staleness-based daily refresh (simpler, no cron needed). Change the 6-hour window to check if the latest trend was fetched today. If not, trigger a refresh. The edge function handles cleanup of old trends (cap at 5, expire the rest).
+
+### Summary of file changes
+
+| File | Change |
+|------|--------|
+| `supabase/functions/fetch-industry-trends/index.ts` | Add cleanup logic: expire old "new" trends beyond top 5, skip URLs already present |
+| `src/components/tabs/HomeTab.tsx` | Change limit to 5, staleness to "not fetched today", timeline cap to 8 |
 
