@@ -1,16 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Pencil, Check, X, RefreshCw, Loader2, ChevronDown } from "lucide-react";
+import { Pencil, Check, X, RefreshCw, Loader2, Calendar, ArrowRight } from "lucide-react";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
-
-
-const STRENGTHS = [
-  "Think strategically — see the big picture first",
-  "Go deep into the data and evidence",
-  "Work with people to find the answer together",
-  "Execute — find the fastest path and move",
-];
 
 interface ProfileData {
   first_name: string | null;
@@ -23,13 +15,20 @@ interface ProfileData {
   brand_pillars: string[];
 }
 
+interface ProfileDates {
+  onboarding_completed: boolean;
+  created_at: string;
+  audit_completed_at: string | null;
+  brand_assessment_completed_at: string | null;
+}
+
 const OnboardingProfileSection = () => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [dates, setDates] = useState<ProfileDates | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
-  const [changingAnswer, setChangingAnswer] = useState<"role" | "strength" | null>(null);
   const [brandSummary, setBrandSummary] = useState("");
   const [regenerating, setRegenerating] = useState(false);
   const [showFullEdit, setShowFullEdit] = useState(false);
@@ -39,23 +38,30 @@ const OnboardingProfileSection = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { data } = await (supabase.from("diagnostic_profiles") as any)
-      .select("first_name, level, primary_strength, sector_focus, north_star_goal, core_practice, firm, brand_pillars")
+      .select("first_name, level, primary_strength, sector_focus, north_star_goal, core_practice, firm, brand_pillars, onboarding_completed, created_at, audit_completed_at, brand_assessment_completed_at, audit_results, brand_assessment_results, identity_intelligence")
       .eq("user_id", user.id)
       .maybeSingle();
     if (data) {
       setProfile(data);
-      generateBrandSummary(data);
+      setDates({
+        onboarding_completed: data.onboarding_completed,
+        created_at: data.created_at,
+        audit_completed_at: data.audit_completed_at,
+        brand_assessment_completed_at: data.brand_assessment_completed_at,
+      });
+      // Generate initial brand summary locally (not AI)
+      generateLocalSummary(data);
     }
     setLoading(false);
   };
 
   useEffect(() => { loadProfile(); }, []);
 
-  const generateBrandSummary = (p: ProfileData) => {
+  const generateLocalSummary = (p: ProfileData) => {
     const role = p.level || "professional";
-    const strength = p.primary_strength || "";
     const industry = p.sector_focus || "your industry";
     const goal = p.north_star_goal || "building authority";
+    const strength = p.primary_strength || "";
     const strengthLabel = strength.includes("strategically") ? "strategic thinking"
       : strength.includes("data") ? "evidence-based analysis"
       : strength.includes("people") ? "collaborative leadership"
@@ -81,17 +87,70 @@ const OnboardingProfileSection = () => {
     }
     setSaving(false);
     setEditingField(null);
-    setChangingAnswer(null);
   };
 
   const handleRegenerate = async () => {
     if (!profile) return;
     setRegenerating(true);
-    // Re-generate locally (could call AI edge function in future)
-    generateBrandSummary(profile);
-    await new Promise(r => setTimeout(r, 800));
-    setRegenerating(false);
-    toast.success("Brand positioning refreshed.");
+    setBrandSummary("Writing your brand positioning...");
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Fetch full profile data for the AI
+      const { data: fullProfile } = await (supabase.from("diagnostic_profiles") as any)
+        .select("level, sector_focus, north_star_goal, firm, core_practice, primary_strength, brand_pillars, audit_results, brand_assessment_results, identity_intelligence")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!fullProfile) throw new Error("Profile not found");
+
+      const identityIntel = fullProfile.identity_intelligence || {};
+
+      const profileContext = JSON.stringify({
+        role: fullProfile.level,
+        industry: fullProfile.sector_focus,
+        career_target: fullProfile.north_star_goal,
+        firm: fullProfile.firm,
+        core_practice: fullProfile.core_practice,
+        primary_strength: fullProfile.primary_strength,
+        brand_pillars: fullProfile.brand_pillars,
+        audit_results: fullProfile.audit_results,
+        brand_assessment_results: fullProfile.brand_assessment_results,
+        expertise_areas: identityIntel.expertise_areas,
+        authority_ambitions: identityIntel.authority_ambitions,
+      }, null, 2);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-brand-positioning`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ profileContext }),
+      });
+
+      if (!resp.ok) throw new Error("Failed to generate");
+      const data = await resp.json();
+      if (data.positioning) {
+        setBrandSummary(data.positioning);
+        toast.success("Brand positioning refreshed.");
+      } else {
+        throw new Error("No positioning returned");
+      }
+    } catch (e: any) {
+      console.error("Brand positioning error:", e);
+      // Fall back to local generation
+      generateLocalSummary(profile);
+      toast.error("Could not generate AI positioning — showing default.");
+    } finally {
+      setRegenerating(false);
+    }
   };
 
   const saveFullEdit = async () => {
@@ -116,6 +175,11 @@ const OnboardingProfileSection = () => {
     }
     setSaving(false);
     setShowFullEdit(false);
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   };
 
   if (loading) {
@@ -145,9 +209,8 @@ const OnboardingProfileSection = () => {
     else if (action === "edit_career_target") { setEditingField("career_target"); setEditValue(profile?.north_star_goal || ""); }
     else if (action === "edit_firm") { setEditingField("firm"); setEditValue(profile?.firm || ""); }
     else if (action === "edit_core_practice") { setEditingField("core_practice"); setEditValue(profile?.core_practice || ""); }
-    else if (action === "edit_strength") { setChangingAnswer("strength"); }
+    else if (action === "edit_strength") { /* handled via profile fields edit */ }
     else if (action === "edit_pillars") { setShowFullEdit(true); setFullEditData({ ...profile! }); }
-    // open_audit, open_brand, go_capture, go_signals are external navigations — bubble up
   };
 
   return (
@@ -208,75 +271,54 @@ const OnboardingProfileSection = () => {
         </div>
       </div>
 
-      {/* Section 2: Your Assessment */}
+      {/* Section 2: Assessment History */}
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Your assessment</h2>
-
-        {/* Role question */}
-        <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
-          <p className="text-xs" style={{ color: "#666" }}>What best describes your role?</p>
-          <p className="text-sm font-medium" style={{ color: "#C5A55A" }}>{profile.level || "Not answered"}</p>
-          {changingAnswer === "role" ? (
-            <div className="space-y-2 pt-2" style={{ borderTop: "1px solid #252525" }}>
-              <input
-                autoFocus
-                defaultValue={profile.level || ""}
-                placeholder="Your actual job title and organisation"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveField("role", (e.target as HTMLInputElement).value);
-                }}
-                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{ background: "#0d0d0d", border: "1px solid #252525", color: "#f0f0f0" }}
-                id="role-edit-input"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    const input = document.getElementById("role-edit-input") as HTMLInputElement;
-                    if (input?.value.trim()) saveField("role", input.value.trim());
-                  }}
-                  className="flex-1 py-2 rounded-lg text-xs font-medium"
-                  style={{ background: "#C5A55A", color: "#0d0d0d" }}
-                >
-                  Save
-                </button>
-                <button onClick={() => setChangingAnswer(null)} className="text-xs px-3 py-2 rounded-lg" style={{ color: "#666", background: "#1a1a1a" }}>Cancel</button>
+        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Assessment history</h2>
+        <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
+          {/* Onboarding */}
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #252525" }}>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
+              <div>
+                <span className="text-sm block" style={{ color: "#f0f0f0" }}>Onboarding</span>
+                <span className="text-[10px] block" style={{ color: "#666" }}>
+                  {dates?.onboarding_completed ? `Completed ${formatDate(dates.created_at)}` : "Not completed"}
+                </span>
               </div>
             </div>
-          ) : (
-            <button onClick={() => setChangingAnswer("role")} className="text-[11px]" style={{ color: "#C5A55A99" }}>
-              Change answer
-            </button>
-          )}
-        </div>
+          </div>
 
-        {/* Strength question */}
-        <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
-          <p className="text-xs" style={{ color: "#666" }}>When you solve a problem, you usually...</p>
-          <p className="text-sm font-medium" style={{ color: "#C5A55A" }}>{profile.primary_strength || "Not answered"}</p>
-          {changingAnswer === "strength" ? (
-            <div className="space-y-2 pt-2" style={{ borderTop: "1px solid #252525" }}>
-              {STRENGTHS.map(s => (
-                <button
-                  key={s}
-                  onClick={() => saveField("primary_strength", s)}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
-                  style={{
-                    background: profile.primary_strength === s ? "#1e1a10" : "#0d0d0d",
-                    border: `1px solid ${profile.primary_strength === s ? "#C5A55A" : "#252525"}`,
-                    color: profile.primary_strength === s ? "#C5A55A" : "#f0f0f0",
-                  }}
-                >
-                  {s}
-                </button>
-              ))}
-              <button onClick={() => setChangingAnswer(null)} className="text-xs mt-1" style={{ color: "#666" }}>Cancel</button>
+          {/* Evidence Audit */}
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #252525" }}>
+            <div className="flex items-center gap-3">
+              <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
+              <div>
+                <span className="text-sm block" style={{ color: "#f0f0f0" }}>Evidence Audit</span>
+                <span className="text-[10px] block" style={{ color: dates?.audit_completed_at ? "#666" : "#3a3a3a" }}>
+                  {dates?.audit_completed_at ? `Completed ${formatDate(dates.audit_completed_at)}` : "Not completed yet"}
+                </span>
+              </div>
             </div>
-          ) : (
-            <button onClick={() => setChangingAnswer("strength")} className="text-[11px]" style={{ color: "#C5A55A99" }}>
-              Change answer
+            <button className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
+              Retake <ArrowRight className="w-3 h-3" />
             </button>
-          )}
+          </div>
+
+          {/* Brand Assessment */}
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
+              <div>
+                <span className="text-sm block" style={{ color: "#f0f0f0" }}>Brand Assessment</span>
+                <span className="text-[10px] block" style={{ color: dates?.brand_assessment_completed_at ? "#666" : "#3a3a3a" }}>
+                  {dates?.brand_assessment_completed_at ? `Completed ${formatDate(dates.brand_assessment_completed_at)}` : "Not completed yet"}
+                </span>
+              </div>
+            </div>
+            <button className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
+              Retake <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -295,7 +337,9 @@ const OnboardingProfileSection = () => {
         </div>
         <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
           <p className="text-[10px] uppercase tracking-wider" style={{ color: "#666" }}>What Aura recommends you stand for</p>
-          <p className="text-sm leading-relaxed" style={{ color: "#f0f0f0" }}>{brandSummary}</p>
+          <p className="text-sm leading-relaxed" style={{ color: regenerating ? "#666" : "#f0f0f0", fontStyle: regenerating ? "italic" : "normal" }}>
+            {brandSummary}
+          </p>
         </div>
       </div>
 
