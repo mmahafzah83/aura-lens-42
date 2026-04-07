@@ -4,12 +4,6 @@ import { toast } from "sonner";
 import { Pencil, Check, X, RefreshCw, Loader2, ChevronDown } from "lucide-react";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 
-const ROLES = [
-  "Senior consultant or advisor",
-  "Executive or director",
-  "Independent expert or founder",
-  "Other professional",
-];
 
 const STRENGTHS = [
   "Think strategically — see the big picture first",
