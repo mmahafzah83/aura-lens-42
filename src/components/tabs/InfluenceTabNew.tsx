@@ -182,8 +182,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   };
 
   /* ── Derived ── */
-  const viewFollowers = posts.length > 0 ? Math.max(...posts.map(p => p.followers || 0)) : 0;
-  const currentFollowers = latestSnapshot?.followers || viewFollowers || 0;
+  const currentFollowers = latestSnapshot?.followers || 0;
   const latestEngRate = latestSnapshot ? Number(latestSnapshot.engagement_rate) || 0 : 0;
   const periodGrowth = snapshots.length >= 2
     ? (snapshots[snapshots.length - 1]?.followers || 0) - (snapshots[0]?.followers || 0) : 0;
