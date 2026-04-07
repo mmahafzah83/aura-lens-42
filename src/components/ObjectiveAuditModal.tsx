@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -171,7 +170,6 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
               </div>
 
               {skill.questions.map((q, qIdx) => {
-                const wasAutoSelected = checks[skill.name][qIdx] && qIdx < 2 && checks[skill.name][qIdx + 1];
                 return (
                   <div
                     key={qIdx}

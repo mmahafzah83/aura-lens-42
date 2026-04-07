@@ -2,8 +2,6 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import { ArrowRight, Loader2 } from "lucide-react";
-import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 
 interface AuditResultsViewProps {
   scores: Record<string, number>;

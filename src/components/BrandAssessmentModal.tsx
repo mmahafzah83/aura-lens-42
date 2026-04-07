@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, ArrowLeft, Compass, Loader2 } from "lucide-react";
+import { X, ArrowLeft, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
