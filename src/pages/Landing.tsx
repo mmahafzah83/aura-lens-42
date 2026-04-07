@@ -181,9 +181,6 @@ const Landing = () => {
     });
   }, [navigate]);
 
-  /* testimonial auto-scroll (desktop only) */
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
 
   /* reveal hooks */
   const pullQuote = useReveal();
