@@ -119,7 +119,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       const [viewRes, snapRes, syncRes, syncErrRes, lastCapRes, capSnapRes] = await Promise.all([
         supabase
           .from("influence_dashboard_view")
-          .select("id, user_id, post_url, post_text, hook, topic_label, format_type, media_type, published_at, impressions, like_count, comment_count, repost_count, engagement_rate, followers, snapshot_date, tracking_status")
+          .select("id, user_id, post_url, post_text, hook, topic_label, format_type, media_type, published_at, impressions, like_count, comment_count, repost_count, engagement_rate, snapshot_date, tracking_status")
           .eq("user_id", uid)
           .neq("tracking_status", "rejected")
           .order("published_at", { ascending: false }),
@@ -182,8 +182,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
   };
 
   /* ── Derived ── */
-  const viewFollowers = posts.length > 0 ? Math.max(...posts.map(p => p.followers || 0)) : 0;
-  const currentFollowers = latestSnapshot?.followers || viewFollowers || 0;
+  const currentFollowers = latestSnapshot?.followers || 0;
   const latestEngRate = latestSnapshot ? Number(latestSnapshot.engagement_rate) || 0 : 0;
   const periodGrowth = snapshots.length >= 2
     ? (snapshots[snapshots.length - 1]?.followers || 0) - (snapshots[0]?.followers || 0) : 0;
