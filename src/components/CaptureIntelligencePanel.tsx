@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link, Mic, Type, FileUp, Loader2, Square, X, ArrowRight, ImageIcon, StickyNote, Plus } from "lucide-react";
+import { Link, Type, FileUp, Loader2, ArrowRight, ImageIcon, StickyNote, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
 type Capture = Database["public"]["Tables"]["captures"]["Row"];
-type InputMode = "link" | "voice" | "text" | "document";
+type InputMode = "link" | "text" | "document";
 
 interface CaptureIntelligencePanelProps {
   entries?: any[];
@@ -17,7 +17,6 @@ interface CaptureIntelligencePanelProps {
 
 const INPUT_MODES: { key: InputMode; icon: typeof Link; label: string; placeholder: string }[] = [
   { key: "link", icon: Link, label: "Paste Link", placeholder: "Paste an article or report URL…" },
-  { key: "voice", icon: Mic, label: "Voice Insight", placeholder: "Recording voice…" },
   { key: "text", icon: Type, label: "Quick Insight", placeholder: "Write a strategic thought or observation…" },
   { key: "document", icon: FileUp, label: "Upload Doc", placeholder: "Upload PDF, DOCX, or image" },
 ];
@@ -26,7 +25,6 @@ const TYPE_ICONS: Record<string, typeof Link> = {
   url: Link,
   link: Link,
   document: FileUp,
-  voice: Mic,
   image: ImageIcon,
   note: StickyNote,
   text: Type,
@@ -47,8 +45,6 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
   const [mode, setMode] = useState<InputMode>("text");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
   const [captures, setCaptures] = useState<Capture[]>([]);
@@ -56,8 +52,6 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadCaptures = useCallback(async () => {
@@ -80,50 +74,8 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
     loadCaptures();
   }, [loadCaptures]);
 
-  /* ── Voice Recording ── */
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
-      const recorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
 
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        if (blob.size === 0) return;
-        setIsTranscribing(true);
-        try {
-          const formData = new FormData();
-          formData.append("audio", blob, `recording.${mimeType.includes("webm") ? "webm" : "mp4"}`);
-          const { data, error } = await supabase.functions.invoke("transcribe-voice", { body: formData });
-          if (error || data?.error) {
-            toast({ title: "Transcription failed", description: data?.error || error?.message, variant: "destructive" });
-          } else if (data?.transcript) {
-            setContent(data.transcript);
-            toast({ title: "Transcribed", description: "Voice note ready. Save to capture." });
-          }
-        } catch {
-          toast({ title: "Error", description: "Could not transcribe.", variant: "destructive" });
-        }
-        setIsTranscribing(false);
-      };
 
-      recorder.start();
-      setIsRecording(true);
-    } catch {
-      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  };
 
   /* ── Document Upload ── */
   const handleDocUpload = async (file: File) => {
@@ -235,13 +187,13 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
           <ArrowRight className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-card-title text-foreground">Capture Intelligence</h3>
+          <h3 className="text-card-title text-foreground">Capture</h3>
           <p className="text-meta">Feed your strategic thinking system</p>
         </div>
       </div>
 
       {/* Mode Selector */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {INPUT_MODES.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
@@ -269,28 +221,6 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
             {uploadingDoc ? <Loader2 className="w-6 h-6 text-primary animate-spin" /> : <FileUp className="w-6 h-6 text-muted-foreground/50" />}
             <span className="text-meta">{uploadingDoc ? "Processing…" : "Click to upload PDF, DOCX, or image"}</span>
           </button>
-        </div>
-      ) : mode === "voice" ? (
-        <div className="flex flex-col items-center gap-4 py-6">
-          {isTranscribing ? (
-            <div className="flex items-center gap-2 text-body text-muted-foreground">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" /> Transcribing…
-            </div>
-          ) : isRecording ? (
-            <button onClick={stopRecording} className="w-16 h-16 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center animate-pulse">
-              <Square className="w-6 h-6 text-destructive" />
-            </button>
-          ) : (
-            <button onClick={startRecording} className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/20 transition-colors">
-              <Mic className="w-7 h-7 text-primary" />
-            </button>
-          )}
-          {content && (
-            <div className="w-full bg-secondary/30 rounded-xl p-4 mt-2">
-              <p className="text-body text-foreground/80 leading-relaxed" dir="auto">{content}</p>
-            </div>
-          )}
-          <p className="text-meta">{isRecording ? "Tap to stop recording" : "Tap to start recording"}</p>
         </div>
       ) : (
         <div>
