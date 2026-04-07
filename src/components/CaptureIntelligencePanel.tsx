@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Link, Mic, Type, FileUp, Loader2, Square, X, ArrowRight, ImageIcon, StickyNote, Plus } from "lucide-react";
+import { Link, Type, FileUp, Loader2, ArrowRight, ImageIcon, StickyNote, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Database } from "@/integrations/supabase/types";
 
 type Capture = Database["public"]["Tables"]["captures"]["Row"];
-type InputMode = "link" | "voice" | "text" | "document";
+type InputMode = "link" | "text" | "document";
 
 interface CaptureIntelligencePanelProps {
   entries?: any[];
@@ -17,7 +17,6 @@ interface CaptureIntelligencePanelProps {
 
 const INPUT_MODES: { key: InputMode; icon: typeof Link; label: string; placeholder: string }[] = [
   { key: "link", icon: Link, label: "Paste Link", placeholder: "Paste an article or report URL…" },
-  { key: "voice", icon: Mic, label: "Voice Insight", placeholder: "Recording voice…" },
   { key: "text", icon: Type, label: "Quick Insight", placeholder: "Write a strategic thought or observation…" },
   { key: "document", icon: FileUp, label: "Upload Doc", placeholder: "Upload PDF, DOCX, or image" },
 ];
@@ -26,7 +25,6 @@ const TYPE_ICONS: Record<string, typeof Link> = {
   url: Link,
   link: Link,
   document: FileUp,
-  voice: Mic,
   image: ImageIcon,
   note: StickyNote,
   text: Type,
@@ -47,8 +45,6 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
   const [mode, setMode] = useState<InputMode>("text");
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
   const [captures, setCaptures] = useState<Capture[]>([]);
@@ -56,8 +52,6 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   const { toast } = useToast();
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadCaptures = useCallback(async () => {
