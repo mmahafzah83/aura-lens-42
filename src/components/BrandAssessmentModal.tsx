@@ -152,6 +152,14 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
     }
   }, [open]);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const q = QUESTIONS[step];
@@ -274,15 +282,16 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
     <>
       {/* Full-screen overlay */}
       <div
-        className="fixed inset-0 z-[1000]"
-        style={{ background: "rgba(0,0,0,0.8)" }}
+        className="fixed inset-0"
+        style={{ background: "rgba(0,0,0,0.8)", zIndex: 999, pointerEvents: "all" }}
         onClick={() => onOpenChange(false)}
       />
 
       {/* Centered modal */}
       <div
-        className="fixed z-[1001]"
+        className="fixed"
         style={{
+          zIndex: 1000,
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
@@ -295,6 +304,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           borderRadius: 16,
           border: "1px solid #252525",
           overflow: "hidden",
+          willChange: "unset",
         }}
         onClick={(e) => e.stopPropagation()}
       >

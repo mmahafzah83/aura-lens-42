@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -98,21 +98,30 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
     level === "Intermediate" ? "bg-amber-500/20 text-amber-400" :
     "bg-rose-500/20 text-rose-400";
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [open]);
+
   if (!open) return null;
 
   return (
     <>
       {/* Full-screen overlay */}
       <div
-        className="fixed inset-0 z-[1000]"
-        style={{ background: "rgba(0,0,0,0.8)" }}
+        className="fixed inset-0"
+        style={{ background: "rgba(0,0,0,0.8)", zIndex: 999, pointerEvents: "all" }}
         onClick={() => onOpenChange(false)}
       />
 
       {/* Centered modal */}
       <div
-        className="fixed z-[1001]"
+        className="fixed"
         style={{
+          zIndex: 1000,
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
@@ -125,6 +134,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           borderRadius: 16,
           border: "1px solid #252525",
           overflow: "hidden",
+          willChange: "unset",
         }}
         onClick={(e) => e.stopPropagation()}
       >

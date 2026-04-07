@@ -429,6 +429,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     }
   };
 
+  // Lock body scroll when open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [open]);
+
   if (!open) return null;
 
   // ── Group conversations ──
@@ -447,8 +455,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const contextType = activeConv?.linked_type || context?.linkedType;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" style={{ zIndex: 999, pointerEvents: "all" }} onClick={onClose} />
 
       <div
         onTouchStart={handleTouchStart}
@@ -457,9 +465,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         className="relative flex flex-col w-full bg-background rounded-t-2xl overflow-hidden"
         style={{
           height: "85vh",
-          transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
+          zIndex: 1000,
+          transform: swipeY > 0 ? `translateY(${swipeY}px)` : "translateY(0)",
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
+          willChange: "unset",
         }}
       >
         {/* Swipe handle */}
