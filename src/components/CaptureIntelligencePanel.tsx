@@ -74,50 +74,8 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
     loadCaptures();
   }, [loadCaptures]);
 
-  /* ── Voice Recording ── */
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
-      const recorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = recorder;
-      chunksRef.current = [];
 
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        if (blob.size === 0) return;
-        setIsTranscribing(true);
-        try {
-          const formData = new FormData();
-          formData.append("audio", blob, `recording.${mimeType.includes("webm") ? "webm" : "mp4"}`);
-          const { data, error } = await supabase.functions.invoke("transcribe-voice", { body: formData });
-          if (error || data?.error) {
-            toast({ title: "Transcription failed", description: data?.error || error?.message, variant: "destructive" });
-          } else if (data?.transcript) {
-            setContent(data.transcript);
-            toast({ title: "Transcribed", description: "Voice note ready. Save to capture." });
-          }
-        } catch {
-          toast({ title: "Error", description: "Could not transcribe.", variant: "destructive" });
-        }
-        setIsTranscribing(false);
-      };
 
-      recorder.start();
-      setIsRecording(true);
-    } catch {
-      toast({ title: "Microphone Error", description: "Could not access microphone.", variant: "destructive" });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
-    setIsRecording(false);
-  };
 
   /* ── Document Upload ── */
   const handleDocUpload = async (file: File) => {
