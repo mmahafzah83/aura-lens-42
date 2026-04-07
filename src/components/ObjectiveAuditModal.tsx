@@ -252,7 +252,8 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 

@@ -145,7 +145,7 @@ const OnboardingProfileSection = () => {
       setRegenerating(false);
     }
   };
-
+  const handleRegenerate = async () => {
     if (!profile) return;
     setRegenerating(true);
     setBrandSummary("Writing your brand positioning...");
