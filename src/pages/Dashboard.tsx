@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Mic, Paperclip, Sparkles } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
