@@ -429,6 +429,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     }
   };
 
+  // Lock body scroll when open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [open]);
+
   if (!open) return null;
 
   // ── Group conversations ──
