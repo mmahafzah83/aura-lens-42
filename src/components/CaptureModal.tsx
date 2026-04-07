@@ -1,9 +1,8 @@
 import { useState, useRef, useCallback } from "react";
-import { Paperclip, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import DocumentUpload from "@/components/DocumentUpload";
