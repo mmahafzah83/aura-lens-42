@@ -89,7 +89,63 @@ const OnboardingProfileSection = () => {
     setEditingField(null);
   };
 
-  const handleRegenerate = async () => {
+  const generateAIPositioning = async (p: ProfileData) => {
+    setRegenerating(true);
+    setBrandSummary("Writing your brand positioning...");
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: fullProfile } = await (supabase.from("diagnostic_profiles") as any)
+        .select("level, sector_focus, north_star_goal, firm, core_practice, primary_strength, brand_pillars, audit_results, brand_assessment_results, identity_intelligence")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!fullProfile) { generateLocalSummary(p); return; }
+
+      const identityIntel = fullProfile.identity_intelligence || {};
+      const profileContext = JSON.stringify({
+        role: fullProfile.level,
+        industry: fullProfile.sector_focus,
+        career_target: fullProfile.north_star_goal,
+        firm: fullProfile.firm,
+        core_practice: fullProfile.core_practice,
+        primary_strength: fullProfile.primary_strength,
+        brand_pillars: fullProfile.brand_pillars,
+        audit_results: fullProfile.audit_results,
+        brand_assessment_results: fullProfile.brand_assessment_results,
+        expertise_areas: identityIntel.expertise_areas,
+        authority_ambitions: identityIntel.authority_ambitions,
+      }, null, 2);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-brand-positioning`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ profileContext }),
+      });
+
+      if (!resp.ok) throw new Error("Failed to generate");
+      const data = await resp.json();
+      if (data.positioning) {
+        setBrandSummary(data.positioning);
+      } else {
+        throw new Error("No positioning returned");
+      }
+    } catch (e: any) {
+      console.error("Brand positioning error:", e);
+      generateLocalSummary(p);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
     if (!profile) return;
     setRegenerating(true);
     setBrandSummary("Writing your brand positioning...");

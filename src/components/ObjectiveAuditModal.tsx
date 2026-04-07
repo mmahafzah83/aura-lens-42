@@ -109,7 +109,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <>
       {/* Full-screen overlay */}
       <div
