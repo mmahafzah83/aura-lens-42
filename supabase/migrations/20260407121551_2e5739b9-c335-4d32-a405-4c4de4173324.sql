@@ -1,0 +1,1 @@
+UPDATE diagnostic_profiles SET level = 'Director of Digital Transformation, EY' WHERE user_id = '9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3';
