@@ -134,14 +134,13 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       let x = cx + labelR * Math.cos(angle);
       let y = cy + labelR * Math.sin(angle);
       
-      // Adjust alignment based on position
       if (Math.cos(angle) < -0.1) ctx.textAlign = "right";
       else if (Math.cos(angle) > 0.1) ctx.textAlign = "left";
       else ctx.textAlign = "center";
 
       ctx.fillText(SHORT_LABELS[i], x, y);
     }
-    ctx.textAlign = "center"; // reset
+    ctx.textAlign = "center";
   }, [orderedScores]);
 
   // Fetch AI interpretation
@@ -180,6 +179,64 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     fetchInterpretation();
   }, []);
 
+  // Parse interpretation into sections for styled rendering
+  const renderInterpretation = (text: string) => {
+    // Split by known section headers (ALL CAPS lines)
+    const sectionRegex = /^(YOUR [A-Z0-9\s&']+(?:DOMAIN|GENIUS|ANGLE|IKIGAI|PILLARS|SPOTS|CONTENT PILLARS|BLIND SPOTS|BLUE OCEAN ANGLE|DOMINANT GALLUP DOMAIN|ZONE OF GENIUS|PROFESSIONAL IKIGAI|TOP 3 CONTENT PILLARS|2 BLIND SPOTS))$/gm;
+    const parts = text.split(sectionRegex);
+    
+    const sections: { header?: string; body: string }[] = [];
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].trim();
+      if (!part) continue;
+      if (sectionRegex.test(part)) {
+        // Reset regex lastIndex
+        sectionRegex.lastIndex = 0;
+        sections.push({ header: part, body: parts[i + 1]?.trim() || "" });
+        i++; // skip the body part
+      } else if (sections.length === 0) {
+        sections.push({ body: part });
+      }
+    }
+
+    // If regex didn't match, fall back to markdown with styled headers
+    if (sections.length <= 1) {
+      return (
+        <ReactMarkdown
+          components={{
+            h1: ({ children }) => <SectionHeader first>{children}</SectionHeader>,
+            h2: ({ children }) => <SectionHeader>{children}</SectionHeader>,
+            h3: ({ children }) => <SectionHeader>{children}</SectionHeader>,
+            p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
+            strong: ({ children }) => <strong className="text-[#C5A55A] font-semibold">{children}</strong>,
+            ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
+            ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
+            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          }}
+        >
+          {text}
+        </ReactMarkdown>
+      );
+    }
+
+    return sections.map((s, i) => (
+      <div key={i}>
+        {s.header && <SectionHeader first={i === 0}>{s.header}</SectionHeader>}
+        <ReactMarkdown
+          components={{
+            p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
+            strong: ({ children }) => <strong className="text-[#C5A55A] font-semibold">{children}</strong>,
+            ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
+            ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
+            li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          }}
+        >
+          {s.body}
+        </ReactMarkdown>
+      </div>
+    ));
+  };
+
   return (
     <div className="space-y-6">
       {/* Section 1 — Radar Chart */}
@@ -201,52 +258,74 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
           </div>
         ) : (
           <div className="prose prose-sm max-w-none">
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => <h1 className="text-sm font-semibold text-[#C5A55A] mt-4 mb-1">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-sm font-semibold text-[#C5A55A] mt-4 mb-1">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-xs font-semibold text-[#C5A55A] mt-3 mb-1">{children}</h3>,
-                p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
-                strong: ({ children }) => <strong className="text-[#C5A55A] font-semibold">{children}</strong>,
-                ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
-                ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
-                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-              }}
-            >
-              {interpretation || ""}
-            </ReactMarkdown>
+            {renderInterpretation(interpretation || "")}
           </div>
         )}
       </div>
 
-      {/* Section 3 — Action Cards */}
+      {/* Section 3 — Guided Actions */}
       <div className="border-t border-[#252525] pt-4 space-y-2">
-        <ActionCard
-          label="Complete Brand Assessment →"
+        {/* Primary CTA */}
+        <button
           onClick={() => { onClose?.(); onNavigate?.("settings"); }}
-        />
-        <ActionCard
-          label="View Strategic Identity →"
-          onClick={() => { onClose?.(); onNavigate?.("identity"); }}
-        />
-        <ActionCard
-          label="Start capturing →"
-          onClick={() => { onClose?.(); onNavigate?.("intelligence"); }}
-        />
+          className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide transition-all active:scale-[0.98] hover:brightness-110"
+          style={{
+            background: "linear-gradient(to bottom, hsl(43 80% 55%), #C5A55A)",
+            color: "#0d0d0d",
+          }}
+        >
+          Continue to Brand Assessment →
+        </button>
+
+        {/* Secondary ghost buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => { onClose?.(); onNavigate?.("identity"); }}
+            className="flex-1 py-2.5 rounded-xl text-[12px] transition-colors text-center"
+            style={{
+              background: "transparent",
+              border: "1px solid #252525",
+              color: "#888",
+            }}
+          >
+            View Strategic Identity
+          </button>
+          <button
+            onClick={() => { onClose?.(); onNavigate?.("intelligence"); }}
+            className="flex-1 py-2.5 rounded-xl text-[12px] transition-colors text-center"
+            style={{
+              background: "transparent",
+              border: "1px solid #252525",
+              color: "#888",
+            }}
+          >
+            Start capturing
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-function ActionCard({ label, onClick }: { label: string; onClick: () => void }) {
+function SectionHeader({ children, first }: { children: React.ReactNode; first?: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between p-3 rounded-[10px] bg-[#141414] border border-[#252525] text-[12px] text-[#f0f0f0] hover:border-[#C5A55A]/40 transition-colors text-left"
-    >
-      <span>{label}</span>
-      <ArrowRight className="w-3.5 h-3.5 text-[#666]" />
-    </button>
+    <div>
+      {!first && (
+        <div className="mt-[14px] mb-[4px]" style={{ borderTop: "0.5px solid #C5A55A", opacity: 0.4 }} />
+      )}
+      <h3
+        className="uppercase tracking-wider"
+        style={{
+          color: "#C5A55A",
+          fontWeight: 500,
+          fontSize: 12,
+          marginTop: first ? 0 : 14,
+          marginBottom: 4,
+        }}
+      >
+        {children}
+      </h3>
+    </div>
   );
 }
 
