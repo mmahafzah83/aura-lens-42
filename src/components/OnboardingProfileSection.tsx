@@ -49,8 +49,8 @@ const OnboardingProfileSection = () => {
         audit_completed_at: data.audit_completed_at,
         brand_assessment_completed_at: data.brand_assessment_completed_at,
       });
-      // Generate initial brand summary locally (not AI)
-      generateLocalSummary(data);
+      // Try AI-generated brand positioning on load
+      generateAIPositioning(data);
     }
     setLoading(false);
   };
