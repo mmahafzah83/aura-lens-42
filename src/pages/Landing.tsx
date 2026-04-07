@@ -25,22 +25,157 @@ const useReveal = () => {
   return { ref, visible };
 };
 
-/* ── Animated counter ── */
+/* ── Animated counter with "+" only after completion ── */
 const Counter = ({ target, visible }: { target: number; visible: boolean }) => {
   const [val, setVal] = useState(0);
+  const [done, setDone] = useState(false);
+  const started = useRef(false);
+
   useEffect(() => {
-    if (!visible) return;
-    let start = 0;
-    const step = Math.max(1, Math.ceil(target / 30));
-    const id = setInterval(() => { start = Math.min(start + step, target); setVal(start); if (start >= target) clearInterval(id); }, 30);
-    return () => clearInterval(id);
+    if (!visible || started.current) return;
+    started.current = true;
+    const duration = 1500;
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const current = Math.round(eased * target);
+      setVal(current);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setVal(target);
+        setDone(true);
+      }
+    };
+    requestAnimationFrame(animate);
   }, [visible, target]);
-  return <>{val}</>;
+
+  // Fallback: if after 3s still at 0, force final value
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (val === 0 && !done) {
+        setVal(target);
+        setDone(true);
+      }
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [val, done, target]);
+
+  return <>{val}{done ? "+" : ""}</>;
+};
+
+/* ── Mobile scroll progress indicator ── */
+const ScrollIndicator = ({ containerRef }: { containerRef: React.RefObject<HTMLDivElement> }) => {
+  const [progress, setProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const scrollTop = el.scrollTop;
+      const scrollHeight = el.scrollHeight - el.clientHeight;
+      setProgress(scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [isMobile, containerRef]);
+
+  if (!isMobile) return null;
+
+  return (
+    <div style={{
+      position: "fixed", right: 14, top: "50%", transform: "translateY(-50%)", zIndex: 100,
+      width: 3, height: 120, background: "#1a1a1a", borderRadius: 2, overflow: "hidden",
+    }}>
+      <div style={{
+        background: "#C5A55A", borderRadius: 2, width: "100%",
+        height: `${progress}%`, transition: "height 0.3s ease",
+      }} />
+    </div>
+  );
+};
+
+/* ── Mobile testimonial with swipe + dots ── */
+const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: string }[] }) => {
+  const [active, setActive] = useState(0);
+  const touchStart = useRef(0);
+  const autoRef = useRef<ReturnType<typeof setInterval>>();
+  const interacted = useRef(false);
+
+  const startAuto = useCallback(() => {
+    if (autoRef.current) clearInterval(autoRef.current);
+    autoRef.current = setInterval(() => {
+      if (!interacted.current) setActive(p => (p + 1) % testimonials.length);
+    }, 5000);
+  }, [testimonials.length]);
+
+  useEffect(() => {
+    startAuto();
+    return () => { if (autoRef.current) clearInterval(autoRef.current); };
+  }, [startAuto]);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStart.current = e.touches[0].clientX;
+    interacted.current = true;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      setActive(p => diff > 0 ? Math.min(p + 1, testimonials.length - 1) : Math.max(p - 1, 0));
+    }
+    setTimeout(() => { interacted.current = false; startAuto(); }, 3000);
+  };
+
+  return (
+    <div>
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="overflow-hidden"
+      >
+        <div style={{ display: "flex", transition: "transform 0.4s ease", transform: `translateX(-${active * 100}%)` }}>
+          {testimonials.map((t, i) => (
+            <div key={i} className="w-full flex-shrink-0 px-1">
+              <div className="p-5 rounded-xl" style={{ background: "#141414", border: "1px solid #252525" }}>
+                <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#999" }}>"{t.q}"</p>
+                <p className="text-[11px]" style={{ color: "#3a3a3a" }}>{t.a}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-2 mt-4">
+        {testimonials.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setActive(i); interacted.current = true; setTimeout(() => { interacted.current = false; startAuto(); }, 3000); }}
+            style={{
+              width: i === active ? 16 : 6, height: 6, borderRadius: 3,
+              background: i === active ? "#C5A55A" : "#1a1a1a",
+              transition: "all 0.3s ease", border: "none", cursor: "pointer", padding: 0,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 };
 
 const Landing = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -49,15 +184,9 @@ const Landing = () => {
     });
   }, [navigate]);
 
-  /* testimonial auto-scroll */
+  /* testimonial auto-scroll (desktop only) */
   const scrollRef = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const id = setInterval(() => { if (!paused && el) el.scrollLeft += 1; }, 30);
-    return () => clearInterval(id);
-  }, [paused]);
 
   /* reveal hooks */
   const pullQuote = useReveal();
@@ -85,8 +214,15 @@ const Landing = () => {
     { n: "04", t: "Watch your influence grow", d: "Track your LinkedIn growth. See which content works. Keep building on what is already working." },
   ];
 
+  // Duplicate testimonials for seamless desktop carousel
+  const desktopTestimonials = [...testimonials, ...testimonials, ...testimonials];
+
   return (
-    <div className="min-h-screen text-[#f0f0f0]" style={{ background: "#0d0d0d", fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div
+      ref={mainRef}
+      className="landing-root min-h-screen text-[#f0f0f0]"
+      style={{ background: "#0d0d0d", fontFamily: "'Inter', system-ui, sans-serif" }}
+    >
       <style>{`
         @keyframes aura-breathe {
           0%, 100% { box-shadow: 0 0 30px rgba(197,165,90,0.3), 0 0 60px rgba(197,165,90,0.12), 0 0 100px rgba(197,165,90,0.06); transform: scale(1); }
@@ -100,6 +236,10 @@ const Landing = () => {
         @keyframes gold-shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(200%); }
+        }
+        @keyframes scroll-left {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
         }
         .glass-card {
           backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
@@ -117,10 +257,59 @@ const Landing = () => {
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Desktop testimonial auto-scroll carousel */
+        .testimonial-track {
+          display: flex;
+          gap: 16px;
+          animation: scroll-left 40s linear infinite;
+          width: max-content;
+        }
+        .testimonial-track:hover {
+          animation-play-state: paused;
+        }
+
+        /* Mobile snap scroll */
+        @media (max-width: 768px) {
+          html { scroll-behavior: smooth; }
+          .landing-root {
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            height: 100vh;
+          }
+          .landing-section {
+            scroll-snap-align: start;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          /* Nav is sticky, not a snap section */
+          .landing-nav {
+            scroll-snap-align: none;
+            min-height: unset;
+          }
+          /* Reduced section padding on mobile */
+          .landing-section {
+            padding-top: 40px !important;
+            padding-bottom: 40px !important;
+          }
+          .section-label {
+            margin-bottom: 14px !important;
+          }
+        }
       `}</style>
 
+      <ScrollIndicator containerRef={mainRef} />
+
       {/* Section 1 — Nav */}
-      <nav className="flex items-center justify-between px-5 sm:px-10 py-5 sticky top-0 z-50" style={{ background: "#0d0d0d", borderBottom: "1px solid #1a1a1a" }}>
+      <nav className="landing-nav flex items-center justify-between px-5 sm:px-10 py-5 sticky top-0 z-[200]" style={{
+        background: "rgba(13,13,13,0.95)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderBottom: "1px solid #1a1a1a",
+        paddingTop: "max(env(safe-area-inset-top), 16px)",
+      }}>
         <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "#C5A55A", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
         <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-[#C5A55A]/10" style={{ color: "#C5A55A", borderColor: "#C5A55A33" }}>
           Sign in
@@ -128,7 +317,7 @@ const Landing = () => {
       </nav>
 
       {/* Section 2 — Hero */}
-      <section className="relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
+      <section className="landing-section relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
@@ -144,7 +333,8 @@ const Landing = () => {
           <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 font-sans">
             Everything you read.<br />Turned into <span style={{ color: "#C5A55A" }}>authority</span>.
           </h1>
-          <p className="text-[14px] sm:text-[16px] leading-relaxed max-w-lg mx-auto mb-10" style={{ color: "#666" }}>
+          {/* Improvement 9: larger hero subtitle on mobile */}
+          <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "#666", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
             Aura reads what you capture, finds the patterns, and helps you create content that builds your name in your field.
           </p>
 
@@ -198,7 +388,7 @@ const Landing = () => {
       </section>
 
       {/* Section 3 — Stats */}
-      <section ref={stats.ref} className="flex items-center justify-center gap-0 py-10 px-5">
+      <section ref={stats.ref} className="landing-section flex items-center justify-center gap-0 py-10 px-5">
         {[
           { num: 47, label: "Sources captured", sub: "articles, links and documents added" },
           { num: 7, label: "Signals detected", sub: "strategic patterns identified" },
@@ -210,7 +400,7 @@ const Landing = () => {
               <div className="flex items-center justify-center gap-1">
                 <span style={{ fontSize: 14, color: "#C5A55A" }}>↑</span>
                 <span className="font-semibold" style={{ fontSize: 40, color: "#C5A55A", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
-                  <Counter target={s.num} visible={stats.visible} />+
+                  <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>
               <div className="mt-1 uppercase tracking-[0.15em]" style={{ fontSize: 9, color: "#3a3a3a" }}>{s.label}</div>
@@ -221,8 +411,8 @@ const Landing = () => {
       </section>
 
       {/* Section 4 — Pull quote (scroll reveal) */}
-      <section ref={pullQuote.ref} className="px-5 sm:px-10 py-14 max-w-2xl mx-auto">
-        <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>The problem</p>
+      <section ref={pullQuote.ref} className="landing-section px-5 sm:px-10 py-14 max-w-2xl mx-auto">
+        <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>The problem</p>
         <div className="relative pl-5">
           {/* Animated gold line */}
           <div style={{
@@ -248,7 +438,7 @@ const Landing = () => {
       </section>
 
       {/* Section 5 — What makes Aura different (carbon fiber bg + glassmorphism) */}
-      <section ref={diffQuote.ref} className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section ref={diffQuote.ref} className="landing-section relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${carbonBg})`,
           backgroundSize: "cover",
@@ -259,7 +449,7 @@ const Landing = () => {
         }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(10,10,10,0.80)" }} />
         <div className="relative max-w-2xl mx-auto">
-          <p className="text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>What makes Aura different</p>
+          <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>What makes Aura different</p>
           <div className="relative pl-5 mb-10">
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
@@ -311,52 +501,55 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Section 6 — Built for */}
-      <section className="py-16 px-5 sm:px-10">
+      {/* Section 6 — Built for (Improvement 6: horizontal compact cards on mobile) */}
+      <section className="landing-section py-16 px-5 sm:px-10">
         <div className="max-w-3xl mx-auto">
-          <p className="text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "#3a3a3a" }}>Built for</p>
+          <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "#3a3a3a" }}>Built for</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
               { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, title: "Executives and leaders", desc: "Who need a consistent personal brand to attract opportunities and board visibility" },
               { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>, title: "Independent experts", desc: "Coaches, advisors, and founders who want to build influence without a marketing team" },
             ].map((p, i) => (
-              <div key={i} className="text-center p-5 rounded-[10px]" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)" }}>
-                <div className="w-[44px] h-[44px] rounded-full mx-auto mb-4 flex items-center justify-center" style={{ border: "1px solid rgba(197,165,90,0.3)" }}>
+              <div key={i} className="sm:text-center p-5 sm:p-5 rounded-[10px] flex sm:flex-col items-center sm:items-center gap-[14px] sm:gap-0" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)", padding: undefined }}>
+                <div className="w-10 h-10 sm:w-[44px] sm:h-[44px] rounded-full sm:mx-auto sm:mb-4 flex items-center justify-center shrink-0" style={{ border: "1px solid rgba(197,165,90,0.3)" }}>
                   {p.icon}
                 </div>
-                <div className="text-[13px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{p.title}</div>
-                <div className="text-[11px] leading-relaxed" style={{ color: "#666" }}>{p.desc}</div>
+                <div className="text-left sm:text-center">
+                  <div className="text-[13px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{p.title}</div>
+                  <div className="text-[11px] leading-relaxed" style={{ color: "#666" }}>{p.desc}</div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Section 7 — How it works (sequential reveal + navy gradient) */}
-      <section id="how-it-works" className="relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      {/* Section 7 — How it works (Improvement 7: tighter mobile spacing) */}
+      <section id="how-it-works" className="landing-section relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(180deg, #0d0d0d 0%, #0a0e18 40%, #0a0e18 60%, #0d0d0d 100%)",
         }} />
         <div className="relative max-w-2xl mx-auto">
-          <p className="text-[9px] uppercase tracking-[0.2em] mb-10 text-center" style={{ color: "#3a3a3a" }}>How it works</p>
-          <div className="flex flex-col gap-10">
+          <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-10 text-center" style={{ color: "#3a3a3a" }}>How it works</p>
+          <div className="flex flex-col gap-10 md:gap-10" style={{}}>
             {stepData.map((s, i) => (
               <div
                 key={s.n}
                 ref={steps[i].ref}
-                className="flex gap-5 items-start"
+                className="flex gap-5 items-start mb-0 md:mb-0"
                 style={{
                   opacity: steps[i].visible ? 1 : 0,
                   transform: steps[i].visible ? "translateX(0)" : "translateX(40px)",
                   transition: `opacity 0.5s ease ${i * 0.12}s, transform 0.5s ease ${i * 0.12}s`,
                   willChange: "transform, opacity",
+                  marginBottom: window.innerWidth <= 768 ? 24 : undefined,
                 }}
               >
-                <div className="text-[32px] font-bold shrink-0 w-12" style={{ color: "#1f1f1f", fontFamily: "'Playfair Display', serif" }}>{s.n}</div>
+                <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "#1f1f1f", fontFamily: "'Playfair Display', serif" }}>{s.n}</div>
                 <div>
-                  <div className="text-[15px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{s.t}</div>
-                  <div className="text-[13px] leading-relaxed" style={{ color: "#666" }}>{s.d}</div>
+                  <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{s.t}</div>
+                  <div className="text-[13px] leading-[1.6]" style={{ color: "#666" }}>{s.d}</div>
                 </div>
               </div>
             ))}
@@ -364,28 +557,29 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Section 8 — Social proof (infinite carousel) */}
-      <section className="py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      {/* Section 8 — Social proof (Improvement 8: desktop auto-scroll, mobile swipe) */}
+      <section className="landing-section py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="max-w-4xl mx-auto overflow-hidden">
-          <div
-            ref={scrollRef}
-            className="flex gap-4 hide-scrollbar"
-            style={{ overflowX: "auto", scrollBehavior: "auto" }}
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-          >
-            {testimonials.map((t, i) => (
-              <div key={i} className="flex-shrink-0 w-[300px] sm:w-[340px] p-5 rounded-xl" style={{ background: "#141414", border: "1px solid #252525" }}>
-                <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#999" }}>"{t.q}"</p>
-                <p className="text-[11px]" style={{ color: "#3a3a3a" }}>{t.a}</p>
-              </div>
-            ))}
+          {/* Desktop: CSS auto-scroll carousel */}
+          <div className="hidden md:block">
+            <div className="testimonial-track">
+              {desktopTestimonials.map((t, i) => (
+                <div key={i} className="flex-shrink-0 w-[340px] p-5 rounded-xl" style={{ background: "#141414", border: "1px solid #252525" }}>
+                  <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#999" }}>"{t.q}"</p>
+                  <p className="text-[11px]" style={{ color: "#3a3a3a" }}>{t.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Mobile: single card with swipe + dots */}
+          <div className="md:hidden">
+            <MobileTestimonials testimonials={testimonials} />
           </div>
         </div>
       </section>
 
       {/* Section 9 — CTA band (gold shimmer) */}
-      <section className="relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#C5A55A" }}>
+      <section className="landing-section relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#C5A55A" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
           animation: "gold-shimmer 5s ease-in-out infinite",
@@ -401,7 +595,7 @@ const Landing = () => {
       </section>
 
       {/* Section 10 — Footer */}
-      <footer className="py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <footer className="landing-section py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
         <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "#C5A55A", fontFamily: "'Playfair Display', serif" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "#3a3a3a" }}>Strategic intelligence for senior professionals.</p>
       </footer>
