@@ -138,7 +138,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
       .eq("user_id", user.id)
       .eq("status", "new")
       .order("fetched_at", { ascending: false })
-      .limit(4);
+      .limit(5);
 
     const trendItems: TimelineItem[] = ((trends as any[]) || []).map((t: any) => ({
       id: t.id,
@@ -180,14 +180,14 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
         // Rough sort by timeAgo — prefer items with "just now" or "Xm ago"
         return 0; // already sorted from DB
       })
-      .slice(0, 6);
+      .slice(0, 8);
 
     setTimeline(merged);
 
     // Check staleness of industry_trends
     const latestTrend = (trends as any[])?.[0];
-    const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000;
-    const isStale = !latestTrend || new Date(latestTrend.fetched_at).getTime() < sixHoursAgo;
+    const eighteenHoursAgo = Date.now() - 18 * 60 * 60 * 1000;
+    const isStale = !latestTrend || new Date(latestTrend.fetched_at).getTime() < eighteenHoursAgo;
 
     if (isStale) {
       supabase.functions.invoke("fetch-industry-trends", {
