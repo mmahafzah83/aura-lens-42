@@ -301,7 +301,7 @@ const Landing = () => {
         }
       `}</style>
 
-      <ScrollIndicator containerRef={mainRef} />
+      <ScrollIndicator />
 
       {/* Section 1 — Nav */}
       <nav className="landing-nav flex items-center justify-between px-5 sm:px-10 py-5 sticky top-0 z-[200]" style={{
@@ -318,7 +318,7 @@ const Landing = () => {
       </nav>
 
       {/* Section 2 — Hero */}
-      <section className="landing-section relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
+      <section className="landing-hero relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${heroBg})`,
           backgroundSize: "cover",
@@ -389,7 +389,7 @@ const Landing = () => {
       </section>
 
       {/* Section 3 — Stats */}
-      <section ref={stats.ref} className="landing-section flex items-center justify-center gap-0 py-10 px-5">
+      <section ref={stats.ref} className="landing-compact flex items-center justify-center gap-0 py-10 px-5">
         {[
           { num: 47, label: "Sources captured", sub: "articles, links and documents added" },
           { num: 7, label: "Signals detected", sub: "strategic patterns identified" },
@@ -412,7 +412,7 @@ const Landing = () => {
       </section>
 
       {/* Section 4 — Pull quote (scroll reveal) */}
-      <section ref={pullQuote.ref} className="landing-section px-5 sm:px-10 py-14 max-w-2xl mx-auto">
+      <section ref={pullQuote.ref} className="landing-compact px-5 sm:px-10 py-14 max-w-2xl mx-auto">
         <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "#3a3a3a" }}>The problem</p>
         <div className="relative pl-5">
           {/* Animated gold line */}
@@ -439,7 +439,7 @@ const Landing = () => {
       </section>
 
       {/* Section 5 — What makes Aura different (carbon fiber bg + glassmorphism) */}
-      <section ref={diffQuote.ref} className="landing-section relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section ref={diffQuote.ref} className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${carbonBg})`,
           backgroundSize: "cover",
@@ -503,7 +503,7 @@ const Landing = () => {
       </section>
 
       {/* Section 6 — Built for (Improvement 6: horizontal compact cards on mobile) */}
-      <section className="landing-section py-16 px-5 sm:px-10">
+      <section className="landing-compact py-16 px-5 sm:px-10">
         <div className="max-w-3xl mx-auto">
           <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "#3a3a3a" }}>Built for</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -527,7 +527,7 @@ const Landing = () => {
       </section>
 
       {/* Section 7 — How it works (Improvement 7: tighter mobile spacing) */}
-      <section id="how-it-works" className="landing-section relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section id="how-it-works" className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(180deg, #0d0d0d 0%, #0a0e18 40%, #0a0e18 60%, #0d0d0d 100%)",
         }} />
@@ -559,7 +559,7 @@ const Landing = () => {
       </section>
 
       {/* Section 8 — Social proof (Improvement 8: desktop auto-scroll, mobile swipe) */}
-      <section className="landing-section py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section className="landing-compact py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
         <div className="max-w-4xl mx-auto overflow-hidden">
           {/* Desktop: CSS auto-scroll carousel */}
           <div className="hidden md:block">
@@ -580,7 +580,7 @@ const Landing = () => {
       </section>
 
       {/* Section 9 — CTA band (gold shimmer) */}
-      <section className="landing-section relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#C5A55A" }}>
+      <section className="landing-compact-cta relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#C5A55A" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
           animation: "gold-shimmer 5s ease-in-out infinite",
@@ -596,7 +596,7 @@ const Landing = () => {
       </section>
 
       {/* Section 10 — Footer */}
-      <footer className="landing-section py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
         <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "#C5A55A", fontFamily: "'Playfair Display', serif" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "#3a3a3a" }}>Strategic intelligence for senior professionals.</p>
       </footer>
