@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, ArrowLeft, Compass, Loader2 } from "lucide-react";
+import { X, ArrowLeft, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
@@ -202,12 +202,15 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Fix 1: Read audit scores from database automatically
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("audit_results")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      const auditScores = profile?.audit_results || {};
+      const auditScores = profile?.audit_results && Object.keys(profile.audit_results).length > 0
+        ? profile.audit_results
+        : null;
 
       const formattedAnswers: Record<string, any> = {};
       QUESTIONS.forEach((qq, i) => {
@@ -215,7 +218,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       });
 
       const { data, error } = await supabase.functions.invoke("brand-assessment", {
-        body: { answers: formattedAnswers, auditScores },
+        body: { answers: formattedAnswers, auditScores: auditScores || "No audit scores available yet" },
       });
 
       if (error) throw error;
@@ -239,7 +242,6 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
         formattedAnswers[`Q${i + 1}`] = answers[i];
       });
 
-      // Extract archetype from interpretation
       const archetypeMatch = interpretation.match(/PRIMARY BRAND ARCHETYPE\s*\n+(.+?)(?:\.|Three|\n)/i);
       const primaryArchetype = archetypeMatch?.[1]?.trim() || "";
       const secondaryMatch = interpretation.match(/secondary archetype[^.]*?(?:is|:)\s*(?:the\s+)?(.+?)(?:\.|$)/i);
@@ -269,130 +271,173 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const progress = showResults ? 100 : ((step + 1) / QUESTIONS.length) * 100;
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0d0d0d] flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="flex items-center gap-3">
-          {!showResults && step > 0 && (
-            <button onClick={() => setStep((s) => s - 1)} className="text-[#3a3a3a] hover:text-[#666] p-1">
-              <ArrowLeft className="w-4 h-4" />
+    <>
+      {/* Full-screen overlay */}
+      <div
+        className="fixed inset-0 z-[1000]"
+        style={{ background: "rgba(0,0,0,0.8)" }}
+        onClick={() => onOpenChange(false)}
+      />
+
+      {/* Centered modal */}
+      <div
+        className="fixed z-[1001]"
+        style={{
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 560,
+          maxWidth: "92vw",
+          height: "88vh",
+          display: "flex",
+          flexDirection: "column",
+          background: "#0d0d0d",
+          borderRadius: 16,
+          border: "1px solid #252525",
+          overflow: "hidden",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header — fixed */}
+        <div className="shrink-0 px-4 pt-4 pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {!showResults && step > 0 && (
+                <button onClick={() => setStep((s) => s - 1)} className="text-[#3a3a3a] hover:text-[#666] p-1">
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+              )}
+              <div className="flex items-center gap-2">
+                <Compass className="w-4 h-4 text-[#C5A55A]" />
+                <span className="text-[13px] text-[#f0f0f0] font-medium">Brand Assessment</span>
+              </div>
+            </div>
+            <button onClick={() => onOpenChange(false)} className="text-[#3a3a3a] hover:text-[#666] p-1">
+              <X className="w-4 h-4" />
             </button>
+          </div>
+
+          {!showResults && step === 0 && (
+            <p className="text-[11px] text-[#666] mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
           )}
-          <div className="flex items-center gap-2">
-            <Compass className="w-4 h-4 text-[#C5A55A]" />
-            <span className="text-[13px] text-[#f0f0f0] font-medium">Brand Assessment</span>
-          </div>
-        </div>
-        <button onClick={() => onOpenChange(false)} className="text-[#3a3a3a] hover:text-[#666] p-1">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
 
-      {/* Subtitle */}
-      {!showResults && step === 0 && (
-        <p className="text-[11px] text-[#666] px-4 mb-2">10 questions · 8 minutes · reveals your positioning</p>
-      )}
-
-      {/* Progress bar */}
-      <div className="px-4 pb-4">
-        <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#C5A55A] rounded-full transition-all duration-500"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-24">
-        {showResults ? (
-          <div className="max-w-2xl mx-auto">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-3 h-3 rounded-full bg-[#C5A55A] animate-pulse" />
-                <p className="text-[13px] text-[#888]">Building your brand positioning across 6 frameworks...</p>
-              </div>
-            ) : (
-              <div className="space-y-0">
-                <div className="prose prose-sm max-w-none
-                  [&_h1]:text-[#C5A55A] [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-[#C5A55A]/20 [&_h1]:pb-2 [&_h1]:mb-3
-                  [&_h2]:text-[#C5A55A] [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-[#C5A55A]/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
-                  [&_h3]:text-[#C5A55A] [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
-                  [&_p]:text-[#888] [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
-                  [&_strong]:text-[#C5A55A] [&_strong]:font-semibold
-                  [&_li]:text-[#888] [&_li]:text-[12px]
-                  [&_ul]:mb-3 [&_ol]:mb-3
-                ">
-                  <ReactMarkdown>{interpretation}</ReactMarkdown>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col gap-3 pt-6 pb-8 border-t border-[#C5A55A]/20 mt-6">
-                  <button
-                    onClick={handleSaveToIdentity}
-                    className="w-full py-3 rounded-xl bg-gradient-to-b from-[hsl(43_80%_55%)] to-[#C5A55A] text-[#0d0d0d] text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
-                  >
-                    Save to Identity →
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="max-w-lg mx-auto pt-4">
-            <p className="text-[11px] text-[#666] mb-1 tracking-wider uppercase">
-              Question {step + 1} of {QUESTIONS.length}
-            </p>
-            <h2 className="text-[18px] text-[#f0f0f0] font-medium leading-snug mb-1">
-              {q.title}
-            </h2>
-            {q.sub && <p className="text-[12px] text-[#666] mb-5">{q.sub}</p>}
-
-            {q.type === "text" ? (
-              <textarea
-                value={(currentAnswer as string) || ""}
-                onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
-                placeholder={q.placeholder}
-                className="w-full h-28 bg-[#141414] border border-[#252525] rounded-xl p-3 text-[13px] text-[#f0f0f0] placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-[#C5A55A]/40 transition-colors"
+          {/* Progress bar */}
+          <div className="mt-2 pb-1">
+            <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#C5A55A] rounded-full transition-all duration-500"
+                style={{ width: `${progress}%` }}
               />
-            ) : (
-              <div className="space-y-2">
-                {q.options?.map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => toggleOption(opt)}
-                    className={`w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all duration-200 ${
-                      isSelected(opt)
-                        ? "border-[#C5A55A]/50 bg-[#C5A55A]/10 text-[#f0f0f0]"
-                        : "border-[#252525] bg-[#141414] text-[#888] hover:border-[#3a3a3a]"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
+            </div>
+          </div>
+        </div>
+
+        {/* Content — scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {showResults ? (
+            <div className="max-w-2xl mx-auto">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-3 h-3 rounded-full bg-[#C5A55A] animate-pulse" />
+                  <p className="text-[13px] text-[#888]">Building your brand positioning across 6 frameworks...</p>
+                </div>
+              ) : (
+                <div className="space-y-0">
+                  <div className="prose prose-sm max-w-none
+                    [&_h1]:text-[#C5A55A] [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-[#C5A55A]/20 [&_h1]:pb-2 [&_h1]:mb-3
+                    [&_h2]:text-[#C5A55A] [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-[#C5A55A]/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
+                    [&_h3]:text-[#C5A55A] [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
+                    [&_p]:text-[#888] [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
+                    [&_strong]:text-[#C5A55A] [&_strong]:font-semibold
+                    [&_li]:text-[#888] [&_li]:text-[12px]
+                    [&_ul]:mb-3 [&_ol]:mb-3
+                  ">
+                    <ReactMarkdown>{interpretation}</ReactMarkdown>
+                  </div>
+
+                  {/* Fix 6: Guided primary action */}
+                  <div className="flex flex-col gap-2 pt-6 border-t border-[#C5A55A]/20 mt-6">
+                    <button
+                      onClick={handleSaveToIdentity}
+                      className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
+                      style={{
+                        background: "linear-gradient(to bottom, hsl(43 80% 55%), #C5A55A)",
+                        color: "#0d0d0d",
+                      }}
+                    >
+                      View my complete Strategic Identity →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="max-w-lg mx-auto pt-4">
+              <p className="text-[11px] text-[#666] mb-1 tracking-wider uppercase">
+                Question {step + 1} of {QUESTIONS.length}
+              </p>
+              <h2 className="text-[18px] text-[#f0f0f0] font-medium leading-snug mb-1">
+                {q.title}
+              </h2>
+              {q.sub && <p className="text-[12px] text-[#666] mb-5">{q.sub}</p>}
+
+              {q.type === "text" ? (
+                <textarea
+                  value={(currentAnswer as string) || ""}
+                  onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
+                  placeholder={q.placeholder}
+                  className="w-full h-28 bg-[#141414] border border-[#252525] rounded-xl p-3 text-[13px] text-[#f0f0f0] placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-[#C5A55A]/40 transition-colors"
+                />
+              ) : (
+                <div className="space-y-2">
+                  {q.options?.map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => toggleOption(opt)}
+                      className={`w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all duration-200 ${
+                        isSelected(opt)
+                          ? "border-[#C5A55A]/50 bg-[#C5A55A]/10 text-[#f0f0f0]"
+                          : "border-[#252525] bg-[#141414] text-[#888] hover:border-[#3a3a3a]"
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer — sticky */}
+        {!showResults && (
+          <div
+            className="shrink-0"
+            style={{
+              background: "#0d0d0d",
+              borderTop: "0.5px solid #1a1a1a",
+              padding: "12px 16px",
+            }}
+          >
+            <button
+              onClick={handleNext}
+              disabled={!canProceed()}
+              className={`w-full py-3.5 rounded-xl text-[13px] font-medium tracking-wide transition-all duration-200 ${
+                canProceed()
+                  ? "hover:brightness-110 active:scale-[0.98]"
+                  : "bg-[#1a1a1a] text-[#3a3a3a] cursor-not-allowed"
+              }`}
+              style={canProceed() ? {
+                background: "linear-gradient(to bottom, hsl(43 80% 55%), #C5A55A)",
+                color: "#0d0d0d",
+              } : undefined}
+            >
+              {step < QUESTIONS.length - 1 ? "Next" : "Generate Brand Positioning"}
+            </button>
           </div>
         )}
       </div>
-
-      {/* Bottom CTA */}
-      {!showResults && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d] to-transparent pt-8">
-          <button
-            onClick={handleNext}
-            disabled={!canProceed()}
-            className={`w-full py-3.5 rounded-xl text-[13px] font-medium tracking-wide transition-all duration-200 ${
-              canProceed()
-                ? "bg-gradient-to-b from-[hsl(43_80%_55%)] to-[#C5A55A] text-[#0d0d0d] hover:brightness-110 active:scale-[0.98]"
-                : "bg-[#1a1a1a] text-[#3a3a3a] cursor-not-allowed"
-            }`}
-          >
-            {step < QUESTIONS.length - 1 ? "Next" : "Generate Brand Positioning"}
-          </button>
-        </div>
-      )}
-    </div>
+    </>
   );
 };
 

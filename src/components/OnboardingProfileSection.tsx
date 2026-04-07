@@ -4,12 +4,6 @@ import { toast } from "sonner";
 import { Pencil, Check, X, RefreshCw, Loader2, ChevronDown } from "lucide-react";
 import ProfileCompletenessCard from "@/components/ProfileCompletenessCard";
 
-const ROLES = [
-  "Senior consultant or advisor",
-  "Executive or director",
-  "Independent expert or founder",
-  "Other professional",
-];
 
 const STRENGTHS = [
   "Think strategically — see the big picture first",
@@ -224,21 +218,30 @@ const OnboardingProfileSection = () => {
           <p className="text-sm font-medium" style={{ color: "#C5A55A" }}>{profile.level || "Not answered"}</p>
           {changingAnswer === "role" ? (
             <div className="space-y-2 pt-2" style={{ borderTop: "1px solid #252525" }}>
-              {ROLES.map(r => (
+              <input
+                autoFocus
+                defaultValue={profile.level || ""}
+                placeholder="Your actual job title and organisation"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveField("role", (e.target as HTMLInputElement).value);
+                }}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ background: "#0d0d0d", border: "1px solid #252525", color: "#f0f0f0" }}
+                id="role-edit-input"
+              />
+              <div className="flex gap-2">
                 <button
-                  key={r}
-                  onClick={() => saveField("role", r)}
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
-                  style={{
-                    background: profile.level === r ? "#1e1a10" : "#0d0d0d",
-                    border: `1px solid ${profile.level === r ? "#C5A55A" : "#252525"}`,
-                    color: profile.level === r ? "#C5A55A" : "#f0f0f0",
+                  onClick={() => {
+                    const input = document.getElementById("role-edit-input") as HTMLInputElement;
+                    if (input?.value.trim()) saveField("role", input.value.trim());
                   }}
+                  className="flex-1 py-2 rounded-lg text-xs font-medium"
+                  style={{ background: "#C5A55A", color: "#0d0d0d" }}
                 >
-                  {r}
+                  Save
                 </button>
-              ))}
-              <button onClick={() => setChangingAnswer(null)} className="text-xs mt-1" style={{ color: "#666" }}>Cancel</button>
+                <button onClick={() => setChangingAnswer(null)} className="text-xs px-3 py-2 rounded-lg" style={{ color: "#666", background: "#1a1a1a" }}>Cancel</button>
+              </div>
             </div>
           ) : (
             <button onClick={() => setChangingAnswer("role")} className="text-[11px]" style={{ color: "#C5A55A99" }}>

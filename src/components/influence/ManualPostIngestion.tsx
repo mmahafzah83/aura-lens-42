@@ -86,7 +86,7 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
         updates.source_trust = 2;
       }
 
-      await supabase.from("linkedin_posts").update(updates).eq("id", existing.id);
+      await (supabase.from("linkedin_posts") as any).update(updates).eq("id", existing.id);
 
       setResult({ inserted: 0, duplicates: 1, errors: [] });
       toast({ title: "Post enriched", description: "Existing post updated with manual data." });

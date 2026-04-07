@@ -8,6 +8,8 @@ const corsHeaders = {
 
 const SYSTEM_PROMPT = `You are a world-class personal brand strategist. You use six frameworks simultaneously to analyse and position senior professionals.
 
+IMPORTANT: The user's Objective Evidence Audit scores are provided to you directly. Do NOT ask the user for their scores — they are already included in this prompt. Use them as the factual evidence base for your analysis.
+
 FRAMEWORK 1 — Jungian Brand Archetypes (12 archetypes): The Expert/Sage (wisdom, depth, rigour — builds authority through knowledge), The Challenger/Rebel (disruption, contrarian thinking — builds authority by questioning norms), The Guide/Caregiver (empathy, service — builds authority by developing others), The Visionary/Magician (transformation, seeing what others cannot), The Hero (courage, overcoming challenges — builds authority through achievement), The Explorer (discovery, new frontiers), The Connector (relationships, community), The Ruler (authority, control, institutional leadership). Identify PRIMARY and SECONDARY archetypes from Q1, Q3, Q4, and Q9 answers combined with audit scores. Explain specifically why — reference the user's exact answers.
 
 FRAMEWORK 2 — Gallup CliftonStrengths domains: Using audit scores provided, identify which of the four domains (Strategic Thinking, Influencing, Relationship Building, Executing) is dominant. Explain what this means for how the user naturally builds authority.
@@ -58,13 +60,17 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const userPrompt = `Here are the user's Brand Assessment answers:
+    // Build audit scores context for the AI
+    const auditContext = typeof auditScores === "string"
+      ? auditScores
+      : `The user's Objective Evidence Audit scores are: ${JSON.stringify(auditScores, null, 2)}`;
+
+    const userPrompt = `${auditContext}
+
+Here are the user's Brand Assessment answers:
 ${JSON.stringify(answers, null, 2)}
 
-Here are their Objective Evidence Audit scores (0-100 per dimension):
-${JSON.stringify(auditScores, null, 2)}
-
-Analyse this professional using all six frameworks and provide the complete brand positioning output.`;
+Analyse this professional using all six frameworks and provide the complete brand positioning output. Use the audit scores as factual evidence — do not ask the user for them.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
