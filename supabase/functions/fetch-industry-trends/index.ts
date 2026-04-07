@@ -16,16 +16,18 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
 
-    // Get user from auth header
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) {
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = claimsData.claims.sub as string;
 
     const adminClient = createClient(supabaseUrl, serviceKey);
 
@@ -33,7 +35,7 @@ serve(async (req) => {
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
       .select("firm, level, core_practice, sector_focus, north_star_goal, leadership_style")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (!profile) {
@@ -66,9 +68,8 @@ serve(async (req) => {
       });
     }
 
-    // Step 3: Call AI gateway with search queries bundled into one prompt
+    // Step 3: Call AI gateway
     const searchPrompt = queries.map((q, i) => `Search query ${i + 1}: "${q}"`).join("\n");
-
     const profileContext = parts.join(", ");
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -158,20 +159,37 @@ serve(async (req) => {
       }
     }
 
-    // Step 4: Check existing URLs for dedup
+    // Step 4: Get existing "new" trends for cleanup
     const { data: existingRows } = await adminClient
       .from("industry_trends")
-      .select("url")
-      .eq("user_id", user.id);
+      .select("id, url")
+      .eq("user_id", userId)
+      .eq("status", "new");
 
-    const existingUrls = new Set((existingRows || []).map((r: any) => r.url));
+    const existingTrends = (existingRows || []) as { id: string; url: string }[];
+    const existingUrls = new Set(existingTrends.map(r => r.url));
 
-    // Step 5: Insert new trends
+    // Build set of fresh URLs from AI
+    const freshUrls = new Set(trends.map((t: any) => t.url).filter(Boolean));
+
+    // Step 5: Expire old trends whose URLs are NOT in the fresh batch
+    const toExpire = existingTrends
+      .filter(r => !freshUrls.has(r.url))
+      .map(r => r.id);
+
+    if (toExpire.length > 0) {
+      await adminClient
+        .from("industry_trends")
+        .update({ status: "expired" })
+        .in("id", toExpire);
+    }
+
+    // Step 6: Insert only genuinely new URLs
     const newTrends = trends
       .filter((t: any) => t.url && !existingUrls.has(t.url))
       .slice(0, 5)
       .map((t: any) => ({
-        user_id: user.id,
+        user_id: userId,
         headline: (t.headline || "").slice(0, 200),
         insight: (t.insight || "").slice(0, 500),
         source: (t.source || "").slice(0, 100),
@@ -190,7 +208,28 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ inserted: newTrends.length, total_fetched: trends.length }), {
+    // Step 7: Cap active trends at 5 — expire oldest beyond 5
+    const { data: activeAfter } = await adminClient
+      .from("industry_trends")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("status", "new")
+      .order("fetched_at", { ascending: false });
+
+    const activeIds = (activeAfter || []) as { id: string }[];
+    if (activeIds.length > 5) {
+      const idsToExpire = activeIds.slice(5).map(r => r.id);
+      await adminClient
+        .from("industry_trends")
+        .update({ status: "expired" })
+        .in("id", idsToExpire);
+    }
+
+    return new Response(JSON.stringify({
+      inserted: newTrends.length,
+      expired: toExpire.length,
+      total_active: Math.min(activeIds.length, 5),
+    }), {
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
