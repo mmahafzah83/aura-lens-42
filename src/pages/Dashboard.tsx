@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Mic, Paperclip, Sparkles } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -244,18 +244,10 @@ const Dashboard = () => {
               <button
                 onClick={() => setCaptureOpen(true)}
                 className="flex-1 flex items-center justify-center gap-2 px-2 py-2 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-all text-[11px]"
-                title="Attach document"
+                title="Capture"
               >
                 <Paperclip className="w-3.5 h-3.5 shrink-0" />
-                <span>Attach</span>
-              </button>
-              <button
-                onClick={() => setCaptureOpen(true)}
-                className="flex-1 flex items-center justify-center gap-2 px-2 py-2 rounded-lg text-muted-foreground/50 hover:text-foreground hover:bg-secondary/30 transition-all text-[11px]"
-                title="Voice input"
-              >
-                <Mic className="w-3.5 h-3.5 shrink-0" />
-                <span>Voice</span>
+                <span>Capture</span>
               </button>
             </div>
           )}
@@ -265,16 +257,9 @@ const Dashboard = () => {
               <button
                 onClick={() => setCaptureOpen(true)}
                 className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-secondary/30 transition-all"
-                title="Attach document"
+                title="Capture"
               >
                 <Paperclip className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setCaptureOpen(true)}
-                className="w-full flex items-center justify-center px-3 py-2 rounded-lg text-muted-foreground/40 hover:text-foreground hover:bg-secondary/30 transition-all"
-                title="Voice input"
-              >
-                <Mic className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -332,22 +317,13 @@ const Dashboard = () => {
                 <Sparkles className="w-4.5 h-4.5 shrink-0" />
                 <span className="text-sm font-medium">Ask Aura</span>
               </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
-                >
-                  <Paperclip className="w-3.5 h-3.5 shrink-0" />
-                  <span>Attach</span>
-                </button>
-                <button
-                  onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
-                >
-                  <Mic className="w-3.5 h-3.5 shrink-0" />
-                  <span>Voice</span>
-                </button>
-              </div>
+              <button
+                onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
+              >
+                <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                <span>Capture</span>
+              </button>
             </div>
           </aside>
         </div>
