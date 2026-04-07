@@ -222,28 +222,6 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
             <span className="text-meta">{uploadingDoc ? "Processing…" : "Click to upload PDF, DOCX, or image"}</span>
           </button>
         </div>
-      ) : mode === "voice" ? (
-        <div className="flex flex-col items-center gap-4 py-6">
-          {isTranscribing ? (
-            <div className="flex items-center gap-2 text-body text-muted-foreground">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" /> Transcribing…
-            </div>
-          ) : isRecording ? (
-            <button onClick={stopRecording} className="w-16 h-16 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center animate-pulse">
-              <Square className="w-6 h-6 text-destructive" />
-            </button>
-          ) : (
-            <button onClick={startRecording} className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center hover:bg-primary/20 transition-colors">
-              <Mic className="w-7 h-7 text-primary" />
-            </button>
-          )}
-          {content && (
-            <div className="w-full bg-secondary/30 rounded-xl p-4 mt-2">
-              <p className="text-body text-foreground/80 leading-relaxed" dir="auto">{content}</p>
-            </div>
-          )}
-          <p className="text-meta">{isRecording ? "Tap to stop recording" : "Tap to start recording"}</p>
-        </div>
       ) : (
         <div>
           {mode === "link" ? (
