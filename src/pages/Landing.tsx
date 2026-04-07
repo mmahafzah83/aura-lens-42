@@ -173,7 +173,6 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
 const Landing = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const mainRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -217,7 +216,6 @@ const Landing = () => {
 
   return (
     <div
-      ref={mainRef}
       className="landing-root min-h-screen text-[#f0f0f0]"
       style={{ background: "#0d0d0d", fontFamily: "'Inter', system-ui, sans-serif" }}
     >
