@@ -187,13 +187,13 @@ const CaptureIntelligencePanel = ({ onCaptured }: CaptureIntelligencePanelProps)
           <ArrowRight className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-card-title text-foreground">Capture Intelligence</h3>
+          <h3 className="text-card-title text-foreground">Capture</h3>
           <p className="text-meta">Feed your strategic thinking system</p>
         </div>
       </div>
 
       {/* Mode Selector */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {INPUT_MODES.map(({ key, icon: Icon, label }) => (
           <button
             key={key}
