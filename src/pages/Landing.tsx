@@ -67,7 +67,7 @@ const Counter = ({ target, visible }: { target: number; visible: boolean }) => {
 };
 
 /* ── Mobile scroll progress indicator ── */
-const ScrollIndicator = ({ containerRef }: { containerRef: React.RefObject<HTMLDivElement> }) => {
+const ScrollIndicator = () => {
   const [progress, setProgress] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -80,16 +80,14 @@ const ScrollIndicator = ({ containerRef }: { containerRef: React.RefObject<HTMLD
 
   useEffect(() => {
     if (!isMobile) return;
-    const el = containerRef.current;
-    if (!el) return;
     const onScroll = () => {
-      const scrollTop = el.scrollTop;
-      const scrollHeight = el.scrollHeight - el.clientHeight;
+      const scrollTop = document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
       setProgress(scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0);
     };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [isMobile, containerRef]);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [isMobile]);
 
   if (!isMobile) return null;
 
@@ -269,30 +267,33 @@ const Landing = () => {
           animation-play-state: paused;
         }
 
-        /* Mobile snap scroll */
+        /* Mobile layout — compact sections, no snap scroll */
         @media (max-width: 768px) {
           html { scroll-behavior: smooth; }
-          .landing-root {
-            scroll-snap-type: y mandatory;
-            overflow-y: scroll;
-            height: 100vh;
-          }
-          .landing-section {
-            scroll-snap-align: start;
+          .landing-hero {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
           }
-          /* Nav is sticky, not a snap section */
-          .landing-nav {
-            scroll-snap-align: none;
-            min-height: unset;
-          }
-          /* Reduced section padding on mobile */
-          .landing-section {
+          .landing-compact {
+            min-height: unset !important;
+            height: auto !important;
+            justify-content: flex-start !important;
             padding-top: 40px !important;
             padding-bottom: 40px !important;
+          }
+          .landing-compact-cta {
+            min-height: unset !important;
+            height: auto !important;
+            padding-top: 48px !important;
+            padding-bottom: 48px !important;
+          }
+          .landing-compact-footer {
+            min-height: unset !important;
+            height: auto !important;
+            padding-top: 32px !important;
+            padding-bottom: 32px !important;
           }
           .section-label {
             margin-bottom: 14px !important;
