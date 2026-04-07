@@ -395,7 +395,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     <Dialog open={open} onOpenChange={(v) => { if (!v && isRecording) stopRecording(); onOpenChange(v); }}>
       <DialogContent className="glass-card border-border/30 sm:max-w-md" onPaste={handlePaste}>
         <DialogHeader>
-          <DialogTitle className="text-gradient-gold text-xl">Capture Intelligence</DialogTitle>
+          <DialogTitle className="text-gradient-gold text-xl">Capture</DialogTitle>
         </DialogHeader>
 
         <div className="flex gap-2 my-4">
