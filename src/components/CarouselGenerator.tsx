@@ -690,6 +690,30 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
       if (data.validation) setValidation(data.validation);
       if (targetLang === lang) setCurrentSlide(0);
       setPipelineStep("carousel");
+
+      // Fire-and-forget save to linkedin_posts
+      if (newSlides.length > 0 && targetLang === "en") {
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+          if (!s?.user?.id) return;
+          const fullText = newSlides.map((sl: Slide) => `${sl.headline}\n${sl.supporting_text}`).join("\n\n");
+          const firstHook = newSlides[0]?.headline || "";
+          supabase.from("linkedin_posts").insert({
+            user_id: s.user.id,
+            linkedin_post_id: `aura_carousel_${Date.now()}`,
+            post_text: fullText,
+            title: title,
+            hook: firstHook.slice(0, 300),
+            tone: "authority",
+            format_type: "carousel",
+            content_type: "carousel",
+            topic_label: title,
+            source_type: "aura_generated",
+            tracking_status: "draft",
+          }).then(({ error: saveErr }) => {
+            if (saveErr) console.error("Auto-save carousel to linkedin_posts failed:", saveErr);
+          });
+        });
+      }
     } catch (e: any) {
       toast.error(e.message || "Failed to generate carousel");
     } finally {
