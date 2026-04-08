@@ -245,11 +245,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     }
 
     // Voice metadata
-    if (captureType === "voice" && voiceAnalysis) {
-      captureMetadata = {
-        summary: voiceAnalysis.summary,
-        skill_pillar: voiceAnalysis.skill_pillar,
-      };
+    if (captureType === "voice" && voiceAudioUrl) {
+      captureMetadata = { audio_url: voiceAudioUrl };
     }
 
     try {
@@ -337,7 +334,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       });
 
       setContent("");
-      setVoiceAnalysis(null);
+      setVoiceAudioUrl(null);
       setImageFile(null);
       setImagePreview(null);
       setImageAnalysis(null);
@@ -584,17 +581,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </>
               )}
               {content && !isRecording && !isTranscribing && (
-                <div className="w-full mt-2 space-y-3">
+                <div className="w-full mt-2 space-y-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Transcript</p>
                   <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} dir="auto" className="bg-secondary border-border/30 resize-none text-sm" placeholder="Transcript will appear here…" />
-                  {voiceAnalysis?.summary && (
-                    <div className="bg-secondary/60 border border-border/20 rounded-xl p-4 space-y-2">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Senior Partner Analysis</p>
-                      <p className="text-xs text-foreground whitespace-pre-line leading-relaxed" dir="auto">{voiceAnalysis.summary}</p>
-                      {voiceAnalysis.skill_pillar && (
-                        <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary mt-1">{voiceAnalysis.skill_pillar}</span>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
