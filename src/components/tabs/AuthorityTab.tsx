@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
@@ -782,8 +783,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   return (
     <div className="space-y-4">
       {/* Delete confirmation dialog */}
-      {pendingDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
+      {pendingDeleteId && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
           <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
             <h3 className="text-base font-semibold text-foreground">Delete this post?</h3>
             <p className="text-sm text-muted-foreground">This action cannot be undone. The post will be permanently removed from your library.</p>
@@ -802,7 +803,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
       <VoiceTrainer />
       {/* Filter bar */}
