@@ -121,6 +121,28 @@ const CreateTab = () => {
           } catch {}
         }
       }
+      // Fire-and-forget save to linkedin_posts
+      if (accumulated) {
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+          if (!s?.user?.id) return;
+          const firstLine = accumulated.split(/\n/).find(l => l.trim())?.trim() || "";
+          supabase.from("linkedin_posts").insert({
+            user_id: s.user.id,
+            linkedin_post_id: `aura_${Date.now()}`,
+            post_text: accumulated,
+            title: topic,
+            hook: firstLine.slice(0, 300),
+            tone: lang === "ar" ? "arabic_executive" : "authority",
+            format_type: contentType === "framework_summary" ? "framework" : contentType,
+            content_type: contentType === "framework_summary" ? "framework" : contentType,
+            topic_label: topic,
+            source_type: "aura_generated",
+            tracking_status: "draft",
+          }).then(({ error: saveErr }) => {
+            if (saveErr) console.error("Auto-save to linkedin_posts failed:", saveErr);
+          });
+        });
+      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
