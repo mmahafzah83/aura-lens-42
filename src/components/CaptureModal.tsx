@@ -346,28 +346,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       // Fire-and-forget: detect signals in background
       if (entryRow?.id) {
         const entryId = entryRow.id;
-        const userId = session.user.id;
         const accessToken = session.access_token;
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-signals`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ entry_id: entryId, user_id: "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3" }),
+        })
+          .then((r) => r.json())
+          .then((result) => console.log("detect-signals result:", result))
+          .catch((err) => console.warn("detect-signals background error:", err));
+
+        // Subtle toast after 5 seconds
         setTimeout(() => {
-          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-signals`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ entry_id: entryId, user_id: userId }),
-          })
-            .then((r) => r.json())
-            .then((result) => {
-              console.log("detect-signals result:", result);
-              if (result?.is_new) {
-                setTimeout(() => {
-                  toast({ title: "🔍 New signal detected", description: "Check Intelligence tab." });
-                }, 3000);
-              }
-            })
-            .catch((err) => console.warn("detect-signals background error:", err));
-        }, 0);
+          toast({ title: "✨ Analysing signal...", description: "Looking for patterns in your captures." });
+        }, 5000);
       }
     } catch (err: any) {
       toast({
