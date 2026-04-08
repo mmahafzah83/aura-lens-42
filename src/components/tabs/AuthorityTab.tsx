@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
-  Loader2, Save, Plus, X, Send, Copy, Check,
+  Loader2, Save, Plus, X, Send, Copy, Check, Trash2,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
   Calendar, TrendingUp, BarChart3, Upload, Mic
@@ -731,6 +731,20 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     toast.success("Marked as published");
   };
 
+  const deletePost = async (id: string) => {
+    const { error } = await supabase
+      .from("linkedin_posts")
+      .delete()
+      .eq("id", id);
+    if (error) {
+      console.error("Failed to delete post:", error);
+      toast.error("Failed to delete post");
+      return;
+    }
+    setPosts(prev => prev.filter(p => p.id !== id));
+    toast.success("Post deleted");
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -821,6 +835,14 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   <Check className="w-3 h-3" /> Mark as published
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => deletePost(p.id)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
             </div>
           </motion.div>
         );
