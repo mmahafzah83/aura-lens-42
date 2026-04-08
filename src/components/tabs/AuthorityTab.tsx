@@ -916,6 +916,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           </motion.div>
         );
       })}
+          </>
+        );
+      })()}
     </div>
   );
 };
