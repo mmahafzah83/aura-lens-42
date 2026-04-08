@@ -700,6 +700,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => { loadPosts(); }, []);
 
@@ -908,7 +909,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                 size="sm"
                 variant="ghost"
                 className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => deletePost(p.id)}
+                onClick={() => setPendingDeleteId(p.id)}
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
