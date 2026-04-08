@@ -41,12 +41,12 @@ serve(async (req) => {
       .maybeSingle();
 
     const voiceContext = voiceProfile ? `
-VOICE PROFILE:
-- Tone: ${voiceProfile.tone || "analytical, calm authority"}
-- Preferred Structures: ${JSON.stringify(voiceProfile.preferred_structures || [])}
-- Storytelling Patterns: ${JSON.stringify(voiceProfile.storytelling_patterns || [])}
-- Example Posts: ${(voiceProfile.example_posts as any[] || []).map((p: any) => p.content?.substring(0, 200)).join("\n---\n")}
-- Admired Posts: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => p.content?.substring(0, 200)).join("\n---\n")}
+VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm authority"}.
+Use these structural patterns: ${JSON.stringify(voiceProfile.preferred_structures || [])}.
+Mirror vocabulary from these examples: ${(voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n")}
+Admired voice references: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n")}
+Vocabulary notes: ${typeof voiceProfile.vocabulary_preferences === "object" ? (voiceProfile.vocabulary_preferences as any)?.notes || "" : ""}
+Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
 ` : "No voice profile set — use analytical, calm authority tone.";
 
     // Build identity context from brand assessment + profile
