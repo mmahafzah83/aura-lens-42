@@ -8,6 +8,7 @@ import BrandArchetypeWidget from "@/components/BrandArchetypeWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import PageHeader from "@/components/PageHeader";
+import VoiceEngineSection from "@/components/VoiceEngineSection";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -64,6 +65,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
       {activeSection === "profile" && (
         <div className="space-y-6 animate-fade-in">
           <OnboardingProfileSection />
+          <VoiceEngineSection />
         </div>
       )}
 
