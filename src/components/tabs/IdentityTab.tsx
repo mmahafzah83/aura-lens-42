@@ -65,6 +65,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
       {activeSection === "profile" && (
         <div className="space-y-6 animate-fade-in">
           <OnboardingProfileSection />
+          <VoiceEngineSection />
         </div>
       )}
 
