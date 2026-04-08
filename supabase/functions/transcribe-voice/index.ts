@@ -77,8 +77,14 @@ serve(async (req) => {
       audioUrl = urlData.publicUrl;
     }
 
-    // Convert audio to base64 for Gemini multimodal
-    const base64Audio = btoa(String.fromCharCode(...audioBytes));
+    // Convert audio to base64 for Gemini multimodal (chunked to avoid stack overflow)
+    let binary = "";
+    const CHUNK = 8192;
+    for (let i = 0; i < audioBytes.length; i += CHUNK) {
+      const chunk = audioBytes.subarray(i, Math.min(i + CHUNK, audioBytes.length));
+      binary += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+    const base64Audio = btoa(binary);
     const mimeType = audioFile.type || "audio/webm";
 
     // Use Gemini multimodal to transcribe
