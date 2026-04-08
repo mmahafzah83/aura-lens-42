@@ -8,6 +8,7 @@ import BrandArchetypeWidget from "@/components/BrandArchetypeWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import PageHeader from "@/components/PageHeader";
+import VoiceEngineSection from "@/components/VoiceEngineSection";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
