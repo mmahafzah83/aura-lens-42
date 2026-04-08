@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Loader2, Save, Plus, X, Send, Copy, Check,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
-  Calendar, TrendingUp, BarChart3
+  Calendar, TrendingUp, BarChart3, Upload, Mic
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -527,6 +527,152 @@ const AnalyzeTab = () => {
 };
 
 /* ═══════════════════════════════════════════
+   VOICE TRAINER — inline in Library tab
+   ═══════════════════════════════════════════ */
+
+const VoiceTrainer = () => {
+  const [pasteText, setPasteText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const appendToVoice = async (newText: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) throw new Error("Not authenticated");
+    const uid = session.user.id;
+
+    const { data: existing } = await supabase
+      .from("authority_voice_profiles")
+      .select("id, example_posts")
+      .eq("user_id", uid)
+      .maybeSingle();
+
+    const current = (existing?.example_posts as any[] || []);
+    const updated = [...current, { content: newText.trim() }];
+
+    if (existing) {
+      const { error } = await supabase
+        .from("authority_voice_profiles")
+        .update({ example_posts: updated, updated_at: new Date().toISOString() })
+        .eq("user_id", uid);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase
+        .from("authority_voice_profiles")
+        .insert({ user_id: uid, example_posts: updated, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    }
+  };
+
+  const handlePaste = async () => {
+    if (!pasteText.trim()) return;
+    setSaving(true);
+    try {
+      await appendToVoice(pasteText);
+      toast.success("Added to your voice engine");
+      setPasteText("");
+    } catch (e: any) {
+      console.error("Voice paste error:", e);
+      toast.error(e.message || "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      let text = "";
+      if (file.name.endsWith(".txt") || file.type === "text/plain") {
+        text = await file.text();
+      } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
+        // For PDF, read as text (basic extraction)
+        const arrayBuf = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuf);
+        // Simple PDF text extraction — find text between stream markers
+        const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+        // Extract readable text sequences (printable ASCII runs)
+        const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
+        text = readable.join("\n").slice(0, 10000);
+        if (!text.trim()) {
+          text = `[PDF uploaded: ${file.name}]`;
+          toast.info("PDF text extraction was limited. For best results, paste the text directly.");
+        }
+      } else {
+        toast.error("Please upload a PDF or TXT file");
+        return;
+      }
+
+      if (text.trim()) {
+        await appendToVoice(text.slice(0, 10000));
+        toast.success("Document added to your voice engine");
+      }
+    } catch (e: any) {
+      console.error("Voice upload error:", e);
+      toast.error(e.message || "Failed to process file");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="glass-card rounded-xl p-5 border border-border/8">
+      <div className="flex items-center gap-2 mb-4">
+        <Mic className="w-4 h-4 text-primary" />
+        <p className="text-sm font-semibold text-foreground">Train your voice</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Upload */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Upload a document</p>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.txt,text/plain,application/pdf"
+            onChange={handleFile}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 text-xs border-border/15"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+            {uploading ? "Processing…" : "Upload PDF or TXT"}
+          </Button>
+        </div>
+
+        {/* Paste */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Paste a post or text</p>
+          <Textarea
+            value={pasteText}
+            onChange={(e) => setPasteText(e.target.value)}
+            placeholder="Paste a post you've written…"
+            className="min-h-[60px] bg-secondary/30 border-border/20 text-xs"
+          />
+          <Button
+            size="sm"
+            className="w-full gap-2 text-xs"
+            onClick={handlePaste}
+            disabled={saving || !pasteText.trim()}
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+            Add to voice engine
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════
    LIBRARY TAB — Saved Content
    ═══════════════════════════════════════════ */
 
@@ -601,19 +747,23 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   if (posts.length === 0) {
     return (
-      <div className="text-center py-16 space-y-3">
-        <FileText className="w-8 h-8 text-primary/30 mx-auto" />
-        <p className="text-foreground font-medium">Your generated content will appear here</p>
-        <p className="text-sm text-muted-foreground max-w-sm mx-auto">Start by creating a post, carousel, or essay on the Create tab.</p>
-        <Button onClick={onSwitchToCreate} className="gap-2">
-          <PenTool className="w-4 h-4" /> Go to Create
-        </Button>
+      <div className="space-y-6">
+        <VoiceTrainer />
+        <div className="text-center py-16 space-y-3">
+          <FileText className="w-8 h-8 text-primary/30 mx-auto" />
+          <p className="text-foreground font-medium">Your generated content will appear here</p>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">Start by creating a post, carousel, or essay on the Create tab.</p>
+          <Button onClick={onSwitchToCreate} className="gap-2">
+            <PenTool className="w-4 h-4" /> Go to Create
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      <VoiceTrainer />
       <p className="text-sm text-muted-foreground">{posts.length} saved {posts.length === 1 ? "piece" : "pieces"} of content</p>
       {posts.map(p => {
         const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
