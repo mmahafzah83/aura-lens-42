@@ -527,6 +527,159 @@ const AnalyzeTab = () => {
 };
 
 /* ═══════════════════════════════════════════
+   LIBRARY TAB — Saved Content
+   ═══════════════════════════════════════════ */
+
+interface SavedPost {
+  id: string;
+  title: string | null;
+  post_text: string | null;
+  format_type: string | null;
+  tracking_status: string;
+  topic_label: string | null;
+  created_at: string;
+}
+
+const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
+  post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  carousel: { label: "Carousel", cls: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
+  framework: { label: "Framework", cls: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
+  essay: { label: "Essay", cls: "bg-muted/30 text-muted-foreground border-border/20" },
+};
+
+const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
+  const [posts, setPosts] = useState<SavedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => { loadPosts(); }, []);
+
+  const loadPosts = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("linkedin_posts")
+      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setPosts((data || []) as SavedPost[]);
+    setLoading(false);
+  };
+
+  const handleCopy = async (id: string, text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const markPublished = async (id: string) => {
+    const { error } = await supabase
+      .from("linkedin_posts")
+      .update({ tracking_status: "published", published_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) {
+      console.error("Failed to mark published:", error);
+      toast.error("Failed to update status");
+      return;
+    }
+    setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
+    toast.success("Marked as published");
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="glass-card rounded-xl p-5 border border-border/8 animate-pulse">
+            <div className="h-4 bg-secondary/30 rounded w-2/3 mb-3" />
+            <div className="h-3 bg-secondary/20 rounded w-1/4 mb-2" />
+            <div className="h-3 bg-secondary/20 rounded w-1/3" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (posts.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-3">
+        <FileText className="w-8 h-8 text-primary/30 mx-auto" />
+        <p className="text-foreground font-medium">Your generated content will appear here</p>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">Start by creating a post, carousel, or essay on the Create tab.</p>
+        <Button onClick={onSwitchToCreate} className="gap-2">
+          <PenTool className="w-4 h-4" /> Go to Create
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">{posts.length} saved {posts.length === 1 ? "piece" : "pieces"} of content</p>
+      {posts.map(p => {
+        const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+        const isDraft = p.tracking_status === "draft";
+        return (
+          <motion.div
+            key={p.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                  {p.title || "Untitled"}
+                </p>
+                {p.topic_label && (
+                  <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
+                  {badge.label}
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                  isDraft
+                    ? "bg-muted/20 text-muted-foreground border-border/15"
+                    : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                }`}>
+                  {isDraft ? "Draft" : "Published"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+              <div className="flex-1" />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
+                disabled={!p.post_text}
+              >
+                {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copiedId === p.id ? "Copied" : "Copy"}
+              </Button>
+              {isDraft && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5 border-border/15"
+                  onClick={() => markPublished(p.id)}
+                >
+                  <Check className="w-3 h-3" /> Mark as published
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════
    MAIN AUTHORITY TAB
    ═══════════════════════════════════════════ */
 
@@ -539,6 +692,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "create", label: "Create", icon: PenTool },
   { key: "plan", label: "Plan", icon: Calendar },
   { key: "analyze", label: "Analyze", icon: BarChart3 },
+  { key: "library", label: "Library", icon: BookOpen },
 ];
 
 const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
@@ -601,6 +755,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
       {activeTab === "create" && <CreateTab />}
       {activeTab === "plan" && <PlanTab />}
       {activeTab === "analyze" && <AnalyzeTab />}
+      {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
     </div>
   );
 };
