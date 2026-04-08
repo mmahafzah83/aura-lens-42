@@ -109,9 +109,12 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
       setUserName(fallback.charAt(0).toUpperCase() + fallback.slice(1));
     }
 
-    // Fetch Aura Score
-    supabase.functions.invoke("calculate-aura-score", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
+    // Fetch Aura Score — get fresh token to avoid expired JWT
+    supabase.auth.getSession().then(({ data: { session: freshSession } }) => {
+      const token = freshSession?.access_token || session.access_token;
+      return supabase.functions.invoke("calculate-aura-score", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
     }).then(({ data }) => {
       if (data && typeof data.aura_score === "number") {
         setAuraScore(data as AuraScore);
