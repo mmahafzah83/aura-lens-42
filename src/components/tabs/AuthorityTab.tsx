@@ -700,6 +700,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => { loadPosts(); }, []);
 
@@ -780,6 +781,29 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   return (
     <div className="space-y-4">
+      {/* Delete confirmation dialog */}
+      {pendingDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
+          <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
+            <h3 className="text-base font-semibold text-foreground">Delete this post?</h3>
+            <p className="text-sm text-muted-foreground">This action cannot be undone. The post will be permanently removed from your library.</p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setPendingDeleteId(null)}>Cancel</Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  const id = pendingDeleteId;
+                  setPendingDeleteId(null);
+                  await deletePost(id);
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <VoiceTrainer />
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -908,7 +932,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                 size="sm"
                 variant="ghost"
                 className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => deletePost(p.id)}
+                onClick={() => setPendingDeleteId(p.id)}
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
