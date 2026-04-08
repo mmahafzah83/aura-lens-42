@@ -760,6 +760,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   return (
     <div className="space-y-4">
+      <VoiceTrainer />
       <p className="text-sm text-muted-foreground">{posts.length} saved {posts.length === 1 ? "piece" : "pieces"} of content</p>
       {posts.map(p => {
         const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
