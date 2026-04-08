@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,23 +7,39 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NEW_PILLARS = ["C-Suite Advisory", "Strategic Architecture", "Industry Foresight", "Transformation Stewardship", "Digital Fluency"];
-
-function hasArabic(text: string): boolean {
-  return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text);
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
-
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Auth check
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authErr } = await supabase.auth.getClaims(token);
+    if (authErr || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId = claimsData.claims.sub as string;
 
     const formData = await req.formData();
     const audioFile = formData.get("audio");
@@ -36,43 +53,35 @@ serve(async (req) => {
 
     console.log("Transcribing audio:", audioFile.name, "size:", audioFile.size);
 
-    const whisperForm = new FormData();
-    whisperForm.append("file", audioFile, audioFile.name || "recording.webm");
-    whisperForm.append("model", "whisper-1");
-    whisperForm.append(
-      "prompt",
-      "Desalination, Digital Twin, NWC, MEWA, KPI, CAPEX, OPEX, SCADA, RO membrane, reverse osmosis, PPP, strategic objectives, utilities, infrastructure, ESG, NOM, TDS, SEC, تحلية, مياه, بنية تحتية, استراتيجية, تحول رقمي"
-    );
+    // Upload audio to storage
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, serviceKey);
+    const ext = audioFile.name?.includes("webm") ? "webm" : "mp4";
+    const storagePath = `${userId}/voice_${Date.now()}.${ext}`;
 
-    const whisperRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-      body: whisperForm,
-    });
+    const arrayBuffer = await audioFile.arrayBuffer();
+    const audioBytes = new Uint8Array(arrayBuffer);
 
-    if (!whisperRes.ok) {
-      const errText = await whisperRes.text();
-      console.error("Whisper API error:", whisperRes.status, errText);
-      if (whisperRes.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (whisperRes.status === 401) return new Response(JSON.stringify({ error: "Invalid OpenAI API key." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      throw new Error(`Whisper transcription failed (${whisperRes.status})`);
-    }
-
-    const whisperData = await whisperRes.json();
-    const transcript = whisperData.text || "";
-    console.log("Transcription complete, length:", transcript.length);
-
-    if (!transcript.trim()) {
-      return new Response(JSON.stringify({ transcript: "", summary: null, skill_pillar: null }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const { error: uploadError } = await adminClient.storage
+      .from("captures")
+      .upload(storagePath, audioBytes, {
+        contentType: audioFile.type || "audio/webm",
+        upsert: false,
       });
+
+    let audioUrl: string | null = null;
+    if (uploadError) {
+      console.error("Audio upload error:", uploadError.message);
+    } else {
+      const { data: urlData } = adminClient.storage.from("captures").getPublicUrl(storagePath);
+      audioUrl = urlData.publicUrl;
     }
 
-    const isArabic = hasArabic(transcript);
-    const bilingualInstruction = isArabic
-      ? `\n\nIMPORTANT: The voice note is in Arabic. Provide each section (Core Idea, Strategic Risk, Next Step) in BOTH Arabic and English. Format each section as:\n[Arabic text]\n[English translation]`
-      : "";
+    // Convert audio to base64 for Gemini multimodal
+    const base64Audio = btoa(String.fromCharCode(...audioBytes));
+    const mimeType = audioFile.type || "audio/webm";
 
+    // Use Gemini multimodal to transcribe
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -81,69 +90,54 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "analyze_voice_note",
-              description: "Analyze a voice note as a Senior Executive Coach would",
-              parameters: {
-                type: "object",
-                properties: {
-                  core_idea: { type: "string", description: "One sentence distilling the central thesis. If Arabic, provide bilingual (Arabic then English)." },
-                  strategic_risk: { type: "string", description: "One sentence identifying the key risk or blind spot. If Arabic, provide bilingual." },
-                  next_step: { type: "string", description: "One concrete, actionable challenge for the executive. Frame as a peer would. If Arabic, provide bilingual." },
-                  skill_pillar: {
-                    type: "string",
-                    enum: NEW_PILLARS,
-                    description: "Which skill pillar this thought most relates to",
-                  },
-                },
-                required: ["core_idea", "strategic_risk", "next_step", "skill_pillar"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "analyze_voice_note" } },
         messages: [
           {
             role: "system",
-            content: `You are a Senior Executive Coach working as a peer to a Director at EY who aspires to be a "Transformation Architect." You are sophisticated, challenging, and neutral. You don't coddle — you clarify. You don't praise easily — you push toward potential.
-
-Given a transcribed voice note, distill it into three components:
-1. THE CORE IDEA — the central thesis, stripped of noise
-2. THE STRATEGIC RISK — what could go wrong, what's being overlooked, or where the thinking is too narrow
-3. THE NEXT STEP — one concrete challenge worthy of a partner meeting agenda. Frame it as: "If I were you, I would..."
-
-Classify under: ${NEW_PILLARS.join(", ")}.${bilingualInstruction}`,
+            content: "Transcribe the following audio recording exactly as spoken. Return only the transcript text, nothing else. Do not analyze, summarize, or interpret the content. Just return the exact words that were spoken. If the audio is in Arabic or any non-English language, transcribe in the original language.",
           },
           {
             role: "user",
-            content: `Analyze this voice note:\n\n"${transcript}"`,
+            content: [
+              {
+                type: "input_audio",
+                input_audio: {
+                  data: base64Audio,
+                  format: mimeType.includes("webm") ? "webm" : "mp4",
+                },
+              },
+              {
+                type: "text",
+                text: "Please transcribe this audio recording exactly as spoken.",
+              },
+            ],
           },
         ],
       }),
     });
 
-    let summary: string | null = null;
-    let skill_pillar: string | null = null;
-
-    if (aiRes.ok) {
-      const aiData = await aiRes.json();
-      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-      if (toolCall?.function?.arguments) {
-        try {
-          const args = JSON.parse(toolCall.function.arguments);
-          summary = `▸ The Core Idea\n${args.core_idea}\n\n▸ The Strategic Risk\n${args.strategic_risk}\n\n▸ The Next Step\n${args.next_step}`;
-          skill_pillar = args.skill_pillar || null;
-        } catch { console.error("Failed to parse AI response"); }
+    if (!aiRes.ok) {
+      const errText = await aiRes.text();
+      console.error("AI transcription error:", aiRes.status, errText);
+      if (aiRes.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-    } else {
-      console.error("AI analysis failed:", aiRes.status);
+      if (aiRes.status === 402) {
+        return new Response(JSON.stringify({ error: "Credits exhausted. Please add funds." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`Transcription failed (${aiRes.status})`);
     }
 
-    return new Response(JSON.stringify({ transcript, summary, skill_pillar }), {
+    const aiData = await aiRes.json();
+    const transcript = aiData.choices?.[0]?.message?.content?.trim() || "";
+    console.log("Transcription complete, length:", transcript.length);
+
+    return new Response(JSON.stringify({ transcript, audio_url: audioUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

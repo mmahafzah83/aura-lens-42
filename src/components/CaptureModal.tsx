@@ -30,7 +30,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [voiceAnalysis, setVoiceAnalysis] = useState<{ summary: string | null; skill_pillar: string | null } | null>(null);
+  const [voiceAudioUrl, setVoiceAudioUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -150,19 +150,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           const formData = new FormData();
           const ext = mimeType.includes("webm") ? "webm" : "mp4";
           formData.append("audio", blob, `recording.${ext}`);
-          const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", { body: formData });
+          const { data: { session } } = await supabase.auth.getSession();
+          const freshToken = session?.access_token;
+          const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", {
+            body: formData,
+            ...(freshToken ? { headers: { Authorization: `Bearer ${freshToken}` } } : {}),
+          });
           if (fnError) {
             toast({ title: "Transcription failed", description: fnError.message, variant: "destructive" });
           } else if (fnData?.error) {
             toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
           } else if (fnData?.transcript) {
             setContent(fnData.transcript);
-            if (fnData.summary) {
-              setVoiceAnalysis({ summary: fnData.summary, skill_pillar: fnData.skill_pillar || null });
-              toast({ title: "Analyzed", description: "Senior Partner briefing generated." });
-            } else {
-              toast({ title: "Transcribed", description: "Voice note converted to text." });
-            }
+            if (fnData.audio_url) setVoiceAudioUrl(fnData.audio_url);
+            toast({ title: "Transcribed", description: "Voice note converted to text." });
           }
         } catch {
           toast({ title: "Error", description: "Could not transcribe audio.", variant: "destructive" });
@@ -244,11 +245,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     }
 
     // Voice metadata
-    if (captureType === "voice" && voiceAnalysis) {
-      captureMetadata = {
-        summary: voiceAnalysis.summary,
-        skill_pillar: voiceAnalysis.skill_pillar,
-      };
+    if (captureType === "voice" && voiceAudioUrl) {
+      captureMetadata = { audio_url: voiceAudioUrl };
     }
 
     try {
@@ -329,14 +327,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         console.log("Entry inserted successfully, id:", entryRow?.id);
       }
 
-      // Success (201)
+      // Success
       toast({
-        title: "Captured. Processing complete.",
-        description: "Your capture has been saved and processed.",
+        title: captureType === "voice" ? "Voice capture saved" : "Captured. Processing complete.",
+        description: "Your capture has been saved.",
       });
 
       setContent("");
-      setVoiceAnalysis(null);
+      setVoiceAudioUrl(null);
       setImageFile(null);
       setImagePreview(null);
       setImageAnalysis(null);
@@ -531,28 +529,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   AI is reading your screenshot…
                 </div>
               )}
-              {imageAnalysis && (
-                <div className="bg-secondary/60 border border-border/20 rounded-xl p-4 space-y-2">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Image Intelligence</p>
-                  {imageAnalysis.title && <p className="text-sm font-medium text-foreground">{imageAnalysis.title}</p>}
-                  <p className="text-xs text-foreground whitespace-pre-line leading-relaxed" dir="auto">{imageAnalysis.summary}</p>
-                  {imageAnalysis.skill_pillar && (
-                    <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary mt-1">{imageAnalysis.skill_pillar}</span>
-                  )}
-                  {onOpenChat && (
-                    <button
-                      onClick={() => {
-                        const title = imageAnalysis.title || "this framework";
-                        onOpenChat(`Turn the framework "${title}" into a 5-minute briefing for my next meeting. Structure it as: Context (30s), Core Framework (2min), Application to Our Client (2min), One Provocative Question (30s).`);
-                        onOpenChange(false);
-                      }}
-                      className="mt-2 w-full text-left text-xs px-3 py-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-colors"
-                    >
-                      ◈ Turn this framework into a 5-minute meeting briefing?
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
@@ -567,7 +543,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
                   </div>
-                  <p className="text-sm text-muted-foreground">Analyzing as Senior Partner…</p>
+                  <p className="text-sm text-muted-foreground">Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -583,17 +559,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </>
               )}
               {content && !isRecording && !isTranscribing && (
-                <div className="w-full mt-2 space-y-3">
+                <div className="w-full mt-2 space-y-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Transcript</p>
                   <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} dir="auto" className="bg-secondary border-border/30 resize-none text-sm" placeholder="Transcript will appear here…" />
-                  {voiceAnalysis?.summary && (
-                    <div className="bg-secondary/60 border border-border/20 rounded-xl p-4 space-y-2">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Senior Partner Analysis</p>
-                      <p className="text-xs text-foreground whitespace-pre-line leading-relaxed" dir="auto">{voiceAnalysis.summary}</p>
-                      {voiceAnalysis.skill_pillar && (
-                        <span className="inline-block text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary mt-1">{voiceAnalysis.skill_pillar}</span>
-                      )}
-                    </div>
-                  )}
                 </div>
               )}
             </div>
