@@ -697,6 +697,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [posts, setPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
+  const [topicFilter, setTopicFilter] = useState<string>("all");
 
   useEffect(() => { loadPosts(); }, []);
 
