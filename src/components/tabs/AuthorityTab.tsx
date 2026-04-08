@@ -781,8 +781,74 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   return (
     <div className="space-y-4">
       <VoiceTrainer />
-      <p className="text-sm text-muted-foreground">{posts.length} saved {posts.length === 1 ? "piece" : "pieces"} of content</p>
-      {posts.map(p => {
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+          <Input
+            placeholder="Search content..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="h-8 pl-8 text-xs bg-secondary/20 border-border/10"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          {(["all", "draft", "published"] as const).map(s => (
+            <Button
+              key={s}
+              size="sm"
+              variant={statusFilter === s ? "default" : "ghost"}
+              className="h-7 text-[11px] px-2.5"
+              onClick={() => setStatusFilter(s)}
+            >
+              {s === "all" ? "All" : s === "draft" ? "Drafts" : "Published"}
+            </Button>
+          ))}
+        </div>
+        {(() => {
+          const topics = [...new Set(posts.map(p => p.topic_label).filter(Boolean))] as string[];
+          if (topics.length <= 1) return null;
+          return (
+            <select
+              value={topicFilter}
+              onChange={e => setTopicFilter(e.target.value)}
+              className="h-7 text-[11px] px-2 rounded-md bg-secondary/20 border border-border/10 text-foreground"
+            >
+              <option value="all">All topics</option>
+              {topics.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          );
+        })()}
+      </div>
+
+      {(() => {
+        const filtered = posts.filter(p => {
+          if (statusFilter === "draft" && p.tracking_status !== "draft") return false;
+          if (statusFilter === "published" && p.tracking_status === "draft") return false;
+          if (topicFilter !== "all" && p.topic_label !== topicFilter) return false;
+          if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            const matchTitle = (p.title || "").toLowerCase().includes(q);
+            const matchTopic = (p.topic_label || "").toLowerCase().includes(q);
+            const matchText = (p.post_text || "").toLowerCase().includes(q);
+            if (!matchTitle && !matchTopic && !matchText) return false;
+          }
+          return true;
+        });
+
+        return (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {filtered.length} of {posts.length} {posts.length === 1 ? "piece" : "pieces"} of content
+            </p>
+            {filtered.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-sm text-muted-foreground">No content matches your filters.</p>
+                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setTopicFilter("all"); }}>
+                  Clear filters
+                </Button>
+              </div>
+            ) : filtered.map(p => {
         const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
         const isDraft = p.tracking_status === "draft";
         return (
