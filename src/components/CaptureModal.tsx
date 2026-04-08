@@ -150,19 +150,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           const formData = new FormData();
           const ext = mimeType.includes("webm") ? "webm" : "mp4";
           formData.append("audio", blob, `recording.${ext}`);
-          const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", { body: formData });
+          const { data: { session } } = await supabase.auth.getSession();
+          const freshToken = session?.access_token;
+          const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", {
+            body: formData,
+            ...(freshToken ? { headers: { Authorization: `Bearer ${freshToken}` } } : {}),
+          });
           if (fnError) {
             toast({ title: "Transcription failed", description: fnError.message, variant: "destructive" });
           } else if (fnData?.error) {
             toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
           } else if (fnData?.transcript) {
             setContent(fnData.transcript);
-            if (fnData.summary) {
-              setVoiceAnalysis({ summary: fnData.summary, skill_pillar: fnData.skill_pillar || null });
-              toast({ title: "Analyzed", description: "Senior Partner briefing generated." });
-            } else {
-              toast({ title: "Transcribed", description: "Voice note converted to text." });
-            }
+            if (fnData.audio_url) setVoiceAudioUrl(fnData.audio_url);
+            toast({ title: "Transcribed", description: "Voice note converted to text." });
           }
         } catch {
           toast({ title: "Error", description: "Could not transcribe audio.", variant: "destructive" });
