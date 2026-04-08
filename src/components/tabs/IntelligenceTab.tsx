@@ -99,7 +99,7 @@ function getTypeStyle(type: string) {
 function getConfidenceStyle(confidence: number) {
   if (confidence >= 0.70) return { bg: "#1a1e15", fg: "#7ab648", label: `${Math.round(confidence * 100)}%` };
   if (confidence >= 0.50) return { bg: "#1e1a10", fg: "#EF9F27", label: `${Math.round(confidence * 100)}%` };
-  return { bg: "#1a1a1a", fg: "#555555", label: "still building" };
+  return { bg: "#1a1a1a", fg: "#888888", label: "Building confidence" };
 }
 
 /* ═══════════════════════════════════════════
