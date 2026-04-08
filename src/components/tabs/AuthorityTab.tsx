@@ -19,7 +19,7 @@ import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
-type AuthoritySubTab = "create" | "plan" | "analyze";
+type AuthoritySubTab = "create" | "plan" | "analyze" | "library";
 
 const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
   post: { label: "LinkedIn Post", icon: PenTool },
