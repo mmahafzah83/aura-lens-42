@@ -115,7 +115,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ user_id: session.user.id }),
       });
       if (!resp.ok) throw new Error("Detection failed");
       const data = await resp.json();
