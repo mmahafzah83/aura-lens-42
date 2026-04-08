@@ -309,16 +309,21 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       }
 
       // Also insert into entries table so Knowledge tab picks it up
+      // For links, use the extracted article text from ingest-capture instead of the raw URL
+      const entryContent = captureType === "link" && data?.extracted_content
+        ? data.extracted_content
+        : captureContent;
       const entryTitle = captureType === "link"
-        ? (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })()
+        ? (data?.extracted_title || (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })())
         : (captureContent || "").slice(0, 60) || "Untitled";
 
       const { data: entryRow, error: entryError } = await supabase.from("entries").insert({
         user_id: session.user.id,
         type: captureType === "link" ? "link" : captureType,
         title: entryTitle,
-        content: captureContent,
-        summary: captureContent.slice(0, 300),
+        content: entryContent,
+        summary: entryContent.slice(0, 300),
+        ...(captureType === "link" && { image_url: data?.original_url || content.trim() }),
       }).select("id").single();
 
       if (entryError) {

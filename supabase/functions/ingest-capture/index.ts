@@ -1,5 +1,37 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+function extractTextFromHtml(html: string): string {
+  // Remove script and style blocks
+  let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+  // Remove nav and footer blocks
+  text = text.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "");
+  text = text.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "");
+  text = text.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "");
+  // Remove all remaining HTML tags
+  text = text.replace(/<[^>]+>/g, " ");
+  // Decode common HTML entities
+  text = text.replace(/&nbsp;/g, " ");
+  text = text.replace(/&amp;/g, "&");
+  text = text.replace(/&lt;/g, "<");
+  text = text.replace(/&gt;/g, ">");
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/&#39;/g, "'");
+  // Collapse whitespace
+  text = text.replace(/\s+/g, " ").trim();
+  return text;
+}
+
+function extractTitle(html: string): string {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return match ? match[1].replace(/\s+/g, " ").trim() : "";
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -87,29 +119,68 @@ Deno.serve(async (req) => {
 
     // Process based on type
     let extracted_text = content;
-    let processing_status = "completed";
-    let error_message: string | null = null;
+    let extracted_title: string | null = null;
 
     try {
       if (type === "link") {
-        // Summarize the link
-        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
-          body: { url: source_url || content },
-        });
-        if (!summaryError && summaryData && !summaryData.error) {
-          extracted_text = [summaryData.title, summaryData.summary].filter(Boolean).join("\n\n");
-          await supabase.from("captures").update({
-            extracted_text,
-            metadata: { ...metadata, title: summaryData.title, summary: summaryData.summary, skill_pillar: summaryData.skill_pillar },
-            processing_status: "completed",
-          }).eq("id", capture.id);
-        } else {
-          // Still mark as completed, just without extraction
-          await supabase.from("captures").update({
-            extracted_text: content,
-            processing_status: "completed",
-          }).eq("id", capture.id);
+        const targetUrl = source_url || content;
+        let fetchSuccess = false;
+
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 10000);
+
+          const pageRes = await fetch(targetUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+              Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Language": "en-US,en;q=0.9",
+            },
+            signal: controller.signal,
+          });
+          clearTimeout(timer);
+
+          if (pageRes.ok) {
+            const html = await pageRes.text();
+            extracted_title = extractTitle(html) || null;
+            const bodyText = extractTextFromHtml(html);
+            if (bodyText.length > 50) {
+              extracted_text = bodyText.substring(0, 3000);
+              fetchSuccess = true;
+            }
+          }
+        } catch (fetchErr) {
+          console.warn("Failed to fetch link content:", (fetchErr as Error).message);
         }
+
+        // Fallback: save URL as content, domain as title
+        if (!fetchSuccess) {
+          extracted_text = targetUrl;
+          try {
+            extracted_title = new URL(targetUrl).hostname;
+          } catch {
+            extracted_title = targetUrl.slice(0, 60);
+          }
+        }
+
+        // Also call summarize-link for AI summary (fire-and-forget style, but await for capture record)
+        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+          body: { url: targetUrl },
+        });
+
+        const captureMetadata = { ...metadata };
+        if (!summaryError && summaryData && !summaryData.error) {
+          captureMetadata.title = summaryData.title || extracted_title;
+          captureMetadata.summary = summaryData.summary;
+          captureMetadata.skill_pillar = summaryData.skill_pillar;
+          extracted_title = summaryData.title || extracted_title;
+        }
+
+        await supabase.from("captures").update({
+          extracted_text,
+          metadata: captureMetadata,
+          processing_status: "completed",
+        }).eq("id", capture.id);
       } else {
         // For text, voice, image, document — store content directly
         await supabase.from("captures").update({
@@ -118,11 +189,9 @@ Deno.serve(async (req) => {
         }).eq("id", capture.id);
       }
     } catch (processingError: any) {
-      processing_status = "failed";
-      error_message = processingError.message || "Processing failed";
       await supabase.from("captures").update({
         processing_status: "failed",
-        error_message,
+        error_message: processingError.message || "Processing failed",
       }).eq("id", capture.id);
     }
 
@@ -133,7 +202,13 @@ Deno.serve(async (req) => {
       .eq("id", capture.id)
       .single();
 
-    return new Response(JSON.stringify(finalCapture), {
+    // Include extracted content for the frontend to use
+    return new Response(JSON.stringify({
+      ...finalCapture,
+      extracted_title: extracted_title,
+      extracted_content: extracted_text,
+      original_url: source_url || content,
+    }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
