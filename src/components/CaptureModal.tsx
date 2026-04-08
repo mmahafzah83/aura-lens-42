@@ -327,10 +327,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         console.log("Entry inserted successfully, id:", entryRow?.id);
       }
 
-      // Success (201)
+      // Success
       toast({
-        title: "Captured. Processing complete.",
-        description: "Your capture has been saved and processed.",
+        title: captureType === "voice" ? "Voice capture saved" : "Captured. Processing complete.",
+        description: "Your capture has been saved.",
       });
 
       setContent("");
