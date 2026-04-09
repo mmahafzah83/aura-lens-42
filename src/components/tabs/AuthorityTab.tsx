@@ -238,6 +238,57 @@ const CreateTab = () => {
               {output}
               {generating && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
             </div>
+            {/* Quality Indicator Bar */}
+            {!generating && (
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-secondary/10">
+                {(() => {
+                  const lowerOutput = output.toLowerCase();
+                  const hasVoiceMatch = voiceWords.length > 0 && voiceWords.some(w => lowerOutput.includes(w));
+                  const lines = output.split(/\n/).filter(l => l.trim());
+                  const firstSentence = lines[0]?.split(/[.!?]/)[0] || "";
+                  const hookOk = firstSentence.split(/\s+/).length <= 20;
+                  const bodyOk = lines.length > 3;
+                  const lastLine = (lines[lines.length - 1] || "").trim();
+                  const closingOk = /[?]/.test(lastLine) || /\b(comment|share|follow|reach out|let['']?s|DM|subscribe|tag|try|start|join)\b/i.test(lastLine);
+                  const structureOk = hookOk && bodyOk && closingOk;
+
+                  const indicators = [
+                    {
+                      pass: hasVoiceMatch,
+                      passLabel: "Voice match",
+                      warnLabel: "Add voice samples",
+                      icon: <Mic className="w-3 h-3" />,
+                    },
+                    {
+                      pass: !!selectedSignalTitle,
+                      passLabel: selectedSignalTitle ? (selectedSignalTitle.length > 30 ? selectedSignalTitle.slice(0, 30) + "…" : selectedSignalTitle) : "",
+                      warnLabel: "No signal selected",
+                      icon: <Zap className="w-3 h-3" />,
+                    },
+                    {
+                      pass: structureOk,
+                      passLabel: "Strong structure",
+                      warnLabel: "Review structure",
+                      icon: <Layers className="w-3 h-3" />,
+                    },
+                  ];
+
+                  return indicators.map((ind, i) => (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
+                        ind.pass
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : "bg-muted/40 text-muted-foreground/60"
+                      }`}
+                    >
+                      {ind.icon}
+                      {ind.pass ? ind.passLabel : ind.warnLabel}
+                    </span>
+                  ));
+                })()}
+              </div>
+            )}
           </motion.div>
         )}
 
