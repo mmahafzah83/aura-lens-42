@@ -289,7 +289,7 @@ const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) =>
                           className="text-[11px] font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
                           style={{ color: "#C5A55A" }}
                         >
-                          Generate content <ArrowRight className="w-3 h-3" />
+                          Create post on this <ArrowRight className="w-3 h-3" />
                         </button>
                       )}
                     </div>
