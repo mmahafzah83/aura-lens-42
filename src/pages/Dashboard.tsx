@@ -21,11 +21,11 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
   { value: "home", label: "Home", icon: Compass },
-  { value: "identity", label: "Identity", icon: User },
-  { value: "intelligence", label: "Intelligence", icon: Shield },
+  { value: "identity", label: "My Story", icon: User },
+  { value: "intelligence", label: "Signals", icon: Shield },
   { value: "strategy", label: "Strategy", icon: Lightbulb },
   { value: "authority", label: "Publish", icon: Crown },
-  { value: "influence", label: "Influence", icon: TrendingUp },
+  { value: "influence", label: "Impact", icon: TrendingUp },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
