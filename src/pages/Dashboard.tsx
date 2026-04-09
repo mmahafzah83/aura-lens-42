@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Lightbulb, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -12,7 +12,7 @@ import NotificationBell from "@/components/NotificationBell";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
-import StrategyTab from "@/components/tabs/StrategyTab";
+
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import InfluenceTabNew from "@/components/tabs/InfluenceTabNew";
 import type { Database } from "@/integrations/supabase/types";
@@ -22,8 +22,7 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 const NAV_ITEMS = [
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass },
   { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User },
-  { value: "intelligence", label: "Signals", pageHeader: "Detect what matters", icon: Shield },
-  { value: "strategy", label: "Strategy", pageHeader: "Plan your moves", icon: Lightbulb },
+  { value: "intelligence", label: "Intelligence", pageHeader: "Intelligence", icon: Shield },
   { value: "authority", label: "Publish", pageHeader: "Content Studio", icon: Crown },
   { value: "influence", label: "Impact", pageHeader: "Measure your influence", icon: TrendingUp },
 ] as const;
@@ -49,8 +48,10 @@ const Dashboard = () => {
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && NAV_ITEMS.some(n => n.value === tabParam)) {
-      setActiveTab(tabParam as TabValue);
+    // Redirect old "strategy" tab to "intelligence"
+    const resolvedTab = tabParam === "strategy" ? "intelligence" : tabParam;
+    if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
+      setActiveTab(resolvedTab as TabValue);
     }
   }, []);
 
@@ -362,12 +363,6 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
                 <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onOpenCapture={() => setCaptureOpen(true)} />
-              </div>
-            )}
-
-            {activeTab === "strategy" && (
-              <div className="animate-tab-spring">
-                <StrategyTab onOpenChat={openChat} />
               </div>
             )}
 
