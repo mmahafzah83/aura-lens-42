@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Loader2 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { toast } from "sonner";
 
 const DIMENSION_ORDER = [
   "Strategic Architecture",
@@ -37,6 +39,9 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; name: string; score: number; tier: string } | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editScores, setEditScores] = useState<Record<string, number>>({});
+  const [savingScores, setSavingScores] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -239,50 +244,131 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
     );
   }
 
+  const startEdit = () => {
+    if (auditResults) {
+      const scores: Record<string, number> = {};
+      DIMENSION_ORDER.forEach(d => { scores[d] = auditResults[d] || 0; });
+      setEditScores(scores);
+      setEditMode(true);
+    }
+  };
+
+  const saveScores = async () => {
+    setSavingScores(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setSavingScores(false); return; }
+
+    // Update audit_results with edited scores
+    const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .update({ audit_results: editScores, skill_ratings: editScores })
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast.error("Failed to save scores");
+    } else {
+      setAuditResults(editScores);
+      setEditMode(false);
+      toast.success("Capability scores updated.");
+    }
+    setSavingScores(false);
+  };
+
   return (
     <div ref={containerRef} className="rounded-xl border border-[#252525] bg-[#141414] p-4 mb-4 relative">
-      <p className="text-[13px] font-medium text-[#f0f0f0] mb-2">Your Capability Radar</p>
-      <canvas
-        ref={canvasRef}
-        className="w-full"
-        style={{ height: 340, background: "transparent" }}
-        onMouseMove={handleCanvasMouseMove}
-        onMouseLeave={() => setTooltip(null)}
-      />
-
-      {/* Tooltip */}
-      {tooltip && (
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: "translateX(-50%)",
-            background: "#1a1a1a",
-            border: "1px solid #333",
-            borderRadius: 8,
-            padding: "6px 10px",
-            zIndex: 10,
-          }}
-        >
-          <p className="text-[11px] font-medium" style={{ color: "#f0f0f0" }}>{tooltip.name}</p>
-          <p className="text-[10px]" style={{ color: "#C5A55A" }}>
-            {tooltip.score}% · {tooltip.tier} Tier
-          </p>
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "0.5px solid #252525" }}>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: "#C5A55A" }} />
-          <span className="text-[10px]" style={{ color: "#888" }}>High Tier (Strategic / Technical)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: "#666" }} />
-          <span className="text-[10px]" style={{ color: "#888" }}>Mid Tier (Leadership / Commercial)</span>
-        </div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[13px] font-medium text-[#f0f0f0]">Your Capability Radar</p>
+        {!editMode ? (
+          <button
+            onClick={startEdit}
+            className="text-[11px] font-medium hover:underline"
+            style={{ color: "#C5A55A" }}
+          >
+            Edit scores
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditMode(false)}
+              className="text-[11px]"
+              style={{ color: "#666" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={saveScores}
+              disabled={savingScores}
+              className="text-[11px] font-medium px-3 py-1 rounded-lg"
+              style={{ background: "#C5A55A", color: "#0d0d0d" }}
+            >
+              {savingScores ? "Saving..." : "Save"}
+            </button>
+          </div>
+        )}
       </div>
+
+      {editMode ? (
+        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+          {DIMENSION_ORDER.map(dim => (
+            <div key={dim} className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#ccc]">{dim}</span>
+                <span className="text-xs font-medium" style={{ color: "#C5A55A" }}>{editScores[dim] || 0}%</span>
+              </div>
+              <Slider
+                value={[editScores[dim] || 0]}
+                onValueChange={([v]) => setEditScores(prev => ({ ...prev, [dim]: v }))}
+                max={100}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          <canvas
+            ref={canvasRef}
+            className="w-full"
+            style={{ height: 340, background: "transparent" }}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseLeave={() => setTooltip(null)}
+          />
+
+          {/* Tooltip */}
+          {tooltip && (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                left: tooltip.x,
+                top: tooltip.y,
+                transform: "translateX(-50%)",
+                background: "#1a1a1a",
+                border: "1px solid #333",
+                borderRadius: 8,
+                padding: "6px 10px",
+                zIndex: 10,
+              }}
+            >
+              <p className="text-[11px] font-medium" style={{ color: "#f0f0f0" }}>{tooltip.name}</p>
+              <p className="text-[10px]" style={{ color: "#C5A55A" }}>
+                {tooltip.score}% · {tooltip.tier} Tier
+              </p>
+            </div>
+          )}
+
+          {/* Legend */}
+          <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "0.5px solid #252525" }}>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: "#C5A55A" }} />
+              <span className="text-[10px]" style={{ color: "#888" }}>High Tier (Strategic / Technical)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full" style={{ background: "#666" }} />
+              <span className="text-[10px]" style={{ color: "#888" }}>Mid Tier (Leadership / Commercial)</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
