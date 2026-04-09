@@ -52,16 +52,59 @@ function daysBetween(a: Date, b: Date): number {
   return Math.max(0, Math.floor(Math.abs(a.getTime() - b.getTime()) / 86400000));
 }
 
-function calcConfidence(aiBase: number, fragmentCount: number, uniqueOrgs: number, updatedAt: string): { confidence: number; confidence_explanation: string } {
-  const sourceWeight = Math.min(fragmentCount / 5, 1.4);
-  const diversityBonus = uniqueOrgs >= 3 ? 1.15 : uniqueOrgs === 2 ? 1.05 : 1.0;
-  const daysSinceUpdate = daysBetween(new Date(), new Date(updatedAt));
-  const recency = daysSinceUpdate <= 7 ? 1.0 : daysSinceUpdate <= 14 ? 0.9 : daysSinceUpdate <= 30 ? 0.8 : daysSinceUpdate <= 60 ? 0.65 : 0.5;
-  const confidence = Math.min(aiBase * sourceWeight * diversityBonus * recency, 1.0);
-  const srcLabel = fragmentCount === 1 ? "source" : "sources";
-  const orgLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
-  const confidence_explanation = `Based on ${fragmentCount} ${srcLabel} from ${uniqueOrgs} ${orgLabel}, updated ${daysSinceUpdate === 0 ? "today" : daysSinceUpdate + " days ago"}.`;
+/* ── NEW additive confidence formula ── */
+function calcConfidence(
+  aiBaseScore: number,
+  uniqueOrgs: number,
+  newestFragmentDate: string,
+): { confidence: number; confidence_explanation: string } {
+  // 50% AI score
+  const aiComponent = Math.min(Math.max(aiBaseScore, 0), 1) * 0.5;
+
+  // 30% source diversity: min(unique_orgs / 5, 1.0)
+  const sourceDiversityWeight = Math.min(uniqueOrgs / 5, 1.0);
+  const diversityComponent = sourceDiversityWeight * 0.3;
+
+  // 20% recency of newest evidence
+  const daysSince = daysBetween(new Date(), new Date(newestFragmentDate));
+  const recencyWeight = daysSince < 7 ? 1.0 : daysSince <= 30 ? 0.7 : daysSince <= 90 ? 0.4 : 0.2;
+  const recencyComponent = recencyWeight * 0.2;
+
+  const confidence = Math.min(aiComponent + diversityComponent + recencyComponent, 1.0);
+
+  const srcLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
+  const ageLabel = daysSince === 0 ? "today" : `${daysSince} days ago`;
+  const confidence_explanation =
+    `AI confidence ${(aiBaseScore * 100).toFixed(0)}%, ${uniqueOrgs} ${srcLabel}, newest evidence ${ageLabel}. ` +
+    `Formula: (${(aiComponent).toFixed(2)} AI) + (${(diversityComponent).toFixed(2)} diversity) + (${(recencyComponent).toFixed(2)} recency) = ${confidence.toFixed(2)}.`;
+
   return { confidence, confidence_explanation };
+}
+
+/* ── Count unique orgs from evidence entries ── */
+async function countUniqueOrgs(
+  admin: any,
+  evidenceEntryIds: string[],
+  extraDomain?: string | null,
+): Promise<number> {
+  if (evidenceEntryIds.length === 0 && !extraDomain) return 1;
+
+  const domains = new Set<string>();
+  if (extraDomain) domains.add(extraDomain);
+
+  if (evidenceEntryIds.length > 0) {
+    const { data: entries } = await admin
+      .from("entries")
+      .select("content")
+      .in("id", evidenceEntryIds);
+
+    (entries || []).forEach((e: any) => {
+      const d = extractDomain(e.content || "");
+      if (d) domains.add(d);
+    });
+  }
+
+  return Math.max(domains.size, 1);
 }
 
 async function calcPriorityScore(
@@ -78,7 +121,6 @@ async function calcPriorityScore(
   const contentGap = 1.0;
   let base = (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
 
-  // Topic preference adjustment
   if (themeTags.length > 0) {
     const { data: prefs } = await admin
       .from("signal_topic_preferences")
@@ -145,7 +187,7 @@ Deno.serve(async (req) => {
       .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars")
       .eq("user_id", user_id).maybeSingle();
 
-    /* ── Step 1: Relevance filter (hardened) ── */
+    /* ── Step 1: Relevance filter ── */
     const contentLower = normalizeText((entry.content || "") + " " + (entry.title || ""));
     const hasRelevance = RELEVANCE_TERMS.some(term => contentLower.includes(term));
 
@@ -234,7 +276,7 @@ ${identityCtx}`;
 
     const matches = findMatches(newTags, newTitle);
 
-    /* ── Step 4a / 4b ── */
+    /* ── Reinforce an existing signal ── */
     const touchedSignalIds = new Set<string>();
 
     async function reinforceSignal(signalRow: any): Promise<string> {
@@ -242,30 +284,14 @@ ${identityCtx}`;
       if (existingEvidence.includes(entry_id)) return signalRow.id;
 
       const mergedEvidence = unique([...existingEvidence, entry_id]);
-      const newFragCount = (signalRow.fragment_count || 0) + 1;
+      const newFragCount = mergedEvidence.length;
 
-      let newUniqueOrgs = signalRow.unique_orgs || 1;
-      if (captureDomain) {
-        const { data: linkedEntries } = await admin
-          .from("entries")
-          .select("content")
-          .in("id", existingEvidence);
-        
-        const existingDomains = new Set<string>();
-        (linkedEntries || []).forEach(e => {
-          const d = extractDomain(e.content || "");
-          if (d) existingDomains.add(d);
-        });
-        
-        if (!existingDomains.has(captureDomain)) {
-          newUniqueOrgs = existingDomains.size + 1;
-        } else {
-          newUniqueOrgs = Math.max(existingDomains.size, 1);
-        }
-      }
+      // Count unique orgs from ALL evidence entries (existing + new)
+      const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence, captureDomain);
 
+      // Use the newest evidence date (now, since we just added one)
       const now = new Date().toISOString();
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
 
       await admin.from("strategic_signals").update({
@@ -293,7 +319,7 @@ ${identityCtx}`;
     } else {
       const now = new Date().toISOString();
       const initialUniqueOrgs = captureDomain ? 1 : 1;
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, 1, admin, user_id, newTags);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
@@ -318,7 +344,7 @@ ${identityCtx}`;
       touchedSignalIds.add(primarySignalId);
     }
 
-    /* ── Step 6: Cross-topic reinforcement ── */
+    /* ── Cross-topic reinforcement ── */
     const otherMatches = allSignals.filter(s =>
       !touchedSignalIds.has(s.id) &&
       (tagOverlapCount(newTags, s.theme_tags || []) >= 2 || titleSharesCoreTopic(newTitle, s.signal_title || ""))
