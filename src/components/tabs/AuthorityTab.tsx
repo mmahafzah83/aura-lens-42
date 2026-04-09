@@ -892,7 +892,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     setLoading(true);
     const { data } = await supabase
       .from("linkedin_posts")
-      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at")
+      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata")
       .order("created_at", { ascending: false })
       .limit(100);
     setPosts((data || []) as SavedPost[]);
