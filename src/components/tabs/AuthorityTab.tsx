@@ -1647,7 +1647,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
       <PageHeader
         icon={Crown}
         title="Content Studio"
-        question="Create, plan, analyze, and publish your authority content."
+        question="Content Studio"
         processLogic="Signal → Insight → Framework → Content → Audience"
       />
 

@@ -20,12 +20,12 @@ import type { Database } from "@/integrations/supabase/types";
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
-  { value: "home", label: "Home", icon: Compass },
-  { value: "identity", label: "Identity", icon: User },
-  { value: "intelligence", label: "Intelligence", icon: Shield },
-  { value: "strategy", label: "Strategy", icon: Lightbulb },
-  { value: "authority", label: "Publish", icon: Crown },
-  { value: "influence", label: "Influence", icon: TrendingUp },
+  { value: "home", label: "Home", pageHeader: "Home", icon: Compass },
+  { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User },
+  { value: "intelligence", label: "Signals", pageHeader: "Detect what matters", icon: Shield },
+  { value: "strategy", label: "Strategy", pageHeader: "Plan your moves", icon: Lightbulb },
+  { value: "authority", label: "Publish", pageHeader: "Content Studio", icon: Crown },
+  { value: "influence", label: "Impact", pageHeader: "Measure your influence", icon: TrendingUp },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
@@ -333,7 +333,7 @@ const Dashboard = () => {
               <h2
                 className="text-sm font-medium text-muted-foreground tracking-wide uppercase"
               >
-                {NAV_ITEMS.find(n => n.value === activeTab)?.label}
+                {NAV_ITEMS.find(n => n.value === activeTab)?.pageHeader}
               </h2>
             </div>
             <div className="flex items-center gap-3">
