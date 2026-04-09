@@ -236,35 +236,25 @@ const ExpandedDetail = ({
 
   useEffect(() => {
     (async () => {
-      const promises: Promise<void>[] = [];
-
       // Load entry-based sources
       if (signal.supporting_evidence_ids?.length) {
-        promises.push(
-          supabase
-            .from("entries")
-            .select("id, title, content, source_url, created_at")
-            .in("id", signal.supporting_evidence_ids)
-            .order("created_at", { ascending: false })
-            .limit(20)
-            .then(r => { setSources((r.data || []) as unknown as SourceEntry[]); })
-        );
+        const r = await supabase
+          .from("entries")
+          .select("id, title, content, source_url, created_at")
+          .in("id", signal.supporting_evidence_ids)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        setSources((r.data || []) as unknown as SourceEntry[]);
       }
 
-      // CHANGE 3: Load evidence_fragments linked to this signal's supporting_evidence_ids
-      // evidence_fragments don't have a signal_id column — they link via source_registry.
-      // We query by user and matching tags/title for relevance, or by the signal's evidence IDs.
+      // CHANGE 3: Load evidence_fragments
       if (signal.supporting_evidence_ids?.length) {
-        promises.push(
-          supabase
-            .from("evidence_fragments")
-            .select("id, title, content, created_at, source_registry_id")
-            .order("created_at", { ascending: false })
-            .limit(20)
-            .then(r => {
-              setEvidenceFragments((r.data || []) as unknown as EvidenceFragmentRow[]);
-            })
-        );
+        const r = await supabase
+          .from("evidence_fragments")
+          .select("id, title, content, created_at, source_registry_id")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        setEvidenceFragments((r.data || []) as unknown as EvidenceFragmentRow[]);
       }
 
       await Promise.all(promises);
