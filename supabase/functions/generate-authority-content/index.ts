@@ -6,6 +6,64 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const FRAMEWORK_PROMPTS: Record<string, string> = {
+  hook_insight_question: "Structure this content using the Hook → Insight → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  slap: "Structure this content using the SLAP (Stop, Look, Act, Purchase) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  bab: "Structure this content using the BAB (Before, After, Bridge) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  pas: "Structure this content using the PAS (Problem, Agitate, Solution) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  wwh: "Structure this content using the WWH (What, Why, How) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  chef: "Structure this content using the CHEF (Curate, Heat, Enhance, Feed) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  story_lesson_question: "Structure this content using the Story → Lesson → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+};
+
+const ARABIC_VOICE_PROMPT = `Write in Arabic as a senior GCC professional who thinks and writes natively in Arabic — not as someone translating from English. Use conversational Modern Standard Arabic. Write short sentences — sometimes one sentence per line for impact. Use direct address: speak to one person, not a crowd. Open with a personal observation or a tension your reader feels right now, not a contrarian statement. Embed questions mid-post, not only at the close. Use the PAS or BAB framework for Arabic posts unless another framework is explicitly selected. End with a single short question that a real colleague would actually answer. Never use corporate Arabic terms. Never use phrases that sound like they were written in English first.`;
+
+function buildVoiceContext(voiceProfile: any): string {
+  if (!voiceProfile) return "No voice profile set — use analytical, calm authority tone.";
+  return `
+VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm authority"}.
+Use these structural patterns: ${JSON.stringify(voiceProfile.preferred_structures || [])}.
+Mirror vocabulary from these examples: ${(voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n")}
+Admired voice references: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n")}
+Vocabulary notes: ${typeof voiceProfile.vocabulary_preferences === "object" ? (voiceProfile.vocabulary_preferences as any)?.notes || "" : ""}
+Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
+`;
+}
+
+function buildIdentityContext(profile: any): string {
+  if (!profile) return "";
+  const brandResults = profile.brand_assessment_results as any;
+  const auditInterp = profile.audit_interpretation as any;
+
+  if (brandResults && brandResults.primary_archetype) {
+    const zoneOfGenius = typeof auditInterp === "string"
+      ? (auditInterp.match(/zone of genius[:\s]*([^\n]+)/i)?.[1] || "")
+      : (auditInterp?.zone_of_genius || "");
+    const pillars = brandResults.content_pillars
+      ? (Array.isArray(brandResults.content_pillars) ? brandResults.content_pillars.join(", ") : brandResults.content_pillars)
+      : "";
+
+    return `
+IDENTITY CONTEXT — always apply this to every piece of content you generate:
+The user's brand archetype is ${brandResults.primary_archetype}. Their positioning statement is ${brandResults.positioning_statement || "not yet defined"}. Their Zone of Genius is ${zoneOfGenius || "not yet identified"}. Their top content pillars are ${pillars || "not yet defined"}. Their role is ${profile.level || "strategy professional"} in ${profile.sector_focus || "their field"} targeting ${profile.north_star_goal || "thought leadership"}.
+Every piece of content must: (1) Sound like their archetype — if they are The Expert, write with rigour and depth. If they are The Challenger, write with a contrarian edge. If they are The Visionary, write with forward-looking perspective. (2) Reinforce their positioning statement — content should always move the reader toward seeing the user through the lens of their positioning. (3) Stay within or adjacent to their content pillars — do not generate content on topics unrelated to their pillars without explicit user request.
+- Practice: ${profile.core_practice || "strategy"}
+- Brand Pillars: ${(profile.brand_pillars || []).join(", ")}
+- Authority Themes: ${JSON.stringify((profile.identity_intelligence as any)?.authority_themes || [])}
+`;
+  }
+
+  return `
+IDENTITY:
+- Role: ${profile.level || "strategy professional"}
+- Sector: ${profile.sector_focus || "general"}
+- North Star: ${profile.north_star_goal || "thought leadership"}
+- Practice: ${profile.core_practice || "strategy"}
+- Brand Pillars: ${(profile.brand_pillars || []).join(", ")}
+- Authority Themes: ${JSON.stringify((profile.identity_intelligence as any)?.authority_themes || [])}
+`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -26,64 +84,20 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Load voice profile
-    const { data: voiceProfile } = await supabase
-      .from("authority_voice_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Load voice profile and diagnostic profile in parallel
+    const [voiceRes, profileRes] = await Promise.all([
+      supabase.from("authority_voice_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("diagnostic_profiles")
+        .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, audit_interpretation, brand_assessment_results")
+        .eq("user_id", user.id).maybeSingle(),
+    ]);
 
-    // Load identity intelligence + brand assessment for authority themes
-    const { data: profile } = await supabase
-      .from("diagnostic_profiles")
-      .select("identity_intelligence, brand_pillars, core_practice, sector_focus, north_star_goal, level, audit_interpretation, brand_assessment_results")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    const voiceContext = voiceProfile ? `
-VOICE PROFILE — Write in this voice: ${voiceProfile.tone || "analytical, calm authority"}.
-Use these structural patterns: ${JSON.stringify(voiceProfile.preferred_structures || [])}.
-Mirror vocabulary from these examples: ${(voiceProfile.example_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 500)).filter(Boolean).join("\n---\n")}
-Admired voice references: ${(voiceProfile.admired_posts as any[] || []).map((p: any) => (p.content || "").substring(0, 300)).filter(Boolean).join("\n---\n")}
-Vocabulary notes: ${typeof voiceProfile.vocabulary_preferences === "object" ? (voiceProfile.vocabulary_preferences as any)?.notes || "" : ""}
-Avoid patterns not present in the user's examples. Match their sentence length, paragraph density, and rhetorical style.
-` : "No voice profile set — use analytical, calm authority tone.";
-
-    // Build identity context from brand assessment + profile
-    const brandResults = profile?.brand_assessment_results as any;
-    const auditInterp = profile?.audit_interpretation as any;
-    let identityContext = "";
-
-    if (brandResults && brandResults.primary_archetype) {
-      const zoneOfGenius = typeof auditInterp === "string"
-        ? (auditInterp.match(/zone of genius[:\s]*([^\n]+)/i)?.[1] || "")
-        : (auditInterp?.zone_of_genius || "");
-      const pillars = brandResults.content_pillars
-        ? (Array.isArray(brandResults.content_pillars) ? brandResults.content_pillars.join(", ") : brandResults.content_pillars)
-        : "";
-
-      identityContext = `
-IDENTITY CONTEXT — always apply this to every piece of content you generate:
-The user's brand archetype is ${brandResults.primary_archetype}. Their positioning statement is ${brandResults.positioning_statement || "not yet defined"}. Their Zone of Genius is ${zoneOfGenius || "not yet identified"}. Their top content pillars are ${pillars || "not yet defined"}. Their role is ${profile?.level || "strategy professional"} in ${profile?.sector_focus || "their field"} targeting ${profile?.north_star_goal || "thought leadership"}.
-Every piece of content must: (1) Sound like their archetype — if they are The Expert, write with rigour and depth. If they are The Challenger, write with a contrarian edge. If they are The Visionary, write with forward-looking perspective. (2) Reinforce their positioning statement — content should always move the reader toward seeing the user through the lens of their positioning. (3) Stay within or adjacent to their content pillars — do not generate content on topics unrelated to their pillars without explicit user request.
-- Practice: ${profile?.core_practice || "strategy"}
-- Brand Pillars: ${(profile?.brand_pillars || []).join(", ")}
-- Authority Themes: ${JSON.stringify((profile?.identity_intelligence as any)?.authority_themes || [])}
-`;
-    } else if (profile) {
-      identityContext = `
-IDENTITY:
-- Role: ${profile.level || "strategy professional"}
-- Sector: ${profile.sector_focus || "general"}
-- North Star: ${profile.north_star_goal || "thought leadership"}
-- Practice: ${profile.core_practice || "strategy"}
-- Brand Pillars: ${(profile.brand_pillars || []).join(", ")}
-- Authority Themes: ${JSON.stringify((profile.identity_intelligence as any)?.authority_themes || [])}
-`;
-    }
+    const voiceProfile = voiceRes.data;
+    const profile = profileRes.data;
+    const identityContext = buildIdentityContext(profile);
 
     if (action === "generate_content") {
-      const { content_type, topic, context, language } = params;
+      const { content_type, topic, context, language, framework, extra_instruction } = params;
 
       const formatInstructions: Record<string, string> = {
         post: `Write a LinkedIn post (scroll-stopping hook → insight → framework/key points → closing question). Short paragraphs, spaced lines. Mobile-readable.`,
@@ -91,24 +105,44 @@ IDENTITY:
         framework_summary: `Write a concise framework summary: problem it solves, when to use it, the steps, and strategic value. Under 500 words.`,
       };
 
-      const langInstructions = language === "ar"
-        ? `Write in natural executive Arabic. Use rhetorical patterns like contrast (ليس...بل...), reframing (المشكلة ليست في...بل في...), insight ladders, and strategic warnings. Use business vocabulary: الحوكمة، التحول الرقمي، الاستراتيجية، التنفيذ، القيادة. Do NOT translate from English — write natively in Arabic.`
-        : `Write in English.`;
+      // Framework instruction
+      const frameworkInstruction = framework && FRAMEWORK_PROMPTS[framework] ? `\n\n${FRAMEWORK_PROMPTS[framework]}` : "";
 
-      const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
+      // Extra instruction (e.g. for short version rewrite)
+      const extraInstruction = extra_instruction ? `\n\n${extra_instruction}` : "";
 
-You are writing for a senior GCC transformation leader. Always open with one of these two hook types:
+      // Language + voice handling
+      let voiceSection: string;
+      if (language === "ar") {
+        // Arabic-native prompt replaces voice section
+        voiceSection = ARABIC_VOICE_PROMPT;
+        // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
+      } else {
+        voiceSection = buildVoiceContext(voiceProfile);
+      }
+
+      const hookFramework = `You are writing for a senior GCC transformation leader. Always open with one of these two hook types:
 
 1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
 2. Specific tension: Name a contradiction the reader lives with daily. Be specific to GCC, utilities, or digital transformation context.
 
-Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.
+Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.`;
 
-${voiceContext}
+      const langLabel = language === "ar"
+        ? `Write in natural executive Arabic.`
+        : `Write in English.`;
+
+      const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
+
+${hookFramework}
+
+${voiceSection}
 ${identityContext}
 
 ${formatInstructions[content_type] || formatInstructions.post}
-${langInstructions}
+${langLabel}
+${frameworkInstruction}
+${extraInstruction}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.`;
 
@@ -140,7 +174,8 @@ Write with conviction. No generic statements. Every line should demonstrate stra
     }
 
     if (action === "generate_narrative_plan") {
-      // Gather recent signals and insights
+      const voiceContext = buildVoiceContext(voiceProfile);
+
       const [signalsRes, insightsRes] = await Promise.all([
         supabase.from("strategic_signals").select("signal_title, explanation, theme_tags, content_opportunity, framework_opportunity").eq("status", "active").order("confidence", { ascending: false }).limit(10),
         supabase.from("learned_intelligence").select("title, intelligence_type, skill_pillars, tags").order("created_at", { ascending: false }).limit(15),
@@ -210,7 +245,6 @@ ${insightsSummary}`
 
       const { suggestions } = JSON.parse(toolCall.function.arguments);
 
-      // Save suggestions
       const rows = suggestions.map((s: any) => ({
         user_id: user.id,
         topic: s.topic,

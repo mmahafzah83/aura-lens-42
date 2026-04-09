@@ -5,7 +5,7 @@ import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
-  Calendar, TrendingUp, BarChart3, Upload, Mic
+  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 type AuthoritySubTab = "create" | "plan" | "analyze" | "library";
+type ContentFramework = "auto" | "hook_insight_question" | "slap" | "bab" | "pas" | "wwh" | "chef" | "story_lesson_question";
 
 const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
   post: { label: "LinkedIn Post", icon: PenTool },
@@ -28,6 +29,168 @@ const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
   essay: { label: "Strategic Essay", icon: FileText },
   framework_summary: { label: "Framework Breakdown", icon: BookOpen },
 };
+
+const FRAMEWORK_OPTIONS: { key: ContentFramework; label: string }[] = [
+  { key: "auto", label: "Auto" },
+  { key: "hook_insight_question", label: "Hook → Insight → Question" },
+  { key: "slap", label: "SLAP" },
+  { key: "bab", label: "BAB" },
+  { key: "pas", label: "PAS" },
+  { key: "wwh", label: "WWH" },
+  { key: "chef", label: "CHEF" },
+  { key: "story_lesson_question", label: "Story → Lesson → Question" },
+];
+
+const FRAMEWORK_PROMPTS: Record<string, string> = {
+  hook_insight_question: "Structure this content using the Hook → Insight → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  slap: "Structure this content using the SLAP (Stop, Look, Act, Purchase) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  bab: "Structure this content using the BAB (Before, After, Bridge) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  pas: "Structure this content using the PAS (Problem, Agitate, Solution) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  wwh: "Structure this content using the WWH (What, Why, How) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  chef: "Structure this content using the CHEF (Curate, Heat, Enhance, Feed) framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+  story_lesson_question: "Structure this content using the Story → Lesson → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
+};
+
+/* ── Quality Rubric Scoring ── */
+interface DimensionScore {
+  key: string;
+  label: string;
+  score: number;
+  max: 10;
+  suggestion?: string;
+}
+
+const FILLER_PHRASES = ["i am excited", "in today's world", "i want to share", "i'm excited", "in this article", "let me share"];
+const JARGON_WORDS = ["synergy", "leverage", "paradigm", "holistic", "ecosystem", "deep dive", "circle back", "move the needle", "low-hanging fruit", "best-in-class", "game-changer", "disruptive", "scalable solution"];
+
+function scoreContent(
+  text: string,
+  lang: "en" | "ar",
+  voiceWords: string[],
+  preferredStructures: string[],
+  selectedSignalTitle: string | null,
+  signalInsight: string | null,
+): { dimensions: DimensionScore[]; total: number } {
+  const lower = text.toLowerCase();
+  const lines = text.split(/\n/).filter(l => l.trim());
+  const firstLine = lines[0] || "";
+  const firstLineWords = firstLine.split(/\s+/).length;
+  const lastLine = (lines[lines.length - 1] || "").trim();
+  const paragraphs = text.split(/\n\s*\n/);
+
+  // H — Hook
+  let h = 0;
+  if (firstLineWords <= 20) h += 5;
+  const hasContrarian = /\b(not|never|stop|wrong|myth|mistake|fail|lie|broken)\b/i.test(firstLine);
+  const hasTension = /\b(but|yet|however|while|despite|although|tension|contradiction)\b/i.test(firstLine);
+  const hasNumber = /\b\d+\b/.test(firstLine);
+  const hasStory = /\b(when i|last week|yesterday|one day|i remember|i was)\b/i.test(firstLine);
+  if (hasContrarian || hasTension || hasNumber || hasStory) h += 3;
+  const hasFillerOpen = FILLER_PHRASES.some(f => lower.startsWith(f));
+  if (!hasFillerOpen) h += 2;
+  const hSuggestion = h < 7 ? (firstLineWords > 20 ? "Shorten your hook to under 20 words" : "Open with a contrarian truth or specific tension") : undefined;
+
+  // S — Structure
+  let s = 0;
+  const hasHookAndBody = lines.length >= 3;
+  const hasClose = /[?]/.test(lastLine) || /\b(comment|share|follow|DM|try|start|join)\b/i.test(lastLine);
+  const secondLine = lines[1] || "";
+  const hasRehook = secondLine.length > 10 && lines.length >= 4;
+  if (hasHookAndBody && hasClose) s += 4;
+  if (hasRehook) s += 3;
+  const genericClose = /what do you think\??$/i.test(lastLine) || /thoughts\??$/i.test(lastLine);
+  if (hasClose && !genericClose) s += 3;
+  else if (hasClose && genericClose) s += 1;
+  const sSuggestion = s < 7 ? (!hasClose ? "Add a specific closing question" : "Add a re-hook sentence after your opening") : undefined;
+
+  // F — Formatting
+  let f = 0;
+  const longParagraph = paragraphs.some(p => p.split(/\n/).filter(l => l.trim()).length > 3);
+  if (!longParagraph) f += 4;
+  const hasBlankLines = text.includes("\n\n") || text.includes("\n \n");
+  if (hasBlankLines) f += 3;
+  const denseBlock = paragraphs.some(p => p.length > 500);
+  if (!denseBlock) f += 3;
+  const fSuggestion = f < 7 ? (longParagraph ? "Break paragraphs into 3 lines or fewer" : "Add blank lines between sections") : undefined;
+
+  // T — Tone
+  let t = 0;
+  const hasJargon = JARGON_WORDS.some(j => lower.includes(j));
+  if (!hasJargon) t += 4;
+  const hasYou = /\byou\b/i.test(text);
+  const hasI = /\bi\b/i.test(text);
+  if (hasYou || hasI) t += 3;
+  const passivePatterns = /\b(was done|were made|is being|has been|will be done)\b/i;
+  if (!passivePatterns.test(text)) t += 3;
+  const tSuggestion = t < 7 ? (hasJargon ? "Remove jargon and corporate speak" : "Write as if speaking to one person") : undefined;
+
+  // E — Engagement
+  let e = 0;
+  const endsWithQ = /\?/.test(lastLine);
+  if (endsWithQ) e += 5;
+  const specificQ = endsWithQ && lastLine.split(/\s+/).length >= 5 && !/^(what do you think|thoughts|agree)\??$/i.test(lastLine.trim());
+  if (specificQ) e += 3;
+  const hasPS = /\bp\.?s\.?\b/i.test(text) || /\brepost\b/i.test(lower) || /\bsave this\b/i.test(lower) || /\bbookmark\b/i.test(lower);
+  if (hasPS) e += 2;
+  const eSuggestion = e < 7 ? (!endsWithQ ? "End with a specific question" : "Add a save/repost prompt or P.S.") : undefined;
+
+  // V — Voice match
+  let v = 0;
+  if (voiceWords.length > 0) {
+    const matched = voiceWords.filter(w => lower.includes(w));
+    const matchPct = matched.length / Math.min(voiceWords.length, 20);
+    v += Math.min(5, Math.round(matchPct * 15));
+  }
+  if (preferredStructures.length > 0) {
+    const structLower = preferredStructures.join(" ").toLowerCase();
+    const hasStructMatch = structLower.includes("hook") && firstLineWords <= 20;
+    v += hasStructMatch ? 5 : 2;
+  } else if (voiceWords.length === 0) {
+    v = 0;
+  }
+  const vSuggestion = v < 7 ? "Add more writing samples to your voice engine" : undefined;
+
+  // I — Signal integration
+  let i = 0;
+  if (selectedSignalTitle) {
+    i += 5;
+    if (signalInsight && lower.includes(signalInsight.toLowerCase().slice(0, 30))) {
+      i += 5;
+    } else if (selectedSignalTitle && lower.includes(selectedSignalTitle.toLowerCase().slice(0, 20))) {
+      i += 3;
+    }
+  }
+  const iSuggestion = i < 7 ? (!selectedSignalTitle ? "Select a signal from the sidebar" : "Weave the signal's insight into the body text") : undefined;
+
+  // A — Arabic/EN quality
+  let a = 0;
+  if (lang === "ar") {
+    const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+    const ratio = arabicChars / Math.max(text.length, 1);
+    if (ratio > 0.3) a += 5;
+    const shortSentences = text.split(/[.،؟!]/).filter(s => s.trim().length > 5 && s.trim().split(/\s+/).length <= 15);
+    if (shortSentences.length >= 3) a += 5;
+  } else {
+    const translationArtifacts = /\b(the the|is is)\b/i.test(text);
+    if (!translationArtifacts) a += 5;
+    const readable = lines.length >= 3 && firstLineWords <= 25;
+    if (readable) a += 5;
+  }
+  const aSuggestion = a < 7 ? (lang === "ar" ? "Use shorter sentences in conversational Arabic" : "Ensure text reads as native English") : undefined;
+
+  const dimensions: DimensionScore[] = [
+    { key: "H", label: "Hook", score: Math.min(10, h), max: 10, suggestion: hSuggestion },
+    { key: "S", label: "Structure", score: Math.min(10, s), max: 10, suggestion: sSuggestion },
+    { key: "F", label: "Formatting", score: Math.min(10, f), max: 10, suggestion: fSuggestion },
+    { key: "T", label: "Tone", score: Math.min(10, t), max: 10, suggestion: tSuggestion },
+    { key: "E", label: "Engagement", score: Math.min(10, e), max: 10, suggestion: eSuggestion },
+    { key: "V", label: "Voice", score: Math.min(10, v), max: 10, suggestion: vSuggestion },
+    { key: "I", label: "Signal", score: Math.min(10, i), max: 10, suggestion: iSuggestion },
+    { key: "A", label: lang === "ar" ? "Arabic" : "English", score: Math.min(10, a), max: 10, suggestion: aSuggestion },
+  ];
+
+  return { dimensions, total: dimensions.reduce((sum, d) => sum + d.score, 0) };
+}
 
 /* ═══════════════════════════════════════════
    CREATE TAB — Content Creation Engine
@@ -59,14 +222,23 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
+  const [framework, setFramework] = useState<ContentFramework>("auto");
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
+  const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
+  const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
   const [planRef, setPlanRef] = useState<string | null>(null);
+
+  // Short version state
+  const [fullVersion, setFullVersion] = useState("");
+  const [shortVersion, setShortVersion] = useState("");
+  const [showingShort, setShowingShort] = useState(false);
+  const [generatingShort, setGeneratingShort] = useState(false);
 
   // AI suggestions
   const [signals, setSignals] = useState<SignalSuggestion[]>([]);
@@ -78,12 +250,11 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
       supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence")
         .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
       supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
-      supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts").limit(1).single(),
+      supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").limit(1).single(),
     ]).then(([sRes, fRes, vRes]) => {
       setSignals((sRes.data || []) as any);
       setFrameworks((fRes.data || []) as any);
       setSuggestionsLoading(false);
-      // Extract words from voice profile for matching
       if (vRes.data) {
         const words: string[] = [];
         const vp = vRes.data.vocabulary_preferences;
@@ -101,19 +272,27 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
           });
         }
         setVoiceWords(Array.from(new Set(words.filter(w => w.length > 3))));
+        // preferred structures
+        const ps = vRes.data.preferred_structures;
+        if (Array.isArray(ps)) setPreferredStructures(ps.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)));
+        else if (typeof ps === "string") setPreferredStructures([ps]);
       }
     });
   }, []);
 
-  const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string) => {
+  const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string, signalInsight?: string) => {
     setTopic(t);
     setContext(ctx);
     setContentType(format);
     setOutput("");
+    setFullVersion("");
+    setShortVersion("");
+    setShowingShort(false);
     setSelectedSignalTitle(signalTitle || null);
+    setSelectedSignalInsight(signalInsight || null);
   };
 
-  // Apply plan prefill when it changes
+  // Apply plan prefill
   useEffect(() => {
     if (planPrefill) {
       setTopic(planPrefill.topic);
@@ -121,50 +300,70 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
       setContentType(planPrefill.contentType);
       setPlanRef(planPrefill.planTitle);
       setOutput("");
+      setFullVersion("");
+      setShortVersion("");
+      setShowingShort(false);
     }
   }, [planPrefill]);
+
+  const streamGeneration = async (extraPromptInstruction?: string): Promise<string> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+    const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({
+        action: "generate_content",
+        content_type: contentType,
+        topic,
+        context,
+        language: lang,
+        framework: framework !== "auto" ? framework : undefined,
+        extra_instruction: extraPromptInstruction,
+      }),
+    });
+    if (!resp.ok || !resp.body) throw new Error("Generation failed");
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let accumulated = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
+      let nl: number;
+      while ((nl = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, nl);
+        textBuffer = textBuffer.slice(nl + 1);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (!line.startsWith("data: ")) continue;
+        const json = line.slice(6).trim();
+        if (json === "[DONE]") break;
+        try {
+          const c = JSON.parse(json).choices?.[0]?.delta?.content;
+          if (c) { accumulated += c; setOutput(accumulated); }
+        } catch {}
+      }
+    }
+    return accumulated;
+  };
 
   const generate = async () => {
     if (!topic.trim()) return;
     if (contentType === "carousel") { setShowCarousel(true); return; }
     setGenerating(true);
     setOutput("");
+    setFullVersion("");
+    setShortVersion("");
+    setShowingShort(false);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ action: "generate_content", content_type: contentType, topic, context, language: lang }),
-      });
-      if (!resp.ok || !resp.body) throw new Error("Generation failed");
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let accumulated = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, nl);
-          textBuffer = textBuffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
-          try {
-            const c = JSON.parse(json).choices?.[0]?.delta?.content;
-            if (c) { accumulated += c; setOutput(accumulated); }
-          } catch {}
-        }
-      }
-      // Fire-and-forget save to linkedin_posts
+      const accumulated = await streamGeneration();
+      setFullVersion(accumulated);
+      // Fire-and-forget save
       if (accumulated) {
         supabase.auth.getSession().then(({ data: { session: s } }) => {
           if (!s?.user?.id) return;
@@ -194,6 +393,51 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
     }
   };
 
+  const generateShort = async () => {
+    setGeneratingShort(true);
+    setShowingShort(true);
+    setOutput("");
+    try {
+      const shortInstruction = lang === "ar"
+        ? "أعد كتابة هذا كنسخة قصيرة ومؤثرة. الحد الأقصى 120 كلمة. احتفظ فقط بالخطاف والفكرة الأقوى والسؤال الختامي. احذف جميع القوائم المرقمة والعناوين الفرعية. كل جملة يجب أن تكون أقل من 12 كلمة."
+        : "Rewrite this as a punchy short version. Maximum 150 words for English. Keep only the hook, the single strongest insight, and the closing question. Remove all numbered lists and subheadings. Every sentence must be under 12 words.";
+      const accumulated = await streamGeneration(shortInstruction);
+      setShortVersion(accumulated);
+      // Save short version separately
+      if (accumulated) {
+        supabase.auth.getSession().then(({ data: { session: s } }) => {
+          if (!s?.user?.id) return;
+          const firstLine = accumulated.split(/\n/).find(l => l.trim())?.trim() || "";
+          supabase.from("linkedin_posts").insert({
+            user_id: s.user.id,
+            linkedin_post_id: `aura_short_${Date.now()}`,
+            post_text: accumulated,
+            title: `${topic} (short)`,
+            hook: firstLine.slice(0, 300),
+            tone: lang === "ar" ? "arabic_executive" : "authority",
+            format_type: "post_short",
+            content_type: "post",
+            topic_label: topic,
+            source_type: "aura_generated",
+            tracking_status: "draft",
+            source_metadata: planRef ? { from_plan: planRef } : {},
+          }).then(({ error: saveErr }) => {
+            if (saveErr) console.error("Auto-save short version failed:", saveErr);
+          });
+        });
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setGeneratingShort(false);
+    }
+  };
+
+  const switchToFull = () => {
+    setShowingShort(false);
+    setOutput(fullVersion);
+  };
+
   const stripMarkdown = (text: string) => text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/`(.+?)`/g, "$1");
 
   const renderMarkdown = (text: string) => {
@@ -213,6 +457,9 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const displayedOutput = output;
+  const isGeneratingAny = generating || generatingShort;
+
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
@@ -225,6 +472,26 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
               <button key={key} onClick={() => setContentType(key)} className={`p-3 rounded-xl border text-left transition-all ${contentType === key ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"}`}>
                 <Icon className="w-4 h-4 mb-1.5" />
                 <span className="text-xs font-medium">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Framework Selector */}
+        <div>
+          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Framework</p>
+          <div className="flex flex-wrap gap-1.5">
+            {FRAMEWORK_OPTIONS.map(fw => (
+              <button
+                key={fw.key}
+                onClick={() => setFramework(fw.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  framework === fw.key
+                    ? "bg-primary/10 border-primary/30 text-primary"
+                    : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
+                }`}
+              >
+                {fw.label}
               </button>
             ))}
           </div>
@@ -252,132 +519,160 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
         </div>
 
         {/* Generate */}
-        <Button onClick={generate} disabled={generating || !topic.trim()} className="w-full gap-2">
+        <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
           {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           Generate {FORMAT_LABELS[contentType]?.label || "Content"}
         </Button>
 
         {/* Output */}
-        {output && (
+        {displayedOutput && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-label uppercase tracking-wider text-xs font-semibold">Generated Content</span>
+              <span className="text-label uppercase tracking-wider text-xs font-semibold">
+                {showingShort ? "Short Version" : "Generated Content"}
+              </span>
               <Button size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {copied ? "Copied" : "Copy"}
               </Button>
             </div>
+
+            {/* Back to full version link */}
+            {showingShort && !generatingShort && (
+              <button onClick={switchToFull} className="flex items-center gap-1 text-xs text-primary hover:underline">
+                <ChevronLeft className="w-3 h-3" /> Back to full version
+              </button>
+            )}
+
             <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto">
-              {renderMarkdown(output)}
-              {generating && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
+              {renderMarkdown(displayedOutput)}
+              {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
             </div>
-            {/* Quality Indicator Bar */}
-            {!generating && (
-              <div className="flex items-center gap-2 p-2 rounded-xl bg-secondary/10">
+
+            {/* Generate shorter version button */}
+            {!isGeneratingAny && !showingShort && fullVersion && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs gap-1.5 border-border/15"
+                onClick={generateShort}
+              >
+                <Zap className="w-3 h-3" /> Generate shorter version →
+              </Button>
+            )}
+
+            {/* Quality Rubric */}
+            {!isGeneratingAny && (
+              <div className="p-3 rounded-xl bg-secondary/10 space-y-3">
                 {(() => {
-                  const lowerOutput = output.toLowerCase();
-                  const hasVoiceMatch = voiceWords.length > 0 && voiceWords.some(w => lowerOutput.includes(w));
-                  const lines = output.split(/\n/).filter(l => l.trim());
-                  const firstSentence = lines[0]?.split(/[.!?]/)[0] || "";
-                  const hookOk = firstSentence.split(/\s+/).length <= 20;
-                  const bodyOk = lines.length > 3;
-                  const lastLine = (lines[lines.length - 1] || "").trim();
-                  const closingOk = /[?]/.test(lastLine) || /\b(comment|share|follow|reach out|let['']?s|DM|subscribe|tag|try|start|join)\b/i.test(lastLine);
-                  const structureOk = hookOk && bodyOk && closingOk;
-
-                  const indicators = [
-                    {
-                      pass: hasVoiceMatch,
-                      passLabel: "Voice match",
-                      warnLabel: "Add voice samples",
-                      icon: <Mic className="w-3 h-3" />,
-                    },
-                    {
-                      pass: !!selectedSignalTitle,
-                      passLabel: selectedSignalTitle ? (selectedSignalTitle.length > 30 ? selectedSignalTitle.slice(0, 30) + "…" : selectedSignalTitle) : "",
-                      warnLabel: "No signal selected",
-                      icon: <Zap className="w-3 h-3" />,
-                    },
-                    {
-                      pass: structureOk,
-                      passLabel: "Strong structure",
-                      warnLabel: "Review structure",
-                      icon: <Layers className="w-3 h-3" />,
-                    },
-                  ];
-
-                  return indicators.map((ind, i) => (
-                    <span
-                      key={i}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
-                        ind.pass
-                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                          : "bg-muted/40 text-muted-foreground/60"
-                      }`}
-                    >
-                      {ind.icon}
-                      {ind.pass ? ind.passLabel : ind.warnLabel}
-                    </span>
-                  ));
+                  const { dimensions, total } = scoreContent(displayedOutput, lang, voiceWords, preferredStructures, selectedSignalTitle, selectedSignalInsight);
+                  const pct = Math.round((total / 80) * 100);
+                  return (
+                    <>
+                      {/* Total score */}
+                      <div className="flex items-center gap-3">
+                        <span className={`text-lg font-bold tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
+                          {total}/80
+                        </span>
+                        <div className="flex-1 bg-secondary/30 rounded-full h-2 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.6 }}
+                            className={`h-full rounded-full ${pct >= 80 ? "bg-amber-500" : "bg-muted-foreground/40"}`}
+                          />
+                        </div>
+                        <span className={`text-xs font-medium tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
+                          {pct}%
+                        </span>
+                      </div>
+                      {/* Dimension rows */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {dimensions.map(d => (
+                          <div key={d.key} className="flex items-center gap-1.5" title={d.suggestion || ""}>
+                            <span className={`text-[10px] font-bold w-4 shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/50"}`}>
+                              {d.key}
+                            </span>
+                            <span className={`text-[10px] truncate ${d.score >= 7 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/50"}`}>
+                              {d.label}
+                            </span>
+                            <span className={`text-[10px] font-semibold tabular-nums ml-auto shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/40"}`}>
+                              {d.score}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Show first suggestion for low-scoring dimension */}
+                      {(() => {
+                        const lowDim = dimensions.find(d => d.score < 7 && d.suggestion);
+                        if (!lowDim) return null;
+                        return (
+                          <p className="text-[10px] text-muted-foreground/50 leading-tight">
+                            💡 {lowDim.key}: {lowDim.suggestion}
+                          </p>
+                        );
+                      })()}
+                    </>
+                  );
                 })()}
               </div>
             )}
           </motion.div>
-            )}
-            {/* Voice Feedback Buttons */}
-            {!generating && (
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
-                  onClick={async () => {
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (!session?.user?.id) return;
-                      const uid = session.user.id;
-                      const snippet = output.slice(0, 300);
-                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).maybeSingle();
-                      const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
-                      if (existing) {
-                        const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
-                        await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm authority" }).eq("id", existing.id);
-                      } else {
-                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
-                      }
-                      toast.success("Voice engine updated ✓");
-                    } catch { toast.error("Failed to update voice engine"); }
-                  }}
-                >
-                  <Check className="w-3 h-3 mr-1" /> Sounds like me
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
-                  onClick={async () => {
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (!session?.user?.id) return;
-                      const uid = session.user.id;
-                      const first10 = output.split(/\s+/).slice(0, 10).join(" ");
-                      const avoidNote = `Avoid this pattern: ${first10}`;
-                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).maybeSingle();
-                      if (existing) {
-                        const prefs = (typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) ? { ...(existing.vocabulary_preferences as any) } : {};
-                        const avoidList = Array.isArray(prefs.avoid) ? [...prefs.avoid, avoidNote] : [avoidNote];
-                        await supabase.from("authority_voice_profiles").update({ vocabulary_preferences: { ...prefs, avoid: avoidList } }).eq("id", existing.id);
-                      } else {
-                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] } });
-                      }
-                      toast.success("Noted. Aura will adjust.");
-                    } catch { toast.error("Failed to save preference"); }
-                  }}
-                >
-                  <X className="w-3 h-3 mr-1" /> Doesn't sound like me
-                </Button>
-              </div>
-            )}
+        )}
+        {/* Voice Feedback Buttons */}
+        {displayedOutput && !isGeneratingAny && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+              onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.user?.id) return;
+                  const uid = session.user.id;
+                  const snippet = output.slice(0, 300);
+                  const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).maybeSingle();
+                  const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
+                  if (existing) {
+                    const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
+                    await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm authority" }).eq("id", existing.id);
+                  } else {
+                    await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
+                  }
+                  toast.success("Voice engine updated ✓");
+                } catch { toast.error("Failed to update voice engine"); }
+              }}
+            >
+              <Check className="w-3 h-3 mr-1" /> Sounds like me
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+              onClick={async () => {
+                try {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.user?.id) return;
+                  const uid = session.user.id;
+                  const first10 = output.split(/\s+/).slice(0, 10).join(" ");
+                  const avoidNote = `Avoid this pattern: ${first10}`;
+                  const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).maybeSingle();
+                  if (existing) {
+                    const prefs = (typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) ? { ...(existing.vocabulary_preferences as any) } : {};
+                    const avoidList = Array.isArray(prefs.avoid) ? [...prefs.avoid, avoidNote] : [avoidNote];
+                    await supabase.from("authority_voice_profiles").update({ vocabulary_preferences: { ...prefs, avoid: avoidList } }).eq("id", existing.id);
+                  } else {
+                    await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] } });
+                  }
+                  toast.success("Noted. Aura will adjust.");
+                } catch { toast.error("Failed to save preference"); }
+              }}
+            >
+              <X className="w-3 h-3 mr-1" /> Doesn't sound like me
+            </Button>
+          </div>
+        )}
 
         {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
       </div>
@@ -398,7 +693,7 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
                 <div className="space-y-2">
                   <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Signals</p>
                   {signals.map(s => (
-                    <button key={s.id} onClick={() => selectSuggestion(s.content_opportunity?.title || s.signal_title, s.explanation, "post", s.signal_title)} className="w-full text-left p-3 rounded-xl bg-card/60 border border-border/8 hover:border-primary/15 transition-all">
+                    <button key={s.id} onClick={() => selectSuggestion(s.content_opportunity?.title || s.signal_title, s.explanation, "post", s.signal_title, s.explanation)} className="w-full text-left p-3 rounded-xl bg-card/60 border border-border/8 hover:border-primary/15 transition-all">
                       <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2">{s.content_opportunity?.title || s.signal_title}</p>
                       <span className="text-[10px] text-muted-foreground/50 mt-1 block">{Math.round(s.confidence * 100)}% confidence</span>
                     </button>
@@ -485,7 +780,6 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
     }
   };
 
-  // Group by format for planning view
   const grouped = suggestions.reduce((acc, s) => {
     const fmt = s.recommended_format || "post";
     if (!acc[fmt]) acc[fmt] = [];
@@ -599,7 +893,6 @@ const AnalyzeTab = () => {
       const posts = postsRes.data || [];
       const snapshot = snapshotRes.data?.[0];
 
-      // Theme counts
       const themeCounts: Record<string, number> = {};
       const toneCounts: Record<string, number> = {};
       posts.forEach((p: any) => {
@@ -641,7 +934,6 @@ const AnalyzeTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Posts Analyzed", value: stats.postCount, icon: FileText },
@@ -665,7 +957,6 @@ const AnalyzeTab = () => {
         ))}
       </div>
 
-      {/* Tone Breakdown */}
       {stats.tones.length > 0 && (
         <div className="glass-card rounded-2xl p-6 border border-border/8">
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-4">Tone Distribution</p>
@@ -692,7 +983,6 @@ const AnalyzeTab = () => {
         </div>
       )}
 
-      {/* Recommendation */}
       <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-4 h-4 text-primary" />
@@ -771,12 +1061,9 @@ const VoiceTrainer = () => {
       if (file.name.endsWith(".txt") || file.type === "text/plain") {
         text = await file.text();
       } else if (file.name.endsWith(".pdf") || file.type === "application/pdf") {
-        // For PDF, read as text (basic extraction)
         const arrayBuf = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuf);
-        // Simple PDF text extraction — find text between stream markers
         const raw = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
-        // Extract readable text sequences (printable ASCII runs)
         const readable = raw.match(/[\x20-\x7E\n\r]{20,}/g) || [];
         text = readable.join("\n").slice(0, 10000);
         if (!text.trim()) {
@@ -809,7 +1096,6 @@ const VoiceTrainer = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Upload */}
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Upload a document</p>
           <input
@@ -831,7 +1117,6 @@ const VoiceTrainer = () => {
           </Button>
         </div>
 
-        {/* Paste */}
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">Paste a post or text</p>
           <Textarea
@@ -872,6 +1157,7 @@ interface SavedPost {
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
   post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
+  post_short: { label: "Short", cls: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
   carousel: { label: "Carousel", cls: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
   framework: { label: "Framework", cls: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
   essay: { label: "Essay", cls: "bg-muted/30 text-muted-foreground border-border/20" },
@@ -965,7 +1251,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   return (
     <div className="space-y-4">
-      {/* Delete confirmation dialog */}
       {pendingDeleteId && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
           <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
@@ -990,7 +1275,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         document.body
       )}
       <VoiceTrainer />
-      {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
@@ -1162,7 +1446,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
   }, []);
 
   const handleGenerateFromPlan = (prefill: PlanPrefill) => {
-    setPlanPrefill({ ...prefill }); // new ref to trigger useEffect
+    setPlanPrefill({ ...prefill });
     setActiveTab("create");
   };
 
@@ -1175,7 +1459,6 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         processLogic="Signal → Insight → Framework → Content → Audience"
       />
 
-      {/* Brand calibration nudge */}
       {brandDone === false && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
           <Target className="w-4 h-4 text-primary shrink-0" />
@@ -1188,10 +1471,8 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         </div>
       )}
 
-      {/* Strategic Advisor — authority context */}
       <StrategicAdvisorPanel context="authority" compact />
 
-      {/* Tab Bar */}
       <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-full sm:w-fit">
         {TABS.map(tab => {
           const Icon = tab.icon;
@@ -1213,7 +1494,6 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         })}
       </div>
 
-      {/* Tab Content */}
       {activeTab === "create" && <CreateTab planPrefill={planPrefill} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "analyze" && <AnalyzeTab />}
