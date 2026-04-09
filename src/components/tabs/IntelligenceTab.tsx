@@ -257,7 +257,7 @@ const ExpandedDetail = ({
         setEvidenceFragments((r.data || []) as unknown as EvidenceFragmentRow[]);
       }
 
-      await Promise.all(promises);
+      // all awaits done above
       setLoading(false);
     })();
   }, [signal.supporting_evidence_ids]);
