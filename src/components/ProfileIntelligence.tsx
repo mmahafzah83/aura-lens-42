@@ -161,7 +161,7 @@ const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) =>
           </div>
           <div>
             <h3 className="text-lg font-semibold text-foreground">Profile Intelligence</h3>
-            <p className="text-xs text-muted-foreground">Strategic Identity Model</p>
+            <p className="text-xs text-muted-foreground">Executive positioning model</p>
           </div>
         </div>
         <Button
@@ -273,7 +273,7 @@ const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) =>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
-                <h4 className="text-sm font-semibold text-foreground">Authority Direction Suggestions</h4>
+                <h4 className="text-sm font-semibold text-foreground">Where to build authority next</h4>
               </div>
               <div className="space-y-2">
                 {identity.authority_themes.map((at, i) => (

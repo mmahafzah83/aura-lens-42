@@ -79,9 +79,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
 
       {activeSection === "identity" && (
         <div className="space-y-6 animate-fade-in">
+          <ProfileIntelligence onGenerateContent={handleGenerateContent} />
           <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
           <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
-          <ProfileIntelligence onGenerateContent={handleGenerateContent} />
         </div>
       )}
 
