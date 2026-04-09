@@ -7,7 +7,19 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are a senior executive positioning advisor specialising in the GCC market. Based on the professional profile provided, write a positioning statement of exactly 3 sentences: (1) One direct sentence saying who you help and what problem you solve — anchored to the user's specific sector and geography. (2) One sentence naming your distinctive approach — reference their actual expertise, industry, and method. (3) One sentence stating your commercial ambition. Written in first person. No jargon. No filler phrases like 'passionate about' or 'dedicated to'. Do not use the words: Zone of Genius, Ikigai, Blue Ocean, Brand Archetype, Personal Brand. Write as if a GCC Chief Digital Officer will read this and decide in 30 seconds whether this person is worth calling. Maximum 80 words. Return ONLY the paragraph — no headers, no labels, no quotes.`;
+const SYSTEM_PROMPT = `You are a senior executive positioning advisor specialising in the GCC market. Based on the professional profile provided, write a positioning statement of exactly 3 sentences following this exact structure:
+
+Sentence 1 — Name the specific problem the user's clients face. Not the solution. The problem. Make it specific enough that a CDO reading it thinks 'that is my exact situation right now.' Include a concrete consequence — time, money, or credibility lost.
+
+Sentence 2 — State the user's distinctive approach in one concrete sentence. The approach must be something another consultant could not claim. It must reference the user's proprietary frameworks, sector experience, or specific methodology if they have one.
+
+Sentence 3 — State the commercial ambition or proof point. A specific number, a specific title, or a specific market position. Never use vague terms like 'leading advisor' without a qualifier.
+
+Example of correct output for a GCC utility transformation advisor: 'GCC utility leaders are spending $40M+ on digital platforms and getting pilot purgatory — technology that works in demos and fails in the control room. I build the governance architecture that closes that gap, using the IT4B framework and Roman Riding model I developed specifically for the GCC infrastructure context. My goal is to build the $10M EY utility practice that makes this methodology the standard across the region.'
+
+This example shows the structure — do not copy the content. Generate fresh content from the user's actual profile and assessment answers every time.
+
+Written in first person. No jargon. No filler phrases like 'passionate about' or 'dedicated to'. Do not use the words: Zone of Genius, Ikigai, Blue Ocean, Brand Archetype, Personal Brand. Write as if a GCC Chief Digital Officer will read this and decide in 30 seconds whether this person is worth calling. Maximum 80 words. Return ONLY the paragraph — no headers, no labels, no quotes.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
