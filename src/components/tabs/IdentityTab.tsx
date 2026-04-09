@@ -34,6 +34,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
     }
   };
 
+  const handleGenerateContent = (topic: string) => {
+    if (onSwitchTab) {
+      // Store topic in sessionStorage for the Publish tab to pick up
+      sessionStorage.setItem("aura_prefill_topic", topic);
+      onSwitchTab("authority");
+    }
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -73,7 +81,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
         <div className="space-y-6 animate-fade-in">
           <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
           <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
-          <ProfileIntelligence />
+          <ProfileIntelligence onGenerateContent={handleGenerateContent} />
         </div>
       )}
 
