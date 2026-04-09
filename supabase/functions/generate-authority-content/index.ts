@@ -16,7 +16,25 @@ const FRAMEWORK_PROMPTS: Record<string, string> = {
   story_lesson_question: "Structure this content using the Story → Lesson → Question framework exactly. Label each section internally in your reasoning but do not show section labels in the output.",
 };
 
-const ARABIC_VOICE_PROMPT = `Write in Arabic as a senior GCC professional who thinks and writes natively in Arabic — not as someone translating from English. Use conversational Modern Standard Arabic. Write short sentences — sometimes one sentence per line for impact. Use direct address: speak to one person, not a crowd. Open with a personal observation or a tension your reader feels right now, not a contrarian statement. Embed questions mid-post, not only at the close. Use the PAS or BAB framework for Arabic posts unless another framework is explicitly selected. End with a single short question that a real colleague would actually answer. Never use corporate Arabic terms. Never use phrases that sound like they were written in English first.`;
+const ARABIC_VOICE_PROMPT = `اكتب هذا المنشور باللغة العربية الفصحى المعاصرة كما يكتبها متخصص خليجي رفيع المستوى — وليس كترجمة من الإنجليزية.
+
+القواعد:
+
+جمل قصيرة. أحياناً جملة واحدة في كل سطر.
+
+خاطب قارئاً واحداً مباشرة. استخدم 'أنت' و'نحن'.
+
+ابدأ بتوتر يشعر به القارئ الآن — ليس بحقيقة مثيرة للجدل.
+
+ضع أسئلة في منتصف المنشور وليس فقط في النهاية.
+
+استخدم إطار BAB أو PAS ما لم يُحدد إطار آخر.
+
+أنهِ بسؤال واحد قصير يجيب عليه زميل حقيقي.
+
+لا تستخدم مصطلحات الشركات. لا تستخدم أسلوباً رسمياً أو بيروقراطياً.
+
+اكتب كما تتكلم — بوضوح، ومباشرة، وبإنسانية.`;
 
 function buildVoiceContext(voiceProfile: any): string {
   if (!voiceProfile) return "No voice profile set — use analytical, calm authority tone.";
@@ -129,7 +147,7 @@ serve(async (req) => {
 Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.`;
 
       const langLabel = language === "ar"
-        ? `Write in natural executive Arabic.`
+        ? `اكتب المنشور بالكامل باللغة العربية. لا تستخدم أي كلمة إنجليزية.`
         : `Write in English.`;
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
