@@ -145,7 +145,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
       <PageHeader
         icon={Lightbulb}
         title="Strategy"
-        question="What do these signals mean strategically?"
+        question="Plan your moves"
         processLogic="Signals → Insights → Frameworks"
       >
         <Button

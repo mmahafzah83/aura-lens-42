@@ -38,8 +38,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
     <div className="space-y-8">
       <PageHeader
         icon={User}
-        title="Identity"
-        question="Who are you becoming as a strategist?"
+        title="My Story"
+        question="Build your foundation"
         processLogic="Identity → Intelligence → Strategy → Authority → Growth"
       />
 
