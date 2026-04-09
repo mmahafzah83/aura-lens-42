@@ -546,6 +546,19 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
                         <span className="px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 font-medium">{s.reason}</span>
                         <span className="ml-auto">{formatSmartDate(s.created_at)}</span>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 h-7 text-xs gap-1.5 border-border/15"
+                        onClick={() => onGenerateFromPlan({
+                          topic: s.topic,
+                          context: `${s.angle}\n\nReason: ${s.reason}`,
+                          contentType: FORMAT_TO_CONTENT_TYPE[s.recommended_format] || "post",
+                          planTitle: s.topic,
+                        })}
+                      >
+                        <ArrowRight className="w-3 h-3" /> Generate this →
+                      </Button>
                     </div>
                   ))}
                 </div>
