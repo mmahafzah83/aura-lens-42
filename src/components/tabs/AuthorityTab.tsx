@@ -48,7 +48,14 @@ interface FrameworkSuggestion {
   tags: string[];
 }
 
-const CreateTab = () => {
+interface PlanPrefill {
+  topic: string;
+  context: string;
+  contentType: ContentType;
+  planTitle: string;
+}
+
+const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
@@ -59,6 +66,7 @@ const CreateTab = () => {
   const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
+  const [planRef, setPlanRef] = useState<string | null>(null);
 
   // AI suggestions
   const [signals, setSignals] = useState<SignalSuggestion[]>([]);
@@ -104,6 +112,17 @@ const CreateTab = () => {
     setOutput("");
     setSelectedSignalTitle(signalTitle || null);
   };
+
+  // Apply plan prefill when it changes
+  useEffect(() => {
+    if (planPrefill) {
+      setTopic(planPrefill.topic);
+      setContext(planPrefill.context);
+      setContentType(planPrefill.contentType);
+      setPlanRef(planPrefill.planTitle);
+      setOutput("");
+    }
+  }, [planPrefill]);
 
   const generate = async () => {
     if (!topic.trim()) return;
