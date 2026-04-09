@@ -1,22 +1,18 @@
 
 
-## Fix: Retake buttons for Evidence Audit and Brand Assessment not clickable
+## Fix: Brand Assessment and Evidence Audit modals appear at top of page instead of centered
 
-### Problem
-The "Retake" buttons for Evidence Audit and Brand Assessment in `OnboardingProfileSection.tsx` (lines 379 and 395) have no `onClick` handlers — they are inert `<button>` elements that do nothing when clicked.
+### Root Cause
+`BrandAssessmentModal` renders its fixed-position overlay directly inside the component tree (no `createPortal`). If any ancestor element has a CSS `transform`, `filter`, or `will-change` property, the browser treats that ancestor as the containing block for `position: fixed` — breaking the centering.
 
-The modals (`ObjectiveAuditModal` and `BrandAssessmentModal`) are controlled by state in the parent `IdentityTab` component, but no callbacks are passed down to `OnboardingProfileSection`.
+`ObjectiveAuditModal` already uses `createPortal(... , document.body)` which avoids this issue, but both modals should be consistent.
 
-### Plan
+### Fix
 
-**File 1: `src/components/OnboardingProfileSection.tsx`**
-- Add two optional callback props: `onRetakeAudit` and `onRetakeBrand`
-- Wire the "Retake" button for Evidence Audit (line 379) to call `onRetakeAudit`
-- Wire the "Retake" button for Brand Assessment (line 395) to call `onRetakeBrand`
+**File: `src/components/BrandAssessmentModal.tsx`**
+- Import `createPortal` from `react-dom`
+- Wrap the entire modal return (overlay + modal container) in `createPortal(..., document.body)` — same pattern as `ObjectiveAuditModal`
+- No other changes to content, questions, styling, or functionality
 
-**File 2: `src/components/tabs/IdentityTab.tsx`**
-- Pass `onRetakeAudit={() => setAuditOpen(true)}` and `onRetakeBrand={() => setBrandOpen(true)}` to the `<OnboardingProfileSection />` component on line 75
-
-### What stays the same
-Everything else — no changes to modals, assessments, data, other tabs, or any other components.
+This is a one-line import + wrapping the existing JSX return. Nothing else changes.
 
