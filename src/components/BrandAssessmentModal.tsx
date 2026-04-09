@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, ArrowLeft, Compass } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -278,7 +279,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
 
   const progress = showResults ? 100 : ((step + 1) / QUESTIONS.length) * 100;
 
-  return (
+  return createPortal(
     <>
       {/* Full-screen overlay */}
       <div
@@ -447,7 +448,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           </div>
         )}
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 
