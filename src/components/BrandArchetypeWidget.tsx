@@ -47,7 +47,14 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
 
   const primary = results?.primary_archetype || "";
   const secondary = results?.secondary_archetype || "";
-  const positioningStatement = results?.positioning_statement || "";
+  const positioningStatement = (() => {
+    const directStatement = typeof results?.positioning_statement === "string" ? results.positioning_statement.trim() : "";
+    if (directStatement) return directStatement;
+
+    const interpretation = typeof results?.interpretation === "string" ? results.interpretation : "";
+    const match = interpretation.match(/YOUR POSITIONING STATEMENT\s*\n\*\*(.*?)\*\*/s);
+    return match?.[1]?.trim() || "";
+  })();
 
   return (
     <div className="rounded-xl border border-[#C5A55A]/20 bg-[#141414] p-5 mb-4">
