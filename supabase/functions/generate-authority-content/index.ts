@@ -147,7 +147,7 @@ serve(async (req) => {
 Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.`;
 
       const langLabel = language === "ar"
-        ? `Write in natural executive Arabic.`
+        ? `اكتب المنشور بالكامل باللغة العربية. لا تستخدم أي كلمة إنجليزية.`
         : `Write in English.`;
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
