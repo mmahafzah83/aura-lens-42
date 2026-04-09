@@ -247,8 +247,8 @@ const CreateTab = () => {
                 {copied ? "Copied" : "Copy"}
               </Button>
             </div>
-            <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed whitespace-pre-line max-h-[500px] overflow-y-auto">
-              {output}
+            <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto">
+              {renderMarkdown(output)}
               {generating && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
             </div>
             {/* Quality Indicator Bar */}
