@@ -18,7 +18,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
       .select("brand_assessment_results, brand_assessment_completed_at")
       .eq("user_id", user.id)
       .maybeSingle();
-    if (data?.brand_assessment_completed_at && data?.brand_assessment_results) {
+    if (data?.brand_assessment_completed_at && data?.brand_assessment_results && typeof data.brand_assessment_results === 'object' && Object.keys(data.brand_assessment_results).length > 0) {
       setResults(data.brand_assessment_results);
       setCompleted(true);
     }

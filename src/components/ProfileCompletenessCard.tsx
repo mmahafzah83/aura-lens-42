@@ -97,13 +97,14 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
       </p>
 
       {/* Progress bar */}
-      <div style={{ height: 4, background: "#1a1a1a", borderRadius: 2, overflow: "hidden", marginBottom: 6 }}>
+      <div style={{ height: 8, background: "#1a1a1a", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
         <div
           style={{
             height: "100%",
             width: `${pct}%`,
+            minWidth: pct > 0 ? "8px" : "0",
             background: fillColor,
-            borderRadius: 2,
+            borderRadius: 4,
             transition: "width 0.5s ease, background 0.3s ease",
           }}
         />
