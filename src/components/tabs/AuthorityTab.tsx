@@ -174,8 +174,21 @@ const CreateTab = () => {
     }
   };
 
+  const stripMarkdown = (text: string) => text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/`(.+?)`/g, "$1");
+
+  const renderMarkdown = (text: string) => {
+    return text.split(/\n/).map((line, i) => {
+      const html = line
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>")
+        .replace(/^#{1,6}\s+(.*)/, "<strong>$1</strong>")
+        .replace(/`(.+?)`/g, "$1");
+      return <p key={i} className={line.trim() ? "" : "h-3"} dangerouslySetInnerHTML={{ __html: html || "&nbsp;" }} />;
+    });
+  };
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(output);
+    await navigator.clipboard.writeText(stripMarkdown(output));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -234,8 +247,8 @@ const CreateTab = () => {
                 {copied ? "Copied" : "Copy"}
               </Button>
             </div>
-            <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed whitespace-pre-line max-h-[500px] overflow-y-auto">
-              {output}
+            <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto">
+              {renderMarkdown(output)}
               {generating && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
             </div>
             {/* Quality Indicator Bar */}
