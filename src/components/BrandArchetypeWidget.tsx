@@ -45,13 +45,9 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
     );
   }
 
-  const primary = results?.primary_archetype || "Your Archetype";
+  const primary = results?.primary_archetype || "";
   const secondary = results?.secondary_archetype || "";
-
-  // Extract one-line description from interpretation
-  const interp = results?.interpretation || "";
-  const descMatch = interp.match(/PRIMARY BRAND ARCHETYPE[^\n]*\n+(?:[^\n]*\n)?([^\n]+)/i);
-  const description = descMatch?.[1]?.trim()?.slice(0, 200) || "";
+  const positioningStatement = results?.positioning_statement || "";
 
   return (
     <div className="rounded-xl border border-[#C5A55A]/20 bg-[#141414] p-5 mb-4">
@@ -67,12 +63,15 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
           Regenerate
         </button>
       </div>
-      <h3 className="text-xl text-[#C5A55A] font-semibold mb-1">{primary}</h3>
-      {secondary && (
-        <p className="text-[12px] text-[#888] mb-2">{primary} · {secondary} — authority through coherence and contrarian insight</p>
+      {positioningStatement ? (
+        <p className="text-base text-[#C5A55A] font-semibold leading-relaxed mb-2">{positioningStatement}</p>
+      ) : (
+        <p className="text-base text-[#C5A55A] font-semibold mb-2">Complete your assessment to reveal your positioning</p>
       )}
-      {description && (
-        <p className="text-[12px] text-[#888] leading-relaxed">{description}</p>
+      {(primary || secondary) && (
+        <p className="text-[11px] text-[#666]">
+          Archetype: {[primary, secondary].filter(Boolean).join(" · ")}
+        </p>
       )}
     </div>
   );
