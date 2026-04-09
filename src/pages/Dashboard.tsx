@@ -12,7 +12,7 @@ import NotificationBell from "@/components/NotificationBell";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
-import StrategyTab from "@/components/tabs/StrategyTab";
+
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import InfluenceTabNew from "@/components/tabs/InfluenceTabNew";
 import type { Database } from "@/integrations/supabase/types";
@@ -22,8 +22,7 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 const NAV_ITEMS = [
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass },
   { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User },
-  { value: "intelligence", label: "Signals", pageHeader: "Detect what matters", icon: Shield },
-  { value: "strategy", label: "Strategy", pageHeader: "Plan your moves", icon: Lightbulb },
+  { value: "intelligence", label: "Intelligence", pageHeader: "Intelligence", icon: Shield },
   { value: "authority", label: "Publish", pageHeader: "Content Studio", icon: Crown },
   { value: "influence", label: "Impact", pageHeader: "Measure your influence", icon: TrendingUp },
 ] as const;
@@ -362,12 +361,6 @@ const Dashboard = () => {
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
                 <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onOpenCapture={() => setCaptureOpen(true)} />
-              </div>
-            )}
-
-            {activeTab === "strategy" && (
-              <div className="animate-tab-spring">
-                <StrategyTab onOpenChat={openChat} />
               </div>
             )}
 
