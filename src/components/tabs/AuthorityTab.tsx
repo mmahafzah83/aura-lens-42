@@ -48,7 +48,14 @@ interface FrameworkSuggestion {
   tags: string[];
 }
 
-const CreateTab = () => {
+interface PlanPrefill {
+  topic: string;
+  context: string;
+  contentType: ContentType;
+  planTitle: string;
+}
+
+const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
@@ -59,6 +66,7 @@ const CreateTab = () => {
   const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
+  const [planRef, setPlanRef] = useState<string | null>(null);
 
   // AI suggestions
   const [signals, setSignals] = useState<SignalSuggestion[]>([]);
@@ -104,6 +112,17 @@ const CreateTab = () => {
     setOutput("");
     setSelectedSignalTitle(signalTitle || null);
   };
+
+  // Apply plan prefill when it changes
+  useEffect(() => {
+    if (planPrefill) {
+      setTopic(planPrefill.topic);
+      setContext(planPrefill.context);
+      setContentType(planPrefill.contentType);
+      setPlanRef(planPrefill.planTitle);
+      setOutput("");
+    }
+  }, [planPrefill]);
 
   const generate = async () => {
     if (!topic.trim()) return;
@@ -162,6 +181,7 @@ const CreateTab = () => {
             topic_label: topic,
             source_type: "aura_generated",
             tracking_status: "draft",
+            source_metadata: planRef ? { from_plan: planRef } : {},
           }).then(({ error: saveErr }) => {
             if (saveErr) console.error("Auto-save to linkedin_posts failed:", saveErr);
           });
@@ -423,7 +443,15 @@ interface NarrativeSuggestion {
   created_at: string;
 }
 
-const PlanTab = () => {
+const FORMAT_TO_CONTENT_TYPE: Record<string, ContentType> = {
+  post: "post",
+  carousel: "carousel",
+  essay: "essay",
+  framework_summary: "framework_summary",
+  framework: "framework_summary",
+};
+
+const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPrefill) => void }) => {
   const [suggestions, setSuggestions] = useState<NarrativeSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -518,6 +546,19 @@ const PlanTab = () => {
                         <span className="px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 font-medium">{s.reason}</span>
                         <span className="ml-auto">{formatSmartDate(s.created_at)}</span>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-3 h-7 text-xs gap-1.5 border-border/15"
+                        onClick={() => onGenerateFromPlan({
+                          topic: s.topic,
+                          context: `${s.angle}\n\nReason: ${s.reason}`,
+                          contentType: FORMAT_TO_CONTENT_TYPE[s.recommended_format] || "post",
+                          planTitle: s.topic,
+                        })}
+                      >
+                        <ArrowRight className="w-3 h-3" /> Generate this →
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -826,6 +867,7 @@ interface SavedPost {
   tracking_status: string;
   topic_label: string | null;
   created_at: string;
+  source_metadata: any;
 }
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
@@ -850,7 +892,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     setLoading(true);
     const { data } = await supabase
       .from("linkedin_posts")
-      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at")
+      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata")
       .order("created_at", { ascending: false })
       .limit(100);
     setPosts((data || []) as SavedPost[]);
@@ -1033,6 +1075,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                 {p.topic_label && (
                   <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
                 )}
+                {p.source_metadata?.from_plan && (
+                  <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+                )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
@@ -1109,11 +1154,17 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
 const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
+  const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
 
   useEffect(() => {
     supabase.from("diagnostic_profiles").select("brand_assessment_completed_at").limit(1).maybeSingle()
       .then(({ data }) => setBrandDone(!!data?.brand_assessment_completed_at));
   }, []);
+
+  const handleGenerateFromPlan = (prefill: PlanPrefill) => {
+    setPlanPrefill({ ...prefill }); // new ref to trigger useEffect
+    setActiveTab("create");
+  };
 
   return (
     <div className="space-y-8">
@@ -1163,8 +1214,8 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "create" && <CreateTab />}
-      {activeTab === "plan" && <PlanTab />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} />}
+      {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "analyze" && <AnalyzeTab />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
     </div>
