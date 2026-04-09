@@ -17,6 +17,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import CarouselGenerator from "@/components/CarouselGenerator";
 import LinkedInIntelligence from "@/components/LinkedInIntelligence";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import ImageCardGenerator from "@/components/ImageCardGenerator";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
