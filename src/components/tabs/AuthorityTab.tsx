@@ -290,7 +290,61 @@ const CreateTab = () => {
               </div>
             )}
           </motion.div>
-        )}
+            )}
+            {/* Voice Feedback Buttons */}
+            {!generating && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.user?.id) return;
+                      const uid = session.user.id;
+                      const snippet = output.slice(0, 300);
+                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).maybeSingle();
+                      const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
+                      if (existing) {
+                        const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
+                        await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm authority" }).eq("id", existing.id);
+                      } else {
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
+                      }
+                      toast.success("Voice engine updated ✓");
+                    } catch { toast.error("Failed to update voice engine"); }
+                  }}
+                >
+                  <Check className="w-3 h-3 mr-1" /> Sounds like me
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.user?.id) return;
+                      const uid = session.user.id;
+                      const first10 = output.split(/\s+/).slice(0, 10).join(" ");
+                      const avoidNote = `Avoid this pattern: ${first10}`;
+                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).maybeSingle();
+                      if (existing) {
+                        const prefs = (typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) ? { ...(existing.vocabulary_preferences as any) } : {};
+                        const avoidList = Array.isArray(prefs.avoid) ? [...prefs.avoid, avoidNote] : [avoidNote];
+                        await supabase.from("authority_voice_profiles").update({ vocabulary_preferences: { ...prefs, avoid: avoidList } }).eq("id", existing.id);
+                      } else {
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] } });
+                      }
+                      toast.success("Noted. Aura will adjust.");
+                    } catch { toast.error("Failed to save preference"); }
+                  }}
+                >
+                  <X className="w-3 h-3 mr-1" /> Doesn't sound like me
+                </Button>
+              </div>
+            )}
 
         {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
       </div>
