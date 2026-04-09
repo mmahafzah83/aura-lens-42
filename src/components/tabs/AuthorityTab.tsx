@@ -174,8 +174,21 @@ const CreateTab = () => {
     }
   };
 
+  const stripMarkdown = (text: string) => text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/`(.+?)`/g, "$1");
+
+  const renderMarkdown = (text: string) => {
+    return text.split(/\n/).map((line, i) => {
+      const html = line
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>")
+        .replace(/^#{1,6}\s+(.*)/, "<strong>$1</strong>")
+        .replace(/`(.+?)`/g, "$1");
+      return <p key={i} className={line.trim() ? "" : "h-3"} dangerouslySetInnerHTML={{ __html: html || "&nbsp;" }} />;
+    });
+  };
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(output);
+    await navigator.clipboard.writeText(stripMarkdown(output));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
