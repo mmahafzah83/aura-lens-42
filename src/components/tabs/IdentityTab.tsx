@@ -40,7 +40,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
         icon={User}
         title="My Story"
         question="Build your foundation"
-        processLogic="Identity → Intelligence → Strategy → Authority → Growth"
+        processLogic="My Story → Signals → Strategy → Publish → Impact"
       />
 
       {/* Sub Navigation */}

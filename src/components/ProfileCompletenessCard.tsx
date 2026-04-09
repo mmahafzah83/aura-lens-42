@@ -75,7 +75,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
   const total = fields.length;
   const pct = Math.round((filledCount / total) * 100);
 
-  const fillColor = pct < 40 ? "#E24B4A" : pct <= 70 ? "#C5A55A" : "#7ab648";
+  const fillColor = "#C5A55A";
 
   const emptyFields = fields
     .filter((f) => !f.filled)
@@ -93,7 +93,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
       }}
     >
       <p style={{ fontSize: 12, color: "#f0f0f0", fontWeight: 500, marginBottom: 8 }}>
-        Profile completeness
+        Foundation strength
       </p>
 
       {/* Progress bar */}
@@ -110,7 +110,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
       </div>
 
       <p style={{ fontSize: 11, color: "#666", marginBottom: emptyFields.length > 0 ? 10 : 0 }}>
-        {filledCount} of {total} fields complete
+        Profile complete · Voice engine active · 3 assessments done
       </p>
 
       {/* Nudges */}
