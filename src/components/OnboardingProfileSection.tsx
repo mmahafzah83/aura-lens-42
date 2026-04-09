@@ -22,7 +22,12 @@ interface ProfileDates {
   brand_assessment_completed_at: string | null;
 }
 
-const OnboardingProfileSection = () => {
+interface OnboardingProfileSectionProps {
+  onRetakeAudit?: () => void;
+  onRetakeBrand?: () => void;
+}
+
+const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingProfileSectionProps = {}) => {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [dates, setDates] = useState<ProfileDates | null>(null);
   const [loading, setLoading] = useState(true);
@@ -376,7 +381,7 @@ const OnboardingProfileSection = () => {
                 </span>
               </div>
             </div>
-            <button className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
+            <button onClick={onRetakeAudit} className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -392,7 +397,7 @@ const OnboardingProfileSection = () => {
                 </span>
               </div>
             </div>
-            <button className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
+            <button onClick={onRetakeBrand} className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
