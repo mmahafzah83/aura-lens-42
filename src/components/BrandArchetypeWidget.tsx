@@ -33,7 +33,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
     return (
       <div className="rounded-xl border border-[#252525] bg-[#141414] p-4 mb-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-[#888]">Complete Brand Assessment to reveal your archetype</p>
+          <p className="text-xs text-[#888]">Complete Brand Assessment to reveal your positioning</p>
           <button
             onClick={onStartAssessment}
             className="text-xs text-[#C5A55A] font-medium hover:underline flex items-center gap-1"
@@ -58,7 +58,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <Crown className="w-4 h-4 text-[#C5A55A]" />
-          <span className="text-[11px] text-[#666] tracking-wider uppercase">Brand Archetype</span>
+          <span className="text-[11px] text-[#666] tracking-wider uppercase">How I am positioned</span>
         </div>
         <button
           onClick={onStartAssessment}
@@ -69,7 +69,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
       </div>
       <h3 className="text-xl text-[#C5A55A] font-semibold mb-1">{primary}</h3>
       {secondary && (
-        <p className="text-[12px] text-[#666] mb-2">Secondary: {secondary}</p>
+        <p className="text-[12px] text-[#888] mb-2">{primary} · {secondary} — authority through coherence and contrarian insight</p>
       )}
       {description && (
         <p className="text-[12px] text-[#888] leading-relaxed">{description}</p>

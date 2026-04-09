@@ -251,10 +251,10 @@ const OnboardingProfileSection = () => {
   const profileFields = [
     { key: "first_name", label: "Name", value: profile.first_name },
     { key: "role", label: "Role", value: profile.level },
-    { key: "primary_strength", label: "Primary strength", value: profile.primary_strength },
+    { key: "primary_strength", label: "How I lead", value: profile.primary_strength },
     { key: "industry", label: "Industry / Sector", value: profile.sector_focus },
-    { key: "career_target", label: "Career target", value: profile.north_star_goal },
-    { key: "core_practice", label: "Core practice", value: profile.core_practice },
+    { key: "career_target", label: "Where I am going", value: profile.north_star_goal },
+    { key: "core_practice", label: "What I specialise in", value: profile.core_practice },
     { key: "firm", label: "Firm", value: profile.firm },
   ];
 
@@ -330,7 +330,7 @@ const OnboardingProfileSection = () => {
       {/* Section 2: Brand Positioning */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Brand positioning</h2>
+          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>How Aura positions me</h2>
           <button
             onClick={handleRegenerate}
             disabled={regenerating}
@@ -341,7 +341,7 @@ const OnboardingProfileSection = () => {
           </button>
         </div>
         <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
-          <p className="text-[10px] uppercase tracking-wider" style={{ color: "#666" }}>What Aura recommends you stand for</p>
+          <p className="text-[10px] uppercase tracking-wider" style={{ color: "#666" }}>Your positioning statement</p>
           <p className="text-sm leading-relaxed" style={{ color: regenerating ? "#666" : "#f0f0f0", fontStyle: regenerating ? "italic" : "normal" }}>
             {brandSummary}
           </p>
@@ -350,7 +350,7 @@ const OnboardingProfileSection = () => {
 
       {/* Section 3: Assessment History */}
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Assessment history</h2>
+        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>My foundation assessments</h2>
         <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
           {/* Onboarding */}
           <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #252525" }}>

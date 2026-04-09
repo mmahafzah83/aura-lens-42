@@ -110,8 +110,8 @@ const VoiceEngineSection = () => {
           <Mic className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-foreground">Voice engine</p>
-          <p className="text-xs text-muted-foreground/60">Teach Aura how you write so every generated post sounds like you</p>
+          <p className="text-sm font-semibold text-foreground">My writing voice</p>
+          <p className="text-xs text-muted-foreground/60">Train Aura on your writing style so every post sounds like you — not like AI</p>
         </div>
         {open ? <ChevronDown className="w-4 h-4 text-muted-foreground/40" /> : <ChevronRight className="w-4 h-4 text-muted-foreground/40" />}
       </button>

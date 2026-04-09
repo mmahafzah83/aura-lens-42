@@ -133,7 +133,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
           </div>
           {northStar && (
             <div className="p-3 rounded-xl bg-secondary/30">
-              <span className="text-[10px] text-muted-foreground tracking-wider uppercase">North Star</span>
+              <span className="text-[10px] text-muted-foreground tracking-wider uppercase">My 3-year ambition</span>
               <p className="text-sm text-foreground mt-0.5">{northStar}</p>
             </div>
           )}
@@ -183,7 +183,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
           </div>
 
           <div>
-            <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">24-Month North Star</label>
+            <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
             <Input value={northStar} onChange={(e) => setNorthStar(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
           </div>
 
