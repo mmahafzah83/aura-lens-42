@@ -17,6 +17,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import CarouselGenerator from "@/components/CarouselGenerator";
 import LinkedInIntelligence from "@/components/LinkedInIntelligence";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import ImageCardGenerator from "@/components/ImageCardGenerator";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
@@ -672,6 +673,11 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
               <X className="w-3 h-3 mr-1" /> Doesn't sound like me
             </Button>
           </div>
+        )}
+
+        {/* Image Card Generator */}
+        {displayedOutput && !isGeneratingAny && (
+          <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
         )}
 
         {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
