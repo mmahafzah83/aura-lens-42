@@ -181,6 +181,7 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
             topic_label: topic,
             source_type: "aura_generated",
             tracking_status: "draft",
+            source_metadata: planRef ? { from_plan: planRef } : {},
           }).then(({ error: saveErr }) => {
             if (saveErr) console.error("Auto-save to linkedin_posts failed:", saveErr);
           });
