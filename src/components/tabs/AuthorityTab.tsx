@@ -92,7 +92,7 @@ const CreateTab = () => {
             if (text) words.push(...text.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4).slice(0, 20));
           });
         }
-        setVoiceWords([...new Set(words.filter(w => w.length > 3))]);
+        setVoiceWords(Array.from(new Set(words.filter(w => w.length > 3))));
       }
     });
   }, []);
