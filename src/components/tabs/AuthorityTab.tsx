@@ -675,6 +675,11 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
           </div>
         )}
 
+        {/* Image Card Generator */}
+        {displayedOutput && !isGeneratingAny && (
+          <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
+        )}
+
         {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
       </div>
 
