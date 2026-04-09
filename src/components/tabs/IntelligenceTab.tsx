@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ThumbsUp, ThumbsDown, Archive } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Archive, ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -96,11 +96,25 @@ function getTypeStyle(type: string) {
   return TYPE_STYLES[type] || TYPE_STYLES.market_trend;
 }
 
+/* CHANGE 5 — confidence bar + pill colour logic */
+function getConfidenceBarColor(confidence: number): { bar: string; text: string } {
+  if (confidence >= 0.80) return { bar: "#C5A55A", text: "#C5A55A" };
+  if (confidence >= 0.60) return { bar: "rgba(212, 162, 78, 0.7)", text: "rgba(212, 162, 78, 0.9)" };
+  return { bar: "rgba(136, 136, 136, 0.5)", text: "#888888" };
+}
+
 function getConfidenceStyle(confidence: number) {
   if (confidence >= 0.70) return { bg: "#1a1e15", fg: "#7ab648", label: `${Math.round(confidence * 100)}%` };
   if (confidence >= 0.50) return { bg: "#1e1a10", fg: "#EF9F27", label: `${Math.round(confidence * 100)}%` };
   return { bg: "#1a1a1a", fg: "#888888", label: "Building confidence" };
 }
+
+/* CHANGE 4 — check if signal is "new" (updated within 48h) */
+function isNew(updatedAt: string): boolean {
+  return (Date.now() - new Date(updatedAt).getTime()) < 48 * 60 * 60 * 1000;
+}
+
+type SortOption = "confidence" | "recent" | "sources";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
@@ -169,6 +183,34 @@ const SourceRow = ({
 };
 
 /* ═══════════════════════════════════════════
+   CHANGE 3 — Evidence fragment row
+   ═══════════════════════════════════════════ */
+
+interface EvidenceFragmentRow {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+}
+
+const EvidenceRow = ({ frag }: { frag: EvidenceFragmentRow }) => {
+  const displayTitle = (frag.title || frag.content || "Untitled").slice(0, 60);
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0", borderBottom: "1px solid #1f1f1f" }}>
+      <div style={{ width: 5, height: 5, borderRadius: "50%", marginTop: 6, flexShrink: 0, backgroundColor: "#C5A55A" }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ color: "#f0f0f0", fontSize: 13, lineHeight: 1.4, margin: 0 }}>
+          {displayTitle}{displayTitle.length >= 60 ? "…" : ""}
+        </p>
+        <p style={{ color: "#666666", fontSize: 11, margin: "3px 0 0" }}>
+          {relativeTime(frag.created_at)}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════
    Expanded card detail
    ═══════════════════════════════════════════ */
 
@@ -188,18 +230,34 @@ const ExpandedDetail = ({
   onNotForMe: (signal: Signal) => void;
 }) => {
   const [sources, setSources] = useState<SourceEntry[]>([]);
+  const [evidenceFragments, setEvidenceFragments] = useState<EvidenceFragmentRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAllEvidence, setShowAllEvidence] = useState(false);
 
   useEffect(() => {
-    if (!signal.supporting_evidence_ids?.length) { setLoading(false); return; }
     (async () => {
-      const { data } = await supabase
-        .from("entries")
-        .select("id, title, content, source_url, created_at")
-        .in("id", signal.supporting_evidence_ids)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      setSources((data || []) as unknown as SourceEntry[]);
+      // Load entry-based sources
+      if (signal.supporting_evidence_ids?.length) {
+        const r = await supabase
+          .from("entries")
+          .select("id, title, content, source_url, created_at")
+          .in("id", signal.supporting_evidence_ids)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        setSources((r.data || []) as unknown as SourceEntry[]);
+      }
+
+      // CHANGE 3: Load evidence_fragments
+      if (signal.supporting_evidence_ids?.length) {
+        const r = await supabase
+          .from("evidence_fragments")
+          .select("id, title, content, created_at, source_registry_id")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        setEvidenceFragments((r.data || []) as unknown as EvidenceFragmentRow[]);
+      }
+
+      // all awaits done above
       setLoading(false);
     })();
   }, [signal.supporting_evidence_ids]);
@@ -232,6 +290,8 @@ const ExpandedDetail = ({
   };
 
   const isLoved = signal.user_signal_feedback === "love";
+  const visibleEvidence = showAllEvidence ? evidenceFragments : evidenceFragments.slice(0, 5);
+  const hiddenCount = evidenceFragments.length - 5;
 
   return (
     <motion.div
@@ -261,7 +321,7 @@ const ExpandedDetail = ({
           </div>
         )}
 
-        {/* Sources */}
+        {/* CHANGE 3: Evidence fragments section */}
         <div style={{ marginTop: 20 }}>
           <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8 }}>
             built from these sources
@@ -270,14 +330,31 @@ const ExpandedDetail = ({
             <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
               <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#3a3a3a" }} />
             </div>
-          ) : sources.length === 0 ? (
-            <p style={{ color: "#3a3a3a", fontSize: 12 }}>No sources linked yet — add captures to build this signal.</p>
-          ) : (
+          ) : evidenceFragments.length > 0 ? (
+            <div>
+              {visibleEvidence.map(frag => (
+                <EvidenceRow key={frag.id} frag={frag} />
+              ))}
+              {!showAllEvidence && hiddenCount > 0 && (
+                <button
+                  onClick={() => setShowAllEvidence(true)}
+                  style={{
+                    background: "none", border: "none", color: "#C5A55A",
+                    fontSize: 12, cursor: "pointer", marginTop: 8, padding: 0,
+                  }}
+                >
+                  + {hiddenCount} more
+                </button>
+              )}
+            </div>
+          ) : sources.length > 0 ? (
             <div>
               {sources.map(s => (
                 <SourceRow key={s.id} entry={s} signalId={signal.id} onRemove={handleRemove} />
               ))}
             </div>
+          ) : (
+            <p style={{ color: "#3a3a3a", fontSize: 12 }}>No sources linked yet — add captures to build this signal.</p>
           )}
         </div>
 
@@ -416,6 +493,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   const [entryCount, setEntryCount] = useState(0);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
 
+  /* CHANGE 1 — sort state */
+  const [sortBy, setSortBy] = useState<SortOption>("confidence");
+
+  /* CHANGE 2 — group by theme state */
+  const [groupByTheme, setGroupByTheme] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
   // Auto-expand signal from URL param
   useEffect(() => {
     const signalParam = searchParams.get("signal");
@@ -459,14 +543,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     const isAlreadyLoved = signal.user_signal_feedback === "love";
 
     if (isAlreadyLoved) {
-      // Unlove
       const newPriority = Math.max(signal.priority_score - 0.10, 0);
       await supabase.from("strategic_signals").update({
         user_signal_feedback: null,
         priority_score: newPriority,
       }).eq("id", signal.id);
 
-      // Decrement tag preferences
       for (const tag of signal.theme_tags || []) {
         const { data: existing } = await supabase
           .from("signal_topic_preferences" as any)
@@ -483,14 +565,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
       setSignals(prev => prev.map(s => s.id === signal.id ? { ...s, user_signal_feedback: null, priority_score: newPriority } : s));
       toast("Love removed");
     } else {
-      // Love
       const newPriority = Math.min(signal.priority_score + 0.10, 1.0);
       await supabase.from("strategic_signals").update({
         user_signal_feedback: "love",
         priority_score: newPriority,
       }).eq("id", signal.id);
 
-      // Upsert tag preferences
       for (const tag of signal.theme_tags || []) {
         const { data: existing } = await supabase
           .from("signal_topic_preferences" as any)
@@ -523,7 +603,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
       priority_score: 0.05,
     }).eq("id", signal.id);
 
-    // Decrement tag preferences
     for (const tag of signal.theme_tags || []) {
       const { data: existing } = await supabase
         .from("signal_topic_preferences" as any)
@@ -559,12 +638,44 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
       .map(([name, count]) => ({ name, count }));
   }, [signals]);
 
+  /* Apply tag filter */
   const filtered = useMemo(() => {
     if (!activeTag) return signals;
     return signals.filter(s => (s.theme_tags || []).includes(activeTag));
   }, [signals, activeTag]);
 
-  const visible = filtered.slice(0, 8);
+  /* CHANGE 1 — apply sort */
+  const sorted = useMemo(() => {
+    const arr = [...filtered];
+    switch (sortBy) {
+      case "confidence": arr.sort((a, b) => b.confidence - a.confidence); break;
+      case "recent": arr.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()); break;
+      case "sources": arr.sort((a, b) => b.fragment_count - a.fragment_count); break;
+    }
+    return arr;
+  }, [filtered, sortBy]);
+
+  /* CHANGE 2 — group signals by first theme tag */
+  const groupedSignals = useMemo(() => {
+    if (!groupByTheme) return null;
+    const groups: Record<string, Signal[]> = {};
+    sorted.forEach(s => {
+      const theme = (s.theme_tags && s.theme_tags.length > 0) ? s.theme_tags[0] : "Uncategorised";
+      if (!groups[theme]) groups[theme] = [];
+      groups[theme].push(s);
+    });
+    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
+  }, [sorted, groupByTheme]);
+
+  const toggleGroupCollapse = (theme: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(theme)) next.delete(theme); else next.add(theme);
+      return next;
+    });
+  };
+
+  const visible = sorted.slice(0, 8);
   const topSignal = signals[0];
   const totalOrgs = signals.reduce((sum, s) => sum + (s.unique_orgs || 0), 0);
   const topConfPct = topSignal ? Math.round(topSignal.confidence * 100) : 0;
@@ -596,6 +707,173 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     );
   }
 
+  /* ── Render a single signal card ── */
+  const renderSignalCard = (signal: Signal, i: number) => {
+    const isExpanded = expandedId === signal.id;
+    const isTop = i === 0 && !activeTag && !groupByTheme;
+    const typeStyle = getTypeStyle(signal.theme_tags?.find(t => t in TYPE_STYLES) || "market_trend");
+    const confStyle = getConfidenceStyle(signal.confidence);
+    const confBarColor = getConfidenceBarColor(signal.confidence);
+    const confidencePct = Math.round(signal.confidence * 100);
+    const sourcesLabel = `${plural(signal.fragment_count, "source")} · ${plural(signal.unique_orgs, "organisation")}`;
+    const needsMore = signal.confidence < 0.60;
+    const moreSources = Math.ceil((0.60 - signal.confidence) / 0.184);
+    const signalIsNew = isNew(signal.updated_at);
+
+    return (
+      <motion.div
+        key={signal.id}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: i * 0.03 }}
+        style={{
+          background: "#141414",
+          borderRadius: 14,
+          border: isTop ? "1.5px solid #C5A55A" : "1px solid #252525",
+          marginBottom: 12,
+          overflow: "hidden",
+          position: "relative",
+        }}
+      >
+        {/* CHANGE 4 — NEW badge */}
+        {signalIsNew && (
+          <div style={{
+            position: "absolute", top: 10, right: 10, zIndex: 2,
+            background: "rgba(197, 165, 90, 0.2)", color: "#C5A55A",
+            fontSize: 10, fontWeight: 700, borderRadius: 10,
+            padding: "2px 8px", letterSpacing: "0.05em",
+          }}>
+            NEW
+          </div>
+        )}
+
+        {/* CHANGE 5 — Confidence Bar with colour variation */}
+        <div style={{ height: 3, background: "#1f1f1f" }}>
+          <div
+            style={{
+              height: "100%",
+              background: confBarColor.bar,
+              width: `${confidencePct}%`,
+              transition: "width 0.5s, background 0.3s",
+            }}
+          />
+        </div>
+
+        {/* Signal Header */}
+        <div style={{ padding: 16 }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+            {/* Type icon */}
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: typeStyle.bg,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16, color: typeStyle.fg, flexShrink: 0,
+            }}>
+              {typeStyle.icon}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Title */}
+              <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: "0 0 6px", lineHeight: 1.35, paddingRight: signalIsNew ? 50 : 0 }}>
+                {signal.signal_title}
+              </p>
+
+              {/* Summary */}
+              <p style={{
+                color: "#666666", fontSize: 13, lineHeight: 1.5, margin: "0 0 10px",
+                display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+              }}>
+                {signal.explanation}
+              </p>
+
+              {/* Meta row */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                {/* CHANGE 5 — Confidence pill with matching colour */}
+                <span style={{
+                  background: confStyle.bg, color: confBarColor.text,
+                  fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12,
+                }}>
+                  {confStyle.label}
+                </span>
+
+                {/* Source count */}
+                <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
+
+                {/* Draft button */}
+                {signal.confidence >= 0.60 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDraftData({ title: signal.signal_title, hook: signal.explanation, angle: "Strategic thought leadership", context: signal.strategic_implications }); }}
+                    style={{
+                      marginLeft: "auto", background: "none", border: "none",
+                      color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    Draft
+                  </button>
+                )}
+              </div>
+
+              {/* Tag pills */}
+              {signal.theme_tags && signal.theme_tags.length > 0 && (
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
+                  {signal.theme_tags.slice(0, isExpanded ? signal.theme_tags.length : 3).map(tag => (
+                    <span key={tag} style={{ fontSize: 10, color: "#555555", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
+                      {formatTag(tag)}
+                    </span>
+                  ))}
+                  {!isExpanded && signal.theme_tags.length > 3 && (
+                    <span style={{ fontSize: 10, color: "#3a3a3a", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
+                      +{signal.theme_tags.length - 3} more
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Building nudge */}
+              {needsMore && (
+                <p style={{ color: "#C5A55A", fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
+                  Add {moreSources > 0 ? moreSources : 1} more {moreSources === 1 ? "source" : "sources"} on this topic to unlock drafting.{" "}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onOpenCapture?.(); }}
+                    style={{ color: "#C5A55A", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 11 }}
+                  >
+                    Capture now →
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Expand toggle */}
+          <button
+            onClick={() => setExpandedId(isExpanded ? null : signal.id)}
+            style={{
+              display: "block", width: "100%", textAlign: "center",
+              color: "#3a3a3a", fontSize: 11, background: "none",
+              border: "none", cursor: "pointer", marginTop: 12, padding: "4px 0",
+            }}
+          >
+            {isExpanded ? "▴ collapse signal" : "▾ expand signal"}
+          </button>
+        </div>
+
+        {/* Expanded detail */}
+        <AnimatePresence>
+          {isExpanded && (
+            <ExpandedDetail
+              signal={signal}
+              onOpenChat={onOpenChat}
+              onArchive={handleArchive}
+              onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
+              onLove={handleLove}
+              onNotForMe={handleNotForMe}
+            />
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  };
+
   return (
     <div style={{ background: "#0d0d0d", minHeight: "100vh", paddingBottom: 80 }}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "0 16px" }}>
@@ -624,7 +902,29 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
           ))}
         </div>
 
-        {/* ── 2. Stat cards ── */}
+        {/* ── 2. Stat cards + CHANGE 1: Sort dropdown ── */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", margin: 0 }}>
+            DETECT WHAT MATTERS
+          </p>
+          {/* CHANGE 1 — Sort dropdown */}
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value as SortOption)}
+            style={{
+              background: "#1a1a1a", color: "#ccc", fontSize: 11, fontWeight: 500,
+              border: "1px solid #2a2a2a", borderRadius: 8, padding: "5px 10px",
+              cursor: "pointer", outline: "none",
+            }}
+            onFocus={e => { e.currentTarget.style.borderColor = "#C5A55A"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+          >
+            <option value="confidence">Highest confidence</option>
+            <option value="recent">Most recent</option>
+            <option value="sources">Most sources</option>
+          </select>
+        </div>
+
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
           {[
             { value: `${topConfPct}%`, label: "top signal", gold: true },
@@ -648,38 +948,61 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
           ))}
         </div>
 
-        {/* ── 3. Cluster filter pills ── */}
-        <div style={{ overflowX: "auto", display: "flex", gap: 8, marginBottom: 16, paddingBottom: 4 }} className="scrollbar-hide">
-          <button
-            onClick={() => setActiveTag(null)}
-            style={{
-              flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
-              cursor: "pointer", whiteSpace: "nowrap",
-              background: !activeTag ? "#1e1a10" : "#141414",
-              color: !activeTag ? "#C5A55A" : "#555555",
-              border: `1px solid ${!activeTag ? "#C5A55A" : "#252525"}`,
-            }}
-          >
-            All signals
-          </button>
-          {clusters.map(c => {
-            const isActive = activeTag === c.name;
-            return (
-              <button
-                key={c.name}
-                onClick={() => setActiveTag(isActive ? null : c.name)}
-                style={{
-                  flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
-                  cursor: "pointer", whiteSpace: "nowrap",
-                  background: isActive ? "#1e1a10" : "#141414",
-                  color: isActive ? "#C5A55A" : "#555555",
-                  border: `1px solid ${isActive ? "#C5A55A" : "#252525"}`,
-                }}
-              >
-                {formatTag(c.name)} ({c.count})
-              </button>
-            );
-          })}
+        {/* ── 3. Cluster filter pills + CHANGE 2: Group by theme toggle ── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <div style={{ overflowX: "auto", display: "flex", gap: 8, flex: 1, paddingBottom: 4 }} className="scrollbar-hide">
+            <button
+              onClick={() => setActiveTag(null)}
+              style={{
+                flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                cursor: "pointer", whiteSpace: "nowrap",
+                background: !activeTag ? "#1e1a10" : "#141414",
+                color: !activeTag ? "#C5A55A" : "#555555",
+                border: `1px solid ${!activeTag ? "#C5A55A" : "#252525"}`,
+              }}
+            >
+              All signals
+            </button>
+            {clusters.map(c => {
+              const isActive = activeTag === c.name;
+              return (
+                <button
+                  key={c.name}
+                  onClick={() => setActiveTag(isActive ? null : c.name)}
+                  style={{
+                    flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
+                    cursor: "pointer", whiteSpace: "nowrap",
+                    background: isActive ? "#1e1a10" : "#141414",
+                    color: isActive ? "#C5A55A" : "#555555",
+                    border: `1px solid ${isActive ? "#C5A55A" : "#252525"}`,
+                  }}
+                >
+                  {formatTag(c.name)} ({c.count})
+                </button>
+              );
+            })}
+          </div>
+
+          {/* CHANGE 2 — Group by theme toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            <span style={{ fontSize: 10, color: "#555555", whiteSpace: "nowrap" }}>Group by theme</span>
+            <button
+              onClick={() => { setGroupByTheme(!groupByTheme); setCollapsedGroups(new Set()); }}
+              style={{
+                width: 34, height: 18, borderRadius: 9, padding: 2,
+                background: groupByTheme ? "#C5A55A" : "#2a2a2a",
+                border: "none", cursor: "pointer", position: "relative",
+                transition: "background 0.2s",
+              }}
+            >
+              <div style={{
+                width: 14, height: 14, borderRadius: "50%",
+                background: "#f0f0f0",
+                transform: groupByTheme ? "translateX(16px)" : "translateX(0)",
+                transition: "transform 0.2s",
+              }} />
+            </button>
+          </div>
         </div>
 
         {/* Filter count */}
@@ -689,144 +1012,49 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
           </p>
         )}
 
-        {/* ── 4. Signal cards ── */}
-        {visible.map((signal, i) => {
-          const isExpanded = expandedId === signal.id;
-          const isTop = i === 0 && !activeTag;
-          const typeStyle = getTypeStyle(signal.theme_tags?.find(t => t in TYPE_STYLES) || "market_trend");
-          const confStyle = getConfidenceStyle(signal.confidence);
-          const sourcesLabel = `${plural(signal.fragment_count, "source")} · ${plural(signal.unique_orgs, "organisation")}`;
-          const needsMore = signal.confidence < 0.60;
-          const moreSources = Math.ceil((0.60 - signal.confidence) / 0.184);
-
-          return (
-            <motion.div
-              key={signal.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: i * 0.03 }}
-              style={{
-                background: "#141414",
-                borderRadius: 14,
-                border: isTop ? "1.5px solid #C5A55A" : "1px solid #252525",
-                marginBottom: 12,
-                overflow: "hidden",
-              }}
-            >
-              {/* Collapsed card */}
-              <div style={{ padding: 16 }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  {/* Type icon */}
-                  <div style={{
-                    width: 36, height: 36, borderRadius: 10,
-                    background: typeStyle.bg,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 16, color: typeStyle.fg, flexShrink: 0,
-                  }}>
-                    {typeStyle.icon}
-                  </div>
-
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Title */}
-                    <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: "0 0 6px", lineHeight: 1.35 }}>
-                      {signal.signal_title}
-                    </p>
-
-                    {/* Summary */}
-                    <p style={{
-                      color: "#666666", fontSize: 13, lineHeight: 1.5, margin: "0 0 10px",
-                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                    }}>
-                      {signal.explanation}
-                    </p>
-
-                    {/* Meta row */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      {/* Confidence pill */}
-                      <span style={{
-                        background: confStyle.bg, color: confStyle.fg,
-                        fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12,
-                      }}>
-                        {confStyle.label}
-                      </span>
-
-                      {/* Source count */}
-                      <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
-
-                      {/* Draft button */}
-                      {signal.confidence >= 0.60 && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDraftData({ title: signal.signal_title, hook: signal.explanation, angle: "Strategic thought leadership", context: signal.strategic_implications }); }}
-                          style={{
-                            marginLeft: "auto", background: "none", border: "none",
-                            color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer",
-                          }}
-                        >
-                          Draft
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Tag pills — max 3 collapsed, all when expanded */}
-                    {signal.theme_tags && signal.theme_tags.length > 0 && (
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
-                        {signal.theme_tags.slice(0, isExpanded ? signal.theme_tags.length : 3).map(tag => (
-                          <span key={tag} style={{ fontSize: 10, color: "#555555", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
-                            {formatTag(tag)}
-                          </span>
-                        ))}
-                        {!isExpanded && signal.theme_tags.length > 3 && (
-                          <span style={{ fontSize: 10, color: "#3a3a3a", background: "#1a1a1a", padding: "2px 8px", borderRadius: 10 }}>
-                            +{signal.theme_tags.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Building nudge */}
-                    {needsMore && (
-                      <p style={{ color: "#C5A55A", fontSize: 11, marginTop: 10, lineHeight: 1.5 }}>
-                        Add {moreSources > 0 ? moreSources : 1} more {moreSources === 1 ? "source" : "sources"} on this topic to unlock drafting.{" "}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onOpenCapture?.(); }}
-                          style={{ color: "#C5A55A", background: "none", border: "none", cursor: "pointer", fontWeight: 600, fontSize: 11 }}
-                        >
-                          Capture now →
-                        </button>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Expand toggle */}
+        {/* ── 4. Signal cards — flat or grouped ── */}
+        {groupByTheme && groupedSignals ? (
+          groupedSignals.map(([theme, themeSignals]) => {
+            const isCollapsed = collapsedGroups.has(theme);
+            return (
+              <div key={theme} style={{ marginBottom: 16 }}>
+                {/* Theme group header */}
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : signal.id)}
+                  onClick={() => toggleGroupCollapse(theme)}
                   style={{
-                    display: "block", width: "100%", textAlign: "center",
-                    color: "#3a3a3a", fontSize: 11, background: "none",
-                    border: "none", cursor: "pointer", marginTop: 12, padding: "4px 0",
+                    display: "flex", alignItems: "center", gap: 8, width: "100%",
+                    background: "none", border: "none", cursor: "pointer",
+                    padding: "8px 0", marginBottom: 4,
                   }}
                 >
-                  {isExpanded ? "▴ collapse signal" : "▾ expand signal"}
+                  {isCollapsed
+                    ? <ChevronRight size={14} style={{ color: "#C5A55A" }} />
+                    : <ChevronDown size={14} style={{ color: "#C5A55A" }} />
+                  }
+                  <span style={{
+                    color: "#C5A55A", fontSize: 11, fontWeight: 700,
+                    letterSpacing: "0.1em", textTransform: "uppercase",
+                  }}>
+                    {formatTag(theme)}
+                  </span>
+                  <span style={{
+                    background: "rgba(197, 165, 90, 0.15)", color: "#C5A55A",
+                    fontSize: 10, fontWeight: 600, borderRadius: 10,
+                    padding: "1px 7px", marginLeft: 2,
+                  }}>
+                    {themeSignals.length}
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: "#252525", marginLeft: 8 }} />
                 </button>
-              </div>
 
-              {/* ── 5. Expanded detail ── */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <ExpandedDetail
-                    signal={signal}
-                    onOpenChat={onOpenChat}
-                    onArchive={handleArchive}
-                    onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
-                    onLove={handleLove}
-                    onNotForMe={handleNotForMe}
-                  />
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
+                {/* Group signals */}
+                {!isCollapsed && themeSignals.map((signal, i) => renderSignalCard(signal, i))}
+              </div>
+            );
+          })
+        ) : (
+          visible.map((signal, i) => renderSignalCard(signal, i))
+        )}
       </div>
 
       {/* Draft panel */}
