@@ -883,6 +883,7 @@ const AnalyzeTab = () => {
     topFormat: string;
     tones: Array<{ tone: string; count: number }>;
   } | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -891,31 +892,57 @@ const AnalyzeTab = () => {
 
   const loadAnalytics = async () => {
     try {
-      const [postsRes, snapshotRes] = await Promise.all([
-        supabase.from("linkedin_posts").select("theme, tone, format_type, engagement_score").neq("tracking_status", "rejected").order("published_at", { ascending: false }).limit(100),
-        supabase.from("influence_snapshots").select("followers, engagement_rate, top_topic, top_format, authority_themes").order("snapshot_date", { ascending: false }).limit(1),
-      ]);
+      const { data: allPosts } = await supabase
+        .from("linkedin_posts")
+        .select("theme, tone, format_type, engagement_score, like_count, comment_count, repost_count, source_type, tracking_status")
+        .neq("tracking_status", "rejected")
+        .order("published_at", { ascending: false })
+        .limit(200);
 
-      const posts = postsRes.data || [];
-      const snapshot = snapshotRes.data?.[0];
+      const rows = allPosts || [];
+      setPosts(rows);
 
+      // External posts = synced from LinkedIn
+      const externalPosts = rows.filter((p: any) => p.source_type === "external_reference");
+      // Aura drafts
+      const auraDrafts = rows.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "draft");
+      // Aura published with real engagement
+      const auraPublishedWithData = rows.filter(
+        (p: any) => p.source_type === "aura_generated" && p.tracking_status === "published" && p.like_count != null && p.like_count > 0
+      );
+
+      // Summary cards use external posts only
       const themeCounts: Record<string, number> = {};
       const toneCounts: Record<string, number> = {};
-      posts.forEach((p: any) => {
+      externalPosts.forEach((p: any) => {
         if (p.theme) themeCounts[p.theme] = (themeCounts[p.theme] || 0) + 1;
         if (p.tone) toneCounts[p.tone] = (toneCounts[p.tone] || 0) + 1;
       });
-      const topTheme = Object.entries(themeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || snapshot?.top_topic || "—";
+      const topTheme = Object.entries(themeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
       const tones = Object.entries(toneCounts).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([tone, count]) => ({ tone, count }));
-      const avgEng = posts.length > 0
-        ? posts.reduce((sum: number, p: any) => sum + (Number(p.engagement_score) || 0), 0) / posts.length
-        : Number(snapshot?.engagement_rate) || 0;
+
+      // Avg engagement from external posts only
+      const avgEng = externalPosts.length > 0
+        ? externalPosts.reduce((sum: number, p: any) => sum + (Number(p.engagement_score) || 0), 0) / externalPosts.length
+        : 0;
+
+      // Top format = most common format_type among top 25% external posts by engagement
+      let topFormat = "—";
+      if (externalPosts.length > 0) {
+        const sorted = [...externalPosts].sort((a: any, b: any) => (Number(b.engagement_score) || 0) - (Number(a.engagement_score) || 0));
+        const top25 = sorted.slice(0, Math.max(1, Math.ceil(sorted.length * 0.25)));
+        const fmtCounts: Record<string, number> = {};
+        top25.forEach((p: any) => {
+          if (p.format_type) fmtCounts[p.format_type] = (fmtCounts[p.format_type] || 0) + 1;
+        });
+        topFormat = Object.entries(fmtCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+      }
 
       setStats({
-        postCount: posts.length,
+        postCount: externalPosts.length,
         topTheme,
         avgEngagement: Math.round(avgEng * 10) / 10,
-        topFormat: snapshot?.top_format || "—",
+        topFormat,
         tones,
       });
     } catch (err) {
@@ -937,6 +964,11 @@ const AnalyzeTab = () => {
       </div>
     );
   }
+
+  // Separate posts for detailed view
+  const externalPosts = posts.filter((p: any) => p.source_type === "external_reference");
+  const auraDrafts = posts.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "draft");
+  const auraPublished = posts.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "published");
 
   return (
     <div className="space-y-6">
@@ -985,6 +1017,23 @@ const AnalyzeTab = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Aura drafts notice */}
+      {auraDrafts.length > 0 && (
+        <div className="glass-card rounded-2xl p-5 border border-border/8">
+          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3 text-muted-foreground/60">Aura Drafts ({auraDrafts.length})</p>
+          <div className="space-y-2">
+            {auraDrafts.slice(0, 5).map((p: any) => (
+              <div key={p.theme + p.tone + Math.random()} className="flex items-center justify-between py-1.5">
+                <span className="text-sm text-foreground/70 truncate flex-1">{p.theme || p.format_type || "Untitled"}</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted/20 text-muted-foreground border border-border/15 shrink-0 ml-2">
+                  Not published yet
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
