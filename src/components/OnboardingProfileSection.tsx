@@ -327,7 +327,28 @@ const OnboardingProfileSection = () => {
         </div>
       </div>
 
-      {/* Section 2: Assessment History */}
+      {/* Section 2: Brand Positioning */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Brand positioning</h2>
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            className="text-[11px] flex items-center gap-1"
+            style={{ color: "#666" }}
+          >
+            <RefreshCw className={`w-3 h-3 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
+          </button>
+        </div>
+        <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
+          <p className="text-[10px] uppercase tracking-wider" style={{ color: "#666" }}>What Aura recommends you stand for</p>
+          <p className="text-sm leading-relaxed" style={{ color: regenerating ? "#666" : "#f0f0f0", fontStyle: regenerating ? "italic" : "normal" }}>
+            {brandSummary}
+          </p>
+        </div>
+      </div>
+
+      {/* Section 3: Assessment History */}
       <div className="space-y-3">
         <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Assessment history</h2>
         <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
@@ -375,27 +396,6 @@ const OnboardingProfileSection = () => {
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Section 3: Brand Positioning */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Brand positioning</h2>
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating}
-            className="text-[11px] flex items-center gap-1"
-            style={{ color: "#666" }}
-          >
-            <RefreshCw className={`w-3 h-3 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
-          </button>
-        </div>
-        <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
-          <p className="text-[10px] uppercase tracking-wider" style={{ color: "#666" }}>What Aura recommends you stand for</p>
-          <p className="text-sm leading-relaxed" style={{ color: regenerating ? "#666" : "#f0f0f0", fontStyle: regenerating ? "italic" : "normal" }}>
-            {brandSummary}
-          </p>
         </div>
       </div>
 

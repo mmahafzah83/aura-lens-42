@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Brain, RefreshCw, Loader2, Sparkles, Target, Globe, Lightbulb, Users, Star, Compass, Layers, Edit2, Save, X } from "lucide-react";
+import { Brain, RefreshCw, Loader2, Sparkles, Target, Globe, Lightbulb, Users, Star, Compass, Layers, Edit2, Save, X, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +54,11 @@ const SECTION_CONFIG = [
 
 type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
 
-const ProfileIntelligence = () => {
+interface ProfileIntelligenceProps {
+  onGenerateContent?: (topic: string) => void;
+}
+
+const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) => {
   const [identity, setIdentity] = useState<IdentityModel>(EMPTY_IDENTITY);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -274,8 +278,21 @@ const ProfileIntelligence = () => {
               <div className="space-y-2">
                 {identity.authority_themes.map((at, i) => (
                   <div key={i} className="p-4 rounded-xl bg-secondary/30 border border-border/10">
-                    <h5 className="text-sm font-medium text-foreground">{at.theme}</h5>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{at.rationale}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <h5 className="text-sm font-medium text-foreground">{at.theme}</h5>
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{at.rationale}</p>
+                      </div>
+                      {onGenerateContent && (
+                        <button
+                          onClick={() => onGenerateContent(at.theme)}
+                          className="text-[11px] font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
+                          style={{ color: "#C5A55A" }}
+                        >
+                          Generate content <ArrowRight className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
