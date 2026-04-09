@@ -867,6 +867,7 @@ interface SavedPost {
   tracking_status: string;
   topic_label: string | null;
   created_at: string;
+  source_metadata: any;
 }
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
