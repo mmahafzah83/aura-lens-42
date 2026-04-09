@@ -48,8 +48,10 @@ const Dashboard = () => {
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && NAV_ITEMS.some(n => n.value === tabParam)) {
-      setActiveTab(tabParam as TabValue);
+    // Redirect old "strategy" tab to "intelligence"
+    const resolvedTab = tabParam === "strategy" ? "intelligence" : tabParam;
+    if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
+      setActiveTab(resolvedTab as TabValue);
     }
   }, []);
 
