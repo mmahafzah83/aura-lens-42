@@ -1154,11 +1154,17 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
 const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
+  const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
 
   useEffect(() => {
     supabase.from("diagnostic_profiles").select("brand_assessment_completed_at").limit(1).maybeSingle()
       .then(({ data }) => setBrandDone(!!data?.brand_assessment_completed_at));
   }, []);
+
+  const handleGenerateFromPlan = (prefill: PlanPrefill) => {
+    setPlanPrefill({ ...prefill }); // new ref to trigger useEffect
+    setActiveTab("create");
+  };
 
   return (
     <div className="space-y-8">
@@ -1208,8 +1214,8 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
       </div>
 
       {/* Tab Content */}
-      {activeTab === "create" && <CreateTab />}
-      {activeTab === "plan" && <PlanTab />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} />}
+      {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "analyze" && <AnalyzeTab />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
     </div>
