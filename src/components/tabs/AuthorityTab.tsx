@@ -57,6 +57,8 @@ const CreateTab = () => {
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
+  const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
+  const [voiceWords, setVoiceWords] = useState<string[]>([]);
 
   // AI suggestions
   const [signals, setSignals] = useState<SignalSuggestion[]>([]);
@@ -68,18 +70,39 @@ const CreateTab = () => {
       supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence")
         .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
       supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
-    ]).then(([sRes, fRes]) => {
+      supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts").limit(1).single(),
+    ]).then(([sRes, fRes, vRes]) => {
       setSignals((sRes.data || []) as any);
       setFrameworks((fRes.data || []) as any);
       setSuggestionsLoading(false);
+      // Extract words from voice profile for matching
+      if (vRes.data) {
+        const words: string[] = [];
+        const vp = vRes.data.vocabulary_preferences;
+        if (vp && typeof vp === "object") {
+          Object.values(vp).forEach((v: any) => {
+            if (typeof v === "string" && v.trim()) words.push(...v.toLowerCase().split(/\s+/));
+            if (Array.isArray(v)) v.forEach((s: any) => { if (typeof s === "string" && s.trim()) words.push(...s.toLowerCase().split(/\s+/)); });
+          });
+        }
+        const ep = vRes.data.example_posts;
+        if (Array.isArray(ep)) {
+          ep.forEach((p: any) => {
+            const text = typeof p === "string" ? p : p?.content || p?.text || "";
+            if (text) words.push(...text.toLowerCase().split(/\s+/).filter((w: string) => w.length > 4).slice(0, 20));
+          });
+        }
+        setVoiceWords(Array.from(new Set(words.filter(w => w.length > 3))));
+      }
     });
   }, []);
 
-  const selectSuggestion = (t: string, ctx: string, format: ContentType) => {
+  const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string) => {
     setTopic(t);
     setContext(ctx);
     setContentType(format);
     setOutput("");
+    setSelectedSignalTitle(signalTitle || null);
   };
 
   const generate = async () => {
@@ -215,6 +238,57 @@ const CreateTab = () => {
               {output}
               {generating && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
             </div>
+            {/* Quality Indicator Bar */}
+            {!generating && (
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-secondary/10">
+                {(() => {
+                  const lowerOutput = output.toLowerCase();
+                  const hasVoiceMatch = voiceWords.length > 0 && voiceWords.some(w => lowerOutput.includes(w));
+                  const lines = output.split(/\n/).filter(l => l.trim());
+                  const firstSentence = lines[0]?.split(/[.!?]/)[0] || "";
+                  const hookOk = firstSentence.split(/\s+/).length <= 20;
+                  const bodyOk = lines.length > 3;
+                  const lastLine = (lines[lines.length - 1] || "").trim();
+                  const closingOk = /[?]/.test(lastLine) || /\b(comment|share|follow|reach out|let['']?s|DM|subscribe|tag|try|start|join)\b/i.test(lastLine);
+                  const structureOk = hookOk && bodyOk && closingOk;
+
+                  const indicators = [
+                    {
+                      pass: hasVoiceMatch,
+                      passLabel: "Voice match",
+                      warnLabel: "Add voice samples",
+                      icon: <Mic className="w-3 h-3" />,
+                    },
+                    {
+                      pass: !!selectedSignalTitle,
+                      passLabel: selectedSignalTitle ? (selectedSignalTitle.length > 30 ? selectedSignalTitle.slice(0, 30) + "…" : selectedSignalTitle) : "",
+                      warnLabel: "No signal selected",
+                      icon: <Zap className="w-3 h-3" />,
+                    },
+                    {
+                      pass: structureOk,
+                      passLabel: "Strong structure",
+                      warnLabel: "Review structure",
+                      icon: <Layers className="w-3 h-3" />,
+                    },
+                  ];
+
+                  return indicators.map((ind, i) => (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ${
+                        ind.pass
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          : "bg-muted/40 text-muted-foreground/60"
+                      }`}
+                    >
+                      {ind.icon}
+                      {ind.pass ? ind.passLabel : ind.warnLabel}
+                    </span>
+                  ));
+                })()}
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -237,7 +311,7 @@ const CreateTab = () => {
                 <div className="space-y-2">
                   <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Signals</p>
                   {signals.map(s => (
-                    <button key={s.id} onClick={() => selectSuggestion(s.content_opportunity?.title || s.signal_title, s.explanation, "post")} className="w-full text-left p-3 rounded-xl bg-card/60 border border-border/8 hover:border-primary/15 transition-all">
+                    <button key={s.id} onClick={() => selectSuggestion(s.content_opportunity?.title || s.signal_title, s.explanation, "post", s.signal_title)} className="w-full text-left p-3 rounded-xl bg-card/60 border border-border/8 hover:border-primary/15 transition-all">
                       <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2">{s.content_opportunity?.title || s.signal_title}</p>
                       <span className="text-[10px] text-muted-foreground/50 mt-1 block">{Math.round(s.confidence * 100)}% confidence</span>
                     </button>
