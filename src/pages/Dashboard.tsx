@@ -333,7 +333,7 @@ const Dashboard = () => {
               <h2
                 className="text-sm font-medium text-muted-foreground tracking-wide uppercase"
               >
-                {NAV_ITEMS.find(n => n.value === activeTab)?.label}
+                {NAV_ITEMS.find(n => n.value === activeTab)?.pageHeader}
               </h2>
             </div>
             <div className="flex items-center gap-3">
