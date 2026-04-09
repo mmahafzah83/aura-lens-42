@@ -443,7 +443,15 @@ interface NarrativeSuggestion {
   created_at: string;
 }
 
-const PlanTab = () => {
+const FORMAT_TO_CONTENT_TYPE: Record<string, ContentType> = {
+  post: "post",
+  carousel: "carousel",
+  essay: "essay",
+  framework_summary: "framework_summary",
+  framework: "framework_summary",
+};
+
+const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPrefill) => void }) => {
   const [suggestions, setSuggestions] = useState<NarrativeSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
