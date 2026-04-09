@@ -1218,6 +1218,196 @@ const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
   essay: { label: "Essay", cls: "bg-muted/30 text-muted-foreground border-border/20" },
 };
 
+/* ── Library Card with Performance Logger ── */
+const LibraryCard = ({
+  post: p,
+  badge,
+  isDraft,
+  isPublished,
+  copiedId,
+  onCopy,
+  onMarkPublished,
+  onDelete,
+}: {
+  post: SavedPost;
+  badge: { label: string; cls: string };
+  isDraft: boolean;
+  isPublished: boolean;
+  copiedId: string | null;
+  onCopy: (id: string, text: string) => void;
+  onMarkPublished: (id: string) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const [metricsOpen, setMetricsOpen] = useState(false);
+  const [impressions, setImpressions] = useState("");
+  const [reactions, setReactions] = useState("");
+  const [comments, setComments] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const saveMetrics = async () => {
+    const imp = parseInt(impressions) || 0;
+    const react = parseInt(reactions) || 0;
+    const comm = parseInt(comments) || 0;
+    const engScore = imp > 0 ? Math.round(((react + comm * 2) / imp) * 100 * 100) / 100 : 0;
+
+    setSaving(true);
+    const { error } = await supabase
+      .from("linkedin_posts")
+      .update({
+        like_count: react,
+        comment_count: comm,
+        engagement_score: engScore,
+      })
+      .eq("id", p.id);
+    setSaving(false);
+
+    if (error) {
+      toast.error("Failed to save metrics");
+      return;
+    }
+    toast.success("Metrics saved. Aura is learning.");
+    setMetricsOpen(false);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
+    >
+      <div className="flex items-start gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+            {p.title || "Untitled"}
+          </p>
+          {p.topic_label && (
+            <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
+          )}
+          {p.source_metadata?.from_plan && (
+            <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
+            {badge.label}
+          </span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+            isDraft
+              ? "bg-muted/20 text-muted-foreground border-border/15"
+              : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+          }`}>
+            {isDraft ? "Draft" : "Published"}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mt-3">
+        <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+        <div className="flex-1" />
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-xs gap-1.5"
+          onClick={() => p.post_text && onCopy(p.id, p.post_text)}
+          disabled={!p.post_text}
+        >
+          {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          {copiedId === p.id ? "Copied" : "Copy"}
+        </Button>
+        {isDraft && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1.5 border-border/15"
+            onClick={() => onMarkPublished(p.id)}
+          >
+            <Check className="w-3 h-3" /> Mark as published
+          </Button>
+        )}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(p.id)}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+
+      {/* Performance logger for published posts */}
+      {isPublished && (
+        <div className="mt-3 pt-3 border-t border-border/8">
+          {!metricsOpen ? (
+            <button
+              onClick={() => setMetricsOpen(true)}
+              className="text-xs text-primary/70 hover:text-primary transition-colors font-medium"
+            >
+              Log performance →
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Impressions</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={impressions}
+                    onChange={e => setImpressions(e.target.value)}
+                    className="h-7 text-xs bg-secondary/20 border-border/10"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Reactions</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={reactions}
+                    onChange={e => setReactions(e.target.value)}
+                    className="h-7 text-xs bg-secondary/20 border-border/10"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground block mb-1">Comments</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={comments}
+                    onChange={e => setComments(e.target.value)}
+                    className="h-7 text-xs bg-secondary/20 border-border/10"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="h-7 text-xs gap-1.5"
+                  onClick={saveMetrics}
+                  disabled={saving}
+                >
+                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                  Save metrics
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => setMetricsOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
 const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [posts, setPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1399,72 +1589,19 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
             ) : filtered.map(p => {
         const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
         const isDraft = p.tracking_status === "draft";
+        const isPublished = p.tracking_status === "published";
         return (
-          <motion.div
+          <LibraryCard
             key={p.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
-          >
-            <div className="flex items-start gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
-                  {p.title || "Untitled"}
-                </p>
-                {p.topic_label && (
-                  <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
-                )}
-                {p.source_metadata?.from_plan && (
-                  <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
-                  {badge.label}
-                </span>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                  isDraft
-                    ? "bg-muted/20 text-muted-foreground border-border/15"
-                    : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-                }`}>
-                  {isDraft ? "Draft" : "Published"}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
-              <div className="flex-1" />
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs gap-1.5"
-                onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
-                disabled={!p.post_text}
-              >
-                {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {copiedId === p.id ? "Copied" : "Copy"}
-              </Button>
-              {isDraft && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs gap-1.5 border-border/15"
-                  onClick={() => markPublished(p.id)}
-                >
-                  <Check className="w-3 h-3" /> Mark as published
-                </Button>
-              )}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => setPendingDeleteId(p.id)}
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          </motion.div>
+            post={p}
+            badge={badge}
+            isDraft={isDraft}
+            isPublished={isPublished}
+            copiedId={copiedId}
+            onCopy={handleCopy}
+            onMarkPublished={markPublished}
+            onDelete={setPendingDeleteId}
+          />
         );
       })}
           </>
@@ -1509,8 +1646,8 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
     <div className="space-y-8">
       <PageHeader
         icon={Crown}
-        title="Authority"
-        question="What should you publish to strengthen your authority?"
+        title="Content Studio"
+        question="Create, plan, analyze, and publish your authority content."
         processLogic="Signal → Insight → Framework → Content → Audience"
       />
 

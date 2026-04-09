@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { value: "identity", label: "Identity", icon: User },
   { value: "intelligence", label: "Intelligence", icon: Shield },
   { value: "strategy", label: "Strategy", icon: Lightbulb },
-  { value: "authority", label: "Authority", icon: Crown },
+  { value: "authority", label: "Publish", icon: Crown },
   { value: "influence", label: "Influence", icon: TrendingUp },
 ] as const;
 
