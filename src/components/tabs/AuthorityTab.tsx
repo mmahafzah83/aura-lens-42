@@ -97,11 +97,12 @@ const CreateTab = () => {
     });
   }, []);
 
-  const selectSuggestion = (t: string, ctx: string, format: ContentType) => {
+  const selectSuggestion = (t: string, ctx: string, format: ContentType, signalTitle?: string) => {
     setTopic(t);
     setContext(ctx);
     setContentType(format);
     setOutput("");
+    setSelectedSignalTitle(signalTitle || null);
   };
 
   const generate = async () => {
