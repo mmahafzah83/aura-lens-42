@@ -178,6 +178,16 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
   }, []);
 
   // Parse interpretation into sections for styled rendering
+  const HEADER_RENAMES: Record<string, string> = {
+    "YOUR ZONE OF GENIUS": "WHAT I DO BEST",
+    "YOUR BLUE OCEAN ANGLE": "MY UNCONTESTED SPACE",
+    "YOUR PROFESSIONAL IKIGAI": "WHY THIS WORK MATTERS TO ME",
+    "YOUR TOP 3 CONTENT PILLARS": "MY 3 AUTHORITY THEMES",
+    "YOUR 2 BLIND SPOTS": "WHERE I NEED TO GROW",
+  };
+
+  const renameHeader = (header: string) => HEADER_RENAMES[header] || header;
+
   const renderInterpretation = (text: string) => {
     // Split by known section headers (ALL CAPS lines)
     const sectionRegex = /^(YOUR [A-Z0-9\s&']+(?:DOMAIN|GENIUS|ANGLE|IKIGAI|PILLARS|SPOTS|CONTENT PILLARS|BLIND SPOTS|BLUE OCEAN ANGLE|DOMINANT GALLUP DOMAIN|ZONE OF GENIUS|PROFESSIONAL IKIGAI|TOP 3 CONTENT PILLARS|2 BLIND SPOTS))$/gm;
@@ -219,7 +229,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
 
     return sections.map((s, i) => (
       <div key={i}>
-        {s.header && <SectionHeader first={i === 0}>{s.header}</SectionHeader>}
+        {s.header && <SectionHeader first={i === 0}>{renameHeader(s.header)}</SectionHeader>}
         <ReactMarkdown
           components={{
             p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
