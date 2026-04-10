@@ -604,14 +604,30 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     }
   }, [signals, searchParams]);
 
+  const [profileAnchors, setProfileAnchors] = useState<{
+    sectorFocus: string | null;
+    corePractice: string | null;
+    northStarGoal: string | null;
+    brandPillars: string[];
+  }>({ sectorFocus: null, corePractice: null, northStarGoal: null, brandPillars: [] });
+
   const loadSignals = useCallback(async () => {
     setLoading(true);
-    const [signalsRes, entriesRes] = await Promise.all([
+    const [signalsRes, entriesRes, profileRes] = await Promise.all([
       supabase.from("strategic_signals").select("*").eq("status", "active").order("priority_score", { ascending: false }).limit(20),
       supabase.from("entries").select("id", { count: "exact", head: true }),
+      supabase.from("diagnostic_profiles").select("sector_focus, core_practice, north_star_goal, brand_pillars").limit(1).maybeSingle(),
     ]);
     setSignals((signalsRes.data || []) as unknown as Signal[]);
     setEntryCount(entriesRes.count || 0);
+    if (profileRes.data) {
+      setProfileAnchors({
+        sectorFocus: profileRes.data.sector_focus,
+        corePractice: profileRes.data.core_practice,
+        northStarGoal: profileRes.data.north_star_goal,
+        brandPillars: (profileRes.data.brand_pillars as string[]) || [],
+      });
+    }
     setLoading(false);
   }, []);
 
