@@ -40,7 +40,7 @@ function tagOverlapCount(a: string[], b: string[]): number {
 function titleSharesCoreTopic(newTitle: string, existingTitle: string): boolean {
   const newKw = keywords(newTitle);
   const exKw = new Set(keywords(existingTitle));
-  return newKw.filter(k => exKw.has(k)).length >= 1;
+  return newKw.filter(k => exKw.has(k)).length >= 2;
 }
 
 function extractDomain(text: string): string | null {
@@ -95,11 +95,11 @@ async function countUniqueOrgs(
   if (evidenceEntryIds.length > 0) {
     const { data: entries } = await admin
       .from("entries")
-      .select("content")
+      .select("content, image_url")
       .in("id", evidenceEntryIds);
 
     (entries || []).forEach((e: any) => {
-      const d = extractDomain(e.content || "");
+      const d = extractDomain(e.image_url || "") || extractDomain(e.content || "");
       if (d) domains.add(d);
     });
   }
@@ -220,7 +220,7 @@ Given an entry and user context, classify it and return valid JSON with these ex
   "summary": "2 sentences, plain language",
   "type": "market_trend|skill_gap|competitor_move|career_opportunity|content_gap",
   "theme_tags": ["3 to 5 short topic strings"],
-  "ai_base_confidence": 0.0 to 1.0,
+  "ai_base_confidence": 0.0 to 1.0 (be strict: 0.9+ = direct evidence with named sources, 0.7-0.89 = strong thematic match to user's industry, 0.5-0.69 = tangentially related, 0.3-0.49 = weak or generic connection, below 0.3 = barely relevant),
   "what_it_means_for_you": "one sentence connecting this signal to the user's career target and industry, personalised"
 }
 
