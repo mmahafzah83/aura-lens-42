@@ -763,10 +763,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   const GROUP_ORDER = ["industry", "edge", "trajectory", "horizon"] as const;
 
   const groupLabels = useMemo(() => ({
-    industry: profileAnchors.sectorFocus || "Industry Signals",
-    edge: profileAnchors.corePractice || "Expertise Signals",
-    trajectory: profileAnchors.northStarGoal || "Growth Signals",
-    horizon: "Horizon Watch",
+    industry: profileAnchors.sectorFocus ? `My industry · ${profileAnchors.sectorFocus}` : "My industry",
+    edge: profileAnchors.corePractice ? `My expertise · ${profileAnchors.corePractice}` : "My expertise",
+    trajectory: profileAnchors.northStarGoal ? `My ambition · ${profileAnchors.northStarGoal}` : "My ambition",
+    horizon: "Wider landscape",
   }), [profileAnchors]);
 
   const groupedSignals = useMemo(() => {
