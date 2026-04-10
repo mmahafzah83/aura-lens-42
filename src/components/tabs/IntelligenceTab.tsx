@@ -483,7 +483,7 @@ const InsightsSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
         />
       )}
       {draftData && (
-        <LinkedInDraftPanel title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
+        <ContentStudio title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
       )}
     </div>
   );
@@ -576,7 +576,7 @@ const FrameworksSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void 
         />
       )}
       {draftData && (
-        <LinkedInDraftPanel title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
+        <ContentStudio title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
       )}
     </div>
   );
