@@ -202,6 +202,56 @@ export type Database = {
           },
         ]
       }
+      content_items: {
+        Row: {
+          body: string
+          created_at: string
+          generation_params: Json
+          id: string
+          language: string
+          signal_id: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          generation_params?: Json
+          id?: string
+          language?: string
+          signal_id?: string | null
+          status?: string
+          title?: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          generation_params?: Json
+          id?: string
+          language?: string
+          signal_id?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_topics: {
         Row: {
           avg_engagement: number
