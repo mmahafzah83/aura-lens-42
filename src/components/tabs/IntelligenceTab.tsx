@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import ContentPreviewModal from "@/components/ContentPreviewModal";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import SignalExplorer from "@/components/SignalExplorer";
 import SignalGraph from "@/components/SignalGraph";
@@ -601,6 +602,36 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   
   const [detecting, setDetecting] = useState(false);
   const [_graphOpen, _setGraphOpen] = useState(false);
+  const [generatingContent, setGeneratingContent] = useState(false);
+  const [previewItem, setPreviewItem] = useState<{ id: string; title: string; body: string; type: string; status: string } | null>(null);
+
+  const handleGenerateContent = async (signal: Signal) => {
+    setGeneratingContent(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const { data, error } = await supabase.functions.invoke("generate-content", {
+        body: { signal_id: signal.id, content_type: "linkedin_post" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.content_item) {
+        setPreviewItem({
+          id: data.content_item.id,
+          title: data.content_item.title,
+          body: data.content_item.body,
+          type: data.content_item.type,
+          status: data.content_item.status,
+        });
+        toast.success("Content generated");
+      }
+    } catch (err: any) {
+      console.error("Content generation failed:", err);
+      toast.error(err.message || "Content generation failed");
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
 
   useEffect(() => {
     const signalParam = searchParams.get("signal");
@@ -863,7 +894,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                 <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
                 {signal.confidence >= 0.60 && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setDraftData({ title: signal.signal_title, hook: signal.explanation, angle: "Strategic thought leadership", context: signal.strategic_implications }); }}
+                    onClick={(e) => { e.stopPropagation(); handleGenerateContent(signal); }}
                     style={{ marginLeft: "auto", background: "none", border: "none", color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                   >Draft</button>
                 )}
@@ -903,7 +934,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
               signal={signal}
               onOpenChat={onOpenChat}
               onArchive={handleArchive}
-              onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
+              onDraft={(s) => handleGenerateContent(s)}
               onLove={handleLove}
               onNotForMe={handleNotForMe}
             />
@@ -1098,6 +1129,20 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
 
       {/* Draft panel */}
       <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
+
+      {/* Content preview modal */}
+      <ContentPreviewModal open={!!previewItem} onClose={() => setPreviewItem(null)} contentItem={previewItem} />
+
+      {/* Generating overlay */}
+      {generatingContent && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#111", borderRadius: 16, padding: "32px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, border: "1px solid #2a2a2a" }}>
+            <Loader2 size={24} className="animate-spin" style={{ color: "#C5A55A" }} />
+            <span style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 500 }}>Generating content…</span>
+            <span style={{ color: "#888", fontSize: 12 }}>This may take a few seconds</span>
+          </div>
+        </div>
+      )}
 
     </div>
   );
