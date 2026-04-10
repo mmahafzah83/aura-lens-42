@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import ContentPreviewModal from "@/components/ContentPreviewModal";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import SignalExplorer from "@/components/SignalExplorer";
 import SignalGraph from "@/components/SignalGraph";
