@@ -1,18 +1,38 @@
 
 
-## Plan: Remove Graph Sub-Tab from Intelligence Page
+## Plan: Hybrid Smart Signal Grouping (4 Groups)
 
-### File: `src/components/tabs/IntelligenceTab.tsx`
+### Concept
+Replace the current naive "first theme_tag" grouping with 4 intelligent categories derived from the user's profile foundations. Each signal gets classified into exactly one group using keyword matching against profile data.
 
-1. **Remove "graph" from `SubTab` type** (line 146) — change to `"signals" | "insights" | "frameworks" | "sources"`
+### The 4 Groups
 
-2. **Remove graph entry from `SUB_TABS` array** (line 852) — delete `{ value: "graph", label: "Graph" }`
+| Group | Source Data | Fallback Label |
+|-------|-----------|----------------|
+| **My Industry** | `sector_focus` keywords | "Industry Signals" |
+| **My Edge** | `core_practice` + `brand_pillars` keywords | "Expertise Signals" |
+| **My Trajectory** | `north_star_goal` + career/opportunity tags | "Growth Signals" |
+| **Horizon Watch** | Everything that doesn't match above | "Emerging Signals" |
 
-3. **Remove graph-specific click handling** in the tab button `onClick` (lines 926-928) — remove the `if (tab.value === "graph")` branch
+Group names adapt dynamically. E.g. if `sector_focus = "Water Utilities"`, the header reads **"Water Utilities"** instead of a generic label.
 
-4. **Remove `graphOpen` state** (line 591) and the `<SignalGraph>` component render (lines 1038-1039)
+### Changes
 
-5. **Remove `SignalGraph` import** (line 14)
+**File: `src/components/tabs/IntelligenceTab.tsx`**
 
-Everything else (Signals, Insights, Frameworks, Sources tabs, pipeline bar, Recommended Move card, sidebar) stays untouched.
+1. **Fetch profile data** — add `diagnostic_profiles` query (sector_focus, core_practice, north_star_goal, brand_pillars) alongside the existing signals fetch in `loadSignals`.
+
+2. **Build keyword matchers** — normalize profile fields into keyword sets for each of the 3 anchored groups (industry, edge, trajectory).
+
+3. **Replace `groupedSignals` logic** — instead of grouping by `theme_tags[0]`, classify each signal by scanning its `theme_tags`, `signal_title`, and `explanation` against the 3 keyword sets. First match wins (priority: Industry > Edge > Trajectory). No match = Horizon Watch.
+
+4. **Update group headers** — use personalized labels from profile data (e.g. the sector name) with fallbacks. Display order is fixed: My Industry, My Edge, My Trajectory, Horizon Watch.
+
+5. **Filter chips stay unchanged** — the horizontal tag filter still works on raw theme_tags. Only the "Group by theme" toggle uses the new smart grouping.
+
+### What stays the same
+- Signal cards, sorting, search, archive, expand/collapse
+- Filter chips (raw theme_tags)
+- No database changes, no new Edge Functions
+- No changes to other tabs or components
 
