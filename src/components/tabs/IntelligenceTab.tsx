@@ -13,6 +13,7 @@ import FrameworkBuilder from "@/components/FrameworkBuilder";
 import SignalExplorer from "@/components/SignalExplorer";
 import SignalGraph from "@/components/SignalGraph";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
+import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import { InsightActions, FrameworkActions } from "@/components/ui/action-buttons";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
@@ -142,7 +143,7 @@ function isNew(updatedAt: string): boolean {
 }
 
 type SortOption = "confidence" | "recent" | "sources";
-type SubTab = "signals" | "insights" | "frameworks" | "graph";
+type SubTab = "signals" | "insights" | "frameworks" | "sources" | "graph";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
@@ -847,6 +848,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     { value: "signals", label: "Signals" },
     { value: "insights", label: "Insights" },
     { value: "frameworks", label: "Frameworks" },
+    { value: "sources", label: "Sources" },
     { value: "graph", label: "Graph" },
   ];
 
@@ -1019,6 +1021,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
 
         {activeSubTab === "insights" && <InsightsSubTab onOpenChat={onOpenChat} />}
         {activeSubTab === "frameworks" && <FrameworksSubTab onOpenChat={onOpenChat} />}
+        {activeSubTab === "sources" && (
+          <SourcesSubTab
+            onOpenCapture={onOpenCapture}
+            onSwitchToSignal={(signalId) => {
+              setActiveSubTab("signals");
+              setExpandedId(signalId);
+            }}
+          />
+        )}
       </div>
 
       {/* Draft panel */}
