@@ -78,6 +78,19 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
     document.body,
   );
 
+/* ── Open entry in new tab helper ── */
+
+function openEntryInNewTab(entry: SourceEntry) {
+  const url = entry.image_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null);
+  if (url) {
+    window.open(url, "_blank", "noopener");
+  } else {
+    // For notes/voice without a URL, open content as a text blob
+    const blob = new Blob([`${entry.title || "Source"}\n\n${entry.content}`], { type: "text/plain" });
+    window.open(URL.createObjectURL(blob), "_blank");
+  }
+}
+
 /* ── Expanded Source View ── */
 
 const ExpandedSource = ({
@@ -224,7 +237,10 @@ const ExpandedSource = ({
           </div>
 
           {/* Actions */}
-          <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+            <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #C5A55A", background: "transparent", color: "#C5A55A", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <ExternalLink size={14} /> Open
+            </button>
             <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "#C5A55A", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
               {detecting ? <Loader2 className="w-4 h-4 animate-spin" style={{ display: "inline" }} /> : <Zap size={14} style={{ display: "inline", marginRight: 4 }} />}
               Detect Signal
@@ -444,6 +460,16 @@ const SourcesSubTab = ({
 
             return (
               <div key={entry.id} style={{ background: "#141414", borderRadius: 14, border: "1px solid #252525", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
+                {/* Open button */}
+                <button
+                  onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
+                  title="Open in new tab"
+                  style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  className="text-[#555] hover:text-[#C5A55A] transition-colors"
+                >
+                  <ExternalLink size={14} />
+                </button>
+
                 {/* Pin button */}
                 <button
                   onClick={e => { e.stopPropagation(); togglePin(entry); }}
