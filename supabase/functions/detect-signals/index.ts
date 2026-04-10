@@ -368,6 +368,32 @@ ${identityCtx}`;
       if (insErr) throw new Error(`Insert: ${insErr.message}`);
       primarySignalId = row.id;
       isNew = true;
+
+      // Write evidence fragment for new signal
+      try {
+        const { data: srcReg } = await admin.from("source_registry").upsert({
+          user_id,
+          source_id: primarySignalId,
+          source_type: "strategic_signal",
+          title: newTitle,
+          processed: true,
+          processed_at: now,
+        }, { onConflict: "source_id,source_type,user_id" }).select("id").single();
+
+        if (srcReg) {
+          await admin.from("evidence_fragments").insert({
+            user_id,
+            source_registry_id: srcReg.id,
+            fragment_type: "signal_evidence",
+            title: entry.title || "Supporting evidence",
+            content: (entry.content || "").slice(0, 2000),
+            tags: newTags,
+            skill_pillars: [],
+          });
+        }
+      } catch (fragErr) {
+        console.error("evidence_fragments write (new signal) skipped:", fragErr);
+      }
       touchedSignalIds.add(primarySignalId);
     }
 
