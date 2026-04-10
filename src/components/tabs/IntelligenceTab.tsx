@@ -725,16 +725,59 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     return arr;
   }, [filtered, sortBy]);
 
+  /* ── Smart grouping helpers ── */
+  const buildKeywords = (text: string | null | undefined): string[] => {
+    if (!text) return [];
+    return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(w => w.length > 2);
+  };
+
+  const industryKeywords = useMemo(() => buildKeywords(profileAnchors.sectorFocus), [profileAnchors.sectorFocus]);
+  const edgeKeywords = useMemo(() => {
+    const words = [
+      ...buildKeywords(profileAnchors.corePractice),
+      ...profileAnchors.brandPillars.flatMap(p => buildKeywords(p)),
+    ];
+    return [...new Set(words)];
+  }, [profileAnchors.corePractice, profileAnchors.brandPillars]);
+  const trajectoryKeywords = useMemo(() => {
+    const base = buildKeywords(profileAnchors.northStarGoal);
+    const careerTerms = ["career", "growth", "opportunity", "promotion", "leadership", "transition", "pivot", "advancement", "role", "position"];
+    return [...new Set([...base, ...careerTerms])];
+  }, [profileAnchors.northStarGoal]);
+
+  const classifySignal = useCallback((signal: Signal): string => {
+    const haystack = [
+      ...(signal.theme_tags || []),
+      signal.signal_title,
+      signal.explanation,
+    ].join(" ").toLowerCase();
+
+    const matches = (keywords: string[]) => keywords.length > 0 && keywords.some(kw => haystack.includes(kw));
+
+    if (matches(industryKeywords)) return "industry";
+    if (matches(edgeKeywords)) return "edge";
+    if (matches(trajectoryKeywords)) return "trajectory";
+    return "horizon";
+  }, [industryKeywords, edgeKeywords, trajectoryKeywords]);
+
+  const GROUP_ORDER = ["industry", "edge", "trajectory", "horizon"] as const;
+
+  const groupLabels = useMemo(() => ({
+    industry: profileAnchors.sectorFocus || "Industry Signals",
+    edge: profileAnchors.corePractice || "Expertise Signals",
+    trajectory: profileAnchors.northStarGoal || "Growth Signals",
+    horizon: "Horizon Watch",
+  }), [profileAnchors]);
+
   const groupedSignals = useMemo(() => {
     if (!groupByTheme) return null;
-    const groups: Record<string, Signal[]> = {};
+    const buckets: Record<string, Signal[]> = { industry: [], edge: [], trajectory: [], horizon: [] };
     sorted.forEach(s => {
-      const theme = (s.theme_tags && s.theme_tags.length > 0) ? s.theme_tags[0] : "Uncategorised";
-      if (!groups[theme]) groups[theme] = [];
-      groups[theme].push(s);
+      const group = classifySignal(s);
+      buckets[group].push(s);
     });
-    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
-  }, [sorted, groupByTheme]);
+    return GROUP_ORDER.filter(k => buckets[k].length > 0).map(k => [groupLabels[k], buckets[k]] as [string, Signal[]]);
+  }, [sorted, groupByTheme, classifySignal, groupLabels]);
 
   const toggleGroupCollapse = (theme: string) => {
     setCollapsedGroups(prev => {
