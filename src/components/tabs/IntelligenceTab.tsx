@@ -934,7 +934,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
               signal={signal}
               onOpenChat={onOpenChat}
               onArchive={handleArchive}
-              onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
+              onDraft={(s) => handleGenerateContent(s)}
               onLove={handleLove}
               onNotForMe={handleNotForMe}
             />
