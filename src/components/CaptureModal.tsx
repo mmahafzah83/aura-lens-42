@@ -27,6 +27,7 @@ const isValidUrl = (s: string) => {
 };
 
 const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureModalProps) => {
+  const queryClient = useQueryClient();
   const [captureType, setCaptureType] = useState<CaptureType>("link");
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
