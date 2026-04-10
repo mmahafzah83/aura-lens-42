@@ -1130,6 +1130,20 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
       {/* Draft panel */}
       <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
 
+      {/* Content preview modal */}
+      <ContentPreviewModal open={!!previewItem} onClose={() => setPreviewItem(null)} contentItem={previewItem} />
+
+      {/* Generating overlay */}
+      {generatingContent && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#111", borderRadius: 16, padding: "32px 40px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, border: "1px solid #2a2a2a" }}>
+            <Loader2 size={24} className="animate-spin" style={{ color: "#C5A55A" }} />
+            <span style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 500 }}>Generating content…</span>
+            <span style={{ color: "#888", fontSize: 12 }}>This may take a few seconds</span>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
