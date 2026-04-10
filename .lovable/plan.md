@@ -1,38 +1,35 @@
 
 
-## Plan: Hybrid Smart Signal Grouping (4 Groups)
+## Plan: Rename and improve smart group labels
 
-### Concept
-Replace the current naive "first theme_tag" grouping with 4 intelligent categories derived from the user's profile foundations. Each signal gets classified into exactly one group using keyword matching against profile data.
+### Problem
+1. Group headers show raw profile values (e.g. "Water Utilities") without context — unclear what they represent
+2. When keywords don't match, everything falls into "Horizon Watch" which is vague
+3. Labels should feel personal and career-oriented ("My Industry", "My Expertise", etc.)
 
-### The 4 Groups
+### Changes — `src/components/tabs/IntelligenceTab.tsx`
 
-| Group | Source Data | Fallback Label |
-|-------|-----------|----------------|
-| **My Industry** | `sector_focus` keywords | "Industry Signals" |
-| **My Edge** | `core_practice` + `brand_pillars` keywords | "Expertise Signals" |
-| **My Trajectory** | `north_star_goal` + career/opportunity tags | "Growth Signals" |
-| **Horizon Watch** | Everything that doesn't match above | "Emerging Signals" |
+**1. Update `groupLabels` (line 765-770)**
 
-Group names adapt dynamically. E.g. if `sector_focus = "Water Utilities"`, the header reads **"Water Utilities"** instead of a generic label.
+Replace with clear, prefixed labels:
 
-### Changes
+```ts
+const groupLabels = useMemo(() => ({
+  industry: profileAnchors.sectorFocus ? `My industry · ${profileAnchors.sectorFocus}` : "My industry",
+  edge: profileAnchors.corePractice ? `My expertise · ${profileAnchors.corePractice}` : "My expertise",
+  trajectory: profileAnchors.northStarGoal ? `My ambition · ${profileAnchors.northStarGoal}` : "My ambition",
+  horizon: "Wider landscape",
+}), [profileAnchors]);
+```
 
-**File: `src/components/tabs/IntelligenceTab.tsx`**
+This gives every group a clear, personal prefix while still showing the profile detail as context after the dot separator.
 
-1. **Fetch profile data** — add `diagnostic_profiles` query (sector_focus, core_practice, north_star_goal, brand_pillars) alongside the existing signals fetch in `loadSignals`.
+**2. Broaden keyword matching to reduce "Wider landscape" overflow (lines 748-761)**
 
-2. **Build keyword matchers** — normalize profile fields into keyword sets for each of the 3 anchored groups (industry, edge, trajectory).
+Currently classification only checks exact substring matches. Improve by:
+- Splitting multi-word profile values into individual keywords (e.g. "Digital Transformation" → ["digital", "transformation"])
+- Adding common synonyms/related terms for industry and expertise matches
+- Lowering the match threshold so signals with partial overlap still land in the right group
 
-3. **Replace `groupedSignals` logic** — instead of grouping by `theme_tags[0]`, classify each signal by scanning its `theme_tags`, `signal_title`, and `explanation` against the 3 keyword sets. First match wins (priority: Industry > Edge > Trajectory). No match = Horizon Watch.
-
-4. **Update group headers** — use personalized labels from profile data (e.g. the sector name) with fallbacks. Display order is fixed: My Industry, My Edge, My Trajectory, Horizon Watch.
-
-5. **Filter chips stay unchanged** — the horizontal tag filter still works on raw theme_tags. Only the "Group by theme" toggle uses the new smart grouping.
-
-### What stays the same
-- Signal cards, sorting, search, archive, expand/collapse
-- Filter chips (raw theme_tags)
-- No database changes, no new Edge Functions
-- No changes to other tabs or components
+No database changes. No new files. Only `IntelligenceTab.tsx` is modified.
 
