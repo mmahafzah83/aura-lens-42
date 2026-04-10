@@ -40,7 +40,7 @@ function tagOverlapCount(a: string[], b: string[]): number {
 function titleSharesCoreTopic(newTitle: string, existingTitle: string): boolean {
   const newKw = keywords(newTitle);
   const exKw = new Set(keywords(existingTitle));
-  return newKw.filter(k => exKw.has(k)).length >= 1;
+  return newKw.filter(k => exKw.has(k)).length >= 2;
 }
 
 function extractDomain(text: string): string | null {
@@ -95,11 +95,11 @@ async function countUniqueOrgs(
   if (evidenceEntryIds.length > 0) {
     const { data: entries } = await admin
       .from("entries")
-      .select("content")
+      .select("content, image_url")
       .in("id", evidenceEntryIds);
 
     (entries || []).forEach((e: any) => {
-      const d = extractDomain(e.content || "");
+      const d = extractDomain(e.image_url || "") || extractDomain(e.content || "");
       if (d) domains.add(d);
     });
   }
@@ -220,7 +220,7 @@ Given an entry and user context, classify it and return valid JSON with these ex
   "summary": "2 sentences, plain language",
   "type": "market_trend|skill_gap|competitor_move|career_opportunity|content_gap",
   "theme_tags": ["3 to 5 short topic strings"],
-  "ai_base_confidence": 0.0 to 1.0,
+  "ai_base_confidence": 0.0 to 1.0 (be strict: 0.9+ = direct evidence with named sources, 0.7-0.89 = strong thematic match to user's industry, 0.5-0.69 = tangentially related, 0.3-0.49 = weak or generic connection, below 0.3 = barely relevant),
   "what_it_means_for_you": "one sentence connecting this signal to the user's career target and industry, personalised"
 }
 
@@ -305,6 +305,33 @@ ${identityCtx}`;
         updated_at: now,
       }).eq("id", signalRow.id);
 
+      // Write evidence fragment for UI consistency
+      try {
+        // First ensure a source_registry entry exists for this signal
+        const { data: srcReg } = await admin.from("source_registry").upsert({
+          user_id,
+          source_id: signalRow.id,
+          source_type: "strategic_signal",
+          title: signalRow.signal_title || "Signal evidence",
+          processed: true,
+          processed_at: now,
+        }, { onConflict: "source_id,source_type,user_id" }).select("id").single();
+
+        if (srcReg) {
+          await admin.from("evidence_fragments").insert({
+            user_id,
+            source_registry_id: srcReg.id,
+            fragment_type: "signal_evidence",
+            title: entry.title || "Supporting evidence",
+            content: (entry.content || "").slice(0, 2000),
+            tags: newTags,
+            skill_pillars: [],
+          });
+        }
+      } catch (fragErr) {
+        console.error("evidence_fragments write (reinforce) skipped:", fragErr);
+      }
+
       touchedSignalIds.add(signalRow.id);
       return signalRow.id;
     }
@@ -341,6 +368,32 @@ ${identityCtx}`;
       if (insErr) throw new Error(`Insert: ${insErr.message}`);
       primarySignalId = row.id;
       isNew = true;
+
+      // Write evidence fragment for new signal
+      try {
+        const { data: srcReg } = await admin.from("source_registry").upsert({
+          user_id,
+          source_id: primarySignalId,
+          source_type: "strategic_signal",
+          title: newTitle,
+          processed: true,
+          processed_at: now,
+        }, { onConflict: "source_id,source_type,user_id" }).select("id").single();
+
+        if (srcReg) {
+          await admin.from("evidence_fragments").insert({
+            user_id,
+            source_registry_id: srcReg.id,
+            fragment_type: "signal_evidence",
+            title: entry.title || "Supporting evidence",
+            content: (entry.content || "").slice(0, 2000),
+            tags: newTags,
+            skill_pillars: [],
+          });
+        }
+      } catch (fragErr) {
+        console.error("evidence_fragments write (new signal) skipped:", fragErr);
+      }
       touchedSignalIds.add(primarySignalId);
     }
 
