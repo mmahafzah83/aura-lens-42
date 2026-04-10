@@ -894,7 +894,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                 <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
                 {signal.confidence >= 0.60 && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setDraftData({ title: signal.signal_title, hook: signal.explanation, angle: "Strategic thought leadership", context: signal.strategic_implications }); }}
+                    onClick={(e) => { e.stopPropagation(); handleGenerateContent(signal); }}
                     style={{ marginLeft: "auto", background: "none", border: "none", color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                   >Draft</button>
                 )}
