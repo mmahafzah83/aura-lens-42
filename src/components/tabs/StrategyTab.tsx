@@ -13,7 +13,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import SignalExplorer from "@/components/SignalExplorer";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
-import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import ContentStudio from "@/components/ContentStudio";
 import SignalGraph from "@/components/SignalGraph";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 
@@ -381,7 +381,7 @@ const StrategyTab = ({ onOpenChat }: StrategyTabProps) => {
       )}
 
       {draftData && (
-        <LinkedInDraftPanel
+        <ContentStudio
           title={draftData.title}
           hook={draftData.hook}
           context={draftData.context}

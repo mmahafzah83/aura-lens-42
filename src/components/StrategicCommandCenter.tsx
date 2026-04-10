@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SignalActions } from "@/components/ui/action-buttons";
 import { formatSmartDate } from "@/lib/formatDate";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
-import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import ContentStudio from "@/components/ContentStudio";
 import SignalExplorer from "@/components/SignalExplorer";
 
 /* ── Types ── */
@@ -317,7 +317,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         initialDescription={builderData?.description || ""}
         initialSteps={builderData?.steps || []}
       />
-      <LinkedInDraftPanel
+      <ContentStudio
         open={!!draftData}
         onClose={() => setDraftData(null)}
         title={draftData?.title || ""}

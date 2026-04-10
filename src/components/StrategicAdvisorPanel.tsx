@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { SignalActions, InsightActions, ContentActions, ADVISOR_ACTION_LABELS, ADVISOR_ACTION_ICONS } from "@/components/ui/action-buttons";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
-import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
+import ContentStudio from "@/components/ContentStudio";
 import SignalExplorer from "@/components/SignalExplorer";
 
 interface AdvisorData {
@@ -167,7 +167,7 @@ const StrategicAdvisorPanel = ({
         initialDescription={builderData?.description || ""}
         initialSteps={builderData?.steps || []}
       />
-      <LinkedInDraftPanel
+      <ContentStudio
         open={!!draftData}
         onClose={() => setDraftData(null)}
         title={draftData?.title || ""}
@@ -310,7 +310,7 @@ const StrategicAdvisorPanel = ({
       initialDescription={builderData?.description || ""}
       initialSteps={builderData?.steps || []}
     />
-    <LinkedInDraftPanel
+    <ContentStudio
       open={!!draftData}
       onClose={() => setDraftData(null)}
       title={draftData?.title || ""}
