@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import SignalExplorer from "@/components/SignalExplorer";
+import SignalGraph from "@/components/SignalGraph";
 
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
@@ -68,7 +69,17 @@ interface Framework {
 
 /* ── Helpers ── */
 
+const SIGNAL_TYPE_LABELS: Record<string, string> = {
+  market_trend: "Market Shift",
+  competitor_move: "Competitive Move",
+  content_gap: "Content Opportunity",
+  capability_gap: "Skill Gap",
+  career_opportunity: "Career Signal",
+  skill_gap: "Skill Gap",
+};
+
 function formatTag(tag: string): string {
+  if (SIGNAL_TYPE_LABELS[tag]) return SIGNAL_TYPE_LABELS[tag];
   const s = tag.replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -143,7 +154,7 @@ function isNew(updatedAt: string): boolean {
 }
 
 type SortOption = "confidence" | "recent" | "sources";
-type SubTab = "signals" | "insights" | "frameworks" | "sources";
+type SubTab = "signals" | "insights" | "frameworks" | "sources" | "graph";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
@@ -590,6 +601,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   
   const [detecting, setDetecting] = useState(false);
+  const [_graphOpen, _setGraphOpen] = useState(false);
 
   useEffect(() => {
     const signalParam = searchParams.get("signal");
@@ -788,9 +800,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   };
 
   const visible = sorted.slice(0, 8);
-  const topSignal = signals[0];
   const totalOrgs = signals.reduce((sum, s) => sum + (s.unique_orgs || 0), 0);
-  const topConfPct = topSignal ? Math.round(topSignal.confidence * 100) : 0;
+  const maxConfidence = signals.length > 0 ? Math.max(...signals.map(s => s.confidence)) : 0;
+  const topConfPct = Math.round(maxConfidence * 100);
 
   /* ── Skeleton ── */
   if (loading) {
@@ -845,7 +857,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
             <div style={{ width: 36, height: 36, borderRadius: 10, background: typeStyle.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: typeStyle.fg, flexShrink: 0 }}>{typeStyle.icon}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: "0 0 6px", lineHeight: 1.35, paddingRight: signalIsNew ? 50 : 0 }}>{signal.signal_title}</p>
-              <p style={{ color: "#666666", fontSize: 13, lineHeight: 1.5, margin: "0 0 10px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{signal.explanation}</p>
+              <p style={{ color: "#666666", fontSize: 13, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{signal.explanation}</p>
+
+              {!isExpanded && signal.what_it_means_for_you && (
+                <p style={{ color: "#555555", fontSize: 12, fontStyle: "italic", lineHeight: 1.4, margin: "0 0 10px" }}>
+                  {signal.what_it_means_for_you.length > 120 ? signal.what_it_means_for_you.slice(0, 120) + "…" : signal.what_it_means_for_you}
+                </p>
+              )}
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ background: confStyle.bg, color: confBarColor.text, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12 }}>{confStyle.label}</span>
@@ -903,12 +921,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   };
 
   /* ── Sub-tab definitions ── */
+
   const SUB_TABS: { value: SubTab; label: string }[] = [
     { value: "signals", label: "Signals" },
     { value: "insights", label: "Insights" },
     { value: "frameworks", label: "Frameworks" },
     { value: "sources", label: "Sources" },
-    
+    { value: "graph", label: "Graph" },
   ];
 
   return (
@@ -1082,6 +1101,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
               setExpandedId(signalId);
             }}
           />
+        )}
+        {activeSubTab === "graph" && (
+          <div>
+            <SignalGraph open={true} onClose={() => setActiveSubTab("signals")} />
+          </div>
         )}
       </div>
 
