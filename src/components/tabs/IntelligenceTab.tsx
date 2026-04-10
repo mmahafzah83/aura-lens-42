@@ -601,6 +601,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   
   const [detecting, setDetecting] = useState(false);
+  const [_graphOpen, _setGraphOpen] = useState(false);
 
   useEffect(() => {
     const signalParam = searchParams.get("signal");
@@ -920,7 +921,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   };
 
   /* ── Sub-tab definitions ── */
-  const [graphOpen, setGraphOpen] = useState(false);
 
   const SUB_TABS: { value: SubTab; label: string }[] = [
     { value: "signals", label: "Signals" },
