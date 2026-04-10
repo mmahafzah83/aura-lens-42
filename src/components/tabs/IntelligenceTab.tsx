@@ -154,7 +154,7 @@ function isNew(updatedAt: string): boolean {
 }
 
 type SortOption = "confidence" | "recent" | "sources";
-type SubTab = "signals" | "insights" | "frameworks" | "sources" | "graph";
+type SubTab = "signals" | "insights" | "frameworks" | "sources";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
@@ -258,15 +258,14 @@ const ExpandedDetail = ({
           .order("created_at", { ascending: false })
           .limit(20);
         setSources((r.data || []) as unknown as SourceEntry[]);
-      }
 
-      if (signal.supporting_evidence_ids?.length) {
-        const r = await supabase
+        const ef = await supabase
           .from("evidence_fragments")
           .select("id, title, content, created_at, source_registry_id")
+          .in("id", signal.supporting_evidence_ids)
           .order("created_at", { ascending: false })
           .limit(20);
-        setEvidenceFragments((r.data || []) as unknown as EvidenceFragmentRow[]);
+        setEvidenceFragments((ef.data || []) as unknown as EvidenceFragmentRow[]);
       }
 
       setLoading(false);
@@ -751,11 +750,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     ];
     return [...new Set(words)];
   }, [profileAnchors.corePractice, profileAnchors.brandPillars]);
-  const trajectoryKeywords = useMemo(() => {
-    const base = buildKeywords(profileAnchors.northStarGoal);
-    const careerTerms = ["career", "growth", "opportunity", "promotion", "leadership", "transition", "pivot", "advancement", "role", "position"];
-    return [...new Set([...base, ...careerTerms])];
-  }, [profileAnchors.northStarGoal]);
+  const _trajectoryKeywords: string[] = [];
 
   const classifySignal = useCallback((signal: Signal): string => {
     const haystack = [
@@ -768,28 +763,26 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
 
     if (matches(industryKeywords)) return "industry";
     if (matches(edgeKeywords)) return "edge";
-    if (matches(trajectoryKeywords)) return "trajectory";
     return "horizon";
-  }, [industryKeywords, edgeKeywords, trajectoryKeywords]);
+  }, [industryKeywords, edgeKeywords]);
 
-  const GROUP_ORDER = ["industry", "edge", "trajectory", "horizon"] as const;
+  const GROUP_ORDER = ["industry", "edge", "horizon"] as const;
 
-  const groupLabels = useMemo(() => ({
-    industry: profileAnchors.sectorFocus ? `My industry · ${profileAnchors.sectorFocus}` : "My industry",
-    edge: profileAnchors.corePractice ? `My expertise · ${profileAnchors.corePractice}` : "My expertise",
-    trajectory: profileAnchors.northStarGoal ? `My ambition · ${profileAnchors.northStarGoal}` : "My ambition",
+  const groupLabels: Record<string, string> = {
+    industry: "My industry",
+    edge: "My expertise",
     horizon: "Wider landscape",
-  }), [profileAnchors]);
+  };
 
   const groupedSignals = useMemo(() => {
     if (!groupByTheme) return null;
-    const buckets: Record<string, Signal[]> = { industry: [], edge: [], trajectory: [], horizon: [] };
+    const buckets: Record<string, Signal[]> = { industry: [], edge: [], horizon: [] };
     sorted.forEach(s => {
       const group = classifySignal(s);
       buckets[group].push(s);
     });
     return GROUP_ORDER.filter(k => buckets[k].length > 0).map(k => [groupLabels[k], buckets[k]] as [string, Signal[]]);
-  }, [sorted, groupByTheme, classifySignal, groupLabels]);
+  }, [sorted, groupByTheme, classifySignal]);
 
   const toggleGroupCollapse = (theme: string) => {
     setCollapsedGroups(prev => {
@@ -927,7 +920,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     { value: "insights", label: "Insights" },
     { value: "frameworks", label: "Frameworks" },
     { value: "sources", label: "Sources" },
-    { value: "graph", label: "Graph" },
   ];
 
   return (
@@ -1101,11 +1093,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
               setExpandedId(signalId);
             }}
           />
-        )}
-        {activeSubTab === "graph" && (
-          <div>
-            <SignalGraph open={true} onClose={() => setActiveSubTab("signals")} />
-          </div>
         )}
       </div>
 
