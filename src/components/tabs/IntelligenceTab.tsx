@@ -1058,7 +1058,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                       style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "8px 0", marginBottom: 4 }}
                     >
                       {isCollapsed ? <ChevronRight size={14} style={{ color: "#C5A55A" }} /> : <ChevronDown size={14} style={{ color: "#C5A55A" }} />}
-                      <span style={{ color: "#C5A55A", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>{formatTag(theme)}</span>
+                      <span style={{ color: "#C5A55A", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>{theme}</span>
                       <span style={{ background: "rgba(197, 165, 90, 0.15)", color: "#C5A55A", fontSize: 10, fontWeight: 600, borderRadius: 10, padding: "1px 7px", marginLeft: 2 }}>{themeSignals.length}</span>
                       <div style={{ flex: 1, height: 1, background: "#252525", marginLeft: 8 }} />
                     </button>
