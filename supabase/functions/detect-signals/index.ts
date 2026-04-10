@@ -397,14 +397,6 @@ ${identityCtx}`;
       touchedSignalIds.add(primarySignalId);
     }
 
-    /* ── Cross-topic reinforcement ── */
-    const otherMatches = allSignals.filter(s =>
-      !touchedSignalIds.has(s.id) &&
-      (tagOverlapCount(newTags, s.theme_tags || []) >= 2 || titleSharesCoreTopic(newTitle, s.signal_title || ""))
-    );
-    for (const otherSig of otherMatches) {
-      await reinforceSignal(otherSig);
-    }
 
     return new Response(JSON.stringify({
       success: true,
