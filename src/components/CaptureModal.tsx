@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import DocumentUpload from "@/components/DocumentUpload";
 
 type CaptureType = "link" | "voice" | "text" | "image" | "document";
@@ -350,24 +351,25 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
       // Fire-and-forget: detect signals in background
       if (entryRow?.id) {
-        const entryId = entryRow.id;
-        const accessToken = session.access_token;
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-signals`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ entry_id: entryId, user_id: "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3" }),
+        supabase.functions.invoke('detect-signals', {
+          body: { entry_id: entryRow.id, user_id: session.user.id },
         })
-          .then((r) => r.json())
-          .then((result) => console.log("detect-signals result:", result))
-          .catch((err) => console.warn("detect-signals background error:", err));
-
-        // Subtle toast after 5 seconds
-        setTimeout(() => {
-          toast({ title: "✨ Analysing signal...", description: "Looking for patterns in your captures." });
-        }, 5000);
+          .then(({ data: result, error }) => {
+            if (error) {
+              console.error("detect-signals error:", error);
+              return;
+            }
+            console.log("detect-signals result:", result);
+            if (result?.is_new) {
+              setTimeout(() => {
+                toast({ title: "✨ New signal detected", description: "A new pattern was found in your captures." });
+              }, 3000);
+            }
+            // Invalidate signals queries so Intelligence tab refreshes
+            queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
+            queryClient.invalidateQueries({ queryKey: ["signals"] });
+          })
+          .catch((err) => console.error("detect-signals background error:", err));
       }
     } catch (err: any) {
       toast({
