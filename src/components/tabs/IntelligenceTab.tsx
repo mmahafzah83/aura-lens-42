@@ -604,14 +604,30 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     }
   }, [signals, searchParams]);
 
+  const [profileAnchors, setProfileAnchors] = useState<{
+    sectorFocus: string | null;
+    corePractice: string | null;
+    northStarGoal: string | null;
+    brandPillars: string[];
+  }>({ sectorFocus: null, corePractice: null, northStarGoal: null, brandPillars: [] });
+
   const loadSignals = useCallback(async () => {
     setLoading(true);
-    const [signalsRes, entriesRes] = await Promise.all([
+    const [signalsRes, entriesRes, profileRes] = await Promise.all([
       supabase.from("strategic_signals").select("*").eq("status", "active").order("priority_score", { ascending: false }).limit(20),
       supabase.from("entries").select("id", { count: "exact", head: true }),
+      supabase.from("diagnostic_profiles").select("sector_focus, core_practice, north_star_goal, brand_pillars").limit(1).maybeSingle(),
     ]);
     setSignals((signalsRes.data || []) as unknown as Signal[]);
     setEntryCount(entriesRes.count || 0);
+    if (profileRes.data) {
+      setProfileAnchors({
+        sectorFocus: profileRes.data.sector_focus,
+        corePractice: profileRes.data.core_practice,
+        northStarGoal: profileRes.data.north_star_goal,
+        brandPillars: (profileRes.data.brand_pillars as string[]) || [],
+      });
+    }
     setLoading(false);
   }, []);
 
@@ -709,16 +725,59 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     return arr;
   }, [filtered, sortBy]);
 
+  /* ── Smart grouping helpers ── */
+  const buildKeywords = (text: string | null | undefined): string[] => {
+    if (!text) return [];
+    return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(w => w.length > 2);
+  };
+
+  const industryKeywords = useMemo(() => buildKeywords(profileAnchors.sectorFocus), [profileAnchors.sectorFocus]);
+  const edgeKeywords = useMemo(() => {
+    const words = [
+      ...buildKeywords(profileAnchors.corePractice),
+      ...profileAnchors.brandPillars.flatMap(p => buildKeywords(p)),
+    ];
+    return [...new Set(words)];
+  }, [profileAnchors.corePractice, profileAnchors.brandPillars]);
+  const trajectoryKeywords = useMemo(() => {
+    const base = buildKeywords(profileAnchors.northStarGoal);
+    const careerTerms = ["career", "growth", "opportunity", "promotion", "leadership", "transition", "pivot", "advancement", "role", "position"];
+    return [...new Set([...base, ...careerTerms])];
+  }, [profileAnchors.northStarGoal]);
+
+  const classifySignal = useCallback((signal: Signal): string => {
+    const haystack = [
+      ...(signal.theme_tags || []),
+      signal.signal_title,
+      signal.explanation,
+    ].join(" ").toLowerCase();
+
+    const matches = (keywords: string[]) => keywords.length > 0 && keywords.some(kw => haystack.includes(kw));
+
+    if (matches(industryKeywords)) return "industry";
+    if (matches(edgeKeywords)) return "edge";
+    if (matches(trajectoryKeywords)) return "trajectory";
+    return "horizon";
+  }, [industryKeywords, edgeKeywords, trajectoryKeywords]);
+
+  const GROUP_ORDER = ["industry", "edge", "trajectory", "horizon"] as const;
+
+  const groupLabels = useMemo(() => ({
+    industry: profileAnchors.sectorFocus || "Industry Signals",
+    edge: profileAnchors.corePractice || "Expertise Signals",
+    trajectory: profileAnchors.northStarGoal || "Growth Signals",
+    horizon: "Horizon Watch",
+  }), [profileAnchors]);
+
   const groupedSignals = useMemo(() => {
     if (!groupByTheme) return null;
-    const groups: Record<string, Signal[]> = {};
+    const buckets: Record<string, Signal[]> = { industry: [], edge: [], trajectory: [], horizon: [] };
     sorted.forEach(s => {
-      const theme = (s.theme_tags && s.theme_tags.length > 0) ? s.theme_tags[0] : "Uncategorised";
-      if (!groups[theme]) groups[theme] = [];
-      groups[theme].push(s);
+      const group = classifySignal(s);
+      buckets[group].push(s);
     });
-    return Object.entries(groups).sort((a, b) => b[1].length - a[1].length);
-  }, [sorted, groupByTheme]);
+    return GROUP_ORDER.filter(k => buckets[k].length > 0).map(k => [groupLabels[k], buckets[k]] as [string, Signal[]]);
+  }, [sorted, groupByTheme, classifySignal, groupLabels]);
 
   const toggleGroupCollapse = (theme: string) => {
     setCollapsedGroups(prev => {
@@ -999,7 +1058,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                       style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "none", border: "none", cursor: "pointer", padding: "8px 0", marginBottom: 4 }}
                     >
                       {isCollapsed ? <ChevronRight size={14} style={{ color: "#C5A55A" }} /> : <ChevronDown size={14} style={{ color: "#C5A55A" }} />}
-                      <span style={{ color: "#C5A55A", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>{formatTag(theme)}</span>
+                      <span style={{ color: "#C5A55A", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>{theme}</span>
                       <span style={{ background: "rgba(197, 165, 90, 0.15)", color: "#C5A55A", fontSize: 10, fontWeight: 600, borderRadius: 10, padding: "1px 7px", marginLeft: 2 }}>{themeSignals.length}</span>
                       <div style={{ flex: 1, height: 1, background: "#252525", marginLeft: 8 }} />
                     </button>
