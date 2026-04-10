@@ -5,9 +5,9 @@ Strategic signals are managed in the 'strategic_signals' table and processed via
 
 ## Smart Grouping (Hybrid 4-group model)
 When "Group by theme" is toggled ON, signals are classified into 4 strategic categories derived from the user's diagnostic_profiles:
-1. **My Industry** — matches `sector_focus` keywords. Label = sector name or "Industry Signals".
-2. **My Edge** — matches `core_practice` + `brand_pillars` keywords. Label = practice name or "Expertise Signals".
-3. **My Trajectory** — matches `north_star_goal` + career terms. Label = goal or "Growth Signals".
-4. **Horizon Watch** — everything else. Label = "Emerging Signals".
+1. **My industry** — matches `sector_focus` keywords. Label = `My industry · {sector}` or "My industry".
+2. **My expertise** — matches `core_practice` + `brand_pillars` keywords. Label = `My expertise · {practice}` or "My expertise".
+3. **My ambition** — matches `north_star_goal` + career terms. Label = `My ambition · {goal}` or "My ambition".
+4. **Wider landscape** — everything else.
 
 Classification scans signal's theme_tags, signal_title, and explanation against keyword sets. Priority: Industry > Edge > Trajectory > Horizon. Group order is fixed. Filter chips still use raw theme_tags independently.
