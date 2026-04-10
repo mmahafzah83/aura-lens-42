@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import SignalExplorer from "@/components/SignalExplorer";
-import SignalGraph from "@/components/SignalGraph";
+
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import { InsightActions, FrameworkActions } from "@/components/ui/action-buttons";
@@ -143,7 +143,7 @@ function isNew(updatedAt: string): boolean {
 }
 
 type SortOption = "confidence" | "recent" | "sources";
-type SubTab = "signals" | "insights" | "frameworks" | "sources" | "graph";
+type SubTab = "signals" | "insights" | "frameworks" | "sources";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
@@ -588,7 +588,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   const [groupByTheme, setGroupByTheme] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
-  const [graphOpen, setGraphOpen] = useState(false);
+  
   const [detecting, setDetecting] = useState(false);
 
   useEffect(() => {
@@ -849,7 +849,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
     { value: "insights", label: "Insights" },
     { value: "frameworks", label: "Frameworks" },
     { value: "sources", label: "Sources" },
-    { value: "graph", label: "Graph" },
+    
   ];
 
   return (
@@ -922,13 +922,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
           {SUB_TABS.map(tab => (
             <button
               key={tab.value}
-              onClick={() => {
-                if (tab.value === "graph") {
-                  setGraphOpen(true);
-                } else {
-                  setActiveSubTab(tab.value);
-                }
-              }}
+              onClick={() => setActiveSubTab(tab.value)}
               style={{
                 padding: "10px 20px", fontSize: 14, fontWeight: 500,
                 color: activeSubTab === tab.value ? "#C5A55A" : "#888",
@@ -1035,8 +1029,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
       {/* Draft panel */}
       <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
 
-      {/* Signal Graph sheet */}
-      <SignalGraph open={graphOpen} onClose={() => setGraphOpen(false)} />
     </div>
   );
 };
