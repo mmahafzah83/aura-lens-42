@@ -776,13 +776,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
 
   const groupedSignals = useMemo(() => {
     if (!groupByTheme) return null;
-    const buckets: Record<string, Signal[]> = { industry: [], edge: [], trajectory: [], horizon: [] };
+    const buckets: Record<string, Signal[]> = { industry: [], edge: [], horizon: [] };
     sorted.forEach(s => {
       const group = classifySignal(s);
       buckets[group].push(s);
     });
     return GROUP_ORDER.filter(k => buckets[k].length > 0).map(k => [groupLabels[k], buckets[k]] as [string, Signal[]]);
-  }, [sorted, groupByTheme, classifySignal, groupLabels]);
+  }, [sorted, groupByTheme, classifySignal]);
 
   const toggleGroupCollapse = (theme: string) => {
     setCollapsedGroups(prev => {
