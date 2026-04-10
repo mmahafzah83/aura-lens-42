@@ -602,6 +602,36 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   
   const [detecting, setDetecting] = useState(false);
   const [_graphOpen, _setGraphOpen] = useState(false);
+  const [generatingContent, setGeneratingContent] = useState(false);
+  const [previewItem, setPreviewItem] = useState<{ id: string; title: string; body: string; type: string; status: string } | null>(null);
+
+  const handleGenerateContent = async (signal: Signal) => {
+    setGeneratingContent(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const { data, error } = await supabase.functions.invoke("generate-content", {
+        body: { signal_id: signal.id, content_type: "linkedin_post" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.content_item) {
+        setPreviewItem({
+          id: data.content_item.id,
+          title: data.content_item.title,
+          body: data.content_item.body,
+          type: data.content_item.type,
+          status: data.content_item.status,
+        });
+        toast.success("Content generated");
+      }
+    } catch (err: any) {
+      console.error("Content generation failed:", err);
+      toast.error(err.message || "Content generation failed");
+    } finally {
+      setGeneratingContent(false);
+    }
+  };
 
   useEffect(() => {
     const signalParam = searchParams.get("signal");
