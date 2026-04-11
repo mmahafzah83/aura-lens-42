@@ -27,6 +27,8 @@ interface SignalDraftPrefill {
   context: string;
   signalId?: string;
   signalTitle?: string;
+  sourceType?: string;
+  sourceTitle?: string;
 }
 
 interface IntelligenceTabProps {
@@ -425,12 +427,11 @@ const ExpandedDetail = ({
    INSIGHTS SUB-TAB
    ═══════════════════════════════════════════ */
 
-const InsightsSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
+const InsightsSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: string) => void; onDraftToStudio?: (prefill: SignalDraftPrefill) => void }) => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [builderData, setBuilderData] = useState<{ title: string; steps: string[]; summary?: string } | null>(null);
-  const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -475,7 +476,7 @@ const InsightsSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
           <InsightActions
             onExpand={() => { setExpandedId(expandedId === insight.id ? null : insight.id); onOpenChat?.(`Expand insight: ${insight.title}\n\n${insight.content}`); }}
             onBuildFramework={() => setBuilderData({ title: insight.title, steps: [], summary: insight.content })}
-            onDraftContent={() => setDraftData({ title: insight.title, context: insight.content })}
+            onDraftContent={() => onDraftToStudio?.({ topic: insight.title, context: insight.content, sourceType: "insight", sourceTitle: insight.title })}
           />
         </div>
       ))}
@@ -490,9 +491,6 @@ const InsightsSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
           onFrameworkCreated={() => setBuilderData(null)}
         />
       )}
-      {draftData && (
-        <LinkedInDraftPanel title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
-      )}
     </div>
   );
 };
@@ -501,11 +499,10 @@ const InsightsSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
    FRAMEWORKS SUB-TAB
    ═══════════════════════════════════════════ */
 
-const FrameworksSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void }) => {
+const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: string) => void; onDraftToStudio?: (prefill: SignalDraftPrefill) => void }) => {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
   const [builderData, setBuilderData] = useState<{ title: string; steps: string[]; summary?: string } | null>(null);
-  const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -566,7 +563,7 @@ const FrameworksSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void 
               <FrameworkActions
                 onOpenFramework={() => setBuilderData({ title: fw.title, steps: steps.map((s: any) => typeof s === "string" ? s : s.title || s.name || ""), summary: fw.summary || "" })}
                 onRefineFramework={() => onOpenChat?.(`Refine and improve framework: ${fw.title}`)}
-                onDraftContent={() => setDraftData({ title: fw.title, context: fw.summary || "" })}
+                onDraftContent={() => onDraftToStudio?.({ topic: fw.title, context: fw.summary || "", sourceType: "framework", sourceTitle: fw.title })}
               />
             </div>
           );
@@ -582,9 +579,6 @@ const FrameworksSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void 
           onClose={() => setBuilderData(null)}
           onFrameworkCreated={() => setBuilderData(null)}
         />
-      )}
-      {draftData && (
-        <LinkedInDraftPanel title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
       )}
     </div>
   );
@@ -1091,8 +1085,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           </>
         )}
 
-        {activeSubTab === "insights" && <InsightsSubTab onOpenChat={onOpenChat} />}
-        {activeSubTab === "frameworks" && <FrameworksSubTab onOpenChat={onOpenChat} />}
+        {activeSubTab === "insights" && <InsightsSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
+        {activeSubTab === "frameworks" && <FrameworksSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
         {activeSubTab === "sources" && (
           <SourcesSubTab
             onOpenCapture={onOpenCapture}
