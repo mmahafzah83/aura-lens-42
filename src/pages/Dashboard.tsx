@@ -48,6 +48,7 @@ const Dashboard = () => {
     signalTitle?: string;
     sourceType?: string;
     sourceTitle?: string;
+    contentFormat?: "post" | "carousel" | "framework_summary";
   } | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

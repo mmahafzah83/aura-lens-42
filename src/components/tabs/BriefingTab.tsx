@@ -16,6 +16,7 @@ interface BriefingTabProps {
   entries: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalTitle?: string; contentFormat?: string }) => void;
 }
 
 /* ── Pull-to-Refresh Hook ─────────────────────────── */
@@ -56,7 +57,7 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
 };
 
 /* ── Main BriefingTab ─────────────────────────────── */
-const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
+const BriefingTab = ({ entries, onOpenChat, onRefresh, onDraftToStudio }: BriefingTabProps) => {
   const [graphOpen, setGraphOpen] = useState(false);
   const [constellationOpen, setConstellationOpen] = useState(false);
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
@@ -93,10 +94,10 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
       <StrategicAdvisor onOpenChat={onOpenChat} />
 
       {/* Daily Briefing */}
-      <DailyStrategicBriefing onOpenChat={onOpenChat} />
+      <DailyStrategicBriefing onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
 
       {/* Unified Strategic Intelligence Engine */}
-      <StrategicIntelligenceEngine onOpenChat={onOpenChat} />
+      <StrategicIntelligenceEngine onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
 
       {/* Knowledge Graph + Constellation */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

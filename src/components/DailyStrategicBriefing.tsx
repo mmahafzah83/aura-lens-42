@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import FrameworkBuilder from "./FrameworkBuilder";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
 import ActionWorkspace from "./ActionWorkspace";
-import CarouselGenerator from "./CarouselGenerator";
+
 
 interface Briefing {
   date: string;
@@ -18,12 +18,13 @@ interface Briefing {
 
 interface DailyStrategicBriefingProps {
   onOpenChat?: (msg?: string) => void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalTitle?: string; contentFormat?: string }) => void;
 }
 
 const CACHE_KEY = "aura-strategic-briefing";
 const CACHE_DATE_KEY = "aura-strategic-briefing-date";
 
-const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => {
+const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicBriefingProps) => {
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,8 +34,6 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
   const [draftTitle, setDraftTitle] = useState("");
   const [draftHook, setDraftHook] = useState("");
   const [actionWorkspaceOpen, setActionWorkspaceOpen] = useState(false);
-  const [carouselOpen, setCarouselOpen] = useState(false);
-  const [carouselData, setCarouselData] = useState({ title: "", description: "", context: "" });
 
   const today = new Date().toDateString();
 
@@ -104,12 +103,12 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
       action: () => onOpenChat?.(`Analyze this strategic signal in depth: "${briefing.strategic_signal.title}" — ${briefing.strategic_signal.description}`),
       actionLabel: "Explore",
       secondaryAction: () => {
-        setCarouselData({
-          title: briefing.strategic_signal.title,
-          description: briefing.strategic_signal.description,
-          context: briefing.framework_opportunity?.description || "",
+        onDraftToStudio?.({
+          topic: briefing.strategic_signal.title,
+          context: `${briefing.strategic_signal.description}\n\n${briefing.framework_opportunity?.description || ""}`,
+          signalTitle: briefing.strategic_signal.title,
+          contentFormat: "carousel",
         });
-        setCarouselOpen(true);
       },
       secondaryLabel: "Carousel",
     },
@@ -246,13 +245,6 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
         onClose={() => setActionWorkspaceOpen(false)}
         action={briefing.recommended_action.action}
         rationale={briefing.recommended_action.rationale}
-      />
-      <CarouselGenerator
-        open={carouselOpen}
-        onClose={() => setCarouselOpen(false)}
-        title={carouselData.title}
-        description={carouselData.description}
-        context={carouselData.context}
       />
     </div>
   );

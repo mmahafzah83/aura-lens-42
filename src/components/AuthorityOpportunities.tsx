@@ -3,7 +3,6 @@ import { Crown, ArrowRight, Loader2, Bell, Sparkles, FileText, LayoutGrid } from
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
-import CarouselGenerator from "./CarouselGenerator";
 
 interface AuthorityOpp {
   id: string;
@@ -22,11 +21,14 @@ interface AuthorityOpp {
   theme_tags: string[];
 }
 
-const AuthorityOpportunities = () => {
+interface AuthorityOpportunitiesProps {
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalTitle?: string; contentFormat?: string }) => void;
+}
+
+const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps) => {
   const [opps, setOpps] = useState<AuthorityOpp[]>([]);
   const [loading, setLoading] = useState(true);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
-  const [carouselData, setCarouselData] = useState<{ title: string; description?: string; context?: string } | null>(null);
 
   useEffect(() => {
     const fetchOpps = async () => {
@@ -125,10 +127,11 @@ const AuthorityOpportunities = () => {
                       <FileText className="w-3 h-3" /> Draft Content
                     </button>
                     <button
-                      onClick={() => setCarouselData({
-                        title: ct.title || opp.signal_title,
-                        description: opp.explanation,
-                        context: opp.framework_opportunity?.description || "",
+                      onClick={() => onDraftToStudio?.({
+                        topic: ct.title || opp.signal_title,
+                        context: `${opp.explanation}\n\n${opp.framework_opportunity?.description || ""}`,
+                        signalTitle: ct.title || opp.signal_title,
+                        contentFormat: "carousel",
                       })}
                       className="text-[10px] text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors bg-amber-500/5 hover:bg-amber-500/10 rounded-lg px-2.5 py-1"
                     >
@@ -148,13 +151,6 @@ const AuthorityOpportunities = () => {
         title={draftData?.title || ""}
         hook={draftData?.hook}
         context={draftData?.context}
-      />
-      <CarouselGenerator
-        open={!!carouselData}
-        onClose={() => setCarouselData(null)}
-        title={carouselData?.title || ""}
-        description={carouselData?.description}
-        context={carouselData?.context}
       />
     </div>
   );

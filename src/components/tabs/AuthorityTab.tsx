@@ -205,6 +205,7 @@ interface SignalPrefill {
   signalTitle?: string;
   sourceType?: string;
   sourceTitle?: string;
+  contentFormat?: "post" | "carousel" | "framework_summary";
 }
 
 interface SignalSuggestion {
@@ -326,8 +327,12 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     if (signalPrefill) {
       setTopic(signalPrefill.topic);
       setContext(signalPrefill.context);
-      // If this is a framework build request, select framework_summary content type
-      if (signalPrefill.sourceType === "framework_build") {
+      // Determine content type from explicit contentFormat or sourceType
+      if (signalPrefill.contentFormat === "carousel") {
+        setContentType("carousel");
+        // Auto-open carousel workflow
+        setTimeout(() => setShowCarousel(true), 100);
+      } else if (signalPrefill.contentFormat === "framework_summary" || signalPrefill.sourceType === "framework_build") {
         setContentType("framework_summary");
         setFramework("auto");
       } else {
