@@ -539,248 +539,258 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           </div>
         </div>
 
-        {/* Framework Selector */}
-        <div>
-          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Framework</p>
-          <div className="flex flex-wrap gap-1.5">
-            {FRAMEWORK_OPTIONS.map(fw => (
-              <button
-                key={fw.key}
-                onClick={() => setFramework(fw.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                  framework === fw.key
-                    ? "bg-primary/10 border-primary/30 text-primary"
-                    : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
-                }`}
-              >
-                {fw.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Topic */}
-        <div>
-          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
-          <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
-        </div>
-
-        {/* Context */}
-        <div>
-          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Context <span className="text-muted-foreground/50 normal-case">(optional)</span></p>
-          <Textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="Add angles, data points, or frameworks to include…" className="min-h-[80px] bg-secondary/30 border-border/20 text-sm" />
-        </div>
-
-        {/* Language */}
-        <div className="flex items-center gap-3">
-          <p className="text-label uppercase tracking-wider text-xs font-semibold">Language</p>
-          <div className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
-            <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>English</button>
-            <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>العربية</button>
-          </div>
-        </div>
-
-        {/* Generate */}
-        <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
-          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          Generate {FORMAT_LABELS[contentType]?.label || "Content"}
-        </Button>
-
-        {/* Output */}
-        {displayedOutput && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-label uppercase tracking-wider text-xs font-semibold">
-                {showingShort ? "Short Version" : "Generated Content"}
-              </span>
-              <Button size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
-                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {copied ? "Copied" : "Copy"}
-              </Button>
+        {/* Framework Builder Mode */}
+        {contentType === "framework_summary" ? (
+          <FrameworkBuilderInline
+            initialTitle={topic}
+            initialDescription={context}
+          />
+        ) : (
+          <>
+            {/* Framework Selector */}
+            <div>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Framework</p>
+              <div className="flex flex-wrap gap-1.5">
+                {FRAMEWORK_OPTIONS.map(fw => (
+                  <button
+                    key={fw.key}
+                    onClick={() => setFramework(fw.key)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      framework === fw.key
+                        ? "bg-primary/10 border-primary/30 text-primary"
+                        : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
+                    }`}
+                  >
+                    {fw.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Back to full version link */}
-            {showingShort && !generatingShort && (
-              <button onClick={switchToFull} className="flex items-center gap-1 text-xs text-primary hover:underline">
-                <ChevronLeft className="w-3 h-3" /> Back to full version
-              </button>
-            )}
-
-            <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto">
-              {renderMarkdown(displayedOutput)}
-              {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
+            {/* Topic */}
+            <div>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
+              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
             </div>
 
-            {/* Generate shorter version button */}
-            {!isGeneratingAny && !showingShort && fullVersion && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-8 text-xs gap-1.5 border-border/15"
-                onClick={generateShort}
-              >
-                <Zap className="w-3 h-3" /> Generate shorter version →
-              </Button>
-            )}
+            {/* Context */}
+            <div>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Context <span className="text-muted-foreground/50 normal-case">(optional)</span></p>
+              <Textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="Add angles, data points, or frameworks to include…" className="min-h-[80px] bg-secondary/30 border-border/20 text-sm" />
+            </div>
 
-            {/* Quality Rubric */}
-            {!isGeneratingAny && (
-              <div className="p-3 rounded-xl bg-secondary/10 space-y-3">
-                {(() => {
-                  const { dimensions, total } = scoreContent(displayedOutput, lang, voiceWords, preferredStructures, selectedSignalTitle, selectedSignalInsight);
-                  const pct = Math.round((total / 80) * 100);
-                  return (
-                    <>
-                      {/* Total score */}
-                      <div className="flex items-center gap-3">
-                        <span className={`text-lg font-bold tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
-                          {total}/80
-                        </span>
-                        <div className="flex-1 bg-secondary/30 rounded-full h-2 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pct}%` }}
-                            transition={{ duration: 0.6 }}
-                            className={`h-full rounded-full ${pct >= 80 ? "bg-amber-500" : "bg-muted-foreground/40"}`}
-                          />
-                        </div>
-                        <span className={`text-xs font-medium tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
-                          {pct}%
-                        </span>
-                      </div>
-                      {/* Dimension rows */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                        {dimensions.map(d => (
-                          <div key={d.key} className="flex items-center gap-1.5" title={d.suggestion || ""}>
-                            <span className={`text-[10px] font-bold w-4 shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/50"}`}>
-                              {d.key}
+            {/* Language */}
+            <div className="flex items-center gap-3">
+              <p className="text-label uppercase tracking-wider text-xs font-semibold">Language</p>
+              <div className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
+                <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>English</button>
+                <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>العربية</button>
+              </div>
+            </div>
+
+            {/* Generate */}
+            <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
+              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Generate {FORMAT_LABELS[contentType]?.label || "Content"}
+            </Button>
+
+            {/* Output */}
+            {displayedOutput && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-label uppercase tracking-wider text-xs font-semibold">
+                    {showingShort ? "Short Version" : "Generated Content"}
+                  </span>
+                  <Button size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
+                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+
+                {/* Back to full version link */}
+                {showingShort && !generatingShort && (
+                  <button onClick={switchToFull} className="flex items-center gap-1 text-xs text-primary hover:underline">
+                    <ChevronLeft className="w-3 h-3" /> Back to full version
+                  </button>
+                )}
+
+                <div dir={lang === "ar" ? "rtl" : "ltr"} className="p-5 rounded-xl bg-secondary/20 border border-border/10 text-sm text-foreground/90 leading-relaxed max-h-[500px] overflow-y-auto">
+                  {renderMarkdown(displayedOutput)}
+                  {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
+                </div>
+
+                {/* Generate shorter version button */}
+                {!isGeneratingAny && !showingShort && fullVersion && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1.5 border-border/15"
+                    onClick={generateShort}
+                  >
+                    <Zap className="w-3 h-3" /> Generate shorter version →
+                  </Button>
+                )}
+
+                {/* Quality Rubric */}
+                {!isGeneratingAny && (
+                  <div className="p-3 rounded-xl bg-secondary/10 space-y-3">
+                    {(() => {
+                      const { dimensions, total } = scoreContent(displayedOutput, lang, voiceWords, preferredStructures, selectedSignalTitle, selectedSignalInsight);
+                      const pct = Math.round((total / 80) * 100);
+                      return (
+                        <>
+                          {/* Total score */}
+                          <div className="flex items-center gap-3">
+                            <span className={`text-lg font-bold tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
+                              {total}/80
                             </span>
-                            <span className={`text-[10px] truncate ${d.score >= 7 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/50"}`}>
-                              {d.label}
-                            </span>
-                            <span className={`text-[10px] font-semibold tabular-nums ml-auto shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/40"}`}>
-                              {d.score}
+                            <div className="flex-1 bg-secondary/30 rounded-full h-2 overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${pct}%` }}
+                                transition={{ duration: 0.6 }}
+                                className={`h-full rounded-full ${pct >= 80 ? "bg-amber-500" : "bg-muted-foreground/40"}`}
+                              />
+                            </div>
+                            <span className={`text-xs font-medium tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
+                              {pct}%
                             </span>
                           </div>
-                        ))}
-                      </div>
-                      {/* Show first suggestion for low-scoring dimension */}
-                      {(() => {
-                        const lowDim = dimensions.find(d => d.score < 7 && d.suggestion);
-                        if (!lowDim) return null;
-                        return (
-                          <p className="text-[10px] text-muted-foreground/50 leading-tight">
-                            💡 {lowDim.key}: {lowDim.suggestion}
-                          </p>
-                        );
-                      })()}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-          </motion.div>
-        )}
-        {/* Voice Feedback Buttons */}
-        {displayedOutput && !isGeneratingAny && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
-              onClick={async () => {
-                try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (!session?.user?.id) return;
-                  const uid = session.user.id;
-                  const snippet = output.slice(0, 300);
-                  const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).maybeSingle();
-                  const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
-                  if (existing) {
-                    const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
-                    await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm authority" }).eq("id", existing.id);
-                  } else {
-                    await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
-                  }
-                  toast.success("Voice engine updated ✓");
-                } catch { toast.error("Failed to update voice engine"); }
-              }}
-            >
-              <Check className="w-3 h-3 mr-1" /> Sounds like me
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
-              onClick={async () => {
-                try {
-                  const { data: { session } } = await supabase.auth.getSession();
-                  if (!session?.user?.id) return;
-                  const uid = session.user.id;
-                  const first10 = output.split(/\s+/).slice(0, 10).join(" ");
-                  const avoidNote = `Avoid this pattern: ${first10}`;
-                  const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).maybeSingle();
-                  if (existing) {
-                    const prefs = (typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) ? { ...(existing.vocabulary_preferences as any) } : {};
-                    const avoidList = Array.isArray(prefs.avoid) ? [...prefs.avoid, avoidNote] : [avoidNote];
-                    await supabase.from("authority_voice_profiles").update({ vocabulary_preferences: { ...prefs, avoid: avoidList } }).eq("id", existing.id);
-                  } else {
-                    await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] } });
-                  }
-                  toast.success("Noted. Aura will adjust.");
-                } catch { toast.error("Failed to save preference"); }
-              }}
-            >
-              <X className="w-3 h-3 mr-1" /> Doesn't sound like me
-            </Button>
-          </div>
-        )}
-
-        {/* Image Card Generator */}
-        {displayedOutput && !isGeneratingAny && (
-          <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
-        )}
-
-        {/* Visual Companion — Blackboard Schematic */}
-        {topic.trim() && !isGeneratingAny && (
-          <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
-                <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
-                  Visual Companion
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={generateVisual}
-                disabled={visualLoading}
-                className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
-              >
-                {visualLoading ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <Sparkles className="w-3 h-3 mr-1" />
+                          {/* Dimension rows */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                            {dimensions.map(d => (
+                              <div key={d.key} className="flex items-center gap-1.5" title={d.suggestion || ""}>
+                                <span className={`text-[10px] font-bold w-4 shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/50"}`}>
+                                  {d.key}
+                                </span>
+                                <span className={`text-[10px] truncate ${d.score >= 7 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/50"}`}>
+                                  {d.label}
+                                </span>
+                                <span className={`text-[10px] font-semibold tabular-nums ml-auto shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/40"}`}>
+                                  {d.score}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Show first suggestion for low-scoring dimension */}
+                          {(() => {
+                            const lowDim = dimensions.find(d => d.score < 7 && d.suggestion);
+                            if (!lowDim) return null;
+                            return (
+                              <p className="text-[10px] text-muted-foreground/50 leading-tight">
+                                💡 {lowDim.key}: {lowDim.suggestion}
+                              </p>
+                            );
+                          })()}
+                        </>
+                      );
+                    })()}
+                  </div>
                 )}
-                {visualUrl ? "Regenerate" : "Generate Schematic"}
-              </Button>
-            </div>
-            {visualLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
-              </div>
-            ) : visualUrl ? (
-              <img src={visualUrl} alt="Visual companion schematic" className="w-full" />
-            ) : (
-              <div className="py-8 text-center">
-                <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
+              </motion.div>
+            )}
+            {/* Voice Feedback Buttons */}
+            {displayedOutput && !isGeneratingAny && (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.user?.id) return;
+                      const uid = session.user.id;
+                      const snippet = output.slice(0, 300);
+                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, example_posts, tone").eq("user_id", uid).maybeSingle();
+                      const newExample = { content: snippet, added_at: new Date().toISOString(), source: "voice_feedback" };
+                      if (existing) {
+                        const posts = Array.isArray(existing.example_posts) ? [...(existing.example_posts as any[]), newExample] : [newExample];
+                        await supabase.from("authority_voice_profiles").update({ example_posts: posts, tone: existing.tone || "analytical, calm authority" }).eq("id", existing.id);
+                      } else {
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
+                      }
+                      toast.success("Voice engine updated ✓");
+                    } catch { toast.error("Failed to update voice engine"); }
+                  }}
+                >
+                  <Check className="w-3 h-3 mr-1" /> Sounds like me
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session?.user?.id) return;
+                      const uid = session.user.id;
+                      const first10 = output.split(/\s+/).slice(0, 10).join(" ");
+                      const avoidNote = `Avoid this pattern: ${first10}`;
+                      const { data: existing } = await supabase.from("authority_voice_profiles").select("id, vocabulary_preferences").eq("user_id", uid).maybeSingle();
+                      if (existing) {
+                        const prefs = (typeof existing.vocabulary_preferences === "object" && existing.vocabulary_preferences) ? { ...(existing.vocabulary_preferences as any) } : {};
+                        const avoidList = Array.isArray(prefs.avoid) ? [...prefs.avoid, avoidNote] : [avoidNote];
+                        await supabase.from("authority_voice_profiles").update({ vocabulary_preferences: { ...prefs, avoid: avoidList } }).eq("id", existing.id);
+                      } else {
+                        await supabase.from("authority_voice_profiles").insert({ user_id: uid, vocabulary_preferences: { avoid: [avoidNote] } });
+                      }
+                      toast.success("Noted. Aura will adjust.");
+                    } catch { toast.error("Failed to save preference"); }
+                  }}
+                >
+                  <X className="w-3 h-3 mr-1" /> Doesn't sound like me
+                </Button>
               </div>
             )}
-          </div>
-        )}
 
-        {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
+            {/* Image Card Generator */}
+            {displayedOutput && !isGeneratingAny && (
+              <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
+            )}
+
+            {/* Visual Companion — Blackboard Schematic */}
+            {topic.trim() && !isGeneratingAny && (
+              <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
+                      Visual Companion
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={generateVisual}
+                    disabled={visualLoading}
+                    className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
+                  >
+                    {visualLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <Sparkles className="w-3 h-3 mr-1" />
+                    )}
+                    {visualUrl ? "Regenerate" : "Generate Schematic"}
+                  </Button>
+                </div>
+                {visualLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
+                  </div>
+                ) : visualUrl ? (
+                  <img src={visualUrl} alt="Visual companion schematic" className="w-full" />
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
+          </>
+        )}
       </div>
 
       {/* Suggestions Sidebar */}
