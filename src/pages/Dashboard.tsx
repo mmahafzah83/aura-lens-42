@@ -46,6 +46,8 @@ const Dashboard = () => {
     context: string;
     signalId?: string;
     signalTitle?: string;
+    sourceType?: string;
+    sourceTitle?: string;
   } | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
