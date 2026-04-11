@@ -5,7 +5,7 @@ import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
-  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft
+  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, Image as ImageIcon
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -730,6 +730,45 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         {/* Image Card Generator */}
         {displayedOutput && !isGeneratingAny && (
           <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
+        )}
+
+        {/* Visual Companion — Blackboard Schematic */}
+        {displayedOutput && !isGeneratingAny && (
+          <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
+                <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
+                  Visual Companion
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={generateVisual}
+                disabled={visualLoading}
+                className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
+              >
+                {visualLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : (
+                  <Sparkles className="w-3 h-3 mr-1" />
+                )}
+                {visualUrl ? "Regenerate" : "Generate Schematic"}
+              </Button>
+            </div>
+            {visualLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
+              </div>
+            ) : visualUrl ? (
+              <img src={visualUrl} alt="Visual companion schematic" className="w-full" />
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
+              </div>
+            )}
+          </div>
         )}
 
         {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
