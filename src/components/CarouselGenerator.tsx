@@ -85,6 +85,7 @@ interface CarouselGeneratorProps {
   title: string;
   description?: string;
   context?: string;
+  inline?: boolean;
 }
 
 /* ── Canvas Dimensions (LinkedIn Portrait) ── */
@@ -540,7 +541,7 @@ const SlidePreview = ({
 };
 
 /* ── Main Component ──────────────────── */
-const CarouselGenerator = ({ open, onClose, title, description, context }: CarouselGeneratorProps) => {
+const CarouselGenerator = ({ open, onClose, title, description, context, inline }: CarouselGeneratorProps) => {
   const [pipelineStep, setPipelineStep] = useState<PipelineStep>("input");
   const [slides, setSlides] = useState<Record<Lang, Slide[]>>({ en: [], ar: [] });
   const [lang, setLang] = useState<Lang>("en");
