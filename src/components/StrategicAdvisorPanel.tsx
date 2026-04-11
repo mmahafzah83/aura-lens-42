@@ -40,6 +40,8 @@ interface StrategicAdvisorPanelProps {
   onOpenChat?: (msg?: string) => void;
   /** External trigger to re-fetch (increment to refresh) */
   refreshTrigger?: number;
+  /** Redirect draft to Content Studio instead of side drawer */
+  onDraftToStudio?: (prefill: { topic: string; context: string; sourceType?: string; sourceTitle?: string }) => void;
 }
 
 const ACTION_ICONS = ADVISOR_ACTION_ICONS;
@@ -50,6 +52,7 @@ const StrategicAdvisorPanel = ({
   compact = false,
   onOpenChat,
   refreshTrigger = 0,
+  onDraftToStudio,
 }: StrategicAdvisorPanelProps) => {
   const [data, setData] = useState<AdvisorData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,7 +154,11 @@ const StrategicAdvisorPanel = ({
             if (at === "build_framework") {
               setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
             } else if (at === "draft_content" || at === "plan_narrative") {
-              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
+              } else {
+                setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+              }
             } else {
               onOpenChat?.(data.recommended_move.action);
             }
@@ -290,7 +297,11 @@ const StrategicAdvisorPanel = ({
             if (at === "build_framework") {
               setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
             } else if (at === "draft_content" || at === "plan_narrative") {
-              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
+              } else {
+                setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
+              }
             } else {
               onOpenChat?.(data.recommended_move.action);
             }
