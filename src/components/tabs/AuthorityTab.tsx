@@ -733,7 +733,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         )}
 
         {/* Visual Companion — Blackboard Schematic */}
-        {displayedOutput && !isGeneratingAny && (
+        {topic.trim() && !isGeneratingAny && (
           <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm overflow-hidden">
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
               <div className="flex items-center gap-2">
