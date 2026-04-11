@@ -992,7 +992,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
         {/* ── Recommended Move (from Strategy page) ── */}
         <div style={{ marginBottom: 16 }}>
-          <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} />
+          <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
         </div>
 
         {/* ── Sub-tab navigation ── */}
