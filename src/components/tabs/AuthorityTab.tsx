@@ -28,7 +28,6 @@ type ContentFramework = "auto" | "hook_insight_question" | "slap" | "bab" | "pas
 const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
   post: { label: "LinkedIn Post", icon: PenTool },
   carousel: { label: "Carousel", icon: LayoutGrid },
-  essay: { label: "Strategic Essay", icon: FileText },
   framework_summary: { label: "Framework Builder", icon: BookOpen },
 };
 
