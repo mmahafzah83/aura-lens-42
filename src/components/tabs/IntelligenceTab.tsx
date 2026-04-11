@@ -490,6 +490,7 @@ const InsightsSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: s
 const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: string) => void; onDraftToStudio?: (prefill: SignalDraftPrefill) => void }) => {
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [loading, setLoading] = useState(true);
+  const [builderData, setBuilderData] = useState<{ title: string; steps: string[]; summary?: string } | null>(null);
 
   useEffect(() => {
     (async () => {
