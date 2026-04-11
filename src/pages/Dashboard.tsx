@@ -41,6 +41,12 @@ const Dashboard = () => {
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [signalDraftPrefill, setSignalDraftPrefill] = useState<{
+    topic: string;
+    context: string;
+    signalId?: string;
+    signalTitle?: string;
+  } | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
@@ -362,13 +368,23 @@ const Dashboard = () => {
 
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
-                <IntelligenceTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onOpenCapture={() => setCaptureOpen(true)} />
+                <IntelligenceTab
+                  entries={entries}
+                  onOpenChat={openChat}
+                  onRefresh={fetchEntries}
+                  onOpenCapture={() => setCaptureOpen(true)}
+                  onDraftToStudio={(prefill) => {
+                    setSignalDraftPrefill(prefill);
+                    setActiveTab("authority");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
               </div>
             )}
 
             {activeTab === "authority" && (
               <div className="animate-tab-spring">
-                <AuthorityTab entries={entries} onRefresh={fetchEntries} />
+                <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} />
               </div>
             )}
 

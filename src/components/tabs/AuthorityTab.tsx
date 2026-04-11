@@ -5,7 +5,7 @@ import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
-  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft
+  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, Image as ImageIcon
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -197,6 +197,13 @@ function scoreContent(
    CREATE TAB — Content Creation Engine
    ═══════════════════════════════════════════ */
 
+interface SignalPrefill {
+  topic: string;
+  context: string;
+  signalId?: string;
+  signalTitle?: string;
+}
+
 interface SignalSuggestion {
   id: string;
   signal_title: string;
@@ -219,7 +226,7 @@ interface PlanPrefill {
   planTitle: string;
 }
 
-const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
+const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
@@ -240,6 +247,10 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
   const [shortVersion, setShortVersion] = useState("");
   const [showingShort, setShowingShort] = useState(false);
   const [generatingShort, setGeneratingShort] = useState(false);
+
+  // Visual companion state
+  const [visualUrl, setVisualUrl] = useState<string | null>(null);
+  const [visualLoading, setVisualLoading] = useState(false);
 
   // AI suggestions
   const [signals, setSignals] = useState<SignalSuggestion[]>([]);
@@ -306,6 +317,47 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
       setShowingShort(false);
     }
   }, [planPrefill]);
+
+  // Apply signal prefill from Intelligence page
+  useEffect(() => {
+    if (signalPrefill) {
+      setTopic(signalPrefill.topic);
+      setContext(signalPrefill.context);
+      setContentType("post");
+      setFramework("hook_insight_question");
+      setSelectedSignalTitle(signalPrefill.signalTitle || null);
+      setSelectedSignalInsight(signalPrefill.context || null);
+      setOutput("");
+      setFullVersion("");
+      setShortVersion("");
+      setShowingShort(false);
+      setVisualUrl(null);
+      setPlanRef(null);
+      onSignalPrefillConsumed?.();
+    }
+  }, [signalPrefill]);
+
+  // Visual companion generation
+  const generateVisual = async () => {
+    setVisualLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const prompt = `Strategic framework diagram for: ${topic}. Key insight: ${output ? output.slice(0, 120) : context.slice(0, 120)}`;
+      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+        body: { image_prompt: prompt },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setVisualUrl(data.image_url || null);
+      toast.success("Visual generated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate visual");
+    } finally {
+      setVisualLoading(false);
+    }
+  };
 
   const streamGeneration = async (extraPromptInstruction?: string): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -678,6 +730,45 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
         {/* Image Card Generator */}
         {displayedOutput && !isGeneratingAny && (
           <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
+        )}
+
+        {/* Visual Companion — Blackboard Schematic */}
+        {displayedOutput && !isGeneratingAny && (
+          <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
+                <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
+                  Visual Companion
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={generateVisual}
+                disabled={visualLoading}
+                className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
+              >
+                {visualLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                ) : (
+                  <Sparkles className="w-3 h-3 mr-1" />
+                )}
+                {visualUrl ? "Regenerate" : "Generate Schematic"}
+              </Button>
+            </div>
+            {visualLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
+              </div>
+            ) : visualUrl ? (
+              <img src={visualUrl} alt="Visual companion schematic" className="w-full" />
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
+              </div>
+            )}
+          </div>
         )}
 
         {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
@@ -1618,6 +1709,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 interface AuthorityTabProps {
   entries: any[];
   onRefresh?: () => void;
+  signalPrefill?: SignalPrefill | null;
+  onSignalPrefillConsumed?: () => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
@@ -1627,7 +1720,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "library", label: "Library", icon: BookOpen },
 ];
 
-const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
+const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
@@ -1641,6 +1734,13 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
     setPlanPrefill({ ...prefill });
     setActiveTab("create");
   };
+
+  // When signalPrefill arrives, switch to create tab
+  useEffect(() => {
+    if (signalPrefill) {
+      setActiveTab("create");
+    }
+  }, [signalPrefill]);
 
   return (
     <div className="space-y-8">
@@ -1686,7 +1786,7 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "analyze" && <AnalyzeTab />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
