@@ -759,27 +759,122 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       Visual Companion
                     </p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={generateVisual}
-                    disabled={visualLoading}
-                    className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
-                  >
-                    {visualLoading ? (
-                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                    ) : (
-                      <Sparkles className="w-3 h-3 mr-1" />
-                    )}
-                    {visualUrl ? "Regenerate" : "Generate Schematic"}
-                  </Button>
+                  {!visualUrl && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={generateVisual}
+                      disabled={visualLoading}
+                      className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
+                    >
+                      {visualLoading ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : (
+                        <Sparkles className="w-3 h-3 mr-1" />
+                      )}
+                      Generate Schematic
+                    </Button>
+                  )}
                 </div>
                 {visualLoading ? (
                   <div className="flex items-center justify-center py-10">
                     <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
                   </div>
                 ) : visualUrl ? (
-                  <img src={visualUrl} alt="Visual companion schematic" className="w-full" />
+                  <div className="space-y-0">
+                    {/* Full visual preview — no cropping */}
+                    <div className="w-full">
+                      <img
+                        src={visualUrl}
+                        alt="Visual companion schematic"
+                        className="w-full h-auto object-contain"
+                        style={{ maxHeight: "none" }}
+                      />
+                    </div>
+                    {/* Post-visual action bar */}
+                    <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border/8 bg-secondary/10">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={generateVisual}
+                        disabled={visualLoading}
+                        className="h-7 text-[11px] gap-1.5 border-border/15"
+                      >
+                        <Sparkles className="w-3 h-3" /> Regenerate Visual
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setVisualUrl(null);
+                        }}
+                        className="h-7 text-[11px] gap-1.5 border-border/15"
+                      >
+                        <PenTool className="w-3 h-3" /> Edit Text
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session?.user?.id) throw new Error("Not authenticated");
+                            const { error } = await supabase.from("content_items").insert({
+                              user_id: session.user.id,
+                              type: "linkedin_post",
+                              title: topic,
+                              body: stripMarkdown(output || fullVersion || ""),
+                              status: "draft",
+                              language: lang,
+                              generation_params: {
+                                visual_url: visualUrl,
+                                framework,
+                                content_type: contentType,
+                              },
+                            });
+                            if (error) throw error;
+                            toast.success("Saved to Library");
+                          } catch (e: any) {
+                            toast.error(e.message || "Failed to save");
+                          }
+                        }}
+                        className="h-7 text-[11px] gap-1.5 border-border/15"
+                      >
+                        <Save className="w-3 h-3" /> Save to Library
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            const resp = await fetch(visualUrl!);
+                            const blob = await resp.blob();
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `visual-${topic.replace(/\s+/g, "-").slice(0, 30)}.png`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          } catch {
+                            toast.error("Failed to download");
+                          }
+                        }}
+                        className="h-7 text-[11px] gap-1.5 border-border/15"
+                      >
+                        <Download className="w-3 h-3" /> Download
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setVisualUrl(null)}
+                        className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground ml-auto"
+                      >
+                        <X className="w-3 h-3" /> Cancel
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="py-8 text-center">
                     <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
