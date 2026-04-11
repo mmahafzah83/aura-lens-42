@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
-import CarouselGenerator from "./CarouselGenerator";
+
 
 /* ── Types ── */
 interface StrategicSignal {
@@ -38,6 +38,7 @@ interface EvidenceSummary {
 
 interface StrategicIntelligenceEngineProps {
   onOpenChat?: (msg?: string) => void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalTitle?: string; contentFormat?: string }) => void;
 }
 
 /* ── Sub-components ── */
@@ -76,7 +77,7 @@ const OpportunitySection = ({ icon: Icon, label, children, accentClass = "text-p
 );
 
 /* ── Main Component ── */
-const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngineProps) => {
+const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicIntelligenceEngineProps) => {
   const [signals, setSignals] = useState<StrategicSignal[]>([]);
   const [evidence, setEvidence] = useState<EvidenceSummary>({ totalFragments: 0, totalEntries: 0, totalDocuments: 0, topTypes: [] });
   const [loading, setLoading] = useState(true);
@@ -88,7 +89,6 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
   const [explorerSignal, setExplorerSignal] = useState<StrategicSignal | null>(null);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
-  const [carouselData, setCarouselData] = useState<{ title: string; description?: string; context?: string } | null>(null);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -383,7 +383,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
                         <button onClick={() => setExplorerSignal(signal)} className="flex-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium">
                           <Search className="w-3.5 h-3.5" /> Explore Evidence
                         </button>
-                        <button onClick={() => setCarouselData({ title: signal.signal_title, description: signal.explanation, context: signal.strategic_implications })} className="text-[11px] bg-primary/5 hover:bg-primary/10 text-primary/70 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium">
+                        <button onClick={() => onDraftToStudio?.({ topic: signal.signal_title, context: `${signal.explanation}\n\n${signal.strategic_implications}`, signalTitle: signal.signal_title, contentFormat: "carousel" })} className="text-[11px] bg-primary/5 hover:bg-primary/10 text-primary/70 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium">
                           <LayoutGrid className="w-3.5 h-3.5" /> Carousel
                         </button>
                         <button onClick={() => dismissSignal(signal.id)} className="text-[11px] text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1">
@@ -466,7 +466,6 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
       <SignalExplorer signal={explorerSignal} open={!!explorerSignal} onClose={() => setExplorerSignal(null)} />
       <FrameworkBuilder open={!!builderData} onClose={() => setBuilderData(null)} initialTitle={builderData?.title || ""} initialDescription={builderData?.description || ""} initialSteps={builderData?.steps || []} />
       <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
-      <CarouselGenerator open={!!carouselData} onClose={() => setCarouselData(null)} title={carouselData?.title || ""} description={carouselData?.description} context={carouselData?.context} />
     </div>
   );
 };
