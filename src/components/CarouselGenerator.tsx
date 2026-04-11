@@ -1514,11 +1514,13 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
     </>
   );
 
-        <div className="px-4 pt-3 pb-1">
-          <StepIndicator />
-        </div>
+  const bodyContent = (
+    <>
+      <div className="px-4 pt-3 pb-1">
+        <StepIndicator />
+      </div>
 
-        <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
+      <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
 
           {/* ═══ STEP: Generating Frameworks ═══ */}
           {(pipelineStep === "input" || generatingFrameworks) && (
