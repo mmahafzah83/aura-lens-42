@@ -1904,9 +1904,51 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
               </button>
             </>
           )}
-        </div>
+      </div>
 
-        <canvas ref={canvasRef} className="hidden" width={CANVAS_W} height={CANVAS_H} />
+      <canvas ref={canvasRef} className="hidden" width={CANVAS_W} height={CANVAS_H} />
+    </>
+  );
+
+  if (inline) {
+    if (!open) return null;
+    return (
+      <div className="w-full bg-background/95 rounded-2xl border border-primary/10 overflow-hidden">
+        {headerContent}
+        {bodyContent}
+      </div>
+    );
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={v => !v && handleClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-background/95 backdrop-blur-xl border-primary/10 p-0">
+        <SheetHeader className="p-5 pb-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/10">
+              <LayoutGrid className="w-4.5 h-4.5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <SheetTitle className="text-base font-bold text-foreground leading-tight">
+                LinkedIn Carousel
+              </SheetTitle>
+              <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
+                {pipelineStep === "visuals"
+                  ? `${imagesReady}/${imagesTotal} visuals generated`
+                  : pipelineStep === "carousel"
+                  ? `${currentSlides.length} slides · ${PALETTES[style].name}`
+                  : pipelineStep === "visual_plan"
+                  ? `${visualPlan.length} slides planned`
+                  : pipelineStep === "frameworks"
+                  ? `${frameworks.length} frameworks generated`
+                  : "Analyzing topic…"
+                }
+              </SheetDescription>
+            </div>
+          </div>
+        </SheetHeader>
+        <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
+        {bodyContent}
       </SheetContent>
     </Sheet>
   );
