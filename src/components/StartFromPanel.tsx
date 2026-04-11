@@ -219,7 +219,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
 
   const sourceIcon = (type: CuratedItem["sourceType"]) => {
     switch (type) {
-      case "signal": return <Zap className="w-3 h-3 text-amber-500/70" />;
+      case "signal": return <Zap className="w-3 h-3 text-primary/70" />;
       case "framework": return <BookOpen className="w-3 h-3 text-blue-400/70" />;
       default: return <Lightbulb className="w-3 h-3 text-primary/50" />;
     }
@@ -270,12 +270,12 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                     onClick={() => handleItemClick(item)}
                     className={`w-full text-left p-3 rounded-xl border transition-all ${
                       confirmId === item.id
-                        ? "bg-amber-500/10 border-amber-500/30"
+                        ? "bg-primary/10 border-primary/30"
                         : "bg-card/60 border-border/8 hover:border-primary/15"
                     }`}
                   >
                     {confirmId === item.id ? (
-                      <p className="text-[11px] text-amber-500 font-medium">
+                      <p className="text-[11px] text-primary font-medium">
                         Replace current draft? Click again to confirm.
                       </p>
                     ) : (
