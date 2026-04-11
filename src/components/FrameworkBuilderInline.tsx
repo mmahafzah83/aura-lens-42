@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Target, RefreshCw, Check, Plus, Trash2, ImageIcon } from "lucide-react";
+import { Loader2, Target, RefreshCw, Check, Plus, Trash2, ImageIcon, Download, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,55 @@ const DEFAULT_STEPS: StepDraft[] = [
   { step_number: 3, step_title: "", step_description: "" },
 ];
 
+function generateSmartSteps(title: string, description: string): StepDraft[] {
+  const t = title.toLowerCase();
+  const d = description.toLowerCase();
+  const combined = `${t} ${d}`;
+
+  if (combined.includes("transform") || combined.includes("change") || combined.includes("shift")) {
+    return [
+      { step_number: 1, step_title: "Assess Current State", step_description: "Map the existing situation, gaps, and readiness for change." },
+      { step_number: 2, step_title: "Design the Transformation Path", step_description: "Define the target state, key milestones, and success criteria." },
+      { step_number: 3, step_title: "Execute & Embed", step_description: "Implement changes systematically and anchor new behaviors." },
+    ];
+  }
+  if (combined.includes("strategy") || combined.includes("strategic") || combined.includes("plan")) {
+    return [
+      { step_number: 1, step_title: "Define Strategic Intent", step_description: "Clarify the core objective and the problem being solved." },
+      { step_number: 2, step_title: "Analyse the Landscape", step_description: "Map stakeholders, constraints, opportunities, and competitive dynamics." },
+      { step_number: 3, step_title: "Commit to Action", step_description: "Prioritise initiatives, allocate resources, and set accountability." },
+    ];
+  }
+  if (combined.includes("lead") || combined.includes("leadership") || combined.includes("team")) {
+    return [
+      { step_number: 1, step_title: "Align on Purpose", step_description: "Create shared clarity on what the team exists to achieve." },
+      { step_number: 2, step_title: "Build Trust & Capability", step_description: "Invest in relationships, skills, and psychological safety." },
+      { step_number: 3, step_title: "Drive Accountable Execution", step_description: "Set rhythms, track progress, and celebrate wins." },
+    ];
+  }
+  if (combined.includes("client") || combined.includes("customer") || combined.includes("stakeholder")) {
+    return [
+      { step_number: 1, step_title: "Understand Needs Deeply", step_description: "Listen, observe, and uncover the real priorities behind stated requirements." },
+      { step_number: 2, step_title: "Co-Create Solutions", step_description: "Collaborate on options that balance value, feasibility, and risk." },
+      { step_number: 3, step_title: "Deliver & Strengthen the Relationship", step_description: "Execute with excellence and build long-term trust." },
+    ];
+  }
+  if (combined.includes("innovat") || combined.includes("create") || combined.includes("build") || combined.includes("design")) {
+    return [
+      { step_number: 1, step_title: "Identify the Opportunity", step_description: "Define the unmet need or gap that this framework addresses." },
+      { step_number: 2, step_title: "Prototype the Approach", step_description: "Develop a lightweight version, test assumptions, and iterate." },
+      { step_number: 3, step_title: "Scale & Systematise", step_description: "Refine the approach into a repeatable, teachable process." },
+    ];
+  }
+
+  // Generic but meaningful fallback
+  return [
+    { step_number: 1, step_title: "Define the Foundation", step_description: "Establish the core principles, scope, and success criteria." },
+    { step_number: 2, step_title: "Develop the Approach", step_description: "Design the key actions, methods, and decision points." },
+    { step_number: 3, step_title: "Deliver & Iterate", step_description: "Execute, measure results, and refine based on outcomes." },
+  ];
+}
+
 const FrameworkBuilderInline = ({
   initialTitle = "",
   initialDescription = "",
@@ -36,7 +85,9 @@ const FrameworkBuilderInline = ({
   const [steps, setSteps] = useState<StepDraft[]>(
     initialSteps.length > 0
       ? initialSteps.map((s, i) => ({ step_number: i + 1, step_title: s, step_description: "" }))
-      : [...DEFAULT_STEPS]
+      : initialTitle.trim()
+        ? generateSmartSteps(initialTitle, initialDescription)
+        : [...DEFAULT_STEPS]
   );
   const [saving, setSaving] = useState(false);
   const [generatingDiagram, setGeneratingDiagram] = useState(false);
@@ -53,7 +104,9 @@ const FrameworkBuilderInline = ({
     setSteps(
       initialSteps.length > 0
         ? initialSteps.map((s, i) => ({ step_number: i + 1, step_title: s, step_description: "" }))
-        : [...DEFAULT_STEPS]
+        : initialTitle.trim()
+          ? generateSmartSteps(initialTitle, initialDescription)
+          : [...DEFAULT_STEPS]
     );
     setCreatedId(null);
     setDiagramUrl(null);
@@ -104,7 +157,9 @@ const FrameworkBuilderInline = ({
           })
           .eq("id", createdId);
         if (error) throw error;
-        toast.success("Framework updated");
+        toast.success("Framework saved — available in your Library", {
+          description: "You can find it anytime in Publish → Library.",
+        });
       } else {
         const { data, error } = await supabase
           .from("master_frameworks")
@@ -120,7 +175,9 @@ const FrameworkBuilderInline = ({
           .single();
         if (error) throw error;
         setCreatedId(data.id);
-        toast.success("Framework created — you can now generate a diagram or approve it");
+        toast.success("Framework created — saved to your Library", {
+          description: "Generate a diagram or approve to activate it.",
+        });
       }
     } catch (e: any) {
       toast.error(e.message || "Failed to save framework");
@@ -163,6 +220,25 @@ const FrameworkBuilderInline = ({
     }
   };
 
+  const handleDownloadDiagram = async () => {
+    if (!diagramUrl) return;
+    try {
+      const response = await fetch(diagramUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(title || "framework").replace(/\s+/g, "_")}_diagram.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Diagram downloaded");
+    } catch {
+      toast.error("Failed to download diagram");
+    }
+  };
+
   const handleApprove = async () => {
     if (!createdId) return;
     setSaving(true);
@@ -198,6 +274,11 @@ const FrameworkBuilderInline = ({
         <h3 className="text-base font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
           {createdId ? "Refine Framework" : "Build Framework"}
         </h3>
+        {initialTitle.trim() && !createdId && (
+          <span className="flex items-center gap-1 text-[10px] text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+            <Sparkles className="w-2.5 h-2.5" /> Smart steps generated
+          </span>
+        )}
       </div>
 
       {/* Title */}
@@ -270,13 +351,23 @@ const FrameworkBuilderInline = ({
 
       {/* Diagram Preview */}
       {diagramUrl && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="rounded-xl overflow-hidden border border-border/10 bg-secondary/10">
             <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
           </div>
           {diagramMeta && (
             <p className="text-[10px] text-muted-foreground text-center capitalize">{diagramMeta}</p>
           )}
+          <div className="flex justify-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleDownloadDiagram}
+              className="text-xs border-border/15 gap-1.5"
+            >
+              <Download className="w-3 h-3" /> Download Diagram
+            </Button>
+          </div>
         </div>
       )}
 
@@ -312,11 +403,12 @@ const FrameworkBuilderInline = ({
 
             <Button
               size="sm"
+              variant="outline"
               onClick={handleApprove}
               disabled={saving}
-              className="text-xs bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/20"
+              className="text-xs border-emerald-500/25 bg-emerald-500/10 text-foreground hover:bg-emerald-500/20"
             >
-              <Check className="w-3 h-3 mr-1.5" /> Approve & Activate
+              <Check className="w-3 h-3 mr-1.5 text-emerald-400" /> Approve & Activate
             </Button>
           </>
         )}

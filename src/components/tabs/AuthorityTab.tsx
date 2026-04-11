@@ -5,7 +5,7 @@ import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
-  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, Image as ImageIcon
+  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, Image as ImageIcon, Download
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -1518,6 +1518,107 @@ const LibraryCard = ({
   );
 };
 
+interface SavedFramework {
+  id: string;
+  title: string;
+  summary: string | null;
+  tags: string[];
+  diagram_url: string | null;
+  created_at: string;
+}
+
+const FrameworkLibrarySection = () => {
+  const [frameworks, setFrameworks] = useState<SavedFramework[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("master_frameworks")
+        .select("id, title, summary, tags, diagram_url, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setFrameworks((data || []) as SavedFramework[]);
+      setLoading(false);
+    })();
+  }, []);
+
+  const handleDownload = async (url: string, title: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${title.replace(/\s+/g, "_")}_diagram.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      toast.error("Failed to download diagram");
+    }
+  };
+
+  if (loading || frameworks.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Target className="w-4 h-4 text-primary/60" />
+        <h3 className="text-sm font-semibold text-foreground">Frameworks</h3>
+        <span className="text-[10px] text-muted-foreground/50">{frameworks.length}</span>
+      </div>
+      <div className="grid gap-2">
+        {frameworks.map(fw => {
+          const isApproved = fw.tags?.includes("Approved");
+          return (
+            <div key={fw.id} className="glass-card rounded-xl p-4 border border-border/8 hover:border-primary/10 transition-all">
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground leading-snug line-clamp-1">{fw.title}</p>
+                  {fw.summary && <p className="text-xs text-muted-foreground/60 mt-0.5 line-clamp-1">{fw.summary}</p>}
+                </div>
+                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                  isApproved
+                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+                    : "bg-muted/20 text-muted-foreground border-border/15"
+                }`}>
+                  {isApproved ? "Approved" : "Draft"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(fw.created_at)}</span>
+                <div className="flex-1" />
+                {fw.diagram_url && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs gap-1.5"
+                      onClick={() => window.open(fw.diagram_url!, "_blank")}
+                    >
+                      <ImageIcon className="w-3 h-3" /> View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs gap-1.5"
+                      onClick={() => handleDownload(fw.diagram_url!, fw.title)}
+                    >
+                      <Download className="w-3 h-3" /> Download
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [posts, setPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1630,6 +1731,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         document.body
       )}
       <VoiceTrainer />
+      <FrameworkLibrarySection />
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
