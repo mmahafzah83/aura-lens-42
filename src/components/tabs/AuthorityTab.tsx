@@ -752,7 +752,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             {topic.trim() && !isGeneratingAny && (() => {
               const visualMode = visualLoading || !!visualUrl;
               return (
-                <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${
+                <div className={`rounded-xl border transition-all duration-300 ${
                   visualMode
                     ? "border-primary/20 bg-card/80 backdrop-blur-sm shadow-lg shadow-primary/5"
                     : "border-border/10 bg-card/60 backdrop-blur-sm"
@@ -795,14 +795,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       <p className="text-xs text-muted-foreground/50">Creating your visual…</p>
                     </div>
                   ) : visualUrl ? (
-                    <div className="space-y-0">
-                      {/* Full visual preview */}
-                      <div className="w-full bg-[#0a0a0a] flex items-center justify-center p-4">
+                    <div>
+                      {/* Scrollable visual preview */}
+                      <div className="w-full overflow-y-auto bg-[#0a0a0a] p-4" style={{ maxHeight: "60vh" }}>
                         <img
                           src={visualUrl}
                           alt="Visual companion schematic"
-                          className="w-full h-auto object-contain rounded-lg"
-                          style={{ maxHeight: "none" }}
+                          className="max-w-full h-auto object-contain rounded-lg mx-auto block"
                         />
                       </div>
                       {/* Action bar */}
