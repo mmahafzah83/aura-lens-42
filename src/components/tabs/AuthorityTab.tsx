@@ -1991,7 +1991,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         </div>
       )}
 
-      <StrategicAdvisorPanel context="authority" compact />
+      
 
       <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-full sm:w-fit">
         {TABS.map(tab => {
