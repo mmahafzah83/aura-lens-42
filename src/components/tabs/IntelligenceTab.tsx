@@ -27,6 +27,8 @@ interface SignalDraftPrefill {
   context: string;
   signalId?: string;
   signalTitle?: string;
+  sourceType?: string;
+  sourceTitle?: string;
 }
 
 interface IntelligenceTabProps {
