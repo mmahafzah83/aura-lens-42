@@ -431,7 +431,6 @@ const InsightsSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: s
   const [insights, setInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [builderData, setBuilderData] = useState<{ title: string; steps: string[]; summary?: string } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -475,22 +474,11 @@ const InsightsSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?: s
 
           <InsightActions
             onExpand={() => { setExpandedId(expandedId === insight.id ? null : insight.id); onOpenChat?.(`Expand insight: ${insight.title}\n\n${insight.content}`); }}
-            onBuildFramework={() => setBuilderData({ title: insight.title, steps: [], summary: insight.content })}
+            onBuildFramework={() => onDraftToStudio?.({ topic: insight.title, context: insight.content, sourceType: "framework_build", sourceTitle: insight.title })}
             onDraftContent={() => onDraftToStudio?.({ topic: insight.title, context: insight.content, sourceType: "insight", sourceTitle: insight.title })}
           />
         </div>
       ))}
-
-      {builderData && (
-        <FrameworkBuilder
-          initialTitle={builderData.title}
-          initialSteps={builderData.steps}
-          initialDescription={builderData.summary || ""}
-          open={!!builderData}
-          onClose={() => setBuilderData(null)}
-          onFrameworkCreated={() => setBuilderData(null)}
-        />
-      )}
     </div>
   );
 };

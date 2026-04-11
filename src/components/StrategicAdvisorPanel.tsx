@@ -152,8 +152,11 @@ const StrategicAdvisorPanel = ({
           onClick={() => {
             const at = data.recommended_move.action_type;
             if (at === "build_framework") {
-              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
-            } else if (at === "draft_content" || at === "plan_narrative") {
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "framework_build", sourceTitle: data.recommended_move.action });
+              } else {
+                setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+              }
               if (onDraftToStudio) {
                 onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
               } else {
@@ -240,11 +243,13 @@ const StrategicAdvisorPanel = ({
                 });
             }}
             onCreateInsight={() => onOpenChat?.(`Create a strategic insight from signal: ${data.priority_signal.title}`)}
-            onDevelopFramework={() => setBuilderData({
-              title: data.priority_signal.title,
-              description: data.priority_signal.explanation || "",
-              steps: [],
-            })}
+            onDevelopFramework={() => {
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.priority_signal.title, context: data.priority_signal.explanation || "", sourceType: "framework_build", sourceTitle: data.priority_signal.title });
+              } else {
+                setBuilderData({ title: data.priority_signal.title, description: data.priority_signal.explanation || "", steps: [] });
+              }
+            }}
             onDraftContent={() => setDraftData({
               title: data.priority_signal.title,
               context: data.priority_signal.explanation || "",
@@ -270,11 +275,13 @@ const StrategicAdvisorPanel = ({
         <div className="pt-1">
           <InsightActions
             onExpand={() => onOpenChat?.(`Expand insight: ${data.strategic_insight.title}`)}
-            onBuildFramework={() => setBuilderData({
-              title: data.strategic_insight.title,
-              description: data.strategic_insight.interpretation,
-              steps: [],
-            })}
+            onBuildFramework={() => {
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.strategic_insight.title, context: data.strategic_insight.interpretation, sourceType: "framework_build", sourceTitle: data.strategic_insight.title });
+              } else {
+                setBuilderData({ title: data.strategic_insight.title, description: data.strategic_insight.interpretation, steps: [] });
+              }
+            }}
             onDraftContent={() => setDraftData({
               title: data.strategic_insight.title,
               context: data.strategic_insight.interpretation,
@@ -295,7 +302,11 @@ const StrategicAdvisorPanel = ({
           <Button size="sm" className="text-xs gap-1.5" onClick={() => {
             const at = data.recommended_move.action_type;
             if (at === "build_framework") {
-              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "framework_build", sourceTitle: data.recommended_move.action });
+              } else {
+                setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+              }
             } else if (at === "draft_content" || at === "plan_narrative") {
               if (onDraftToStudio) {
                 onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
