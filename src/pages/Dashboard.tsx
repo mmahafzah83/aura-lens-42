@@ -362,7 +362,15 @@ const Dashboard = () => {
 
             {activeTab === "identity" && (
               <div className="animate-tab-spring">
-                <IdentityTab onResetDiagnostic={() => setShowDiagnostic(true)} onSwitchTab={switchTab} />
+                <IdentityTab
+                  onResetDiagnostic={() => setShowDiagnostic(true)}
+                  onSwitchTab={switchTab}
+                  onDraftToStudio={(prefill) => {
+                    setSignalDraftPrefill(prefill);
+                    setActiveTab("authority");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
               </div>
             )}
 
