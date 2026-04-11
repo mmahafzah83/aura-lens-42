@@ -302,7 +302,11 @@ const StrategicAdvisorPanel = ({
           <Button size="sm" className="text-xs gap-1.5" onClick={() => {
             const at = data.recommended_move.action_type;
             if (at === "build_framework") {
-              setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+              if (onDraftToStudio) {
+                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "framework_build", sourceTitle: data.recommended_move.action });
+              } else {
+                setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
+              }
             } else if (at === "draft_content" || at === "plan_narrative") {
               if (onDraftToStudio) {
                 onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
