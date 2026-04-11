@@ -85,6 +85,7 @@ interface CarouselGeneratorProps {
   title: string;
   description?: string;
   context?: string;
+  inline?: boolean;
 }
 
 /* ── Canvas Dimensions (LinkedIn Portrait) ── */
@@ -540,7 +541,7 @@ const SlidePreview = ({
 };
 
 /* ── Main Component ──────────────────── */
-const CarouselGenerator = ({ open, onClose, title, description, context }: CarouselGeneratorProps) => {
+const CarouselGenerator = ({ open, onClose, title, description, context, inline }: CarouselGeneratorProps) => {
   const [pipelineStep, setPipelineStep] = useState<PipelineStep>("input");
   const [slides, setSlides] = useState<Record<Lang, Slide[]>>({ en: [], ar: [] });
   const [lang, setLang] = useState<Lang>("en");
@@ -1474,44 +1475,52 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
     </div>
   );
 
-  return (
-    <Sheet open={open} onOpenChange={v => !v && handleClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-background/95 backdrop-blur-xl border-primary/10 p-0">
-        {/* Header */}
-        <div className="p-5 pb-0">
-          <SheetHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/10">
-                <LayoutGrid className="w-4.5 h-4.5 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <SheetTitle className="text-base font-bold text-foreground leading-tight">
-                  LinkedIn Carousel
-                </SheetTitle>
-                <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
-                  {pipelineStep === "visuals"
-                    ? `${imagesReady}/${imagesTotal} visuals generated`
-                    : pipelineStep === "carousel"
-                    ? `${currentSlides.length} slides · ${PALETTES[style].name}`
-                    : pipelineStep === "visual_plan"
-                    ? `${visualPlan.length} slides planned`
-                    : pipelineStep === "frameworks"
-                    ? `${frameworks.length} frameworks generated`
-                    : "Analyzing topic…"
-                  }
-                </SheetDescription>
-              </div>
-            </div>
-          </SheetHeader>
+  const headerContent = (
+    <>
+      {/* Header */}
+      <div className="p-5 pb-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/10">
+            <LayoutGrid className="w-4.5 h-4.5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-foreground leading-tight">
+              LinkedIn Carousel
+            </h3>
+            <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+              {pipelineStep === "visuals"
+                ? `${imagesReady}/${imagesTotal} visuals generated`
+                : pipelineStep === "carousel"
+                ? `${currentSlides.length} slides · ${PALETTES[style].name}`
+                : pipelineStep === "visual_plan"
+                ? `${visualPlan.length} slides planned`
+                : pipelineStep === "frameworks"
+                ? `${frameworks.length} frameworks generated`
+                : "Analyzing topic…"
+              }
+            </p>
+          </div>
+          {inline && (
+            <button
+              onClick={handleClose}
+              className="text-[11px] text-muted-foreground/50 hover:text-foreground flex items-center gap-1 transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Back to setup
+            </button>
+          )}
         </div>
+      </div>
+      <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
+    </>
+  );
 
-        <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
+  const bodyContent = (
+    <>
+      <div className="px-4 pt-3 pb-1">
+        <StepIndicator />
+      </div>
 
-        <div className="px-4 pt-3 pb-1">
-          <StepIndicator />
-        </div>
-
-        <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
+      <div className="px-4 sm:px-5 py-4 space-y-4 overflow-x-hidden">
 
           {/* ═══ STEP: Generating Frameworks ═══ */}
           {(pipelineStep === "input" || generatingFrameworks) && (
@@ -1895,9 +1904,51 @@ const CarouselGenerator = ({ open, onClose, title, description, context }: Carou
               </button>
             </>
           )}
-        </div>
+      </div>
 
-        <canvas ref={canvasRef} className="hidden" width={CANVAS_W} height={CANVAS_H} />
+      <canvas ref={canvasRef} className="hidden" width={CANVAS_W} height={CANVAS_H} />
+    </>
+  );
+
+  if (inline) {
+    if (!open) return null;
+    return (
+      <div className="w-full bg-background/95 rounded-2xl border border-primary/10 overflow-hidden">
+        {headerContent}
+        {bodyContent}
+      </div>
+    );
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={v => !v && handleClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-background/95 backdrop-blur-xl border-primary/10 p-0">
+        <SheetHeader className="p-5 pb-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-amber-500/10 flex items-center justify-center border border-primary/10">
+              <LayoutGrid className="w-4.5 h-4.5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <SheetTitle className="text-base font-bold text-foreground leading-tight">
+                LinkedIn Carousel
+              </SheetTitle>
+              <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
+                {pipelineStep === "visuals"
+                  ? `${imagesReady}/${imagesTotal} visuals generated`
+                  : pipelineStep === "carousel"
+                  ? `${currentSlides.length} slides · ${PALETTES[style].name}`
+                  : pipelineStep === "visual_plan"
+                  ? `${visualPlan.length} slides planned`
+                  : pipelineStep === "frameworks"
+                  ? `${frameworks.length} frameworks generated`
+                  : "Analyzing topic…"
+                }
+              </SheetDescription>
+            </div>
+          </div>
+        </SheetHeader>
+        <div className="h-0.5 bg-gradient-to-r from-primary/40 via-amber-500/30 to-transparent mt-4" />
+        {bodyContent}
       </SheetContent>
     </Sheet>
   );
