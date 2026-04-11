@@ -528,7 +528,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         {/* Format Selector */}
         <div>
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3">Content Format</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any }][]).map(([key, { label, icon: Icon }]) => (
               <button key={key} onClick={() => setContentType(key)} className={`p-3 rounded-xl border text-left transition-all ${contentType === key ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"}`}>
                 <Icon className="w-4 h-4 mb-1.5" />
