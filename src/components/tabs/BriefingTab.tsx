@@ -57,7 +57,7 @@ const usePullToRefresh = (onRefresh?: () => Promise<void> | void) => {
 };
 
 /* ── Main BriefingTab ─────────────────────────────── */
-const BriefingTab = ({ entries, onOpenChat, onRefresh }: BriefingTabProps) => {
+const BriefingTab = ({ entries, onOpenChat, onRefresh, onDraftToStudio }: BriefingTabProps) => {
   const [graphOpen, setGraphOpen] = useState(false);
   const [constellationOpen, setConstellationOpen] = useState(false);
   const { containerRef, pullY, refreshing, progress, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(onRefresh);
