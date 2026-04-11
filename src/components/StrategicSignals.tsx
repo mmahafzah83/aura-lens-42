@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
-import ContentStudio from "./ContentStudio";
+import LinkedInDraftPanel from "./LinkedInDraftPanel";
 import CarouselGenerator from "./CarouselGenerator";
 
 interface StrategicSignal {
@@ -361,7 +361,7 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         initialDescription={builderData?.description || ""}
         initialSteps={builderData?.steps || []}
       />
-      <ContentStudio
+      <LinkedInDraftPanel
         open={!!draftData}
         onClose={() => setDraftData(null)}
         title={draftData?.title || ""}

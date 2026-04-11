@@ -8,7 +8,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import ContentStudio from "@/components/ContentStudio";
+import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import SignalExplorer from "@/components/SignalExplorer";
 import SignalGraph from "@/components/SignalGraph";
@@ -483,7 +483,7 @@ const InsightsSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void })
         />
       )}
       {draftData && (
-        <ContentStudio title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
+        <LinkedInDraftPanel title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
       )}
     </div>
   );
@@ -576,7 +576,7 @@ const FrameworksSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void 
         />
       )}
       {draftData && (
-        <ContentStudio title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
+        <LinkedInDraftPanel title={draftData.title} hook={draftData.hook} context={draftData.context} open={!!draftData} onClose={() => setDraftData(null)} />
       )}
     </div>
   );
@@ -593,7 +593,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
-  const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string; signalId?: string } | null>(null);
+  const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("confidence");
   const [groupByTheme, setGroupByTheme] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -601,15 +601,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
   
   const [detecting, setDetecting] = useState(false);
   const [_graphOpen, _setGraphOpen] = useState(false);
-
-  const handleGenerateContent = (signal: Signal) => {
-    setDraftData({
-      title: signal.signal_title,
-      hook: signal.what_it_means_for_you || undefined,
-      context: signal.explanation + "\n\n" + signal.strategic_implications,
-      signalId: signal.id,
-    });
-  };
 
   useEffect(() => {
     const signalParam = searchParams.get("signal");
@@ -872,7 +863,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
                 <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
                 {signal.confidence >= 0.60 && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleGenerateContent(signal); }}
+                    onClick={(e) => { e.stopPropagation(); setDraftData({ title: signal.signal_title, hook: signal.explanation, angle: "Strategic thought leadership", context: signal.strategic_implications }); }}
                     style={{ marginLeft: "auto", background: "none", border: "none", color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                   >Draft</button>
                 )}
@@ -912,7 +903,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
               signal={signal}
               onOpenChat={onOpenChat}
               onArchive={handleArchive}
-              onDraft={(s) => handleGenerateContent(s)}
+              onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
               onLove={handleLove}
               onNotForMe={handleNotForMe}
             />
@@ -1105,8 +1096,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: Inte
         )}
       </div>
 
-      {/* Content Studio */}
-      <ContentStudio open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} signalId={draftData?.signalId} />
+      {/* Draft panel */}
+      <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
 
     </div>
   );

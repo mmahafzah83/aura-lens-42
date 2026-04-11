@@ -202,56 +202,6 @@ export type Database = {
           },
         ]
       }
-      content_items: {
-        Row: {
-          body: string
-          created_at: string
-          generation_params: Json
-          id: string
-          language: string
-          signal_id: string | null
-          status: string
-          title: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body?: string
-          created_at?: string
-          generation_params?: Json
-          id?: string
-          language?: string
-          signal_id?: string | null
-          status?: string
-          title?: string
-          type: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          generation_params?: Json
-          id?: string
-          language?: string
-          signal_id?: string | null
-          status?: string
-          title?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_items_signal_id_fkey"
-            columns: ["signal_id"]
-            isOneToOne: false
-            referencedRelation: "strategic_signals"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       content_topics: {
         Row: {
           avg_engagement: number
@@ -1533,13 +1483,6 @@ export type Database = {
             referencedRelation: "linkedin_connections"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sync_runs_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "linkedin_connections_safe"
-            referencedColumns: ["id"]
-          },
         ]
       }
       training_logs: {
@@ -1602,63 +1545,6 @@ export type Database = {
           topic_label: string | null
           tracking_status: string | null
           user_id: string | null
-        }
-        Relationships: []
-      }
-      linkedin_connections_safe: {
-        Row: {
-          connected_at: string | null
-          created_at: string | null
-          display_name: string | null
-          handle: string | null
-          id: string | null
-          last_synced_at: string | null
-          linkedin_id: string | null
-          profile_name: string | null
-          profile_url: string | null
-          scopes: string[] | null
-          source_status: string | null
-          status: string | null
-          timezone: string | null
-          token_expires_at: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          connected_at?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          handle?: string | null
-          id?: string | null
-          last_synced_at?: string | null
-          linkedin_id?: string | null
-          profile_name?: string | null
-          profile_url?: string | null
-          scopes?: string[] | null
-          source_status?: string | null
-          status?: string | null
-          timezone?: string | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          connected_at?: string | null
-          created_at?: string | null
-          display_name?: string | null
-          handle?: string | null
-          id?: string | null
-          last_synced_at?: string | null
-          linkedin_id?: string | null
-          profile_name?: string | null
-          profile_url?: string | null
-          scopes?: string[] | null
-          source_status?: string | null
-          status?: string | null
-          timezone?: string | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id?: string | null
         }
         Relationships: []
       }

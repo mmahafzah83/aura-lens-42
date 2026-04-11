@@ -3,7 +3,7 @@ import { Loader2, Zap, Target, Crown, ArrowRight, RefreshCw, Sparkles, LayoutGri
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import FrameworkBuilder from "./FrameworkBuilder";
-import ContentStudio from "./ContentStudio";
+import LinkedInDraftPanel from "./LinkedInDraftPanel";
 import ActionWorkspace from "./ActionWorkspace";
 import CarouselGenerator from "./CarouselGenerator";
 
@@ -235,7 +235,7 @@ const DailyStrategicBriefing = ({ onOpenChat }: DailyStrategicBriefingProps) => 
         initialDescription={builderData.description}
         initialSteps={[]}
       />
-      <ContentStudio
+      <LinkedInDraftPanel
         open={draftOpen}
         onClose={() => setDraftOpen(false)}
         title={draftTitle}

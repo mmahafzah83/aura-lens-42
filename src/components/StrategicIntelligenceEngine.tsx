@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
-import ContentStudio from "./ContentStudio";
+import LinkedInDraftPanel from "./LinkedInDraftPanel";
 import CarouselGenerator from "./CarouselGenerator";
 
 /* ── Types ── */
@@ -465,7 +465,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat }: StrategicIntelligenceEngine
       {/* ── Modals ── */}
       <SignalExplorer signal={explorerSignal} open={!!explorerSignal} onClose={() => setExplorerSignal(null)} />
       <FrameworkBuilder open={!!builderData} onClose={() => setBuilderData(null)} initialTitle={builderData?.title || ""} initialDescription={builderData?.description || ""} initialSteps={builderData?.steps || []} />
-      <ContentStudio open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
+      <LinkedInDraftPanel open={!!draftData} onClose={() => setDraftData(null)} title={draftData?.title || ""} hook={draftData?.hook} angle={draftData?.angle} context={draftData?.context} />
       <CarouselGenerator open={!!carouselData} onClose={() => setCarouselData(null)} title={carouselData?.title || ""} description={carouselData?.description} context={carouselData?.context} />
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Crown, ArrowRight, Loader2, Bell, Sparkles, FileText, LayoutGrid } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import ContentStudio from "./ContentStudio";
+import LinkedInDraftPanel from "./LinkedInDraftPanel";
 import CarouselGenerator from "./CarouselGenerator";
 
 interface AuthorityOpp {
@@ -142,7 +142,7 @@ const AuthorityOpportunities = () => {
         );
       })}
 
-      <ContentStudio
+      <LinkedInDraftPanel
         open={!!draftData}
         onClose={() => setDraftData(null)}
         title={draftData?.title || ""}
