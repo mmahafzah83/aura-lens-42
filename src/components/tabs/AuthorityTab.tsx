@@ -197,6 +197,13 @@ function scoreContent(
    CREATE TAB — Content Creation Engine
    ═══════════════════════════════════════════ */
 
+interface SignalPrefill {
+  topic: string;
+  context: string;
+  signalId?: string;
+  signalTitle?: string;
+}
+
 interface SignalSuggestion {
   id: string;
   signal_title: string;
@@ -219,7 +226,7 @@ interface PlanPrefill {
   planTitle: string;
 }
 
-const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
+const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
@@ -240,6 +247,10 @@ const CreateTab = ({ planPrefill }: { planPrefill?: PlanPrefill | null }) => {
   const [shortVersion, setShortVersion] = useState("");
   const [showingShort, setShowingShort] = useState(false);
   const [generatingShort, setGeneratingShort] = useState(false);
+
+  // Visual companion state
+  const [visualUrl, setVisualUrl] = useState<string | null>(null);
+  const [visualLoading, setVisualLoading] = useState(false);
 
   // AI suggestions
   const [signals, setSignals] = useState<SignalSuggestion[]>([]);
