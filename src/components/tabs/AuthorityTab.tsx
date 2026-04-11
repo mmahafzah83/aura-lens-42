@@ -901,49 +901,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         )}
       </div>
 
-      {/* Suggestions Sidebar */}
-      <div className="hidden lg:block w-72 shrink-0">
-        <div className="sticky top-0 glass-card rounded-2xl p-5 border border-border/8 max-h-[calc(100vh-240px)] overflow-y-auto space-y-5">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <h4 className="text-label uppercase tracking-wider text-xs font-semibold">Start From</h4>
-          </div>
-
-          {suggestionsLoading ? (
-            <div className="flex justify-center py-6"><Loader2 className="w-4 h-4 animate-spin text-primary/40" /></div>
-          ) : (
-            <>
-              {signals.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold flex items-center gap-1"><Zap className="w-3 h-3" /> Signals</p>
-                  {signals.map(s => (
-                    <button key={s.id} onClick={() => selectSuggestion(s.content_opportunity?.title || s.signal_title, s.explanation, "post", s.signal_title, s.explanation)} className="w-full text-left p-3 rounded-xl bg-card/60 border border-border/8 hover:border-primary/15 transition-all">
-                      <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2">{s.content_opportunity?.title || s.signal_title}</p>
-                      <span className="text-[10px] text-muted-foreground/50 mt-1 block">{Math.round(s.confidence * 100)}% confidence</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {frameworks.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold flex items-center gap-1"><Target className="w-3 h-3" /> Frameworks</p>
-                  {frameworks.map(fw => (
-                    <button key={fw.id} onClick={() => selectSuggestion(fw.title, fw.summary || "", "framework_summary")} className="w-full text-left p-3 rounded-xl bg-card/60 border border-border/8 hover:border-primary/15 transition-all">
-                      <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2">{fw.title}</p>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {signals.length === 0 && frameworks.length === 0 && (
-                <div className="text-center py-6">
-                  <Lightbulb className="w-6 h-6 text-primary/20 mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground/40">Capture more insights to unlock suggestions</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      <StartFromPanel
+        currentFormat={contentType}
+        hasDraft={!!(topic.trim() || output)}
+        onSelect={(t, ctx, fmt, sigTitle, sigInsight) => {
+          selectSuggestion(t, ctx, fmt, sigTitle, sigInsight);
+        }}
+      />
     </div>
   );
 };
