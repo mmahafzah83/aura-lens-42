@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import SignalExplorer from "./SignalExplorer";
 import FrameworkBuilder from "./FrameworkBuilder";
 import LinkedInDraftPanel from "./LinkedInDraftPanel";
-import CarouselGenerator from "./CarouselGenerator";
 
 interface StrategicSignal {
   id: string;
@@ -29,6 +28,7 @@ interface StrategicSignal {
 
 interface StrategicSignalsProps {
   onOpenChat?: (msg?: string) => void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalTitle?: string; contentFormat?: string }) => void;
 }
 
 /* ── Opportunity Section Card ─────────────── */
@@ -54,7 +54,7 @@ const OpportunitySection = ({
   </div>
 );
 
-const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
+const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps) => {
   const [signals, setSignals] = useState<StrategicSignal[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
@@ -62,7 +62,6 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
   const [explorerSignal, setExplorerSignal] = useState<StrategicSignal | null>(null);
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
-  const [carouselData, setCarouselData] = useState<{ title: string; description?: string; context?: string } | null>(null);
 
   const fetchSignals = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -326,10 +325,11 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
                         <Search className="w-3.5 h-3.5" /> Explore
                       </button>
                       <button
-                        onClick={() => setCarouselData({
-                          title: signal.signal_title,
-                          description: signal.explanation,
-                          context: signal.strategic_implications,
+                        onClick={() => onDraftToStudio?.({
+                          topic: signal.signal_title,
+                          context: `${signal.explanation}\n\n${signal.strategic_implications}`,
+                          signalTitle: signal.signal_title,
+                          contentFormat: "carousel",
                         })}
                         className="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
                       >
@@ -368,13 +368,6 @@ const StrategicSignals = ({ onOpenChat }: StrategicSignalsProps) => {
         hook={draftData?.hook}
         angle={draftData?.angle}
         context={draftData?.context}
-      />
-      <CarouselGenerator
-        open={!!carouselData}
-        onClose={() => setCarouselData(null)}
-        title={carouselData?.title || ""}
-        description={carouselData?.description}
-        context={carouselData?.context}
       />
     </div>
   );
