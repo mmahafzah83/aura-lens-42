@@ -28,7 +28,7 @@ const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
   post: { label: "LinkedIn Post", icon: PenTool },
   carousel: { label: "Carousel", icon: LayoutGrid },
   essay: { label: "Strategic Essay", icon: FileText },
-  framework_summary: { label: "Framework Breakdown", icon: BookOpen },
+  framework_summary: { label: "Framework Builder", icon: BookOpen },
 };
 
 const FRAMEWORK_OPTIONS: { key: ContentFramework; label: string }[] = [
@@ -202,6 +202,8 @@ interface SignalPrefill {
   context: string;
   signalId?: string;
   signalTitle?: string;
+  sourceType?: string;
+  sourceTitle?: string;
 }
 
 interface SignalSuggestion {
@@ -323,8 +325,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     if (signalPrefill) {
       setTopic(signalPrefill.topic);
       setContext(signalPrefill.context);
-      setContentType("post");
-      setFramework("hook_insight_question");
+      // If this is a framework build request, select framework_summary content type
+      if (signalPrefill.sourceType === "framework_build") {
+        setContentType("framework_summary");
+        setFramework("auto");
+      } else {
+        setContentType("post");
+        setFramework("hook_insight_question");
+      }
       setSelectedSignalTitle(signalPrefill.signalTitle || null);
       setSelectedSignalInsight(signalPrefill.context || null);
       setOutput("");
