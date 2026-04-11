@@ -255,10 +255,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [visualUrl, setVisualUrl] = useState<string | null>(null);
   const [visualLoading, setVisualLoading] = useState(false);
 
-  // AI suggestions
-  const [signals, setSignals] = useState<SignalSuggestion[]>([]);
-  const [frameworks, setFrameworks] = useState<FrameworkSuggestion[]>([]);
-  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+  // AI suggestions (used by voice profile loading only)
+  const [_signals, setSignals] = useState<SignalSuggestion[]>([]);
+  const [_frameworks, setFrameworks] = useState<FrameworkSuggestion[]>([]);
+  const [_suggestionsLoading, setSuggestionsLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([

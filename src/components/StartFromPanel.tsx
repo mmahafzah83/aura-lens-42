@@ -6,7 +6,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-type ContentType = "post" | "carousel" | "framework_summary";
+type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 
 interface RawSignal {
   id: string;
