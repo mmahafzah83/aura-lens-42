@@ -318,6 +318,47 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     }
   }, [planPrefill]);
 
+  // Apply signal prefill from Intelligence page
+  useEffect(() => {
+    if (signalPrefill) {
+      setTopic(signalPrefill.topic);
+      setContext(signalPrefill.context);
+      setContentType("post");
+      setFramework("hook_insight_question");
+      setSelectedSignalTitle(signalPrefill.signalTitle || null);
+      setSelectedSignalInsight(signalPrefill.context || null);
+      setOutput("");
+      setFullVersion("");
+      setShortVersion("");
+      setShowingShort(false);
+      setVisualUrl(null);
+      setPlanRef(null);
+      onSignalPrefillConsumed?.();
+    }
+  }, [signalPrefill]);
+
+  // Visual companion generation
+  const generateVisual = async () => {
+    setVisualLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const prompt = `Strategic framework diagram for: ${topic}. Key insight: ${output ? output.slice(0, 120) : context.slice(0, 120)}`;
+      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
+        body: { image_prompt: prompt },
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setVisualUrl(data.image_url || null);
+      toast.success("Visual generated");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate visual");
+    } finally {
+      setVisualLoading(false);
+    }
+  };
+
   const streamGeneration = async (extraPromptInstruction?: string): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Not authenticated");
