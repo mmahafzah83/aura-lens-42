@@ -1706,7 +1706,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
         })}
       </div>
 
-      {activeTab === "create" && <CreateTab planPrefill={planPrefill} />}
+      {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
       {activeTab === "analyze" && <AnalyzeTab />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
