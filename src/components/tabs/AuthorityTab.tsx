@@ -1629,6 +1629,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 interface AuthorityTabProps {
   entries: any[];
   onRefresh?: () => void;
+  signalPrefill?: SignalPrefill | null;
+  onSignalPrefillConsumed?: () => void;
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
@@ -1638,7 +1640,7 @@ const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "library", label: "Library", icon: BookOpen },
 ];
 
-const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
+const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed }: AuthorityTabProps) => {
   const [activeTab, setActiveTab] = useState<AuthoritySubTab>("create");
   const [brandDone, setBrandDone] = useState<boolean | null>(null);
   const [planPrefill, setPlanPrefill] = useState<PlanPrefill | null>(null);
@@ -1652,6 +1654,13 @@ const AuthorityTab = ({ entries, onRefresh }: AuthorityTabProps) => {
     setPlanPrefill({ ...prefill });
     setActiveTab("create");
   };
+
+  // When signalPrefill arrives, switch to create tab
+  useEffect(() => {
+    if (signalPrefill) {
+      setActiveTab("create");
+    }
+  }, [signalPrefill]);
 
   return (
     <div className="space-y-8">
