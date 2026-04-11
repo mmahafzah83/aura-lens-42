@@ -871,7 +871,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
                 {signal.confidence >= 0.60 && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); setDraftData({ title: signal.signal_title, hook: signal.explanation, angle: "Strategic thought leadership", context: signal.strategic_implications }); }}
+                    onClick={(e) => { e.stopPropagation(); onDraftToStudio?.({ topic: signal.signal_title, context: [signal.explanation, signal.strategic_implications, signal.what_it_means_for_you].filter(Boolean).join("\n\n"), signalId: signal.id, signalTitle: signal.signal_title }); }}
                     style={{ marginLeft: "auto", background: "none", border: "none", color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
                   >Draft</button>
                 )}
@@ -911,7 +911,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               signal={signal}
               onOpenChat={onOpenChat}
               onArchive={handleArchive}
-              onDraft={(s) => setDraftData({ title: s.signal_title, hook: s.explanation, angle: "Strategic thought leadership", context: s.strategic_implications })}
+              onDraft={(s) => onDraftToStudio?.({ topic: s.signal_title, context: [s.explanation, s.strategic_implications, s.what_it_means_for_you].filter(Boolean).join("\n\n"), signalId: s.id, signalTitle: s.signal_title })}
               onLove={handleLove}
               onNotForMe={handleNotForMe}
             />
