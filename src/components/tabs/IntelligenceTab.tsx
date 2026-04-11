@@ -22,11 +22,19 @@ import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
+interface SignalDraftPrefill {
+  topic: string;
+  context: string;
+  signalId?: string;
+  signalTitle?: string;
+}
+
 interface IntelligenceTabProps {
   entries: Entry[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
   onOpenCapture?: () => void;
+  onDraftToStudio?: (prefill: SignalDraftPrefill) => void;
 }
 
 interface Signal {
@@ -586,7 +594,7 @@ const FrameworksSubTab = ({ onOpenChat }: { onOpenChat?: (msg?: string) => void 
    Main Intelligence Tab
    ═══════════════════════════════════════════ */
 
-const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture }: IntelligenceTabProps) => {
+const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
