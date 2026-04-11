@@ -749,139 +749,153 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
             )}
 
-            {/* Visual Companion — Blackboard Schematic */}
-            {topic.trim() && !isGeneratingAny && (
-              <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
-                      Visual Companion
-                    </p>
-                  </div>
-                  {!visualUrl && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={generateVisual}
-                      disabled={visualLoading}
-                      className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
-                    >
-                      {visualLoading ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : (
-                        <Sparkles className="w-3 h-3 mr-1" />
+            {/* Visual Companion — LinkedIn Post Visual */}
+            {topic.trim() && !isGeneratingAny && (() => {
+              const visualMode = visualLoading || !!visualUrl;
+              return (
+                <div className={`rounded-xl border overflow-hidden transition-all duration-300 ${
+                  visualMode
+                    ? "border-primary/20 bg-card/80 backdrop-blur-sm shadow-lg shadow-primary/5"
+                    : "border-border/10 bg-card/60 backdrop-blur-sm"
+                }`}>
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
+                      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
+                        Visual Companion
+                      </p>
+                      {visualLoading && (
+                        <span className="text-[10px] text-primary/70 font-medium animate-pulse ml-1">
+                          Generating visual…
+                        </span>
                       )}
-                      Generate Schematic
-                    </Button>
-                  )}
-                </div>
-                {visualLoading ? (
-                  <div className="flex items-center justify-center py-10">
-                    <Loader2 className="w-5 h-5 text-primary/40 animate-spin" />
-                  </div>
-                ) : visualUrl ? (
-                  <div className="space-y-0">
-                    {/* Full visual preview — no cropping */}
-                    <div className="w-full">
-                      <img
-                        src={visualUrl}
-                        alt="Visual companion schematic"
-                        className="w-full h-auto object-contain"
-                        style={{ maxHeight: "none" }}
-                      />
+                      {visualUrl && !visualLoading && (
+                        <span className="text-[10px] text-emerald-500/80 font-medium ml-1">
+                          ✓ Visual ready
+                        </span>
+                      )}
                     </div>
-                    {/* Post-visual action bar */}
-                    <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border/8 bg-secondary/10">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={generateVisual}
-                        disabled={visualLoading}
-                        className="h-7 text-[11px] gap-1.5 border-border/15"
-                      >
-                        <Sparkles className="w-3 h-3" /> Regenerate Visual
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setVisualUrl(null);
-                        }}
-                        className="h-7 text-[11px] gap-1.5 border-border/15"
-                      >
-                        <PenTool className="w-3 h-3" /> Edit Text
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            const { data: { session } } = await supabase.auth.getSession();
-                            if (!session?.user?.id) throw new Error("Not authenticated");
-                            const { error } = await supabase.from("content_items").insert({
-                              user_id: session.user.id,
-                              type: "linkedin_post",
-                              title: topic,
-                              body: stripMarkdown(output || fullVersion || ""),
-                              status: "draft",
-                              language: lang,
-                              generation_params: {
-                                visual_url: visualUrl,
-                                framework,
-                                content_type: contentType,
-                              },
-                            });
-                            if (error) throw error;
-                            toast.success("Saved to Library");
-                          } catch (e: any) {
-                            toast.error(e.message || "Failed to save");
-                          }
-                        }}
-                        className="h-7 text-[11px] gap-1.5 border-border/15"
-                      >
-                        <Save className="w-3 h-3" /> Save to Library
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            const resp = await fetch(visualUrl!);
-                            const blob = await resp.blob();
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = `visual-${topic.replace(/\s+/g, "-").slice(0, 30)}.png`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                          } catch {
-                            toast.error("Failed to download");
-                          }
-                        }}
-                        className="h-7 text-[11px] gap-1.5 border-border/15"
-                      >
-                        <Download className="w-3 h-3" /> Download
-                      </Button>
+                    {!visualUrl && !visualLoading && (
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => setVisualUrl(null)}
-                        className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground ml-auto"
+                        onClick={generateVisual}
+                        className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
                       >
-                        <X className="w-3 h-3" /> Cancel
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Generate Schematic
                       </Button>
+                    )}
+                  </div>
+
+                  {/* States */}
+                  {visualLoading ? (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <Loader2 className="w-6 h-6 text-primary/50 animate-spin" />
+                      <p className="text-xs text-muted-foreground/50">Creating your visual…</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
-                  </div>
-                )}
-              </div>
-            )}
+                  ) : visualUrl ? (
+                    <div className="space-y-0">
+                      {/* Full visual preview */}
+                      <div className="w-full bg-[#0a0a0a] flex items-center justify-center p-4">
+                        <img
+                          src={visualUrl}
+                          alt="Visual companion schematic"
+                          className="w-full h-auto object-contain rounded-lg"
+                          style={{ maxHeight: "none" }}
+                        />
+                      </div>
+                      {/* Action bar */}
+                      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border/8 bg-secondary/10">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={generateVisual}
+                          disabled={visualLoading}
+                          className="h-7 text-[11px] gap-1.5 border-border/15"
+                        >
+                          <Sparkles className="w-3 h-3" /> Regenerate Visual
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setVisualUrl(null)}
+                          className="h-7 text-[11px] gap-1.5 border-border/15"
+                        >
+                          <PenTool className="w-3 h-3" /> Edit Text
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              const { data: { session } } = await supabase.auth.getSession();
+                              if (!session?.user?.id) throw new Error("Not authenticated");
+                              const { error } = await supabase.from("content_items").insert({
+                                user_id: session.user.id,
+                                type: "linkedin_post",
+                                title: topic,
+                                body: stripMarkdown(output || fullVersion || ""),
+                                status: "draft",
+                                language: lang,
+                                generation_params: {
+                                  visual_url: visualUrl,
+                                  framework,
+                                  content_type: contentType,
+                                },
+                              });
+                              if (error) throw error;
+                              toast.success("Saved to Library");
+                            } catch (e: any) {
+                              toast.error(e.message || "Failed to save");
+                            }
+                          }}
+                          className="h-7 text-[11px] gap-1.5 border-border/15"
+                        >
+                          <Save className="w-3 h-3" /> Save to Library
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={async () => {
+                            try {
+                              const resp = await fetch(visualUrl!);
+                              const blob = await resp.blob();
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = url;
+                              a.download = `visual-${topic.replace(/\s+/g, "-").slice(0, 30)}.png`;
+                              document.body.appendChild(a);
+                              a.click();
+                              document.body.removeChild(a);
+                              URL.revokeObjectURL(url);
+                            } catch {
+                              toast.error("Failed to download");
+                            }
+                          }}
+                          className="h-7 text-[11px] gap-1.5 border-border/15"
+                        >
+                          <Download className="w-3 h-3" /> Download
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setVisualUrl(null)}
+                          className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground ml-auto"
+                        >
+                          <X className="w-3 h-3" /> Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center">
+                      <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {showCarousel && <CarouselGenerator open={showCarousel} onClose={() => setShowCarousel(false)} title={topic} context={context} />}
           </>
