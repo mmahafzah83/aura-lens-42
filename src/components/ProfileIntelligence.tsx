@@ -55,7 +55,7 @@ const SECTION_CONFIG = [
 type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
 
 interface ProfileIntelligenceProps {
-  onGenerateContent?: (topic: string) => void;
+  onGenerateContent?: (topic: string, context?: string) => void;
 }
 
 const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) => {
@@ -285,7 +285,7 @@ const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) =>
                       </div>
                       {onGenerateContent && (
                         <button
-                          onClick={() => onGenerateContent(at.theme)}
+                          onClick={() => onGenerateContent(at.theme, at.rationale)}
                           className="text-[11px] font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
                           style={{ color: "#C5A55A" }}
                         >

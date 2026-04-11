@@ -13,9 +13,10 @@ import VoiceEngineSection from "@/components/VoiceEngineSection";
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
   onSwitchTab?: (tab: string) => void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; sourceType?: string; sourceTitle?: string }) => void;
 }
 
-const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
+const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
   const [activeSection, setActiveSection] = useState<"profile" | "identity" | "settings">("profile");
   const [auditOpen, setAuditOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
@@ -34,9 +35,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab }: IdentityTabProps) => {
     }
   };
 
-  const handleGenerateContent = (topic: string) => {
-    if (onSwitchTab) {
-      // Store topic in sessionStorage for the Publish tab to pick up
+  const handleGenerateContent = (topic: string, context?: string) => {
+    if (onDraftToStudio) {
+      onDraftToStudio({
+        topic,
+        context: context || "",
+        sourceType: "authority_next",
+        sourceTitle: topic,
+      });
+    } else if (onSwitchTab) {
       sessionStorage.setItem("aura_prefill_topic", topic);
       onSwitchTab("authority");
     }

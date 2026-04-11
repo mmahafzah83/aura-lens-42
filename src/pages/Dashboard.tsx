@@ -46,6 +46,8 @@ const Dashboard = () => {
     context: string;
     signalId?: string;
     signalTitle?: string;
+    sourceType?: string;
+    sourceTitle?: string;
   } | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -362,7 +364,15 @@ const Dashboard = () => {
 
             {activeTab === "identity" && (
               <div className="animate-tab-spring">
-                <IdentityTab onResetDiagnostic={() => setShowDiagnostic(true)} onSwitchTab={switchTab} />
+                <IdentityTab
+                  onResetDiagnostic={() => setShowDiagnostic(true)}
+                  onSwitchTab={switchTab}
+                  onDraftToStudio={(prefill) => {
+                    setSignalDraftPrefill(prefill);
+                    setActiveTab("authority");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
               </div>
             )}
 
