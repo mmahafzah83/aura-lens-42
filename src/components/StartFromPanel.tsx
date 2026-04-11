@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  Sparkles, Zap, Target, Lightbulb, RefreshCw, Loader2,
-  Clock, TrendingUp, BookOpen
+  Sparkles, Zap, Lightbulb, RefreshCw, Loader2,
+  TrendingUp, BookOpen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";

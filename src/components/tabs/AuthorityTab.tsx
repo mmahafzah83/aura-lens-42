@@ -19,6 +19,7 @@ import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import LinkedInIntelligence from "@/components/LinkedInIntelligence";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import ImageCardGenerator from "@/components/ImageCardGenerator";
+import StartFromPanel from "@/components/StartFromPanel";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
