@@ -149,12 +149,18 @@ const ExpandedSource = ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/detect-signals`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
-        body: JSON.stringify({ entry_id: entry.id }),
+      // Extract evidence first, then detect signals
+      const { data: extractResult, error: extractError } = await supabase.functions.invoke('extract-evidence', {
+        body: { source_type: 'entry', source_id: entry.id, user_id: session.user.id },
       });
-      if (!resp.ok) throw new Error("Detection failed");
+      if (extractError) throw new Error("Evidence extraction failed");
+      const registryId = extractResult?.source_registry_id;
+      if (registryId) {
+        const { error: sigError } = await supabase.functions.invoke('detect-signals-v2', {
+          body: { source_registry_id: registryId, user_id: session.user.id },
+        });
+        if (sigError) throw new Error("Signal detection failed");
+      }
       toast.success("Signal detection triggered");
     } catch (e: any) {
       toast.error(e.message);
