@@ -83,3 +83,6 @@ verify_jwt = false
 
 [functions.calculate-aura-score]
 verify_jwt = false
+
+[functions.detect-signals-v2]
+verify_jwt = false

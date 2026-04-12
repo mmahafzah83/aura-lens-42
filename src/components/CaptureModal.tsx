@@ -350,27 +350,42 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       onCaptured();
       onOpenChange(false);
 
-      // Fire-and-forget: detect signals in background
+      // Fire-and-forget: extract evidence then detect signals (unified pipeline)
       if (entryRow?.id) {
-        supabase.functions.invoke('detect-signals', {
-          body: { entry_id: entryRow.id, user_id: session.user.id },
+        supabase.functions.invoke('extract-evidence', {
+          body: { source_type: 'entry', source_id: entryRow.id, user_id: session.user.id },
         })
-          .then(({ data: result, error }) => {
-            if (error) {
-              console.error("detect-signals error:", error);
+          .then(({ data: extractResult, error: extractError }) => {
+            if (extractError) {
+              console.error("extract-evidence error:", extractError);
               return;
             }
-            console.log("detect-signals result:", result);
+            console.log("extract-evidence result:", extractResult);
+            const registryId = extractResult?.source_registry_id;
+            if (!registryId) return;
+
+            // Now run signal detection on the new fragments
+            return supabase.functions.invoke('detect-signals-v2', {
+              body: { source_registry_id: registryId, user_id: session.user.id },
+            });
+          })
+          .then((res) => {
+            if (!res) return;
+            const { data: result, error } = res;
+            if (error) {
+              console.error("detect-signals-v2 error:", error);
+              return;
+            }
+            console.log("detect-signals-v2 result:", result);
             if (result?.is_new) {
               setTimeout(() => {
                 toast({ title: "✨ New signal detected", description: "A new pattern was found in your captures." });
               }, 3000);
             }
-            // Invalidate signals queries so Intelligence tab refreshes
             queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
             queryClient.invalidateQueries({ queryKey: ["signals"] });
           })
-          .catch((err) => console.error("detect-signals background error:", err));
+          .catch((err) => console.error("pipeline background error:", err));
       }
     } catch (err: any) {
       toast({
