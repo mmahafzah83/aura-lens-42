@@ -1837,6 +1837,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showPublished, setShowPublished] = useState(false);
   const [showDrafts, setShowDrafts] = useState(true);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleCardExpand = (id: string) => setExpandedCards(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
 
   useEffect(() => { loadPosts(); }, []);
 
