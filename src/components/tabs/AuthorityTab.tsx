@@ -1555,7 +1555,7 @@ const LibraryCard = ({
       </div>
 
       {/* Performance logger for published posts */}
-      {isPublished && (
+      {isPublished && p._source === "linkedin_posts" && (
         <div className="mt-3 pt-3 border-t border-border/8">
           {!metricsOpen ? (
             <button
