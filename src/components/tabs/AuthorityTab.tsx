@@ -341,8 +341,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         setContentType("post");
         setFramework("hook_insight_question");
       }
+      setSelectedSignalId(signalPrefill.signalId || null);
       setSelectedSignalTitle(signalPrefill.signalTitle || null);
-      setSelectedSignalInsight(signalPrefill.context || null);
       setOutput("");
       setFullVersion("");
       setShortVersion("");
