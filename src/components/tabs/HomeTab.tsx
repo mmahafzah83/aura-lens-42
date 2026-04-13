@@ -215,7 +215,6 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
       if (existingMoves && (existingMoves as any[]).length > 0) {
         setMoves(existingMoves as any[]);
       } else {
-        // Call generate-moves
         const freshSession2 = (await supabase.auth.getSession()).data.session;
         const { data: genData } = await supabase.functions.invoke("generate-moves", {
           body: { user_id: user.id },
@@ -432,7 +431,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
         </motion.div>
       )}
 
-      {/* 4. Recommended Moves */}
+      {/* 4. Today's Focus — Recommended Moves */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -443,128 +442,51 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
         </span>
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
           {movesLoading ? (
-            <>
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "#141414",
-                    border: "1px solid #1f1f1f",
-                    borderRadius: 10,
-                    padding: 16,
-                    height: 100,
-                  }}
-                >
-                  <div style={{ width: "60%", height: 12, background: "#1f1f1f", borderRadius: 4 }} />
-                  <div style={{ width: "90%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 10 }} />
-                  <div style={{ width: "40%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 6 }} />
-                </div>
-              ))}
-            </>
+            [0, 1, 2].map((i) => (
+              <div key={i} style={{ background: "#141414", border: "1px solid #1f1f1f", borderRadius: 10, padding: 16, height: 100 }}>
+                <div style={{ width: "60%", height: 12, background: "#1f1f1f", borderRadius: 4 }} />
+                <div style={{ width: "90%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 10 }} />
+                <div style={{ width: "40%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 6 }} />
+              </div>
+            ))
           ) : moves.length > 0 ? (
             moves.slice(0, 3).map((move: any) => {
-              const badgeColor =
-                move.output_type === "carousel" ? "#4A90D9" :
-                move.output_type === "framework" ? "#5AA469" :
-                "#C5A55A";
-              const BadgeIcon =
-                move.output_type === "carousel" ? LayoutGrid :
-                move.output_type === "framework" ? Box :
-                FileText;
-
+              const badgeColor = move.output_type === "carousel" ? "#4A90D9" : move.output_type === "framework" ? "#5AA469" : "#C5A55A";
+              const BadgeIcon = move.output_type === "carousel" ? LayoutGrid : move.output_type === "framework" ? Box : FileText;
               return (
-                <div
-                  key={move.id}
-                  style={{
-                    background: "#141414",
-                    border: "1px solid #252525",
-                    borderRadius: 10,
-                    padding: "14px 16px",
-                  }}
-                >
+                <div key={move.id} style={{ background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: "14px 16px" }}>
                   <div className="flex items-start justify-between gap-2">
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#e0e0e0", lineHeight: 1.3, flex: 1 }}>
                       {move.title}
                     </div>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 600,
-                        color: badgeColor,
-                        background: `${badgeColor}15`,
-                        border: `1px solid ${badgeColor}30`,
-                        padding: "2px 8px",
-                        borderRadius: 12,
-                        whiteSpace: "nowrap" as const,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 3,
-                        textTransform: "uppercase" as const,
-                        letterSpacing: 0.5,
-                        flexShrink: 0,
-                      }}
-                    >
+                    <span style={{
+                      fontSize: 9, fontWeight: 600, color: badgeColor, background: `${badgeColor}15`,
+                      border: `1px solid ${badgeColor}30`, padding: "2px 8px", borderRadius: 12,
+                      whiteSpace: "nowrap" as const, display: "flex", alignItems: "center", gap: 3,
+                      textTransform: "uppercase" as const, letterSpacing: 0.5, flexShrink: 0,
+                    }}>
                       <BadgeIcon style={{ width: 9, height: 9 }} />
                       {move.output_type}
                     </span>
                   </div>
-
                   <div
                     style={{
-                      fontSize: 11,
-                      color: "#666",
-                      marginTop: 6,
-                      lineHeight: 1.4,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical" as any,
-                      overflow: "hidden",
+                      fontSize: 11, color: "#666", marginTop: 6, lineHeight: 1.4,
+                      display: "-webkit-box", WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical" as any, overflow: "hidden",
                     }}
                     title={move.rationale}
                   >
                     {move.rationale}
                   </div>
-
                   <div className="flex gap-2 mt-3">
-                    <button
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color: "#C5A55A",
-                        background: "transparent",
-                        border: "none",
-                        padding: "4px 0",
-                        cursor: "pointer",
-                      }}
-                    >
+                    <button style={{ fontSize: 10, fontWeight: 600, color: "#C5A55A", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer" }}>
                       Draft It
                     </button>
-                    <button
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 500,
-                        color: "#555",
-                        background: "transparent",
-                        border: "none",
-                        padding: "4px 0",
-                        cursor: "pointer",
-                        marginLeft: 8,
-                      }}
-                    >
+                    <button style={{ fontSize: 10, fontWeight: 500, color: "#555", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}>
                       Explore
                     </button>
-                    <button
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 400,
-                        color: "#333",
-                        background: "transparent",
-                        border: "none",
-                        padding: "4px 0",
-                        cursor: "pointer",
-                        marginLeft: 8,
-                      }}
-                    >
+                    <button style={{ fontSize: 10, fontWeight: 400, color: "#333", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}>
                       Dismiss
                     </button>
                   </div>
@@ -572,30 +494,13 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
               );
             })
           ) : (
-            <div
-              style={{
-                background: "#1a1a1a",
-                borderRadius: 12,
-                padding: "20px 16px",
-                textAlign: "center" as const,
-              }}
-            >
+            <div style={{ background: "#1a1a1a", borderRadius: 12, padding: "20px 16px", textAlign: "center" as const }}>
               <div style={{ fontSize: 12, color: "#555", lineHeight: 1.4 }}>
                 Capture more content to unlock strategic recommendations.
               </div>
               <button
                 onClick={() => onOpenChat?.("I want to capture my first insight")}
-                style={{
-                  marginTop: 12,
-                  background: "#C5A55A",
-                  color: "#0d0d0d",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  padding: "9px 20px",
-                  borderRadius: 8,
-                  border: "none",
-                  cursor: "pointer",
-                }}
+                style={{ marginTop: 12, background: "#C5A55A", color: "#0d0d0d", fontSize: 12, fontWeight: 500, padding: "9px 20px", borderRadius: 8, border: "none", cursor: "pointer" }}
               >
                 Capture now
               </button>
