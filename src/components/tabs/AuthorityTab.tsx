@@ -1716,54 +1716,57 @@ const FrameworkLibrarySection = () => {
   if (loading || frameworks.length === 0) return null;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-base">⚙️</span>
-        <h3 className="text-sm font-semibold text-foreground">Frameworks</h3>
-        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/20 text-muted-foreground">
+    <div>
+      <div className="flex items-center gap-2.5 mb-3" style={{ borderLeft: "1px solid #f0f0f0", paddingLeft: 12 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f0f0f0", margin: 0 }}>
+          Frameworks
+        </h3>
+        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#999" }}>
           {frameworks.length}
         </span>
       </div>
-      <div className="grid gap-2">
+      <div style={{ display: "grid", gap: 12 }}>
         {frameworks.map(fw => {
           const isApproved = fw.tags?.includes("Approved");
           return (
-            <div key={fw.id} className="glass-card rounded-xl p-4 border border-border/8 hover:border-primary/10 transition-all">
+            <div
+              key={fw.id}
+              style={{ backgroundColor: "#141414", borderRadius: 8, padding: 16, border: "1px solid rgba(255,255,255,0.04)", transition: "border-color 0.2s" }}
+              className="hover:border-[rgba(255,255,255,0.08)]"
+            >
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground leading-snug line-clamp-1">{fw.title}</p>
-                  {fw.summary && <p className="text-xs text-muted-foreground/60 mt-0.5 line-clamp-1">{fw.summary}</p>}
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0", lineHeight: 1.4 }} className="line-clamp-1">{fw.title}</p>
+                  {fw.summary && <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 4 }} className="line-clamp-2">{fw.summary}</p>}
                 </div>
-                <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                  isApproved
-                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
-                    : "bg-muted/20 text-muted-foreground border-border/15"
-                }`}>
+              </div>
+              <div className="flex items-center gap-2 mt-3">
+                <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(fw.created_at)}</span>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                  backgroundColor: isApproved ? "rgba(16,185,129,0.12)" : "#252525",
+                  color: isApproved ? "#34d399" : "#999",
+                }}>
                   {isApproved ? "Approved" : "Draft"}
                 </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(fw.created_at)}</span>
                 <div className="flex-1" />
                 {fw.diagram_url && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs gap-1.5"
+                  <div className="flex items-center gap-2">
+                    <button
                       onClick={() => window.open(fw.diagram_url!, "_blank")}
+                      style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "#252525", color: "#ccc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      className="hover:bg-[#303030] transition-colors"
                     >
                       <ImageIcon className="w-3 h-3" /> View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs gap-1.5"
+                    </button>
+                    <button
                       onClick={() => handleDownload(fw.diagram_url!, fw.title)}
+                      style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "#252525", color: "#ccc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      className="hover:bg-[#303030] transition-colors"
                     >
                       <Download className="w-3 h-3" /> Download
-                    </Button>
-                  </>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -1893,7 +1896,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
       {pendingDeleteId && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
           <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
@@ -1919,20 +1922,21 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       )}
 
       {/* ── Section 1: Aura Drafts ── */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-base">✍️</span>
-          <h3 className="text-sm font-semibold" style={{ color: "#C5A55A" }}>Your Drafts</h3>
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "rgba(197,165,90,0.15)", color: "#C5A55A" }}>
+      <div>
+        <div className="flex items-center gap-2.5" style={{ borderLeft: "1px solid #C5A55A", paddingLeft: 12, marginBottom: 12 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#C5A55A", margin: 0 }}>
+            Your Drafts
+          </h3>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#C5A55A" }}>
             {drafts.length}
           </span>
         </div>
         {drafts.length === 0 ? (
-          <div className="glass-card rounded-xl p-5 border border-border/8 text-center">
-            <p className="text-xs text-muted-foreground/50">No drafts yet. Generate content on the Create tab.</p>
+          <div style={{ backgroundColor: "#1a1a1a", borderRadius: 8, padding: 16, textAlign: "center" }}>
+            <p style={{ fontSize: 13, color: "#666" }}>No drafts yet. Generate content on the Create tab.</p>
           </div>
         ) : (
-          <div className="grid gap-3">
+          <div style={{ display: "grid", gap: 12 }}>
             {drafts.map(p => {
               const lang = (p.source_metadata as any)?._language || "en";
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
@@ -1941,43 +1945,63 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   key={p.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
+                  style={{
+                    backgroundColor: "#1a1a1a",
+                    borderLeft: "2px solid #C5A55A",
+                    borderRadius: 8,
+                    padding: 16,
+                    border: "1px solid rgba(255,255,255,0.04)",
+                    borderLeftWidth: 2,
+                    borderLeftColor: "#C5A55A",
+                    transition: "all 0.2s",
+                  }}
+                  className="hover:bg-[#1e1e1e] hover:border-l-[#D4B57A]"
                 >
-                  <div className="flex items-start gap-3 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-snug line-clamp-3" dir="auto">
-                        {p.post_text || "Untitled draft"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-secondary/20 text-muted-foreground border-border/15 uppercase">
-                        {lang === "ar" ? "AR" : "EN"}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
-                        {badge.label}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-amber-500/15 text-amber-400 border-amber-500/20">
-                        Draft
-                      </span>
-                    </div>
+                  {/* Body text */}
+                  <p style={{ fontSize: 14, color: "#e0e0e0", lineHeight: 1.6 }} className="line-clamp-4" dir="auto">
+                    {p.post_text || "Untitled draft"}
+                  </p>
+
+                  {/* Badge row */}
+                  <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#999", textTransform: "uppercase" }}>
+                      {lang === "ar" ? "AR" : "EN"}
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
+                      {badge.label}
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "rgba(245,158,11,0.12)", color: "#fbbf24" }}>
+                      Draft
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+
+                  {/* Date + Actions */}
+                  <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
+                    <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(p.created_at)}</span>
                     <div className="flex-1" />
-                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5"
-                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)} disabled={!p.post_text}>
-                      {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    <button
+                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
+                      disabled={!p.post_text}
+                      style={{ fontSize: 13, color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      className="hover:text-foreground transition-colors disabled:opacity-30"
+                    >
+                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedId === p.id ? "Copied" : "Copy"}
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 border-border/15"
-                      onClick={() => markPublished(p.id)}>
-                      <Check className="w-3 h-3" /> Mark as published
-                    </Button>
-                    <Button size="sm" variant="ghost"
-                      className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setPendingDeleteId(p.id)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    </button>
+                    <button
+                      onClick={() => markPublished(p.id)}
+                      style={{ fontSize: 13, color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      className="hover:text-foreground transition-colors"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Mark as Published
+                    </button>
+                    <button
+                      onClick={() => setPendingDeleteId(p.id)}
+                      style={{ fontSize: 13, color: "#ef4444", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </motion.div>
               );
@@ -1987,25 +2011,27 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       </div>
 
       {/* ── Section 2: Published Posts (collapsed by default) ── */}
-      <div className="space-y-3">
+      <div>
         <button
           onClick={() => setShowPublished(!showPublished)}
-          className="flex items-center gap-2 w-full text-left group"
+          className="flex items-center gap-2.5 w-full text-left group"
+          style={{ borderLeft: "1px solid #f0f0f0", paddingLeft: 12, marginBottom: showPublished ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "#f0f0f0" }}
         >
-          <span className="text-base">📢</span>
-          <h3 className="text-sm font-semibold text-foreground">Published Posts</h3>
-          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/20 text-muted-foreground">
+          <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f0f0f0", margin: 0 }}>
+            Published Posts
+          </h3>
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#999" }}>
             {publishedPosts.length}
           </span>
-          <span className="ml-auto text-xs text-primary/60 group-hover:text-primary transition-colors">
+          <span className="ml-auto group-hover:text-primary transition-colors" style={{ fontSize: 12, color: "#C5A55A" }}>
             {showPublished ? "Hide" : "Show all"}
           </span>
         </button>
         {showPublished && (
-          <div className="grid gap-3">
+          <div style={{ display: "grid", gap: 12 }}>
             {publishedPosts.length === 0 ? (
-              <div className="glass-card rounded-xl p-5 border border-border/8 text-center">
-                <p className="text-xs text-muted-foreground/50">No published posts yet.</p>
+              <div style={{ backgroundColor: "#141414", borderRadius: 8, padding: 16, textAlign: "center" }}>
+                <p style={{ fontSize: 13, color: "#666" }}>No published posts yet.</p>
               </div>
             ) : publishedPosts.map(p => {
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
@@ -2014,39 +2040,46 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   key={p.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
+                  style={{ backgroundColor: "#141414", borderRadius: 8, padding: 16, border: "1px solid rgba(255,255,255,0.04)", transition: "border-color 0.2s" }}
+                  className="hover:border-[rgba(255,255,255,0.08)]"
                 >
-                  <div className="flex items-start gap-3 mb-2">
+                  <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground leading-snug line-clamp-2" dir="auto">
+                      <p style={{ fontSize: 14, color: "#e0e0e0", lineHeight: 1.5 }} className="line-clamp-2" dir="auto">
                         {p.post_text}
                       </p>
                       {p.topic_label && (
-                        <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
+                        <p style={{ fontSize: 12, color: "#666", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
                         {badge.label}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-emerald-500/15 text-emerald-400 border-emerald-500/20">
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "rgba(16,185,129,0.12)", color: "#34d399" }}>
                         Published
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+                  <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
+                    <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(p.created_at)}</span>
                     <div className="flex-1" />
-                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5"
-                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)} disabled={!p.post_text}>
-                      {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    <button
+                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
+                      disabled={!p.post_text}
+                      style={{ fontSize: 13, color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      className="hover:text-foreground transition-colors disabled:opacity-30"
+                    >
+                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copiedId === p.id ? "Copied" : "Copy"}
-                    </Button>
-                    <Button size="sm" variant="ghost"
-                      className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => setPendingDeleteId(p.id)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    </button>
+                    <button
+                      onClick={() => setPendingDeleteId(p.id)}
+                      style={{ fontSize: 13, color: "#ef4444", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                      className="hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </motion.div>
               );
