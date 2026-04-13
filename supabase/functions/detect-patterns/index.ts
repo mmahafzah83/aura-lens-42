@@ -55,6 +55,34 @@ function isDuplicate(newTags: string[], newTitle: string, existingTags: string[]
 
 function unique<T>(arr: T[]): T[] { return [...new Set(arr)]; }
 
+function daysBetween(a: Date, b: Date): number {
+  return Math.max(0, Math.floor(Math.abs(a.getTime() - b.getTime()) / 86400000));
+}
+
+/* ── Confidence formula (identical to detect-signals) ── */
+function calcConfidence(
+  aiBaseScore: number,
+  fragmentCount: number,
+  uniqueOrgs: number,
+  newestFragmentDate: string,
+): { confidence: number; confidence_explanation: string } {
+  const aiComponent = Math.min(Math.max(aiBaseScore, 0), 1) * 0.40;
+  const fragmentDepth = Math.min(fragmentCount / 10, 1.0);
+  const depthComponent = fragmentDepth * 0.35;
+  const orgDiversity = Math.min(uniqueOrgs / 5, 1.0);
+  const diversityComponent = orgDiversity * 0.15;
+  const daysSince = daysBetween(new Date(), new Date(newestFragmentDate));
+  const recencyWeight = daysSince < 7 ? 1.0 : daysSince <= 30 ? 0.7 : daysSince <= 90 ? 0.4 : 0.2;
+  const recencyComponent = recencyWeight * 0.10;
+  const confidence = Math.min(aiComponent + depthComponent + diversityComponent + recencyComponent, 1.0);
+  const srcLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
+  const ageLabel = daysSince === 0 ? "today" : `${daysSince} days ago`;
+  const confidence_explanation =
+    `AI ${(aiBaseScore * 100).toFixed(0)}%, ${fragmentCount} fragments, ${uniqueOrgs} ${srcLabel}, newest ${ageLabel}. ` +
+    `Formula: (${aiComponent.toFixed(2)} AI) + (${depthComponent.toFixed(2)} depth) + (${diversityComponent.toFixed(2)} diversity) + (${recencyComponent.toFixed(2)} recency) = ${confidence.toFixed(2)}.`;
+  return { confidence, confidence_explanation };
+}
+
 function parseAiJson(raw: string): any {
   try {
     return JSON.parse(raw);
@@ -229,11 +257,16 @@ Detect 2-5 signals maximum. Quality over quantity.`;
         const mergedEvidence = unique([...(existing.supporting_evidence_ids || []), ...evidenceIds]);
         const newFragCount = mergedEvidence.length;
 
+        const nowTs = new Date().toISOString();
+        const aiScore = signal.confidence || 0.7;
+        const { confidence: newConf, confidence_explanation } = calcConfidence(aiScore, newFragCount, existing.unique_orgs || 1, nowTs);
+
         await adminClient.from("strategic_signals").update({
           supporting_evidence_ids: mergedEvidence,
           fragment_count: newFragCount,
-          confidence: Math.min((existing.confidence || 0.7) + 0.05, 1.0),
-          updated_at: new Date().toISOString(),
+          confidence: newConf,
+          confidence_explanation,
+          updated_at: nowTs,
         }).eq("id", existing.id);
 
         // Update local copy so subsequent signals in this batch also see the update
@@ -252,17 +285,25 @@ Detect 2-5 signals maximum. Quality over quantity.`;
 
         if (current) {
           const mergedEvidence = unique([...(current.supporting_evidence_ids || []), ...evidenceIds]);
+          const nowTs2 = new Date().toISOString();
+          const aiScore2 = signal.confidence || 0.7;
+          const { confidence: newConf2, confidence_explanation: ce2 } = calcConfidence(aiScore2, mergedEvidence.length, 1, nowTs2);
           await adminClient.from("strategic_signals").update({
             supporting_evidence_ids: mergedEvidence,
             fragment_count: mergedEvidence.length,
-            confidence: Math.min((current.confidence || 0.7) + 0.05, 1.0),
-            updated_at: new Date().toISOString(),
+            confidence: newConf2,
+            confidence_explanation: ce2,
+            updated_at: nowTs2,
           }).eq("id", batchId);
 
           results.push({ id: batchId, reinforced: true });
         }
       } else {
         // Insert new signal
+        const nowTs3 = new Date().toISOString();
+        const aiScore3 = signal.confidence || 0.7;
+        const { confidence: newConf3, confidence_explanation: ce3 } = calcConfidence(aiScore3, evidenceIds.length, 1, nowTs3);
+
         const { data: row, error: insErr } = await adminClient
           .from("strategic_signals")
           .insert({
@@ -273,7 +314,8 @@ Detect 2-5 signals maximum. Quality over quantity.`;
             supporting_evidence_ids: evidenceIds,
             theme_tags: newTags,
             skill_pillars: signal.skill_pillars || [],
-            confidence: signal.confidence || 0.7,
+            confidence: newConf3,
+            confidence_explanation: ce3,
             fragment_count: evidenceIds.length,
             framework_opportunity: signal.framework_opportunity || {},
             content_opportunity: signal.content_opportunity || {},

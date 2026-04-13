@@ -64,31 +64,36 @@ function daysBetween(a: Date, b: Date): number {
   return Math.max(0, Math.floor(Math.abs(a.getTime() - b.getTime()) / 86400000));
 }
 
-/* ── NEW additive confidence formula ── */
+/* ── Confidence formula (shared across pipelines) ── */
 function calcConfidence(
   aiBaseScore: number,
+  fragmentCount: number,
   uniqueOrgs: number,
   newestFragmentDate: string,
 ): { confidence: number; confidence_explanation: string } {
-  // 50% AI score
-  const aiComponent = Math.min(Math.max(aiBaseScore, 0), 1) * 0.5;
+  // 40% AI score
+  const aiComponent = Math.min(Math.max(aiBaseScore, 0), 1) * 0.40;
 
-  // 30% source diversity: min(unique_orgs / 5, 1.0)
-  const sourceDiversityWeight = Math.min(uniqueOrgs / 5, 1.0);
-  const diversityComponent = sourceDiversityWeight * 0.3;
+  // 35% fragment depth: min(fragmentCount / 10, 1.0)
+  const fragmentDepth = Math.min(fragmentCount / 10, 1.0);
+  const depthComponent = fragmentDepth * 0.35;
 
-  // 20% recency of newest evidence
+  // 15% org diversity: min(uniqueOrgs / 5, 1.0)
+  const orgDiversity = Math.min(uniqueOrgs / 5, 1.0);
+  const diversityComponent = orgDiversity * 0.15;
+
+  // 10% recency of newest evidence
   const daysSince = daysBetween(new Date(), new Date(newestFragmentDate));
   const recencyWeight = daysSince < 7 ? 1.0 : daysSince <= 30 ? 0.7 : daysSince <= 90 ? 0.4 : 0.2;
-  const recencyComponent = recencyWeight * 0.2;
+  const recencyComponent = recencyWeight * 0.10;
 
-  const confidence = Math.min(aiComponent + diversityComponent + recencyComponent, 1.0);
+  const confidence = Math.min(aiComponent + depthComponent + diversityComponent + recencyComponent, 1.0);
 
   const srcLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
   const ageLabel = daysSince === 0 ? "today" : `${daysSince} days ago`;
   const confidence_explanation =
-    `AI confidence ${(aiBaseScore * 100).toFixed(0)}%, ${uniqueOrgs} ${srcLabel}, newest evidence ${ageLabel}. ` +
-    `Formula: (${(aiComponent).toFixed(2)} AI) + (${(diversityComponent).toFixed(2)} diversity) + (${(recencyComponent).toFixed(2)} recency) = ${confidence.toFixed(2)}.`;
+    `AI ${(aiBaseScore * 100).toFixed(0)}%, ${fragmentCount} fragments, ${uniqueOrgs} ${srcLabel}, newest ${ageLabel}. ` +
+    `Formula: (${aiComponent.toFixed(2)} AI) + (${depthComponent.toFixed(2)} depth) + (${diversityComponent.toFixed(2)} diversity) + (${recencyComponent.toFixed(2)} recency) = ${confidence.toFixed(2)}.`;
 
   return { confidence, confidence_explanation };
 }
@@ -331,7 +336,7 @@ ${identityCtx}`;
       const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence, captureDomain);
 
       const nowTs = new Date().toISOString();
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueOrgs, nowTs);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, nowTs);
       const priorityScore = await calcPriorityScore(confidence, nowTs, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
 
       await admin.from("strategic_signals").update({
@@ -359,7 +364,7 @@ ${identityCtx}`;
     } else {
       const now = new Date().toISOString();
       const initialUniqueOrgs = captureDomain ? 1 : 1;
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, 1, admin, user_id, newTags);
 
       // Insert signal first with empty evidence (will update after fragment creation)
