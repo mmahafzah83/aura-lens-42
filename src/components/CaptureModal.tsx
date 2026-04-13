@@ -354,7 +354,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
       setContent("");
       setVoiceAudioUrl(null);
-      setImageFile(null);
+      setTranscriptionFailed(false);
       setImagePreview(null);
       setImageAnalysis(null);
       setUrlError(null);
