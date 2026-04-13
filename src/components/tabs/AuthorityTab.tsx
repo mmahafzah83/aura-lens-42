@@ -1680,7 +1680,7 @@ interface SavedFramework {
   created_at: string;
 }
 
-const FrameworkLibrarySection = ({ pendingDeleteId, setPendingDeleteId }: { pendingDeleteId: string | null; setPendingDeleteId: (id: string | null) => void }) => {
+const FrameworkLibrarySection = ({ pendingDeleteId, setPendingDeleteId, expandedCards, toggleCardExpand }: { pendingDeleteId: string | null; setPendingDeleteId: (id: string | null) => void; expandedCards: Set<string>; toggleCardExpand: (id: string) => void }) => {
   const [frameworks, setFrameworks] = useState<SavedFramework[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
@@ -2184,7 +2184,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       </div>
 
       {/* ── Section 3: Frameworks ── */}
-      <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} />
+      <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} expandedCards={expandedCards} toggleCardExpand={toggleCardExpand} />
 
       {/* ── Section 4: Voice Trainer ── */}
       <VoiceTrainer />
