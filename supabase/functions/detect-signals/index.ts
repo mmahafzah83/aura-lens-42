@@ -281,33 +281,11 @@ ${identityCtx}`;
 
     async function reinforceSignal(signalRow: any): Promise<string> {
       const existingEvidence: string[] = signalRow.supporting_evidence_ids || [];
-      if (existingEvidence.includes(entry_id)) return signalRow.id;
 
-      const mergedEvidence = unique([...existingEvidence, entry_id]);
-      const newFragCount = mergedEvidence.length;
-
-      // Count unique orgs from ALL evidence entries (existing + new)
-      const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence, captureDomain);
-
-      // Use the newest evidence date (now, since we just added one)
-      const now = new Date().toISOString();
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueOrgs, now);
-      const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
-
-      await admin.from("strategic_signals").update({
-        supporting_evidence_ids: mergedEvidence,
-        fragment_count: newFragCount,
-        unique_orgs: newUniqueOrgs,
-        confidence,
-        confidence_explanation,
-        what_it_means_for_you: whatItMeans,
-        priority_score: priorityScore,
-        updated_at: now,
-      }).eq("id", signalRow.id);
-
-      // Write evidence fragment for UI consistency
+      // Create evidence fragment from the entry
+      let fragmentId: string | null = null;
       try {
-        // First ensure a source_registry entry exists for this signal
+        const now = new Date().toISOString();
         const { data: srcReg } = await admin.from("source_registry").upsert({
           user_id,
           source_id: signalRow.id,
@@ -318,7 +296,7 @@ ${identityCtx}`;
         }, { onConflict: "source_id,source_type,user_id" }).select("id").single();
 
         if (srcReg) {
-          await admin.from("evidence_fragments").insert({
+          const { data: fragRow } = await admin.from("evidence_fragments").insert({
             user_id,
             source_registry_id: srcReg.id,
             fragment_type: "signal_evidence",
@@ -326,11 +304,36 @@ ${identityCtx}`;
             content: (entry.content || "").slice(0, 2000),
             tags: newTags,
             skill_pillars: [],
-          });
+          }).select("id").single();
+          fragmentId = fragRow?.id || null;
         }
       } catch (fragErr) {
         console.error("evidence_fragments write (reinforce) skipped:", fragErr);
       }
+
+      // Use fragment ID (not entry ID) in supporting_evidence_ids
+      const idToAdd = fragmentId || entry_id;
+      if (existingEvidence.includes(idToAdd)) return signalRow.id;
+
+      const mergedEvidence = unique([...existingEvidence, idToAdd]);
+      const newFragCount = mergedEvidence.length;
+
+      const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence, captureDomain);
+
+      const nowTs = new Date().toISOString();
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueOrgs, nowTs);
+      const priorityScore = await calcPriorityScore(confidence, nowTs, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
+
+      await admin.from("strategic_signals").update({
+        supporting_evidence_ids: mergedEvidence,
+        fragment_count: newFragCount,
+        unique_orgs: newUniqueOrgs,
+        confidence,
+        confidence_explanation,
+        what_it_means_for_you: whatItMeans,
+        priority_score: priorityScore,
+        updated_at: nowTs,
+      }).eq("id", signalRow.id);
 
       touchedSignalIds.add(signalRow.id);
       return signalRow.id;
@@ -349,6 +352,7 @@ ${identityCtx}`;
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, 1, admin, user_id, newTags);
 
+      // Insert signal first with empty evidence (will update after fragment creation)
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
         signal_title: newTitle,
@@ -360,7 +364,7 @@ ${identityCtx}`;
         what_it_means_for_you: whatItMeans,
         priority_score: priorityScore,
         status: "active",
-        supporting_evidence_ids: [entry_id],
+        supporting_evidence_ids: [],
         fragment_count: 1,
         unique_orgs: initialUniqueOrgs,
       }).select("id").single();
@@ -369,7 +373,8 @@ ${identityCtx}`;
       primarySignalId = row.id;
       isNew = true;
 
-      // Write evidence fragment for new signal
+      // Create evidence fragment and store its ID (not entry ID) in the signal
+      let fragmentId: string | null = null;
       try {
         const { data: srcReg } = await admin.from("source_registry").upsert({
           user_id,
@@ -381,7 +386,7 @@ ${identityCtx}`;
         }, { onConflict: "source_id,source_type,user_id" }).select("id").single();
 
         if (srcReg) {
-          await admin.from("evidence_fragments").insert({
+          const { data: fragRow } = await admin.from("evidence_fragments").insert({
             user_id,
             source_registry_id: srcReg.id,
             fragment_type: "signal_evidence",
@@ -389,11 +394,19 @@ ${identityCtx}`;
             content: (entry.content || "").slice(0, 2000),
             tags: newTags,
             skill_pillars: [],
-          });
+          }).select("id").single();
+          fragmentId = fragRow?.id || null;
         }
       } catch (fragErr) {
         console.error("evidence_fragments write (new signal) skipped:", fragErr);
       }
+
+      // Update signal with fragment ID (fallback to entry_id if fragment creation failed)
+      const evidenceId = fragmentId || entry_id;
+      await admin.from("strategic_signals").update({
+        supporting_evidence_ids: [evidenceId],
+      }).eq("id", primarySignalId);
+
       touchedSignalIds.add(primarySignalId);
     }
 
