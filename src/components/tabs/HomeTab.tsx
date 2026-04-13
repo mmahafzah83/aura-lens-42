@@ -40,6 +40,7 @@ interface HomeTabProps {
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
   onNavigateToSignal?: (signalId: string) => void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalId?: string; signalTitle?: string; contentFormat?: "post" | "carousel" | "framework_summary" }) => void;
 }
 
 const PLACEHOLDERS = [
@@ -71,7 +72,7 @@ function getTrendDate(publishedAt: string | null): string {
   return "1 week ago";
 }
 
-const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: HomeTabProps) => {
+const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDraftToStudio }: HomeTabProps) => {
   const [auraScore, setAuraScore] = useState<AuraScore | null>(null);
   const [userName, setUserName] = useState("");
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
@@ -81,6 +82,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
   const [placeholder] = useState(() => PLACEHOLDERS[new Date().getDate() % PLACEHOLDERS.length]);
   const [moves, setMoves] = useState<any[]>([]);
   const [movesLoading, setMovesLoading] = useState(true);
+  const [expandedMoveId, setExpandedMoveId] = useState<string | null>(null);
+  const [moveSignalTitles, setMoveSignalTitles] = useState<Record<string, string[]>>({});
 
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -453,6 +456,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
             moves.slice(0, 3).map((move: any) => {
               const badgeColor = move.output_type === "carousel" ? "#4A90D9" : move.output_type === "framework" ? "#5AA469" : "#C5A55A";
               const BadgeIcon = move.output_type === "carousel" ? LayoutGrid : move.output_type === "framework" ? Box : FileText;
+              const isExpanded = expandedMoveId === move.id;
               return (
                 <div key={move.id} style={{ background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: "14px 16px" }}>
                   <div className="flex items-start justify-between gap-2">
@@ -472,21 +476,73 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
                   <div
                     style={{
                       fontSize: 11, color: "#666", marginTop: 6, lineHeight: 1.4,
-                      display: "-webkit-box", WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical" as any, overflow: "hidden",
+                      ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any, overflow: "hidden" }),
                     }}
                     title={move.rationale}
                   >
                     {move.rationale}
                   </div>
+                  {/* Expanded: show source signal titles */}
+                  {isExpanded && moveSignalTitles[move.id] && moveSignalTitles[move.id].length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {moveSignalTitles[move.id].map((st: string, idx: number) => (
+                        <span key={idx} style={{
+                          fontSize: 9, color: "#888", background: "#1a1a1a", border: "1px solid #252525",
+                          padding: "2px 8px", borderRadius: 8,
+                        }}>
+                          {st}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex gap-2 mt-3">
-                    <button style={{ fontSize: 10, fontWeight: 600, color: "#C5A55A", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer" }}>
+                    <button
+                      onClick={() => {
+                        const fmt = move.output_type === "carousel" ? "carousel" : move.output_type === "framework" ? "framework_summary" : "post";
+                        onDraftToStudio?.({
+                          topic: move.title,
+                          context: move.rationale,
+                          signalId: Array.isArray(move.source_signal_ids) && move.source_signal_ids.length > 0 ? move.source_signal_ids[0] : undefined,
+                          signalTitle: moveSignalTitles[move.id]?.[0] || undefined,
+                          contentFormat: fmt as any,
+                        });
+                      }}
+                      style={{ fontSize: 10, fontWeight: 600, color: "#C5A55A", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer" }}
+                    >
                       Draft It
                     </button>
-                    <button style={{ fontSize: 10, fontWeight: 500, color: "#555", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}>
-                      Explore
+                    <button
+                      onClick={async () => {
+                        if (isExpanded) {
+                          setExpandedMoveId(null);
+                          return;
+                        }
+                        setExpandedMoveId(move.id);
+                        // Fetch signal titles if not cached
+                        if (!moveSignalTitles[move.id] && Array.isArray(move.source_signal_ids) && move.source_signal_ids.length > 0) {
+                          const { data: sigs } = await supabase
+                            .from("strategic_signals")
+                            .select("signal_title")
+                            .in("id", move.source_signal_ids);
+                          setMoveSignalTitles(prev => ({ ...prev, [move.id]: (sigs || []).map((s: any) => s.signal_title) }));
+                        } else if (!moveSignalTitles[move.id]) {
+                          setMoveSignalTitles(prev => ({ ...prev, [move.id]: [] }));
+                        }
+                      }}
+                      style={{ fontSize: 10, fontWeight: 500, color: "#555", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}
+                    >
+                      {isExpanded ? "Collapse" : "Explore"}
                     </button>
-                    <button style={{ fontSize: 10, fontWeight: 400, color: "#333", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}>
+                    <button
+                      onClick={async () => {
+                        setMoves(prev => prev.filter(m => m.id !== move.id));
+                        await supabase
+                          .from("recommended_moves" as any)
+                          .update({ status: "dismissed" } as any)
+                          .eq("id", move.id);
+                      }}
+                      style={{ fontSize: 10, fontWeight: 400, color: "#333", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}
+                    >
                       Dismiss
                     </button>
                   </div>
