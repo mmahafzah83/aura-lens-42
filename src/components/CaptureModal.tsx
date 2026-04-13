@@ -148,28 +148,36 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           return;
         }
         setIsTranscribing(true);
-        toast({ title: "Transcribing", description: "Processing your audio…" });
+        setTranscriptionFailed(false);
         try {
           const formData = new FormData();
           const ext = mimeType.includes("webm") ? "webm" : "mp4";
           formData.append("audio", blob, `recording.${ext}`);
           const { data: { session } } = await supabase.auth.getSession();
           const freshToken = session?.access_token;
+
+          // Upload audio to storage for later reference
+          if (session?.user?.id) {
+            const audioPath = `${session.user.id}/${Date.now()}.${ext}`;
+            const { error: upErr } = await supabase.storage.from("captures").upload(audioPath, blob);
+            if (!upErr) {
+              const { data: urlData } = supabase.storage.from("captures").getPublicUrl(audioPath);
+              if (urlData?.publicUrl) setVoiceAudioUrl(urlData.publicUrl);
+            }
+          }
+
           const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", {
             body: formData,
             ...(freshToken ? { headers: { Authorization: `Bearer ${freshToken}` } } : {}),
           });
-          if (fnError) {
-            toast({ title: "Transcription failed", description: fnError.message, variant: "destructive" });
-          } else if (fnData?.error) {
-            toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
-          } else if (fnData?.transcript) {
+          if (fnError || fnData?.error || !fnData?.transcript) {
+            setTranscriptionFailed(true);
+          } else {
             setContent(fnData.transcript);
             if (fnData.audio_url) setVoiceAudioUrl(fnData.audio_url);
-            toast({ title: "Transcribed", description: "Voice note converted to text." });
           }
         } catch {
-          toast({ title: "Error", description: "Could not transcribe audio.", variant: "destructive" });
+          setTranscriptionFailed(true);
         }
         setIsTranscribing(false);
       };
