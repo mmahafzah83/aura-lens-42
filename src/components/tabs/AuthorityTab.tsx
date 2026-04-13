@@ -2084,9 +2084,10 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#999" }}>
             {publishedPosts.length}
           </span>
-          <span className="ml-auto group-hover:text-primary transition-colors" style={{ fontSize: 12, color: "#C5A55A" }}>
-            {showPublished ? "Hide" : "Show all"}
-          </span>
+          <ChevronDown
+            className="ml-auto transition-transform duration-200 group-hover:text-primary"
+            style={{ width: 16, height: 16, color: "#888", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
+          />
         </button>
         {showPublished && (
           <div style={{ display: "grid", gap: 12 }}>
