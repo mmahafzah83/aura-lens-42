@@ -587,6 +587,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
+  const [movesCount, setMovesCount] = useState(0);
+  const [publishedCount, setPublishedCount] = useState(0);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("confidence");
   const [groupByTheme, setGroupByTheme] = useState(false);
@@ -618,13 +620,17 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   const loadSignals = useCallback(async () => {
     setLoading(true);
-    const [signalsRes, entriesRes, profileRes] = await Promise.all([
+    const [signalsRes, entriesRes, profileRes, movesRes, publishedRes] = await Promise.all([
       supabase.from("strategic_signals").select("*").eq("status", "active").order("priority_score", { ascending: false }).limit(20),
       supabase.from("entries").select("id", { count: "exact", head: true }),
       supabase.from("diagnostic_profiles").select("sector_focus, core_practice, north_star_goal, brand_pillars").limit(1).maybeSingle(),
+      supabase.from("content_items").select("id", { count: "exact", head: true }).eq("status", "draft"),
+      supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
     ]);
     setSignals((signalsRes.data || []) as unknown as Signal[]);
     setEntryCount(entriesRes.count || 0);
+    setMovesCount(movesRes.count || 0);
+    setPublishedCount(publishedRes.count || 0);
     if (profileRes.data) {
       setProfileAnchors({
         sectorFocus: profileRes.data.sector_focus,
@@ -929,8 +935,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           {[
             { label: "Sources", count: entryCount, gold: false },
             { label: "Signals", count: signals.length, gold: true },
-            { label: "Moves", count: 0, gold: false },
-            { label: "Published", count: 0, gold: false },
+            { label: "Moves", count: movesCount, gold: false },
+            { label: "Published", count: publishedCount, gold: false },
           ].map((step, i) => (
             <div key={step.label} style={{ display: "flex", alignItems: "center" }}>
               {i > 0 && <span style={{ color: "#2a2a2a", margin: "0 8px", fontSize: 12 }}>›</span>}
