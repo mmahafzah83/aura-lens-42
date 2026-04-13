@@ -430,6 +430,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     setFullVersion("");
     setShortVersion("");
     setShowingShort(false);
+    setGenerationTimestamp(new Date().toISOString());
     try {
       const accumulated = await streamGeneration();
       setFullVersion(accumulated);
