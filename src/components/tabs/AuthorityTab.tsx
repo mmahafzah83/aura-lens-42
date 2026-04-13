@@ -1718,9 +1718,11 @@ const FrameworkLibrarySection = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Target className="w-4 h-4 text-primary/60" />
+        <span className="text-base">⚙️</span>
         <h3 className="text-sm font-semibold text-foreground">Frameworks</h3>
-        <span className="text-[10px] text-muted-foreground/50">{frameworks.length}</span>
+        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/20 text-muted-foreground">
+          {frameworks.length}
+        </span>
       </div>
       <div className="grid gap-2">
         {frameworks.map(fw => {
