@@ -32,6 +32,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionFailed, setTranscriptionFailed] = useState(false);
   const [voiceAudioUrl, setVoiceAudioUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
