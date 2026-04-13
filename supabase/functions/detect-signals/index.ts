@@ -336,7 +336,7 @@ ${identityCtx}`;
       const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence, captureDomain);
 
       const nowTs = new Date().toISOString();
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueOrgs, nowTs);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, nowTs);
       const priorityScore = await calcPriorityScore(confidence, nowTs, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
 
       await admin.from("strategic_signals").update({
@@ -364,7 +364,7 @@ ${identityCtx}`;
     } else {
       const now = new Date().toISOString();
       const initialUniqueOrgs = captureDomain ? 1 : 1;
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, 1, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, 1, admin, user_id, newTags);
 
       // Insert signal first with empty evidence (will update after fragment creation)
