@@ -1776,31 +1776,37 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   };
 
   const markPublished = async (id: string) => {
-    const { error } = await supabase
-      .from("linkedin_posts")
-      .update({ tracking_status: "published", published_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) {
-      console.error("Failed to mark published:", error);
-      toast.error("Failed to update status");
-      return;
+    const item = posts.find(p => p.id === id);
+    if (!item) return;
+    if (item._source === "content_items") {
+      const { error } = await supabase
+        .from("content_items")
+        .update({ status: "published" })
+        .eq("id", id);
+      if (error) { toast.error("Failed to update status"); return; }
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
+    } else {
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .update({ tracking_status: "published", published_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) { toast.error("Failed to update status"); return; }
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
     }
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
     toast.success("Marked as published");
   };
 
   const deletePost = async (id: string) => {
+    const item = posts.find(p => p.id === id);
+    if (!item) return;
+    const table = item._source === "content_items" ? "content_items" : "linkedin_posts";
     const { error } = await supabase
-      .from("linkedin_posts")
+      .from(table)
       .delete()
       .eq("id", id);
-    if (error) {
-      console.error("Failed to delete post:", error);
-      toast.error("Failed to delete post");
-      return;
-    }
+    if (error) { toast.error("Failed to delete"); return; }
     setPosts(prev => prev.filter(p => p.id !== id));
-    toast.success("Post deleted");
+    toast.success("Deleted");
   };
 
   if (loading) {
