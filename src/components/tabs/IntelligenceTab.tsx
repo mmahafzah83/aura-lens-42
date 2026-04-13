@@ -620,13 +620,17 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   const loadSignals = useCallback(async () => {
     setLoading(true);
-    const [signalsRes, entriesRes, profileRes] = await Promise.all([
+    const [signalsRes, entriesRes, profileRes, movesRes, publishedRes] = await Promise.all([
       supabase.from("strategic_signals").select("*").eq("status", "active").order("priority_score", { ascending: false }).limit(20),
       supabase.from("entries").select("id", { count: "exact", head: true }),
       supabase.from("diagnostic_profiles").select("sector_focus, core_practice, north_star_goal, brand_pillars").limit(1).maybeSingle(),
+      supabase.from("content_items").select("id", { count: "exact", head: true }).eq("status", "draft"),
+      supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
     ]);
     setSignals((signalsRes.data || []) as unknown as Signal[]);
     setEntryCount(entriesRes.count || 0);
+    setMovesCount(movesRes.count || 0);
+    setPublishedCount(publishedRes.count || 0);
     if (profileRes.data) {
       setProfileAnchors({
         sectorFocus: profileRes.data.sector_focus,
