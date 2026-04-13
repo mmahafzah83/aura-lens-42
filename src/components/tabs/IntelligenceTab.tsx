@@ -830,7 +830,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     const confStyle = getConfidenceStyle(signal.confidence);
     const confBarColor = getConfidenceBarColor(signal.confidence);
     const confidencePct = Math.round(signal.confidence * 100);
-    const sourcesLabel = `${plural(signal.fragment_count, "source")} · ${plural(signal.unique_orgs, "organisation")}`;
+    const sourcesLabel = `${plural(signal.fragment_count, "evidence")} · ${plural(signal.unique_orgs, "organisation")}`;
     const needsMore = signal.confidence < 0.60;
     const moreSources = Math.ceil((0.60 - signal.confidence) / 0.184);
     const signalIsNew = isNew(signal.updated_at);
@@ -869,13 +869,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               )}
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ background: confStyle.bg, color: confBarColor.text, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12 }}>{confStyle.label}</span>
+                <span style={{ background: confStyle.bg, color: confBarColor.text, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12 }}>Strength {confStyle.label}</span>
                 <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
                 {signal.confidence >= 0.60 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onDraftToStudio?.({ topic: signal.signal_title, context: [signal.explanation, signal.strategic_implications, signal.what_it_means_for_you].filter(Boolean).join("\n\n"), signalId: signal.id, signalTitle: signal.signal_title }); }}
                     style={{ marginLeft: "auto", background: "none", border: "none", color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                  >Draft</button>
+                  >Write on this</button>
                 )}
               </div>
 
@@ -903,7 +903,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             onClick={() => setExpandedId(isExpanded ? null : signal.id)}
             style={{ display: "block", width: "100%", textAlign: "center", color: "#3a3a3a", fontSize: 11, background: "none", border: "none", cursor: "pointer", marginTop: 12, padding: "4px 0" }}
           >
-            {isExpanded ? "▴ collapse signal" : "▾ expand signal"}
+            {isExpanded ? "▴ collapse" : "▾ expand"}
           </button>
         </div>
 
@@ -926,8 +926,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   /* ── Sub-tab definitions ── */
 
   const SUB_TABS: { value: SubTab; label: string }[] = [
-    { value: "signals", label: "Signals" },
-    { value: "insights", label: "Insights" },
+    { value: "signals", label: "Intelligence" },
     { value: "frameworks", label: "Frameworks" },
     { value: "sources", label: "Sources" },
   ];
@@ -944,7 +943,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         }}>
           {[
             { label: "Sources", count: entryCount, gold: false },
-            { label: "Signals", count: signals.length, gold: true },
+            { label: "Patterns found", count: signals.length, gold: true },
             { label: "Moves", count: movesCount, gold: false },
             { label: "Published", count: publishedCount, gold: false },
           ].map((step, i) => (
@@ -1093,7 +1092,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           </>
         )}
 
-        {activeSubTab === "insights" && <InsightsSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
+        {/* Insights sub-tab removed — data continues to be populated in background */}
         {activeSubTab === "frameworks" && <FrameworksSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
         {activeSubTab === "sources" && (
           <SourcesSubTab
