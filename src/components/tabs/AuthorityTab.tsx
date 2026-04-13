@@ -1718,9 +1718,11 @@ const FrameworkLibrarySection = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Target className="w-4 h-4 text-primary/60" />
+        <span className="text-base">⚙️</span>
         <h3 className="text-sm font-semibold text-foreground">Frameworks</h3>
-        <span className="text-[10px] text-muted-foreground/50">{frameworks.length}</span>
+        <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/20 text-muted-foreground">
+          {frameworks.length}
+        </span>
       </div>
       <div className="grid gap-2">
         {frameworks.map(fw => {
@@ -1773,15 +1775,12 @@ const FrameworkLibrarySection = () => {
 };
 
 const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
-  const [posts, setPosts] = useState<SavedPost[]>([]);
+  const [drafts, setDrafts] = useState<SavedPost[]>([]);
+  const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
-  const [topicFilter, setTopicFilter] = useState<string>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const [showPublished, setShowPublished] = useState(false);
 
   useEffect(() => { loadPosts(); }, []);
 
@@ -1790,23 +1789,20 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     const [liRes, ciRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at")
         .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
         .from("content_items")
         .select("id, type, body, language, status, generation_params, created_at")
+        .eq("status", "draft")
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
 
-    const liPosts: SavedPost[] = (liRes.data || []).map((p: any) => ({
-      ...p,
-      _source: "linkedin_posts" as const,
-    }));
-
-    const ciPosts: SavedPost[] = (ciRes.data || []).map((ci: any) => ({
+    // Drafts from content_items
+    const ciDrafts: SavedPost[] = (ciRes.data || []).map((ci: any) => ({
       id: ci.id,
       title: null,
       post_text: ci.body,
@@ -1814,14 +1810,21 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       tracking_status: ci.status,
       topic_label: null,
       created_at: ci.created_at,
-      source_metadata: ci.generation_params,
+      source_metadata: { ...ci.generation_params, _language: ci.language },
       _source: "content_items" as const,
     }));
 
-    const merged = [...liPosts, ...ciPosts].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
-    setPosts(merged);
+    // Published linkedin posts — filter out empty/short post_text
+    const liPublished: SavedPost[] = (liRes.data || [])
+      .filter((p: any) => p.post_text && p.post_text.trim().length >= 20)
+      .filter((p: any) => p.published_at || p.tracking_status === "published")
+      .map((p: any) => ({
+        ...p,
+        _source: "linkedin_posts" as const,
+      }));
+
+    setDrafts(ciDrafts);
+    setPublishedPosts(liPublished);
     setLoading(false);
   };
 
@@ -1832,36 +1835,28 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   };
 
   const markPublished = async (id: string) => {
-    const item = posts.find(p => p.id === id);
+    const item = drafts.find(p => p.id === id);
     if (!item) return;
-    if (item._source === "content_items") {
-      const { error } = await supabase
-        .from("content_items")
-        .update({ status: "published" })
-        .eq("id", id);
-      if (error) { toast.error("Failed to update status"); return; }
-      setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
-    } else {
-      const { error } = await supabase
-        .from("linkedin_posts")
-        .update({ tracking_status: "published", published_at: new Date().toISOString() })
-        .eq("id", id);
-      if (error) { toast.error("Failed to update status"); return; }
-      setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
-    }
+    const { error } = await supabase
+      .from("content_items")
+      .update({ status: "published" })
+      .eq("id", id);
+    if (error) { toast.error("Failed to update status"); return; }
+    setDrafts(prev => prev.filter(p => p.id !== id));
     toast.success("Marked as published");
   };
 
   const deletePost = async (id: string) => {
-    const item = posts.find(p => p.id === id);
+    // Check drafts first, then published
+    const inDrafts = drafts.find(p => p.id === id);
+    const inPublished = publishedPosts.find(p => p.id === id);
+    const item = inDrafts || inPublished;
     if (!item) return;
     const table = item._source === "content_items" ? "content_items" : "linkedin_posts";
-    const { error } = await supabase
-      .from(table)
-      .delete()
-      .eq("id", id);
+    const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
-    setPosts(prev => prev.filter(p => p.id !== id));
+    if (inDrafts) setDrafts(prev => prev.filter(p => p.id !== id));
+    if (inPublished) setPublishedPosts(prev => prev.filter(p => p.id !== id));
     toast.success("Deleted");
   };
 
@@ -1879,7 +1874,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     );
   }
 
-  if (posts.length === 0) {
+  const hasAnyContent = drafts.length > 0 || publishedPosts.length > 0;
+
+  if (!hasAnyContent) {
     return (
       <div className="space-y-6">
         <VoiceTrainer />
@@ -1896,7 +1893,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {pendingDeleteId && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
           <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
@@ -1920,95 +1917,149 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         </div>,
         document.body
       )}
-      <VoiceTrainer />
-      <FrameworkLibrarySection />
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-          <Input
-            placeholder="Search content..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="h-8 pl-8 text-xs bg-secondary/20 border-border/10"
-          />
+
+      {/* ── Section 1: Aura Drafts ── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">✍️</span>
+          <h3 className="text-sm font-semibold" style={{ color: "#C5A55A" }}>Your Drafts</h3>
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: "rgba(197,165,90,0.15)", color: "#C5A55A" }}>
+            {drafts.length}
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          {(["all", "draft", "published"] as const).map(s => (
-            <Button
-              key={s}
-              size="sm"
-              variant={statusFilter === s ? "default" : "ghost"}
-              className="h-7 text-[11px] px-2.5"
-              onClick={() => setStatusFilter(s)}
-            >
-              {s === "all" ? "All" : s === "draft" ? "Drafts" : "Published"}
-            </Button>
-          ))}
-        </div>
-        {(() => {
-          const topics = [...new Set(posts.map(p => p.topic_label).filter(Boolean))] as string[];
-          if (topics.length <= 1) return null;
-          return (
-            <select
-              value={topicFilter}
-              onChange={e => setTopicFilter(e.target.value)}
-              className="h-7 text-[11px] px-2 rounded-md bg-secondary/20 border border-border/10 text-foreground"
-            >
-              <option value="all">All topics</option>
-              {topics.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          );
-        })()}
+        {drafts.length === 0 ? (
+          <div className="glass-card rounded-xl p-5 border border-border/8 text-center">
+            <p className="text-xs text-muted-foreground/50">No drafts yet. Generate content on the Create tab.</p>
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {drafts.map(p => {
+              const lang = (p.source_metadata as any)?._language || "en";
+              const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
+                >
+                  <div className="flex items-start gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground leading-snug line-clamp-3" dir="auto">
+                        {p.post_text || "Untitled draft"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-secondary/20 text-muted-foreground border-border/15 uppercase">
+                        {lang === "ar" ? "AR" : "EN"}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
+                        {badge.label}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-amber-500/15 text-amber-400 border-amber-500/20">
+                        Draft
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+                    <div className="flex-1" />
+                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5"
+                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)} disabled={!p.post_text}>
+                      {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedId === p.id ? "Copied" : "Copy"}
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5 border-border/15"
+                      onClick={() => markPublished(p.id)}>
+                      <Check className="w-3 h-3" /> Mark as published
+                    </Button>
+                    <Button size="sm" variant="ghost"
+                      className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setPendingDeleteId(p.id)}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {(() => {
-        const filtered = posts.filter(p => {
-          if (statusFilter === "draft" && p.tracking_status !== "draft") return false;
-          if (statusFilter === "published" && p.tracking_status === "draft") return false;
-          if (topicFilter !== "all" && p.topic_label !== topicFilter) return false;
-          if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
-            const matchTitle = (p.title || "").toLowerCase().includes(q);
-            const matchTopic = (p.topic_label || "").toLowerCase().includes(q);
-            const matchText = (p.post_text || "").toLowerCase().includes(q);
-            if (!matchTitle && !matchTopic && !matchText) return false;
-          }
-          return true;
-        });
-
-        return (
-          <>
-            <p className="text-sm text-muted-foreground">
-              {filtered.length} of {posts.length} {posts.length === 1 ? "piece" : "pieces"} of content
-            </p>
-            {filtered.length === 0 ? (
-              <div className="text-center py-10">
-                <p className="text-sm text-muted-foreground">No content matches your filters.</p>
-                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setTopicFilter("all"); }}>
-                  Clear filters
-                </Button>
+      {/* ── Section 2: Published Posts (collapsed by default) ── */}
+      <div className="space-y-3">
+        <button
+          onClick={() => setShowPublished(!showPublished)}
+          className="flex items-center gap-2 w-full text-left group"
+        >
+          <span className="text-base">📢</span>
+          <h3 className="text-sm font-semibold text-foreground">Published Posts</h3>
+          <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-secondary/20 text-muted-foreground">
+            {publishedPosts.length}
+          </span>
+          <span className="ml-auto text-xs text-primary/60 group-hover:text-primary transition-colors">
+            {showPublished ? "Hide" : "Show all"}
+          </span>
+        </button>
+        {showPublished && (
+          <div className="grid gap-3">
+            {publishedPosts.length === 0 ? (
+              <div className="glass-card rounded-xl p-5 border border-border/8 text-center">
+                <p className="text-xs text-muted-foreground/50">No published posts yet.</p>
               </div>
-            ) : filtered.map(p => {
-        const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
-        const isDraft = p.tracking_status === "draft";
-        const isPublished = p.tracking_status === "published";
-        return (
-          <LibraryCard
-            key={p.id}
-            post={p}
-            badge={badge}
-            isDraft={isDraft}
-            isPublished={isPublished}
-            copiedId={copiedId}
-            onCopy={handleCopy}
-            onMarkPublished={markPublished}
-            onDelete={setPendingDeleteId}
-          />
-        );
-      })}
-          </>
-        );
-      })()}
+            ) : publishedPosts.map(p => {
+              const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+              return (
+                <motion.div
+                  key={p.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card rounded-xl p-5 border border-border/8 hover:border-primary/10 transition-all"
+                >
+                  <div className="flex items-start gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-foreground leading-snug line-clamp-2" dir="auto">
+                        {p.post_text}
+                      </p>
+                      {p.topic_label && (
+                        <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
+                        {badge.label}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-emerald-500/15 text-emerald-400 border-emerald-500/20">
+                        Published
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+                    <div className="flex-1" />
+                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5"
+                      onClick={() => p.post_text && handleCopy(p.id, p.post_text)} disabled={!p.post_text}>
+                      {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copiedId === p.id ? "Copied" : "Copy"}
+                    </Button>
+                    <Button size="sm" variant="ghost"
+                      className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setPendingDeleteId(p.id)}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Section 3: Frameworks ── */}
+      <FrameworkLibrarySection />
+
+      {/* ── Section 4: Voice Trainer ── */}
+      <VoiceTrainer />
     </div>
   );
 };
