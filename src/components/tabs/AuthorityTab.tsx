@@ -579,10 +579,36 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             </div>
 
             {/* Generate */}
-            <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
-              {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Generate {FORMAT_LABELS[contentType]?.label || "Content"}
-            </Button>
+            {contentType === "post" && monthlyGenerationCount >= FREE_LIMIT ? (
+              <Button
+                className="w-full gap-2 opacity-60 cursor-not-allowed"
+                onClick={() => toast("You've used your 3 free generations this month", {
+                  description: "Upgrade to Aura Pro for unlimited content generation, advanced signal insights, and priority support.",
+                  action: { label: "Upgrade", onClick: () => toast.info("Coming soon — Aura Pro is on the way.") },
+                })}
+              >
+                <Send className="w-4 h-4" />
+                Upgrade to Generate
+              </Button>
+            ) : (
+              <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
+                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                Generate {FORMAT_LABELS[contentType]?.label || "Content"}
+              </Button>
+            )}
+
+            {/* Usage indicator */}
+            {contentType === "post" && (
+              <p className="text-center" style={{ fontSize: 11, color: monthlyGenerationCount >= FREE_LIMIT ? "#C5A55A" : "#999999" }}>
+                {monthlyGenerationCount >= FREE_LIMIT ? (
+                  <span className="flex items-center justify-center gap-1">
+                    🔒 {FREE_LIMIT} / {FREE_LIMIT} free generations used — upgrade for unlimited
+                  </span>
+                ) : (
+                  `${monthlyGenerationCount} / ${FREE_LIMIT} free generations used this month`
+                )}
+              </p>
+            )}
 
             {/* Output */}
             {displayedOutput && (
