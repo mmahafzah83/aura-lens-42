@@ -1680,7 +1680,7 @@ interface SavedFramework {
   created_at: string;
 }
 
-const FrameworkLibrarySection = ({ pendingDeleteId, setPendingDeleteId }: { pendingDeleteId: string | null; setPendingDeleteId: (id: string | null) => void }) => {
+const FrameworkLibrarySection = ({ pendingDeleteId, setPendingDeleteId, expandedCards, toggleCardExpand }: { pendingDeleteId: string | null; setPendingDeleteId: (id: string | null) => void; expandedCards: Set<string>; toggleCardExpand: (id: string) => void }) => {
   const [frameworks, setFrameworks] = useState<SavedFramework[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(true);
@@ -1754,7 +1754,20 @@ const FrameworkLibrarySection = ({ pendingDeleteId, setPendingDeleteId }: { pend
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0", lineHeight: 1.4 }} className="line-clamp-1">{fw.title}</p>
-                    {fw.summary && <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 4 }} className="line-clamp-2">{fw.summary}</p>}
+                    {fw.summary && (
+                      <>
+                        <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 4 }} className={expandedCards.has(fw.id) ? "" : "line-clamp-2"}>{fw.summary}</p>
+                        {fw.summary.split("\n").length > 2 || fw.summary.length > 120 ? (
+                          <button
+                            onClick={() => toggleCardExpand(fw.id)}
+                            style={{ fontSize: 13, color: "#C5A55A", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
+                            className="hover:underline"
+                          >
+                            {expandedCards.has(fw.id) ? "Show less" : "Read more"}
+                          </button>
+                        ) : null}
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-3">
@@ -1837,6 +1850,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showPublished, setShowPublished] = useState(false);
   const [showDrafts, setShowDrafts] = useState(true);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleCardExpand = (id: string) => setExpandedCards(prev => { const next = new Set(prev); if (next.has(id)) { next.delete(id); } else { next.add(id); } return next; });
 
   useEffect(() => { loadPosts(); }, []);
 
@@ -2019,9 +2034,18 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   className="hover:bg-[#1e1e1e] hover:border-l-[#D4B57A]"
                 >
                   {/* Body text */}
-                  <p style={{ fontSize: 14, color: "#e0e0e0", lineHeight: 1.6 }} className="line-clamp-4" dir="auto">
+                  <p style={{ fontSize: 14, color: "#e0e0e0", lineHeight: 1.6 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
                     {p.post_text || "Untitled draft"}
                   </p>
+                  {(p.post_text?.split("\n").length || 0) > 4 || (p.post_text?.length || 0) > 280 ? (
+                    <button
+                      onClick={() => toggleCardExpand(p.id)}
+                      style={{ fontSize: 13, color: "#C5A55A", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
+                      className="hover:underline"
+                    >
+                      {expandedCards.has(p.id) ? "Show less" : "Read more"}
+                    </button>
+                  ) : null}
 
                   {/* Badge row */}
                   <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
@@ -2107,9 +2131,18 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                 >
                   <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <p style={{ fontSize: 14, color: "#e0e0e0", lineHeight: 1.5 }} className="line-clamp-2" dir="auto">
+                      <p style={{ fontSize: 14, color: "#e0e0e0", lineHeight: 1.5 }} className={expandedCards.has(p.id) ? "" : "line-clamp-2"} dir="auto">
                         {p.post_text}
                       </p>
+                      {(p.post_text?.split("\n").length || 0) > 2 || (p.post_text?.length || 0) > 140 ? (
+                        <button
+                          onClick={() => toggleCardExpand(p.id)}
+                          style={{ fontSize: 13, color: "#C5A55A", background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 4 }}
+                          className="hover:underline"
+                        >
+                          {expandedCards.has(p.id) ? "Show less" : "Read more"}
+                        </button>
+                      ) : null}
                       {p.topic_label && (
                         <p style={{ fontSize: 12, color: "#666", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
                       )}
@@ -2151,7 +2184,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       </div>
 
       {/* ── Section 3: Frameworks ── */}
-      <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} />
+      <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} expandedCards={expandedCards} toggleCardExpand={toggleCardExpand} />
 
       {/* ── Section 4: Voice Trainer ── */}
       <VoiceTrainer />
