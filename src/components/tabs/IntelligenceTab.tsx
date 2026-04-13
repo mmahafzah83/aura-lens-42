@@ -164,7 +164,7 @@ function isNew(updatedAt: string): boolean {
 }
 
 type SortOption = "confidence" | "recent" | "sources";
-type SubTab = "signals" | "insights" | "frameworks" | "sources";
+type SubTab = "signals" | "frameworks" | "sources";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
@@ -255,11 +255,14 @@ const ExpandedDetail = ({
 }) => {
   const [sources, setSources] = useState<SourceEntry[]>([]);
   const [evidenceFragments, setEvidenceFragments] = useState<EvidenceFragmentRow[]>([]);
+  const [keyInsights, setKeyInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
 
   useEffect(() => {
     (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+
       if (signal.supporting_evidence_ids?.length) {
         // Query evidence_fragments first (canonical source)
         const ef = await supabase
@@ -280,9 +283,21 @@ const ExpandedDetail = ({
         setSources((r.data || []) as unknown as SourceEntry[]);
       }
 
+      // Fetch Key Insights from learned_intelligence matching signal tags
+      if (user && signal.theme_tags?.length > 0) {
+        const { data: insightsData } = await supabase
+          .from("learned_intelligence")
+          .select("id, title, content, intelligence_type, skill_pillars, tags, created_at")
+          .eq("user_id", user.id)
+          .or(`tags.ov.{${signal.theme_tags.join(",")}},skill_pillars.ov.{${signal.theme_tags.join(",")}}`)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        setKeyInsights((insightsData || []) as unknown as Insight[]);
+      }
+
       setLoading(false);
     })();
-  }, [signal.supporting_evidence_ids]);
+  }, [signal.supporting_evidence_ids, signal.theme_tags]);
 
   const handleRemove = async (entryId: string) => {
     const newIds = signal.supporting_evidence_ids.filter(id => id !== entryId);
@@ -340,6 +355,24 @@ const ExpandedDetail = ({
           <div style={{ marginTop: 16 }}>
             <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 6 }}>what this means for you</p>
             <p style={{ color: "#888888", fontSize: 13, lineHeight: 1.6, margin: 0 }}>{highlightKeyPhrases(signal.what_it_means_for_you)}</p>
+          </div>
+        )}
+
+        {/* Key Insights section */}
+        {keyInsights.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8, textTransform: "uppercase" }}>key insights</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {keyInsights.map(insight => (
+                <div key={insight.id} style={{ background: "#1a1a1a", borderRadius: 10, padding: "12px 14px", border: "1px solid #252525" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, flex: 1 }}>{insight.title}</p>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#252525", color: "#888888", textTransform: "capitalize", flexShrink: 0 }}>{insight.intelligence_type}</span>
+                  </div>
+                  <p style={{ color: "#888888", fontSize: 13, lineHeight: 1.5, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{insight.content}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -830,7 +863,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     const confStyle = getConfidenceStyle(signal.confidence);
     const confBarColor = getConfidenceBarColor(signal.confidence);
     const confidencePct = Math.round(signal.confidence * 100);
-    const sourcesLabel = `${plural(signal.fragment_count, "source")} · ${plural(signal.unique_orgs, "organisation")}`;
+    const sourcesLabel = `${plural(signal.fragment_count, "evidence")} · ${plural(signal.unique_orgs, "organisation")}`;
     const needsMore = signal.confidence < 0.60;
     const moreSources = Math.ceil((0.60 - signal.confidence) / 0.184);
     const signalIsNew = isNew(signal.updated_at);
@@ -869,13 +902,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               )}
 
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <span style={{ background: confStyle.bg, color: confBarColor.text, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12 }}>{confStyle.label}</span>
+                <span style={{ background: confStyle.bg, color: confBarColor.text, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 12 }}>Strength {confStyle.label}</span>
                 <span style={{ color: "#666666", fontSize: 11 }}>{sourcesLabel}</span>
                 {signal.confidence >= 0.60 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onDraftToStudio?.({ topic: signal.signal_title, context: [signal.explanation, signal.strategic_implications, signal.what_it_means_for_you].filter(Boolean).join("\n\n"), signalId: signal.id, signalTitle: signal.signal_title }); }}
                     style={{ marginLeft: "auto", background: "none", border: "none", color: "#C5A55A", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                  >Draft</button>
+                  >Write on this</button>
                 )}
               </div>
 
@@ -903,7 +936,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             onClick={() => setExpandedId(isExpanded ? null : signal.id)}
             style={{ display: "block", width: "100%", textAlign: "center", color: "#3a3a3a", fontSize: 11, background: "none", border: "none", cursor: "pointer", marginTop: 12, padding: "4px 0" }}
           >
-            {isExpanded ? "▴ collapse signal" : "▾ expand signal"}
+            {isExpanded ? "▴ collapse" : "▾ expand"}
           </button>
         </div>
 
@@ -926,8 +959,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   /* ── Sub-tab definitions ── */
 
   const SUB_TABS: { value: SubTab; label: string }[] = [
-    { value: "signals", label: "Signals" },
-    { value: "insights", label: "Insights" },
+    { value: "signals", label: "Intelligence" },
     { value: "frameworks", label: "Frameworks" },
     { value: "sources", label: "Sources" },
   ];
@@ -944,7 +976,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         }}>
           {[
             { label: "Sources", count: entryCount, gold: false },
-            { label: "Signals", count: signals.length, gold: true },
+            { label: "Patterns found", count: signals.length, gold: true },
             { label: "Moves", count: movesCount, gold: false },
             { label: "Published", count: publishedCount, gold: false },
           ].map((step, i) => (
@@ -1017,9 +1049,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           ))}
         </div>
 
-        {/* ── Sub-tab content ── */}
         {activeSubTab === "signals" && (
           <>
+            <p style={{ color: "#666666", fontSize: 13, margin: "-8px 0 16px" }}>Patterns Aura detected across everything you've captured — ranked by strength.</p>
             {/* Filter chips + group toggle */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <div style={{ overflowX: "auto", display: "flex", gap: 8, flex: 1, paddingBottom: 4 }} className="scrollbar-hide">
@@ -1093,7 +1125,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           </>
         )}
 
-        {activeSubTab === "insights" && <InsightsSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
+        {/* Insights sub-tab removed — data continues to be populated in background */}
         {activeSubTab === "frameworks" && <FrameworksSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
         {activeSubTab === "sources" && (
           <SourcesSubTab
