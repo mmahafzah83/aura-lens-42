@@ -240,8 +240,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
+  const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
+  const [generationTimestamp, setGenerationTimestamp] = useState<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
   const [planRef, setPlanRef] = useState<string | null>(null);
@@ -339,6 +341,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         setContentType("post");
         setFramework("hook_insight_question");
       }
+      setSelectedSignalId(signalPrefill.signalId || null);
       setSelectedSignalTitle(signalPrefill.signalTitle || null);
       setSelectedSignalInsight(signalPrefill.context || null);
       setOutput("");
@@ -427,6 +430,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     setFullVersion("");
     setShortVersion("");
     setShowingShort(false);
+    setGenerationTimestamp(new Date().toISOString());
     try {
       const accumulated = await streamGeneration();
       setFullVersion(accumulated);
@@ -584,12 +588,36 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           if (!session?.user?.id) throw new Error("Not authenticated");
                           const body = stripMarkdown(output || fullVersion || shortVersion || "");
                           if (!body.trim()) { toast.error("Nothing to save"); return; }
+
+                          // Fetch diagnostic profile for identity_snapshot
+                          const { data: profile } = await supabase.from("diagnostic_profiles")
+                            .select("level, sector_focus, core_practice, firm")
+                            .eq("user_id", session.user.id)
+                            .maybeSingle();
+
+                          const generationParams = {
+                            model: "google/gemini-3-flash-preview",
+                            prompt_template_version: "v1",
+                            signal_ids: selectedSignalId ? [selectedSignalId] : [],
+                            signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+                            identity_snapshot: {
+                              role: profile?.level ?? null,
+                              industry: profile?.firm ?? null,
+                              sector_focus: profile?.sector_focus ?? null,
+                              core_practice: profile?.core_practice ?? null,
+                            },
+                            topic: topic || null,
+                            language: lang,
+                            timestamp: generationTimestamp || new Date().toISOString(),
+                          };
+
                           const { error } = await supabase.from("content_items").insert({
                             user_id: session.user.id,
                             type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
                             body,
                             language: lang,
                             status: "draft",
+                            generation_params: generationParams,
                           });
                           if (error) throw error;
                           toast.success("Draft saved to your library.");
