@@ -1484,14 +1484,27 @@ const LibraryCard = ({
     >
       <div className="flex items-start gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
-            {p.title || "Untitled"}
-          </p>
-          {p.topic_label && (
-            <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
-          )}
-          {p.source_metadata?.from_plan && (
-            <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+          {p._source === "content_items" ? (
+            <>
+              <p className="text-sm text-foreground leading-snug line-clamp-3" dir="auto">
+                {p.post_text || "Untitled"}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] text-muted-foreground/40">Aura Draft</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                {p.title || "Untitled"}
+              </p>
+              {p.topic_label && (
+                <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
+              )}
+              {p.source_metadata?.from_plan && (
+                <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+              )}
+            </>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -1500,7 +1513,7 @@ const LibraryCard = ({
           </span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
             isDraft
-              ? "bg-muted/20 text-muted-foreground border-border/15"
+              ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
               : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           }`}>
             {isDraft ? "Draft" : "Published"}
