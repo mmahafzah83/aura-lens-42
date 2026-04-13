@@ -261,14 +261,7 @@ const ExpandedDetail = ({
   useEffect(() => {
     (async () => {
       if (signal.supporting_evidence_ids?.length) {
-        const r = await supabase
-          .from("entries")
-          .select("id, title, content, source_url, created_at")
-          .in("id", signal.supporting_evidence_ids)
-          .order("created_at", { ascending: false })
-          .limit(20);
-        setSources((r.data || []) as unknown as SourceEntry[]);
-
+        // Query evidence_fragments first (canonical source)
         const ef = await supabase
           .from("evidence_fragments")
           .select("id, title, content, created_at, source_registry_id")
@@ -276,6 +269,15 @@ const ExpandedDetail = ({
           .order("created_at", { ascending: false })
           .limit(20);
         setEvidenceFragments((ef.data || []) as unknown as EvidenceFragmentRow[]);
+
+        // Fallback: also query entries for legacy signals with entry IDs
+        const r = await supabase
+          .from("entries")
+          .select("id, title, content, source_url, created_at")
+          .in("id", signal.supporting_evidence_ids)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        setSources((r.data || []) as unknown as SourceEntry[]);
       }
 
       setLoading(false);
@@ -344,6 +346,8 @@ const ExpandedDetail = ({
                 <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "#C5A55A", fontSize: 12, cursor: "pointer", marginTop: 8, padding: 0 }}>+ {hiddenCount} more</button>
               )}
             </div>
+          ) : !signal.supporting_evidence_ids?.length ? (
+            <p style={{ color: "#555", fontSize: 12, fontStyle: "italic" }}>Evidence is being indexed — check back shortly.</p>
           ) : sources.length > 0 ? (
             <div>{sources.map(s => <SourceRow key={s.id} entry={s} signalId={signal.id} onRemove={handleRemove} />)}</div>
           ) : (
