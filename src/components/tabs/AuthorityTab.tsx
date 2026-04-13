@@ -1834,8 +1834,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [publishedPosts, setPublishedPosts] = useState<SavedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showPublished, setShowPublished] = useState(false);
+  const [showDrafts, setShowDrafts] = useState(true);
 
   useEffect(() => { loadPosts(); }, []);
 
