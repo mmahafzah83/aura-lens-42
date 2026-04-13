@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowUp, ArrowDown, Send, TrendingUp, Sparkles, Globe, Zap, X } from "lucide-react";
+import { ArrowUp, ArrowDown, Send, TrendingUp, Sparkles, Globe, Zap, X, FileText, LayoutGrid, Box } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
