@@ -255,6 +255,7 @@ const ExpandedDetail = ({
 }) => {
   const [sources, setSources] = useState<SourceEntry[]>([]);
   const [evidenceFragments, setEvidenceFragments] = useState<EvidenceFragmentRow[]>([]);
+  const [keyInsights, setKeyInsights] = useState<Insight[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAllEvidence, setShowAllEvidence] = useState(false);
 
