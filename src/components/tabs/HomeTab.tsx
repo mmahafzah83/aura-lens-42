@@ -72,7 +72,7 @@ function getTrendDate(publishedAt: string | null): string {
   return "1 week ago";
 }
 
-const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: HomeTabProps) => {
+const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDraftToStudio }: HomeTabProps) => {
   const [auraScore, setAuraScore] = useState<AuraScore | null>(null);
   const [userName, setUserName] = useState("");
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
