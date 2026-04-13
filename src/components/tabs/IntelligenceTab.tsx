@@ -164,7 +164,7 @@ function isNew(updatedAt: string): boolean {
 }
 
 type SortOption = "confidence" | "recent" | "sources";
-type SubTab = "signals" | "insights" | "frameworks" | "sources";
+type SubTab = "signals" | "frameworks" | "sources";
 
 /* ═══════════════════════════════════════════
    Source row in expanded card
