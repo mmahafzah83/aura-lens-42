@@ -82,6 +82,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
   const [placeholder] = useState(() => PLACEHOLDERS[new Date().getDate() % PLACEHOLDERS.length]);
   const [moves, setMoves] = useState<any[]>([]);
   const [movesLoading, setMovesLoading] = useState(true);
+  const [expandedMoveId, setExpandedMoveId] = useState<string | null>(null);
+  const [moveSignalTitles, setMoveSignalTitles] = useState<Record<string, string[]>>({});
 
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
