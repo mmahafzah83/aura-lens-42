@@ -358,6 +358,24 @@ const ExpandedDetail = ({
           </div>
         )}
 
+        {/* Key Insights section */}
+        {keyInsights.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8, textTransform: "uppercase" }}>key insights</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {keyInsights.map(insight => (
+                <div key={insight.id} style={{ background: "#1a1a1a", borderRadius: 10, padding: "12px 14px", border: "1px solid #252525" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, flex: 1 }}>{insight.title}</p>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#252525", color: "#888888", textTransform: "capitalize", flexShrink: 0 }}>{insight.intelligence_type}</span>
+                  </div>
+                  <p style={{ color: "#888888", fontSize: 13, lineHeight: 1.5, margin: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{insight.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div style={{ marginTop: 20 }}>
           <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8 }}>built from these sources</p>
           {loading ? (
