@@ -32,6 +32,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const [content, setContent] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcriptionFailed, setTranscriptionFailed] = useState(false);
   const [voiceAudioUrl, setVoiceAudioUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -147,28 +148,36 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           return;
         }
         setIsTranscribing(true);
-        toast({ title: "Transcribing", description: "Processing your audio…" });
+        setTranscriptionFailed(false);
         try {
           const formData = new FormData();
           const ext = mimeType.includes("webm") ? "webm" : "mp4";
           formData.append("audio", blob, `recording.${ext}`);
           const { data: { session } } = await supabase.auth.getSession();
           const freshToken = session?.access_token;
+
+          // Upload audio to storage for later reference
+          if (session?.user?.id) {
+            const audioPath = `${session.user.id}/${Date.now()}.${ext}`;
+            const { error: upErr } = await supabase.storage.from("captures").upload(audioPath, blob);
+            if (!upErr) {
+              const { data: urlData } = supabase.storage.from("captures").getPublicUrl(audioPath);
+              if (urlData?.publicUrl) setVoiceAudioUrl(urlData.publicUrl);
+            }
+          }
+
           const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", {
             body: formData,
             ...(freshToken ? { headers: { Authorization: `Bearer ${freshToken}` } } : {}),
           });
-          if (fnError) {
-            toast({ title: "Transcription failed", description: fnError.message, variant: "destructive" });
-          } else if (fnData?.error) {
-            toast({ title: "Transcription failed", description: fnData.error, variant: "destructive" });
-          } else if (fnData?.transcript) {
+          if (fnError || fnData?.error || !fnData?.transcript) {
+            setTranscriptionFailed(true);
+          } else {
             setContent(fnData.transcript);
             if (fnData.audio_url) setVoiceAudioUrl(fnData.audio_url);
-            toast({ title: "Transcribed", description: "Voice note converted to text." });
           }
         } catch {
-          toast({ title: "Error", description: "Could not transcribe audio.", variant: "destructive" });
+          setTranscriptionFailed(true);
         }
         setIsTranscribing(false);
       };
@@ -317,7 +326,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         : captureContent;
       const entryTitle = captureType === "link"
         ? (data?.extracted_title || (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })())
-        : (captureContent || "").slice(0, 60) || "Untitled";
+        : captureType === "voice"
+          ? (captureContent || "").slice(0, 60) + (captureContent.length > 60 ? "..." : "") || "Voice capture"
+          : (captureContent || "").slice(0, 60) || "Untitled";
 
       const { data: entryRow, error: entryError } = await supabase.from("entries").insert({
         user_id: session.user.id,
@@ -326,6 +337,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         content: entryContent,
         summary: entryContent.slice(0, 300),
         ...(captureType === "link" && { image_url: data?.original_url || content.trim() }),
+        ...(captureType === "voice" && voiceAudioUrl && { image_url: voiceAudioUrl }),
       }).select("id").single();
 
       if (entryError) {
@@ -342,7 +354,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
       setContent("");
       setVoiceAudioUrl(null);
-      setImageFile(null);
+      setTranscriptionFailed(false);
       setImagePreview(null);
       setImageAnalysis(null);
       setUrlError(null);
@@ -576,9 +588,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   <p className="text-sm text-muted-foreground">{isRecording ? "Recording… tap to stop" : "Tap to record"}</p>
                 </>
               )}
-              {content && !isRecording && !isTranscribing && (
+              {!isRecording && !isTranscribing && (
                 <div className="w-full mt-2 space-y-2">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Transcript</p>
+                  {transcriptionFailed && (
+                    <p className="text-xs" style={{ color: "#999999" }}>Auto-transcription unavailable. Type your notes manually.</p>
+                  )}
+                  <p className="text-xs" style={{ color: "#999999" }}>Transcript</p>
                   <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} dir="auto" className="bg-secondary border-border/30 resize-none text-sm" placeholder="Transcript will appear here…" />
                 </div>
               )}
