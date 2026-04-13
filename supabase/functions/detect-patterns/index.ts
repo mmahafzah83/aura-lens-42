@@ -55,6 +55,34 @@ function isDuplicate(newTags: string[], newTitle: string, existingTags: string[]
 
 function unique<T>(arr: T[]): T[] { return [...new Set(arr)]; }
 
+function daysBetween(a: Date, b: Date): number {
+  return Math.max(0, Math.floor(Math.abs(a.getTime() - b.getTime()) / 86400000));
+}
+
+/* ── Confidence formula (identical to detect-signals) ── */
+function calcConfidence(
+  aiBaseScore: number,
+  fragmentCount: number,
+  uniqueOrgs: number,
+  newestFragmentDate: string,
+): { confidence: number; confidence_explanation: string } {
+  const aiComponent = Math.min(Math.max(aiBaseScore, 0), 1) * 0.40;
+  const fragmentDepth = Math.min(fragmentCount / 10, 1.0);
+  const depthComponent = fragmentDepth * 0.35;
+  const orgDiversity = Math.min(uniqueOrgs / 5, 1.0);
+  const diversityComponent = orgDiversity * 0.15;
+  const daysSince = daysBetween(new Date(), new Date(newestFragmentDate));
+  const recencyWeight = daysSince < 7 ? 1.0 : daysSince <= 30 ? 0.7 : daysSince <= 90 ? 0.4 : 0.2;
+  const recencyComponent = recencyWeight * 0.10;
+  const confidence = Math.min(aiComponent + depthComponent + diversityComponent + recencyComponent, 1.0);
+  const srcLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
+  const ageLabel = daysSince === 0 ? "today" : `${daysSince} days ago`;
+  const confidence_explanation =
+    `AI ${(aiBaseScore * 100).toFixed(0)}%, ${fragmentCount} fragments, ${uniqueOrgs} ${srcLabel}, newest ${ageLabel}. ` +
+    `Formula: (${aiComponent.toFixed(2)} AI) + (${depthComponent.toFixed(2)} depth) + (${diversityComponent.toFixed(2)} diversity) + (${recencyComponent.toFixed(2)} recency) = ${confidence.toFixed(2)}.`;
+  return { confidence, confidence_explanation };
+}
+
 function parseAiJson(raw: string): any {
   try {
     return JSON.parse(raw);
