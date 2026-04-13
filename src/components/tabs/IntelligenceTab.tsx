@@ -346,6 +346,8 @@ const ExpandedDetail = ({
                 <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "#C5A55A", fontSize: 12, cursor: "pointer", marginTop: 8, padding: 0 }}>+ {hiddenCount} more</button>
               )}
             </div>
+          ) : !signal.supporting_evidence_ids?.length ? (
+            <p style={{ color: "#555", fontSize: 12, fontStyle: "italic" }}>Evidence is being indexed — check back shortly.</p>
           ) : sources.length > 0 ? (
             <div>{sources.map(s => <SourceRow key={s.id} entry={s} signalId={signal.id} onRemove={handleRemove} />)}</div>
           ) : (
