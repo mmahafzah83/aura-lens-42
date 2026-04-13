@@ -117,26 +117,34 @@ const Dashboard = () => {
       if (!session) navigate("/auth");
       else {
         setUser({ email: session.user.email });
+        const uid = session.user.id;
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
           .select("completed, onboarding_completed")
-          .eq("user_id", session.user.id)
+          .eq("user_id", uid)
           .maybeSingle();
+
+        // New wizard trigger: no profile row AND localStorage not set
+        const wizardDone = localStorage.getItem("aura_onboarding_complete") === "true";
+        if (!profile && !wizardDone) {
+          setWizardUserId(uid);
+          setShowWizard(true);
+          return;
+        }
         
         // Gate: onboarding must be completed first
-        if (!profile || !(profile as any).onboarding_completed) {
+        if (profile && !(profile as any).onboarding_completed) {
           navigate("/onboarding");
           return;
         }
         
         if (profile && (profile as any).completed) {
-          const onboardKey = `aura_onboarded_${session.user.id}`;
+          const onboardKey = `aura_onboarded_${uid}`;
           if (!localStorage.getItem(onboardKey)) {
             setShowOnboarding(true);
           }
           checkStrategicNudge(session.access_token);
         } else if (profile && (profile as any).onboarding_completed) {
-          // New onboarding completed but old diagnostic not done — skip diagnostic, go to home
           checkStrategicNudge(session.access_token);
         } else {
           setShowDiagnostic(true);
