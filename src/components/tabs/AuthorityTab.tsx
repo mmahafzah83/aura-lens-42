@@ -586,7 +586,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           if (!body.trim()) { toast.error("Nothing to save"); return; }
                           const { error } = await supabase.from("content_items").insert({
                             user_id: session.user.id,
-                            type: contentType === "carousel" ? "carousel" : contentType === "framework_summary" ? "framework" : "post",
+                            type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
                             body,
                             language: lang,
                             status: "draft",
