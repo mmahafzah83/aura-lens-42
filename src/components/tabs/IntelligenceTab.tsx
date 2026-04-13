@@ -935,8 +935,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           {[
             { label: "Sources", count: entryCount, gold: false },
             { label: "Signals", count: signals.length, gold: true },
-            { label: "Moves", count: 0, gold: false },
-            { label: "Published", count: 0, gold: false },
+            { label: "Moves", count: movesCount, gold: false },
+            { label: "Published", count: publishedCount, gold: false },
           ].map((step, i) => (
             <div key={step.label} style={{ display: "flex", alignItems: "center" }}>
               {i > 0 && <span style={{ color: "#2a2a2a", margin: "0 8px", fontSize: 12 }}>›</span>}
