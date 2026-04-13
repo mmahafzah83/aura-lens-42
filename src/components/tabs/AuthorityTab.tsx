@@ -343,6 +343,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       }
       setSelectedSignalId(signalPrefill.signalId || null);
       setSelectedSignalTitle(signalPrefill.signalTitle || null);
+      setSelectedSignalInsight(signalPrefill.context || null);
       setOutput("");
       setFullVersion("");
       setShortVersion("");
