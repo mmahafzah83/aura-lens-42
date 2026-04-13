@@ -308,8 +308,18 @@ const ExpandedDetail = ({
   };
 
   const isLoved = signal.user_signal_feedback === "love";
-  const visibleEvidence = showAllEvidence ? evidenceFragments : evidenceFragments.slice(0, 5);
-  const hiddenCount = evidenceFragments.length - 5;
+  const uniqueEvidence = evidenceFragments.reduce<EvidenceFragmentRow[]>((acc, frag) => {
+    const key = (frag.title || "").trim() || "Untitled source";
+    const existing = acc.find(f => ((f.title || "").trim() || "Untitled source") === key);
+    if (!existing) {
+      acc.push({ ...frag, title: frag.title || "Untitled source" });
+    } else if (frag.created_at > existing.created_at) {
+      acc[acc.indexOf(existing)] = { ...frag, title: frag.title || "Untitled source" };
+    }
+    return acc;
+  }, []);
+  const visibleEvidence = showAllEvidence ? uniqueEvidence : uniqueEvidence.slice(0, 5);
+  const hiddenCount = uniqueEvidence.length - 5;
 
   return (
     <motion.div
