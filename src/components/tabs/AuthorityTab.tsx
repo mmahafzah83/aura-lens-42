@@ -258,10 +258,28 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [visualUrl, setVisualUrl] = useState<string | null>(null);
   const [visualLoading, setVisualLoading] = useState(false);
 
+  // Free-tier generation limit
+  const [monthlyGenerationCount, setMonthlyGenerationCount] = useState(0);
+  const FREE_LIMIT = 3;
   // AI suggestions (used by voice profile loading only)
   const [_signals, setSignals] = useState<SignalSuggestion[]>([]);
   const [_frameworks, setFrameworks] = useState<FrameworkSuggestion[]>([]);
   const [_suggestionsLoading, setSuggestionsLoading] = useState(true);
+
+  // Load monthly generation count
+  useEffect(() => {
+    (async () => {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+      const { count } = await supabase
+        .from("content_items")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", monthStart)
+        .lt("created_at", nextMonth);
+      setMonthlyGenerationCount(count || 0);
+    })();
+  }, []);
 
   useEffect(() => {
     Promise.all([
