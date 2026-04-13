@@ -74,12 +74,12 @@ serve(async (req) => {
     }
 
     const signalBlock = signals
-      .map((s: any) => `- ${s.signal_title} — ${s.explanation} — confidence: ${s.confidence}`)
+      .map((s: any) => `ID: ${s.id} | Title: ${s.signal_title} | ${s.explanation}`)
       .join("\n");
 
     const userPrompt = `User profile: ${profile?.level || "unknown role"}, ${profile?.firm || "unknown industry"}, ${profile?.sector_focus || "unknown sector"}, ${profile?.core_practice || "unknown practice"}.
 
-Top signals:
+Top signals (use these exact IDs in source_signal_ids):
 ${signalBlock}
 
 Generate exactly 3 recommended content moves. Respond ONLY with valid JSON array:
@@ -88,9 +88,10 @@ Generate exactly 3 recommended content moves. Respond ONLY with valid JSON array
     "title": "short action-oriented title (max 10 words)",
     "rationale": "1-2 sentence explanation grounded in the signals",
     "output_type": "post" or "carousel" or "framework",
-    "source_signal_ids": [array of signal IDs from above that are most relevant]
+    "source_signal_ids": ["id1", "id2"]
   }
 ]
+In your JSON response, source_signal_ids must contain the IDs of the 1-3 signals most relevant to each move. Do not leave source_signal_ids empty.
 Do not include any text outside the JSON array.`;
 
     // Step 3 — AI call
@@ -151,10 +152,16 @@ Do not include any text outside the JSON array.`;
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const validSignalIds = new Set(signals.map((s: any) => s.id));
+    // Fallback: top 2 signal IDs by confidence (signals already sorted desc)
+    const fallbackIds = signals.slice(0, 2).map((s: any) => s.id);
 
     const rows = movesArray.slice(0, 3).map((m: any) => {
       const rawIds = Array.isArray(m.source_signal_ids) ? m.source_signal_ids : [];
-      const filteredIds = rawIds.filter((id: string) => uuidRegex.test(id) && validSignalIds.has(id));
+      let filteredIds = rawIds.filter((id: string) => uuidRegex.test(id) && validSignalIds.has(id));
+      // Fallback: if AI returned empty/invalid IDs, use top 2 signals
+      if (filteredIds.length === 0) {
+        filteredIds = fallbackIds;
+      }
       return {
         user_id,
         title: String(m.title || "Untitled move").slice(0, 200),
