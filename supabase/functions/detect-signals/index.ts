@@ -20,9 +20,11 @@ function stemWord(w: string): string {
 }
 
 const STOP = new Set([
-  "the","and","for","with","from","that","this","into","about","your","their",
-  "have","been","will","what","when","where","how","why","are","was","were",
-  "is","a","an","of","in","on","to","by","or","as","at","it","its","than",
+  "the","and","for","of","in","a","an","to","with","by","as","at","from",
+  "is","are","was","were","be","been","being","have","has","had","do","does","did",
+  "will","would","could","should","may","might","shall","can","its","this","that",
+  "these","those","their","our","your","my",
+  "it","or","on","into","about","what","when","where","how","why","than",
   "through","across","over","under","between",
 ]);
 
@@ -37,10 +39,20 @@ function tagOverlapCount(a: string[], b: string[]): number {
   return a.map(t => normalizeText(t)).filter(t => setB.has(t)).length;
 }
 
-function titleSharesCoreTopic(newTitle: string, existingTitle: string): boolean {
-  const newKw = keywords(newTitle);
-  const exKw = new Set(keywords(existingTitle));
-  return newKw.filter(k => exKw.has(k)).length >= 2;
+function titleSimilarity(newTitle: string, existingTitle: string): number {
+  const newWords = keywords(newTitle);
+  if (newWords.length === 0) return 0;
+  const exSet = new Set(keywords(existingTitle));
+  const matchCount = newWords.filter(w => exSet.has(w)).length;
+  return matchCount / newWords.length;
+}
+
+function isDuplicate(newTags: string[], newTitle: string, existingTags: string[], existingTitle: string): boolean {
+  // Layer 1: tag overlap (2+ shared tags)
+  if (tagOverlapCount(newTags, existingTags) >= 2) return true;
+  // Layer 2: title similarity (60%+ significant word match)
+  if (titleSimilarity(newTitle, existingTitle) >= 0.6) return true;
+  return false;
 }
 
 function extractDomain(text: string): string | null {
@@ -267,11 +279,9 @@ ${identityCtx}`;
     const allSignals = existingSignals || [];
 
     function findMatches(tags: string[], title: string): typeof allSignals {
-      return allSignals.filter(s => {
-        const overlap = tagOverlapCount(tags, s.theme_tags || []);
-        const titleMatch = titleSharesCoreTopic(title, s.signal_title || "");
-        return overlap >= 2 || titleMatch;
-      });
+      return allSignals.filter(s =>
+        isDuplicate(tags, title, s.theme_tags || [], s.signal_title || "")
+      );
     }
 
     const matches = findMatches(newTags, newTitle);
