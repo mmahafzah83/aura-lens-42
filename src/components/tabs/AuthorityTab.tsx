@@ -2141,7 +2141,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       </div>
 
       {/* ── Section 3: Frameworks ── */}
-      <FrameworkLibrarySection />
+      <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} />
 
       {/* ── Section 4: Voice Trainer ── */}
       <VoiceTrainer />
