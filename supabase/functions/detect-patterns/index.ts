@@ -7,6 +7,54 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/* ── helpers ── */
+
+function normalizeText(v: string): string {
+  return v.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function stemWord(w: string): string {
+  if (w.endsWith("ies") && w.length > 4) return w.slice(0, -3) + "y";
+  if (w.endsWith("s") && !w.endsWith("ss") && w.length > 4) return w.slice(0, -1);
+  return w;
+}
+
+const STOP = new Set([
+  "the","and","for","of","in","a","an","to","with","by","as","at","from",
+  "is","are","was","were","be","been","being","have","has","had","do","does","did",
+  "will","would","could","should","may","might","shall","can","its","this","that",
+  "these","those","their","our","your","my",
+  "it","or","on","into","about","what","when","where","how","why","than",
+  "through","across","over","under","between",
+]);
+
+function keywords(text: string): string[] {
+  return [...new Set(
+    normalizeText(text).split(" ").map(stemWord).filter(w => w.length > 2 && !STOP.has(w))
+  )];
+}
+
+function tagOverlapCount(a: string[], b: string[]): number {
+  const setB = new Set(b.map(t => normalizeText(t)));
+  return a.map(t => normalizeText(t)).filter(t => setB.has(t)).length;
+}
+
+function titleSimilarity(newTitle: string, existingTitle: string): number {
+  const newWords = keywords(newTitle);
+  if (newWords.length === 0) return 0;
+  const exSet = new Set(keywords(existingTitle));
+  const matchCount = newWords.filter(w => exSet.has(w)).length;
+  return matchCount / newWords.length;
+}
+
+function isDuplicate(newTags: string[], newTitle: string, existingTags: string[], existingTitle: string): boolean {
+  if (tagOverlapCount(newTags, existingTags) >= 2) return true;
+  if (titleSimilarity(newTitle, existingTitle) >= 0.6) return true;
+  return false;
+}
+
+function unique<T>(arr: T[]): T[] { return [...new Set(arr)]; }
+
 function parseAiJson(raw: string): any {
   try {
     return JSON.parse(raw);
@@ -72,14 +120,15 @@ Deno.serve(async (req) => {
       ? `User context: Sector=${profile.sector_focus || "N/A"}, Practice=${profile.core_practice || "N/A"}, Goal=${profile.north_star_goal || "N/A"}`
       : "";
 
-    // Get existing signals to avoid duplicates
+    // Get existing signals for dedup (full data needed for reinforcement)
     const { data: existingSignals } = await adminClient
       .from("strategic_signals")
-      .select("signal_title")
+      .select("id, signal_title, theme_tags, confidence, fragment_count, supporting_evidence_ids, unique_orgs, updated_at")
       .eq("user_id", user_id)
       .eq("status", "active");
 
-    const existingTitles = (existingSignals || []).map((s: any) => s.signal_title).join(", ");
+    const allExisting = existingSignals || [];
+    const existingTitles = allExisting.map((s: any) => s.signal_title).join(", ");
 
     // Prepare fragment summaries for AI
     const fragmentSummaries = fragments.map((f: any, i: number) =>
@@ -149,40 +198,101 @@ Detect 2-5 signals maximum. Quality over quantity.`;
     const parsed = parseAiJson(aiData.choices?.[0]?.message?.content || "{}");
     const signals = parsed.signals || [];
 
-    // Insert signals
-    const inserted = [];
+    // Process signals with two-layer dedup
+    const results: any[] = [];
+
+    // Also track signals we just created in this batch to dedup within the batch itself
+    const batchSignals: { id: string; title: string; tags: string[]; }[] = [];
+
     for (const signal of signals) {
+      const newTitle = signal.signal_title || "Untitled Signal";
+      const newTags: string[] = Array.isArray(signal.theme_tags) ? signal.theme_tags : [];
+
       // Map fragment indices to actual IDs
       const evidenceIds = (signal.supporting_fragment_indices || [])
         .map((idx: number) => fragments[idx - 1]?.id)
         .filter(Boolean);
 
-      const { data: row, error: insErr } = await adminClient
-        .from("strategic_signals")
-        .insert({
-          user_id,
-          signal_title: signal.signal_title,
-          explanation: signal.explanation,
-          strategic_implications: signal.strategic_implications,
-          supporting_evidence_ids: evidenceIds,
-          theme_tags: signal.theme_tags || [],
-          skill_pillars: signal.skill_pillars || [],
-          confidence: signal.confidence || 0.7,
-          fragment_count: evidenceIds.length,
-          framework_opportunity: signal.framework_opportunity || {},
-          content_opportunity: signal.content_opportunity || {},
-          consulting_opportunity: signal.consulting_opportunity || {},
-        })
-        .select()
-        .single();
+      // Two-layer dedup check against existing DB signals
+      const existingMatch = allExisting.find(s =>
+        isDuplicate(newTags, newTitle, s.theme_tags || [], s.signal_title || "")
+      );
 
-      if (!insErr && row) inserted.push(row);
+      // Also check against signals we just created in this batch
+      const batchMatch = !existingMatch
+        ? batchSignals.find(s => isDuplicate(newTags, newTitle, s.tags, s.title))
+        : null;
+
+      if (existingMatch) {
+        // Reinforce existing signal
+        const existing = existingMatch;
+        const mergedEvidence = unique([...(existing.supporting_evidence_ids || []), ...evidenceIds]);
+        const newFragCount = mergedEvidence.length;
+
+        await adminClient.from("strategic_signals").update({
+          supporting_evidence_ids: mergedEvidence,
+          fragment_count: newFragCount,
+          confidence: Math.min((existing.confidence || 0.7) + 0.05, 1.0),
+          updated_at: new Date().toISOString(),
+        }).eq("id", existing.id);
+
+        // Update local copy so subsequent signals in this batch also see the update
+        existing.supporting_evidence_ids = mergedEvidence;
+        existing.fragment_count = newFragCount;
+
+        results.push({ ...existing, reinforced: true });
+      } else if (batchMatch) {
+        // Reinforce the signal we just created in this batch
+        const batchId = batchMatch.id;
+        const { data: current } = await adminClient
+          .from("strategic_signals")
+          .select("supporting_evidence_ids, fragment_count, confidence")
+          .eq("id", batchId)
+          .single();
+
+        if (current) {
+          const mergedEvidence = unique([...(current.supporting_evidence_ids || []), ...evidenceIds]);
+          await adminClient.from("strategic_signals").update({
+            supporting_evidence_ids: mergedEvidence,
+            fragment_count: mergedEvidence.length,
+            confidence: Math.min((current.confidence || 0.7) + 0.05, 1.0),
+            updated_at: new Date().toISOString(),
+          }).eq("id", batchId);
+
+          results.push({ id: batchId, reinforced: true });
+        }
+      } else {
+        // Insert new signal
+        const { data: row, error: insErr } = await adminClient
+          .from("strategic_signals")
+          .insert({
+            user_id,
+            signal_title: newTitle,
+            explanation: signal.explanation,
+            strategic_implications: signal.strategic_implications,
+            supporting_evidence_ids: evidenceIds,
+            theme_tags: newTags,
+            skill_pillars: signal.skill_pillars || [],
+            confidence: signal.confidence || 0.7,
+            fragment_count: evidenceIds.length,
+            framework_opportunity: signal.framework_opportunity || {},
+            content_opportunity: signal.content_opportunity || {},
+            consulting_opportunity: signal.consulting_opportunity || {},
+          })
+          .select()
+          .single();
+
+        if (!insErr && row) {
+          results.push(row);
+          batchSignals.push({ id: row.id, title: newTitle, tags: newTags });
+        }
+      }
     }
 
     return new Response(JSON.stringify({
       success: true,
-      signals_detected: inserted.length,
-      signals: inserted,
+      signals_detected: results.length,
+      signals: results,
       fragments_analyzed: fragments.length,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
