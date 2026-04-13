@@ -1414,6 +1414,7 @@ interface SavedPost {
   topic_label: string | null;
   created_at: string;
   source_metadata: any;
+  _source: "linkedin_posts" | "content_items";
 }
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
@@ -1483,14 +1484,27 @@ const LibraryCard = ({
     >
       <div className="flex items-start gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
-            {p.title || "Untitled"}
-          </p>
-          {p.topic_label && (
-            <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
-          )}
-          {p.source_metadata?.from_plan && (
-            <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+          {p._source === "content_items" ? (
+            <>
+              <p className="text-sm text-foreground leading-snug line-clamp-3" dir="auto">
+                {p.post_text || "Untitled"}
+              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] text-muted-foreground/40">Aura Draft</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                {p.title || "Untitled"}
+              </p>
+              {p.topic_label && (
+                <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
+              )}
+              {p.source_metadata?.from_plan && (
+                <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+              )}
+            </>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -1499,7 +1513,7 @@ const LibraryCard = ({
           </span>
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
             isDraft
-              ? "bg-muted/20 text-muted-foreground border-border/15"
+              ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
               : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
           }`}>
             {isDraft ? "Draft" : "Published"}
@@ -1541,7 +1555,7 @@ const LibraryCard = ({
       </div>
 
       {/* Performance logger for published posts */}
-      {isPublished && (
+      {isPublished && p._source === "linkedin_posts" && (
         <div className="mt-3 pt-3 border-t border-border/8">
           {!metricsOpen ? (
             <button
@@ -1723,17 +1737,48 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => { loadPosts(); }, []);
 
   const loadPosts = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("linkedin_posts")
-      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    setPosts((data || []) as SavedPost[]);
+    const [liRes, ciRes] = await Promise.all([
+      supabase
+        .from("linkedin_posts")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type")
+        .neq("source_type", "aura_generated")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("content_items")
+        .select("id, type, body, language, status, generation_params, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+    ]);
+
+    const liPosts: SavedPost[] = (liRes.data || []).map((p: any) => ({
+      ...p,
+      _source: "linkedin_posts" as const,
+    }));
+
+    const ciPosts: SavedPost[] = (ciRes.data || []).map((ci: any) => ({
+      id: ci.id,
+      title: null,
+      post_text: ci.body,
+      format_type: ci.type === "framework" ? "framework" : ci.type,
+      tracking_status: ci.status,
+      topic_label: null,
+      created_at: ci.created_at,
+      source_metadata: ci.generation_params,
+      _source: "content_items" as const,
+    }));
+
+    const merged = [...liPosts, ...ciPosts].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    setPosts(merged);
     setLoading(false);
   };
 
@@ -1744,31 +1789,37 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   };
 
   const markPublished = async (id: string) => {
-    const { error } = await supabase
-      .from("linkedin_posts")
-      .update({ tracking_status: "published", published_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) {
-      console.error("Failed to mark published:", error);
-      toast.error("Failed to update status");
-      return;
+    const item = posts.find(p => p.id === id);
+    if (!item) return;
+    if (item._source === "content_items") {
+      const { error } = await supabase
+        .from("content_items")
+        .update({ status: "published" })
+        .eq("id", id);
+      if (error) { toast.error("Failed to update status"); return; }
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
+    } else {
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .update({ tracking_status: "published", published_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) { toast.error("Failed to update status"); return; }
+      setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
     }
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, tracking_status: "published" } : p));
     toast.success("Marked as published");
   };
 
   const deletePost = async (id: string) => {
+    const item = posts.find(p => p.id === id);
+    if (!item) return;
+    const table = item._source === "content_items" ? "content_items" : "linkedin_posts";
     const { error } = await supabase
-      .from("linkedin_posts")
+      .from(table)
       .delete()
       .eq("id", id);
-    if (error) {
-      console.error("Failed to delete post:", error);
-      toast.error("Failed to delete post");
-      return;
-    }
+    if (error) { toast.error("Failed to delete"); return; }
     setPosts(prev => prev.filter(p => p.id !== id));
-    toast.success("Post deleted");
+    toast.success("Deleted");
   };
 
   if (loading) {
