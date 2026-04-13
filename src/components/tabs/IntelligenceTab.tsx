@@ -1016,9 +1016,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           ))}
         </div>
 
-        {/* ── Sub-tab content ── */}
         {activeSubTab === "signals" && (
           <>
+            <p style={{ color: "#666666", fontSize: 13, margin: "-8px 0 16px" }}>Patterns Aura detected across everything you've captured — ranked by strength.</p>
             {/* Filter chips + group toggle */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
               <div style={{ overflowX: "auto", display: "flex", gap: 8, flex: 1, paddingBottom: 4 }} className="scrollbar-hide">
