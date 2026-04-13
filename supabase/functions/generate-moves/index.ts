@@ -149,15 +149,22 @@ Do not include any text outside the JSON array.`;
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
 
-    const rows = movesArray.slice(0, 3).map((m: any) => ({
-      user_id,
-      title: String(m.title || "Untitled move").slice(0, 200),
-      rationale: String(m.rationale || ""),
-      output_type: ["post", "carousel", "framework"].includes(m.output_type) ? m.output_type : "post",
-      source_signal_ids: Array.isArray(m.source_signal_ids) ? m.source_signal_ids : [],
-      status: "active",
-      expires_at: expiresAt,
-    }));
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const validSignalIds = new Set(signals.map((s: any) => s.id));
+
+    const rows = movesArray.slice(0, 3).map((m: any) => {
+      const rawIds = Array.isArray(m.source_signal_ids) ? m.source_signal_ids : [];
+      const filteredIds = rawIds.filter((id: string) => uuidRegex.test(id) && validSignalIds.has(id));
+      return {
+        user_id,
+        title: String(m.title || "Untitled move").slice(0, 200),
+        rationale: String(m.rationale || ""),
+        output_type: ["post", "carousel", "framework"].includes(m.output_type) ? m.output_type : "post",
+        source_signal_ids: filteredIds,
+        status: "active",
+        expires_at: expiresAt,
+      };
+    });
 
     const { data: inserted, error: insertErr } = await supabase
       .from("recommended_moves")
