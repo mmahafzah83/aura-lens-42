@@ -40,6 +40,8 @@ const Dashboard = () => {
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardUserId, setWizardUserId] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [signalDraftPrefill, setSignalDraftPrefill] = useState<{
