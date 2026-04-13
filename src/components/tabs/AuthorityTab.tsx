@@ -16,8 +16,6 @@ import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
-import LinkedInIntelligence from "@/components/LinkedInIntelligence";
-import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import ImageCardGenerator from "@/components/ImageCardGenerator";
 import StartFromPanel from "@/components/StartFromPanel";
 
@@ -1277,8 +1275,8 @@ const AnalyzeTab = () => {
         <div className="glass-card rounded-2xl p-5 border border-border/8">
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3 text-muted-foreground/60">Aura Drafts ({auraDrafts.length})</p>
           <div className="space-y-2">
-            {auraDrafts.slice(0, 5).map((p: any) => (
-              <div key={p.theme + p.tone + Math.random()} className="flex items-center justify-between py-1.5">
+            {auraDrafts.slice(0, 5).map((p: any, i: number) => (
+              <div key={`${p.theme}-${p.tone}-${i}`} className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-foreground/70 truncate flex-1">{p.theme || p.format_type || "Untitled"}</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted/20 text-muted-foreground border border-border/15 shrink-0 ml-2">
                   Not published yet
@@ -2070,7 +2068,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
           <p className="text-xs text-muted-foreground flex-1">
             Complete your Brand Assessment to get content fully calibrated to your positioning.
           </p>
-          <a href="/dashboard?tab=me&subtab=settings" className="text-xs text-primary font-medium whitespace-nowrap hover:underline">
+          <a href="/dashboard?tab=identity" className="text-xs text-primary font-medium whitespace-nowrap hover:underline">
             Start →
           </a>
         </div>
