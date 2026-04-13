@@ -841,7 +841,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                                 },
                               });
                               if (error) throw error;
-                              toast.success("Saved to Library");
+                              toast.success("Draft saved to your library.");
                             } catch (e: any) {
                               toast.error(e.message || "Failed to save");
                             }
