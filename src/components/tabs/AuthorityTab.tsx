@@ -1414,6 +1414,7 @@ interface SavedPost {
   topic_label: string | null;
   created_at: string;
   source_metadata: any;
+  _source: "linkedin_posts" | "content_items";
 }
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
@@ -1723,17 +1724,48 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "published">("all");
   const [topicFilter, setTopicFilter] = useState<string>("all");
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
   useEffect(() => { loadPosts(); }, []);
 
   const loadPosts = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("linkedin_posts")
-      .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata")
-      .order("created_at", { ascending: false })
-      .limit(100);
-    setPosts((data || []) as SavedPost[]);
+    const [liRes, ciRes] = await Promise.all([
+      supabase
+        .from("linkedin_posts")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type")
+        .neq("source_type", "aura_generated")
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("content_items")
+        .select("id, type, body, language, status, generation_params, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100),
+    ]);
+
+    const liPosts: SavedPost[] = (liRes.data || []).map((p: any) => ({
+      ...p,
+      _source: "linkedin_posts" as const,
+    }));
+
+    const ciPosts: SavedPost[] = (ciRes.data || []).map((ci: any) => ({
+      id: ci.id,
+      title: null,
+      post_text: ci.body,
+      format_type: ci.type === "framework" ? "framework" : ci.type,
+      tracking_status: ci.status,
+      topic_label: null,
+      created_at: ci.created_at,
+      source_metadata: ci.generation_params,
+      _source: "content_items" as const,
+    }));
+
+    const merged = [...liPosts, ...ciPosts].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    setPosts(merged);
     setLoading(false);
   };
 
