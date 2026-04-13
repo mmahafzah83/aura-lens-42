@@ -2068,7 +2068,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
       {/* ── Section 2: Published Posts (collapsed by default) ── */}
