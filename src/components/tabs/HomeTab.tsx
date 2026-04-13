@@ -40,6 +40,7 @@ interface HomeTabProps {
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
   onNavigateToSignal?: (signalId: string) => void;
+  onDraftToStudio?: (prefill: { topic: string; context: string; signalId?: string; signalTitle?: string; contentFormat?: "post" | "carousel" | "framework_summary" }) => void;
 }
 
 const PLACEHOLDERS = [
