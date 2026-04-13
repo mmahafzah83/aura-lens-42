@@ -372,49 +372,59 @@ const Dashboard = () => {
           <div className="tab-content-spring">
             {activeTab === "home" && (
               <div className="animate-tab-spring">
-                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                <ErrorBoundary>
+                  <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+                </ErrorBoundary>
               </div>
             )}
 
             {activeTab === "identity" && (
               <div className="animate-tab-spring">
-                <IdentityTab
-                  onResetDiagnostic={() => setShowDiagnostic(true)}
-                  onSwitchTab={switchTab}
-                  onDraftToStudio={(prefill) => {
-                    setSignalDraftPrefill(prefill);
-                    setActiveTab("authority");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                />
+                <ErrorBoundary>
+                  <IdentityTab
+                    onResetDiagnostic={() => setShowDiagnostic(true)}
+                    onSwitchTab={switchTab}
+                    onDraftToStudio={(prefill) => {
+                      setSignalDraftPrefill(prefill);
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
+                </ErrorBoundary>
               </div>
             )}
 
             {activeTab === "intelligence" && (
               <div className="animate-tab-spring">
-                <IntelligenceTab
-                  entries={entries}
-                  onOpenChat={openChat}
-                  onRefresh={fetchEntries}
-                  onOpenCapture={() => setCaptureOpen(true)}
-                  onDraftToStudio={(prefill) => {
-                    setSignalDraftPrefill(prefill);
-                    setActiveTab("authority");
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                />
+                <ErrorBoundary>
+                  <IntelligenceTab
+                    entries={entries}
+                    onOpenChat={openChat}
+                    onRefresh={fetchEntries}
+                    onOpenCapture={() => setCaptureOpen(true)}
+                    onDraftToStudio={(prefill) => {
+                      setSignalDraftPrefill(prefill);
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                  />
+                </ErrorBoundary>
               </div>
             )}
 
             {activeTab === "authority" && (
               <div className="animate-tab-spring">
-                <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} />
+                <ErrorBoundary>
+                  <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} />
+                </ErrorBoundary>
               </div>
             )}
 
             {activeTab === "influence" && (
               <div className="animate-tab-spring">
-                <InfluenceTabNew entries={entries} onOpenChat={openChat} />
+                <ErrorBoundary>
+                  <InfluenceTabNew entries={entries} onOpenChat={openChat} />
+                </ErrorBoundary>
               </div>
             )}
           </div>
