@@ -79,6 +79,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
   const [trendCount, setTrendCount] = useState(0);
   const [auraInput, setAuraInput] = useState("");
   const [placeholder] = useState(() => PLACEHOLDERS[new Date().getDate() % PLACEHOLDERS.length]);
+  const [moves, setMoves] = useState<any[]>([]);
+  const [movesLoading, setMovesLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
