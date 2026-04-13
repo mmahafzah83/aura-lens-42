@@ -141,7 +141,7 @@ const StrategicAdvisorPanel = ({
           <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/15">
             <MoveIcon className="w-3.5 h-3.5 text-primary" />
           </div>
-          <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">Recommended Move</span>
+          <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">Your Next Move</span>
         </div>
         <p className="text-sm font-semibold text-foreground leading-snug mb-1.5">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed mb-3">{data.recommended_move.reason}</p>
@@ -294,7 +294,7 @@ const StrategicAdvisorPanel = ({
       <div className="p-5 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.05] to-transparent space-y-2">
         <div className="flex items-center gap-2">
           <MoveIcon className="w-4 h-4 text-primary" />
-          <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">Recommended Move</span>
+          <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">Your Next Move</span>
         </div>
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
