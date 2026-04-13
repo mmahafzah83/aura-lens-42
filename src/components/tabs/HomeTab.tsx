@@ -199,6 +199,40 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
         headers: { Authorization: `Bearer ${session.access_token}` },
       }).catch(console.error);
     }
+    // Fetch recommended moves
+    setMovesLoading(true);
+    try {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: existingMoves } = await supabase
+        .from("recommended_moves" as any)
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .gte("created_at", twentyFourHoursAgo)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (existingMoves && (existingMoves as any[]).length > 0) {
+        setMoves(existingMoves as any[]);
+      } else {
+        // Call generate-moves
+        const freshSession2 = (await supabase.auth.getSession()).data.session;
+        const { data: genData } = await supabase.functions.invoke("generate-moves", {
+          body: { user_id: user.id },
+          headers: { Authorization: `Bearer ${freshSession2?.access_token || session.access_token}` },
+        });
+        if (genData?.moves && genData.moves.length > 0) {
+          setMoves(genData.moves);
+        } else {
+          setMoves([]);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load moves:", e);
+      setMoves([]);
+    } finally {
+      setMovesLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
