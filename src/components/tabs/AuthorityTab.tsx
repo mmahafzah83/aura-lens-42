@@ -664,6 +664,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             generation_params: generationParams,
                           });
                           if (error) throw error;
+                          setMonthlyGenerationCount(prev => prev + 1);
                           toast.success("Draft saved to your library.");
                         } catch (e: any) {
                           toast.error(e.message || "Failed to save");
