@@ -432,84 +432,156 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
         </motion.div>
       )}
 
-      {/* 4. Focus Card */}
-      {auraScore && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.1 }}
-        >
-          {auraScore.aura_score >= 40 && topSignal ? (
-            <div
-              style={{
-                background: "#C5A55A",
-                borderRadius: 12,
-                padding: "16px 16px 14px",
-              }}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#0d0d0d", lineHeight: 1.3 }}>
-                {topSignal.signal_title}
-              </div>
-              {topSignal.what_it_means_for_you && (
+      {/* 4. Recommended Moves */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.1 }}
+      >
+        <span style={{ color: "#3a3a3a", fontSize: 10, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase" as const }}>
+          Today's Focus
+        </span>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
+          {movesLoading ? (
+            <>
+              {[0, 1, 2].map((i) => (
                 <div
+                  key={i}
                   style={{
-                    fontSize: 12,
-                    color: "#0d0d0d",
-                    opacity: 0.7,
-                    marginTop: 4,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap" as const,
+                    background: "#141414",
+                    border: "1px solid #1f1f1f",
+                    borderRadius: 10,
+                    padding: 16,
+                    height: 100,
                   }}
                 >
-                  {topSignal.what_it_means_for_you}
+                  <div style={{ width: "60%", height: 12, background: "#1f1f1f", borderRadius: 4 }} />
+                  <div style={{ width: "90%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 10 }} />
+                  <div style={{ width: "40%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 6 }} />
                 </div>
-              )}
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => onOpenChat?.(`Draft a LinkedIn post about: ${topSignal.signal_title}`)}
+              ))}
+            </>
+          ) : moves.length > 0 ? (
+            moves.slice(0, 3).map((move: any) => {
+              const badgeColor =
+                move.output_type === "carousel" ? "#4A90D9" :
+                move.output_type === "framework" ? "#5AA469" :
+                "#C5A55A";
+              const BadgeIcon =
+                move.output_type === "carousel" ? LayoutGrid :
+                move.output_type === "framework" ? Box :
+                FileText;
+
+              return (
+                <div
+                  key={move.id}
                   style={{
-                    flex: 1,
-                    background: "#0d0d0d",
-                    color: "#f0f0f0",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    padding: "9px 14px",
-                    borderRadius: 8,
-                    border: "none",
-                    cursor: "pointer",
+                    background: "#141414",
+                    border: "1px solid #252525",
+                    borderRadius: 10,
+                    padding: "14px 16px",
                   }}
                 >
-                  Draft content now
-                </button>
-                <button
-                  onClick={() => onNavigateToSignal?.(topSignal.id)}
-                  style={{
-                    flex: 1,
-                    background: "transparent",
-                    color: "#0d0d0d",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    padding: "9px 14px",
-                    borderRadius: 8,
-                    border: "1px solid rgba(0,0,0,0.3)",
-                    cursor: "pointer",
-                  }}
-                >
-                  View signal
-                </button>
-              </div>
-            </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#e0e0e0", lineHeight: 1.3, flex: 1 }}>
+                      {move.title}
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 600,
+                        color: badgeColor,
+                        background: `${badgeColor}15`,
+                        border: `1px solid ${badgeColor}30`,
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        whiteSpace: "nowrap" as const,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 3,
+                        textTransform: "uppercase" as const,
+                        letterSpacing: 0.5,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <BadgeIcon style={{ width: 9, height: 9 }} />
+                      {move.output_type}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "#666",
+                      marginTop: 6,
+                      lineHeight: 1.4,
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical" as any,
+                      overflow: "hidden",
+                    }}
+                    title={move.rationale}
+                  >
+                    {move.rationale}
+                  </div>
+
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: "#C5A55A",
+                        background: "transparent",
+                        border: "none",
+                        padding: "4px 0",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Draft It
+                    </button>
+                    <button
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 500,
+                        color: "#555",
+                        background: "transparent",
+                        border: "none",
+                        padding: "4px 0",
+                        cursor: "pointer",
+                        marginLeft: 8,
+                      }}
+                    >
+                      Explore
+                    </button>
+                    <button
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 400,
+                        color: "#333",
+                        background: "transparent",
+                        border: "none",
+                        padding: "4px 0",
+                        cursor: "pointer",
+                        marginLeft: 8,
+                      }}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           ) : (
             <div
               style={{
                 background: "#1a1a1a",
                 borderRadius: 12,
-                padding: "16px 16px 14px",
+                padding: "20px 16px",
+                textAlign: "center" as const,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 500, color: "#666", lineHeight: 1.3 }}>
-                Capture something to unlock your first signal
+              <div style={{ fontSize: 12, color: "#555", lineHeight: 1.4 }}>
+                Capture more content to unlock strategic recommendations.
               </div>
               <button
                 onClick={() => onOpenChat?.("I want to capture my first insight")}
@@ -529,8 +601,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal }: Ho
               </button>
             </div>
           )}
-        </motion.div>
-      )}
+        </div>
+      </motion.div>
 
       {/* 5. Live Intelligence Timeline */}
       <div>
