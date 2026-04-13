@@ -1275,7 +1275,7 @@ const AnalyzeTab = () => {
         <div className="glass-card rounded-2xl p-5 border border-border/8">
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3 text-muted-foreground/60">Aura Drafts ({auraDrafts.length})</p>
           <div className="space-y-2">
-            {auraDrafts.slice(0, 5).map((p: any) => (
+            {auraDrafts.slice(0, 5).map((p: any, i: number) => (
               <div key={`${p.theme}-${p.tone}-${i}`} className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-foreground/70 truncate flex-1">{p.theme || p.format_type || "Untitled"}</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted/20 text-muted-foreground border border-border/15 shrink-0 ml-2">
