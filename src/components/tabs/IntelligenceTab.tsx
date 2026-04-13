@@ -261,6 +261,8 @@ const ExpandedDetail = ({
 
   useEffect(() => {
     (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+
       if (signal.supporting_evidence_ids?.length) {
         // Query evidence_fragments first (canonical source)
         const ef = await supabase
@@ -281,9 +283,21 @@ const ExpandedDetail = ({
         setSources((r.data || []) as unknown as SourceEntry[]);
       }
 
+      // Fetch Key Insights from learned_intelligence matching signal tags
+      if (user && signal.theme_tags?.length > 0) {
+        const { data: insightsData } = await supabase
+          .from("learned_intelligence")
+          .select("id, title, content, intelligence_type, skill_pillars, tags, created_at")
+          .eq("user_id", user.id)
+          .or(`tags.ov.{${signal.theme_tags.join(",")}},skill_pillars.ov.{${signal.theme_tags.join(",")}}`)
+          .order("created_at", { ascending: false })
+          .limit(3);
+        setKeyInsights((insightsData || []) as unknown as Insight[]);
+      }
+
       setLoading(false);
     })();
-  }, [signal.supporting_evidence_ids]);
+  }, [signal.supporting_evidence_ids, signal.theme_tags]);
 
   const handleRemove = async (entryId: string) => {
     const newIds = signal.supporting_evidence_ids.filter(id => id !== entryId);
