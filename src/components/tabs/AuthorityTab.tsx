@@ -5,7 +5,7 @@ import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
   Sparkles, Zap, Target, ArrowRight, Crown, Layers,
-  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, Image as ImageIcon, Download
+  Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, ChevronDown, Image as ImageIcon, Download
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
@@ -1680,9 +1680,10 @@ interface SavedFramework {
   created_at: string;
 }
 
-const FrameworkLibrarySection = () => {
+const FrameworkLibrarySection = ({ pendingDeleteId, setPendingDeleteId }: { pendingDeleteId: string | null; setPendingDeleteId: (id: string | null) => void }) => {
   const [frameworks, setFrameworks] = useState<SavedFramework[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -1713,66 +1714,117 @@ const FrameworkLibrarySection = () => {
     }
   };
 
+  const deleteFramework = async (id: string) => {
+    const { error } = await supabase.from("master_frameworks").delete().eq("id", id);
+    if (error) { toast.error("Failed to delete framework"); return; }
+    setFrameworks(prev => prev.filter(fw => fw.id !== id));
+    toast.success("Framework deleted");
+  };
+
   if (loading || frameworks.length === 0) return null;
 
   return (
     <div>
-      <div className="flex items-center gap-2.5 mb-3" style={{ borderLeft: "1px solid #f0f0f0", paddingLeft: 12 }}>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2.5 w-full text-left group"
+        style={{ borderLeft: "1px solid #f0f0f0", paddingLeft: 12, marginBottom: expanded ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "#f0f0f0" }}
+      >
         <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#f0f0f0", margin: 0 }}>
           Frameworks
         </h3>
         <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#999" }}>
           {frameworks.length}
         </span>
-      </div>
-      <div style={{ display: "grid", gap: 12 }}>
-        {frameworks.map(fw => {
-          const isApproved = fw.tags?.includes("Approved");
-          return (
-            <div
-              key={fw.id}
-              style={{ backgroundColor: "#141414", borderRadius: 8, padding: 16, border: "1px solid rgba(255,255,255,0.04)", transition: "border-color 0.2s" }}
-              className="hover:border-[rgba(255,255,255,0.08)]"
-            >
-              <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0", lineHeight: 1.4 }} className="line-clamp-1">{fw.title}</p>
-                  {fw.summary && <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 4 }} className="line-clamp-2">{fw.summary}</p>}
+        <ChevronDown
+          className="ml-auto transition-transform duration-200 group-hover:text-primary"
+          style={{ width: 16, height: 16, color: "#888", transform: expanded ? "rotate(0deg)" : "rotate(-90deg)" }}
+        />
+      </button>
+      {expanded && (
+        <div style={{ display: "grid", gap: 12 }}>
+          {frameworks.map(fw => {
+            const isApproved = fw.tags?.includes("Approved");
+            return (
+              <div
+                key={fw.id}
+                style={{ backgroundColor: "#141414", borderRadius: 8, padding: 16, border: "1px solid rgba(255,255,255,0.04)", transition: "border-color 0.2s" }}
+                className="hover:border-[rgba(255,255,255,0.08)]"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#f0f0f0", lineHeight: 1.4 }} className="line-clamp-1">{fw.title}</p>
+                    {fw.summary && <p style={{ fontSize: 13, color: "#888", lineHeight: 1.5, marginTop: 4 }} className="line-clamp-2">{fw.summary}</p>}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(fw.created_at)}</span>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-                  backgroundColor: isApproved ? "rgba(16,185,129,0.12)" : "#252525",
-                  color: isApproved ? "#34d399" : "#999",
-                }}>
-                  {isApproved ? "Approved" : "Draft"}
-                </span>
-                <div className="flex-1" />
-                {fw.diagram_url && (
+                <div className="flex items-center gap-2 mt-3">
+                  <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(fw.created_at)}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                    backgroundColor: isApproved ? "rgba(16,185,129,0.12)" : "#252525",
+                    color: isApproved ? "#34d399" : "#999",
+                  }}>
+                    {isApproved ? "Approved" : "Draft"}
+                  </span>
+                  <div className="flex-1" />
                   <div className="flex items-center gap-2">
+                    {fw.diagram_url && (
+                      <>
+                        <button
+                          onClick={() => window.open(fw.diagram_url!, "_blank")}
+                          style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "#252525", color: "#ccc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                          className="hover:bg-[#303030] transition-colors"
+                        >
+                          <ImageIcon className="w-3 h-3" /> View
+                        </button>
+                        <button
+                          onClick={() => handleDownload(fw.diagram_url!, fw.title)}
+                          style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "#252525", color: "#ccc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                          className="hover:bg-[#303030] transition-colors"
+                        >
+                          <Download className="w-3 h-3" /> Download
+                        </button>
+                      </>
+                    )}
                     <button
-                      onClick={() => window.open(fw.diagram_url!, "_blank")}
-                      style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "#252525", color: "#ccc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
-                      className="hover:bg-[#303030] transition-colors"
+                      onClick={() => setPendingDeleteId(`fw_${fw.id}`)}
+                      style={{ fontSize: 12, fontWeight: 500, padding: "4px 8px", borderRadius: 6, backgroundColor: "transparent", color: "#ef4444", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                      className="hover:bg-red-500/10 transition-colors"
                     >
-                      <ImageIcon className="w-3 h-3" /> View
-                    </button>
-                    <button
-                      onClick={() => handleDownload(fw.diagram_url!, fw.title)}
-                      style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "#252525", color: "#ccc", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
-                      className="hover:bg-[#303030] transition-colors"
-                    >
-                      <Download className="w-3 h-3" /> Download
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
-                )}
+                </div>
               </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Framework delete confirmation */}
+      {pendingDeleteId?.startsWith("fw_") && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.8)" }}>
+          <div className="bg-card border border-border/20 rounded-xl p-6 w-[400px] max-w-[90vw] space-y-4 shadow-2xl">
+            <h3 className="text-base font-semibold text-foreground">Delete this framework?</h3>
+            <p className="text-sm text-muted-foreground">Are you sure you want to delete this framework? This action cannot be undone.</p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setPendingDeleteId(null)}>Cancel</Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={async () => {
+                  const id = pendingDeleteId!.replace("fw_", "");
+                  setPendingDeleteId(null);
+                  await deleteFramework(id);
+                }}
+              >
+                Delete
+              </Button>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
@@ -1784,6 +1836,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [showPublished, setShowPublished] = useState(false);
+  const [showDrafts, setShowDrafts] = useState(true);
 
   useEffect(() => { loadPosts(); }, []);
 
@@ -1923,15 +1976,23 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
       {/* ── Section 1: Aura Drafts ── */}
       <div>
-        <div className="flex items-center gap-2.5" style={{ borderLeft: "1px solid #C5A55A", paddingLeft: 12, marginBottom: 12 }}>
+        <button
+          onClick={() => setShowDrafts(!showDrafts)}
+          className="flex items-center gap-2.5 w-full text-left group"
+          style={{ borderLeft: "1px solid #C5A55A", paddingLeft: 12, marginBottom: showDrafts ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "#C5A55A" }}
+        >
           <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#C5A55A", margin: 0 }}>
             Your Drafts
           </h3>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#C5A55A" }}>
             {drafts.length}
           </span>
-        </div>
-        {drafts.length === 0 ? (
+          <ChevronDown
+            className="ml-auto transition-transform duration-200 group-hover:text-primary"
+            style={{ width: 16, height: 16, color: "#C5A55A", transform: showDrafts ? "rotate(0deg)" : "rotate(-90deg)" }}
+          />
+        </button>
+        {showDrafts && (drafts.length === 0 ? (
           <div style={{ backgroundColor: "#1a1a1a", borderRadius: 8, padding: 16, textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "#666" }}>No drafts yet. Generate content on the Create tab.</p>
           </div>
@@ -2007,7 +2068,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
       {/* ── Section 2: Published Posts (collapsed by default) ── */}
@@ -2023,9 +2084,10 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#999" }}>
             {publishedPosts.length}
           </span>
-          <span className="ml-auto group-hover:text-primary transition-colors" style={{ fontSize: 12, color: "#C5A55A" }}>
-            {showPublished ? "Hide" : "Show all"}
-          </span>
+          <ChevronDown
+            className="ml-auto transition-transform duration-200 group-hover:text-primary"
+            style={{ width: 16, height: 16, color: "#888", transform: showPublished ? "rotate(0deg)" : "rotate(-90deg)" }}
+          />
         </button>
         {showPublished && (
           <div style={{ display: "grid", gap: 12 }}>
@@ -2089,7 +2151,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       </div>
 
       {/* ── Section 3: Frameworks ── */}
-      <FrameworkLibrarySection />
+      <FrameworkLibrarySection pendingDeleteId={pendingDeleteId} setPendingDeleteId={setPendingDeleteId} />
 
       {/* ── Section 4: Voice Trainer ── */}
       <VoiceTrainer />
