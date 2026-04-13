@@ -74,12 +74,12 @@ serve(async (req) => {
     }
 
     const signalBlock = signals
-      .map((s: any) => `- ${s.signal_title} — ${s.explanation} — confidence: ${s.confidence}`)
+      .map((s: any) => `ID: ${s.id} | Title: ${s.signal_title} | ${s.explanation}`)
       .join("\n");
 
     const userPrompt = `User profile: ${profile?.level || "unknown role"}, ${profile?.firm || "unknown industry"}, ${profile?.sector_focus || "unknown sector"}, ${profile?.core_practice || "unknown practice"}.
 
-Top signals:
+Top signals (use these exact IDs in source_signal_ids):
 ${signalBlock}
 
 Generate exactly 3 recommended content moves. Respond ONLY with valid JSON array:
@@ -88,9 +88,10 @@ Generate exactly 3 recommended content moves. Respond ONLY with valid JSON array
     "title": "short action-oriented title (max 10 words)",
     "rationale": "1-2 sentence explanation grounded in the signals",
     "output_type": "post" or "carousel" or "framework",
-    "source_signal_ids": [array of signal IDs from above that are most relevant]
+    "source_signal_ids": ["id1", "id2"]
   }
 ]
+In your JSON response, source_signal_ids must contain the IDs of the 1-3 signals most relevant to each move. Do not leave source_signal_ids empty.
 Do not include any text outside the JSON array.`;
 
     // Step 3 — AI call
