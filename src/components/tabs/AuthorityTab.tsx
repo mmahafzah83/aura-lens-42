@@ -1976,15 +1976,23 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
       {/* ── Section 1: Aura Drafts ── */}
       <div>
-        <div className="flex items-center gap-2.5" style={{ borderLeft: "1px solid #C5A55A", paddingLeft: 12, marginBottom: 12 }}>
+        <button
+          onClick={() => setShowDrafts(!showDrafts)}
+          className="flex items-center gap-2.5 w-full text-left group"
+          style={{ borderLeft: "1px solid #C5A55A", paddingLeft: 12, marginBottom: showDrafts ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "#C5A55A" }}
+        >
           <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#C5A55A", margin: 0 }}>
             Your Drafts
           </h3>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "#252525", color: "#C5A55A" }}>
             {drafts.length}
           </span>
-        </div>
-        {drafts.length === 0 ? (
+          <ChevronDown
+            className="ml-auto transition-transform duration-200 group-hover:text-primary"
+            style={{ width: 16, height: 16, color: "#C5A55A", transform: showDrafts ? "rotate(0deg)" : "rotate(-90deg)" }}
+          />
+        </button>
+        {showDrafts && (drafts.length === 0 ? (
           <div style={{ backgroundColor: "#1a1a1a", borderRadius: 8, padding: 16, textAlign: "center" }}>
             <p style={{ fontSize: 13, color: "#666" }}>No drafts yet. Generate content on the Create tab.</p>
           </div>
