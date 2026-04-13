@@ -359,7 +359,7 @@ const Dashboard = () => {
           <div className="tab-content-spring">
             {activeTab === "home" && (
               <div className="animate-tab-spring">
-                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} />
+                <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
               </div>
             )}
 
