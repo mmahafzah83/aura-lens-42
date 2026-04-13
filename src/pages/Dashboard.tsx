@@ -208,6 +208,7 @@ const Dashboard = () => {
         setShowOnboarding(false);
       }} />}
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
+      {showWizard && <OnboardingWizard userId={wizardUserId} onComplete={() => setShowWizard(false)} />}
 
       {/* ── Desktop Sidebar ── */}
       <aside
