@@ -152,10 +152,16 @@ Do not include any text outside the JSON array.`;
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const validSignalIds = new Set(signals.map((s: any) => s.id));
+    // Fallback: top 2 signal IDs by confidence (signals already sorted desc)
+    const fallbackIds = signals.slice(0, 2).map((s: any) => s.id);
 
     const rows = movesArray.slice(0, 3).map((m: any) => {
       const rawIds = Array.isArray(m.source_signal_ids) ? m.source_signal_ids : [];
-      const filteredIds = rawIds.filter((id: string) => uuidRegex.test(id) && validSignalIds.has(id));
+      let filteredIds = rawIds.filter((id: string) => uuidRegex.test(id) && validSignalIds.has(id));
+      // Fallback: if AI returned empty/invalid IDs, use top 2 signals
+      if (filteredIds.length === 0) {
+        filteredIds = fallbackIds;
+      }
       return {
         user_id,
         title: String(m.title || "Untitled move").slice(0, 200),
