@@ -435,3 +435,49 @@ ${identityCtx}`;
     });
   }
 });
+
+// ──────────────────────────────────────────────────────────────────────
+// CLEANUP: Merge duplicate "Integrated Digital Water Utility Ecosystem" signals
+// Run once in Supabase SQL Editor:
+//
+// WITH keeper AS (
+//   SELECT id
+//   FROM strategic_signals
+//   WHERE signal_title ILIKE '%Integrated Digital Water Utility Ecosystem%'
+//     AND status = 'active'
+//   ORDER BY fragment_count DESC, created_at ASC
+//   LIMIT 1
+// ),
+// duplicates AS (
+//   SELECT id, supporting_evidence_ids
+//   FROM strategic_signals
+//   WHERE signal_title ILIKE '%Integrated Digital Water Utility Ecosystem%'
+//     AND status = 'active'
+//     AND id != (SELECT id FROM keeper)
+// ),
+// merged_evidence AS (
+//   SELECT array_agg(DISTINCT eid) AS all_ids
+//   FROM (
+//     SELECT unnest(supporting_evidence_ids) AS eid
+//     FROM strategic_signals
+//     WHERE signal_title ILIKE '%Integrated Digital Water Utility Ecosystem%'
+//       AND status = 'active'
+//   ) sub
+// )
+// -- Step 1: Update keeper with merged evidence
+// UPDATE strategic_signals
+// SET supporting_evidence_ids = (SELECT all_ids FROM merged_evidence),
+//     fragment_count = (SELECT array_length(all_ids, 1) FROM merged_evidence),
+//     updated_at = now()
+// WHERE id = (SELECT id FROM keeper);
+//
+// -- Step 2: Delete duplicates (run separately after step 1)
+// DELETE FROM strategic_signals
+// WHERE signal_title ILIKE '%Integrated Digital Water Utility Ecosystem%'
+//   AND status = 'active'
+//   AND id != (SELECT id FROM strategic_signals
+//              WHERE signal_title ILIKE '%Integrated Digital Water Utility Ecosystem%'
+//                AND status = 'active'
+//              ORDER BY fragment_count DESC, created_at ASC
+//              LIMIT 1);
+// ──────────────────────────────────────────────────────────────────────
