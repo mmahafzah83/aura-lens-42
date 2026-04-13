@@ -430,29 +430,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     try {
       const accumulated = await streamGeneration();
       setFullVersion(accumulated);
-      // Fire-and-forget save
-      if (accumulated) {
-        supabase.auth.getSession().then(({ data: { session: s } }) => {
-          if (!s?.user?.id) return;
-          const firstLine = accumulated.split(/\n/).find(l => l.trim())?.trim() || "";
-          supabase.from("linkedin_posts").insert({
-            user_id: s.user.id,
-            linkedin_post_id: `aura_${Date.now()}`,
-            post_text: accumulated,
-            title: topic,
-            hook: firstLine.slice(0, 300),
-            tone: lang === "ar" ? "arabic_executive" : "authority",
-            format_type: contentType === "framework_summary" ? "framework" : contentType,
-            content_type: contentType === "framework_summary" ? "framework" : contentType,
-            topic_label: topic,
-            source_type: "aura_generated",
-            tracking_status: "draft",
-            source_metadata: planRef ? { from_plan: planRef } : {},
-          }).then(({ error: saveErr }) => {
-            if (saveErr) console.error("Auto-save to linkedin_posts failed:", saveErr);
-          });
-        });
-      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -470,29 +447,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         : "Rewrite this as a punchy short version. Maximum 150 words for English. Keep only the hook, the single strongest insight, and the closing question. Remove all numbered lists and subheadings. Every sentence must be under 12 words.";
       const accumulated = await streamGeneration(shortInstruction);
       setShortVersion(accumulated);
-      // Save short version separately
-      if (accumulated) {
-        supabase.auth.getSession().then(({ data: { session: s } }) => {
-          if (!s?.user?.id) return;
-          const firstLine = accumulated.split(/\n/).find(l => l.trim())?.trim() || "";
-          supabase.from("linkedin_posts").insert({
-            user_id: s.user.id,
-            linkedin_post_id: `aura_short_${Date.now()}`,
-            post_text: accumulated,
-            title: `${topic} (short)`,
-            hook: firstLine.slice(0, 300),
-            tone: lang === "ar" ? "arabic_executive" : "authority",
-            format_type: "post_short",
-            content_type: "post",
-            topic_label: topic,
-            source_type: "aura_generated",
-            tracking_status: "draft",
-            source_metadata: planRef ? { from_plan: planRef } : {},
-          }).then(({ error: saveErr }) => {
-            if (saveErr) console.error("Auto-save short version failed:", saveErr);
-          });
-        });
-      }
     } catch (e: any) {
       toast.error(e.message);
     } finally {
@@ -615,10 +569,38 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   <span className="text-label uppercase tracking-wider text-xs font-semibold">
                     {showingShort ? "Short Version" : "Generated Content"}
                   </span>
-                  <Button size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
-                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    {copied ? "Copied" : "Copy"}
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
+                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copied ? "Copied" : "Copy"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1.5 text-xs border-border/15"
+                      onClick={async () => {
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session?.user?.id) throw new Error("Not authenticated");
+                          const body = stripMarkdown(output || fullVersion || shortVersion || "");
+                          if (!body.trim()) { toast.error("Nothing to save"); return; }
+                          const { error } = await supabase.from("content_items").insert({
+                            user_id: session.user.id,
+                            type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
+                            body,
+                            language: lang,
+                            status: "draft",
+                          });
+                          if (error) throw error;
+                          toast.success("Draft saved to your library.");
+                        } catch (e: any) {
+                          toast.error(e.message || "Failed to save");
+                        }
+                      }}
+                    >
+                      <Save className="w-3 h-3" /> Save Draft
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Back to full version link */}
@@ -859,7 +841,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                                 },
                               });
                               if (error) throw error;
-                              toast.success("Saved to Library");
+                              toast.success("Draft saved to your library.");
                             } catch (e: any) {
                               toast.error(e.message || "Failed to save");
                             }
