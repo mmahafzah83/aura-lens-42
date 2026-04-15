@@ -265,7 +265,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 ) : (
                   <div className="flex items-center justify-between group mt-0.5">
-                    <span style={{ fontSize: 11, color: "#d0d0d0" }} className="truncate flex-1">{fact.value || "—"}</span>
+                    <span style={{ fontSize: 11, color: "#d0d0d0", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
                     <button onClick={() => startEdit(fact.key, fact.value)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                       <Pencil className="w-2.5 h-2.5 text-[#555] hover:text-[#C5A55A]" />
                     </button>
