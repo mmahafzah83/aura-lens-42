@@ -298,6 +298,7 @@ export type Database = {
           audit_completed_at: string | null
           audit_interpretation: string | null
           audit_results: Json | null
+          avatar_url: string | null
           brand_assessment_answers: Json | null
           brand_assessment_completed_at: string | null
           brand_assessment_results: Json | null
@@ -326,6 +327,7 @@ export type Database = {
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_results?: Json | null
+          avatar_url?: string | null
           brand_assessment_answers?: Json | null
           brand_assessment_completed_at?: string | null
           brand_assessment_results?: Json | null
@@ -354,6 +356,7 @@ export type Database = {
           audit_completed_at?: string | null
           audit_interpretation?: string | null
           audit_results?: Json | null
+          avatar_url?: string | null
           brand_assessment_answers?: Json | null
           brand_assessment_completed_at?: string | null
           brand_assessment_results?: Json | null
