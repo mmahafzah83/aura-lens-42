@@ -1,35 +1,23 @@
 
 
-## Plan: Rename and improve smart group labels
+## Fix: Left column text truncation on My Story page
 
-### Problem
-1. Group headers show raw profile values (e.g. "Water Utilities") without context — unclear what they represent
-2. When keywords don't match, everything falls into "Horizon Watch" which is vague
-3. Labels should feel personal and career-oriented ("My Industry", "My Expertise", etc.)
+**Problem**: The left column is 200px wide. Identity fact values (especially "How I lead" and "Specialises in") use `truncate` CSS, cutting off text with no way to read it.
 
-### Changes — `src/components/tabs/IntelligenceTab.tsx`
+**Solution**: Replace `truncate` with word-wrap so text flows onto multiple lines instead of being clipped.
 
-**1. Update `groupLabels` (line 765-770)**
+### Changes (single file)
 
-Replace with clear, prefixed labels:
+**`src/components/tabs/IdentityTab.tsx`** — Line 268
 
-```ts
-const groupLabels = useMemo(() => ({
-  industry: profileAnchors.sectorFocus ? `My industry · ${profileAnchors.sectorFocus}` : "My industry",
-  edge: profileAnchors.corePractice ? `My expertise · ${profileAnchors.corePractice}` : "My expertise",
-  trajectory: profileAnchors.northStarGoal ? `My ambition · ${profileAnchors.northStarGoal}` : "My ambition",
-  horizon: "Wider landscape",
-}), [profileAnchors]);
+Change the value `<span>` from:
+```tsx
+<span style={{ fontSize: 11, color: "#d0d0d0" }} className="truncate flex-1">
+```
+To:
+```tsx
+<span style={{ fontSize: 11, color: "#d0d0d0", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">
 ```
 
-This gives every group a clear, personal prefix while still showing the profile detail as context after the dot separator.
-
-**2. Broaden keyword matching to reduce "Wider landscape" overflow (lines 748-761)**
-
-Currently classification only checks exact substring matches. Improve by:
-- Splitting multi-word profile values into individual keywords (e.g. "Digital Transformation" → ["digital", "transformation"])
-- Adding common synonyms/related terms for industry and expertise matches
-- Lowering the match threshold so signals with partial overlap still land in the right group
-
-No database changes. No new files. Only `IntelligenceTab.tsx` is modified.
+This removes the single-line truncation and lets values wrap naturally within the 200px column. No other files or logic change.
 
