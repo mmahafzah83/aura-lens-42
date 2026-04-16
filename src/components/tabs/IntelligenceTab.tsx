@@ -584,24 +584,34 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     }
   }, [signals, searchParams]);
 
+  const [loadError, setLoadError] = useState(false);
+
   const loadSignals = useCallback(async () => {
     setLoading(true);
-    const [signalsRes, entriesRes, movesRes, publishedRes] = await Promise.all([
-      supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
-      supabase.from("entries").select("id", { count: "exact", head: true }),
-      supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
-      supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
-    ]);
-    const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
-    setSignals(loadedSignals);
-    setEntryCount(entriesRes.count || 0);
-    setMovesCount(movesRes.count || 0);
-    setPublishedCount(publishedRes.count || 0);
-    // Auto-select first signal
-    if (loadedSignals.length > 0 && !selectedSignalId) {
-      setSelectedSignalId(loadedSignals[0].id);
+    setLoadError(false);
+    try {
+      const [signalsRes, entriesRes, movesRes, publishedRes] = await Promise.all([
+        supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
+        supabase.from("entries").select("id", { count: "exact", head: true }),
+        supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
+      ]);
+      const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
+      setSignals(loadedSignals);
+      setEntryCount(entriesRes.count || 0);
+      setMovesCount(movesRes.count || 0);
+      setPublishedCount(publishedRes.count || 0);
+      // Auto-select first signal
+      if (loadedSignals.length > 0 && !selectedSignalId) {
+        setSelectedSignalId(loadedSignals[0].id);
+      }
+    } catch (err) {
+      console.error("[IntelligenceTab] loadSignals failed", err);
+      setLoadError(true);
+      showQueryErrorToast();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { loadSignals(); }, [loadSignals]);

@@ -10,6 +10,8 @@ import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import VoiceEngineSection from "@/components/VoiceEngineSection";
+import SectionError from "@/components/ui/section-error";
+import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { createPortal } from "react-dom";
 
 interface IdentityTabProps {
@@ -50,40 +52,50 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [regenerating, setRegenerating] = useState(false);
   const [showFullPositioning, setShowFullPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadAll();
   }, []);
 
   const loadAll = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+    setLoadError(false);
+    setLoading(true);
+    try {
+      const { data: { user } } = await withTimeout(supabase.auth.getUser());
+      if (!user) { setLoading(false); return; }
 
-    const [profileRes, scoreRes, signalsRes] = await Promise.all([
-      (supabase.from("diagnostic_profiles" as any) as any)
-        .select("first_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
-        .eq("user_id", user.id).maybeSingle(),
-      (supabase.from("authority_scores") as any)
-        .select("authority_score").eq("user_id", user.id)
-        .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
-      (supabase.from("strategic_signals") as any)
-        .select("signal_title, confidence, unique_orgs")
-        .eq("user_id", user.id).eq("status", "active")
-        .order("confidence", { ascending: false }).limit(20),
-    ]);
+      const [profileRes, scoreRes, signalsRes] = await withTimeout(Promise.all([
+        (supabase.from("diagnostic_profiles" as any) as any)
+          .select("first_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
+          .eq("user_id", user.id).maybeSingle(),
+        (supabase.from("authority_scores") as any)
+          .select("authority_score").eq("user_id", user.id)
+          .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
+        (supabase.from("strategic_signals") as any)
+          .select("signal_title, confidence, unique_orgs")
+          .eq("user_id", user.id).eq("status", "active")
+          .order("confidence", { ascending: false }).limit(20),
+      ]));
 
-    if (profileRes.data) setProfile(profileRes.data);
-    if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
-    if (signalsRes.data) {
-      const signals = signalsRes.data as any[];
-      setSignalStats({
-        count: signals.length,
-        topConfidence: signals.length > 0 ? Math.round(Number(signals[0].confidence) * 100) : 0,
-        totalOrgs: signals.reduce((s: number, sig: any) => s + (sig.unique_orgs || 0), 0),
-        topSignals: signals.slice(0, 4).map((s: any) => s.signal_title),
-      });
+      if (profileRes.data) setProfile(profileRes.data);
+      if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
+      if (signalsRes.data) {
+        const signals = signalsRes.data as any[];
+        setSignalStats({
+          count: signals.length,
+          topConfidence: signals.length > 0 ? Math.round(Number(signals[0].confidence) * 100) : 0,
+          totalOrgs: signals.reduce((s: number, sig: any) => s + (sig.unique_orgs || 0), 0),
+          topSignals: signals.slice(0, 4).map((s: any) => s.signal_title),
+        });
+      }
+    } catch (err) {
+      console.error("[IdentityTab] loadAll failed", err);
+      setLoadError(true);
+      showQueryErrorToast();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const startEdit = (field: string, currentValue: string) => {
