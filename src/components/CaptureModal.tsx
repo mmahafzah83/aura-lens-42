@@ -269,8 +269,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         return;
       }
 
-      console.log("Calling ingest-capture with:", captureType, captureContent);
-
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
         method: "POST",
         headers: {
@@ -285,8 +283,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           ...(captureType === "image" && image_url && { source_url: image_url }),
         }),
       });
-
-      console.log("Response status:", resp.status);
 
       const data = await resp.json().catch(() => null);
 
@@ -343,8 +339,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
       if (entryError) {
         console.error("Failed to insert entry:", entryError.message, entryError);
-      } else {
-        console.log("Entry inserted successfully, id:", entryRow?.id);
       }
 
       // Success
@@ -373,7 +367,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               console.error("extract-evidence error:", extractError);
               return;
             }
-            console.log("extract-evidence result:", extractResult);
             const registryId = extractResult?.source_registry_id;
             if (!registryId) return;
 
@@ -389,7 +382,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               console.error("detect-signals-v2 error:", error);
               return;
             }
-            console.log("detect-signals-v2 result:", result);
             if (result?.is_new) {
               setTimeout(() => {
                 sonnerToast("New pattern detected ✦", {
