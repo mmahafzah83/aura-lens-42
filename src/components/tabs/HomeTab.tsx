@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Database } from "@/integrations/supabase/types";
+import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
+import SectionError from "@/components/ui/section-error";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
