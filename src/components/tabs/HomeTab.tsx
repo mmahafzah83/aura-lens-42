@@ -310,6 +310,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
 
   return (
     <div className="space-y-5 pb-32 relative">
+      {loadError && (
+        <SectionError onRetry={loadData} message="Couldn't load your home. " />
+      )}
       {/* 1. Status bar */}
       <div className="flex items-center justify-between">
         <span style={{ color: "#3a3a3a", fontSize: 11, fontWeight: 500, letterSpacing: 1 }}>
