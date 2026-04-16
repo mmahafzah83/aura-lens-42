@@ -240,6 +240,11 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
     } finally {
       setMovesLoading(false);
     }
+    } catch (err) {
+      console.error("[HomeTab] loadData failed", err);
+      setLoadError(true);
+      showQueryErrorToast();
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
