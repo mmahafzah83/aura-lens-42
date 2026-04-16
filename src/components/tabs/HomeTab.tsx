@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Database } from "@/integrations/supabase/types";
+import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
+import SectionError from "@/components/ui/section-error";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -84,10 +86,13 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
   const [movesLoading, setMovesLoading] = useState(true);
   const [expandedMoveId, setExpandedMoveId] = useState<string | null>(null);
   const [moveSignalTitles, setMoveSignalTitles] = useState<Record<string, string[]>>({});
+  const [loadError, setLoadError] = useState(false);
 
   const loadData = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    setLoadError(false);
+    try {
+      const { data: { user } } = await withTimeout(supabase.auth.getUser());
+      if (!user) return;
 
     const session = (await supabase.auth.getSession()).data.session;
     if (!session) return;
@@ -235,6 +240,11 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
     } finally {
       setMovesLoading(false);
     }
+    } catch (err) {
+      console.error("[HomeTab] loadData failed", err);
+      setLoadError(true);
+      showQueryErrorToast();
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -300,6 +310,9 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
 
   return (
     <div className="space-y-5 pb-32 relative">
+      {loadError && (
+        <SectionError onRetry={loadData} message="Couldn't load your home. " />
+      )}
       {/* 1. Status bar */}
       <div className="flex items-center justify-between">
         <span style={{ color: "#3a3a3a", fontSize: 11, fontWeight: 500, letterSpacing: 1 }}>

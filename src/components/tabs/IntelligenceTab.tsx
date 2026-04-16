@@ -11,6 +11,8 @@ import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
+import SectionError from "@/components/ui/section-error";
+import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
 import type { Database } from "@/integrations/supabase/types";
@@ -584,24 +586,34 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     }
   }, [signals, searchParams]);
 
+  const [loadError, setLoadError] = useState(false);
+
   const loadSignals = useCallback(async () => {
     setLoading(true);
-    const [signalsRes, entriesRes, movesRes, publishedRes] = await Promise.all([
-      supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
-      supabase.from("entries").select("id", { count: "exact", head: true }),
-      supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
-      supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
-    ]);
-    const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
-    setSignals(loadedSignals);
-    setEntryCount(entriesRes.count || 0);
-    setMovesCount(movesRes.count || 0);
-    setPublishedCount(publishedRes.count || 0);
-    // Auto-select first signal
-    if (loadedSignals.length > 0 && !selectedSignalId) {
-      setSelectedSignalId(loadedSignals[0].id);
+    setLoadError(false);
+    try {
+      const [signalsRes, entriesRes, movesRes, publishedRes] = await Promise.all([
+        supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
+        supabase.from("entries").select("id", { count: "exact", head: true }),
+        supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
+      ]);
+      const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
+      setSignals(loadedSignals);
+      setEntryCount(entriesRes.count || 0);
+      setMovesCount(movesRes.count || 0);
+      setPublishedCount(publishedRes.count || 0);
+      // Auto-select first signal
+      if (loadedSignals.length > 0 && !selectedSignalId) {
+        setSelectedSignalId(loadedSignals[0].id);
+      }
+    } catch (err) {
+      console.error("[IntelligenceTab] loadSignals failed", err);
+      setLoadError(true);
+      showQueryErrorToast();
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => { loadSignals(); }, [loadSignals]);
@@ -685,6 +697,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   return (
     <div style={{ background: "#0d0d0d", minHeight: "100vh", paddingBottom: 80 }}>
+      {loadError && (
+        <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
+      )}
       <style>{`
         @media (max-width: 768px) {
           .intel-counter-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; }
