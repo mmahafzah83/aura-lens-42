@@ -759,6 +759,9 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                       )}
                     </div>
                     {msg.role === "assistant" && msg.content && !isLoading && (
+                      <ContextPanel userQuery={messages[i - 1]?.role === "user" ? messages[i - 1].content : ""} />
+                    )}
+                    {msg.role === "assistant" && msg.content && !isLoading && (
                       <button
                         onClick={async () => {
                           if (savedIndices.has(i)) return;
