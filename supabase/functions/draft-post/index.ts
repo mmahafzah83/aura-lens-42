@@ -76,6 +76,37 @@ serve(async (req) => {
       ? `\n\n=== EXPERT FRAMEWORKS (MANDATORY - apply strictly) ===\nYou MUST apply every rule below. These are the user's saved #ExpertSystem frameworks.\n\n${frameworkDigest}\n\n=== END FRAMEWORKS ===`
       : "";
 
+    // Fetch identity context (diagnostic_profiles) to ground the draft in the user's role/sector/goal
+    let identityBlock = "";
+    if (token) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+        const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
+        const { data: { user } } = await anonClient.auth.getUser(token);
+        if (user) {
+          const { data: profile } = await supabase
+            .from("diagnostic_profiles")
+            .select("level, sector_focus, north_star_goal, core_practice, firm")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (profile) {
+            const lines: string[] = [];
+            if (profile.level) lines.push(`Role: ${profile.level}`);
+            if (profile.firm) lines.push(`Firm: ${profile.firm}`);
+            if (profile.sector_focus) lines.push(`Sector: ${profile.sector_focus}`);
+            if (profile.core_practice) lines.push(`Core practice: ${profile.core_practice}`);
+            if (profile.north_star_goal) lines.push(`North-star goal: ${String(profile.north_star_goal).slice(0, 200)}`);
+            if (lines.length > 0) {
+              identityBlock = `\n\n=== AUTHOR IDENTITY (write FROM this person's perspective) ===\n${lines.join("\n")}\n=== END IDENTITY ===`;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("draft-post identity fetch error:", e);
+      }
+    }
+
     const isArabic = lang === "ar";
 
     const EXPERT_LINKEDIN_EN = `You are an Elite Executive LinkedIn Ghostwriter for a Director-level strategy leader.
