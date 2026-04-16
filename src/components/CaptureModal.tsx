@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import DocumentUpload from "@/components/DocumentUpload";
 
@@ -391,7 +392,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             console.log("detect-signals-v2 result:", result);
             if (result?.is_new) {
               setTimeout(() => {
-                toast({ title: "✨ New signal detected", description: "A new pattern was found in your captures." });
+                sonnerToast("New pattern detected ✦", {
+                  position: "bottom-right",
+                  duration: 3000,
+                  style: {
+                    background: "#1a1400",
+                    color: "#C5A55A",
+                    border: "1px solid #C5A55A33",
+                  },
+                });
               }, 3000);
             }
             queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
