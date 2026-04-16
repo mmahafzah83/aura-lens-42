@@ -397,6 +397,44 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
         </Fade>
       )}
 
+      {/* ── EMPTY STATE — no synced posts at all ── */}
+      {!hasPosts && (
+        <Fade delay={0.04}>
+          <div
+            style={{
+              background: "#141414",
+              border: "1px solid #252525",
+              borderRadius: 10,
+              padding: 32,
+              textAlign: "center",
+            }}
+          >
+            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12 }}>📊</div>
+            <h3 style={{ fontSize: 14, color: "#f0f0f0", fontWeight: 600, margin: 0 }}>
+              No performance data yet
+            </h3>
+            <p style={{ fontSize: 12, color: "#666", marginTop: 8, marginBottom: 20, lineHeight: 1.5 }}>
+              Connect your LinkedIn account or sync your posts to start tracking your influence.
+            </p>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("aura:open-linkedin-sync"))}
+              style={{
+                background: "#C5A55A",
+                color: "#0a0a0a",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 20px",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Sync LinkedIn posts
+            </button>
+          </div>
+        </Fade>
+      )}
+
       {/* ═══════════════════════════════════════════
          § 1  OVERVIEW
          ═══════════════════════════════════════════ */}
