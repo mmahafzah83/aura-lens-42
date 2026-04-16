@@ -86,10 +86,13 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
   const [movesLoading, setMovesLoading] = useState(true);
   const [expandedMoveId, setExpandedMoveId] = useState<string | null>(null);
   const [moveSignalTitles, setMoveSignalTitles] = useState<Record<string, string[]>>({});
+  const [loadError, setLoadError] = useState(false);
 
   const loadData = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    setLoadError(false);
+    try {
+      const { data: { user } } = await withTimeout(supabase.auth.getUser());
+      if (!user) return;
 
     const session = (await supabase.auth.getSession()).data.session;
     if (!session) return;
