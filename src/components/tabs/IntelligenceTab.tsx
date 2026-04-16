@@ -148,8 +148,8 @@ const AutomationStrip = () => {
           {collapsed ? "Show automation ↓" : "Hide automation ↑"}
         </button>
       </div>
-      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 200, transition: "max-height 200ms ease-in-out" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 400, transition: "max-height 200ms ease-in-out" }}>
+        <div className="intel-automation-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {cards.map((c, i) => (
             <div key={i} style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
               <div style={{ width: 26, height: 26, borderRadius: 6, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
