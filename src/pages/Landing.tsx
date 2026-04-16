@@ -5,6 +5,10 @@ import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap } from "lucide-
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 
+if (typeof document !== "undefined") {
+  document.title = "Aura — Strategic Intelligence OS";
+}
+
 /* ── Scroll-based reveal hook (works in iframes) ── */
 const useReveal = () => {
   const ref = useRef<any>(null);

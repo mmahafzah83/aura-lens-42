@@ -22,11 +22,11 @@ import type { Database } from "@/integrations/supabase/types";
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
-  { value: "home", label: "Home", pageHeader: "Home", icon: Compass },
-  { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User },
-  { value: "intelligence", label: "Intelligence", pageHeader: "Intelligence", icon: Shield },
-  { value: "authority", label: "Publish", pageHeader: "Content Studio", icon: Crown },
-  { value: "influence", label: "Impact", pageHeader: "Measure your influence", icon: TrendingUp },
+  { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Home — Aura" },
+  { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User, docTitle: "My Story — Aura" },
+  { value: "intelligence", label: "Intelligence", pageHeader: "Intelligence", icon: Shield, docTitle: "Intelligence — Aura" },
+  { value: "authority", label: "Publish", pageHeader: "Content Studio", icon: Crown, docTitle: "Content Studio — Aura" },
+  { value: "influence", label: "Impact", pageHeader: "Measure your influence", icon: TrendingUp, docTitle: "Impact — Aura" },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
@@ -198,6 +198,12 @@ const Dashboard = () => {
     setMobileSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Keep browser tab title in sync with the active section
+  useEffect(() => {
+    const item = NAV_ITEMS.find(n => n.value === activeTab);
+    if (item) document.title = item.docTitle;
+  }, [activeTab]);
 
   return (
     <div className="min-h-screen bg-background flex relative safe-area-container">
