@@ -384,7 +384,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
           </button>
         )}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div className="intel-key-insights-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         {visible.map(insight => {
           const badge = getBadge(insight.intelligence_type);
           return (
@@ -477,7 +477,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
           <p style={{ color: "#666", fontSize: 13 }}>No frameworks created yet.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div className="intel-frameworks-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {visible.map(fw => {
             const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
             const approved = isApproved(fw);
