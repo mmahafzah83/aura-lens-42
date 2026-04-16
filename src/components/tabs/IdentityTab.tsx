@@ -216,6 +216,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
   return (
     <div className="space-y-6">
+      {loadError && (
+        <SectionError onRetry={loadAll} message="Couldn't load your story. " />
+      )}
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT COLUMN */}

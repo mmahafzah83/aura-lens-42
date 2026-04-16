@@ -11,6 +11,8 @@ import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import FrameworkBuilder from "@/components/FrameworkBuilder";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
+import SectionError from "@/components/ui/section-error";
+import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
 import type { Database } from "@/integrations/supabase/types";
@@ -695,6 +697,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   return (
     <div style={{ background: "#0d0d0d", minHeight: "100vh", paddingBottom: 80 }}>
+      {loadError && (
+        <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
+      )}
       <style>{`
         @media (max-width: 768px) {
           .intel-counter-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; }
