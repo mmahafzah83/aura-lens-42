@@ -788,6 +788,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                       return (
                         <div
                           key={s.id}
+                          className="intel-signal-row"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
                             display: "flex", alignItems: "center", gap: 0, padding: "12px 16px",
