@@ -6,6 +6,99 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 
+/* ── Context Panel — shows what data informed the response ── */
+interface MatchedSignal { id: string; signal_title: string; }
+interface ProfileCtx { level?: string | null; sector_focus?: string | null; north_star_goal?: string | null; }
+
+const ContextPanel = ({ userQuery }: { userQuery: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [signals, setSignals] = useState<MatchedSignal[]>([]);
+  const [profile, setProfile] = useState<ProfileCtx>({});
+
+  useEffect(() => {
+    if (!expanded || loaded) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setLoaded(true); return; }
+        const uid = session.user.id;
+        const [sigRes, profRes] = await Promise.all([
+          supabase.from("strategic_signals").select("id, signal_title").eq("user_id", uid).eq("status", "active").limit(50),
+          supabase.from("diagnostic_profiles").select("level, sector_focus, north_star_goal").eq("user_id", uid).maybeSingle(),
+        ]);
+        const q = (userQuery || "").toLowerCase();
+        const tokens = q.split(/\s+/).filter(t => t.length > 3);
+        const matched = (sigRes.data || []).filter((s: any) => {
+          const title = (s.signal_title || "").toLowerCase();
+          if (!title) return false;
+          if (q && title.includes(q)) return true;
+          return tokens.some(t => title.includes(t));
+        }).slice(0, 8) as MatchedSignal[];
+        setSignals(matched);
+        setProfile((profRes.data as ProfileCtx) || {});
+      } catch (e) {
+        console.error("[ContextPanel] load failed", e);
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, [expanded, loaded, userQuery]);
+
+  const profileRows: { label: string; value: string }[] = [];
+  if (profile.level) profileRows.push({ label: "Role", value: profile.level });
+  if (profile.sector_focus) profileRows.push({ label: "Sector", value: profile.sector_focus });
+  if (profile.north_star_goal) profileRows.push({ label: "Target", value: profile.north_star_goal.slice(0, 60) });
+
+  return (
+    <div className="mt-1.5 w-full max-w-[85%]">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{ fontSize: 10, color: "#444", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+      >
+        Context used {expanded ? "▴" : "↓"}
+      </button>
+      {expanded && (
+        <div style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
+          <div style={{ fontSize: 9, textTransform: "uppercase", color: "#333", letterSpacing: 0.5 }}>SIGNALS</div>
+          {!loaded ? (
+            <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>Loading…</div>
+          ) : signals.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+              {signals.map(s => (
+                <span key={s.id} style={{ background: "#1a1400", border: "1px solid #C5A55A33", color: "#C5A55A", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
+                  {s.signal_title}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>No stored signals matched this query</div>
+          )}
+
+          <div style={{ fontSize: 9, textTransform: "uppercase", color: "#333", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
+          {profileRows.length > 0 ? (
+            <div style={{ marginTop: 4 }}>
+              {profileRows.map(r => (
+                <div key={r.label} style={{ fontSize: 10, color: "#555" }}>· {r.label}: {r.value}</div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>No profile context available</div>
+          )}
+
+          {loaded && (
+            <div style={{ marginTop: 8, fontSize: 10, color: signals.length > 0 ? "#4a8a4a" : "#8a6a20" }}>
+              {signals.length > 0
+                ? "Response grounded in your stored intelligence"
+                : "Response based on general reasoning — capture more to improve relevance"}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── BLUF Response Block — shows first 2 sentences prominently, rest expandable ── */
 const AuraResponseBlock = ({ content }: { content: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -665,6 +758,9 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                         msg.content
                       )}
                     </div>
+                    {msg.role === "assistant" && msg.content && !isLoading && (
+                      <ContextPanel userQuery={messages[i - 1]?.role === "user" ? messages[i - 1].content : ""} />
+                    )}
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <button
                         onClick={async () => {
