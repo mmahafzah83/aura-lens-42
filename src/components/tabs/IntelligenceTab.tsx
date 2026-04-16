@@ -685,10 +685,26 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   return (
     <div style={{ background: "#0d0d0d", minHeight: "100vh", paddingBottom: 80 }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .intel-counter-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+          .intel-counter-bar > div { border-right: none !important; border-bottom: 0.5px solid #222; }
+          .intel-counter-bar > div:nth-child(odd) { border-right: 0.5px solid #222 !important; }
+          .intel-counter-bar > div:nth-child(3),
+          .intel-counter-bar > div:nth-child(4) { border-bottom: none; }
+          .intel-automation-grid { grid-template-columns: 1fr !important; }
+          .intel-command-center { flex-direction: column-reverse !important; min-height: 0 !important; }
+          .intel-command-left { flex: 1 1 auto !important; border-right: none !important; border-top: 0.5px solid #1e1e1e; }
+          .intel-command-right { flex: 1 1 auto !important; max-height: none !important; }
+          .intel-signal-row { min-height: 48px; }
+          .intel-key-insights-grid { grid-template-columns: 1fr !important; }
+          .intel-frameworks-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
 
         {/* ── Counter Bar ── */}
-        <div style={{ background: "#141414", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
+        <div className="intel-counter-bar" style={{ background: "#141414", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
           {[
             { label: "Sources", count: entryCount, gold: false },
             { label: "Patterns found", count: signals.length, gold: true },
@@ -711,14 +727,14 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         </div>
 
         {/* ── Tab Bar ── */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid #252525", marginBottom: 14, overflowX: "auto" }} className="scrollbar-hide">
+        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid #252525", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }} className="scrollbar-hide">
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
               color: activeSubTab === tab.value ? "#C5A55A" : "#444",
               background: "transparent", border: "none",
               borderBottom: activeSubTab === tab.value ? "2px solid #C5A55A" : "2px solid transparent",
-              cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s",
+              cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
             }}>{tab.label}</button>
           ))}
         </div>
