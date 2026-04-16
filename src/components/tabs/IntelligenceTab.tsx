@@ -758,9 +758,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             ) : (
               <>
                 {/* Command Center container */}
-                <div style={{ background: "#0f0f0f", border: "0.5px solid #1e1e1e", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
+                <div className="intel-command-center" style={{ background: "#0f0f0f", border: "0.5px solid #1e1e1e", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
-                  <div style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid #1e1e1e" }}>
+                  <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid #1e1e1e" }}>
                     {selectedSignal && (
                       <SignalDetailPanel
                         signal={selectedSignal}
@@ -773,7 +773,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   </div>
 
                   {/* RIGHT PANEL — signal list (~42%) */}
-                  <div style={{ flex: "0 0 42%", minWidth: 0, background: "#0d0d0d", overflowY: "auto", maxHeight: 600 }}>
+                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "#0d0d0d", overflowY: "auto", maxHeight: 600 }}>
                     {/* Header */}
                     <div style={{ padding: "14px 16px", borderBottom: "0.5px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600 }}>All patterns</span>
