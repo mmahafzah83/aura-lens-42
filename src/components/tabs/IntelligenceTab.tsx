@@ -148,8 +148,8 @@ const AutomationStrip = () => {
           {collapsed ? "Show automation ↓" : "Hide automation ↑"}
         </button>
       </div>
-      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 200, transition: "max-height 200ms ease-in-out" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 400, transition: "max-height 200ms ease-in-out" }}>
+        <div className="intel-automation-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {cards.map((c, i) => (
             <div key={i} style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
               <div style={{ width: 26, height: 26, borderRadius: 6, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
@@ -384,7 +384,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
           </button>
         )}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+      <div className="intel-key-insights-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
         {visible.map(insight => {
           const badge = getBadge(insight.intelligence_type);
           return (
@@ -477,7 +477,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
           <p style={{ color: "#666", fontSize: 13 }}>No frameworks created yet.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <div className="intel-frameworks-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {visible.map(fw => {
             const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
             const approved = isApproved(fw);
@@ -685,10 +685,26 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   return (
     <div style={{ background: "#0d0d0d", minHeight: "100vh", paddingBottom: 80 }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .intel-counter-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+          .intel-counter-bar > div { border-right: none !important; border-bottom: 0.5px solid #222; }
+          .intel-counter-bar > div:nth-child(odd) { border-right: 0.5px solid #222 !important; }
+          .intel-counter-bar > div:nth-child(3),
+          .intel-counter-bar > div:nth-child(4) { border-bottom: none; }
+          .intel-automation-grid { grid-template-columns: 1fr !important; }
+          .intel-command-center { flex-direction: column-reverse !important; min-height: 0 !important; }
+          .intel-command-left { flex: 1 1 auto !important; border-right: none !important; border-top: 0.5px solid #1e1e1e; }
+          .intel-command-right { flex: 1 1 auto !important; max-height: none !important; }
+          .intel-signal-row { min-height: 48px; }
+          .intel-key-insights-grid { grid-template-columns: 1fr !important; }
+          .intel-frameworks-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
 
         {/* ── Counter Bar ── */}
-        <div style={{ background: "#141414", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
+        <div className="intel-counter-bar" style={{ background: "#141414", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
           {[
             { label: "Sources", count: entryCount, gold: false },
             { label: "Patterns found", count: signals.length, gold: true },
@@ -711,14 +727,14 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         </div>
 
         {/* ── Tab Bar ── */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid #252525", marginBottom: 14, overflowX: "auto" }} className="scrollbar-hide">
+        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid #252525", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }} className="scrollbar-hide">
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
               color: activeSubTab === tab.value ? "#C5A55A" : "#444",
               background: "transparent", border: "none",
               borderBottom: activeSubTab === tab.value ? "2px solid #C5A55A" : "2px solid transparent",
-              cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s",
+              cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
             }}>{tab.label}</button>
           ))}
         </div>
@@ -742,9 +758,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             ) : (
               <>
                 {/* Command Center container */}
-                <div style={{ background: "#0f0f0f", border: "0.5px solid #1e1e1e", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
+                <div className="intel-command-center" style={{ background: "#0f0f0f", border: "0.5px solid #1e1e1e", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
-                  <div style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid #1e1e1e" }}>
+                  <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid #1e1e1e" }}>
                     {selectedSignal && (
                       <SignalDetailPanel
                         signal={selectedSignal}
@@ -757,7 +773,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   </div>
 
                   {/* RIGHT PANEL — signal list (~42%) */}
-                  <div style={{ flex: "0 0 42%", minWidth: 0, background: "#0d0d0d", overflowY: "auto", maxHeight: 600 }}>
+                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "#0d0d0d", overflowY: "auto", maxHeight: 600 }}>
                     {/* Header */}
                     <div style={{ padding: "14px 16px", borderBottom: "0.5px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600 }}>All patterns</span>
@@ -772,6 +788,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                       return (
                         <div
                           key={s.id}
+                          className="intel-signal-row"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
                             display: "flex", alignItems: "center", gap: 0, padding: "12px 16px",
