@@ -125,16 +125,19 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
           .order("published_at", { ascending: false }),
         supabase.from("influence_snapshots")
           .select("snapshot_date, followers, follower_growth, impressions, reactions, comments, shares, engagement_rate, source_type")
+          .eq("user_id", uid)
           .gte("snapshot_date", range === "all" ? "2020-01-01" : since)
           .order("snapshot_date", { ascending: true }).limit(365),
-        supabase.from("sync_runs").select("id").limit(100),
-        supabase.from("sync_errors").select("id").limit(100),
+        supabase.from("sync_runs").select("id").eq("user_id", uid).limit(100),
+        supabase.from("sync_errors").select("id").eq("user_id", uid).limit(100),
         supabase.from("sync_runs")
           .select("completed_at")
+          .eq("user_id", uid)
           .eq("sync_type", "browser_capture").eq("status", "completed")
           .order("completed_at", { ascending: false }).limit(1),
         supabase.from("influence_snapshots")
           .select("id", { count: "exact", head: true })
+          .eq("user_id", uid)
           .eq("source_type", "browser_capture"),
       ]);
 
