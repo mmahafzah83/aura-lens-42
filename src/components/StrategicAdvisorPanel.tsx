@@ -147,27 +147,21 @@ const StrategicAdvisorPanel = ({
         <p className="text-xs text-muted-foreground leading-relaxed mb-3">{data.recommended_move.reason}</p>
         <Button
           size="sm"
-          variant="outline"
-          className="text-xs gap-1.5"
+          className="text-xs gap-1.5 bg-[#C5A55A] text-black hover:bg-[#b89548]"
           onClick={() => {
-            const at = data.recommended_move.action_type;
-            if (at === "build_framework") {
-              if (onDraftToStudio) {
-                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "framework_build", sourceTitle: data.recommended_move.action });
-              } else {
-                setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
-              }
-              if (onDraftToStudio) {
-                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
-              } else {
-                setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
-              }
+            if (onDraftToStudio) {
+              onDraftToStudio({
+                topic: data.recommended_move.action,
+                context: data.recommended_move.reason,
+                sourceType: "recommended_move",
+                sourceTitle: data.recommended_move.action,
+              });
             } else {
-              onOpenChat?.(data.recommended_move.action);
+              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
             }
           }}
         >
-          <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
+          Publish →
         </Button>
       </motion.div>
       <FrameworkBuilder
@@ -231,7 +225,7 @@ const StrategicAdvisorPanel = ({
         <p className="text-sm font-semibold text-foreground leading-snug">{data.priority_signal.title}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.priority_signal.explanation}</p>
         {data.priority_signal.evidence_count != null && data.priority_signal.evidence_count > 0 && (
-          <p className="text-meta">{data.priority_signal.evidence_count} evidence sources</p>
+          <p className="text-meta">{data.priority_signal.evidence_count} findings</p>
         )}
         <div className="pt-1">
           <SignalActions
@@ -299,25 +293,14 @@ const StrategicAdvisorPanel = ({
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" className="text-xs gap-1.5" onClick={() => {
-            const at = data.recommended_move.action_type;
-            if (at === "build_framework") {
-              if (onDraftToStudio) {
-                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "framework_build", sourceTitle: data.recommended_move.action });
-              } else {
-                setBuilderData({ title: data.recommended_move.action, description: data.recommended_move.reason, steps: [] });
-              }
-            } else if (at === "draft_content" || at === "plan_narrative") {
-              if (onDraftToStudio) {
-                onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
-              } else {
-                setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
-              }
+          <Button size="sm" className="text-xs gap-1.5 bg-[#C5A55A] text-black hover:bg-[#b89548]" onClick={() => {
+            if (onDraftToStudio) {
+              onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
             } else {
-              onOpenChat?.(data.recommended_move.action);
+              setDraftData({ title: data.recommended_move.action, context: data.recommended_move.reason });
             }
           }}>
-            <MoveIcon className="w-3.5 h-3.5" /> {moveLabel}
+            Publish →
           </Button>
           <ContentActions onSaveForLater={() => {}} />
         </div>
