@@ -226,19 +226,16 @@ const ImpactTab = () => {
     }
     setUploading(true);
     try {
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-      const rows = (parsed.data as any[]).filter(Boolean);
-      if (rows.length === 0) {
-        toast.error("CSV is empty");
-        setUploading(false);
-        return;
-      }
+      const form = new FormData();
+      form.append("file", file);
       const { data, error } = await supabase.functions.invoke("import-linkedin-csv", {
-        body: { rows, filename: file.name },
+        body: form,
       });
       if (error) throw error;
-      toast.success(`LinkedIn data imported successfully — ${data?.imported ?? 0} rows`);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const imported = (data as any)?.imported ?? 0;
+      const fileType = (data as any)?.file_type ?? "data";
+      toast.success(`LinkedIn ${fileType} imported — ${imported} row${imported === 1 ? "" : "s"}`);
       await loadAll();
     } catch (err: any) {
       console.error("CSV upload failed:", err);
