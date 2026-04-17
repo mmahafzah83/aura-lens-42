@@ -98,7 +98,7 @@ function relativeTime(dateStr: string): string {
   return `${weeks}w ago`;
 }
 
-type SubTab = "signals" | "frameworks" | "sources";
+type SubTab = "signals" | "sources";
 
 /* ═══════════════════════════════════════════
    AUTOMATION STRIP
@@ -592,17 +592,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     setLoading(true);
     setLoadError(false);
     try {
-      const [signalsRes, entriesRes, movesRes, publishedRes] = await Promise.all([
+      const [signalsRes, entriesRes, movesRes] = await Promise.all([
         supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("linkedin_posts").select("id", { count: "exact", head: true }).not("published_at", "is", null),
       ]);
       const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
       setSignals(loadedSignals);
       setEntryCount(entriesRes.count || 0);
       setMovesCount(movesRes.count || 0);
-      setPublishedCount(publishedRes.count || 0);
       // Auto-select first signal
       if (loadedSignals.length > 0 && !selectedSignalId) {
         setSelectedSignalId(loadedSignals[0].id);
@@ -690,8 +688,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   }
 
   const SUB_TABS: { value: SubTab; label: string }[] = [
-    { value: "signals", label: "Intelligence" },
-    { value: "frameworks", label: "Frameworks" },
+    { value: "signals", label: "Signals" },
     { value: "sources", label: "Sources" },
   ];
 
@@ -701,12 +698,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
       )}
       <style>{`
-        @media (max-width: 768px) {
-          .intel-counter-bar { display: grid !important; grid-template-columns: 1fr 1fr !important; }
-          .intel-counter-bar > div { border-right: none !important; border-bottom: 0.5px solid #222; }
-          .intel-counter-bar > div:nth-child(odd) { border-right: 0.5px solid #222 !important; }
-          .intel-counter-bar > div:nth-child(3),
-          .intel-counter-bar > div:nth-child(4) { border-bottom: none; }
+          @media (max-width: 768px) {
+          .intel-counter-bar > div:last-child { border-right: none !important; }
           .intel-automation-grid { grid-template-columns: 1fr !important; }
           .intel-command-center { flex-direction: column-reverse !important; min-height: 0 !important; }
           .intel-command-left { flex: 1 1 auto !important; border-right: none !important; border-top: 0.5px solid #1e1e1e; }
@@ -724,9 +717,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             { label: "Sources", count: entryCount, gold: false },
             { label: "Signals", count: signals.length, gold: true },
             { label: "Moves", count: movesCount, gold: false },
-            { label: "Published", count: publishedCount, gold: false },
-          ].map((step, i) => (
-            <div key={step.label} style={{ flex: 1, textAlign: "center", padding: "12px 8px", borderRight: i < 3 ? "0.5px solid #222" : "none" }}>
+          ].map((step, i, arr) => (
+            <div key={step.label} style={{ flex: 1, textAlign: "center", padding: "12px 8px", borderRight: i < arr.length - 1 ? "0.5px solid #222" : "none" }}>
               <p style={{ color: step.gold ? "#C5A55A" : "#f0f0f0", fontSize: 20, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{step.count}</p>
               <p style={{ color: "#444", fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase", margin: "4px 0 0" }}>{step.label}</p>
             </div>
@@ -851,7 +843,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           </>
         )}
 
-        {activeSubTab === "frameworks" && <FrameworksSubTab onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />}
         {activeSubTab === "sources" && (
           <SourcesSubTab
             onOpenCapture={onOpenCapture}
