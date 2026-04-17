@@ -319,7 +319,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                 </button>
               )}
               <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#C5A55A]" />
+                <Compass className="w-4 h-4 text-[#F97316]" />
                 <span className="text-[13px] text-[#f0f0f0] font-medium">Brand Assessment</span>
               </div>
             </div>
@@ -336,7 +336,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           <div className="mt-2 pb-1">
             <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#C5A55A] rounded-full transition-all duration-500"
+                className="h-full bg-[#F97316] rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -349,17 +349,17 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             <div className="max-w-2xl mx-auto">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="w-3 h-3 rounded-full bg-[#C5A55A] animate-pulse" />
+                  <div className="w-3 h-3 rounded-full bg-[#F97316] animate-pulse" />
                   <p className="text-[13px] text-[#888]">Building your brand positioning across 6 frameworks...</p>
                 </div>
               ) : (
                 <div className="space-y-0">
                   <div className="prose prose-sm max-w-none
-                    [&_h1]:text-[#C5A55A] [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-[#C5A55A]/20 [&_h1]:pb-2 [&_h1]:mb-3
-                    [&_h2]:text-[#C5A55A] [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-[#C5A55A]/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
-                    [&_h3]:text-[#C5A55A] [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
+                    [&_h1]:text-[#F97316] [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-[#F97316]/20 [&_h1]:pb-2 [&_h1]:mb-3
+                    [&_h2]:text-[#F97316] [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-[#F97316]/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
+                    [&_h3]:text-[#F97316] [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
                     [&_p]:text-[#888] [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
-                    [&_strong]:text-[#C5A55A] [&_strong]:font-semibold
+                    [&_strong]:text-[#F97316] [&_strong]:font-semibold
                     [&_li]:text-[#888] [&_li]:text-[12px]
                     [&_ul]:mb-3 [&_ol]:mb-3
                   ">
@@ -367,12 +367,12 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   </div>
 
                   {/* Fix 6: Guided primary action */}
-                  <div className="flex flex-col gap-2 pt-6 border-t border-[#C5A55A]/20 mt-6">
+                  <div className="flex flex-col gap-2 pt-6 border-t border-[#F97316]/20 mt-6">
                     <button
                       onClick={handleSaveToIdentity}
                       className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
                       style={{
-                        background: "linear-gradient(to bottom, hsl(43 80% 55%), #C5A55A)",
+                        background: "linear-gradient(to bottom, hsl(43 80% 55%), #F97316)",
                         color: "#0d0d0d",
                       }}
                     >
@@ -397,7 +397,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   value={(currentAnswer as string) || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
                   placeholder={q.placeholder}
-                  className="w-full h-28 bg-[#141414] border border-[#252525] rounded-xl p-3 text-[13px] text-[#f0f0f0] placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-[#C5A55A]/40 transition-colors"
+                  className="w-full h-28 bg-[#141414] border border-[#252525] rounded-xl p-3 text-[13px] text-[#f0f0f0] placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-[#F97316]/40 transition-colors"
                 />
               ) : (
                 <div className="space-y-2">
@@ -407,7 +407,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                       onClick={() => toggleOption(opt)}
                       className={`w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all duration-200 ${
                         isSelected(opt)
-                          ? "border-[#C5A55A]/50 bg-[#C5A55A]/10 text-[#f0f0f0]"
+                          ? "border-[#F97316]/50 bg-[#F97316]/10 text-[#f0f0f0]"
                           : "border-[#252525] bg-[#141414] text-[#888] hover:border-[#3a3a3a]"
                       }`}
                     >
@@ -439,7 +439,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   : "bg-[#1a1a1a] text-[#3a3a3a] cursor-not-allowed"
               }`}
               style={canProceed() ? {
-                background: "linear-gradient(to bottom, hsl(43 80% 55%), #C5A55A)",
+                background: "linear-gradient(to bottom, hsl(43 80% 55%), #F97316)",
                 color: "#0d0d0d",
               } : undefined}
             >

@@ -104,7 +104,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
   const progressPct = (step / 3) * 100;
 
   const inputClass =
-    "w-full rounded-lg border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e0e0e0] placeholder:text-[#555] focus:outline-none focus:border-[#C5A55A] transition-colors";
+    "w-full rounded-lg border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e0e0e0] placeholder:text-[#555] focus:outline-none focus:border-[#F97316] transition-colors";
 
   const content = (
     <div
@@ -125,12 +125,12 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl overflow-hidden" style={{ background: "#252525" }}>
           <div
             className="h-full transition-all duration-500"
-            style={{ width: `${progressPct}%`, background: "#C5A55A" }}
+            style={{ width: `${progressPct}%`, background: "#F97316" }}
           />
         </div>
 
         {/* Step indicator */}
-        <p className="text-xs tracking-[0.15em] uppercase mb-6" style={{ color: "#C5A55A" }}>
+        <p className="text-xs tracking-[0.15em] uppercase mb-6" style={{ color: "#F97316" }}>
           Step {step} of 3
         </p>
 
@@ -151,7 +151,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-wider text-[#888] mb-1.5">
-                  Role <span style={{ color: "#C5A55A" }}>*</span>
+                  Role <span style={{ color: "#F97316" }}>*</span>
                 </label>
                 <input
                   className={`${inputClass} ${roleError ? "border-red-500" : ""}`}
@@ -212,7 +212,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
             </div>
 
             {capturing && (
-              <div className="flex items-center gap-2 text-sm" style={{ color: "#C5A55A" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: "#F97316" }}>
                 <Loader2 className="w-4 h-4 animate-spin" /> Processing your capture...
               </div>
             )}
@@ -257,7 +257,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
             </div>
 
             <div className="flex items-center gap-3 p-4 rounded-lg" style={{ background: "#1a1a1a", border: "1px solid #252525" }}>
-              <Chrome className="w-8 h-8 text-[#C5A55A] shrink-0" />
+              <Chrome className="w-8 h-8 text-[#F97316] shrink-0" />
               <div className="flex-1">
                 <p className="text-sm text-[#e0e0e0] font-medium">Install the Aura Chrome Extension</p>
                 <p className="text-xs mt-0.5" style={{ color: "#666" }}>Already installed? You're good to go.</p>
@@ -267,7 +267,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors"
-                style={{ border: "1px solid #C5A55A", color: "#C5A55A" }}
+                style={{ border: "1px solid #F97316", color: "#F97316" }}
               >
                 Install <ExternalLink className="w-3 h-3" />
               </a>
@@ -280,7 +280,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 { icon: Radio, text: "Feed your signal engine with industry content" },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-center gap-2.5 text-sm" style={{ color: "#aaa" }}>
-                  <Icon className="w-4 h-4 text-[#C5A55A] shrink-0" />
+                  <Icon className="w-4 h-4 text-[#F97316] shrink-0" />
                   {text}
                 </li>
               ))}

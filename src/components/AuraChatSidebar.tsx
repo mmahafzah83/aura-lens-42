@@ -66,7 +66,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
           ) : signals.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               {signals.map(s => (
-                <span key={s.id} style={{ background: "#1a1400", border: "1px solid #C5A55A33", color: "#C5A55A", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
+                <span key={s.id} style={{ background: "#1a1400", border: "1px solid #F9731633", color: "#F97316", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
                   {s.signal_title}
                 </span>
               ))}
@@ -112,7 +112,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
 
   return (
     <div>
-      <div className="text-sm font-semibold leading-relaxed" style={{ color: "#C5A55A" }}>
+      <div className="text-sm font-semibold leading-relaxed" style={{ color: "#F97316" }}>
         <ReactMarkdown
           components={{
             p: ({ children }) => <span>{children}</span>,

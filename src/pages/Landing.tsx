@@ -101,7 +101,7 @@ const ScrollIndicator = () => {
       width: 3, height: 120, background: "#1a1a1a", borderRadius: 2, overflow: "hidden",
     }}>
       <div style={{
-        background: "#C5A55A", borderRadius: 2, width: "100%",
+        background: "#F97316", borderRadius: 2, width: "100%",
         height: `${progress}%`, transition: "height 0.3s ease",
       }} />
     </div>
@@ -164,7 +164,7 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
             onClick={() => { setActive(i); interacted.current = true; setTimeout(() => { interacted.current = false; startAuto(); }, 3000); }}
             style={{
               width: i === active ? 16 : 6, height: 6, borderRadius: 3,
-              background: i === active ? "#C5A55A" : "#1a1a1a",
+              background: i === active ? "#F97316" : "#1a1a1a",
               transition: "all 0.3s ease", border: "none", cursor: "pointer", padding: 0,
             }}
           />
@@ -310,8 +310,8 @@ const Landing = () => {
         borderBottom: "1px solid #1a1a1a",
         paddingTop: "max(env(safe-area-inset-top), 16px)",
       }}>
-        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "#C5A55A", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
-        <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-[#C5A55A]/10" style={{ color: "#C5A55A", borderColor: "#C5A55A33" }}>
+        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "#F97316", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
+        <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-[#F97316]/10" style={{ color: "#F97316", borderColor: "#F9731633" }}>
           Sign in
         </button>
       </nav>
@@ -331,7 +331,7 @@ const Landing = () => {
         <div className="relative z-10 max-w-2xl mx-auto">
           <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals worldwide</p>
           <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 font-sans">
-            Everything you read.<br />Turned into <span style={{ color: "#C5A55A" }}>authority</span>.
+            Everything you read.<br />Turned into <span style={{ color: "#F97316" }}>authority</span>.
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
           <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "#666", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
@@ -341,7 +341,7 @@ const Landing = () => {
           {/* Capture orb */}
           <div className="relative w-[220px] h-[220px] mx-auto mb-10">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #C5A55A, #a88c3a)", animation: "aura-breathe 3s ease-in-out infinite" }}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F97316, #a88c3a)", animation: "aura-breathe 3s ease-in-out infinite" }}>
                 <span className="text-[10px] font-bold text-[#0d0d0d] tracking-wider">AURA</span>
               </div>
             </div>
@@ -367,8 +367,8 @@ const Landing = () => {
               const y = 110 + Math.sin(rad) * 95;
               return (
                 <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 18, top: y - 18, animation: "orb-float 3s ease-in-out infinite", animationDelay: `${delay}s`, willChange: "transform" }}>
-                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid #C5A55A", borderRadius: "50%" }}>
-                    <Icon size={16} style={{ color: "#C5A55A" }} />
+                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid #F97316", borderRadius: "50%" }}>
+                    <Icon size={16} style={{ color: "#F97316" }} />
                   </div>
                   <span className="mt-1 whitespace-nowrap" style={{ fontSize: "9px", color: "#3a3a3a" }}>{label}</span>
                 </div>
@@ -377,7 +377,7 @@ const Landing = () => {
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "#C5A55A", color: "#0d0d0d", fontWeight: 500 }}>
+            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "#F97316", color: "#0d0d0d", fontWeight: 500 }}>
               Get early access
             </button>
             <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-white/5" style={{ color: "#666666", border: "0.5px solid #3a3a3a", background: "transparent", fontWeight: 400 }}>
@@ -398,8 +398,8 @@ const Landing = () => {
             {i > 0 && <div className="w-px h-14 mx-6 sm:mx-10" style={{ background: "#252525" }} />}
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <span style={{ fontSize: 14, color: "#C5A55A" }}>↑</span>
-                <span className="font-semibold" style={{ fontSize: 40, color: "#C5A55A", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
+                <span style={{ fontSize: 14, color: "#F97316" }}>↑</span>
+                <span className="font-semibold" style={{ fontSize: 40, color: "#F97316", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
                   <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>
@@ -417,7 +417,7 @@ const Landing = () => {
           {/* Animated gold line */}
           <div style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
-            background: "#C5A55A",
+            background: "#F97316",
             transformOrigin: "top",
             transform: pullQuote.visible ? "scaleY(1)" : "scaleY(0)",
             transition: "transform 0.8s cubic-bezier(0.22,1,0.36,1)",
@@ -453,7 +453,7 @@ const Landing = () => {
           <div className="relative pl-5 mb-10">
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
-              background: "#C5A55A",
+              background: "#F97316",
               transformOrigin: "top",
               transform: diffQuote.visible ? "scaleY(1)" : "scaleY(0)",
               transition: "transform 0.8s cubic-bezier(0.22,1,0.36,1)",
@@ -480,7 +480,7 @@ const Landing = () => {
               { icon: "↗", title: "Map your path to your career target", desc: "What stands between you and the role you want. Aura shows you the specific gaps and how to close them." },
             ].map((c, i) => (
               <div key={i} className="glass-card flex gap-4 p-5 rounded-[10px]">
-                <div className="glass-icon w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm transition-shadow duration-300" style={{ background: "rgba(197,165,90,0.12)", color: "#C5A55A", border: "1px solid rgba(197,165,90,0.2)" }}>
+                <div className="glass-icon w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm transition-shadow duration-300" style={{ background: "rgba(197,165,90,0.12)", color: "#F97316", border: "1px solid rgba(197,165,90,0.2)" }}>
                   {c.icon}
                 </div>
                 <div>
@@ -495,7 +495,7 @@ const Landing = () => {
           <p className="text-[9px] uppercase tracking-[0.15em] mb-3 text-center" style={{ color: "#3a3a3a" }}>Inspired by proven frameworks</p>
           <div className="flex flex-wrap justify-center gap-2">
             {["Gallup CliftonStrengths", "Personal brand positioning", "Career gap analysis", "Voice profiling"].map(f => (
-              <span key={f} className="px-3 py-1.5 rounded-full text-[11px]" style={{ color: "#C5A55A", border: "1px solid rgba(197,165,90,0.25)", background: "#1e1a10" }}>{f}</span>
+              <span key={f} className="px-3 py-1.5 rounded-full text-[11px]" style={{ color: "#F97316", border: "1px solid rgba(197,165,90,0.25)", background: "#1e1a10" }}>{f}</span>
             ))}
           </div>
         </div>
@@ -507,9 +507,9 @@ const Landing = () => {
           <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "#3a3a3a" }}>Built for</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, title: "Executives and leaders", desc: "Who need a consistent personal brand to attract opportunities and board visibility" },
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C5A55A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>, title: "Independent experts", desc: "Coaches, advisors, and founders who want to build influence without a marketing team" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, title: "Executives and leaders", desc: "Who need a consistent personal brand to attract opportunities and board visibility" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>, title: "Independent experts", desc: "Coaches, advisors, and founders who want to build influence without a marketing team" },
             ].map((p, i) => (
               <div key={i} className="sm:text-center p-5 sm:p-5 rounded-[10px] flex sm:flex-col items-center sm:items-center gap-[14px] sm:gap-0" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)", padding: undefined }}>
                 <div className="w-10 h-10 sm:w-[44px] sm:h-[44px] rounded-full sm:mx-auto sm:mb-4 flex items-center justify-center shrink-0" style={{ border: "1px solid rgba(197,165,90,0.3)" }}>
@@ -579,7 +579,7 @@ const Landing = () => {
       </section>
 
       {/* Section 9 — CTA band (gold shimmer) */}
-      <section className="landing-compact-cta relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#C5A55A" }}>
+      <section className="landing-compact-cta relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#F97316" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
           animation: "gold-shimmer 5s ease-in-out infinite",
@@ -596,7 +596,7 @@ const Landing = () => {
 
       {/* Section 10 — Footer */}
       <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
-        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "#C5A55A", fontFamily: "'Playfair Display', serif" }}>AURA</span>
+        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "#F97316", fontFamily: "'Playfair Display', serif" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "#3a3a3a" }}>Strategic intelligence for senior professionals.</p>
       </footer>
     </div>

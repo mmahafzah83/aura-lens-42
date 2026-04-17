@@ -36,7 +36,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
           <p className="text-xs text-[#888]">Complete Brand Assessment to reveal your positioning</p>
           <button
             onClick={onStartAssessment}
-            className="text-xs text-[#C5A55A] font-medium hover:underline flex items-center gap-1"
+            className="text-xs text-[#F97316] font-medium hover:underline flex items-center gap-1"
           >
             <Crown className="w-3.5 h-3.5" /> Start Assessment →
           </button>
@@ -57,23 +57,23 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
   })();
 
   return (
-    <div className="rounded-xl border border-[#C5A55A]/20 bg-[#141414] p-5 mb-4">
+    <div className="rounded-xl border border-[#F97316]/20 bg-[#141414] p-5 mb-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Crown className="w-4 h-4 text-[#C5A55A]" />
+          <Crown className="w-4 h-4 text-[#F97316]" />
           <span className="text-[11px] text-[#666] tracking-wider uppercase">How I am positioned</span>
         </div>
         <button
           onClick={onStartAssessment}
-          className="text-[10px] text-[#666] hover:text-[#C5A55A] transition-colors"
+          className="text-[10px] text-[#666] hover:text-[#F97316] transition-colors"
         >
           Regenerate
         </button>
       </div>
       {positioningStatement ? (
-        <p className="text-base text-[#C5A55A] font-semibold leading-relaxed mb-2">{positioningStatement}</p>
+        <p className="text-base text-[#F97316] font-semibold leading-relaxed mb-2">{positioningStatement}</p>
       ) : (
-        <p className="text-base text-[#C5A55A] font-semibold mb-2">Complete your assessment to reveal your positioning</p>
+        <p className="text-base text-[#F97316] font-semibold mb-2">Complete your assessment to reveal your positioning</p>
       )}
       {(primary || secondary) && (
         <p className="text-[11px] text-[#666]">

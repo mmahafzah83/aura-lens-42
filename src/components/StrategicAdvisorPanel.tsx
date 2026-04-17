@@ -147,7 +147,7 @@ const StrategicAdvisorPanel = ({
         <p className="text-xs text-muted-foreground leading-relaxed mb-3">{data.recommended_move.reason}</p>
         <Button
           size="sm"
-          className="text-xs gap-1.5 bg-[#C5A55A] text-black hover:bg-[#b89548]"
+          className="text-xs gap-1.5 bg-[#F97316] text-black hover:bg-[#b89548]"
           onClick={() => {
             if (onDraftToStudio) {
               onDraftToStudio({
@@ -293,7 +293,7 @@ const StrategicAdvisorPanel = ({
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" className="text-xs gap-1.5 bg-[#C5A55A] text-black hover:bg-[#b89548]" onClick={() => {
+          <Button size="sm" className="text-xs gap-1.5 bg-[#F97316] text-black hover:bg-[#b89548]" onClick={() => {
             if (onDraftToStudio) {
               onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
             } else {

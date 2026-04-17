@@ -126,7 +126,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
     ctx.closePath();
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = "#C5A55A";
+    ctx.strokeStyle = "#F97316";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -138,7 +138,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
-      ctx.fillStyle = "#C5A55A";
+      ctx.fillStyle = "#F97316";
       ctx.fill();
     }
 
@@ -226,7 +226,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       <div className="rounded-xl border border-[#252525] bg-[#141414] p-6 mb-4">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center" style={{ background: "rgba(197,165,90,0.1)", border: "1px solid rgba(197,165,90,0.2)" }}>
-            <ShieldCheck className="w-6 h-6" style={{ color: "#C5A55A" }} />
+            <ShieldCheck className="w-6 h-6" style={{ color: "#F97316" }} />
           </div>
           <div>
             <p className="text-sm font-medium" style={{ color: "#f0f0f0" }}>Complete your Evidence Audit to reveal your capability radar</p>
@@ -235,7 +235,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           <button
             onClick={onStartAudit}
             className="px-5 py-2.5 rounded-xl text-sm font-medium"
-            style={{ background: "#C5A55A", color: "#0d0d0d" }}
+            style={{ background: "#F97316", color: "#0d0d0d" }}
           >
             Start Audit →
           </button>
@@ -281,7 +281,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           <button
             onClick={startEdit}
             className="text-[11px] font-medium hover:underline"
-            style={{ color: "#C5A55A" }}
+            style={{ color: "#F97316" }}
           >
             Edit scores
           </button>
@@ -298,7 +298,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
               onClick={saveScores}
               disabled={savingScores}
               className="text-[11px] font-medium px-3 py-1 rounded-lg"
-              style={{ background: "#C5A55A", color: "#0d0d0d" }}
+              style={{ background: "#F97316", color: "#0d0d0d" }}
             >
               {savingScores ? "Saving..." : "Save"}
             </button>
@@ -312,7 +312,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
             <div key={dim} className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-[#ccc]">{dim}</span>
-                <span className="text-xs font-medium" style={{ color: "#C5A55A" }}>{editScores[dim] || 0}%</span>
+                <span className="text-xs font-medium" style={{ color: "#F97316" }}>{editScores[dim] || 0}%</span>
               </div>
               <Slider
                 value={[editScores[dim] || 0]}
@@ -350,7 +350,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
               }}
             >
               <p className="text-[11px] font-medium" style={{ color: "#f0f0f0" }}>{tooltip.name}</p>
-              <p className="text-[10px]" style={{ color: "#C5A55A" }}>
+              <p className="text-[10px]" style={{ color: "#F97316" }}>
                 {tooltip.score}% · {tooltip.tier} Tier
               </p>
             </div>
@@ -359,7 +359,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           {/* Legend */}
           <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "0.5px solid #252525" }}>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: "#C5A55A" }} />
+              <span className="w-2 h-2 rounded-full" style={{ background: "#F97316" }} />
               <span className="text-[10px]" style={{ color: "#888" }}>High Tier (Strategic / Technical)</span>
             </div>
             <div className="flex items-center gap-1.5">

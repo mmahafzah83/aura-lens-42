@@ -45,6 +45,21 @@ const Dashboard = () => {
   const [wizardUserId, setWizardUserId] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    return (localStorage.getItem("aura-theme") as "dark" | "light") || "dark";
+  });
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("aura-theme", next);
+        if (next === "light") document.documentElement.setAttribute("data-theme", "light");
+        else document.documentElement.removeAttribute("data-theme");
+      } catch {}
+      return next;
+    });
+  };
   const [signalDraftPrefill, setSignalDraftPrefill] = useState<{
     topic: string;
     context: string;
@@ -219,10 +234,24 @@ const Dashboard = () => {
 
       {/* ── Desktop Sidebar ── */}
       <aside
-        className={`hidden md:flex flex-col fixed top-0 left-0 h-full z-30 border-r border-border/10 bg-background/95 backdrop-blur-xl transition-all duration-300 ${
+        className={`hidden md:flex flex-col fixed top-0 left-0 h-full z-30 border-r border-border/10 backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-[68px]" : "w-[220px]"
         }`}
+        style={{ background: "var(--color-sidebar)" }}
       >
+        {/* Orange left rail */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 3,
+            background: "var(--color-accent)",
+            borderRadius: "0 2px 2px 0",
+          }}
+        />
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-border/8">
           <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
@@ -246,9 +275,20 @@ const Dashboard = () => {
                 onClick={() => switchTab(item.value)}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-[250ms] ease-[ease-in-out] tactile-press group ${
                   isActive
-                    ? "bg-primary/12 text-primary border border-primary/20 shadow-[0_0_12px_hsl(43_80%_45%/0.1)]"
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-transparent"
                 }`}
+                style={
+                  isActive
+                    ? {
+                        borderLeft: "2px solid var(--color-accent)",
+                        paddingLeft: 6,
+                        marginLeft: 2,
+                        background: "var(--color-border-subtle)",
+                        color: "var(--color-text-primary)",
+                      }
+                    : undefined
+                }
               >
                 <item.icon className={`w-5 h-5 shrink-0 transition-colors duration-[250ms] ${isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"}`} />
                 {!sidebarCollapsed && (
@@ -283,6 +323,39 @@ const Dashboard = () => {
             <Menu className="w-4 h-4 shrink-0" />
             {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
           </button>
+
+          {/* Theme toggle pill */}
+          {!sidebarCollapsed && (
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              style={{
+                background: "var(--color-border-subtle)",
+                border: "0.5px solid var(--color-border)",
+                borderRadius: 20,
+                padding: "4px 10px",
+                fontSize: 11,
+                color: "var(--color-text-secondary)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginTop: 4,
+                alignSelf: "flex-start",
+              }}
+            >
+              <span
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: "50%",
+                  background: "var(--color-accent)",
+                  display: "inline-block",
+                }}
+              />
+              <span>{theme === "light" ? "Light" : "Dark"}</span>
+            </button>
+          )}
         </div>
       </aside>
 

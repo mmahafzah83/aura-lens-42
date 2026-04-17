@@ -244,20 +244,20 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div className="mx-auto relative" style={{ width: 80, height: 80 }}>
               <div
                 className="w-full h-full rounded-full overflow-hidden flex items-center justify-center cursor-pointer group"
-                style={{ border: "2px solid #C5A55A" }}
+                style={{ border: "2px solid #F97316" }}
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadingAvatar ? (
-                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} />
+                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
                 ) : profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span style={{ color: "#C5A55A", fontSize: 24, fontWeight: 600 }}>{initials}</span>
+                  <span style={{ color: "#F97316", fontSize: 24, fontWeight: 600 }}>{initials}</span>
                 )}
                 {/* Hover overlay */}
                 <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Upload className="w-3.5 h-3.5" style={{ color: "#C5A55A" }} />
-                  <span style={{ color: "#C5A55A", fontSize: 10 }}>Upload</span>
+                  <Upload className="w-3.5 h-3.5" style={{ color: "#F97316" }} />
+                  <span style={{ color: "#F97316", fontSize: 10 }}>Upload</span>
                 </div>
               </div>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
@@ -282,15 +282,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       onKeyDown={e => e.key === "Enter" && saveEdit(fact.key)}
                       onBlur={() => saveEdit(fact.key)}
                       autoFocus
-                      className="flex-1 bg-transparent border-b border-[#C5A55A] text-[11px] text-[#d0d0d0] outline-none py-0.5"
+                      className="flex-1 bg-transparent border-b border-[#F97316] text-[11px] text-[#d0d0d0] outline-none py-0.5"
                     />
-                    {saving ? <Loader2 className="w-3 h-3 animate-spin text-[#C5A55A]" /> : <Check className="w-3 h-3 text-green-500" />}
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin text-[#F97316]" /> : <Check className="w-3 h-3 text-green-500" />}
                   </div>
                 ) : (
                   <div className="flex items-center justify-between group mt-0.5">
                     <span style={{ fontSize: 11, color: "#d0d0d0", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
                     <button onClick={() => startEdit(fact.key, fact.value)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                      <Pencil className="w-2.5 h-2.5 text-[#555] hover:text-[#C5A55A]" />
+                      <Pencil className="w-2.5 h-2.5 text-[#555] hover:text-[#F97316]" />
                     </button>
                   </div>
                 )}
@@ -304,7 +304,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             {assessments.map(a => (
               <div key={a.name} className="flex items-center gap-2 mb-1.5 last:mb-0">
                 {a.done ? (
-                  <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: "#C5A55A" }}>
+                  <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: "#F97316" }}>
                     <Check className="w-2 h-2 text-black" />
                   </div>
                 ) : (
@@ -319,7 +319,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       if (a.name === "Evidence Audit") setAuditOpen(true);
                       else if (a.name === "Brand Assessment") setBrandOpen(true);
                     }}
-                    style={{ fontSize: 9, color: "#C5A55A" }}
+                    style={{ fontSize: 9, color: "#F97316" }}
                   >
                     Start →
                   </button>
@@ -332,10 +332,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         {/* RIGHT COLUMN */}
         <div className="flex-1 space-y-4">
           {/* Positioning Card */}
-          <div style={{ background: "#141414", borderLeft: "2px solid #C5A55A", borderRadius: "0 10px 10px 0", padding: 16, position: "relative" }}>
+          <div style={{ background: "#141414", borderLeft: "2px solid #F97316", borderRadius: "0 10px 10px 0", padding: 16, position: "relative" }}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#C5A55A", letterSpacing: "0.1em", marginBottom: 6 }}>
+                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#F97316", letterSpacing: "0.1em", marginBottom: 6 }}>
                   YOUR MARKET POSITION
                 </div>
                 <h3 style={{ fontSize: 15, fontWeight: 600, color: "#f0f0f0", marginBottom: 8 }}>
@@ -344,7 +344,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 {profile?.brand_pillars && profile.brand_pillars.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     {profile.brand_pillars.map((p, i) => (
-                      <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#C5A55A", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{p}</span>
+                      <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#F97316", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{p}</span>
                     ))}
                   </div>
                 )}
@@ -354,14 +354,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       {positioningStatement}
                     </p>
                     {positioningStatement.length > 200 && (
-                      <button onClick={() => setShowFullPositioning(!showFullPositioning)} style={{ fontSize: 10, color: "#C5A55A", marginTop: 4 }}>
+                      <button onClick={() => setShowFullPositioning(!showFullPositioning)} style={{ fontSize: 10, color: "#F97316", marginTop: 4 }}>
                         {showFullPositioning ? "Show less" : "Show more"}
                       </button>
                     )}
                   </div>
                 )}
               </div>
-              <button onClick={regeneratePositioning} disabled={regenerating} style={{ fontSize: 10, color: "#555" }} className="shrink-0 ml-3 hover:text-[#C5A55A] transition-colors">
+              <button onClick={regeneratePositioning} disabled={regenerating} style={{ fontSize: 10, color: "#555" }} className="shrink-0 ml-3 hover:text-[#F97316] transition-colors">
                 {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
               </button>
             </div>
@@ -370,11 +370,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           {/* Timeline */}
           <div className="relative" style={{ paddingLeft: 20 }}>
             {/* Vertical line */}
-            <div className="absolute" style={{ left: 5, top: 8, bottom: 8, width: 1, background: "linear-gradient(to bottom, #C5A55A, #252525)" }} />
+            <div className="absolute" style={{ left: 5, top: 8, bottom: 8, width: 1, background: "linear-gradient(to bottom, #F97316, #252525)" }} />
 
             {/* Node 1 — Where I Am Now */}
             <div className="relative mb-4">
-              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", background: "#C5A55A" }} />
+              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", background: "#F97316" }} />
               <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: "10px 12px" }}>
                 <div className="flex items-center justify-between group">
                   <div>
@@ -382,7 +382,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     <p style={{ fontSize: 10, color: "#666" }}>{[profile?.sector_focus, profile?.core_practice].filter(Boolean).join(" · ")}</p>
                   </div>
                   <button onClick={() => startEdit("level", profile?.level || "")} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Pencil className="w-3 h-3 text-[#555] hover:text-[#C5A55A]" />
+                    <Pencil className="w-3 h-3 text-[#555] hover:text-[#F97316]" />
                   </button>
                 </div>
               </div>
@@ -390,13 +390,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
             {/* Node 2 — Building Authority In */}
             <div className="relative mb-4">
-              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", border: "2px solid #C5A55A", background: "transparent" }} />
+              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", border: "2px solid #F97316", background: "transparent" }} />
               <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: "10px 12px" }}>
                 <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>ACTIVE FOCUS AREAS</div>
                 {signalStats.topTags.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {signalStats.topTags.map((s, i) => (
-                      <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#C5A55A", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{s}</span>
+                      <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#F97316", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{s}</span>
                     ))}
                   </div>
                 ) : (
@@ -441,7 +441,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <button
             onClick={() => setFullProfileOpen(true)}
             className="flex items-center gap-1.5 transition-colors"
-            style={{ fontSize: 11, color: "#C5A55A" }}
+            style={{ fontSize: 11, color: "#F97316" }}
           >
             Full profile <ChevronRight className="w-3 h-3" />
           </button>

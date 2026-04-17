@@ -105,7 +105,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     ctx.closePath();
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = "#C5A55A";
+    ctx.strokeStyle = "#F97316";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -117,7 +117,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, 2 * Math.PI);
-      ctx.fillStyle = "#C5A55A";
+      ctx.fillStyle = "#F97316";
       ctx.fill();
     }
 
@@ -216,7 +216,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
             h2: ({ children }) => <SectionHeader>{children}</SectionHeader>,
             h3: ({ children }) => <SectionHeader>{children}</SectionHeader>,
             p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
-            strong: ({ children }) => <strong className="text-[#C5A55A] font-semibold">{children}</strong>,
+            strong: ({ children }) => <strong className="text-[#F97316] font-semibold">{children}</strong>,
             ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
             ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
@@ -233,7 +233,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
         <ReactMarkdown
           components={{
             p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
-            strong: ({ children }) => <strong className="text-[#C5A55A] font-semibold">{children}</strong>,
+            strong: ({ children }) => <strong className="text-[#F97316] font-semibold">{children}</strong>,
             ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
             ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
@@ -261,7 +261,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       <div className="border-t border-[#252525] pt-4">
         {loading ? (
           <div className="flex items-center gap-3 py-8 justify-center">
-            <div className="w-2 h-2 rounded-full bg-[#C5A55A] animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse" />
             <p className="text-xs text-[#888]">Analysing your profile across 4 frameworks...</p>
           </div>
         ) : (
@@ -278,7 +278,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
           onClick={() => { onClose?.(); onNavigate?.("settings"); }}
           className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide transition-all active:scale-[0.98] hover:brightness-110"
           style={{
-            background: "linear-gradient(to bottom, hsl(43 80% 55%), #C5A55A)",
+            background: "linear-gradient(to bottom, hsl(43 80% 55%), #F97316)",
             color: "#0d0d0d",
           }}
         >
@@ -319,12 +319,12 @@ function SectionHeader({ children, first }: { children: React.ReactNode; first?:
   return (
     <div>
       {!first && (
-        <div className="mt-[14px] mb-[4px]" style={{ borderTop: "0.5px solid #C5A55A", opacity: 0.4 }} />
+        <div className="mt-[14px] mb-[4px]" style={{ borderTop: "0.5px solid #F97316", opacity: 0.4 }} />
       )}
       <h3
         className="uppercase tracking-wider"
         style={{
-          color: "#C5A55A",
+          color: "#F97316",
           fontWeight: 500,
           fontSize: 12,
           marginTop: first ? 0 : 14,
