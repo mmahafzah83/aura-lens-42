@@ -809,3 +809,98 @@
   background: #f7f7f7 !important;
 }
 
+
+/* ──────────────────────────────────────────────────────────
+   Light-mode overrides — RGB() form
+   Browsers (esp. Chrome) normalize hex colors set via the React
+   .style.X API to rgb() form in the actual style attribute.
+   So [style*="#141414"] won't match — we need [style*="rgb(20, 20, 20)"].
+   These rules mirror the hex rules above for reliability.
+   ────────────────────────────────────────────────────────── */
+
+/* Card / panel backgrounds → white */
+[data-theme="light"] [style*="background: rgb(13, 13, 13)"],
+[data-theme="light"] [style*="background: rgb(12, 12, 12)"],
+[data-theme="light"] [style*="background: rgb(17, 17, 17)"],
+[data-theme="light"] [style*="background: rgb(19, 19, 19)"],
+[data-theme="light"] [style*="background: rgb(20, 20, 20)"],
+[data-theme="light"] [style*="background-color: rgb(20, 20, 20)"] {
+  background: #ffffff !important;
+}
+
+/* Subtle inner surfaces */
+[data-theme="light"] [style*="background: rgb(26, 26, 26)"],
+[data-theme="light"] [style*="background: rgb(30, 30, 30)"],
+[data-theme="light"] [style*="background: rgb(31, 31, 31)"],
+[data-theme="light"] [style*="background: rgb(37, 37, 37)"],
+[data-theme="light"] [style*="background: rgb(42, 42, 42)"] {
+  background: #f0f0f0 !important;
+}
+
+/* Borders → light grey */
+[data-theme="light"] [style*="border: 1px solid rgb(30, 30, 30)"],
+[data-theme="light"] [style*="border: 1px solid rgb(31, 31, 31)"],
+[data-theme="light"] [style*="border: 1px solid rgb(34, 34, 34)"],
+[data-theme="light"] [style*="border: 1px solid rgb(37, 37, 37)"],
+[data-theme="light"] [style*="border: 1px solid rgb(42, 42, 42)"],
+[data-theme="light"] [style*="border: 1px solid rgb(51, 51, 51)"],
+[data-theme="light"] [style*="border: 0.5px solid rgb(30, 30, 30)"],
+[data-theme="light"] [style*="border: 0.5px solid rgb(34, 34, 34)"],
+[data-theme="light"] [style*="border: 0.5px solid rgb(37, 37, 37)"] {
+  border-color: #e8e8e8 !important;
+}
+
+/* Vertical timeline connector lines */
+[data-theme="light"] [style*="background: rgb(31, 31, 31)"] {
+  background: #e8e8e8 !important;
+}
+
+/* Primary text (white-ish) → dark */
+[data-theme="light"] [style*="color: rgb(240, 240, 240)"],
+[data-theme="light"] [style*="color: rgb(255, 255, 255)"],
+[data-theme="light"] [style*="color: rgb(224, 224, 224)"],
+[data-theme="light"] [style*="color: rgb(208, 208, 208)"],
+[data-theme="light"] [style*="color: rgb(192, 192, 192)"] {
+  color: #111111 !important;
+}
+
+/* Secondary text → mid grey */
+[data-theme="light"] [style*="color: rgb(204, 204, 204)"],
+[data-theme="light"] [style*="color: rgb(153, 153, 153)"],
+[data-theme="light"] [style*="color: rgb(136, 136, 136)"],
+[data-theme="light"] [style*="color: rgb(102, 102, 102)"] {
+  color: #666666 !important;
+}
+
+/* Muted text → light grey */
+[data-theme="light"] [style*="color: rgb(85, 85, 85)"],
+[data-theme="light"] [style*="color: rgb(68, 68, 68)"],
+[data-theme="light"] [style*="color: rgb(61, 61, 61)"],
+[data-theme="light"] [style*="color: rgb(58, 58, 58)"],
+[data-theme="light"] [style*="color: rgb(51, 51, 51)"],
+[data-theme="light"] [style*="color: rgb(42, 42, 42)"] {
+  color: #999999 !important;
+}
+
+/* Orange chip background (gold-ish dark warm) → soft orange tint */
+[data-theme="light"] [style*="background: rgb(26, 20, 0)"] {
+  background: rgba(249, 115, 22, 0.07) !important;
+  border-color: rgba(249, 115, 22, 0.28) !important;
+}
+
+/* Page-level dark wrappers */
+[data-theme="light"] [style*="background: rgb(13, 13, 13)"][style*="min-height"],
+[data-theme="light"] [style*="background: rgb(13, 13, 13)"][style*="overflow-y"] {
+  background: #f7f7f7 !important;
+}
+
+/* Heavy 1px solid orange borders → softer */
+[data-theme="light"] [style*="border: 1px solid rgb(249, 115, 22)"] {
+  border: 0.5px solid rgba(249, 115, 22, 0.35) !important;
+}
+
+/* Orange CTA buttons with dark text → keep orange, white text */
+[data-theme="light"] button[style*="background: rgb(249, 115, 22)"][style*="color: rgb(13, 13, 13)"],
+[data-theme="light"] button[style*="background: rgb(249, 115, 22)"][style*="color: rgb(0, 0, 0)"] {
+  color: #ffffff !important;
+}
