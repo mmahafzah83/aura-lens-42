@@ -343,8 +343,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
       // Success
       toast({
-        title: captureType === "voice" ? "Voice capture saved" : "Captured. Processing complete.",
-        description: "Your capture has been saved.",
+        title: captureType === "voice" ? "Source saved" : "Source saved",
+        description: "Your source has been saved.",
       });
 
       setContent("");
