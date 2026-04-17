@@ -886,27 +886,39 @@ const ImpactTab = () => {
               const erPct = rawEr > 1 ? rawEr : rawEr * 100;
               const isTop = i === 0;
               const fillPct = maxErPct > 0 ? (erPct / maxErPct) * 100 : 0;
+              const rankColor = isTop ? "#F97316" : "var(--color-text-muted)";
 
-              let badge: { label: string; bg: string; color: string } | null = null;
-              if (erPct > 5) badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648" };
-              else if (erPct >= 3) badge = { label: "Above avg", bg: "#F9731618", color: "#F97316" };
+              let badge: { label: string; bg: string; color: string; border: string } | null = null;
+              if (i < 3) {
+                badge = { label: "Top post", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+              } else if (erPct > 5) {
+                badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648", border: "#7ab64844" };
+              } else if (erPct >= 3) {
+                badge = { label: "Above avg", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+              }
+
+              // Bar opacity decreases by rank for non-top
+              const barOpacity = isTop ? 1 : Math.max(0.35, 1 - i * 0.08);
 
               return (
                 <div
                   key={`${p.post_id ?? "x"}-${i}`}
-                  className="px-5 py-4"
+                  className="px-5"
                   style={{
+                    paddingTop: 12,
+                    paddingBottom: 12,
                     borderBottom: i === topPosts.length - 1 ? "none" : "0.5px solid var(--color-border)",
                     borderLeft: isTop ? "3px solid #F97316" : undefined,
-                    paddingLeft: isTop ? 10 : undefined,
+                    paddingLeft: isTop ? 12 : undefined,
                     background: isTop ? "rgba(249,115,22,0.04)" : undefined,
+                    borderRadius: isTop ? "0 4px 4px 0" : undefined,
                   }}
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}
                     <div
-                      className="shrink-0 w-6 text-center tabular-nums text-sm font-semibold"
-                      style={{ color: "var(--color-text-muted)" }}
+                      className="shrink-0 w-6 text-center tabular-nums"
+                      style={{ fontSize: 16, fontWeight: 600, color: rankColor }}
                     >
                       {i + 1}
                     </div>
@@ -914,7 +926,10 @@ const ImpactTab = () => {
                     {/* Center */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium truncate" style={{ color: "var(--color-text-primary)" }}>
+                        <div
+                          className="truncate"
+                          style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}
+                        >
                           {title}
                         </div>
                         {p.post?.post_url && (
@@ -929,20 +944,22 @@ const ImpactTab = () => {
                           </a>
                         )}
                       </div>
-                      <div className="text-[11px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+                      <div className="mt-0.5" style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
                         {formatNumber(p.impressions ?? 0)} impressions
+                        <span className="mx-1.5" style={{ color: "var(--color-text-muted)" }}>·</span>
+                        {formatNumber(p.reactions ?? 0)} reactions
                       </div>
                     </div>
 
                     {/* Right */}
                     <div className="text-right shrink-0">
-                      <div className="text-[13px] font-semibold tabular-nums" style={{ color: "#F97316" }}>
+                      <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 700, color: "#F97316" }}>
                         {erPct.toFixed(1)}%
                       </div>
                       {badge && (
                         <div
                           className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
-                          style={{ background: badge.bg, color: badge.color, fontWeight: 600 }}
+                          style={{ background: badge.bg, color: badge.color, fontWeight: 600, border: `0.5px solid ${badge.border}` }}
                         >
                           {badge.label}
                         </div>
@@ -965,6 +982,7 @@ const ImpactTab = () => {
                         width: `${fillPct}%`,
                         height: "100%",
                         background: "#F97316",
+                        opacity: barOpacity,
                         borderRadius: 2,
                         transition: "width 600ms ease",
                       }}
