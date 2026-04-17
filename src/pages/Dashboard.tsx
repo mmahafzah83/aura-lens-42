@@ -45,6 +45,21 @@ const Dashboard = () => {
   const [wizardUserId, setWizardUserId] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window === "undefined") return "dark";
+    return (localStorage.getItem("aura-theme") as "dark" | "light") || "dark";
+  });
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("aura-theme", next);
+        if (next === "light") document.documentElement.setAttribute("data-theme", "light");
+        else document.documentElement.removeAttribute("data-theme");
+      } catch {}
+      return next;
+    });
+  };
   const [signalDraftPrefill, setSignalDraftPrefill] = useState<{
     topic: string;
     context: string;
