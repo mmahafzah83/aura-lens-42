@@ -332,7 +332,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         {/* RIGHT COLUMN */}
         <div className="flex-1 space-y-4">
           {/* Positioning Card */}
-          <div style={{ background: "#141414", borderLeft: "2px solid #F97316", borderRadius: "0 10px 10px 0", padding: 16, position: "relative" }}>
+          <div className="aura-hero-card" style={{ background: "#141414", borderLeft: "2px solid #F97316", borderRadius: "0 10px 10px 0", padding: 16, position: "relative" }}>
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div style={{ fontSize: 9, textTransform: "uppercase", color: "#F97316", letterSpacing: "0.1em", marginBottom: 6 }}>

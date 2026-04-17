@@ -346,6 +346,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
 
       {/* 4. Today's Focus — Recommended Moves */}
       <motion.div
+        className="aura-hero-card"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, delay: 0.1 }}
