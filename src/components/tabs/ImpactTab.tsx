@@ -592,7 +592,58 @@ const ImpactTab = () => {
         </div>
       </section>
 
-      {/* ─────────── 4. HEADLINE STATS ─────────── */}
+      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Score breakdown
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {([
+            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
+            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
+          ]).map((c) => {
+            const cfg = subScoreCard(c.kind, c.value);
+            return (
+              <div
+                key={c.label}
+                style={{
+                  background: "var(--color-card)",
+                  borderRadius: 8,
+                  padding: "14px 16px",
+                  border: `0.5px solid ${cfg.border}`,
+                }}
+              >
+                <div className="flex items-baseline justify-between">
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                    {c.label}
+                  </div>
+                  <div
+                    className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                    style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
+                  >
+                    {cfg.tag}
+                  </div>
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{ fontSize: 24, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
+                >
+                  {Math.round(c.value)}
+                </div>
+                <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
+                  {c.desc}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─────────── 5. HEADLINE STATS ─────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <HeroStat
           value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
@@ -611,128 +662,13 @@ const ImpactTab = () => {
         />
       </div>
 
-      {/* ─────────── 5. AUTHORITY SCORE BAND ─────────── */}
-      <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Score breakdown
-        </h2>
-        <div
-          className="rounded-lg p-4"
-          style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
-        >
-          {/* Sparkline */}
-          {scoreSeries.length < 2 ? (
-            <div
-              className="text-xs py-6 text-center rounded-md"
-              style={{ color: "var(--color-text-muted)", border: "0.5px dashed var(--color-border)" }}
-            >
-              Not enough data yet
-            </div>
-          ) : (
-            <div style={{ height: 100, width: "100%" }}>
-              <ResponsiveContainer>
-                <LineChart data={scoreSeries} margin={{ top: 6, right: 8, bottom: 4, left: -10 }}>
-                  <XAxis
-                    dataKey="label"
-                    tick={(p: any) => {
-                      const d = scoreSeries[p.index];
-                      if (!d?.showLabel) return <g />;
-                      return (
-                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
-                          {d.label}
-                        </text>
-                      );
-                    }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={0}
-                  />
-                  <YAxis
-                    domain={scoreYDomain}
-                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={28}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "0.5px solid var(--color-border)",
-                      borderRadius: 6,
-                      fontSize: 11,
-                      color: "var(--color-text-primary)",
-                    }}
-                    labelStyle={{ color: "var(--color-text-secondary)" }}
-                    formatter={(value: any) => [`${value}`, "Score"]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#F97316"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#F97316" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Sub-score cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-            {([
-              { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
-              { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
-              { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
-            ]).map((c) => {
-              const cfg = subScoreCard(c.kind, c.value);
-              return (
-                <div
-                  key={c.label}
-                  style={{
-                    background: "var(--color-bg-subtle, rgba(0,0,0,0.02))",
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    border: `0.5px solid ${cfg.border}`,
-                  }}
-                >
-                  <div className="flex items-baseline justify-between">
-                    <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
-                      {c.label}
-                    </div>
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
-                    >
-                      {cfg.tag}
-                    </div>
-                  </div>
-                  <div
-                    className="tabular-nums mt-1"
-                    style={{ fontSize: 22, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
-                  >
-                    {Math.round(c.value)}
-                  </div>
-                  <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
-                    {c.desc}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
         <h2
           className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Follower growth
+          Follower growth — daily new followers
         </h2>
         {followerRows.length === 0 ? (
           <div
@@ -765,15 +701,9 @@ const ImpactTab = () => {
             className="rounded-lg p-4"
             style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
           >
-            <div style={{ height: 140, width: "100%" }}>
+            <div style={{ height: 160, width: "100%" }}>
               <ResponsiveContainer>
-                <AreaChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
-                  <defs>
-                    <linearGradient id="followerArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7ab648" stopOpacity={0.2} />
-                      <stop offset="100%" stopColor="#7ab648" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
                   <XAxis
                     dataKey="label"
                     tick={(p: any) => {
@@ -790,14 +720,15 @@ const ImpactTab = () => {
                     interval={0}
                   />
                   <YAxis
-                    domain={followerYDomain}
-                    tickFormatter={(v) => formatCompact(Number(v))}
+                    allowDecimals={false}
+                    domain={[0, "auto"]}
                     tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
                     axisLine={false}
                     tickLine={false}
-                    width={36}
+                    width={30}
                   />
                   <Tooltip
+                    cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
                     contentStyle={{
                       background: "var(--color-card)",
                       border: "0.5px solid var(--color-border)",
@@ -805,19 +736,10 @@ const ImpactTab = () => {
                       fontSize: 11,
                       color: "var(--color-text-primary)",
                     }}
-                    labelStyle={{ color: "var(--color-text-secondary)" }}
-                    formatter={(value: any) => [`${formatNumber(Number(value))} followers`, ""]}
+                    formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="followers"
-                    stroke="#7ab648"
-                    strokeWidth={2}
-                    fill="url(#followerArea)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#7ab648" }}
-                  />
-                </AreaChart>
+                  <Bar dataKey="growth" fill="#7ab648" radius={[2, 2, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
 
