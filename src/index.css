@@ -4,6 +4,49 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
+/* ── Aura Design System Tokens ── */
+:root {
+  /* Accent — Orange */
+  --color-accent: #F97316;
+  --color-accent-hover: #EA6C0A;
+  --color-accent-muted: rgba(249, 115, 22, 0.12);
+  --color-accent-border: rgba(249, 115, 22, 0.35);
+
+  /* Dark mode surfaces (default) */
+  --color-bg: #0c0c0c;
+  --color-sidebar: #0c0c0c;
+  --color-card: #131313;
+  --color-border: #1e1e1e;
+  --color-border-subtle: #161616;
+
+  /* Dark mode text */
+  --color-text-primary: #f0f0f0;
+  --color-text-secondary: #3d3d3d;
+  --color-text-muted: #2a2a2a;
+
+  /* Semantic — unchanged */
+  --color-green: #7ab648;
+  --color-amber: #EF9F27;
+  --color-red: #E24B4A;
+}
+
+[data-theme="light"] {
+  --color-bg: #f8f8f8;
+  --color-sidebar: #ffffff;
+  --color-card: #ffffff;
+  --color-border: #e8e8e8;
+  --color-border-subtle: #f0f0f0;
+
+  --color-text-primary: #111111;
+  --color-text-secondary: #999999;
+  --color-text-muted: #cccccc;
+
+  --color-accent: #F97316;
+  --color-accent-hover: #EA6C0A;
+  --color-accent-muted: rgba(249, 115, 22, 0.08);
+  --color-accent-border: rgba(249, 115, 22, 0.30);
+}
+
 @keyframes skeleton-pulse {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
