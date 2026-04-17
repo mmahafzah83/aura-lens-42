@@ -258,9 +258,21 @@ const Dashboard = () => {
             <Zap className="w-4.5 h-4.5 text-primary" />
           </div>
           {!sidebarCollapsed && (
-            <div className="overflow-hidden">
+            <div className="overflow-hidden min-w-0">
               <h1 className="text-lg tracking-tight text-gradient-gold font-semibold">Aura</h1>
-              <p className="text-[8px] text-muted-foreground/40 tracking-[0.15em] uppercase">Strategic Intelligence OS</p>
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: "0.08em",
+                  color: "var(--color-text-muted)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textTransform: "uppercase",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                Strategic Intelligence OS
+              </p>
             </div>
           )}
         </div>
@@ -284,7 +296,7 @@ const Dashboard = () => {
                         borderLeft: "2px solid var(--color-accent)",
                         paddingLeft: 6,
                         marginLeft: 2,
-                        background: "var(--color-border-subtle)",
+                        background: "rgba(249, 115, 22, 0.08)",
                         color: "var(--color-text-primary)",
                       }
                     : undefined
@@ -316,15 +328,7 @@ const Dashboard = () => {
             {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
           </button>
 
-          <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-muted-foreground/40 hover:text-muted-foreground transition-all"
-          >
-            <Menu className="w-4 h-4 shrink-0" />
-            {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
-          </button>
-
-          {/* Theme toggle pill */}
+          {/* Theme toggle pill — above Collapse */}
           {!sidebarCollapsed && (
             <button
               onClick={toggleTheme}
@@ -333,15 +337,17 @@ const Dashboard = () => {
                 background: "var(--color-border-subtle)",
                 border: "0.5px solid var(--color-border)",
                 borderRadius: 20,
-                padding: "4px 10px",
+                padding: "0 12px",
+                minHeight: 32,
+                width: "100%",
                 fontSize: 11,
+                fontWeight: 500,
                 color: "var(--color-text-secondary)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: 6,
-                marginTop: 4,
-                alignSelf: "flex-start",
+                justifyContent: "center",
+                gap: 8,
               }}
             >
               <span
@@ -351,11 +357,20 @@ const Dashboard = () => {
                   borderRadius: "50%",
                   background: "var(--color-accent)",
                   display: "inline-block",
+                  flexShrink: 0,
                 }}
               />
               <span>{theme === "light" ? "Light" : "Dark"}</span>
             </button>
           )}
+
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-muted-foreground/40 hover:text-muted-foreground transition-all"
+          >
+            <Menu className="w-4 h-4 shrink-0" />
+            {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
+          </button>
         </div>
       </aside>
 
