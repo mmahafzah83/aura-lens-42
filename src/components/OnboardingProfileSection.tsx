@@ -246,7 +246,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
       </div>
     );
   }
@@ -281,7 +281,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
 
       {/* Section 1: Your Profile */}
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>Your profile</h2>
+        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#F97316" }}>Your profile</h2>
         <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
           {profileFields.map((f, i) => (
             <div
@@ -322,7 +322,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                 <button
                   onClick={() => { setEditingField(f.key); setEditValue(f.value || ""); }}
                   className="text-xs flex items-center gap-1 ml-3 shrink-0"
-                  style={{ color: "#C5A55A" }}
+                  style={{ color: "#F97316" }}
                 >
                   <Pencil className="w-3 h-3" /> Edit
                 </button>
@@ -335,7 +335,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
       {/* Section 2: Brand Positioning */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>How Aura positions me</h2>
+          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#F97316" }}>How Aura positions me</h2>
           <button
             onClick={handleRegenerate}
             disabled={regenerating}
@@ -355,7 +355,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
 
       {/* Section 3: Assessment History */}
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#C5A55A" }}>My foundation assessments</h2>
+        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#F97316" }}>My foundation assessments</h2>
         <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
           {/* Onboarding */}
           <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #252525" }}>
@@ -381,7 +381,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                 </span>
               </div>
             </div>
-            <button onClick={onRetakeAudit} className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
+            <button onClick={onRetakeAudit} className="text-[11px] flex items-center gap-1" style={{ color: "#F97316" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -397,7 +397,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                 </span>
               </div>
             </div>
-            <button onClick={onRetakeBrand} className="text-[11px] flex items-center gap-1" style={{ color: "#C5A55A" }}>
+            <button onClick={onRetakeBrand} className="text-[11px] flex items-center gap-1" style={{ color: "#F97316" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -409,13 +409,13 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
         <button
           onClick={() => { setFullEditData({ ...profile }); setShowFullEdit(true); }}
           className="w-full py-3 rounded-xl text-sm font-medium"
-          style={{ background: "#141414", border: "1px solid #252525", color: "#C5A55A" }}
+          style={{ background: "#141414", border: "1px solid #252525", color: "#F97316" }}
         >
           Edit full profile
         </button>
       ) : (
-        <div className="rounded-xl p-4 space-y-4" style={{ background: "#141414", border: "1px solid #C5A55A33" }}>
-          <h3 className="text-xs uppercase tracking-wider" style={{ color: "#C5A55A" }}>Edit all fields</h3>
+        <div className="rounded-xl p-4 space-y-4" style={{ background: "#141414", border: "1px solid #F9731633" }}>
+          <h3 className="text-xs uppercase tracking-wider" style={{ color: "#F97316" }}>Edit all fields</h3>
           {[
             { key: "first_name", label: "Name" },
             { key: "level", label: "Role" },
@@ -440,7 +440,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               onClick={saveFullEdit}
               disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: "#C5A55A", color: "#0d0d0d" }}
+              style={{ background: "#F97316", color: "#0d0d0d" }}
             >
               {saving ? "Saving..." : "Save all changes"}
             </button>

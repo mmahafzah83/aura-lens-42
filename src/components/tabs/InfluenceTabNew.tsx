@@ -419,7 +419,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("aura:open-linkedin-sync"))}
               style={{
-                background: "#C5A55A",
+                background: "#F97316",
                 color: "#0a0a0a",
                 border: "none",
                 borderRadius: 8,

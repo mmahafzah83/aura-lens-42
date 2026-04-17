@@ -273,7 +273,7 @@ const SignalDetailPanel = ({
           </p>
 
           {/* Confidence number */}
-          <p style={{ fontSize: 64, fontWeight: 800, color: "#C5A55A", letterSpacing: -3, lineHeight: 1, margin: "0 0 4px" }}>
+          <p style={{ fontSize: 64, fontWeight: 800, color: "#F97316", letterSpacing: -3, lineHeight: 1, margin: "0 0 4px" }}>
             {confPct}%
           </p>
 
@@ -297,7 +297,7 @@ const SignalDetailPanel = ({
           {keyInsight && (
             <div style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#333", marginBottom: 6 }}>Key insight</p>
-              <div style={{ background: "#111", border: "0.5px solid #252525", borderLeft: "2px solid #C5A55A", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
+              <div style={{ background: "#111", border: "0.5px solid #252525", borderLeft: "2px solid #F97316", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "#d0d0d0", margin: "0 0 3px" }}>{keyInsight.title}</p>
                 <p style={{ fontSize: 11, color: "#555", lineHeight: 1.5, margin: 0 }}>{keyInsight.content.slice(0, 200)}</p>
               </div>
@@ -311,13 +311,13 @@ const SignalDetailPanel = ({
               <div>
                 {visibleEvidence.map(frag => (
                   <div key={frag.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
-                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#C5A55A", flexShrink: 0 }} />
+                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#F97316", flexShrink: 0 }} />
                     <span style={{ fontSize: 11, color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{frag.title}</span>
                     <span style={{ fontSize: 10, color: "#333", marginLeft: "auto", flexShrink: 0 }}>{relativeTime(frag.created_at)}</span>
                   </div>
                 ))}
                 {!showAllEvidence && hiddenCount > 0 && (
-                  <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "#C5A55A", fontSize: 11, cursor: "pointer", padding: 0, marginTop: 4 }}>+ {hiddenCount} more</button>
+                  <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "#F97316", fontSize: 11, cursor: "pointer", padding: 0, marginTop: 4 }}>+ {hiddenCount} more</button>
                 )}
               </div>
             ) : (
@@ -333,7 +333,7 @@ const SignalDetailPanel = ({
           {/* Action button */}
           <button
             onClick={() => onDraft(signal)}
-            style={{ width: "100%", background: "#C5A55A", color: "#000", border: "none", borderRadius: 6, padding: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            style={{ width: "100%", background: "#F97316", color: "#000", border: "none", borderRadius: 6, padding: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
           >
             Write on this
           </button>
@@ -367,10 +367,10 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
   const getBadge = (type: string) => {
     switch (type) {
       case "signal": case "pattern": return { label: "Signal", bg: "#0a1628", border: "#1d4ed844", color: "#60a5fa" };
-      case "insight": case "principle": return { label: "Insight", bg: "#1a1400", border: "#C5A55A44", color: "#C5A55A" };
+      case "insight": case "principle": return { label: "Insight", bg: "#1a1400", border: "#F9731644", color: "#F97316" };
       case "recommendation": case "framework_step": return { label: "Recommendation", bg: "#0a1a0a", border: "#2a4a2a", color: "#4a8a4a" };
       case "blind_spot": case "claim": return { label: "Blind spot", bg: "#1a0a0a", border: "#4a2a2a", color: "#aa6060" };
-      default: return { label: "Insight", bg: "#1a1400", border: "#C5A55A44", color: "#C5A55A" };
+      default: return { label: "Insight", bg: "#1a1400", border: "#F9731644", color: "#F97316" };
     }
   };
 
@@ -381,7 +381,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600, margin: 0 }}>Key insights from your captures</p>
         {insights.length > 3 && (
-          <button onClick={() => setShowAll(!showAll)} style={{ background: "none", border: "none", color: "#C5A55A", fontSize: 10, cursor: "pointer" }}>
+          <button onClick={() => setShowAll(!showAll)} style={{ background: "none", border: "none", color: "#F97316", fontSize: 10, cursor: "pointer" }}>
             {showAll ? "Show less" : `View all ${insights.length} →`}
           </button>
         )}
@@ -400,7 +400,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
               </p>
               <button
                 onClick={() => onDraftToStudio?.({ topic: insight.title, context: insight.content, sourceType: "insight", sourceTitle: insight.title })}
-                style={{ background: "none", border: "none", color: "#C5A55A", fontSize: 10, fontWeight: 500, cursor: "pointer", padding: 0 }}
+                style={{ background: "none", border: "none", color: "#F97316", fontSize: 10, fontWeight: 500, cursor: "pointer", padding: 0 }}
               >
                 Write on this →
               </button>
@@ -439,7 +439,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
     toast("Framework deleted");
   };
 
-  if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} /></div>;
+  if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} /></div>;
 
   const isApproved = (fw: Framework) => fw.source_type === "approved" || fw.source_type === "signal";
   const filtered = filter === "all" ? frameworks : filter === "approved" ? frameworks.filter(isApproved) : frameworks.filter(f => !isApproved(f));
@@ -454,7 +454,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
           <h2 style={{ color: "#f0f0f0", fontSize: 17, fontWeight: 700, margin: 0 }}>Frameworks</h2>
           <p style={{ color: "#444", fontSize: 11, margin: "2px 0 0" }}>{frameworks.length} created · Your structured thinking library</p>
         </div>
-        <button onClick={() => setBuilderData({ title: "", steps: [], summary: "" })} style={{ background: "#C5A55A", color: "#000", borderRadius: 6, padding: "7px 14px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New framework</button>
+        <button onClick={() => setBuilderData({ title: "", steps: [], summary: "" })} style={{ background: "#F97316", color: "#000", borderRadius: 6, padding: "7px 14px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New framework</button>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
@@ -466,7 +466,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
           <button key={chip.key} onClick={() => setFilter(chip.key)} style={{
             padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: "pointer",
             background: filter === chip.key ? "#1a1400" : "#141414",
-            color: filter === chip.key ? "#C5A55A" : "#555",
+            color: filter === chip.key ? "#F97316" : "#555",
             border: `1px solid ${filter === chip.key ? "rgba(197,165,90,0.27)" : "#252525"}`,
           }}>{chip.label}</button>
         ))}
@@ -484,7 +484,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
             const approved = isApproved(fw);
             return (
-              <div key={fw.id} style={{ background: "#141414", border: "0.5px solid #222", borderTop: approved ? "2px solid #C5A55A" : "0.5px solid #222", borderRadius: 10, padding: 16 }}>
+              <div key={fw.id} style={{ background: "#141414", border: "0.5px solid #222", borderTop: approved ? "2px solid #F97316" : "0.5px solid #222", borderRadius: 10, padding: 16 }}>
                 <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "#0a1a0a" : "#1e1e1e", border: `0.5px solid ${approved ? "#2a4a2a" : "#333"}`, color: approved ? "#4a8a4a" : "#555" }}>
                   {approved ? "Approved" : "Draft"}
                 </span>
@@ -505,7 +505,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
                     { label: "Draft content", action: () => onDraftToStudio?.({ topic: fw.title, context: fw.summary || "", sourceType: "framework", sourceTitle: fw.title }) },
                   ].map(btn => (
                     <button key={btn.label} onClick={btn.action} style={{ background: "transparent", border: "0.5px solid #2a2a2a", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "#555", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(197,165,90,0.27)"; e.currentTarget.style.color = "#C5A55A"; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(197,165,90,0.27)"; e.currentTarget.style.color = "#F97316"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}
                     >{btn.label}</button>
                   ))}
@@ -718,7 +718,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             { label: "Moves", count: movesCount, gold: false },
           ].map((step, i, arr) => (
             <div key={step.label} style={{ flex: 1, textAlign: "center", padding: "12px 8px", borderRight: i < arr.length - 1 ? "0.5px solid #222" : "none" }}>
-              <p style={{ color: step.gold ? "#C5A55A" : "#f0f0f0", fontSize: 20, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{step.count}</p>
+              <p style={{ color: step.gold ? "#F97316" : "#f0f0f0", fontSize: 20, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{step.count}</p>
               <p style={{ color: "#444", fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase", margin: "4px 0 0" }}>{step.label}</p>
             </div>
           ))}
@@ -737,9 +737,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "#C5A55A" : "#444",
+              color: activeSubTab === tab.value ? "#F97316" : "#444",
               background: "transparent", border: "none",
-              borderBottom: activeSubTab === tab.value ? "2px solid #C5A55A" : "2px solid transparent",
+              borderBottom: activeSubTab === tab.value ? "2px solid #F97316" : "2px solid transparent",
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
             }}>{tab.label}</button>
           ))}
@@ -801,7 +801,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             borderBottom: idx < visibleSignals.length - 1 ? "0.5px solid #1a1a1a" : "none",
                             cursor: "pointer", transition: "background 0.1s",
                             background: isSelected ? "#141414" : "transparent",
-                            borderLeft: isSelected ? "2px solid #C5A55A" : "2px solid transparent",
+                            borderLeft: isSelected ? "2px solid #F97316" : "2px solid transparent",
                           }}
                           onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#111"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
@@ -809,7 +809,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           <span style={{ fontSize: 10, fontWeight: 700, color: "#222", minWidth: 22, textAlign: "center" }}>{idx + 1}</span>
                           {/* Vertical strength bar */}
                           <div style={{ width: 3, height: 32, borderRadius: 2, position: "relative", overflow: "hidden", flexShrink: 0, marginRight: 10, background: "#1e1e1e" }}>
-                            <div style={{ position: "absolute", top: 0, width: "100%", height: `${confPct}%`, background: "#C5A55A", opacity: confPct / 100, borderRadius: 2 }} />
+                            <div style={{ position: "absolute", top: 0, width: "100%", height: `${confPct}%`, background: "#F97316", opacity: confPct / 100, borderRadius: 2 }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
                             <p style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "#f0f0f0" : "#999", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -819,7 +819,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
                             </p>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#C5A55A" : "#555", flexShrink: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#F97316" : "#555", flexShrink: 0 }}>
                             {confPct}%
                           </span>
                         </div>

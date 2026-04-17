@@ -251,18 +251,18 @@ function StatementCard({ hook, tag, name, role }: { hook: string; tag: string; n
   return (
     <div style={{ background: "#0d0d0d", border: "1px solid #1e1e1e", borderRadius: 16, padding: 32, position: "relative", overflow: "hidden", minHeight: 300 }}>
       {/* Gold triangle */}
-      <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, background: "#C5A55A", clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} />
+      <div style={{ position: "absolute", top: 0, right: 0, width: 80, height: 80, background: "#F97316", clipPath: "polygon(100% 0, 0 0, 100% 100%)" }} />
       {/* Tag */}
-      <p style={{ color: "#C5A55A", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>{tag}</p>
+      <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>{tag}</p>
       {/* Hook */}
       <p style={{ color: "#fff", fontSize: 16, fontWeight: 800, lineHeight: 1.55, marginBottom: 20 }}>{hook}</p>
       {/* Divider */}
-      <div style={{ width: 40, height: 2, background: "#C5A55A", marginBottom: 16 }} />
+      <div style={{ width: 40, height: 2, background: "#F97316", marginBottom: 16 }} />
       {/* Footer */}
-      <p style={{ color: "#C5A55A", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>{name}</p>
+      <p style={{ color: "#F97316", fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>{name}</p>
       <p style={{ color: "#555", fontSize: 10, marginTop: 2 }}>{role}</p>
       {/* AURA mark */}
-      <p style={{ position: "absolute", bottom: 16, right: 20, color: "#C5A55A", fontSize: 8, fontWeight: 700, letterSpacing: 3, opacity: 0.5 }}>AURA</p>
+      <p style={{ position: "absolute", bottom: 16, right: 20, color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 3, opacity: 0.5 }}>AURA</p>
     </div>
   );
 }
@@ -271,16 +271,16 @@ function FrameworkCard({ title, points, name }: { title: string; points: { title
   return (
     <div style={{ background: "#faf8f4", border: "1px solid #e8e4da", borderRadius: 16, padding: 32, minHeight: 300 }}>
       {/* Eyebrow */}
-      <p style={{ color: "#C5A55A", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
+      <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
       {/* Title */}
       <p style={{ color: "#1a1a1a", fontSize: 18, fontWeight: 900, lineHeight: 1.3, marginBottom: 12 }}>{title}</p>
       {/* Accent bar */}
-      <div style={{ width: 32, height: 3, background: "#C5A55A", marginBottom: 20 }} />
+      <div style={{ width: 32, height: 3, background: "#F97316", marginBottom: 20 }} />
       {/* Points */}
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {points.map((pt, i) => (
           <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 12, background: "#1a1a1a", color: "#C5A55A", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 24, height: 24, borderRadius: 12, background: "#1a1a1a", color: "#F97316", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {i + 1}
             </div>
             <div>
@@ -293,7 +293,7 @@ function FrameworkCard({ title, points, name }: { title: string; points: { title
       {/* Footer */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 }}>
         <p style={{ color: "#1a1a1a", fontSize: 11, fontWeight: 600 }}>{name}</p>
-        <p style={{ color: "#C5A55A", fontSize: 11, fontWeight: 600 }}>Save this ↑</p>
+        <p style={{ color: "#F97316", fontSize: 11, fontWeight: 600 }}>Save this ↑</p>
       </div>
     </div>
   );
@@ -303,7 +303,7 @@ function SplitCard({ leftItems, rightItems, name, hook }: { leftItems: string[];
   return (
     <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid #1e1e1e", minHeight: 300 }}>
       {/* Header */}
-      <div style={{ background: "#0d0d0d", padding: "16px 24px", borderBottom: "2px solid #C5A55A" }}>
+      <div style={{ background: "#0d0d0d", padding: "16px 24px", borderBottom: "2px solid #F97316" }}>
         <p style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>Compare & Contrast</p>
       </div>
       {/* Columns */}
@@ -319,9 +319,9 @@ function SplitCard({ leftItems, rightItems, name, hook }: { leftItems: string[];
         </div>
         {/* Right */}
         <div style={{ background: "#0d0d0d", padding: 20 }}>
-          <p style={{ color: "#C5A55A", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>AFTER</p>
+          <p style={{ color: "#F97316", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>AFTER</p>
           {rightItems.map((item, i) => (
-            <div key={i} style={{ borderLeft: "2px solid #C5A55A", paddingLeft: 10, marginBottom: 8 }}>
+            <div key={i} style={{ borderLeft: "2px solid #F97316", paddingLeft: 10, marginBottom: 8 }}>
               <p style={{ color: "#fff", fontSize: 11, lineHeight: 1.4 }}>{item}</p>
             </div>
           ))}
@@ -329,7 +329,7 @@ function SplitCard({ leftItems, rightItems, name, hook }: { leftItems: string[];
       </div>
       {/* Footer */}
       <div style={{ background: "#0d0d0d", padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ color: "#C5A55A", fontSize: 10, fontWeight: 700 }}>{name}</p>
+        <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700 }}>{name}</p>
         <p style={{ color: "#666", fontSize: 10, fontStyle: "italic" }}>{hook.slice(0, 60)}</p>
       </div>
     </div>
@@ -342,21 +342,21 @@ function ArabicCard({ hook, name, role, tag }: { hook: string; name: string; rol
       {/* Three gold dots */}
       <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: "#C5A55A" }} />
+          <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: "#F97316" }} />
         ))}
       </div>
       {/* AURA top right */}
-      <p style={{ position: "absolute", top: 20, right: 24, color: "#C5A55A", fontSize: 10, fontWeight: 700, letterSpacing: 3 }}>AURA</p>
+      <p style={{ position: "absolute", top: 20, right: 24, color: "#F97316", fontSize: 10, fontWeight: 700, letterSpacing: 3 }}>AURA</p>
       {/* Tag */}
-      <p style={{ color: "#C5A55A", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>{tag}</p>
+      <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>{tag}</p>
       {/* Hook */}
       <p style={{ color: "#fff", fontSize: 16, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl" }}>
         {hook || "اكتب النص العربي هنا..."}
       </p>
       {/* Accent bar */}
-      <div style={{ width: 32, height: 2, background: "#C5A55A", marginTop: 20, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
+      <div style={{ width: 32, height: 2, background: "#F97316", marginTop: 20, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
       {/* Footer */}
-      <p style={{ color: "#C5A55A", fontSize: 11, fontWeight: 700, textAlign: "right" }}>{name}</p>
+      <p style={{ color: "#F97316", fontSize: 11, fontWeight: 700, textAlign: "right" }}>{name}</p>
       <p style={{ color: "#555", fontSize: 10, textAlign: "right", marginTop: 2 }}>{role}</p>
     </div>
   );

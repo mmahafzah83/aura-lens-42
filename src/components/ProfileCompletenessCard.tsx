@@ -75,7 +75,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
   const total = fields.length;
   const pct = Math.round((filledCount / total) * 100);
 
-  const fillColor = "#C5A55A";
+  const fillColor = "#F97316";
 
   const emptyFields = fields
     .filter((f) => !f.filled)
@@ -130,7 +130,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
               <span style={{ fontSize: 11, color: "#888", flex: 1 }}>{f.label}</span>
               <span
                 className="group-hover:underline"
-                style={{ fontSize: 11, color: "#C5A55A", fontWeight: 500 }}
+                style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}
               >
                 Add →
               </span>

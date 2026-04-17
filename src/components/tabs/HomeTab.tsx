@@ -290,7 +290,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
   };
 
   const scoreColor = (score: number) => {
-    if (score >= 65) return "#C5A55A";
+    if (score >= 65) return "#F97316";
     if (score >= 40) return "#EF9F27";
     return "#E24B4A";
   };
@@ -321,7 +321,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
         {trendCount > 0 && (
           <span
             style={{
-              background: "#C5A55A",
+              background: "#F97316",
               color: "#0d0d0d",
               fontSize: 10,
               fontWeight: 600,
@@ -364,7 +364,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
             ))
           ) : moves.length > 0 ? (
             moves.slice(0, 3).map((move: any) => {
-              const badgeColor = move.output_type === "carousel" ? "#4A90D9" : move.output_type === "framework" ? "#5AA469" : "#C5A55A";
+              const badgeColor = move.output_type === "carousel" ? "#4A90D9" : move.output_type === "framework" ? "#5AA469" : "#F97316";
               const BadgeIcon = move.output_type === "carousel" ? LayoutGrid : move.output_type === "framework" ? Box : FileText;
               const isExpanded = expandedMoveId === move.id;
               return (
@@ -417,7 +417,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
                           contentFormat: fmt as any,
                         });
                       }}
-                      style={{ fontSize: 10, fontWeight: 600, color: "#C5A55A", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer" }}
+                      style={{ fontSize: 10, fontWeight: 600, color: "#F97316", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer" }}
                     >
                       Draft It
                     </button>
@@ -466,7 +466,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
               </div>
               <button
                 onClick={() => onOpenChat?.("I want to capture my first insight")}
-                style={{ marginTop: 12, background: "#C5A55A", color: "#0d0d0d", fontSize: 12, fontWeight: 500, padding: "9px 20px", borderRadius: 8, border: "none", cursor: "pointer" }}
+                style={{ marginTop: 12, background: "#F97316", color: "#0d0d0d", fontSize: 12, fontWeight: 500, padding: "9px 20px", borderRadius: 8, border: "none", cursor: "pointer" }}
               >
                 Capture now
               </button>
@@ -486,7 +486,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
             {timeline.length > 0 ? (
               timeline.map((item, i) => {
                 const dotColor =
-                  item.type === "trend" ? "#C5A55A" :
+                  item.type === "trend" ? "#F97316" :
                   item.type === "signal" ? "#7ab648" :
                   "#534AB7";
 
@@ -532,8 +532,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
                               style={{
                                 fontSize: 10,
                                 fontWeight: 500,
-                                color: "#C5A55A",
-                                border: "1px solid #C5A55A",
+                                color: "#F97316",
+                                border: "1px solid #F97316",
                                 background: "transparent",
                                 padding: "4px 10px",
                                 borderRadius: 6,
@@ -566,8 +566,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
                               style={{
                                 fontSize: 10,
                                 fontWeight: 500,
-                                color: "#C5A55A",
-                                border: "1px solid #C5A55A",
+                                color: "#F97316",
+                                border: "1px solid #F97316",
                                 background: "transparent",
                                 padding: "4px 10px",
                                 borderRadius: 6,
@@ -599,8 +599,8 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
                             style={{
                               fontSize: 10,
                               fontWeight: 500,
-                              color: "#C5A55A",
-                              border: "1px solid #C5A55A",
+                              color: "#F97316",
+                              border: "1px solid #F97316",
                               background: "transparent",
                               padding: "4px 10px",
                               borderRadius: 6,
@@ -672,7 +672,7 @@ const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDr
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: auraInput.trim() ? "#C5A55A" : "#252525",
+              background: auraInput.trim() ? "#F97316" : "#252525",
               border: "none",
               display: "flex",
               alignItems: "center",

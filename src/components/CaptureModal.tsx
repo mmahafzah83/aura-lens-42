@@ -389,8 +389,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   duration: 3000,
                   style: {
                     background: "#1a1400",
-                    color: "#C5A55A",
-                    border: "1px solid #C5A55A33",
+                    color: "#F97316",
+                    border: "1px solid #F9731633",
                   },
                 });
               }, 3000);

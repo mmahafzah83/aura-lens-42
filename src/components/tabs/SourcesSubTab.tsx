@@ -180,7 +180,7 @@ const ExpandedSource = ({
             onChange={e => setEditTitle(e.target.value)}
             placeholder="Title"
             style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "8px 12px", color: "#f0f0f0", fontSize: 14, marginBottom: 10, outline: "none" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "#C5A55A"; }}
+            onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
             onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
           />
           <textarea
@@ -188,11 +188,11 @@ const ExpandedSource = ({
             onChange={e => setEditContent(e.target.value)}
             rows={6}
             style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "8px 12px", color: "#f0f0f0", fontSize: 13, resize: "vertical", outline: "none" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "#C5A55A"; }}
+            onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
             onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
           />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={handleSaveEdit} disabled={saving} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#C5A55A", color: "#0d0d0d", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={handleSaveEdit} disabled={saving} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
               {saving ? "Saving..." : "Save"}
             </button>
             <button onClick={() => setEditing(false)} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#888", fontSize: 13, cursor: "pointer" }}>Cancel</button>
@@ -210,14 +210,14 @@ const ExpandedSource = ({
           )}
 
           {sourceUrl && (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#C5A55A", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12, textDecoration: "none" }}>
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#F97316", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12, textDecoration: "none" }}>
               <ExternalLink size={12} /> {extractDomain(sourceUrl) || sourceUrl}
             </a>
           )}
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
             {entry.skill_pillar && (
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(197,165,90,0.1)", color: "#C5A55A" }}>{entry.skill_pillar}</span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(197,165,90,0.1)", color: "#F97316" }}>{entry.skill_pillar}</span>
             )}
             {entry.framework_tag && (
               <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#1a1a1a", color: "#666", border: "1px solid #252525" }}>{entry.framework_tag}</span>
@@ -232,7 +232,7 @@ const ExpandedSource = ({
             ) : linkedSignals.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {linkedSignals.map(s => (
-                  <button key={s.id} onClick={() => onSwitchToSignal(s.id)} style={{ background: "none", border: "none", color: "#C5A55A", fontSize: 12, cursor: "pointer", textAlign: "left", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                  <button key={s.id} onClick={() => onSwitchToSignal(s.id)} style={{ background: "none", border: "none", color: "#F97316", fontSize: 12, cursor: "pointer", textAlign: "left", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
                     <Zap size={12} /> {s.signal_title}
                   </button>
                 ))}
@@ -244,10 +244,10 @@ const ExpandedSource = ({
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-            <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #C5A55A", background: "transparent", color: "#C5A55A", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #F97316", background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <ExternalLink size={14} /> Open
             </button>
-            <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "#C5A55A", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
+            <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
               {detecting ? <Loader2 className="w-4 h-4 animate-spin" style={{ display: "inline" }} /> : <Zap size={14} style={{ display: "inline", marginRight: 4 }} />}
               Detect Signal
             </button>
@@ -373,11 +373,11 @@ const SourcesSubTab = ({
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
         <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(197,165,90,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", border: "1px solid rgba(197,165,90,0.15)" }}>
-          <FileUp className="w-6 h-6" style={{ color: "#C5A55A" }} />
+          <FileUp className="w-6 h-6" style={{ color: "#F97316" }} />
         </div>
         <p style={{ color: "#f0f0f0", fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>Your knowledge starts here.</p>
         <p style={{ color: "#666", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
-        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "#C5A55A", color: "#0d0d0d", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
           Capture your first source
         </button>
       </div>
@@ -391,7 +391,7 @@ const SourcesSubTab = ({
       {/* Header count */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(197,165,90,0.1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(197,165,90,0.15)" }}>
-          <FileUp className="w-4 h-4" style={{ color: "#C5A55A" }} />
+          <FileUp className="w-4 h-4" style={{ color: "#F97316" }} />
         </div>
         <h2 style={{ color: "#888", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
         <span style={{ color: "#666", fontSize: 12, marginLeft: "auto" }}>{totalCount} captured</span>
@@ -405,7 +405,7 @@ const SourcesSubTab = ({
           onChange={e => setSearch(e.target.value)}
           placeholder="Search your sources..."
           style={{ width: "100%", paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10, background: "#1a1a1a", border: "1px solid #252525", borderRadius: 12, color: "#f0f0f0", fontSize: 13, outline: "none" }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#C5A55A"; }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
           onBlur={e => { e.currentTarget.style.borderColor = "#252525"; }}
         />
       </div>
@@ -424,8 +424,8 @@ const SourcesSubTab = ({
                   flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
                   cursor: "pointer", whiteSpace: "nowrap",
                   background: isActive ? "rgba(197,165,90,0.15)" : "#141414",
-                  color: isActive ? "#C5A55A" : "#555",
-                  border: `1px solid ${isActive ? "#C5A55A" : "#252525"}`,
+                  color: isActive ? "#F97316" : "#555",
+                  border: `1px solid ${isActive ? "#F97316" : "#252525"}`,
                 }}
               >
                 {f.label} ({count})
@@ -437,7 +437,7 @@ const SourcesSubTab = ({
           value={sortKey}
           onChange={e => setSortKey(e.target.value as SortKey)}
           style={{ background: "#1a1a1a", color: "#ccc", fontSize: 11, fontWeight: 500, border: "1px solid #2a2a2a", borderRadius: 8, padding: "5px 10px", cursor: "pointer", outline: "none", flexShrink: 0 }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#C5A55A"; }}
+          onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
           onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
         >
           <option value="recent">Most recent</option>
@@ -449,7 +449,7 @@ const SourcesSubTab = ({
       {/* Cards */}
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} />
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
         </div>
       ) : entries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
@@ -471,7 +471,7 @@ const SourcesSubTab = ({
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
                   title="Open in new tab"
                   style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                  className="text-[#555] hover:text-[#C5A55A] transition-colors"
+                  className="text-[#555] hover:text-[#F97316] transition-colors"
                 >
                   <ExternalLink size={14} />
                 </button>
@@ -482,7 +482,7 @@ const SourcesSubTab = ({
                   style={{ position: "absolute", top: 12, right: 40, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
                 >
                   {entry.pinned
-                    ? <Pin size={14} fill="#C5A55A" color="#C5A55A" />
+                    ? <Pin size={14} fill="#F97316" color="#F97316" />
                     : <PinOff size={14} color="#3a3a3a" />}
                 </button>
 
@@ -502,7 +502,7 @@ const SourcesSubTab = ({
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(197,165,90,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <EntryIcon size={16} style={{ color: "#C5A55A" }} />
+                      <EntryIcon size={16} style={{ color: "#F97316" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 60 }}>
                       <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayTitle}</p>
@@ -511,7 +511,7 @@ const SourcesSubTab = ({
                         {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
                         <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
-                          <span title="Signal generated from this source" style={{ color: "#C5A55A", display: "flex", alignItems: "center" }}>
+                          <span title="Signal generated from this source" style={{ color: "#F97316", display: "flex", alignItems: "center" }}>
                             <Zap size={12} />
                           </span>
                         )}
@@ -536,7 +536,7 @@ const SourcesSubTab = ({
           {/* Load more spinner */}
           {loadingMore && (
             <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#C5A55A" }} />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#F97316" }} />
             </div>
           )}
           {!hasMore && entries.length > 0 && (

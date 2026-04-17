@@ -39,7 +39,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
-              background: "#C5A55A",
+              background: "#F97316",
               color: "#000",
               border: "none",
               borderRadius: "8px",

@@ -172,7 +172,7 @@ const Onboarding = () => {
   if (!authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#0d0d0d" }}>
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#C5A55A" }} />
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "#F97316" }} />
       </div>
     );
   }
@@ -195,7 +195,7 @@ const Onboarding = () => {
                 ←
               </button>
             )}
-            <span className="text-xs tracking-wide" style={{ color: "#C5A55A" }}>
+            <span className="text-xs tracking-wide" style={{ color: "#F97316" }}>
               {step < 4 ? `Step ${step + 1} of 4 · ${STEP_NAMES[step]}` : "Complete ✓"}
             </span>
           </div>
@@ -208,7 +208,7 @@ const Onboarding = () => {
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${currentPct}%`,
-              background: step === 3 ? "#7ab648" : "#C5A55A",
+              background: step === 3 ? "#7ab648" : "#F97316",
             }}
           />
         </div>
@@ -218,11 +218,11 @@ const Onboarding = () => {
               <div
                 className="w-3 h-3 rounded-full border-2 transition-all"
                 style={{
-                  borderColor: i <= step ? (step === 3 && i === 3 ? "#7ab648" : "#C5A55A") : "#1a1a1a",
-                  background: i < step ? (step === 3 && i === 3 ? "#7ab648" : "#C5A55A") : "transparent",
+                  borderColor: i <= step ? (step === 3 && i === 3 ? "#7ab648" : "#F97316") : "#1a1a1a",
+                  background: i < step ? (step === 3 && i === 3 ? "#7ab648" : "#F97316") : "transparent",
                 }}
               />
-              <span className="text-[9px] tracking-wider uppercase" style={{ color: i <= step ? "#C5A55A" : "#3a3a3a" }}>
+              <span className="text-[9px] tracking-wider uppercase" style={{ color: i <= step ? "#F97316" : "#3a3a3a" }}>
                 {s.label}
               </span>
             </div>
@@ -235,7 +235,7 @@ const Onboarding = () => {
         {/* Screen 1 — Name + Job title + Industry */}
         {step === 0 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#C5A55A" }}>Step 1 — Your foundation</p>
+            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#F97316" }}>Step 1 — Your foundation</p>
             <h1 className="text-xl font-medium" style={{ color: "#f0f0f0" }}>Tell Aura who you are</h1>
             <p className="text-sm" style={{ color: "#666" }}>This takes 60 seconds. It shapes everything Aura generates for you.</p>
 
@@ -271,8 +271,8 @@ const Onboarding = () => {
                     className="px-3 py-1.5 rounded-full text-xs transition-all"
                     style={{
                       background: role === chip ? "#1e1a10" : "#141414",
-                      border: `1px solid ${role === chip ? "#C5A55A" : "#252525"}`,
-                      color: role === chip ? "#C5A55A" : "#666",
+                      border: `1px solid ${role === chip ? "#F97316" : "#252525"}`,
+                      color: role === chip ? "#F97316" : "#666",
                     }}
                   >
                     {chip}
@@ -292,8 +292,8 @@ const Onboarding = () => {
                     className="px-3 py-1.5 rounded-full text-xs transition-all"
                     style={{
                       background: industry === ind ? "#1e1a10" : "#141414",
-                      border: `1px solid ${industry === ind ? "#C5A55A" : "#252525"}`,
-                      color: industry === ind ? "#C5A55A" : "#666",
+                      border: `1px solid ${industry === ind ? "#F97316" : "#252525"}`,
+                      color: industry === ind ? "#F97316" : "#666",
                     }}
                   >
                     {ind}
@@ -320,7 +320,7 @@ const Onboarding = () => {
               disabled={!canContinueScreen1}
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
-                background: canContinueScreen1 ? "#C5A55A" : "#252525",
+                background: canContinueScreen1 ? "#F97316" : "#252525",
                 color: canContinueScreen1 ? "#0d0d0d" : "#666",
               }}
             >
@@ -339,10 +339,10 @@ const Onboarding = () => {
         {/* Screen 2 — Strengths */}
         {step === 1 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #C5A55A33", color: "#C5A55A" }}>
+            <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #F9731633", color: "#F97316" }}>
               ✓ Great start. Your profile is taking shape. This next step is the one most people skip — and the one that makes the biggest difference.
             </div>
-            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#C5A55A" }}>Step 2 — Your strengths</p>
+            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#F97316" }}>Step 2 — Your strengths</p>
             <h1 className="text-xl font-medium" style={{ color: "#f0f0f0" }}>How do you naturally work?</h1>
             <p className="text-sm" style={{ color: "#666" }}>Choose what feels most like you. Aura uses this to find your brand positioning.</p>
             <p className="text-xs font-medium mt-2" style={{ color: "#999" }}>When you solve a problem, you usually...</p>
@@ -354,8 +354,8 @@ const Onboarding = () => {
                   className="w-full text-left px-4 py-3 rounded-lg text-sm transition-all"
                   style={{
                     background: "#141414",
-                    border: `1px solid ${strength === s ? "#C5A55A" : "#252525"}`,
-                    color: strength === s ? "#C5A55A" : "#f0f0f0",
+                    border: `1px solid ${strength === s ? "#F97316" : "#252525"}`,
+                    color: strength === s ? "#F97316" : "#f0f0f0",
                   }}
                 >
                   {s}
@@ -370,7 +370,7 @@ const Onboarding = () => {
               disabled={!strength}
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
-                background: strength ? "#C5A55A" : "#252525",
+                background: strength ? "#F97316" : "#252525",
                 color: strength ? "#0d0d0d" : "#666",
               }}
             >
@@ -389,10 +389,10 @@ const Onboarding = () => {
         {/* Screen 3 — First capture */}
         {step === 2 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #C5A55A33", color: "#C5A55A" }}>
+            <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #F9731633", color: "#F97316" }}>
               ◈ Almost there — you are doing great. One last step. This is where Aura comes alive. Your first capture generates your first signal in under 60 seconds.
             </div>
-            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#C5A55A" }}>Step 3 — Feed Aura</p>
+            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#F97316" }}>Step 3 — Feed Aura</p>
             <h1 className="text-xl font-medium" style={{ color: "#f0f0f0" }}>Add your first source</h1>
             <p className="text-sm" style={{ color: "#666" }}>Paste a link to any article you read recently. Aura will read it and find your first signal.</p>
 
@@ -404,8 +404,8 @@ const Onboarding = () => {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
                   style={{
                     background: captureType === t ? "#1e1a10" : "#141414",
-                    border: `1px solid ${captureType === t ? "#C5A55A" : "#252525"}`,
-                    color: captureType === t ? "#C5A55A" : "#666",
+                    border: `1px solid ${captureType === t ? "#F97316" : "#252525"}`,
+                    color: captureType === t ? "#F97316" : "#666",
                   }}
                 >
                   {t === "link" ? <Link2 className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
@@ -446,7 +446,7 @@ const Onboarding = () => {
               disabled={!captureValue.trim() || loading}
               className="w-full py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
               style={{
-                background: captureValue.trim() ? "#C5A55A" : "#252525",
+                background: captureValue.trim() ? "#F97316" : "#252525",
                 color: captureValue.trim() ? "#0d0d0d" : "#666",
               }}
             >
@@ -472,7 +472,7 @@ const Onboarding = () => {
         {/* Screen 4 — Ready */}
         {step === 3 && (
           <div className="mt-10 space-y-6 max-w-lg mx-auto flex flex-col items-center text-center">
-            <div className="text-[56px] font-medium" style={{ color: "#C5A55A" }}>
+            <div className="text-[56px] font-medium" style={{ color: "#F97316" }}>
               {auraScore}
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#3a3a3a" }}>
@@ -517,7 +517,7 @@ const Onboarding = () => {
             <button
               onClick={finishOnboarding}
               className="w-full py-3 rounded-xl text-sm font-medium mt-4"
-              style={{ background: "#C5A55A", color: "#0d0d0d" }}
+              style={{ background: "#F97316", color: "#0d0d0d" }}
             >
               Go to my Aura →
             </button>
