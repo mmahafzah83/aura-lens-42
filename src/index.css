@@ -31,15 +31,15 @@
 }
 
 [data-theme="light"] {
-  --color-bg: #f8f8f8;
+  --color-bg: #f7f7f7;
   --color-sidebar: #ffffff;
   --color-card: #ffffff;
   --color-border: #e8e8e8;
   --color-border-subtle: #f0f0f0;
 
   --color-text-primary: #111111;
-  --color-text-secondary: #999999;
-  --color-text-muted: #cccccc;
+  --color-text-secondary: #666666;
+  --color-text-muted: #aaaaaa;
 
   --color-accent: #F97316;
   --color-accent-hover: #EA6C0A;
@@ -516,3 +516,151 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ──────────────────────────────────────────────────────────
+   LIGHT MODE INLINE-STYLE OVERRIDES
+   The codebase uses many hardcoded hex values in inline `style`
+   attributes (#0d0d0d, #111, #131313, #141414, #1a1a1a, #1e1e1e,
+   #1f1f1f, #222, #252525, #2a2a2a, #f0f0f0, #d0d0d0, #ccc, #888,
+   #666, #555, #3d3d3d). Inline styles can only be overridden with
+   !important. These rules flip them to light-mode equivalents
+   without touching dark mode (the rules only fire under [data-theme="light"]).
+   ────────────────────────────────────────────────────────── */
+
+/* Card / panel / surface backgrounds → white */
+[data-theme="light"] [style*="background: #0d0d0d"],
+[data-theme="light"] [style*="background:#0d0d0d"],
+[data-theme="light"] [style*="background: #0c0c0c"],
+[data-theme="light"] [style*="background:#0c0c0c"],
+[data-theme="light"] [style*="background: #111"],
+[data-theme="light"] [style*="background:#111"],
+[data-theme="light"] [style*="background: #131313"],
+[data-theme="light"] [style*="background:#131313"],
+[data-theme="light"] [style*="background: #141414"],
+[data-theme="light"] [style*="background:#141414"],
+[data-theme="light"] [style*="background-color: #141414"],
+[data-theme="light"] [style*="background-color:#141414"] {
+  background: #ffffff !important;
+}
+
+/* Subtle inner surfaces (skeleton bars, chip pills) → light grey */
+[data-theme="light"] [style*="background: #1a1a1a"],
+[data-theme="light"] [style*="background:#1a1a1a"],
+[data-theme="light"] [style*="background: #1e1e1e"],
+[data-theme="light"] [style*="background:#1e1e1e"],
+[data-theme="light"] [style*="background: #1f1f1f"],
+[data-theme="light"] [style*="background:#1f1f1f"],
+[data-theme="light"] [style*="background: #252525"],
+[data-theme="light"] [style*="background:#252525"],
+[data-theme="light"] [style*="background-color: #252525"],
+[data-theme="light"] [style*="background-color:#252525"],
+[data-theme="light"] [style*="background: #2a2a2a"],
+[data-theme="light"] [style*="background:#2a2a2a"] {
+  background: #f0f0f0 !important;
+}
+
+/* Borders → light grey */
+[data-theme="light"] [style*="border: 1px solid #1e1e1e"],
+[data-theme="light"] [style*="border:1px solid #1e1e1e"],
+[data-theme="light"] [style*="border: 0.5px solid #1e1e1e"],
+[data-theme="light"] [style*="border: 1px solid #1f1f1f"],
+[data-theme="light"] [style*="border:1px solid #1f1f1f"],
+[data-theme="light"] [style*="border: 1px solid #222"],
+[data-theme="light"] [style*="border:1px solid #222"],
+[data-theme="light"] [style*="border: 0.5px solid #222"],
+[data-theme="light"] [style*="border: 1px solid #252525"],
+[data-theme="light"] [style*="border:1px solid #252525"],
+[data-theme="light"] [style*="border: 0.5px solid #252525"],
+[data-theme="light"] [style*="border: 1px solid #2a2a2a"],
+[data-theme="light"] [style*="border:1px solid #2a2a2a"],
+[data-theme="light"] [style*="border: 1px solid #333"],
+[data-theme="light"] [style*="border:1px solid #333"] {
+  border-color: #e8e8e8 !important;
+}
+
+/* Divider/separator lines */
+[data-theme="light"] [style*="background: #1e1e1e"][style*="height"] {
+  background: #e8e8e8 !important;
+}
+
+/* Text colours → dark for primary */
+[data-theme="light"] [style*="color: #f0f0f0"],
+[data-theme="light"] [style*="color:#f0f0f0"],
+[data-theme="light"] [style*="color: #fff"],
+[data-theme="light"] [style*="color:#fff"],
+[data-theme="light"] [style*="color: #ffffff"],
+[data-theme="light"] [style*="color:#ffffff"],
+[data-theme="light"] [style*="color: #d0d0d0"],
+[data-theme="light"] [style*="color:#d0d0d0"] {
+  color: #111111 !important;
+}
+
+/* Text → secondary */
+[data-theme="light"] [style*="color: #ccc"],
+[data-theme="light"] [style*="color:#ccc"],
+[data-theme="light"] [style*="color: #888"],
+[data-theme="light"] [style*="color:#888"],
+[data-theme="light"] [style*="color: #999"],
+[data-theme="light"] [style*="color:#999"] {
+  color: #666666 !important;
+}
+
+/* Text → muted */
+[data-theme="light"] [style*="color: #555"],
+[data-theme="light"] [style*="color:#555"],
+[data-theme="light"] [style*="color: #3d3d3d"],
+[data-theme="light"] [style*="color:#3d3d3d"],
+[data-theme="light"] [style*="color: #2a2a2a"],
+[data-theme="light"] [style*="color:#2a2a2a"] {
+  color: #aaaaaa !important;
+}
+
+/* Orange chips on white backgrounds — soften the accent fill/border
+   that uses the warm gold-ish background "#1a1400" with rgba border */
+[data-theme="light"] [style*="background: #1a1400"],
+[data-theme="light"] [style*="background:#1a1400"] {
+  background: rgba(249, 115, 22, 0.07) !important;
+  border-color: rgba(249, 115, 22, 0.28) !important;
+}
+[data-theme="light"] [style*="border: 1px solid rgba(197,165,90"],
+[data-theme="light"] [style*="border:1px solid rgba(197,165,90"] {
+  border-color: rgba(249, 115, 22, 0.28) !important;
+}
+/* Orange chip text contrast on white */
+[data-theme="light"] [style*="color: #F97316"][style*="background: #1a1400"],
+[data-theme="light"] [style*="color: #F97316"][style*="background:#1a1400"],
+[data-theme="light"] [style*="color: #F97316"][style*="background: rgba(249"],
+[data-theme="light"] [style*="color:#F97316"][style*="background:rgba(249"] {
+  color: #C45E0A !important;
+}
+
+/* Heavy 1px solid orange borders → softer 0.5px subtle orange */
+[data-theme="light"] [style*="border: 1px solid #F97316"],
+[data-theme="light"] [style*="border:1px solid #F97316"] {
+  border: 0.5px solid rgba(249, 115, 22, 0.35) !important;
+}
+
+/* Inputs / textareas with dark background + light text */
+[data-theme="light"] input[style*="background: #1a1a1a"],
+[data-theme="light"] textarea[style*="background: #1a1a1a"],
+[data-theme="light"] input[style*="background:#1a1a1a"],
+[data-theme="light"] textarea[style*="background:#1a1a1a"] {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+/* Page-level background wrappers */
+[data-theme="light"] [style*="background: #0d0d0d"][style*="minHeight"],
+[data-theme="light"] [style*="background:#0d0d0d"][style*="minHeight"],
+[data-theme="light"] [style*="background: #0d0d0d"][style*="min-height"] {
+  background: #f7f7f7 !important;
+}
+
+/* CTA buttons that use orange bg + dark text — keep orange, switch text to white */
+[data-theme="light"] button[style*="background: #F97316"][style*="color: #0d0d0d"],
+[data-theme="light"] button[style*="background:#F97316"][style*="color:#0d0d0d"],
+[data-theme="light"] button[style*="background: #F97316"][style*="color: #000"],
+[data-theme="light"] button[style*="background:#F97316"][style*="color:#000"] {
+  color: #ffffff !important;
+}
+
