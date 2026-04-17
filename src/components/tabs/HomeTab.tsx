@@ -1,693 +1,597 @@
-import { useState, useEffect, useCallback } from "react";
-import { ArrowUp, ArrowDown, Send, TrendingUp, Sparkles, Globe, Zap, X, FileText, LayoutGrid, Box } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import type { Database } from "@/integrations/supabase/types";
-import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
+import { motion } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 import SectionError from "@/components/ui/section-error";
+import { formatSmartDate } from "@/lib/formatDate";
 
-type Entry = Database["public"]["Tables"]["entries"]["Row"];
-
-export interface AuraScore {
-  aura_score: number;
-  capture_score: number;
-  signal_score: number;
-  content_score: number;
-  score_status: string;
-  score_description: string;
-  score_trend: number | null;
-}
-
-interface TimelineItem {
-  id: string;
-  type: "trend" | "signal" | "aura";
-  title: string;
-  description: string;
-  sourceLabel: string;
-  timeAgo: string;
-  url?: string;
-  signalId?: string;
-  status?: string;
-}
-
-interface TopSignal {
-  id: string;
-  signal_title: string;
-  what_it_means_for_you: string | null;
-}
+type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
 interface HomeTabProps {
-  entries?: Entry[];
+  entries?: any[];
   onOpenChat?: (msg?: string) => void;
   onRefresh?: () => Promise<void> | void;
   onNavigateToSignal?: (signalId: string) => void;
-  onDraftToStudio?: (prefill: { topic: string; context: string; signalId?: string; signalTitle?: string; contentFormat?: "post" | "carousel" | "framework_summary" }) => void;
+  onOpenCapture?: () => void;
+  onSwitchTab?: (tab: TabValue) => void;
+  onDraftToStudio?: (prefill: any) => void;
 }
 
-const PLACEHOLDERS = [
-  "What should I write about this week?",
-  "Where are the gaps in my authority?",
-  "How do I position for a CDO role?",
-];
-
-function getRelativeTime(date: string): string {
-  const diff = Date.now() - new Date(date).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
+interface ScoreSnap {
+  score: number;
+  components: any;
+  created_at: string;
+}
+interface RecMove {
+  id: string;
+  title: string;
+  rationale: string;
+  output_type: string;
+}
+interface Trend {
+  id: string;
+  headline: string;
+  insight: string;
+  url: string | null;
+  source: string;
+  fetched_at: string;
+  status?: string;
+}
+interface TopSignal {
+  signal_title: string;
+  confidence: number;
 }
 
-function getTrendDate(publishedAt: string | null): string {
-  if (!publishedAt) return "Recent";
-  const now = new Date();
-  const pub = new Date(publishedAt);
-  const diffMs = now.getTime() - pub.getTime();
-  const days = Math.floor(diffMs / 86400000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  if (days <= 6) return `${days} days ago`;
-  return "1 week ago";
-}
+const ACCENT = "#F97316";
+const GREEN = "#7ab648";
+const RED = "#E24B4A";
 
-const HomeTab = ({ entries = [], onOpenChat, onRefresh, onNavigateToSignal, onDraftToStudio }: HomeTabProps) => {
-  const [auraScore, setAuraScore] = useState<AuraScore | null>(null);
-  const [userName, setUserName] = useState("");
-  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
-  const [topSignal, setTopSignal] = useState<TopSignal | null>(null);
-  const [trendCount, setTrendCount] = useState(0);
-  const [auraInput, setAuraInput] = useState("");
-  const [placeholder] = useState(() => PLACEHOLDERS[new Date().getDate() % PLACEHOLDERS.length]);
-  const [moves, setMoves] = useState<any[]>([]);
+// ────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────
+
+const getGreeting = (h: number) => {
+  if (h >= 5 && h < 12) return "GOOD MORNING";
+  if (h >= 12 && h < 17) return "GOOD AFTERNOON";
+  return "GOOD EVENING";
+};
+
+const fmtTime = (d: Date) =>
+  d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+
+const timeAgo = (iso: string) => formatSmartDate(iso);
+
+// ────────────────────────────────────────────────
+// Component
+// ────────────────────────────────────────────────
+
+const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
+  const [now, setNow] = useState(new Date());
+  const [userName, setUserName] = useState<string>("");
+
+  // section-level loading + error
+  const [briefLoading, setBriefLoading] = useState(true);
+  const [briefError, setBriefError] = useState(false);
   const [movesLoading, setMovesLoading] = useState(true);
-  const [expandedMoveId, setExpandedMoveId] = useState<string | null>(null);
-  const [moveSignalTitles, setMoveSignalTitles] = useState<Record<string, string[]>>({});
-  const [loadError, setLoadError] = useState(false);
+  const [movesError, setMovesError] = useState(false);
+  const [trendsLoading, setTrendsLoading] = useState(true);
+  const [trendsError, setTrendsError] = useState(false);
+  const [trendsCountLoading, setTrendsCountLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
-    setLoadError(false);
-    try {
-      const { data: { user } } = await withTimeout(supabase.auth.getUser());
+  // data
+  const [latestScore, setLatestScore] = useState<ScoreSnap | null>(null);
+  const [score7dAgo, setScore7dAgo] = useState<number | null>(null);
+  const [daysSinceCapture, setDaysSinceCapture] = useState<number | null>(null);
+  const [topSignal, setTopSignal] = useState<TopSignal | null>(null);
+  const [topMove, setTopMove] = useState<RecMove | null>(null);
+  const [newFollowers30d, setNewFollowers30d] = useState<number>(0);
+  const [moves, setMoves] = useState<RecMove[]>([]);
+  const [trends, setTrends] = useState<Trend[]>([]);
+  const [trendsBadgeCount, setTrendsBadgeCount] = useState<number>(0);
+
+  // per-trend UI state
+  const [addedSignalIds, setAddedSignalIds] = useState<Set<string>>(new Set());
+  const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
+
+  // Live clock
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Load name
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const meta: any = user.user_metadata || {};
+      const fallback = (user.email || "").split("@")[0];
+      let name = meta.first_name || meta.full_name || meta.name || "";
+      try {
+        const { data } = await supabase
+          .from("diagnostic_profiles")
+          .select("first_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (data?.first_name) name = data.first_name;
+      } catch {}
+      setUserName((name || fallback || "there").toString().split(" ")[0].toUpperCase());
+    })();
+  }, []);
 
-    const session = (await supabase.auth.getSession()).data.session;
-    if (!session) return;
-
-    // Update last_visit_at
-    await supabase
-      .from("diagnostic_profiles")
-      .update({ last_visit_at: new Date().toISOString() } as any)
-      .eq("user_id", user.id);
-
-    // Fetch profile name
-    const { data: profile } = await supabase
-      .from("diagnostic_profiles")
-      .select("firm, level, last_visit_at, first_name")
-      .eq("user_id", user.id)
-      .single();
-
-    const profileFirstName = (profile as any)?.first_name;
-    if (profileFirstName) {
-      setUserName(profileFirstName);
-    } else {
-      const email = user.email || "";
-      const fallback = email.split("@")[0].split(".")[0];
-      setUserName(fallback.charAt(0).toUpperCase() + fallback.slice(1));
-    }
-
-    // Fetch Aura Score — get fresh token to avoid expired JWT
-    supabase.auth.getSession().then(({ data: { session: freshSession } }) => {
-      const token = freshSession?.access_token || session.access_token;
-      return supabase.functions.invoke("calculate-aura-score", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    }).then(({ data }) => {
-      if (data && typeof data.aura_score === "number") {
-        setAuraScore(data as AuraScore);
-      }
-    }).catch(console.error);
-
-    // Fetch top signal
-    const { data: signals } = await supabase
-      .from("strategic_signals")
-      .select("id, signal_title, what_it_means_for_you")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .order("priority_score", { ascending: false })
-      .limit(1);
-
-    if (signals && signals.length > 0) {
-      setTopSignal(signals[0] as TopSignal);
-    }
-
-    // Fetch industry trends (new)
-    const { data: trends } = await supabase
-      .from("industry_trends" as any)
-      .select("*")
-      .eq("user_id", user.id)
-      .eq("status", "new")
-      .order("fetched_at", { ascending: false })
-      .limit(5);
-
-    const trendItems: TimelineItem[] = ((trends as any[]) || []).map((t: any) => ({
-      id: t.id,
-      type: "trend" as const,
-      title: t.headline,
-      description: t.insight,
-      sourceLabel: `From the web · ${getTrendDate(t.published_at)}`,
-      timeAgo: getTrendDate(t.published_at),
-      url: t.url,
-      status: t.status,
-    }));
-
-    setTrendCount(trendItems.length);
-
-    // Fetch recent signal updates
-    const lastVisit = profile?.last_visit_at || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: recentSignals } = await supabase
-      .from("strategic_signals")
-      .select("id, signal_title, explanation, updated_at")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .gt("updated_at", lastVisit)
-      .order("updated_at", { ascending: false })
-      .limit(3);
-
-    const signalItems: TimelineItem[] = ((recentSignals as any[]) || []).map((s: any) => ({
-      id: `sig-${s.id}`,
-      type: "signal" as const,
-      title: s.signal_title,
-      description: s.explanation?.slice(0, 80) || "",
-      sourceLabel: `Your signal · ${getRelativeTime(s.updated_at)}`,
-      timeAgo: getRelativeTime(s.updated_at),
-      signalId: s.id,
-    }));
-
-    // Merge and sort by recency, max 6
-    const merged = [...trendItems, ...signalItems]
-      .sort((a, b) => {
-        // Rough sort by timeAgo — prefer items with "just now" or "Xm ago"
-        return 0; // already sorted from DB
-      })
-      .slice(0, 8);
-
-    setTimeline(merged);
-
-    // Check staleness of industry_trends
-    const latestTrend = (trends as any[])?.[0];
-    const eighteenHoursAgo = Date.now() - 18 * 60 * 60 * 1000;
-    const isStale = !latestTrend || new Date(latestTrend.fetched_at).getTime() < eighteenHoursAgo;
-
-    if (isStale) {
-      supabase.functions.invoke("fetch-industry-trends", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      }).catch(console.error);
-    }
-    // Fetch recommended moves
-    setMovesLoading(true);
+  // ─── Loaders ───
+  const loadBriefing = useCallback(async () => {
+    setBriefLoading(true);
+    setBriefError(false);
     try {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: existingMoves } = await supabase
-        .from("recommended_moves" as any)
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .gte("created_at", twentyFourHoursAgo)
-        .order("created_at", { ascending: false })
-        .limit(3);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("no user");
+      const uid = user.id;
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
-      if (existingMoves && (existingMoves as any[]).length > 0) {
-        setMoves(existingMoves as any[]);
+      const [latestRes, prevRes, lastEntryRes, sigRes, moveRes, follRes] = await Promise.all([
+        supabase.from("score_snapshots").select("score, components, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("score_snapshots").select("score").eq("user_id", uid).lte("created_at", sevenDaysAgo).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("entries").select("created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("strategic_signals").select("signal_title, confidence").eq("user_id", uid).eq("status", "active").order("confidence", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("recommended_moves").select("id, title, rationale, output_type").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("influence_snapshots").select("follower_growth").eq("user_id", uid).eq("source_type", "linkedin_export").gte("snapshot_date", thirtyDaysAgo),
+      ]);
+
+      setLatestScore(latestRes.data ?? null);
+      setScore7dAgo(prevRes.data?.score ?? null);
+      if (lastEntryRes.data?.created_at) {
+        const diffMs = Date.now() - new Date(lastEntryRes.data.created_at).getTime();
+        setDaysSinceCapture(Math.floor(diffMs / 86400_000));
       } else {
-        const freshSession2 = (await supabase.auth.getSession()).data.session;
-        const { data: genData } = await supabase.functions.invoke("generate-moves", {
-          body: { user_id: user.id },
-          headers: { Authorization: `Bearer ${freshSession2?.access_token || session.access_token}` },
-        });
-        if (genData?.moves && genData.moves.length > 0) {
-          setMoves(genData.moves);
-        } else {
-          setMoves([]);
-        }
+        setDaysSinceCapture(null);
       }
+      setTopSignal(sigRes.data ?? null);
+      setTopMove(moveRes.data ?? null);
+      setNewFollowers30d((follRes.data || []).reduce((s: number, r: any) => s + (r.follower_growth || 0), 0));
     } catch (e) {
-      console.error("Failed to load moves:", e);
-      setMoves([]);
+      console.error("[HomeTab] briefing load failed", e);
+      setBriefError(true);
     } finally {
-      setMovesLoading(false);
-    }
-    } catch (err) {
-      console.error("[HomeTab] loadData failed", err);
-      setLoadError(true);
-      showQueryErrorToast();
+      setBriefLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const loadMoves = useCallback(async () => {
+    setMovesLoading(true);
+    setMovesError(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("no user");
+      const { data, error } = await supabase
+        .from("recommended_moves")
+        .select("id, title, rationale, output_type")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      setMoves(data || []);
+    } catch (e) {
+      console.error("[HomeTab] moves load failed", e);
+      setMovesError(true);
+    } finally {
+      setMovesLoading(false);
+    }
+  }, []);
 
-  const handleAddToSignals = async (item: TimelineItem) => {
-    const session = (await supabase.auth.getSession()).data.session;
-    if (!session || !item.url) return;
+  const loadTrends = useCallback(async () => {
+    setTrendsLoading(true);
+    setTrendsError(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("no user");
+      const { data, error } = await supabase
+        .from("industry_trends")
+        .select("id, headline, insight, url, source, fetched_at, status")
+        .eq("user_id", user.id)
+        .order("fetched_at", { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      setTrends((data || []) as Trend[]);
+    } catch (e) {
+      console.error("[HomeTab] trends load failed", e);
+      setTrendsError(true);
+    } finally {
+      setTrendsLoading(false);
+    }
+  }, []);
 
-    // Call ingest-capture
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-      body: JSON.stringify({ type: "url", source_url: item.url, content: item.title }),
-    }).catch(console.error);
+  const loadTrendsBadge = useCallback(async () => {
+    setTrendsCountLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+      const { count } = await supabase
+        .from("industry_trends")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("fetched_at", sevenDaysAgo);
+      setTrendsBadgeCount(count || 0);
+    } catch (e) {
+      console.error("[HomeTab] trends badge failed", e);
+    } finally {
+      setTrendsCountLoading(false);
+    }
+  }, []);
 
-    // Update trend status
-    await supabase
-      .from("industry_trends" as any)
-      .update({ status: "added" } as any)
-      .eq("id", item.id);
+  useEffect(() => {
+    loadBriefing();
+    loadMoves();
+    loadTrends();
+    loadTrendsBadge();
+  }, [loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
 
-    setTimeline(prev => prev.filter(t => t.id !== item.id));
-    toast("Added to your intelligence — signal detection running.");
+  // ─── Derived ───
+  const scoreDiff = useMemo(() => {
+    if (latestScore == null || score7dAgo == null) return null;
+    return latestScore.score - score7dAgo;
+  }, [latestScore, score7dAgo]);
+
+  const captureScore = useMemo(() => {
+    const c = latestScore?.components?.capture_score;
+    return typeof c === "number" ? c : parseInt(c, 10) || 0;
+  }, [latestScore]);
+
+  // Build narrative parts (with styling colors)
+  type Part = { text: string; bold?: boolean; color?: string };
+  const narrative: Part[] = useMemo(() => {
+    const parts: Part[] = [];
+    // Sentence 1
+    if (scoreDiff != null && scoreDiff < -5) {
+      parts.push({ text: "Your authority score is " });
+      parts.push({ text: "declining", color: RED });
+      parts.push({ text: " — down " });
+      parts.push({ text: `${Math.abs(scoreDiff)} points`, bold: true });
+      parts.push({ text: " this week. " });
+    } else if (scoreDiff != null && scoreDiff > 5) {
+      parts.push({ text: "Your authority score is " });
+      parts.push({ text: "growing", color: GREEN });
+      parts.push({ text: " — up " });
+      parts.push({ text: `${scoreDiff} points`, bold: true });
+      parts.push({ text: " this week. " });
+    } else {
+      parts.push({ text: "Your authority score is holding steady this week. " });
+    }
+
+    // Sentence 2
+    if (topSignal) {
+      parts.push({ text: "Your top signal (" });
+      parts.push({ text: topSignal.signal_title, bold: true });
+      parts.push({ text: " at " });
+      parts.push({ text: `${Math.round((topSignal.confidence || 0) * 100)}%`, bold: true });
+      parts.push({ text: ") has a " });
+      parts.push({ text: "publishing window open right now", color: ACCENT });
+      parts.push({ text: ". " });
+    } else {
+      parts.push({ text: "Capture more sources to build your signal intelligence. " });
+    }
+
+    // Sentence 3
+    if (daysSinceCapture != null && daysSinceCapture >= 4 && captureScore < 80) {
+      parts.push({ text: "You haven't captured anything in " });
+      parts.push({ text: `${daysSinceCapture} days`, bold: true, color: RED });
+      parts.push({ text: " — this is " });
+      parts.push({ text: "directly reducing your score", color: RED });
+      parts.push({ text: "." });
+    } else if (daysSinceCapture != null && daysSinceCapture >= 4 && captureScore >= 80) {
+      parts.push({ text: "Your signal base is strong — now is the time to " });
+      parts.push({ text: "publish", color: ACCENT });
+      parts.push({ text: "." });
+    } else if (daysSinceCapture != null && daysSinceCapture < 4 && (scoreDiff ?? 0) < 0) {
+      parts.push({ text: "Keep capturing and publishing to reverse the decline." });
+    } else {
+      parts.push({ text: "Keep your current pace — your authority is " });
+      parts.push({ text: "compounding", color: GREEN });
+      parts.push({ text: "." });
+    }
+
+    if (newFollowers30d > 0) {
+      parts.push({ text: " You gained " });
+      parts.push({ text: `${newFollowers30d.toLocaleString()} followers`, bold: true });
+      parts.push({ text: " this month." });
+    }
+    return parts;
+  }, [scoreDiff, topSignal, daysSinceCapture, captureScore, newFollowers30d]);
+
+  // ─── Actions ───
+  const handlePrimaryCTA = () => {
+    if (daysSinceCapture != null && daysSinceCapture >= 4) {
+      onOpenCapture?.();
+    } else if (topMove) {
+      onSwitchTab?.("authority");
+    } else {
+      onOpenCapture?.();
+    }
   };
 
-  const handleDismiss = async (item: TimelineItem) => {
-    await supabase
-      .from("industry_trends" as any)
-      .update({ status: "dismissed" } as any)
-      .eq("id", item.id);
+  const primaryLabel = daysSinceCapture != null && daysSinceCapture >= 4
+    ? "Capture now →"
+    : topMove ? "Draft your move →" : "Capture now →";
 
-    setTimeline(prev => prev.filter(t => t.id !== item.id));
+  const dismissMove = async (id: string) => {
+    setMoves(prev => prev.filter(m => m.id !== id));
+    try {
+      await supabase.from("recommended_moves").update({ status: "dismissed" }).eq("id", id);
+    } catch (e) {
+      console.error("[HomeTab] dismiss move failed", e);
+    }
   };
 
-  const handleAuraSend = () => {
-    if (!auraInput.trim()) return;
-    onOpenChat?.(auraInput.trim());
-    setAuraInput("");
+  const addTrendToSignals = async (trend: Trend) => {
+    setAddedSignalIds(prev => new Set(prev).add(trend.id));
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.functions.invoke("detect-signals", {
+        body: { user_id: user.id, entry_id: null, trend_title: trend.headline },
+      });
+    } catch (e) {
+      console.error("[HomeTab] add trend to signals failed", e);
+    }
   };
 
-  const scoreColor = (score: number) => {
-    if (score >= 65) return "#F97316";
-    if (score >= 40) return "#EF9F27";
-    return "#E24B4A";
+  const dismissTrend = (id: string) => {
+    setDismissedTrendIds(prev => new Set(prev).add(id));
   };
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const visibleTrends = trends.filter(t => !dismissedTrendIds.has(t.id));
 
-  const lowestComponent = auraScore
-    ? (() => {
-        const { capture_score, signal_score, content_score } = auraScore;
-        const min = Math.min(capture_score, signal_score, content_score);
-        if (capture_score === min) return "capture";
-        if (signal_score === min) return "signal";
-        return "content";
-      })()
-    : null;
-
+  // ─── Render ───
   return (
-    <div className="space-y-5 pb-32 relative">
-      {loadError && (
-        <SectionError onRetry={loadData} message="Couldn't load your home. " />
-      )}
-      {/* 1. Status bar */}
-      <div className="flex items-center justify-between">
-        <span style={{ color: "#3a3a3a", fontSize: 11, fontWeight: 500, letterSpacing: 1 }}>
-          {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </span>
-        {trendCount > 0 && (
-          <span
-            style={{
-              background: "#F97316",
-              color: "#0d0d0d",
-              fontSize: 10,
-              fontWeight: 600,
-              padding: "3px 10px",
-              borderRadius: 20,
-              letterSpacing: 0.5,
-            }}
-          >
-            {trendCount} new trend{trendCount !== 1 ? "s" : ""}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="space-y-6 max-w-3xl"
+    >
+      {/* SECTION 1 — Header bar */}
+      <header className="flex items-end justify-between gap-3 pt-1">
+        <div>
+          <div className="text-foreground" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em" }}>
+            {fmtTime(now)}
+          </div>
+          <div className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
+            {getGreeting(now.getHours())}{userName ? `, ${userName}` : ""}
+          </div>
+        </div>
+        {!trendsCountLoading && trendsBadgeCount > 0 && (
+          <span style={{
+            background: ACCENT, color: "#fff", fontSize: 11, fontWeight: 500,
+            padding: "3px 12px", borderRadius: 20,
+          }}>
+            {trendsBadgeCount} new trend{trendsBadgeCount === 1 ? "" : "s"}
           </span>
         )}
-      </div>
+      </header>
 
-      {/* 2. Header */}
-      <div>
-        <span style={{ color: "#3a3a3a", fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase" as const }}>
-          {greeting}, {userName}
-        </span>
-      </div>
+      {/* SECTION 2 — AI daily briefing */}
+      {briefError ? (
+        <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
+          <SectionError onRetry={loadBriefing} message="Couldn't load briefing. " />
+        </div>
+      ) : briefLoading ? (
+        <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-11/12" />
+          <Skeleton className="h-4 w-3/4" />
+          <div className="flex gap-2 pt-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-8 w-32" />
+          </div>
+        </div>
+      ) : (
+        <div
+          className="rounded-r-lg border"
+          style={{
+            background: "hsl(var(--card))",
+            borderColor: "hsl(var(--border) / 0.5)",
+            borderLeftWidth: 4,
+            borderLeftColor: ACCENT,
+            padding: "16px 20px",
+          }}
+        >
+          <p style={{ fontSize: 14, lineHeight: 1.75, color: "hsl(var(--muted-foreground))", margin: 0 }}>
+            {narrative.map((p, i) => (
+              <span
+                key={i}
+                style={{
+                  fontWeight: p.bold ? 600 : 400,
+                  color: p.color || (p.bold ? "hsl(var(--foreground))" : undefined),
+                }}
+              >
+                {p.text}
+              </span>
+            ))}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              onClick={handlePrimaryCTA}
+              style={{
+                background: ACCENT, color: "#fff",
+                fontSize: 12, fontWeight: 600,
+                padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
+              }}
+            >
+              {primaryLabel}
+            </button>
+            <button
+              onClick={() => onSwitchTab?.("intelligence")}
+              style={{
+                border: "0.5px solid hsl(var(--border))",
+                color: "hsl(var(--muted-foreground))",
+                background: "transparent",
+                fontSize: 12, padding: "7px 18px", borderRadius: 4,
+                marginLeft: 4, cursor: "pointer",
+              }}
+            >
+              See your signals →
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* 3. Score Card removed per terminology standardisation */}
-
-      {/* 4. Today's Focus — Recommended Moves */}
-      <motion.div
-        className="aura-hero-card"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, delay: 0.1 }}
-      >
-        <span style={{ color: "#3a3a3a", fontSize: 10, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase" as const }}>
+      {/* SECTION 3 — Today's focus */}
+      <section>
+        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 10 }}>
           Today's Focus
-        </span>
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-          {movesLoading ? (
-            [0, 1, 2].map((i) => (
-              <div key={i} style={{ background: "#141414", border: "1px solid #1f1f1f", borderRadius: 10, padding: 16, height: 100 }}>
-                <div style={{ width: "60%", height: 12, background: "#1f1f1f", borderRadius: 4 }} />
-                <div style={{ width: "90%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 10 }} />
-                <div style={{ width: "40%", height: 10, background: "#1a1a1a", borderRadius: 4, marginTop: 6 }} />
-              </div>
-            ))
-          ) : moves.length > 0 ? (
-            moves.slice(0, 3).map((move: any) => {
-              const badgeColor = move.output_type === "carousel" ? "#4A90D9" : move.output_type === "framework" ? "#5AA469" : "#F97316";
-              const BadgeIcon = move.output_type === "carousel" ? LayoutGrid : move.output_type === "framework" ? Box : FileText;
-              const isExpanded = expandedMoveId === move.id;
+        </div>
+        {movesError ? (
+          <SectionError onRetry={loadMoves} message="Couldn't load moves. " />
+        ) : movesLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : moves.length === 0 ? (
+          <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px", color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
+            No moves yet — Aura will generate your first strategic move after you capture more sources
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {moves.map((m, i) => {
+              const badge =
+                m.output_type === "carousel" ? { label: "⊞ CAROUSEL", bg: "#5b8def18", color: "#5b8def", border: "#5b8def44" }
+                : m.output_type === "framework" ? { label: "◈ FRAMEWORK", bg: "#7ab64818", color: GREEN, border: "#7ab64840" }
+                : { label: "✦ POST", bg: "#F9731618", color: ACCENT, border: "#F9731644" };
+              const isHero = i === 0;
               return (
-                <div key={move.id} style={{ background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: "14px 16px" }}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#e0e0e0", lineHeight: 1.3, flex: 1 }}>
-                      {move.title}
+                <div
+                  key={m.id}
+                  style={{
+                    background: isHero ? "hsl(var(--card))" : "hsl(var(--card))",
+                    border: "0.5px solid hsl(var(--border))",
+                    borderLeftWidth: isHero ? 3 : 0.5,
+                    borderLeftColor: isHero ? ACCENT : "hsl(var(--border))",
+                    borderRadius: isHero ? "0 8px 8px 0" : 8,
+                    padding: "14px 16px",
+                    backgroundImage: isHero ? "linear-gradient(90deg, rgba(249,115,22,0.04), transparent 60%)" : "none",
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: "hsl(var(--foreground))" }}>
+                      {m.title}
                     </div>
-                    <span style={{
-                      fontSize: 9, fontWeight: 600, color: badgeColor, background: `${badgeColor}15`,
-                      border: `1px solid ${badgeColor}30`, padding: "2px 8px", borderRadius: 12,
-                      whiteSpace: "nowrap" as const, display: "flex", alignItems: "center", gap: 3,
-                      textTransform: "uppercase" as const, letterSpacing: 0.5, flexShrink: 0,
-                    }}>
-                      <BadgeIcon style={{ width: 9, height: 9 }} />
-                      {move.output_type}
+                    <span style={{ background: badge.bg, color: badge.color, border: `0.5px solid ${badge.border}`, fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 3, whiteSpace: "nowrap" }}>
+                      {badge.label}
                     </span>
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11, color: "#666", marginTop: 6, lineHeight: 1.4,
-                      ...(isExpanded ? {} : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as any, overflow: "hidden" }),
-                    }}
-                    title={move.rationale}
-                  >
-                    {move.rationale}
-                  </div>
-                  {/* Expanded: show source signal titles */}
-                  {isExpanded && moveSignalTitles[move.id] && moveSignalTitles[move.id].length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {moveSignalTitles[move.id].map((st: string, idx: number) => (
-                        <span key={idx} style={{
-                          fontSize: 9, color: "#888", background: "#1a1a1a", border: "1px solid #252525",
-                          padding: "2px 8px", borderRadius: 8,
-                        }}>
-                          {st}
-                        </span>
-                      ))}
+                  {m.rationale && (
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", lineHeight: 1.5, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {m.rationale}
                     </div>
                   )}
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex items-center" style={{ marginTop: 10 }}>
                     <button
-                      onClick={() => {
-                        const fmt = move.output_type === "carousel" ? "carousel" : move.output_type === "framework" ? "framework_summary" : "post";
-                        onDraftToStudio?.({
-                          topic: move.title,
-                          context: move.rationale,
-                          signalId: Array.isArray(move.source_signal_ids) && move.source_signal_ids.length > 0 ? move.source_signal_ids[0] : undefined,
-                          signalTitle: moveSignalTitles[move.id]?.[0] || undefined,
-                          contentFormat: fmt as any,
-                        });
-                      }}
-                      style={{ fontSize: 10, fontWeight: 600, color: "#F97316", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer" }}
+                      onClick={() => onSwitchTab?.("authority")}
+                      style={{ color: ACCENT, fontSize: 11, fontWeight: 500, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
                     >
                       Draft It
                     </button>
                     <button
-                      onClick={async () => {
-                        if (isExpanded) {
-                          setExpandedMoveId(null);
-                          return;
-                        }
-                        setExpandedMoveId(move.id);
-                        // Fetch signal titles if not cached
-                        if (!moveSignalTitles[move.id] && Array.isArray(move.source_signal_ids) && move.source_signal_ids.length > 0) {
-                          const { data: sigs } = await supabase
-                            .from("strategic_signals")
-                            .select("signal_title")
-                            .in("id", move.source_signal_ids);
-                          setMoveSignalTitles(prev => ({ ...prev, [move.id]: (sigs || []).map((s: any) => s.signal_title) }));
-                        } else if (!moveSignalTitles[move.id]) {
-                          setMoveSignalTitles(prev => ({ ...prev, [move.id]: [] }));
-                        }
-                      }}
-                      style={{ fontSize: 10, fontWeight: 500, color: "#555", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}
+                      onClick={() => onSwitchTab?.("intelligence")}
+                      style={{ color: "hsl(var(--muted-foreground) / 0.7)", fontSize: 11, marginLeft: 14, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
                     >
-                      {isExpanded ? "Collapse" : "Explore"}
+                      Explore
                     </button>
                     <button
-                      onClick={async () => {
-                        setMoves(prev => prev.filter(m => m.id !== move.id));
-                        await supabase
-                          .from("recommended_moves" as any)
-                          .update({ status: "dismissed" } as any)
-                          .eq("id", move.id);
-                      }}
-                      style={{ fontSize: 10, fontWeight: 400, color: "#333", background: "transparent", border: "none", padding: "4px 0", cursor: "pointer", marginLeft: 8 }}
+                      onClick={() => dismissMove(m.id)}
+                      style={{ color: "hsl(var(--muted-foreground) / 0.7)", fontSize: 11, marginLeft: 14, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
                     >
                       Dismiss
                     </button>
                   </div>
                 </div>
               );
-            })
-          ) : (
-            <div style={{ background: "#1a1a1a", borderRadius: 12, padding: "20px 16px", textAlign: "center" as const }}>
-              <div style={{ fontSize: 12, color: "#555", lineHeight: 1.4 }}>
-                Capture more content to unlock strategic recommendations.
-              </div>
-              <button
-                onClick={() => onOpenChat?.("I want to capture my first insight")}
-                style={{ marginTop: 12, background: "#F97316", color: "#0d0d0d", fontSize: 12, fontWeight: 500, padding: "9px 20px", borderRadius: 8, border: "none", cursor: "pointer" }}
-              >
-                Capture now
-              </button>
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* SECTION 4 — Live intelligence */}
+      <section>
+        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 10 }}>
+          Live Intelligence
+        </div>
+        {trendsError ? (
+          <SectionError onRetry={loadTrends} message="Couldn't load intelligence. " />
+        ) : trendsLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+        ) : visibleTrends.length === 0 ? (
+          <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px" }}>
+            <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>No live intelligence yet</div>
+            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
+              Aura fetches industry trends automatically based on your signal topics
             </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* 5. Live Intelligence Timeline */}
-      <div>
-        <span style={{ color: "#3a3a3a", fontSize: 10, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase" as const }}>
-          Live intelligence
-        </span>
-
-        <div style={{ marginTop: 12 }}>
-          <AnimatePresence>
-            {timeline.length > 0 ? (
-              timeline.map((item, i) => {
-                const dotColor =
-                  item.type === "trend" ? "#F97316" :
-                  item.type === "signal" ? "#7ab648" :
-                  "#534AB7";
-
-                return (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                    transition={{ duration: 0.25, delay: i * 0.05 }}
-                    className="flex gap-3"
-                    style={{ marginBottom: 2 }}
-                  >
-                    {/* Dot + line */}
-                    <div className="flex flex-col items-center" style={{ width: 16, flexShrink: 0 }}>
-                      <div style={{
-                        width: 8, height: 8, borderRadius: "50%", background: dotColor,
-                        marginTop: 6, flexShrink: 0,
-                      }} />
-                      {i < timeline.length - 1 && (
-                        <div style={{ width: 1, flex: 1, background: "#1f1f1f", minHeight: 32 }} />
+          </div>
+        ) : (
+          <div>
+            {visibleTrends.map((t, idx) => {
+              const isAdded = addedSignalIds.has(t.id);
+              const isLast = idx === visibleTrends.length - 1;
+              return (
+                <div
+                  key={t.id}
+                  className="flex gap-3"
+                  style={{
+                    padding: "10px 0",
+                    borderBottom: isLast ? "none" : "0.5px solid hsl(var(--border))",
+                  }}
+                >
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, marginTop: 6, flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0">
+                    <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 3 }}>
+                      {t.source ? `FROM ${t.source.toUpperCase()}` : "FROM THE WEB"} · {timeAgo(t.fetched_at)}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 3 }}>
+                      {t.url ? (
+                        <a href={t.url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+                          {t.headline}
+                        </a>
+                      ) : t.headline}
+                    </div>
+                    {t.insight && (
+                      <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", lineHeight: 1.5, marginBottom: 6 }}>
+                        {t.insight}
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      {isAdded ? (
+                        <span style={{ color: GREEN, fontSize: 10, padding: "3px 10px" }}>✓ Added</span>
+                      ) : (
+                        <button
+                          onClick={() => addTrendToSignals(t)}
+                          style={{ border: "0.5px solid #F9731644", color: ACCENT, background: "transparent", fontSize: 10, padding: "3px 10px", borderRadius: 3, cursor: "pointer" }}
+                        >
+                          Add to signals
+                        </button>
                       )}
+                      <button
+                        onClick={() => dismissTrend(t.id)}
+                        style={{ color: "hsl(var(--muted-foreground) / 0.7)", fontSize: 10, background: "transparent", border: "none", marginLeft: 10, cursor: "pointer", padding: 0 }}
+                      >
+                        Dismiss
+                      </button>
                     </div>
-
-                    {/* Content */}
-                    <div style={{ flex: 1, paddingBottom: 16 }}>
-                      <div style={{ fontSize: 9, color: "#444", fontWeight: 500, letterSpacing: 0.8, textTransform: "uppercase" as const }}>
-                        {item.sourceLabel}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#c0c0c0", fontWeight: 500, marginTop: 3, lineHeight: 1.3 }}>
-                        {item.title}
-                      </div>
-                      <div style={{ fontSize: 11, color: "#555", marginTop: 2, lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
-                        {item.description}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex gap-2 mt-2">
-                        {item.type === "trend" && (
-                          <>
-                            <button
-                              onClick={() => handleAddToSignals(item)}
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 500,
-                                color: "#F97316",
-                                border: "1px solid #F97316",
-                                background: "transparent",
-                                padding: "4px 10px",
-                                borderRadius: 6,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Add to signals
-                            </button>
-                            <button
-                              onClick={() => handleDismiss(item)}
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 500,
-                                color: "#444",
-                                border: "1px solid #252525",
-                                background: "transparent",
-                                padding: "4px 10px",
-                                borderRadius: 6,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Dismiss
-                            </button>
-                          </>
-                        )}
-                        {item.type === "signal" && (
-                          <>
-                            <button
-                              onClick={() => onOpenChat?.(`Draft a LinkedIn post about: ${item.title}`)}
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 500,
-                                color: "#F97316",
-                                border: "1px solid #F97316",
-                                background: "transparent",
-                                padding: "4px 10px",
-                                borderRadius: 6,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Draft content
-                            </button>
-                            <button
-                              onClick={() => item.signalId && onNavigateToSignal?.(item.signalId)}
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 500,
-                                color: "#444",
-                                border: "1px solid #252525",
-                                background: "transparent",
-                                padding: "4px 10px",
-                                borderRadius: 6,
-                                cursor: "pointer",
-                              }}
-                            >
-                              View signal
-                            </button>
-                          </>
-                        )}
-                        {item.type === "aura" && (
-                          <button
-                            onClick={() => onOpenChat?.(item.title)}
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 500,
-                              color: "#F97316",
-                              border: "1px solid #F97316",
-                              background: "transparent",
-                              padding: "4px 10px",
-                              borderRadius: 6,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Ask now
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                style={{ fontSize: 12, color: "#444", padding: "20px 0", textAlign: "center" as const }}
-              >
-                You're up to date. Check back tomorrow for new trends.
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* 6. Ask Aura Input — pinned above bottom nav */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 56,
-          left: 0,
-          right: 0,
-          padding: "8px 16px",
-          background: "#0d0d0d",
-          borderTop: "1px solid #1f1f1f",
-          zIndex: 35,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            background: "#141414",
-            borderRadius: 24,
-            padding: "6px 6px 6px 16px",
-          }}
-        >
-          <input
-            type="text"
-            value={auraInput}
-            onChange={(e) => setAuraInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAuraSend()}
-            placeholder={placeholder}
-            style={{
-              flex: 1,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              color: "#f0f0f0",
-              fontSize: 13,
-            }}
-          />
-          <button
-            onClick={handleAuraSend}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: auraInput.trim() ? "#F97316" : "#252525",
-              border: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: auraInput.trim() ? "pointer" : "default",
-              transition: "background 0.2s",
-              flexShrink: 0,
-            }}
-          >
-            <Send style={{ width: 14, height: 14, color: auraInput.trim() ? "#0d0d0d" : "#555" }} />
-          </button>
-        </div>
-      </div>
-    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </motion.div>
   );
 };
 
