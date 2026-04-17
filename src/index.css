@@ -664,3 +664,51 @@
   color: #ffffff !important;
 }
 
+/* ── Hero card (light mode only) ──
+   Top-priority card per page: Today's Focus (Home), Your Market Position (My Story),
+   Your Next Move (Intelligence). Dark mode is untouched. */
+[data-theme="light"] .aura-hero-card {
+  background: #ffffff !important;
+  border: 0.5px solid #e0e0e0 !important;
+  border-left: 4px solid #F97316 !important;
+  border-radius: 0 8px 8px 0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+}
+/* Eyebrow label inside hero card → darker orange for white-bg contrast */
+[data-theme="light"] .aura-hero-card [style*="color: #F97316"][style*="text-transform"],
+[data-theme="light"] .aura-hero-card [style*="color:#F97316"][style*="text-transform"],
+[data-theme="light"] .aura-hero-card [style*="color: #F97316"][style*="textTransform"],
+[data-theme="light"] .aura-hero-card [style*="color:#F97316"][style*="textTransform"] {
+  color: #C45E0A !important;
+}
+/* Title text inside hero → strong dark */
+[data-theme="light"] .aura-hero-card h1,
+[data-theme="light"] .aura-hero-card h2,
+[data-theme="light"] .aura-hero-card h3,
+[data-theme="light"] .aura-hero-card h4 {
+  color: #111111 !important;
+  font-weight: 700 !important;
+}
+/* Body text inside hero card */
+[data-theme="light"] .aura-hero-card p,
+[data-theme="light"] .aura-hero-card [style*="color: #888"],
+[data-theme="light"] .aura-hero-card [style*="color:#888"],
+[data-theme="light"] .aura-hero-card [style*="color: #666"],
+[data-theme="light"] .aura-hero-card [style*="color:#666"],
+[data-theme="light"] .aura-hero-card [style*="color: #e0e0e0"],
+[data-theme="light"] .aura-hero-card [style*="color:#e0e0e0"] {
+  color: #777777 !important;
+}
+/* Ghost buttons inside hero card */
+[data-theme="light"] .aura-hero-card button[style*="background: transparent"],
+[data-theme="light"] .aura-hero-card button[style*="background:transparent"] {
+  border: 0.5px solid #e0e0e0 !important;
+  color: #aaaaaa !important;
+}
+/* Primary orange button inside hero card stays orange w/ white text */
+[data-theme="light"] .aura-hero-card button[style*="background: #F97316"],
+[data-theme="light"] .aura-hero-card button[style*="background:#F97316"] {
+  background: #F97316 !important;
+  color: #ffffff !important;
+}
+

@@ -728,7 +728,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         <AutomationStrip />
 
         {/* ── Your Next Move ── */}
-        <div style={{ marginBottom: 14 }}>
+        <div className="aura-hero-card" style={{ marginBottom: 14 }}>
           <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
         </div>
 
