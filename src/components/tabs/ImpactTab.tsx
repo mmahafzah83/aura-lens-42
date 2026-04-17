@@ -401,11 +401,6 @@ const ImpactTab = () => {
     }));
   }, [followerRows, selectedDays]);
 
-  const followerYDomain = useMemo<[number, number]>(() => {
-    const vals = followerSeries.map(f => f.followers).filter(v => v > 0);
-    if (vals.length === 0) return [0, 100];
-    return [Math.max(0, Math.min(...vals) - 200), Math.max(...vals) + 200];
-  }, [followerSeries]);
 
   const bestDay = useMemo(() => {
     if (followerRows.length === 0) return null;
