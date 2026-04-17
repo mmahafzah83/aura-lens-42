@@ -369,19 +369,7 @@ const ImpactTab = () => {
       : daysSinceLastAll <= 3 ? "#EF9F27"
         : "#E24B4A";
 
-  /* ── Score chart series ── */
-  const scoreSeries = useMemo(() => snapshots.map((s, i, arr) => ({
-    date: s.created_at,
-    label: fmtDateShort(s.created_at),
-    score: s.score,
-    showLabel: i % 3 === 0 || i === arr.length - 1,
-  })), [snapshots]);
-
-  const scoreYDomain = useMemo<[number, number]>(() => {
-    if (scoreSeries.length === 0) return [0, 100];
-    const min = Math.min(...scoreSeries.map(s => s.score));
-    return [Math.max(0, min - 10), 100];
-  }, [scoreSeries]);
+  /* (score chart removed — only sub-score cards remain) */
 
   /* ── Sub-score card colour rules ── */
   const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
