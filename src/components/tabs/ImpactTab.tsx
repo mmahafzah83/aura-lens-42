@@ -5,10 +5,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
-  LineChart, Line,
-  AreaChart, Area,
   BarChart, Bar,
-  XAxis, YAxis, Tooltip,
+  XAxis, YAxis, Tooltip, ReferenceLine,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
