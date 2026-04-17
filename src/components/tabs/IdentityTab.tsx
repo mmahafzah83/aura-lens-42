@@ -252,13 +252,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <p style={{ fontSize: 14, fontWeight: 600, color: "#f0f0f0", marginTop: 10 }}>{userName}</p>
             <p style={{ fontSize: 11, color: "#888", lineHeight: 1.4 }}>{profile?.level || "Executive"}</p>
 
-            {/* Authority score */}
-            <div style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.2)", borderRadius: 6, padding: "6px 10px", marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 22, fontWeight: 700, color: "#C5A55A" }}>
-                {authorityScore != null ? Math.round(Number(authorityScore)) : "—"}
-              </span>
-              <span style={{ fontSize: 9, color: "#888" }}>Authority<br/>Score</span>
-            </div>
           </div>
 
           {/* Identity Facts */}

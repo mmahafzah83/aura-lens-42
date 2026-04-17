@@ -767,7 +767,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 <p style={{ color: "#666", fontSize: 13, marginBottom: 20 }}>Capture knowledge to start building signals.</p>
                 <Button variant="outline" size="sm" onClick={runPatternDetection} disabled={detecting} className="gap-2 text-xs">
                   {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  Detect Patterns
+                  Detect signals
                 </Button>
               </div>
             ) : (
