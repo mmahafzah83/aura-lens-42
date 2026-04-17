@@ -608,11 +608,60 @@
 /* Text → muted */
 [data-theme="light"] [style*="color: #555"],
 [data-theme="light"] [style*="color:#555"],
+[data-theme="light"] [style*="color: #444"],
+[data-theme="light"] [style*="color:#444"],
 [data-theme="light"] [style*="color: #3d3d3d"],
 [data-theme="light"] [style*="color:#3d3d3d"],
+[data-theme="light"] [style*="color: #3a3a3a"],
+[data-theme="light"] [style*="color:#3a3a3a"],
+[data-theme="light"] [style*="color: #333"],
+[data-theme="light"] [style*="color:#333"],
 [data-theme="light"] [style*="color: #2a2a2a"],
 [data-theme="light"] [style*="color:#2a2a2a"] {
-  color: #aaaaaa !important;
+  color: #999999 !important;
+}
+
+/* Light-grey body text used in dark mode (#c0c0c0, #d0d0d0, #e0e0e0)
+   → dark for readability on white in light mode */
+[data-theme="light"] [style*="color: #c0c0c0"],
+[data-theme="light"] [style*="color:#c0c0c0"],
+[data-theme="light"] [style*="color: #e0e0e0"],
+[data-theme="light"] [style*="color:#e0e0e0"] {
+  color: #111111 !important;
+}
+
+/* Card backgrounds — additional hex variants that React may serialize.
+   Cover both spaced and non-spaced colon variants for #141414, #131313, #111. */
+[data-theme="light"] [style*="background:#141414"],
+[data-theme="light"] [style*="background: #141414"],
+[data-theme="light"] [style*="background:#131313"],
+[data-theme="light"] [style*="background: #131313"],
+[data-theme="light"] [style*="background:#111"],
+[data-theme="light"] [style*="background: #111"],
+[data-theme="light"] [style*="background:#1a1a1a"],
+[data-theme="light"] [style*="background: #1a1a1a"] {
+  background: #ffffff !important;
+  border-color: #e8e8e8 !important;
+}
+
+/* Borders — additional dark hex variants */
+[data-theme="light"] [style*="border: 1px solid #252525"],
+[data-theme="light"] [style*="border:1px solid #252525"],
+[data-theme="light"] [style*="border: 1px solid #1f1f1f"],
+[data-theme="light"] [style*="border:1px solid #1f1f1f"],
+[data-theme="light"] [style*="border: 1px solid #1e1e1e"],
+[data-theme="light"] [style*="border:1px solid #1e1e1e"],
+[data-theme="light"] [style*="border: 0.5px solid #1e1e1e"],
+[data-theme="light"] [style*="border:0.5px solid #1e1e1e"],
+[data-theme="light"] [style*="border: 0.5px solid #252525"],
+[data-theme="light"] [style*="border:0.5px solid #252525"] {
+  border-color: #e8e8e8 !important;
+}
+
+/* Vertical timeline connector lines (1px wide divs) */
+[data-theme="light"] [style*="background: #1f1f1f"],
+[data-theme="light"] [style*="background:#1f1f1f"] {
+  background: #e8e8e8 !important;
 }
 
 /* Orange chips on white backgrounds — soften the accent fill/border
