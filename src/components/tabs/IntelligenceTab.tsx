@@ -559,7 +559,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
   const [movesCount, setMovesCount] = useState(0);
-  const [publishedCount, setPublishedCount] = useState(0);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; angle?: string; context?: string } | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<SubTab>("signals");
   const [detecting, setDetecting] = useState(false);
