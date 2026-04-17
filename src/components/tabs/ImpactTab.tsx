@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Upload, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
   LineChart, Line,
+  AreaChart, Area,
   BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip,
+  XAxis, YAxis, Tooltip,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
@@ -32,6 +34,7 @@ interface PostMetricRow {
     title: string | null;
     post_text: string | null;
     post_url: string | null;
+    published_at: string | null;
   } | null;
 }
 
@@ -39,6 +42,8 @@ interface FollowerRow {
   snapshot_date: string;
   followers: number;
   follower_growth: number;
+  impressions?: number;
+  engagement_rate?: number;
 }
 
 type RangeDays = 7 | 30 | 90 | 365;
@@ -70,21 +75,16 @@ const formatCompact = (n: number): string => {
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
-const extractPostIdFromUrl = (url: string | null | undefined): string | null => {
-  if (!url) return null;
-  // LinkedIn URLs end with long alphanumeric/hyphen ID — grab the trailing token
-  const m = url.replace(/\/$/, "").match(/[-_]([A-Za-z0-9]{8,})\/?$/);
-  return m ? m[1] : null;
-};
-
 /* ── Component ── */
 const ImpactTab = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [selectedDays, setSelectedDays] = useState<RangeDays>(30);
 
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [captureRows, setCaptureRows] = useState<{ created_at: string }[]>([]);
   const [capturesThisMonth, setCapturesThisMonth] = useState(0);
+  const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
@@ -93,6 +93,10 @@ const ImpactTab = () => {
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
+
+  // Peak score in last 30 days (always — regardless of filter — for narrative)
+  const [peakScore30, setPeakScore30] = useState<number | null>(null);
+  const [peakDate30, setPeakDate30] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -108,7 +112,7 @@ const ImpactTab = () => {
     const sinceIso = sinceDate.toISOString();
     const sinceDateOnly = sinceIso.slice(0, 10);
 
-    // Snapshots within range
+    // Snapshots within selected range (for chart)
     const snapRes = await safeQuery(
       () => supabase
         .from("score_snapshots")
@@ -119,6 +123,20 @@ const ImpactTab = () => {
       { context: "Impact: snapshots", silent: true }
     );
     setSnapshots((snapRes.data as Snapshot[]) || []);
+
+    // Peak score in last 30 days for narrative
+    const thirty = new Date();
+    thirty.setDate(thirty.getDate() - 30);
+    const peakRes = await supabase
+      .from("score_snapshots")
+      .select("score, created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", thirty.toISOString())
+      .order("score", { ascending: false })
+      .limit(1);
+    const peak = (peakRes.data as any)?.[0];
+    setPeakScore30(peak?.score ?? null);
+    setPeakDate30(peak?.created_at ?? null);
 
     // Captures within range
     const capRes = await safeQuery(
@@ -143,7 +161,17 @@ const ImpactTab = () => {
       .gte("created_at", monthStart.toISOString());
     setCapturesThisMonth(monthCount ?? 0);
 
-    // LinkedIn metrics count (overall, to decide whether to show upload card)
+    // Last capture all-time (for "days since last capture" narrative)
+    const lastCapRes = await supabase
+      .from("entries")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const lastCap = (lastCapRes.data as any)?.[0]?.created_at;
+    setLastCaptureAll(lastCap ? new Date(lastCap) : null);
+
+    // LinkedIn metrics count (overall, for empty state decisions)
     const { count: trueCount } = await supabase
       .from("linkedin_post_metrics")
       .select("id", { count: "exact", head: true })
@@ -153,7 +181,7 @@ const ImpactTab = () => {
     if ((trueCount ?? 0) > 0) {
       const topRes = await supabase
         .from("linkedin_post_metrics")
-        .select("post_id, impressions, reactions, engagement_rate, snapshot_date, post:linkedin_posts(title, post_text, post_url)")
+        .select("post_id, impressions, reactions, engagement_rate, snapshot_date, post:linkedin_posts(title, post_text, post_url, published_at)")
         .eq("user_id", user.id)
         .gte("snapshot_date", sinceDateOnly)
         .order("engagement_rate", { ascending: false })
@@ -163,7 +191,7 @@ const ImpactTab = () => {
       setTopPosts([]);
     }
 
-    // Follower / influence snapshots from LinkedIn export
+    // Follower / influence snapshots from LinkedIn export (within range, followers > 0)
     const folRes = await safeQuery(
       () => supabase
         .from("influence_snapshots")
@@ -174,14 +202,16 @@ const ImpactTab = () => {
         .order("snapshot_date", { ascending: true }),
       { context: "Impact: influence snapshots", silent: true }
     );
-    const folRows = (folRes.data as any[]) || [];
-    setFollowerRows(folRows.map(r => ({
-      snapshot_date: r.snapshot_date,
-      followers: Number(r.followers || 0),
-      follower_growth: Number(r.follower_growth || 0),
-    })));
+    const folRowsAll = (folRes.data as any[]) || [];
+    setFollowerRows(folRowsAll
+      .filter(r => Number(r.followers || 0) > 0)
+      .map(r => ({
+        snapshot_date: r.snapshot_date,
+        followers: Number(r.followers || 0),
+        follower_growth: Number(r.follower_growth || 0),
+      })));
 
-    // Hero numbers — latest follower count (most recent snapshot, any date)
+    // Latest follower count (most recent snapshot, any date)
     const latestFolRes = await supabase
       .from("influence_snapshots")
       .select("followers")
@@ -192,11 +222,11 @@ const ImpactTab = () => {
       .limit(1);
     setLatestFollowers((latestFolRes.data?.[0] as any)?.followers ?? null);
 
-    // Period impressions + avg engagement rate from influence_snapshots
-    const totalImp = folRows.reduce((s, r) => s + Number(r.impressions || 0), 0);
-    setPeriodImpressions(folRows.length ? totalImp : null);
+    // Period impressions + avg engagement rate
+    const totalImp = folRowsAll.reduce((s, r) => s + Number(r.impressions || 0), 0);
+    setPeriodImpressions(folRowsAll.length ? totalImp : null);
 
-    const erRows = folRows.filter(r => Number(r.impressions || 0) > 0 && Number(r.engagement_rate || 0) > 0);
+    const erRows = folRowsAll.filter(r => Number(r.engagement_rate || 0) > 0);
     if (erRows.length > 0) {
       const avg = erRows.reduce((s, r) => s + Number(r.engagement_rate || 0), 0) / erRows.length;
       setPeriodEngagementRate(avg);
@@ -230,37 +260,82 @@ const ImpactTab = () => {
     return best?.score ?? null;
   }, [snapshots]);
 
-  const score3 = useMemo(() => {
-    if (snapshots.length === 0) return null;
-    const target = new Date();
-    target.setDate(target.getDate() - 3);
-    let best: Snapshot | null = null;
-    for (const s of snapshots) {
-      if (new Date(s.created_at) <= target) best = s;
-    }
-    return best?.score ?? snapshots[0].score;
-  }, [snapshots]);
-
   const weekDelta = score7 !== null ? latestScore - score7 : null;
 
   let trendLabel = "→ Stable";
   let trendColor = "var(--color-text-secondary)";
   if (weekDelta !== null) {
     if (weekDelta > 0) { trendLabel = `↑ +${weekDelta} this week`; trendColor = "#7ab648"; }
-    else if (weekDelta < 0) { trendLabel = `↓ ${weekDelta} this week`; trendColor = "#E24B4A"; }
+    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "#E24B4A"; }
   }
 
-  // Aura interpretation
-  let interpretation = "Your score is stable. Consistent captures will push it higher.";
-  let interpretationColor = "var(--color-text-secondary)";
-  if (score3 !== null && latestScore < score3 && captureScore < 80) {
-    const drop = score3 - latestScore;
-    interpretation = `Your score dropped ${drop} point${drop === 1 ? "" : "s"} this week. You haven't captured anything recently — resume your capture habit to recover.`;
-    interpretationColor = "#E24B4A";
-  } else if (score7 !== null && latestScore > score7) {
-    interpretation = "Your authority score is growing. Keep capturing and publishing to maintain momentum.";
-    interpretationColor = "#7ab648";
-  }
+  const daysSinceLastAll = lastCaptureAll ? daysBetween(new Date(), lastCaptureAll) : null;
+
+  const newFollowersPeriod = useMemo(
+    () => followerRows.reduce((s, r) => s + (r.follower_growth || 0), 0),
+    [followerRows]
+  );
+
+  /* ── AI narrative ── */
+  const narrative = useMemo(() => {
+    type Part = { text: string; type: "neutral" | "primary" | "negative" | "positive" | "action" };
+    const parts: Part[] = [];
+
+    // Opening
+    if (weekDelta !== null && weekDelta < -5) {
+      parts.push({ text: "Your authority score is declining — ", type: "neutral" });
+      parts.push({ text: `down ${Math.abs(weekDelta)} points this week. `, type: "negative" });
+    } else if (weekDelta !== null && weekDelta > 5) {
+      parts.push({ text: "Your authority score is growing — ", type: "neutral" });
+      parts.push({ text: `up ${weekDelta} points this week. `, type: "positive" });
+    } else {
+      parts.push({ text: "Your authority score is holding steady this week. ", type: "neutral" });
+    }
+
+    // Middle
+    if (captureScore < 80 && daysSinceLastAll !== null && daysSinceLastAll >= 4 && peakScore30 !== null && peakDate30) {
+      parts.push({ text: `It peaked at `, type: "neutral" });
+      parts.push({ text: `${peakScore30}`, type: "primary" });
+      parts.push({ text: ` on `, type: "neutral" });
+      parts.push({ text: `${fmtDateShort(peakDate30)}`, type: "primary" });
+      parts.push({ text: ` when you were capturing daily — then `, type: "neutral" });
+      parts.push({ text: `dropped as activity stalled`, type: "negative" });
+      parts.push({ text: ". ", type: "neutral" });
+    } else if (contentScore === 100) {
+      parts.push({ text: "Your content output is at full strength. ", type: "positive" });
+    } else if (signalScore >= 85) {
+      parts.push({ text: "Your signal intelligence is strong. ", type: "positive" });
+    }
+
+    // Closing
+    if (captureScore < 80) {
+      parts.push({ text: "One action fixes this: ", type: "neutral" });
+      parts.push({ text: "capture something today.", type: "action" });
+    } else if (contentScore < 80) {
+      parts.push({ text: "Publishing more consistently will push your score higher.", type: "neutral" });
+    } else {
+      parts.push({ text: "Keep your current pace to continue compounding.", type: "neutral" });
+    }
+
+    if (newFollowersPeriod > 0) {
+      parts.push({ text: " You gained ", type: "neutral" });
+      parts.push({ text: `${newFollowersPeriod} followers`, type: "positive" });
+      parts.push({ text: " this period.", type: "neutral" });
+    }
+
+    return parts;
+  }, [weekDelta, captureScore, contentScore, signalScore, daysSinceLastAll, peakScore30, peakDate30, newFollowersPeriod]);
+
+  const partColor = (t: string) => {
+    switch (t) {
+      case "primary": return "var(--color-text-primary)";
+      case "negative": return "#E24B4A";
+      case "positive": return "#7ab648";
+      case "action": return "#F97316";
+      default: return "var(--color-text-secondary)";
+    }
+  };
+  const partWeight = (t: string) => (t === "primary" ? 500 : t === "action" ? 600 : t === "negative" || t === "positive" ? 500 : 400);
 
   /* ── Capture activity (selectedDays) ── */
   const captureSeries = useMemo(() => {
@@ -276,7 +351,7 @@ const ImpactTab = () => {
       const key = startOfDay(new Date(r.created_at)).toISOString().slice(0, 10);
       if (key in buckets) buckets[key]++;
     }
-    const everyN = selectedDays <= 7 ? 1 : selectedDays <= 30 ? 3 : selectedDays <= 90 ? 7 : 30;
+    const everyN = selectedDays <= 7 ? 1 : selectedDays <= 30 ? 3 : 7;
     return Object.entries(buckets).map(([date, captures], i, arr) => ({
       date,
       label: fmtDateShort(date),
@@ -289,21 +364,19 @@ const ImpactTab = () => {
     (acc, x) => (x.captures > acc.captures ? x : acc),
     { label: "—", captures: 0 } as { label: string; captures: number }
   );
-  const lastCaptureDate = captureRows.length
-    ? new Date(captureRows[captureRows.length - 1].created_at)
-    : null;
-  const daysSinceLast = lastCaptureDate ? daysBetween(new Date(), lastCaptureDate) : null;
-  const daysColor = daysSinceLast === null
+
+  const daysColor = daysSinceLastAll === null
     ? "var(--color-text-muted)"
-    : daysSinceLast === 0 ? "#7ab648"
-      : daysSinceLast <= 3 ? "#EF9F27"
+    : daysSinceLastAll === 0 ? "#7ab648"
+      : daysSinceLastAll <= 3 ? "#EF9F27"
         : "#E24B4A";
 
   /* ── Score chart series ── */
-  const scoreSeries = useMemo(() => snapshots.map(s => ({
+  const scoreSeries = useMemo(() => snapshots.map((s, i, arr) => ({
     date: s.created_at,
     label: fmtDateShort(s.created_at),
     score: s.score,
+    showLabel: i % 3 === 0 || i === arr.length - 1,
   })), [snapshots]);
 
   const scoreYDomain = useMemo<[number, number]>(() => {
@@ -312,9 +385,27 @@ const ImpactTab = () => {
     return [Math.max(0, min - 10), 100];
   }, [scoreSeries]);
 
+  /* ── Sub-score card colour rules ── */
+  const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
+    if (kind === "capture") {
+      if (value >= 90) return { color: "#7ab648", border: "#7ab64844", tag: "Healthy" };
+      if (value >= 70) return { color: "#F97316", border: "#F9731644", tag: "Good" };
+      return { color: "#E24B4A", border: "#E24B4A44", tag: "Needs action" };
+    }
+    if (kind === "content") {
+      if (value === 100) return { color: "#7ab648", border: "#7ab64844", tag: "Perfect" };
+      if (value >= 70) return { color: "#F97316", border: "#F9731644", tag: "Good" };
+      return { color: "#E24B4A", border: "#E24B4A44", tag: "Needs action" };
+    }
+    // signal
+    if (value >= 85) return { color: "#7ab648", border: "#7ab64844", tag: "Strong" };
+    if (value >= 70) return { color: "#F97316", border: "#F9731644", tag: "Good" };
+    return { color: "#E24B4A", border: "#E24B4A44", tag: "Build signals" };
+  };
+
   /* ── Follower chart series ── */
   const followerSeries = useMemo(() => {
-    const everyN = selectedDays <= 7 ? 1 : selectedDays <= 30 ? 3 : selectedDays <= 90 ? 7 : 30;
+    const everyN = selectedDays <= 7 ? 1 : selectedDays <= 30 ? 3 : 7;
     return followerRows.map((r, i, arr) => ({
       date: r.snapshot_date,
       label: fmtDateShort(r.snapshot_date),
@@ -327,13 +418,9 @@ const ImpactTab = () => {
   const followerYDomain = useMemo<[number, number]>(() => {
     const vals = followerSeries.map(f => f.followers).filter(v => v > 0);
     if (vals.length === 0) return [0, 100];
-    return [Math.max(0, Math.min(...vals) - 500), Math.max(...vals) + 500];
+    return [Math.max(0, Math.min(...vals) - 200), Math.max(...vals) + 200];
   }, [followerSeries]);
 
-  const totalNewFollowers = useMemo(
-    () => followerRows.reduce((s, r) => s + (r.follower_growth || 0), 0),
-    [followerRows]
-  );
   const bestDay = useMemo(() => {
     if (followerRows.length === 0) return null;
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
@@ -388,15 +475,28 @@ const ImpactTab = () => {
 
   const ranges: RangeDays[] = [7, 30, 90, 365];
 
+  // Max engagement rate in topPosts (for inline bars)
+  const maxErPct = topPosts.reduce((m, p) => {
+    const raw = Number(p.engagement_rate || 0);
+    const er = raw > 1 ? raw : raw * 100;
+    return er > m ? er : m;
+  }, 0);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="space-y-8 max-w-5xl"
+      className="space-y-7 max-w-5xl"
     >
-      {/* Page header */}
-      <div className="space-y-1">
+      {/* ─────────── 1. PAGE HEADER ─────────── */}
+      <div className="space-y-1.5">
+        <div
+          className="text-[10px] font-semibold uppercase tracking-[0.16em]"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          Measure your influence
+        </div>
         <h1
           className="text-2xl sm:text-3xl font-bold tracking-tight"
           style={{ color: "var(--color-text-primary)", fontFamily: "Inter, sans-serif" }}
@@ -408,7 +508,7 @@ const ImpactTab = () => {
         </p>
       </div>
 
-      {/* ─────────── TIME FILTER ─────────── */}
+      {/* ─────────── 2. TIME FILTER ─────────── */}
       <div className="flex items-center gap-2">
         {ranges.map((r) => {
           const active = selectedDays === r;
@@ -430,230 +530,232 @@ const ImpactTab = () => {
         })}
       </div>
 
-      {/* ─────────── HERO NUMBERS ─────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <HeroStat
-          value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
-          label="LinkedIn followers"
-        />
-        <HeroStat
-          value={periodImpressions !== null ? formatCompact(periodImpressions) : "—"}
-          label="Impressions"
-        />
-        <HeroStat
-          value={periodEngagementRate !== null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
-          label="Avg engagement rate"
-        />
-      </div>
-
-      {/* ─────────── SECTION 1: Authority score ─────────── */}
+      {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
-        className="aura-hero-card rounded-xl p-6"
+        className="p-6"
         style={{
           background: "var(--color-card)",
           border: "0.5px solid var(--color-border)",
-          borderLeft: "4px solid var(--color-accent)",
+          borderLeft: "4px solid #F97316",
           borderRadius: "0 8px 8px 0",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
+          {/* LEFT: narrative */}
           <div>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
+              {narrative.map((p, i) => (
+                <span
+                  key={i}
+                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
+                >
+                  {p.text}
+                </span>
+              ))}
+            </p>
+
+            {captureScore < 80 && (
+              <button
+                onClick={() => navigate("/home")}
+                className="mt-4 inline-flex items-center gap-1.5"
+                style={{
+                  background: "#F97316",
+                  color: "#ffffff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "6px 16px",
+                  borderRadius: 4,
+                }}
+              >
+                Capture now →
+              </button>
+            )}
+          </div>
+
+          {/* RIGHT: authority score */}
+          <div className="md:text-right md:min-w-[180px]">
             <div
-              className="font-bold leading-none"
-              style={{ fontSize: 64, color: "var(--color-text-primary)", fontFamily: "Inter, sans-serif" }}
+              className="leading-none tabular-nums"
+              style={{ fontSize: 48, fontWeight: 700, color: "#F97316", fontFamily: "Inter, sans-serif" }}
             >
               {latestScore}
             </div>
             <div
-              className="text-xs uppercase tracking-widest mt-2"
-              style={{ color: "var(--color-text-muted)" }}
+              className="mt-1.5"
+              style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}
             >
               Authority score
             </div>
-            <div className="mt-3 text-sm font-medium" style={{ color: trendColor }}>
+            <div className="mt-2 text-xs font-medium" style={{ color: trendColor }}>
               {trendLabel}
             </div>
           </div>
-
-          <div className="space-y-4">
-            {[
-              { label: "Capture", value: captureScore },
-              { label: "Content", value: contentScore },
-              { label: "Signal", value: signalScore },
-            ].map((s) => (
-              <div key={s.label}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-medium" style={{ color: "var(--color-text-secondary)" }}>
-                    {s.label}
-                  </span>
-                  <span className="text-xs font-semibold tabular-nums" style={{ color: "var(--color-text-primary)" }}>
-                    {Math.round(s.value)}
-                  </span>
-                </div>
-                <div style={{ height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden" }}>
-                  <div
-                    style={{
-                      width: `${Math.max(0, Math.min(100, s.value))}%`,
-                      height: "100%",
-                      background: "var(--color-accent)",
-                      transition: "width 600ms ease",
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
+      </section>
 
-        <div className="mt-6">
+      {/* ─────────── 4. HEADLINE STATS ─────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <HeroStat
+          value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
+          label={latestFollowers !== null ? "LinkedIn followers" : "No data yet"}
+          color="#F97316"
+        />
+        <HeroStat
+          value={periodImpressions !== null ? formatCompact(periodImpressions) : "—"}
+          label={periodImpressions !== null ? "Impressions" : "No data yet"}
+          color="var(--color-text-primary)"
+        />
+        <HeroStat
+          value={periodEngagementRate !== null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
+          label={periodEngagementRate !== null ? "Avg engagement rate" : "No data yet"}
+          color="#7ab648"
+        />
+      </div>
+
+      {/* ─────────── 5. AUTHORITY SCORE BAND ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Score breakdown
+        </h2>
+        <div
+          className="rounded-lg p-4"
+          style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
+        >
+          {/* Sparkline */}
           {scoreSeries.length < 2 ? (
             <div
-              className="text-sm py-8 text-center rounded-lg"
-              style={{
-                color: "var(--color-text-muted)",
-                background: "var(--color-bg-subtle, transparent)",
-                border: "0.5px dashed var(--color-border)",
-              }}
+              className="text-xs py-6 text-center rounded-md"
+              style={{ color: "var(--color-text-muted)", border: "0.5px dashed var(--color-border)" }}
             >
               Not enough data yet
             </div>
           ) : (
-            <div style={{ height: 160, width: "100%" }}>
+            <div style={{ height: 100, width: "100%" }}>
               <ResponsiveContainer>
-                <LineChart data={scoreSeries} margin={{ top: 8, right: 12, bottom: 4, left: -12 }}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
+                <LineChart data={scoreSeries} margin={{ top: 6, right: 8, bottom: 4, left: -10 }}>
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
-                    axisLine={{ stroke: "var(--color-border)" }}
+                    tick={(p: any) => {
+                      const d = scoreSeries[p.index];
+                      if (!d?.showLabel) return <g />;
+                      return (
+                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
+                          {d.label}
+                        </text>
+                      );
+                    }}
+                    axisLine={false}
                     tickLine={false}
+                    interval={0}
                   />
                   <YAxis
                     domain={scoreYDomain}
-                    tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
                     axisLine={false}
                     tickLine={false}
-                    width={32}
+                    width={28}
                   />
                   <Tooltip
                     contentStyle={{
                       background: "var(--color-card)",
                       border: "0.5px solid var(--color-border)",
-                      borderRadius: 8,
-                      fontSize: 12,
+                      borderRadius: 6,
+                      fontSize: 11,
                       color: "var(--color-text-primary)",
                     }}
                     labelStyle={{ color: "var(--color-text-secondary)" }}
+                    formatter={(value: any) => [`${value}`, "Score"]}
                   />
                   <Line
                     type="monotone"
                     dataKey="score"
-                    stroke="var(--color-accent)"
+                    stroke="#F97316"
                     strokeWidth={2}
-                    dot={{ r: 3, fill: "var(--color-accent)", strokeWidth: 0 }}
-                    activeDot={{ r: 5 }}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#F97316" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           )}
-        </div>
 
-        <p className="mt-4 text-sm leading-relaxed" style={{ color: interpretationColor }}>
-          {interpretation}
-        </p>
-      </section>
-
-      {/* ─────────── SECTION 2: Capture activity ─────────── */}
-      <section>
-        <h2
-          className="text-sm font-semibold uppercase tracking-widest mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Capture activity — last {selectedDays} days
-        </h2>
-        <div
-          className="rounded-xl p-5"
-          style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
-        >
-          <div style={{ height: 140, width: "100%" }}>
-            <ResponsiveContainer>
-              <BarChart data={captureSeries} margin={{ top: 6, right: 8, bottom: 4, left: -16 }}>
-                <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={(p: any) => {
-                    const d = captureSeries[p.index];
-                    if (!d?.showLabel) return <g />;
-                    return (
-                      <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={10} fill="var(--color-text-muted)">
-                        {d.label}
-                      </text>
-                    );
+          {/* Sub-score cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+            {([
+              { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
+              { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
+              { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
+            ]).map((c) => {
+              const cfg = subScoreCard(c.kind, c.value);
+              return (
+                <div
+                  key={c.label}
+                  style={{
+                    background: "var(--color-bg-subtle, rgba(0,0,0,0.02))",
+                    borderRadius: 6,
+                    padding: "10px 12px",
+                    border: `0.5px solid ${cfg.border}`,
                   }}
-                  axisLine={{ stroke: "var(--color-border)" }}
-                  tickLine={false}
-                  interval={0}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  domain={[0, "auto"]}
-                  allowDataOverflow={false}
-                  tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <Tooltip
-                  cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
-                  contentStyle={{
-                    background: "var(--color-card)",
-                    border: "0.5px solid var(--color-border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    color: "var(--color-text-primary)",
-                  }}
-                />
-                <Bar dataKey="captures" fill="var(--color-accent)" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mt-5 pt-5" style={{ borderTop: "0.5px solid var(--color-border)" }}>
-            <Stat label="Captures this month" value={String(capturesThisMonth)} />
-            <Stat label="Most active day" value={mostActive.captures > 0 ? mostActive.label : "—"} />
-            <Stat
-              label="Days since last capture"
-              value={daysSinceLast === null ? "—" : String(daysSinceLast)}
-              valueColor={daysColor}
-            />
+                >
+                  <div className="flex items-baseline justify-between">
+                    <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                      {c.label}
+                    </div>
+                    <div
+                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
+                    >
+                      {cfg.tag}
+                    </div>
+                  </div>
+                  <div
+                    className="tabular-nums mt-1"
+                    style={{ fontSize: 22, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
+                  >
+                    {Math.round(c.value)}
+                  </div>
+                  <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
+                    {c.desc}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ─────────── SECTION: Follower growth ─────────── */}
+      {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
         <h2
-          className="text-sm font-semibold uppercase tracking-widest mb-3"
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
           Follower growth
         </h2>
         {followerRows.length === 0 ? (
           <div
-            className="rounded-xl p-6 text-sm text-center"
+            className="rounded-lg p-6 text-center"
             style={{
               border: "1.5px dashed var(--color-border)",
               color: "var(--color-text-secondary)",
               background: "transparent",
             }}
           >
-            <p>Import your LinkedIn analytics to see follower growth</p>
+            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
+              Import your LinkedIn analytics to see follower growth
+            </p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+              Upload your LinkedIn .xlsx export on this page
+            </p>
             {postMetricsCount === 0 && (
               <button
                 onClick={handleUploadClick}
-                className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
-                style={{ background: "var(--color-accent)", color: "#ffffff" }}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
+                style={{ background: "#F97316", color: "#ffffff" }}
               >
                 <Upload className="w-3.5 h-3.5" />
                 Upload LinkedIn .xlsx
@@ -662,32 +764,37 @@ const ImpactTab = () => {
           </div>
         ) : (
           <div
-            className="rounded-xl p-5"
+            className="rounded-lg p-4"
             style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
           >
-            <div style={{ height: 160, width: "100%" }}>
+            <div style={{ height: 140, width: "100%" }}>
               <ResponsiveContainer>
-                <LineChart data={followerSeries} margin={{ top: 8, right: 12, bottom: 4, left: -8 }}>
-                  <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
+                <AreaChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
+                  <defs>
+                    <linearGradient id="followerArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#7ab648" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#7ab648" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <XAxis
                     dataKey="label"
                     tick={(p: any) => {
                       const d = followerSeries[p.index];
                       if (!d?.showLabel) return <g />;
                       return (
-                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={10} fill="var(--color-text-muted)">
+                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
                           {d.label}
                         </text>
                       );
                     }}
-                    axisLine={{ stroke: "var(--color-border)" }}
+                    axisLine={false}
                     tickLine={false}
                     interval={0}
                   />
                   <YAxis
                     domain={followerYDomain}
                     tickFormatter={(v) => formatCompact(Number(v))}
-                    tick={{ fontSize: 10, fill: "var(--color-text-muted)" }}
+                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
                     axisLine={false}
                     tickLine={false}
                     width={36}
@@ -696,36 +803,34 @@ const ImpactTab = () => {
                     contentStyle={{
                       background: "var(--color-card)",
                       border: "0.5px solid var(--color-border)",
-                      borderRadius: 8,
-                      fontSize: 12,
+                      borderRadius: 6,
+                      fontSize: 11,
                       color: "var(--color-text-primary)",
                     }}
                     labelStyle={{ color: "var(--color-text-secondary)" }}
-                    formatter={(value: any, name: any, item: any) => {
-                      if (name === "followers") return [`${formatNumber(Number(value))} followers`, ""];
-                      return [`+${value} new`, ""];
-                    }}
+                    formatter={(value: any) => [`${formatNumber(Number(value))} followers`, ""]}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="followers"
                     stroke="#7ab648"
                     strokeWidth={2}
-                    dot={selectedDays <= 30 ? { r: 3, fill: "#7ab648", strokeWidth: 0 } : false}
-                    activeDot={{ r: 5 }}
+                    fill="url(#followerArea)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#7ab648" }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-5 pt-5" style={{ borderTop: "0.5px solid var(--color-border)" }}>
+            <div className="grid grid-cols-2 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
               <Stat
-                label="New followers"
-                value={`+${formatNumber(totalNewFollowers)}`}
+                label="New followers this period"
+                value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
                 valueColor="#7ab648"
               />
               <Stat
-                label="Best day"
+                label="Best single day"
                 value={bestDay && bestDay.follower_growth > 0
                   ? `+${bestDay.follower_growth} · ${fmtDateShort(bestDay.snapshot_date)}`
                   : "—"}
@@ -736,188 +841,300 @@ const ImpactTab = () => {
         )}
       </section>
 
-      {/* ─────────── SECTION: LinkedIn upload (when no metrics) ─────────── */}
-      {postMetricsCount === 0 && (
-        <section
-          className="rounded-xl p-6"
-          style={{ border: "1.5px dashed var(--color-border)", background: "transparent" }}
-        >
-          <div className="flex items-start gap-4">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "rgba(249,115,22,0.1)", border: "0.5px solid var(--color-border)" }}
-            >
-              <Upload className="w-5 h-5" style={{ color: "var(--color-accent)" }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                Import your LinkedIn analytics
-              </h3>
-              <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
-                Download your analytics from LinkedIn and upload here. Aura will import your impression data, follower growth, and top post performance.
-              </p>
-
-              <ol
-                className="mt-4 text-xs leading-relaxed space-y-1.5 pl-4 list-decimal"
-                style={{ color: "var(--color-text-secondary)" }}
-              >
-                <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
-                <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
-                <li>Select date range → Download</li>
-                <li>Upload the downloaded .xlsx file below</li>
-              </ol>
-
-              <div className="mt-4 flex items-center gap-3 flex-wrap">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".xlsx"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-                {!selectedFile ? (
-                  <button
-                    onClick={handleUploadClick}
-                    disabled={uploading}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-60"
-                    style={{ background: "var(--color-accent)", color: "#ffffff" }}
-                  >
-                    <Upload className="w-4 h-4" />
-                    Upload LinkedIn .xlsx file
-                  </button>
-                ) : (
-                  <>
-                    <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
-                      {selectedFile.name}
-                    </span>
-                    <button
-                      onClick={handleUpload}
-                      disabled={uploading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-60"
-                      style={{ background: "var(--color-accent)", color: "#ffffff" }}
-                    >
-                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                      {uploading ? "Importing..." : "Import"}
-                    </button>
-                    {!uploading && (
-                      <button
-                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                        className="text-xs"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ─────────── SECTION: Post performance ─────────── */}
-      {postMetricsCount > 0 && (
-        <section>
+      {/* ─────────── 7. POST PERFORMANCE ─────────── */}
+      <section>
+        <div className="flex items-baseline justify-between mb-3">
           <h2
-            className="text-sm font-semibold uppercase tracking-widest mb-3"
+            className="text-[11px] font-semibold uppercase tracking-[0.14em]"
             style={{ color: "var(--color-text-secondary)" }}
           >
             Post performance
           </h2>
+          <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
+            vs 2.5% LinkedIn avg
+          </span>
+        </div>
+
+        {postMetricsCount === 0 ? (
           <div
-            className="rounded-xl overflow-hidden"
+            className="rounded-lg p-6"
+            style={{ border: "1.5px dashed var(--color-border)", background: "transparent" }}
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: "rgba(249,115,22,0.1)", border: "0.5px solid var(--color-border)" }}
+              >
+                <Upload className="w-5 h-5" style={{ color: "#F97316" }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
+                  No post data for this period
+                </h3>
+                <p className="text-xs mt-1" style={{ color: "var(--color-text-secondary)" }}>
+                  Import your LinkedIn analytics to see post performance.
+                </p>
+                <ol
+                  className="mt-3 text-[11px] leading-relaxed space-y-1 pl-4 list-decimal"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
+                  <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
+                  <li>Select date range → Download</li>
+                  <li>Upload the .xlsx file below</li>
+                </ol>
+
+                <div className="mt-4 flex items-center gap-3 flex-wrap">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xlsx"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  {!selectedFile ? (
+                    <button
+                      onClick={handleUploadClick}
+                      disabled={uploading}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
+                      style={{ background: "#F97316", color: "#ffffff" }}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      Upload LinkedIn .xlsx file
+                    </button>
+                  ) : (
+                    <>
+                      <span className="text-[11px] px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
+                        {selectedFile.name}
+                      </span>
+                      <button
+                        onClick={handleUpload}
+                        disabled={uploading}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
+                        style={{ background: "#F97316", color: "#ffffff" }}
+                      >
+                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                        {uploading ? "Importing..." : "Import"}
+                      </button>
+                      {!uploading && (
+                        <button
+                          onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                          className="text-[11px]"
+                          style={{ color: "var(--color-text-muted)" }}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : topPosts.length === 0 ? (
+          <div
+            className="rounded-lg p-6 text-sm text-center"
+            style={{
+              border: "1.5px dashed var(--color-border)",
+              color: "var(--color-text-secondary)",
+              background: "transparent",
+            }}
+          >
+            <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>No post data for this period</p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+              Try a wider time range or import more LinkedIn analytics.
+            </p>
+          </div>
+        ) : (
+          <div
+            className="rounded-lg overflow-hidden"
             style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
           >
-            {topPosts.length === 0 ? (
-              <div className="p-6 text-sm text-center" style={{ color: "var(--color-text-muted)" }}>
-                No post performance in the selected range.
-              </div>
-            ) : (
-              topPosts.map((p, i) => {
-                // Title fallback chain
-                let title: string = (p.post?.title || "").trim();
-                if (!title) {
-                  const text = (p.post?.post_text || "").trim();
-                  if (text) {
-                    title = text.slice(0, 80) + (text.length > 80 ? "…" : "");
-                  } else {
-                    title = `Post from ${fmtDateShort(p.snapshot_date)}`;
-                  }
+            {topPosts.map((p, i) => {
+              // Title fallback chain
+              let title: string = (p.post?.title || "").trim();
+              if (!title) {
+                if (p.post?.published_at) {
+                  title = `Post · ${fmtDateShort(p.post.published_at)}`;
+                } else {
+                  title = `Post · ${fmtDateShort(p.snapshot_date)}`;
                 }
+              }
 
-                // Engagement rate normalization (some are stored 0-1, some 0-100)
-                const rawEr = Number(p.engagement_rate || 0);
-                const erPct = rawEr > 1 ? rawEr : rawEr * 100;
-                const isTop = i === 0;
+              // Engagement rate normalization
+              const rawEr = Number(p.engagement_rate || 0);
+              const erPct = rawEr > 1 ? rawEr : rawEr * 100;
+              const isTop = i === 0;
+              const fillPct = maxErPct > 0 ? (erPct / maxErPct) * 100 : 0;
 
-                let badge: { label: string; bg: string; color: string; border: string } | null = null;
-                if (erPct > 5) badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648", border: "#7ab64840" };
-                else if (erPct >= 3) badge = { label: "Above avg", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+              let badge: { label: string; bg: string; color: string } | null = null;
+              if (erPct > 5) badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648" };
+              else if (erPct >= 3) badge = { label: "Above avg", bg: "#F9731618", color: "#F97316" };
 
-                return (
-                  <div
-                    key={`${p.post_id ?? "x"}-${i}`}
-                    className="flex items-center gap-4 px-5 py-4"
-                    style={{
-                      borderBottom: i === topPosts.length - 1 ? "none" : "0.5px solid var(--color-border)",
-                      borderLeft: isTop ? "3px solid #F97316" : undefined,
-                      background: isTop ? "rgba(249,115,22,0.04)" : undefined,
-                    }}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate" style={{ color: "var(--color-text-primary)" }}>
-                        {title}
-                      </div>
-                      <div className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-                        {fmtDateShort(p.snapshot_date)}
-                      </div>
+              return (
+                <div
+                  key={`${p.post_id ?? "x"}-${i}`}
+                  className="px-5 py-4"
+                  style={{
+                    borderBottom: i === topPosts.length - 1 ? "none" : "0.5px solid var(--color-border)",
+                    borderLeft: isTop ? "3px solid #F97316" : undefined,
+                    paddingLeft: isTop ? 10 : undefined,
+                    background: isTop ? "rgba(249,115,22,0.04)" : undefined,
+                  }}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Rank */}
+                    <div
+                      className="shrink-0 w-6 text-center tabular-nums text-sm font-semibold"
+                      style={{ color: "var(--color-text-muted)" }}
+                    >
+                      {i + 1}
                     </div>
-                    <Metric label="Impressions" value={(p.impressions ?? 0).toLocaleString()} />
-                    <Metric label="Reactions" value={(p.reactions ?? 0).toLocaleString()} />
-                    <div className="text-right shrink-0 w-[110px]">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <span className="text-sm font-semibold tabular-nums" style={{ color: "var(--color-accent)" }}>
-                          {erPct.toFixed(1)}%
-                        </span>
-                        {badge && (
-                          <span
-                            className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold"
-                            style={{ background: badge.bg, color: badge.color, border: `0.5px solid ${badge.border}` }}
+
+                    {/* Center */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium truncate" style={{ color: "var(--color-text-primary)" }}>
+                          {title}
+                        </div>
+                        {p.post?.post_url && (
+                          <a
+                            href={p.post.post_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="shrink-0"
+                            style={{ color: "var(--color-text-muted)" }}
                           >
-                            {badge.label}
-                          </span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
                         )}
                       </div>
-                      <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-                        Engagement
+                      <div className="text-[11px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+                        {formatNumber(p.impressions ?? 0)} impressions
                       </div>
                     </div>
-                    {p.post?.post_url && (
-                      <a
-                        href={p.post.post_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="shrink-0"
-                        style={{ color: "var(--color-text-muted)" }}
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
+
+                    {/* Right */}
+                    <div className="text-right shrink-0">
+                      <div className="text-[13px] font-semibold tabular-nums" style={{ color: "#F97316" }}>
+                        {erPct.toFixed(1)}%
+                      </div>
+                      {badge && (
+                        <div
+                          className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
+                          style={{ background: badge.bg, color: badge.color, fontWeight: 600 }}
+                        >
+                          {badge.label}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                );
-              })
-            )}
+
+                  {/* Inline bar */}
+                  <div
+                    className="mt-2"
+                    style={{
+                      height: 3,
+                      background: "var(--color-border)",
+                      borderRadius: 2,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${fillPct}%`,
+                        height: "100%",
+                        background: "#F97316",
+                        borderRadius: 2,
+                        transition: "width 600ms ease",
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </section>
-      )}
+        )}
+      </section>
+
+      {/* ─────────── 8. CAPTURE ACTIVITY ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Capture activity — last {selectedDays} days
+        </h2>
+        <div
+          className="rounded-lg p-4"
+          style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
+        >
+          <div style={{ height: 120, width: "100%" }}>
+            <ResponsiveContainer>
+              <BarChart data={captureSeries} margin={{ top: 6, right: 8, bottom: 4, left: -16 }}>
+                <XAxis
+                  dataKey="label"
+                  tick={(p: any) => {
+                    const d = captureSeries[p.index];
+                    if (!d?.showLabel) return <g />;
+                    return (
+                      <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
+                        {d.label}
+                      </text>
+                    );
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={0}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  domain={[0, "auto"]}
+                  allowDataOverflow={false}
+                  tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={28}
+                />
+                <Tooltip
+                  cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
+                  contentStyle={{
+                    background: "var(--color-card)",
+                    border: "0.5px solid var(--color-border)",
+                    borderRadius: 6,
+                    fontSize: 11,
+                    color: "var(--color-text-primary)",
+                  }}
+                  formatter={(value: any) => [`${value} captures`, ""]}
+                />
+                <Bar dataKey="captures" fill="#F97316" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
+            <Stat label="Captures this month" value={String(capturesThisMonth)} />
+            <Stat label="Most active day" value={mostActive.captures > 0 ? mostActive.label : "—"} />
+            <Stat
+              label="Days since last capture"
+              value={
+                daysSinceLastAll === null
+                  ? "—"
+                  : daysSinceLastAll === 0
+                    ? "Today"
+                    : String(daysSinceLastAll)
+              }
+              valueColor={daysColor}
+            />
+          </div>
+        </div>
+      </section>
     </motion.div>
   );
 };
 
-const HeroStat = ({ value, label }: { value: string; label: string }) => (
+const HeroStat = ({ value, label, color }: { value: string; label: string; color: string }) => (
   <div
-    className="rounded-lg"
     style={{
       background: "var(--color-card)",
       border: "0.5px solid var(--color-border)",
@@ -927,7 +1144,7 @@ const HeroStat = ({ value, label }: { value: string; label: string }) => (
   >
     <div
       className="tabular-nums"
-      style={{ fontSize: 24, fontWeight: 700, color: "var(--color-accent)", fontFamily: "Inter, sans-serif", lineHeight: 1.1 }}
+      style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "Inter, sans-serif", lineHeight: 1.1 }}
     >
       {value}
     </div>
@@ -953,21 +1170,7 @@ const Stat = ({ label, value, valueColor }: { label: string; value: string; valu
     >
       {value}
     </div>
-    <div className="text-[11px] uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
-      {label}
-    </div>
-  </div>
-);
-
-const Metric = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
-  <div className="text-right shrink-0 w-[88px]">
-    <div
-      className="text-sm font-semibold tabular-nums"
-      style={{ color: accent ? "var(--color-accent)" : "var(--color-text-primary)" }}
-    >
-      {value}
-    </div>
-    <div className="text-[10px] uppercase tracking-wider mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+    <div className="text-[10px] uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
       {label}
     </div>
   </div>
