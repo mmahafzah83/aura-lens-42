@@ -218,7 +218,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
             )}
             {captured && (
               <div className="flex items-center gap-2 text-sm text-green-400">
-                <Check className="w-4 h-4" /> Capture saved. Your first signal will appear shortly.
+                <Check className="w-4 h-4" /> Source saved. Your first signal will appear shortly.
               </div>
             )}
 

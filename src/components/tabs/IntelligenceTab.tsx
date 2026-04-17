@@ -138,8 +138,8 @@ const AutomationStrip = () => {
   };
 
   const cards = [
-    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", icon: "⚡", title: "Auto-detect on capture", desc: "New pattern detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
-    { iconBg: "#0a1020", iconBorder: "#1a3060", icon: "↻", title: "Weekly pattern refresh", desc: "Patterns recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
+    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
+    { iconBg: "#0a1020", iconBorder: "#1a3060", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
     { iconBg: "#1a1200", iconBorder: "#3a2a00", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
   ];
 
@@ -722,7 +722,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         <div className="intel-counter-bar" style={{ background: "#141414", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
           {[
             { label: "Sources", count: entryCount, gold: false },
-            { label: "Patterns found", count: signals.length, gold: true },
+            { label: "Signals", count: signals.length, gold: true },
             { label: "Moves", count: movesCount, gold: false },
             { label: "Published", count: publishedCount, gold: false },
           ].map((step, i) => (
@@ -759,7 +759,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
            ═══════════════════════════════════════════ */}
         {activeSubTab === "signals" && (
           <>
-            <p style={{ color: "#444", fontSize: 12, margin: "-4px 0 14px" }}>Patterns Aura detected across everything you've captured — ranked by strength.</p>
+            <p style={{ color: "#444", fontSize: 12, margin: "-4px 0 14px" }}>Signals Aura detected across everything you've captured — ranked by strength.</p>
 
             {signals.length === 0 ? (
               <div style={{ textAlign: "center", padding: 40 }}>
@@ -767,7 +767,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 <p style={{ color: "#666", fontSize: 13, marginBottom: 20 }}>Capture knowledge to start building signals.</p>
                 <Button variant="outline" size="sm" onClick={runPatternDetection} disabled={detecting} className="gap-2 text-xs">
                   {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  Detect Patterns
+                  Detect signals
                 </Button>
               </div>
             ) : (
@@ -791,7 +791,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "#0d0d0d", overflowY: "auto", maxHeight: 600 }}>
                     {/* Header */}
                     <div style={{ padding: "14px 16px", borderBottom: "0.5px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600 }}>All patterns</span>
+                      <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600 }}>All signals</span>
                       <span style={{ fontSize: 10, color: "#333" }}>{sortedByConfidence.length} total</span>
                     </div>
 
@@ -825,7 +825,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               {s.signal_title}
                             </p>
                             <p style={{ fontSize: 9, color: "#333", margin: "2px 0 0" }}>
-                              {s.fragment_count} evidence · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
+                              {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
                             </p>
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#C5A55A" : "#555", flexShrink: 0 }}>
@@ -841,14 +841,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         onClick={() => setShowAllSignals(!showAllSignals)}
                         style={{ display: "block", width: "100%", textAlign: "center", padding: "10px 16px", fontSize: 10, color: "#333", background: "none", border: "none", borderTop: "0.5px solid #1a1a1a", cursor: "pointer" }}
                       >
-                        {showAllSignals ? "Show less ↑" : `Show all ${sortedByConfidence.length} patterns ↓`}
+                        {showAllSignals ? "Show less ↑" : `Show all ${sortedByConfidence.length} signals ↓`}
                       </button>
                     )}
                   </div>
                 </div>
-
-                {/* Key Insights strip */}
-                <KeyInsightsStrip onDraftToStudio={onDraftToStudio} />
               </>
             )}
           </>

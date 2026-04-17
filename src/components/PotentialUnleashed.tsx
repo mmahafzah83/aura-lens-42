@@ -23,7 +23,7 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
 
   const handleGenerate = async () => {
     if (entries.length === 0) {
-      toast({ title: "No captures yet", description: "Add some captures first.", variant: "destructive" });
+      toast({ title: "No sources yet", description: "Add some sources first.", variant: "destructive" });
       return;
     }
 
