@@ -41,7 +41,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
-  const [signalStats, setSignalStats] = useState({ count: 0, topConfidence: 0, totalOrgs: 0, topSignals: [] as string[] });
+  const [signalStats, setSignalStats] = useState({ count: 0, topConfidence: 0, totalOrgs: 0, topTags: [] as string[] });
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -73,7 +73,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           .select("authority_score").eq("user_id", user.id)
           .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
-          .select("signal_title, confidence, unique_orgs")
+          .select("signal_title, confidence, unique_orgs, theme_tags")
           .eq("user_id", user.id).eq("status", "active")
           .order("confidence", { ascending: false }).limit(20),
       ]));
@@ -82,11 +82,26 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
+        const seen = new Set<string>();
+        const topTags: string[] = [];
+        for (const sig of signals) {
+          const tags: string[] = Array.isArray(sig.theme_tags) ? sig.theme_tags : [];
+          for (const t of tags) {
+            if (!t) continue;
+            const key = t.trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              topTags.push(t.trim());
+              if (topTags.length >= 6) break;
+            }
+          }
+          if (topTags.length >= 6) break;
+        }
         setSignalStats({
           count: signals.length,
           topConfidence: signals.length > 0 ? Math.round(Number(signals[0].confidence) * 100) : 0,
           totalOrgs: signals.reduce((s: number, sig: any) => s + (sig.unique_orgs || 0), 0),
-          topSignals: signals.slice(0, 4).map((s: any) => s.signal_title),
+          topTags,
         });
       }
     } catch (err) {
@@ -321,7 +336,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div style={{ fontSize: 9, textTransform: "uppercase", color: "#C5A55A", letterSpacing: "0.1em", marginBottom: 6 }}>
-                  HOW AURA POSITIONS ME
+                  YOUR MARKET POSITION
                 </div>
                 <h3 style={{ fontSize: 15, fontWeight: 600, color: "#f0f0f0", marginBottom: 8 }}>
                   {positioningTitle || "Complete your profile to unlock positioning"}
@@ -378,27 +393,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", border: "2px solid #C5A55A", background: "transparent" }} />
               <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: "10px 12px" }}>
                 <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>BUILDING AUTHORITY IN</div>
-                {signalStats.topSignals.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {signalStats.topSignals.map((s, i) => (
+                {signalStats.topTags.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {signalStats.topTags.map((s, i) => (
                       <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#C5A55A", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{s}</span>
                     ))}
                   </div>
                 ) : (
-                  <p style={{ fontSize: 10, color: "#555", marginBottom: 6, fontStyle: "italic" }}>No signals detected yet</p>
+                  <p style={{ fontSize: 10, color: "#555", fontStyle: "italic" }}>Capture more to build your signal profile</p>
                 )}
-                <div className="flex gap-2">
-                  {[
-                    { val: signalStats.count, label: "signals" },
-                    { val: signalStats.topConfidence ? `${signalStats.topConfidence}%` : "—", label: "top strength" },
-                    { val: signalStats.totalOrgs, label: "organisations" },
-                  ].map((box, i) => (
-                    <div key={i} style={{ background: "#111", border: "1px solid #222", borderRadius: 6, padding: 5, textAlign: "center", flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#C5A55A" }}>{box.val}</div>
-                      <div style={{ fontSize: 8, color: "#555" }}>{box.label}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
 
