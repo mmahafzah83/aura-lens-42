@@ -1029,10 +1029,19 @@ const ImpactTab = () => {
                   allowDecimals={false}
                   domain={[0, "auto"]}
                   allowDataOverflow={false}
+                  tickCount={5}
+                  tickFormatter={(v) => Math.round(Number(v)).toString()}
                   tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
                   axisLine={false}
                   tickLine={false}
                   width={28}
+                />
+                <ReferenceLine
+                  y={5}
+                  stroke="var(--color-text-muted)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.45}
+                  label={{ value: "5", position: "right", fontSize: 9, fill: "var(--color-text-muted)" }}
                 />
                 <Tooltip
                   cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
@@ -1045,10 +1054,30 @@ const ImpactTab = () => {
                   }}
                   formatter={(value: any) => [`${value} captures`, ""]}
                 />
-                <Bar dataKey="captures" fill="#F97316" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="captures" fill="#F97316" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Insight line */}
+          {daysSinceLastAll !== null && (
+            <div
+              className="mt-3 text-xs"
+              style={{
+                color:
+                  daysSinceLastAll >= 4 ? "#E24B4A"
+                    : daysSinceLastAll === 0 ? "#7ab648"
+                      : "#EF9F27",
+                fontWeight: 500,
+              }}
+            >
+              {daysSinceLastAll >= 4
+                ? `No captures in ${daysSinceLastAll} days — this is why your score dropped.`
+                : daysSinceLastAll === 0
+                  ? "You captured today — keep the streak going."
+                  : "Capture today to maintain your score."}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
             <Stat label="Captures this month" value={String(capturesThisMonth)} />
