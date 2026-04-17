@@ -61,54 +61,102 @@
 
 @layer base {
   :root {
-    --background: 0 0% 4%;
-    --foreground: 40 10% 92%;
+    --background: 0 0% 5%;
+    --foreground: 0 0% 94%;
 
     --card: 0 0% 7%;
-    --card-foreground: 40 10% 92%;
+    --card-foreground: 0 0% 94%;
 
     --popover: 0 0% 7%;
-    --popover-foreground: 40 10% 92%;
+    --popover-foreground: 0 0% 94%;
 
-    --primary: 43 72% 52%;
+    --primary: 24 95% 54%;
     --primary-foreground: 0 0% 4%;
 
     --secondary: 0 0% 10%;
-    --secondary-foreground: 40 8% 72%;
+    --secondary-foreground: 0 0% 72%;
 
     --muted: 0 0% 9%;
     --muted-foreground: 0 0% 42%;
 
-    --accent: 43 72% 52%;
+    --accent: 24 95% 54%;
     --accent-foreground: 0 0% 4%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14%;
-    --input: 0 0% 14%;
-    --ring: 43 72% 52%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --ring: 24 95% 54%;
 
     --radius: 1rem;
 
     --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 40 8% 72%;
-    --sidebar-primary: 43 72% 52%;
+    --sidebar-foreground: 0 0% 72%;
+    --sidebar-primary: 24 95% 54%;
     --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 40 8% 72%;
-    --sidebar-border: 0 0% 14%;
-    --sidebar-ring: 43 72% 52%;
+    --sidebar-accent: 0 0% 9%;
+    --sidebar-accent-foreground: 0 0% 94%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 24 95% 54%;
 
-    --gold-glow: 43 80% 45%;
+    --gold-glow: 24 92% 48%;
     --card-hover: 0 0% 11%;
     --surface-glass: 0 0% 8% / 0.7;
 
     /* Influence page tokens */
-    --influence-bg: 228 18% 5%;
-    --influence-surface: 228 14% 9%;
-    --influence-accent-gold: 43 72% 52%;
+    --influence-bg: 0 0% 5%;
+    --influence-surface: 0 0% 9%;
+    --influence-accent-gold: 24 95% 54%;
     --influence-accent-blue: 207 100% 62%;
+  }
+
+  [data-theme="light"] {
+    --background: 0 0% 97%;
+    --foreground: 0 0% 7%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+
+    --primary: 24 95% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 20%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 24 95% 54%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 24 95% 54%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 30%;
+    --sidebar-primary: 24 95% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 7%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: 24 95% 54%;
+
+    --gold-glow: 24 92% 48%;
+    --card-hover: 0 0% 96%;
+    --surface-glass: 0 0% 100% / 0.7;
+
+    --influence-bg: 0 0% 97%;
+    --influence-surface: 0 0% 100%;
+    --influence-accent-gold: 24 95% 54%;
+    --influence-accent-blue: 207 100% 50%;
   }
 }
 
