@@ -5,10 +5,8 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
-  LineChart, Line,
-  AreaChart, Area,
   BarChart, Bar,
-  XAxis, YAxis, Tooltip,
+  XAxis, YAxis, Tooltip, ReferenceLine,
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
@@ -371,19 +369,7 @@ const ImpactTab = () => {
       : daysSinceLastAll <= 3 ? "#EF9F27"
         : "#E24B4A";
 
-  /* ── Score chart series ── */
-  const scoreSeries = useMemo(() => snapshots.map((s, i, arr) => ({
-    date: s.created_at,
-    label: fmtDateShort(s.created_at),
-    score: s.score,
-    showLabel: i % 3 === 0 || i === arr.length - 1,
-  })), [snapshots]);
-
-  const scoreYDomain = useMemo<[number, number]>(() => {
-    if (scoreSeries.length === 0) return [0, 100];
-    const min = Math.min(...scoreSeries.map(s => s.score));
-    return [Math.max(0, min - 10), 100];
-  }, [scoreSeries]);
+  /* (score chart removed — only sub-score cards remain) */
 
   /* ── Sub-score card colour rules ── */
   const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
@@ -415,11 +401,6 @@ const ImpactTab = () => {
     }));
   }, [followerRows, selectedDays]);
 
-  const followerYDomain = useMemo<[number, number]>(() => {
-    const vals = followerSeries.map(f => f.followers).filter(v => v > 0);
-    if (vals.length === 0) return [0, 100];
-    return [Math.max(0, Math.min(...vals) - 200), Math.max(...vals) + 200];
-  }, [followerSeries]);
 
   const bestDay = useMemo(() => {
     if (followerRows.length === 0) return null;
@@ -594,7 +575,58 @@ const ImpactTab = () => {
         </div>
       </section>
 
-      {/* ─────────── 4. HEADLINE STATS ─────────── */}
+      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Score breakdown
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {([
+            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
+            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
+          ]).map((c) => {
+            const cfg = subScoreCard(c.kind, c.value);
+            return (
+              <div
+                key={c.label}
+                style={{
+                  background: "var(--color-card)",
+                  borderRadius: 8,
+                  padding: "14px 16px",
+                  border: `0.5px solid ${cfg.border}`,
+                }}
+              >
+                <div className="flex items-baseline justify-between">
+                  <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                    {c.label}
+                  </div>
+                  <div
+                    className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                    style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
+                  >
+                    {cfg.tag}
+                  </div>
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{ fontSize: 24, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
+                >
+                  {Math.round(c.value)}
+                </div>
+                <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
+                  {c.desc}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─────────── 5. HEADLINE STATS ─────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <HeroStat
           value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
@@ -613,128 +645,13 @@ const ImpactTab = () => {
         />
       </div>
 
-      {/* ─────────── 5. AUTHORITY SCORE BAND ─────────── */}
-      <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Score breakdown
-        </h2>
-        <div
-          className="rounded-lg p-4"
-          style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
-        >
-          {/* Sparkline */}
-          {scoreSeries.length < 2 ? (
-            <div
-              className="text-xs py-6 text-center rounded-md"
-              style={{ color: "var(--color-text-muted)", border: "0.5px dashed var(--color-border)" }}
-            >
-              Not enough data yet
-            </div>
-          ) : (
-            <div style={{ height: 100, width: "100%" }}>
-              <ResponsiveContainer>
-                <LineChart data={scoreSeries} margin={{ top: 6, right: 8, bottom: 4, left: -10 }}>
-                  <XAxis
-                    dataKey="label"
-                    tick={(p: any) => {
-                      const d = scoreSeries[p.index];
-                      if (!d?.showLabel) return <g />;
-                      return (
-                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
-                          {d.label}
-                        </text>
-                      );
-                    }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={0}
-                  />
-                  <YAxis
-                    domain={scoreYDomain}
-                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={28}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "0.5px solid var(--color-border)",
-                      borderRadius: 6,
-                      fontSize: 11,
-                      color: "var(--color-text-primary)",
-                    }}
-                    labelStyle={{ color: "var(--color-text-secondary)" }}
-                    formatter={(value: any) => [`${value}`, "Score"]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    stroke="#F97316"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#F97316" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Sub-score cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
-            {([
-              { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
-              { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
-              { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
-            ]).map((c) => {
-              const cfg = subScoreCard(c.kind, c.value);
-              return (
-                <div
-                  key={c.label}
-                  style={{
-                    background: "var(--color-bg-subtle, rgba(0,0,0,0.02))",
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    border: `0.5px solid ${cfg.border}`,
-                  }}
-                >
-                  <div className="flex items-baseline justify-between">
-                    <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
-                      {c.label}
-                    </div>
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
-                    >
-                      {cfg.tag}
-                    </div>
-                  </div>
-                  <div
-                    className="tabular-nums mt-1"
-                    style={{ fontSize: 22, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
-                  >
-                    {Math.round(c.value)}
-                  </div>
-                  <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
-                    {c.desc}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
         <h2
           className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Follower growth
+          Follower growth — daily new followers
         </h2>
         {followerRows.length === 0 ? (
           <div
@@ -767,15 +684,9 @@ const ImpactTab = () => {
             className="rounded-lg p-4"
             style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
           >
-            <div style={{ height: 140, width: "100%" }}>
+            <div style={{ height: 160, width: "100%" }}>
               <ResponsiveContainer>
-                <AreaChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
-                  <defs>
-                    <linearGradient id="followerArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7ab648" stopOpacity={0.2} />
-                      <stop offset="100%" stopColor="#7ab648" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
                   <XAxis
                     dataKey="label"
                     tick={(p: any) => {
@@ -792,14 +703,15 @@ const ImpactTab = () => {
                     interval={0}
                   />
                   <YAxis
-                    domain={followerYDomain}
-                    tickFormatter={(v) => formatCompact(Number(v))}
+                    allowDecimals={false}
+                    domain={[0, "auto"]}
                     tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
                     axisLine={false}
                     tickLine={false}
-                    width={36}
+                    width={30}
                   />
                   <Tooltip
+                    cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
                     contentStyle={{
                       background: "var(--color-card)",
                       border: "0.5px solid var(--color-border)",
@@ -807,19 +719,10 @@ const ImpactTab = () => {
                       fontSize: 11,
                       color: "var(--color-text-primary)",
                     }}
-                    labelStyle={{ color: "var(--color-text-secondary)" }}
-                    formatter={(value: any) => [`${formatNumber(Number(value))} followers`, ""]}
+                    formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="followers"
-                    stroke="#7ab648"
-                    strokeWidth={2}
-                    fill="url(#followerArea)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: "#7ab648" }}
-                  />
-                </AreaChart>
+                  <Bar dataKey="growth" fill="#7ab648" radius={[2, 2, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
 
@@ -966,27 +869,39 @@ const ImpactTab = () => {
               const erPct = rawEr > 1 ? rawEr : rawEr * 100;
               const isTop = i === 0;
               const fillPct = maxErPct > 0 ? (erPct / maxErPct) * 100 : 0;
+              const rankColor = isTop ? "#F97316" : "var(--color-text-muted)";
 
-              let badge: { label: string; bg: string; color: string } | null = null;
-              if (erPct > 5) badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648" };
-              else if (erPct >= 3) badge = { label: "Above avg", bg: "#F9731618", color: "#F97316" };
+              let badge: { label: string; bg: string; color: string; border: string } | null = null;
+              if (i < 3) {
+                badge = { label: "Top post", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+              } else if (erPct > 5) {
+                badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648", border: "#7ab64844" };
+              } else if (erPct >= 3) {
+                badge = { label: "Above avg", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+              }
+
+              // Bar opacity decreases by rank for non-top
+              const barOpacity = isTop ? 1 : Math.max(0.35, 1 - i * 0.08);
 
               return (
                 <div
                   key={`${p.post_id ?? "x"}-${i}`}
-                  className="px-5 py-4"
+                  className="px-5"
                   style={{
+                    paddingTop: 12,
+                    paddingBottom: 12,
                     borderBottom: i === topPosts.length - 1 ? "none" : "0.5px solid var(--color-border)",
                     borderLeft: isTop ? "3px solid #F97316" : undefined,
-                    paddingLeft: isTop ? 10 : undefined,
+                    paddingLeft: isTop ? 12 : undefined,
                     background: isTop ? "rgba(249,115,22,0.04)" : undefined,
+                    borderRadius: isTop ? "0 4px 4px 0" : undefined,
                   }}
                 >
                   <div className="flex items-center gap-4">
                     {/* Rank */}
                     <div
-                      className="shrink-0 w-6 text-center tabular-nums text-sm font-semibold"
-                      style={{ color: "var(--color-text-muted)" }}
+                      className="shrink-0 w-6 text-center tabular-nums"
+                      style={{ fontSize: 16, fontWeight: 600, color: rankColor }}
                     >
                       {i + 1}
                     </div>
@@ -994,7 +909,10 @@ const ImpactTab = () => {
                     {/* Center */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium truncate" style={{ color: "var(--color-text-primary)" }}>
+                        <div
+                          className="truncate"
+                          style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}
+                        >
                           {title}
                         </div>
                         {p.post?.post_url && (
@@ -1009,20 +927,22 @@ const ImpactTab = () => {
                           </a>
                         )}
                       </div>
-                      <div className="text-[11px] mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+                      <div className="mt-0.5" style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
                         {formatNumber(p.impressions ?? 0)} impressions
+                        <span className="mx-1.5" style={{ color: "var(--color-text-muted)" }}>·</span>
+                        {formatNumber(p.reactions ?? 0)} reactions
                       </div>
                     </div>
 
                     {/* Right */}
                     <div className="text-right shrink-0">
-                      <div className="text-[13px] font-semibold tabular-nums" style={{ color: "#F97316" }}>
+                      <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 700, color: "#F97316" }}>
                         {erPct.toFixed(1)}%
                       </div>
                       {badge && (
                         <div
                           className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
-                          style={{ background: badge.bg, color: badge.color, fontWeight: 600 }}
+                          style={{ background: badge.bg, color: badge.color, fontWeight: 600, border: `0.5px solid ${badge.border}` }}
                         >
                           {badge.label}
                         </div>
@@ -1045,6 +965,7 @@ const ImpactTab = () => {
                         width: `${fillPct}%`,
                         height: "100%",
                         background: "#F97316",
+                        opacity: barOpacity,
                         borderRadius: 2,
                         transition: "width 600ms ease",
                       }}
@@ -1091,10 +1012,19 @@ const ImpactTab = () => {
                   allowDecimals={false}
                   domain={[0, "auto"]}
                   allowDataOverflow={false}
+                  tickCount={5}
+                  tickFormatter={(v) => Math.round(Number(v)).toString()}
                   tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
                   axisLine={false}
                   tickLine={false}
                   width={28}
+                />
+                <ReferenceLine
+                  y={5}
+                  stroke="var(--color-text-muted)"
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.45}
+                  label={{ value: "5", position: "right", fontSize: 9, fill: "var(--color-text-muted)" }}
                 />
                 <Tooltip
                   cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
@@ -1107,10 +1037,30 @@ const ImpactTab = () => {
                   }}
                   formatter={(value: any) => [`${value} captures`, ""]}
                 />
-                <Bar dataKey="captures" fill="#F97316" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="captures" fill="#F97316" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Insight line */}
+          {daysSinceLastAll !== null && (
+            <div
+              className="mt-3 text-xs"
+              style={{
+                color:
+                  daysSinceLastAll >= 4 ? "#E24B4A"
+                    : daysSinceLastAll === 0 ? "#7ab648"
+                      : "#EF9F27",
+                fontWeight: 500,
+              }}
+            >
+              {daysSinceLastAll >= 4
+                ? `No captures in ${daysSinceLastAll} days — this is why your score dropped.`
+                : daysSinceLastAll === 0
+                  ? "You captured today — keep the streak going."
+                  : "Capture today to maintain your score."}
+            </div>
+          )}
 
           <div className="grid grid-cols-3 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
             <Stat label="Captures this month" value={String(capturesThisMonth)} />
