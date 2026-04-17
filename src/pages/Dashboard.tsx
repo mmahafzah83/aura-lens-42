@@ -16,7 +16,7 @@ import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
-import InfluenceTabNew from "@/components/tabs/InfluenceTabNew";
+import ImpactTab from "@/components/tabs/ImpactTab";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -517,7 +517,7 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring">
                 <ErrorBoundary>
-                  <InfluenceTabNew entries={entries} onOpenChat={openChat} />
+                  <ImpactTab />
                 </ErrorBoundary>
               </div>
             )}
