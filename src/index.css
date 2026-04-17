@@ -768,10 +768,20 @@
   background: #ffffff !important;
   border-color: #e8e8e8 !important;
 }
-/* Inner card titles (light grey on dark) → strong dark text */
-[data-theme="light"] .aura-hero-card > div > div > div[style*="color: #e0e0e0"],
-[data-theme="light"] .aura-hero-card > div > div > div[style*="color:#e0e0e0"] {
+/* Inner card titles + any descendant text using light-grey on dark.
+   Use descendant combinator (space) to catch arbitrarily nested elements. */
+[data-theme="light"] .aura-hero-card [style*="color: #e0e0e0"],
+[data-theme="light"] .aura-hero-card [style*="color:#e0e0e0"],
+[data-theme="light"] .aura-hero-card [style*="color: #c0c0c0"],
+[data-theme="light"] .aura-hero-card [style*="color:#c0c0c0"],
+[data-theme="light"] .aura-hero-card [style*="color: #d0d0d0"],
+[data-theme="light"] .aura-hero-card [style*="color:#d0d0d0"] {
   color: #111111 !important;
+}
+/* Inner card body text (#666) should remain readable on white */
+[data-theme="light"] .aura-hero-card [style*="color: #666"],
+[data-theme="light"] .aura-hero-card [style*="color:#666"] {
+  color: #666666 !important;
 }
 /* Action buttons (Draft It / Explore / Dismiss) inside inner cards */
 [data-theme="light"] .aura-hero-card button[style*="color: #555"],
