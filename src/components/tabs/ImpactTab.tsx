@@ -214,34 +214,38 @@ const ImpactTab = () => {
     score: s.score,
   }));
 
-  /* ── CSV Upload ── */
+  /* ── XLSX Upload ── */
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const handleUploadClick = () => fileInputRef.current?.click();
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      toast.error("Please upload a .csv file");
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      toast.error("Please upload a .xlsx file");
       return;
     }
+    setSelectedFile(file);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
     setUploading(true);
     try {
-      const text = await file.text();
-      const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-      const rows = (parsed.data as any[]).filter(Boolean);
-      if (rows.length === 0) {
-        toast.error("CSV is empty");
-        setUploading(false);
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke("import-linkedin-csv", {
-        body: { rows, filename: file.name },
+      const form = new FormData();
+      form.append("file", selectedFile);
+      const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
+        body: form,
       });
       if (error) throw error;
-      toast.success(`LinkedIn data imported successfully — ${data?.imported ?? 0} rows`);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const imp = (data as any)?.imported || {};
+      const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
+      toast.success(`LinkedIn data imported — ${days} days of data loaded`);
+      setSelectedFile(null);
       await loadAll();
     } catch (err: any) {
-      console.error("CSV upload failed:", err);
+      console.error("XLSX upload failed:", err);
       toast.error(err?.message || "Upload failed. Please try again.");
     } finally {
       setUploading(false);
@@ -496,50 +500,65 @@ const ImpactTab = () => {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-base font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                Connect your LinkedIn performance data
+                Import your LinkedIn analytics
               </h3>
               <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
-                Upload your LinkedIn analytics export to see post performance, engagement rates, and which content is driving your audience growth.
+                Download your analytics from LinkedIn and upload here. Aura will import your impression data, follower growth, and top post performance.
               </p>
 
-              <button
-                onClick={() => setHowOpen(v => !v)}
-                className="mt-3 flex items-center gap-1.5 text-xs font-medium"
-                style={{ color: "var(--color-accent)" }}
+              <ol
+                className="mt-4 text-xs leading-relaxed space-y-1.5 pl-4 list-decimal"
+                style={{ color: "var(--color-text-secondary)" }}
               >
-                {howOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                How to export
-              </button>
-              {howOpen && (
-                <p
-                  className="mt-2 text-xs leading-relaxed p-3 rounded-md"
-                  style={{
-                    color: "var(--color-text-secondary)",
-                    background: "var(--color-bg-subtle, rgba(0,0,0,0.04))",
-                    border: "0.5px solid var(--color-border)",
-                  }}
-                >
-                  Go to linkedin.com → your profile → Analytics → Export button (top right) → select Last 365 days → download. Upload the CSV file below.
-                </p>
-              )}
+                <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
+                <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
+                <li>Select date range → Download</li>
+                <li>Upload the downloaded .xlsx file below</li>
+              </ol>
 
-              <div className="mt-4">
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv"
-                  onChange={handleFile}
+                  accept=".xlsx"
+                  onChange={handleFileSelect}
                   className="hidden"
                 />
-                <button
-                  onClick={handleUploadClick}
-                  disabled={uploading}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-60"
-                  style={{ background: "var(--color-accent)", color: "#ffffff" }}
-                >
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {uploading ? "Uploading..." : "Upload LinkedIn CSV"}
-                </button>
+                {!selectedFile ? (
+                  <button
+                    onClick={handleUploadClick}
+                    disabled={uploading}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-60"
+                    style={{ background: "var(--color-accent)", color: "#ffffff" }}
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload LinkedIn .xlsx file
+                  </button>
+                ) : (
+                  <>
+                    <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
+                      {selectedFile.name}
+                    </span>
+                    <button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-opacity disabled:opacity-60"
+                      style={{ background: "var(--color-accent)", color: "#ffffff" }}
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      {uploading ? "Importing..." : "Import"}
+                    </button>
+                    {!uploading && (
+                      <button
+                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                        className="text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
