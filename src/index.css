@@ -904,3 +904,11 @@
 [data-theme="light"] button[style*="background: rgb(249, 115, 22)"][style*="color: rgb(0, 0, 0)"] {
   color: #ffffff !important;
 }
+
+/* 3-Year Target green-tinted card → soft green tint on white in light mode */
+[data-theme="light"] [style*="background: rgb(10, 18, 10)"],
+[data-theme="light"] [style*="background:#0a120a"],
+[data-theme="light"] [style*="background: #0a120a"] {
+  background: rgba(122, 182, 72, 0.06) !important;
+  border-color: rgba(122, 182, 72, 0.30) !important;
+}
