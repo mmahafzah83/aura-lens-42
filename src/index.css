@@ -761,3 +761,41 @@
   color: #ffffff !important;
 }
 
+/* ── Today's Focus inner cards (Home page) ──
+   The 3 recommended-move cards live INSIDE .aura-hero-card. Force their
+   inline-styled dark backgrounds → white surfaces in light mode. */
+[data-theme="light"] .aura-hero-card > div > div[style] {
+  background: #ffffff !important;
+  border-color: #e8e8e8 !important;
+}
+/* Inner card titles (light grey on dark) → strong dark text */
+[data-theme="light"] .aura-hero-card > div > div > div[style*="color: #e0e0e0"],
+[data-theme="light"] .aura-hero-card > div > div > div[style*="color:#e0e0e0"] {
+  color: #111111 !important;
+}
+/* Action buttons (Draft It / Explore / Dismiss) inside inner cards */
+[data-theme="light"] .aura-hero-card button[style*="color: #555"],
+[data-theme="light"] .aura-hero-card button[style*="color:#555"],
+[data-theme="light"] .aura-hero-card button[style*="color: #444"],
+[data-theme="light"] .aura-hero-card button[style*="color:#444"],
+[data-theme="light"] .aura-hero-card button[style*="color: #333"],
+[data-theme="light"] .aura-hero-card button[style*="color:#333"] {
+  color: #999999 !important;
+}
+
+/* ── Live Intelligence feed (Home page) ──
+   Headlines were #c0c0c0 on dark — flip to #111 in light mode.
+   Source/date eyebrow #444 → muted #999. */
+[data-theme="light"] [style*="color: #c0c0c0"],
+[data-theme="light"] [style*="color:#c0c0c0"] {
+  color: #111111 !important;
+}
+
+/* ── Page-level dark wrappers (Intelligence content panel) ── */
+[data-theme="light"] [style*="background: #0d0d0d"][style*="minHeight"],
+[data-theme="light"] [style*="background:#0d0d0d"][style*="minHeight"],
+[data-theme="light"] [style*="background: #0d0d0d"][style*="overflowY"],
+[data-theme="light"] [style*="background:#0d0d0d"][style*="overflowY"] {
+  background: #f7f7f7 !important;
+}
+
