@@ -392,7 +392,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div className="relative mb-4">
               <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", border: "2px solid #C5A55A", background: "transparent" }} />
               <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: "10px 12px" }}>
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>BUILDING AUTHORITY IN</div>
+                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>ACTIVE FOCUS AREAS</div>
                 {signalStats.topTags.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {signalStats.topTags.map((s, i) => (
