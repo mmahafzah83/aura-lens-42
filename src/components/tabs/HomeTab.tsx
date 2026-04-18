@@ -40,7 +40,44 @@ interface Trend {
   source: string;
   fetched_at: string;
   status?: string;
+  validation_score?: number | null;
+  relevance_score?: number | null;
+  topic_relevance_score?: number | null;
+  final_score?: number | null;
 }
+
+type TrendFilter = "all" | "high_confidence" | "top_relevance" | "trusted" | "newest";
+
+const TRUSTED_SET = new Set([
+  "mckinsey.com","bcg.com","bain.com","deloitte.com","ey.com","pwc.com",
+  "kpmg.com","accenture.com","oliverwyman.com","rolandberger.com",
+  "hbr.org","sloanreview.mit.edu","brookings.edu","gartner.com",
+  "forrester.com","idc.com","ft.com","wsj.com","bloomberg.com",
+  "economist.com","reuters.com","weforum.org","imf.org","worldbank.org",
+  "nature.com","science.org","nber.org",
+]);
+
+const isTrusted = (source: string) => {
+  const s = (source || "").toLowerCase();
+  return Array.from(TRUSTED_SET).some(d => s === d || s.endsWith("." + d));
+};
+
+const qualityTier = (v?: number | null): { label: string; color: string } => {
+  const n = v ?? 0;
+  if (n >= 75) return { label: "High quality", color: "#7ab648" };
+  if (n >= 50) return { label: "Solid", color: "#F97316" };
+  return { label: "Low signal", color: "hsl(var(--muted-foreground))" };
+};
+
+const trendReason = (t: Trend): string => {
+  const reasons: string[] = [];
+  if (isTrusted(t.source)) reasons.push("trusted source");
+  if ((t.topic_relevance_score ?? 0) >= 50) reasons.push("matches your focus");
+  if ((t.relevance_score ?? 0) >= 70) reasons.push("strategically relevant");
+  if ((t.validation_score ?? 0) >= 70) reasons.push("strong content");
+  if (reasons.length === 0) return "Selected for breadth";
+  return `Selected for ${reasons.slice(0, 2).join(" + ")}`;
+};
 interface TopSignal {
   signal_title: string;
   confidence: number;
@@ -104,6 +141,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // per-trend UI state
   const [addedSignalIds, setAddedSignalIds] = useState<Set<string>>(new Set());
   const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
+  const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
 
   // Live clock
   useEffect(() => {
@@ -215,10 +253,12 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status")
+          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score")
           .eq("user_id", uid)
+          .eq("status", "new")
+          .order("final_score", { ascending: false })
           .order("fetched_at", { ascending: false })
-          .limit(5),
+          .limit(8),
         8000,
       );
       if (error) throw error;
@@ -384,7 +424,31 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setDismissedTrendIds(prev => new Set(prev).add(id));
   };
 
-  const visibleTrends = trends.filter(t => !dismissedTrendIds.has(t.id));
+  const visibleTrends = useMemo(() => {
+    let arr = trends.filter(t => !dismissedTrendIds.has(t.id));
+    switch (trendFilter) {
+      case "high_confidence":
+        arr = arr.filter(t => (t.validation_score ?? 0) >= 60);
+        break;
+      case "top_relevance":
+        arr = [...arr].sort((a, b) =>
+          ((b.topic_relevance_score ?? 0) + (b.relevance_score ?? 0)) -
+          ((a.topic_relevance_score ?? 0) + (a.relevance_score ?? 0))
+        );
+        break;
+      case "trusted":
+        arr = arr.filter(t => isTrusted(t.source));
+        break;
+      case "newest":
+        arr = [...arr].sort((a, b) => +new Date(b.fetched_at) - +new Date(a.fetched_at));
+        break;
+      case "all":
+      default:
+        // Already ordered by final_score from query
+        break;
+    }
+    return arr.slice(0, 5);
+  }, [trends, dismissedTrendIds, trendFilter]);
 
   // ─── Render ───
   return (
@@ -563,8 +627,41 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 4 — Live intelligence */}
       <section>
-        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 10 }}>
-          Live Intelligence
+        <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+            Live Intelligence
+          </div>
+          {!trendsError && !showTrendsSkeleton && trends.length > 0 && (
+            <div className="flex items-center gap-1" style={{ fontSize: 10 }}>
+              {([
+                { key: "all", label: "Top picks" },
+                { key: "high_confidence", label: "High confidence" },
+                { key: "top_relevance", label: "Most relevant" },
+                { key: "trusted", label: "Trusted only" },
+                { key: "newest", label: "Newest" },
+              ] as { key: TrendFilter; label: string }[]).map(f => {
+                const active = trendFilter === f.key;
+                return (
+                  <button
+                    key={f.key}
+                    onClick={() => setTrendFilter(f.key)}
+                    style={{
+                      background: active ? "#F9731618" : "transparent",
+                      border: `0.5px solid ${active ? "#F9731644" : "hsl(var(--border))"}`,
+                      color: active ? ACCENT : "hsl(var(--muted-foreground))",
+                      fontSize: 10,
+                      padding: "3px 8px",
+                      borderRadius: 3,
+                      cursor: "pointer",
+                      fontWeight: active ? 600 : 400,
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         {trendsError ? (
           <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
@@ -578,9 +675,13 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div className="min-h-[80px]" aria-busy="true" />
         ) : visibleTrends.length === 0 ? (
           <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px" }}>
-            <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>No live intelligence yet</div>
+            <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>
+              {trends.length === 0 ? "No live intelligence yet" : "No trends match this filter"}
+            </div>
             <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
-              Aura fetches industry trends automatically based on your signal topics
+              {trends.length === 0
+                ? "Aura curates industry trends from trusted sources, validated for quality"
+                : "Try a different filter or reset to top picks"}
             </div>
           </div>
         ) : (
@@ -588,24 +689,40 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             {visibleTrends.map((t, idx) => {
               const isAdded = addedSignalIds.has(t.id);
               const isLast = idx === visibleTrends.length - 1;
+              const tier = qualityTier(t.validation_score);
+              const trusted = isTrusted(t.source);
+              const reason = trendReason(t);
               return (
                 <div
                   key={t.id}
                   className="flex gap-3"
                   style={{
-                    padding: "10px 0",
+                    padding: "12px 0",
                     borderBottom: isLast ? "none" : "0.5px solid hsl(var(--border))",
                   }}
                 >
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, marginTop: 6, flexShrink: 0 }} />
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: ACCENT, marginTop: 7, flexShrink: 0 }} />
                   <div className="flex-1 min-w-0">
-                    <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 3 }}>
-                      {t.source ? `FROM ${t.source.toUpperCase()}` : "FROM THE WEB"} · {timeAgo(t.fetched_at)}
+                    <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 4 }}>
+                      <span style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.8)", fontWeight: 500 }}>
+                        {t.source ? t.source.toUpperCase() : "WEB"}
+                      </span>
+                      {trusted && (
+                        <span title="Trusted publisher" style={{ fontSize: 9, color: GREEN, border: `0.5px solid ${GREEN}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+                          ✓ TRUSTED
+                        </span>
+                      )}
+                      <span title={`Quality score ${t.validation_score ?? 0}/100`} style={{ fontSize: 9, color: tier.color, border: `0.5px solid ${tier.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+                        {tier.label.toUpperCase()} · {t.validation_score ?? 0}
+                      </span>
+                      <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground) / 0.6)" }}>
+                        · {timeAgo(t.fetched_at)}
+                      </span>
                     </div>
                     <button
                       onClick={() => navigate(`/trends/${t.id}`)}
                       className="text-left w-full"
-                      style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 3 }}
+                      style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontSize: 12.5, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 4, lineHeight: 1.4 }}
                     >
                       {t.headline}
                     </button>
@@ -614,6 +731,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                         {t.insight}
                       </div>
                     )}
+                    <div style={{ fontSize: 9, color: "hsl(var(--muted-foreground) / 0.65)", fontStyle: "italic", marginBottom: 6 }}>
+                      ◆ {reason}
+                    </div>
                     <div className="flex items-center">
                       {isAdded ? (
                         <span style={{ color: GREEN, fontSize: 10, padding: "3px 10px" }}>✓ Added</span>

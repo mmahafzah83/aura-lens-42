@@ -18,7 +18,30 @@ interface TrendRow {
   content_markdown: string | null;
   fetched_at: string;
   validation_status: string | null;
+  validation_score: number | null;
+  relevance_score: number | null;
+  topic_relevance_score: number | null;
+  final_score: number | null;
 }
+
+const TRUSTED_SET = new Set([
+  "mckinsey.com","bcg.com","bain.com","deloitte.com","ey.com","pwc.com",
+  "kpmg.com","accenture.com","oliverwyman.com","rolandberger.com",
+  "hbr.org","sloanreview.mit.edu","brookings.edu","gartner.com",
+  "forrester.com","idc.com","ft.com","wsj.com","bloomberg.com",
+  "economist.com","reuters.com","weforum.org","imf.org","worldbank.org",
+  "nature.com","science.org","nber.org",
+]);
+const isTrusted = (s: string | null) => {
+  const x = (s || "").toLowerCase();
+  return Array.from(TRUSTED_SET).some(d => x === d || x.endsWith("." + d));
+};
+const tier = (v: number | null | undefined): { label: string; color: string } => {
+  const n = v ?? 0;
+  if (n >= 75) return { label: "High quality", color: "#7ab648" };
+  if (n >= 50) return { label: "Solid", color: "#F97316" };
+  return { label: "Low signal", color: "hsl(var(--muted-foreground))" };
+};
 
 export default function TrendDetail() {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +58,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -103,8 +126,28 @@ export default function TrendDetail() {
         ← Back
       </button>
 
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 8 }}>
-        {trend.source ? `From ${trend.source}` : "From the web"} · {formatSmartDate(trend.fetched_at)}
+      <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 10 }}>
+        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.8)", fontWeight: 500 }}>
+          {trend.source ? `From ${trend.source}` : "From the web"}
+        </span>
+        {isTrusted(trend.source) && (
+          <span style={{ fontSize: 9, color: "#7ab648", border: "0.5px solid #7ab64855", padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+            ✓ TRUSTED
+          </span>
+        )}
+        {(() => { const t = tier(trend.validation_score); return (
+          <span title={`Quality ${trend.validation_score ?? 0}/100`} style={{ fontSize: 9, color: t.color, border: `0.5px solid ${t.color}55`, padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+            {t.label.toUpperCase()} · {trend.validation_score ?? 0}
+          </span>
+        ); })()}
+        {(trend.topic_relevance_score ?? 0) >= 40 && (
+          <span title="Topic match with your profile" style={{ fontSize: 9, color: "#F97316", border: "0.5px solid #F9731655", padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+            FOCUS MATCH · {trend.topic_relevance_score}
+          </span>
+        )}
+        <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground) / 0.6)" }}>
+          · {formatSmartDate(trend.fetched_at)}
+        </span>
       </div>
 
       <h1 style={{ fontSize: 24, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 14, lineHeight: 1.3 }}>
