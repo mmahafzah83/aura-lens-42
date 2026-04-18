@@ -737,15 +737,18 @@ export type Database = {
           content_markdown: string | null
           content_text: string | null
           fetched_at: string
+          final_score: number
           headline: string
           id: string
           insight: string
           last_checked_at: string | null
           published_at: string | null
+          rejection_reason: string | null
           relevance_score: number
           source: string
           status: string
           summary: string | null
+          topic_relevance_score: number
           url: string | null
           user_id: string
           validation_score: number
@@ -756,15 +759,18 @@ export type Database = {
           content_markdown?: string | null
           content_text?: string | null
           fetched_at?: string
+          final_score?: number
           headline: string
           id?: string
           insight: string
           last_checked_at?: string | null
           published_at?: string | null
+          rejection_reason?: string | null
           relevance_score?: number
           source: string
           status?: string
           summary?: string | null
+          topic_relevance_score?: number
           url?: string | null
           user_id: string
           validation_score?: number
@@ -775,15 +781,18 @@ export type Database = {
           content_markdown?: string | null
           content_text?: string | null
           fetched_at?: string
+          final_score?: number
           headline?: string
           id?: string
           insight?: string
           last_checked_at?: string | null
           published_at?: string | null
+          rejection_reason?: string | null
           relevance_score?: number
           source?: string
           status?: string
           summary?: string | null
+          topic_relevance_score?: number
           url?: string | null
           user_id?: string
           validation_score?: number
