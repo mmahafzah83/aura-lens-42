@@ -352,20 +352,34 @@ function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: str
   return { ok: true };
 }
 
-// Stage 5.5: Consultant gate — strict LLM ACCEPT/REJECT arbiter on cleaned text.
+// Stage 5.5: AI_JUDGE — strict LLM ACCEPT/REJECT arbiter on cleaned text.
 // Final filter after rule-based gates. Uses Lovable AI Gateway (Gemini 2.5 Flash Lite).
-// Returns { decision: "ACCEPT"|"REJECT", reason: string }. On any error → ACCEPT (fail-open
-// because rule gates already passed and we don't want to drop valid signals on transient errors).
-async function consultantGate(cleanText: string): Promise<{ decision: "ACCEPT" | "REJECT"; reason: string }> {
+// Returns ACCEPT / REJECT from the model, or UNAVAILABLE on infra failure.
+// Controlled fail-open is enforced at the call site (not here) using validation/quality scores.
+type JudgeResult =
+  | { decision: "ACCEPT" | "REJECT"; reason: string; bypassed: false }
+  | { decision: "UNAVAILABLE"; reason: string; bypassed: true };
+
+async function aiJudge(cleanText: string): Promise<JudgeResult> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) return { decision: "ACCEPT", reason: "no_api_key" };
+  if (!LOVABLE_API_KEY) return { decision: "UNAVAILABLE", reason: "no_api_key", bypassed: true };
   const sample = cleanText.slice(0, 6000);
   const systemPrompt = `You are a strict senior strategy consultant reviewing intelligence inputs.
 
 Your job is NOT to summarize.
 Your job is NOT to generate insights.
 
-Your ONLY job: Decide if this article is worth generating a strategic signal.
+Your ONLY job:
+Decide if this article is worth generating a strategic signal.
+
+INPUT:
+Cleaned article text
+
+OUTPUT (STRICT JSON):
+{
+  "decision": "ACCEPT" or "REJECT",
+  "reason": "..."
+}
 
 REJECT if ANY:
 - Describes a company (who they are, what they do)
@@ -385,7 +399,10 @@ REJECT: "Water-link is a Flemish water company..."
 REJECT: "Digital transformation is important..."
 ACCEPT: "70% of utilities fail to scale transformation due to governance issues"
 
-RULE: If unsure → REJECT. Return JSON only.`;
+RULE:
+If unsure → REJECT.
+
+Return JSON only.`;
 
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -400,7 +417,7 @@ RULE: If unsure → REJECT. Return JSON only.`;
         tools: [{
           type: "function",
           function: {
-            name: "consultant_decision",
+            name: "ai_judge_decision",
             description: "Return ACCEPT or REJECT with a short reason.",
             parameters: {
               type: "object",
@@ -413,22 +430,31 @@ RULE: If unsure → REJECT. Return JSON only.`;
             },
           },
         }],
-        tool_choice: { type: "function", function: { name: "consultant_decision" } },
+        tool_choice: { type: "function", function: { name: "ai_judge_decision" } },
       }),
     });
     if (!resp.ok) {
-      console.log("[consultant_gate] gateway error", resp.status);
-      return { decision: "ACCEPT", reason: `gateway_${resp.status}` };
+      console.log("[judge] gateway_error", resp.status);
+      return { decision: "UNAVAILABLE", reason: `gateway_${resp.status}`, bypassed: true };
     }
     const json = await resp.json();
     const args = json?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-    if (!args) return { decision: "ACCEPT", reason: "no_tool_call" };
-    const parsed = JSON.parse(args);
+    if (!args) {
+      console.log("[judge] no_tool_call");
+      return { decision: "UNAVAILABLE", reason: "no_tool_call", bypassed: true };
+    }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(args);
+    } catch {
+      console.log("[judge] parse_error");
+      return { decision: "UNAVAILABLE", reason: "parse_error", bypassed: true };
+    }
     const decision = parsed.decision === "REJECT" ? "REJECT" : "ACCEPT";
-    return { decision, reason: String(parsed.reason || "").slice(0, 200) };
+    return { decision, reason: String(parsed.reason || "").slice(0, 200), bypassed: false };
   } catch (e) {
-    console.log("[consultant_gate] error", (e as Error).message);
-    return { decision: "ACCEPT", reason: "exception" };
+    console.log("[judge] exception", (e as Error).message);
+    return { decision: "UNAVAILABLE", reason: "exception", bypassed: true };
   }
 }
 
@@ -988,6 +1014,10 @@ serve(async (req) => {
       discovery_reason?: string;
     }> = [];
 
+    // AI_JUDGE controlled fail-open: per-run cap on bypassed articles
+    const MAX_JUDGE_BYPASSES = 2;
+    let judgeBypassCount = 0;
+
     let firecrawlQuotaExhausted = false;
     for (const c of candidates) {
       if (existingUrls.has(c.url)) continue;
@@ -1032,13 +1062,8 @@ serve(async (req) => {
         console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
       }
 
-      // Stage 5.5: Consultant gate (LLM final arbiter on cleaned text)
-      const gate = await consultantGate(text);
-      if (gate.decision === "REJECT") {
-        console.log("[trends] reject consultant_gate", c.url, gate.reason); continue;
-      }
-      console.log("[trends] consultant_gate ACCEPT", c.url, gate.reason);
-
+      // Compute scores BEFORE AI_JUDGE so the controlled fail-open branch
+      // can read live in-scope validation_score / content_quality_score.
       const source = domainOf(canonical);
       const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
       if (validation_score <= 0) {
@@ -1047,6 +1072,34 @@ serve(async (req) => {
       const topic_relevance_score = computeTopicRelevance(text, profileTokens);
       const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
       const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
+
+      // Stage 5.5: AI_JUDGE — strict LLM final arbiter (controlled fail-open)
+      const judge = await aiJudge(text);
+
+      if (judge.decision === "REJECT") {
+        console.log(`[judge] rejected: ${c.url} — ${judge.reason}`);
+        continue;
+      }
+
+      if (judge.decision === "UNAVAILABLE") {
+        // passesBusinessRelevance already enforced upstream — implicit pass.
+        const highConfidence = validation_score >= 85 && content_quality_score >= 80;
+
+        if (!highConfidence) {
+          console.log(`[judge] rejected: ${c.url} — judge_unavailable (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
+          continue;
+        }
+
+        if (judgeBypassCount >= MAX_JUDGE_BYPASSES) {
+          console.log(`[judge] rejected: ${c.url} — bypass_limit_exceeded (validation=${validation_score}, quality=${content_quality_score})`);
+          continue;
+        }
+
+        judgeBypassCount++;
+        console.log(`[judge] accepted: ${c.url} — judge_bypass_high_confidence (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
+      } else {
+        console.log(`[judge] accepted: ${c.url} — ${judge.reason}`);
+      }
 
       scraped.push({
         url: c.url, canonical,

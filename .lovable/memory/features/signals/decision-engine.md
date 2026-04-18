@@ -1,14 +1,23 @@
 ---
 name: signals-decision-engine
-description: Signal Engine pipeline (Exa discovery → Firecrawl → strict 6-stage extraction → AI synth). Stages: line-scored start detection, section-aware extraction, hard rejection, business relevance filter, strict insight openers.
+description: Signal Engine pipeline (Exa discovery → Firecrawl → strict 6-stage extraction → AI synth). Stages: line-scored start detection, section-aware extraction, hard rejection, business relevance filter, AI_JUDGE LLM arbiter with controlled fail-open, strict insight openers.
 type: feature
 ---
 
 Trends are Signal Objects with action_recommendation, content_angle, decision_label.
 
-Pipeline: Exa neural discovery (2 passes) → preflight HEAD → Firecrawl scrape → **6-stage extraction** → **Stage 5.5 consultant gate (LLM)** → adaptive selection (floors 60/50/40, min 3) → AI synthesis (Gemini 2.5 Flash) → insert.
+Pipeline: Exa neural discovery (2 passes) → preflight HEAD → Firecrawl scrape → **6-stage extraction** → score computation → **Stage 5.5 AI_JUDGE (LLM)** → adaptive selection (floors 60/50/40, min 3) → AI synthesis (Gemini 2.5 Flash) → insert.
 
-**Stage 5.5 — Consultant gate** (`consultantGate`, `google/gemini-2.5-flash-lite` via Lovable AI Gateway, tool-calling for strict JSON): runs AFTER all rule-based gates as final arbiter. Strict senior-consultant prompt: REJECT if describes a company / no numbers / no argument / marketing / generic / storytelling without insight. ACCEPT only if clear insight, numbers, or shows a gap/risk/shift. "If unsure → REJECT". Fail-open on gateway error/exception (ACCEPT with reason logged) so transient AI failures don't drop valid signals. Sample = first 6000 chars of cleaned text.
+**Stage 5.5 — AI_JUDGE** (`aiJudge`, `google/gemini-2.5-flash-lite` via Lovable AI Gateway, tool-calling for strict JSON): runs AFTER all rule-based gates AND after score computation as final arbiter. Strict senior-consultant prompt: REJECT if describes a company / no numbers / no argument / marketing / generic / storytelling without insight. ACCEPT only if clear insight, numbers, or shows a gap/risk/shift. "If unsure → REJECT". Sample = first 6000 chars of cleaned text.
+
+**Controlled fail-open** (NOT full fail-open): On infra failure (missing API key, gateway non-2xx, missing tool call, JSON parse error, network exception), `aiJudge` returns `decision: "UNAVAILABLE"` instead of ACCEPT. The call site then admits the article ONLY if `validation_score >= 85` AND `content_quality_score >= 80` (passesBusinessRelevance is implicit — already enforced upstream). Bypassed articles are capped at `MAX_JUDGE_BYPASSES = 2` per run to prevent low-governance flooding during outages.
+
+**Logging** (greppable `[judge]` prefix):
+- `[judge] accepted: <url> — <model reason>` — normal LLM ACCEPT
+- `[judge] accepted: <url> — judge_bypass_high_confidence (validation=NN, quality=NN, reason=<infra reason>)` — fail-open admit
+- `[judge] rejected: <url> — <model reason>` — normal LLM REJECT
+- `[judge] rejected: <url> — judge_unavailable (validation=NN, quality=NN, reason=<infra reason>)` — fail-open denied (scores below threshold)
+- `[judge] rejected: <url> — bypass_limit_exceeded (validation=NN, quality=NN)` — fail-open denied (cap reached)
 
 **Stage 1 — Article start detection** (`detectArticleStart` + `scoreLine`):
 Each line scored: +3 full sentence (>100ch + punctuation), +2 verbs (is/are/will/enables/drives/improves/reveals/finds…), +2 business terms (strategy/transformation/efficiency/regulation/AI…), -3 nav words (skip/download/share/subscribe/login/view pdf/thank you for visiting), -2 short (<40ch), -2 ALL CAPS. Article starts at the first 3-line window where cumulative score ≥4 (or any single line ≥5). Everything before is dropped.
