@@ -73,100 +73,168 @@ function markdownToText(md: string): string {
 }
 
 // ───────── Content cleaning pipeline ─────────
-// Phrases / patterns that indicate non-article noise. Lines containing these
-// (or starting with them) are stripped before scoring + AI synthesis.
-const NOISE_LINE_PATTERNS: RegExp[] = [
-  /^\s*skip to (main )?content\b/i,
-  /^\s*skip to navigation\b/i,
-  /^\s*jump to\b/i,
-  /^\s*back to top\b/i,
-  /^\s*subscribe( now| today)?\b/i,
-  /^\s*sign (in|up)\b/i,
-  /^\s*log ?in\b/i,
-  /^\s*follow us\b/i,
-  /^\s*share (this|on)\b/i,
-  /^\s*download( the)? pdf\b/i,
-  /^\s*print this\b/i,
-  /^\s*figure\s+\d+[:.]/i,
-  /^\s*table\s+\d+[:.]/i,
-  /^\s*image\s+\d+[:.]/i,
-  /^\s*photo(graph)?\s*[:.]/i,
-  /^\s*caption[:.]?/i,
-  /^\s*citation[:.]?/i,
-  /^\s*cite this article\b/i,
-  /^\s*how to cite\b/i,
-  /^\s*download citation\b/i,
-  /^\s*advertisement\b/i,
-  /^\s*sponsored content\b/i,
-  /^\s*related (articles?|reading|content|posts?)\b/i,
-  /^\s*read (more|next)\b/i,
-  /^\s*you may (also )?like\b/i,
+// Phrases that, if present anywhere in a line, mark the line as non-article
+// noise (site chrome, journal boilerplate, related content, system text).
+const NOISE_PHRASE_PATTERNS: RegExp[] = [
+  /skip to (main )?content/i,
+  /skip to navigation/i,
+  /jump to (content|navigation|main)/i,
+  /back to top/i,
+  /thank you for visiting/i,
+  /you are using a browser version/i,
+  /to obtain the best experience/i,
+  /turn off compatibility mode/i,
+  /displaying the site without styles/i,
+  /we are displaying the site/i,
+  /(view|download)( the)? pdf\b/i,
+  /^\s*pdf\s*$/i,
+  /print this/i,
+  /^\s*subscribe( now| today)?\s*$/i,
+  /^\s*sign (in|up)\s*$/i,
+  /^\s*log ?in\s*$/i,
+  /follow us( on)?/i,
+  /^\s*share (this|on|via)\b/i,
+  /(figure|table|image|fig\.?|tbl\.?)\s+\d+[:.]/i,
+  /^\s*caption\b/i,
+  /^\s*citation\b/i,
+  /cite this (article|paper|chapter)/i,
+  /how to cite/i,
+  /download citation/i,
+  /export citation/i,
+  /metrics\s*$/i,
+  /^\s*advertisement\s*$/i,
+  /sponsored content/i,
+  /^\s*related (articles?|reading|content|posts?|topics?|stories|insights?)/i,
+  /similar content( being)? viewed/i,
+  /you may (also )?like/i,
+  /^\s*read (more|next|on)\b/i,
+  /more (from|on|in)( this)?( author| topic| section)?/i,
   /^\s*comments?\s*\(\d+\)/i,
-  /^\s*leave a (comment|reply)\b/i,
-  /^\s*privacy policy\b/i,
-  /^\s*terms of (service|use)\b/i,
-  /^\s*cookie (policy|preferences|settings)\b/i,
-  /^\s*all rights reserved\b/i,
-  /^\s*copyright\s+©/i,
-  /^\s*©\s*\d{4}/,
-  /^\s*table of contents\b/i,
-  /^\s*on this page\b/i,
+  /leave a (comment|reply)/i,
+  /privacy policy/i,
+  /terms of (service|use)/i,
+  /cookie (policy|preferences|settings|notice)/i,
+  /all rights reserved/i,
+  /copyright\s+©/i,
+  /©\s*\d{4}/,
+  /^\s*table of contents/i,
+  /^\s*on this page/i,
+  /^\s*(home|about|contact|services|products|blog|news|careers|press|investors)\s*$/i,
+  // Scientific / journal chrome
+  /^\s*open access\s*$/i,
+  /^\s*article open access/i,
+  /^\s*author information/i,
+  /^\s*about (the )?authors?/i,
+  /^\s*about this article/i,
+  /^\s*affiliations?\s*$/i,
+  /^\s*corresponding author/i,
+  /^\s*editor['']?s? note/i,
+  /^\s*peer review information/i,
+  /^\s*ethics declarations?/i,
+  /^\s*supplementary (material|information)/i,
+  /^\s*data availability/i,
+  /^\s*acknowledg(e?)ments?/i,
+  /^\s*funding\s*$/i,
+  /^\s*disclosures?/i,
+  /^\s*conflicts? of interest/i,
+  /^\s*reprints? and permissions?/i,
+  /^\s*rights and permissions?/i,
+  // System / runtime
   /\bmathjax\b/i,
   /\bcss warning\b/i,
-  /\bjavascript (is )?(required|disabled|enabled)\b/i,
-  /\benable javascript\b/i,
-  /^\s*(home|about|contact|services|products|blog|news|careers|press|investors)\s*$/i,
+  /\bjavascript (is )?(required|disabled|enabled|must be enabled)\b/i,
+  /enable javascript/i,
+  /accept( all)? cookies/i,
+  /we use cookies/i,
 ];
 
 // Section headers that mark the start of "junk" trailing content.
-// Everything from these headers to the end of the document is removed.
-const TRAILING_SECTION_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|notes?|footnotes?|further reading|see also|related articles?|comments?|about the authors?|author information|acknowledg(e?)ments?|disclosures?|conflicts? of interest|funding|data availability|supplementary (material|information)|appendix)\s*$/im;
+const TRAILING_SECTION_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|notes?|footnotes?|further reading|see also|related (articles?|topics?|content|reading)|similar (content|articles?)|comments?|about (the )?authors?|author information|about this article|acknowledg(e?)ments?|disclosures?|conflicts? of interest|funding|data availability|supplementary (material|information)|appendix|reprints? and permissions?|rights and permissions?|cite this article|how to cite|metrics|peer review information|ethics declarations?|publisher['']?s note)\s*[:.]?\s*$/im;
+
+// Strip markdown link wrappers so line-start matches work on "[Skip…](url)"
+function unwrapMarkdownArtifacts(line: string): string {
+  let s = line;
+  // images: ![alt](url) → ""
+  s = s.replace(/!\[[^\]]*]\([^)]*\)/g, "");
+  // links: [text](url) → text
+  s = s.replace(/\[([^\]]*)]\([^)]*\)/g, "$1");
+  // bare URLs
+  s = s.replace(/https?:\/\/\S+/g, "");
+  // emphasis markers
+  s = s.replace(/[*_~`]+/g, "");
+  return s.trim();
+}
 
 function stripTrailingSections(md: string): string {
   if (!md) return md;
   const lines = md.split(/\r?\n/);
   let cutAt = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (TRAILING_SECTION_RE.test(lines[i].trim())) {
-      // Only cut if it's reasonably late in the doc (avoid killing useful intros).
-      if (i >= Math.floor(lines.length * 0.4)) { cutAt = i; break; }
+    const probe = unwrapMarkdownArtifacts(lines[i]).trim();
+    if (TRAILING_SECTION_RE.test(probe)) {
+      // Cut at section if it's past 35% of doc (intros stay safe).
+      if (i >= Math.floor(lines.length * 0.35)) { cutAt = i; break; }
     }
   }
   return cutAt > 0 ? lines.slice(0, cutAt).join("\n") : md;
 }
 
 function isNoiseLine(line: string): boolean {
-  const t = line.trim();
+  const stripped = unwrapMarkdownArtifacts(line);
+  const t = stripped.trim();
   if (!t) return false;
-  // very short non-sentence lines that look like nav crumbs
   if (t.length < 4) return true;
-  if (NOISE_LINE_PATTERNS.some(re => re.test(t))) return true;
-  // standalone citation markers: "[1]", "[12]", "[1, 2]"
+  if (NOISE_PHRASE_PATTERNS.some(re => re.test(t))) return true;
+  // standalone citation markers
   if (/^\[\d+(\s*,\s*\d+)*]\s*$/.test(t)) return true;
-  // ALL-CAPS short lines (often nav/headers)
+  // ALL-CAPS short lines (nav/section labels)
   if (t.length <= 40 && /^[A-Z0-9\s\-:|·•]+$/.test(t) && /[A-Z]/.test(t) && !/[.!?]$/.test(t)) return true;
+  // pure numeric / DOI-ish
+  if (/^(doi[:\s]|https?:|www\.|10\.\d{4,})/i.test(t) && t.length < 120) return true;
   return false;
 }
 
-// Clean an article: remove trailing sections, drop noise lines, strip
-// citation markers like "[1]" / "[1,2]", normalize whitespace, dedupe paragraphs.
+// Heuristic: chrome lines at the very top before the article body.
+// Strip until we hit a real paragraph (≥120 chars sentence-like text).
+function stripLeadingChrome(md: string): string {
+  const lines = md.split(/\r?\n/);
+  let firstReal = 0;
+  for (let i = 0; i < Math.min(lines.length, 60); i++) {
+    const probe = unwrapMarkdownArtifacts(lines[i]).trim();
+    if (!probe) continue;
+    if (isNoiseLine(lines[i])) { firstReal = i + 1; continue; }
+    // Sentence-ish line with ≥120 chars and contains a period → article body started
+    if (probe.length >= 120 && /[.!?]/.test(probe)) break;
+    // Heading that is clearly the article title (has letters + spaces, not nav)
+    if (/^#{1,3}\s+\S/.test(lines[i])) break;
+  }
+  return lines.slice(firstReal).join("\n");
+}
+
+// Clean an article: strip leading chrome, trailing sections, drop noise lines,
+// strip citation markers, normalize, dedupe paragraphs.
 function cleanArticleMarkdown(md: string): string {
   if (!md) return "";
-  let out = stripTrailingSections(md);
+  let out = stripLeadingChrome(md);
+  out = stripTrailingSections(out);
   const cleanedLines: string[] = [];
   for (const raw of out.split(/\r?\n/)) {
     if (isNoiseLine(raw)) continue;
     cleanedLines.push(raw);
   }
   out = cleanedLines.join("\n");
-  // strip inline citation markers within sentences
   out = out.replace(/\[\d+(\s*,\s*\d+)*]/g, "");
-  // strip MathJax / script residue
   out = out.replace(/<script[\s\S]*?<\/script>/gi, " ");
   out = out.replace(/\\\([\s\S]*?\\\)/g, " ");
   out = out.replace(/\$\$[\s\S]*?\$\$/g, " ");
-  // collapse 3+ blank lines
   out = out.replace(/\n{3,}/g, "\n\n");
+  // Run a second pass: now that wrappers are gone, recheck noise lines
+  const pass2: string[] = [];
+  for (const raw of out.split(/\r?\n/)) {
+    if (isNoiseLine(raw)) continue;
+    pass2.push(raw);
+  }
+  out = pass2.join("\n");
   // dedupe consecutive identical paragraphs
   const paras = out.split(/\n{2,}/);
   const dedup: string[] = [];
@@ -177,6 +245,25 @@ function cleanArticleMarkdown(md: string): string {
     dedup.push(p.trim());
   }
   return dedup.join("\n\n").trim();
+}
+
+// Acceptance gate: opening must look like article body, not chrome.
+// Reject if first 400 chars (plain text) are dominated by nav/system phrases.
+function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: string } {
+  if (!cleanText || cleanText.length < 200) return { ok: false, reason: "thin_opening" };
+  const head = cleanText.slice(0, 500).toLowerCase();
+  const noiseHits = [
+    "skip to", "thank you for visiting", "download pdf", "view pdf",
+    "you are using a browser", "displaying the site", "enable javascript",
+    "accept cookies", "subscribe", "sign in", "log in",
+    "table of contents", "on this page", "related articles", "similar content",
+  ].filter(p => head.includes(p)).length;
+  if (noiseHits >= 2) return { ok: false, reason: "chrome_in_opening" };
+  // Must contain at least one sentence-like construct in the first 500 chars.
+  if (!/[a-z][a-z ,;:'"-]{40,}[.!?]/i.test(cleanText.slice(0, 800))) {
+    return { ok: false, reason: "no_sentence_in_opening" };
+  }
+  return { ok: true };
 }
 
 // 0–100 quality score: length + structure + readability + signal density.
