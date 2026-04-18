@@ -440,68 +440,61 @@ async function exaDiscover(
 ): Promise<Array<{ url: string; title?: string; description?: string; reason?: string }>> {
   const collected = new Map<string, { url: string; title?: string; description?: string; reason?: string }>();
 
-  // Run one Exa call per query and merge. Exa's neural search returns highly
-  // relevant articles ranked by semantic match.
+  // Strategy: run two passes per query — one biased to consulting/business
+  // sources, one open. This avoids monoculture from a single category.
+  const consultingDomains = TRUSTED_DOMAINS.filter(d =>
+    !/(nature|science|nber)\.org?$/.test(d) && !/^nature\.com$/.test(d)
+  );
+
   for (const q of queries) {
     if (!q || q.length < 6) continue;
-    try {
-      const res = await fetch(EXA_URL, {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: `${q} — recent strategic article for senior consultants (${profileContext})`,
-          numResults: 8,
-          type: "neural",
-          useAutoprompt: true,
-          category: "research paper",
-          startPublishedDate: new Date(Date.now() - 90 * 86400_000).toISOString(),
-          contents: { text: false, summary: { query: "Why this matters strategically" } },
-          includeDomains: TRUSTED_DOMAINS,
-        }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        // Retry without the domain restriction (Exa returns no results if filter is too tight)
-        const fallback = await fetch(EXA_URL, {
+    const passes: Array<Record<string, unknown>> = [
+      // Pass 1: business/consulting bias (no category, restricted domains)
+      {
+        query: `${q} — strategic implications for senior consultants (${profileContext})`,
+        numResults: 6,
+        type: "neural",
+        useAutoprompt: true,
+        startPublishedDate: new Date(Date.now() - 120 * 86400_000).toISOString(),
+        contents: { text: false, summary: { query: "Why this matters strategically" } },
+        includeDomains: consultingDomains,
+      },
+      // Pass 2: open neural search (broader pool, no domain/category lock)
+      {
+        query: `${q} executive briefing OR analysis OR report`,
+        numResults: 5,
+        type: "neural",
+        useAutoprompt: true,
+        startPublishedDate: new Date(Date.now() - 120 * 86400_000).toISOString(),
+      },
+    ];
+
+    for (const body of passes) {
+      try {
+        const res = await fetch(EXA_URL, {
           method: "POST",
           headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: q,
-            numResults: 8,
-            type: "neural",
-            useAutoprompt: true,
-            startPublishedDate: new Date(Date.now() - 90 * 86400_000).toISOString(),
-          }),
+          body: JSON.stringify(body),
         });
-        const fb = await fallback.json().catch(() => null);
-        if (!fallback.ok) {
-          console.error("[trends] exa query failed", q, fallback.status, fb);
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          console.error("[trends] exa pass failed", res.status, data);
           continue;
         }
-        const results = Array.isArray(fb?.results) ? fb.results : [];
+        const results = Array.isArray(data?.results) ? data.results : [];
         for (const r of results) {
           if (r?.url && !collected.has(r.url)) {
-            collected.set(r.url, { url: r.url, title: r.title, description: r.summary || r.text?.slice(0, 200) });
+            collected.set(r.url, {
+              url: r.url,
+              title: r.title,
+              description: r.summary || r.text?.slice(0, 200),
+              reason: r.summary,
+            });
           }
         }
-        continue;
+      } catch (e) {
+        console.error("[trends] exa pass exception", e);
       }
-      const results = Array.isArray(data?.results) ? data.results : [];
-      for (const r of results) {
-        if (r?.url && !collected.has(r.url)) {
-          collected.set(r.url, {
-            url: r.url,
-            title: r.title,
-            description: r.summary || r.text?.slice(0, 200),
-            reason: r.summary,
-          });
-        }
-      }
-    } catch (e) {
-      console.error("[trends] exa query exception", q, e);
     }
   }
 
