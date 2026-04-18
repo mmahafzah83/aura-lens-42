@@ -35,6 +35,12 @@ const BLOCKED_PHRASES = [
   "checking your browser", "ddos protection by cloudflare",
   "this content is for subscribers", "premium subscribers only",
   "log in to continue", "sign in to continue", "register to continue",
+  // Login walls — pages that return HTML but require authentication
+  "please log in", "please sign in", "you must be logged in", "you must be signed in",
+  "members only", "for members only", "members-only content",
+  "this content requires a subscription", "subscriber-exclusive",
+  "create an account to continue", "sign up to read", "sign up to continue",
+  "login required", "authentication required", "session expired",
 ];
 
 // ─────────────────────────────────────────
