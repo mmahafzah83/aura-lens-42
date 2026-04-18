@@ -73,11 +73,11 @@ function showErrorToast() {
   });
 }
 
-/** Wrap a promise with a timeout. Rejects with a "timeout" error if exceeded. */
-export function withTimeout<T>(p: Promise<T>, ms = DEFAULT_TIMEOUT_MS): Promise<T> {
+/** Wrap a promise (or thenable, e.g. a Supabase query builder) with a timeout. */
+export function withTimeout<T>(p: PromiseLike<T>, ms = DEFAULT_TIMEOUT_MS): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const t = setTimeout(() => reject(new Error("timeout")), ms);
-    p.then(
+    Promise.resolve(p).then(
       (v) => {
         clearTimeout(t);
         resolve(v);
