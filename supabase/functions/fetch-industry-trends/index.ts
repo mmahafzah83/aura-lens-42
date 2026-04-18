@@ -563,7 +563,33 @@ serve(async (req) => {
       topic_relevance_score: number; final_score: number;
       validation_status: string; last_checked_at: string;
       published_at: null; status: string;
+      selection_reason: string;
     };
+
+    function buildSelectionReason(opts: {
+      domain: string; validation: number; topic: number; ai: number; discoveryReason?: string;
+    }): string {
+      const parts: string[] = [];
+      const dom = opts.domain.toLowerCase();
+      const trusted = TRUSTED_DOMAINS.some(td => dom === td || dom.endsWith("." + td));
+      if (trusted) parts.push(`Trusted source (${opts.domain})`);
+      else parts.push(`Source: ${opts.domain}`);
+
+      if (opts.topic >= 60) parts.push("strong match to your focus areas");
+      else if (opts.topic >= 30) parts.push("relevant to your focus areas");
+
+      if (opts.ai >= 70) parts.push("high editorial relevance");
+      else if (opts.ai >= 50) parts.push("solid editorial relevance");
+
+      if (opts.validation >= 80) parts.push("high content quality");
+      else if (opts.validation >= 60) parts.push("good content quality");
+
+      let reason = parts.join(" · ");
+      if (opts.discoveryReason && opts.discoveryReason.length > 0) {
+        reason += ` — ${opts.discoveryReason.slice(0, 140)}`;
+      }
+      return reason.slice(0, 300);
+    }
 
     const built: Built[] = [];
     for (const s of synthesized) {
@@ -573,6 +599,13 @@ serve(async (req) => {
       const final_score = Math.round(
         src.validation_score * W_VAL + ai_relevance * W_REL + src.topic_relevance_score * W_TOPIC,
       );
+      const selection_reason = buildSelectionReason({
+        domain: src.source,
+        validation: src.validation_score,
+        topic: src.topic_relevance_score,
+        ai: ai_relevance,
+        discoveryReason: src.discovery_reason,
+      });
       built.push({
         user_id: userId,
         headline: (s.headline || src.title || "").slice(0, 200),
@@ -591,6 +624,7 @@ serve(async (req) => {
         last_checked_at: new Date().toISOString(),
         published_at: null,
         status: "new",
+        selection_reason,
       });
     }
 
