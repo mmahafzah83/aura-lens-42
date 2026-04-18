@@ -534,12 +534,18 @@ serve(async (req) => {
       discovery_reason?: string;
     }> = [];
 
+    let firecrawlQuotaExhausted = false;
     for (const c of candidates) {
       if (existingUrls.has(c.url)) continue;
+      if (firecrawlQuotaExhausted) break; // stop hammering a dead key
       const pre = await preflightUrl(c.url);
       if (!pre.ok) { console.log("[trends] preflight reject", c.url, pre.reason); continue; }
       const result = await firecrawlScrape(firecrawlKey, pre.finalUrl || c.url);
-      if (!result.ok) { console.log("[trends] scrape failed", c.url, result.status); continue; }
+      if (!result.ok) {
+        console.log("[trends] scrape failed", c.url, result.status);
+        if (result.status === 402) firecrawlQuotaExhausted = true;
+        continue;
+      }
       if (result.statusCode >= 400) { console.log("[trends] http error", c.url, result.statusCode); continue; }
       if (!result.markdown || result.markdown.length < MIN_CONTENT_CHARS) {
         console.log("[trends] thin markdown", c.url, result.markdown?.length || 0); continue;
@@ -701,6 +707,10 @@ serve(async (req) => {
       inserted, scraped: scraped.length, candidates: candidates.length,
       selected: selected.length, total_active: Math.min(ids.length, 5),
       adaptive_floor: usedFloor,
+      firecrawl_quota_exhausted: firecrawlQuotaExhausted,
+      warning: firecrawlQuotaExhausted
+        ? "Firecrawl returned 402 (insufficient credits). No new snapshots could be scraped. Top up Firecrawl credits to restore signal generation."
+        : undefined,
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("fetch-industry-trends error:", e);
