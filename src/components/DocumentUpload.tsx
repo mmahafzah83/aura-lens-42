@@ -47,7 +47,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     pollIntervalRef.current = window.setInterval(async () => {
       const { data } = await supabase
         .from("documents")
-        .select("status, summary, page_count")
+        .select("status, summary, page_count, error_message")
         .eq("id", documentId)
         .maybeSingle();
       if (!data) return;
@@ -62,19 +62,22 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       } else if (data.status === "error") {
         stopPolling();
         if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
-        sonnerToast.error(`Could not process ${filename}. Try uploading again or use a different format.`, {
+        const reason = (data as any).error_message ? ` ${(data as any).error_message}` : "";
+        sonnerToast.error(`Could not process ${filename}.${reason}`, {
           duration: Infinity,
         });
         setStatus("error");
+        onUploaded?.();
       }
-    }, 5000);
+    }, 4000);
 
+    // Allow up to 3 minutes for large PDFs
     pollTimeoutRef.current = window.setTimeout(() => {
       stopPolling();
       if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
-      sonnerToast.error(`Processing ${filename} timed out. Try uploading again.`, { duration: Infinity });
+      sonnerToast.error(`Processing ${filename} is taking longer than expected. It may still complete in the background — refresh in a minute.`, { duration: Infinity });
       setStatus("error");
-    }, 60000);
+    }, 180000);
   };
 
   const checkDuplicate = async (file: File): Promise<{ filename: string; date: string } | null> => {
