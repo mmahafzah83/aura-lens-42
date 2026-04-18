@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionError from "@/components/ui/section-error";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useAuthReady } from "@/hooks/useAuthReady";
+import { withTimeout } from "@/lib/safeQuery";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
