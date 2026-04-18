@@ -361,6 +361,11 @@ const ExpandedSource = ({
             <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #F97316", background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <ExternalLink size={14} /> Open
             </button>
+            {entry.type === "document" && entry.file_url && (
+              <button onClick={() => downloadDocument(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#ccc", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                <Download size={14} /> Download
+              </button>
+            )}
             <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
               {detecting ? <Loader2 className="w-4 h-4 animate-spin" style={{ display: "inline" }} /> : <Zap size={14} style={{ display: "inline", marginRight: 4 }} />}
               Detect Signal
