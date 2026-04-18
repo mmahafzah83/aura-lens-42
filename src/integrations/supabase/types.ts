@@ -733,21 +733,29 @@ export type Database = {
       }
       industry_trends: {
         Row: {
+          action_recommendation: string | null
           canonical_url: string | null
           category: string | null
+          confidence_level: string | null
+          content_angle: string | null
           content_markdown: string | null
           content_text: string | null
+          decision_label: string | null
           fetched_at: string
           final_score: number
           headline: string
           id: string
           impact_level: string | null
           insight: string
+          is_valid: boolean
           last_checked_at: string | null
+          opportunity_type: string | null
           published_at: string | null
           rejection_reason: string | null
           relevance_score: number
           selection_reason: string | null
+          signal_type: string | null
+          snapshot_quality: number
           source: string
           status: string
           summary: string | null
@@ -758,21 +766,29 @@ export type Database = {
           validation_status: string
         }
         Insert: {
+          action_recommendation?: string | null
           canonical_url?: string | null
           category?: string | null
+          confidence_level?: string | null
+          content_angle?: string | null
           content_markdown?: string | null
           content_text?: string | null
+          decision_label?: string | null
           fetched_at?: string
           final_score?: number
           headline: string
           id?: string
           impact_level?: string | null
           insight: string
+          is_valid?: boolean
           last_checked_at?: string | null
+          opportunity_type?: string | null
           published_at?: string | null
           rejection_reason?: string | null
           relevance_score?: number
           selection_reason?: string | null
+          signal_type?: string | null
+          snapshot_quality?: number
           source: string
           status?: string
           summary?: string | null
@@ -783,21 +799,29 @@ export type Database = {
           validation_status?: string
         }
         Update: {
+          action_recommendation?: string | null
           canonical_url?: string | null
           category?: string | null
+          confidence_level?: string | null
+          content_angle?: string | null
           content_markdown?: string | null
           content_text?: string | null
+          decision_label?: string | null
           fetched_at?: string
           final_score?: number
           headline?: string
           id?: string
           impact_level?: string | null
           insight?: string
+          is_valid?: boolean
           last_checked_at?: string | null
+          opportunity_type?: string | null
           published_at?: string | null
           rejection_reason?: string | null
           relevance_score?: number
           selection_reason?: string | null
+          signal_type?: string | null
+          snapshot_quality?: number
           source?: string
           status?: string
           summary?: string | null
