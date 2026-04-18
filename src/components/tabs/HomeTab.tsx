@@ -44,6 +44,7 @@ interface Trend {
   relevance_score?: number | null;
   topic_relevance_score?: number | null;
   final_score?: number | null;
+  selection_reason?: string | null;
 }
 
 type TrendFilter = "all" | "high_confidence" | "top_relevance" | "trusted" | "newest";
