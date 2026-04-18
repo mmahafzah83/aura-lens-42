@@ -1491,7 +1491,6 @@ serve(async (req) => {
       } catch { /* no body */ }
     }
 
-    const authHeader = req.headers.get("Authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey     = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -1500,19 +1499,50 @@ serve(async (req) => {
     const exaKey      = Deno.env.get("EXA_API_KEY");
 
     if (!firecrawlKey) {
-      return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured", inserted: 0 }), {
+      return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (!exaKey) {
-      return new Response(JSON.stringify({ error: "EXA_API_KEY not configured", inserted: 0 }), {
+      return new Response(JSON.stringify({ error: "EXA_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // ── Phase B: self-invoked enrichment ──
+    if (phase === "enrich") {
+      const isServiceCall = authHeader.includes(serviceKey);
+      let userId = bodyEnrichUserId;
+      if (!isServiceCall) {
+        const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+        const token = authHeader.replace("Bearer ", "");
+        const { data: claimsData } = await userClient.auth.getClaims(token);
+        userId = (claimsData?.claims?.sub as string | null) ?? null;
+      }
+      if (!userId || bodyCandidateIds.length === 0) {
+        return new Response(JSON.stringify({ error: "phase=enrich requires user_id and candidate_ids" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const enrichPromise = runPhaseB({
+        userId, candidateIds: bodyCandidateIds, mode,
+        adminClient, firecrawlKey, lovableKey,
+      }).catch(e => console.error("[enrich] uncaught", e));
+      // @ts-ignore Edge runtime global
+      if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+        // @ts-ignore
+        (EdgeRuntime as any).waitUntil(enrichPromise);
+      }
+      return new Response(JSON.stringify({ status: "enriching_started", queued: bodyCandidateIds.length }), {
+        status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Phase A: user-initiated discovery ──
+    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims?.sub) {
@@ -1521,332 +1551,31 @@ serve(async (req) => {
       });
     }
     const userId = claimsData.claims.sub as string;
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
       .select("firm, level, core_practice, sector_focus, north_star_goal, leadership_style")
       .eq("user_id", userId)
       .single();
-
     if (!profile) {
       return new Response(JSON.stringify({ error: "No profile found", inserted: 0 }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const year = new Date().getFullYear();
-    const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
-    const profileTokens = tokenizeProfile(
-      profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.leadership_style,
-    );
-    const queries = [
-      `${profile.sector_focus || ""} ${profile.core_practice || ""} ${year}`.trim(),
-      `${profile.sector_focus || ""} digital transformation strategy ${year}`.trim(),
-      `${profile.core_practice || ""} consulting trends ${year}`.trim(),
-    ].filter(q => q.length > 8);
-
-    console.log("[trends] exa discovery for queries:", queries);
-    const discoveryResults = await exaDiscover(exaKey, profileContext, queries);
-    console.log("[trends] exa returned:", discoveryResults.length);
-
-    const seen = new Set<string>();
-    const candidates = discoveryResults.filter(r => {
-      if (!r.url) return false;
-      const dom = domainOf(r.url);
-      if (!dom) return false;
-      if (/(reddit|youtube|twitter|x\.com|facebook|pinterest|quora|tiktok)\./i.test(dom)) return false;
-      if (seen.has(r.url)) return false;
-      seen.add(r.url);
-      return true;
+    const result = await runPhaseA({
+      userId, mode, adminClient, exaKey, profile, supabaseUrl, serviceKey,
     });
-    console.log("[trends] candidates after dedupe:", candidates.length);
-
-    const { data: existingRows } = await adminClient
-      .from("industry_trends")
-      .select("id, canonical_url, url")
-      .eq("user_id", userId)
-      .eq("status", "new");
-    const existingUrls = new Set<string>();
-    (existingRows ?? []).forEach((r: any) => {
-      if (r.canonical_url) existingUrls.add(r.canonical_url);
-      if (r.url) existingUrls.add(r.url);
-    });
-
-    // Scrape + clean + multi-stage validation
-    const scraped: Array<{
-      url: string; canonical: string; title: string;
-      raw_markdown: string; clean_markdown: string;
-      text: string; source: string;
-      validation_score: number; topic_relevance_score: number;
-      snapshot_quality: number; content_quality_score: number;
-      discovery_reason?: string;
-    }> = [];
-
-    // AI_JUDGE controlled fail-open: per-run cap on bypassed articles
-    const MAX_JUDGE_BYPASSES = 2;
-    let judgeBypassCount = 0;
-
-    const MAX_VALIDATED = 8; // early-exit cap to stay under 150s function timeout
-    let firecrawlQuotaExhausted = false;
-    for (const c of candidates) {
-      if (scraped.length >= MAX_VALIDATED) { console.log("[trends] reached MAX_VALIDATED, stopping"); break; }
-      if (existingUrls.has(c.url)) continue;
-      if (firecrawlQuotaExhausted) break; // stop hammering a dead key
-      const pre = await preflightUrl(c.url);
-      if (!pre.ok) { console.log("[trends] preflight reject", c.url, pre.reason); continue; }
-      const result = await firecrawlScrape(firecrawlKey, pre.finalUrl || c.url);
-      if (!result.ok) {
-        console.log("[trends] scrape failed", c.url, result.status);
-        if (result.status === 402) firecrawlQuotaExhausted = true;
-        continue;
-      }
-      if (result.statusCode >= 400) { console.log("[trends] http error", c.url, result.statusCode); continue; }
-      if (!result.markdown || result.markdown.length < MIN_CONTENT_CHARS) {
-        console.log("[trends] thin raw markdown", c.url, result.markdown?.length || 0); continue;
-      }
-      const canonical = result.sourceURL || pre.finalUrl || c.url;
-      if (existingUrls.has(canonical)) continue;
-
-      // ── Cleaning pipeline (per spec) ──
-      const raw_markdown = result.markdown;
-      const clean_markdown = cleanArticleMarkdown(raw_markdown, canonical);
-      const text = markdownToText(clean_markdown);
-      const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
-
-      // Stage 3: Hard rejection rules
-      if (text.length < MIN_CLEAN_TEXT_CHARS) {
-        console.log("[trends] reject thin_clean_text", c.url, text.length); continue;
-      }
-      if (noiseRatio > MAX_NOISE_RATIO) {
-        console.log("[trends] reject high_noise_ratio", c.url, noiseRatio.toFixed(2)); continue;
-      }
-      const opening = openingLooksLikeArticle(text);
-      if (!opening.ok) {
-        console.log("[trends] reject opening", c.url, opening.reason); continue;
-      }
-      const blocked = detectBlockedContent(text);
-      if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
-      // Stage 5: Business relevance filter
-      const biz = passesBusinessRelevance(text);
-      if (!biz.ok) {
-        console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
-      }
-
-      // Compute scores BEFORE AI_JUDGE so the controlled fail-open branch
-      // can read live in-scope validation_score / content_quality_score.
-      const source = domainOf(canonical);
-      const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
-      if (validation_score <= 0) {
-        console.log("[trends] reject zero_validation", c.url); continue;
-      }
-      const topic_relevance_score = computeTopicRelevance(text, profileTokens);
-      const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
-      const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
-
-      // Stage 5.5: AI_JUDGE — strict LLM final arbiter (controlled fail-open)
-      const judge = await aiJudge(text);
-
-      if (judge.decision === "REJECT") {
-        console.log(`[judge] rejected: ${c.url} — ${judge.reason}`);
-        continue;
-      }
-
-      if (judge.decision === "UNAVAILABLE") {
-        // passesBusinessRelevance already enforced upstream — implicit pass.
-        const highConfidence = validation_score >= 85 && content_quality_score >= 80;
-
-        if (!highConfidence) {
-          console.log(`[judge] rejected: ${c.url} — judge_unavailable (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
-          continue;
-        }
-
-        if (judgeBypassCount >= MAX_JUDGE_BYPASSES) {
-          console.log(`[judge] rejected: ${c.url} — bypass_limit_exceeded (validation=${validation_score}, quality=${content_quality_score})`);
-          continue;
-        }
-
-        judgeBypassCount++;
-        console.log(`[judge] accepted: ${c.url} — judge_bypass_high_confidence (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
-      } else {
-        console.log(`[judge] accepted: ${c.url} — ${judge.reason}`);
-      }
-
-      scraped.push({
-        url: c.url, canonical,
-        title: result.title || c.title || canonical,
-        raw_markdown, clean_markdown, text, source,
-        validation_score, topic_relevance_score, snapshot_quality, content_quality_score,
-        discovery_reason: c.reason,
-      });
-    }
-    console.log("[trends] validated articles:", scraped.length);
-
-    let synthesized: any[] = [];
-    if (scraped.length > 0) {
-      // Feed AI the CLEAN markdown only (per spec).
-      synthesized = await aiSynthesize(lovableKey, profileContext,
-        scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.clean_markdown })));
-    }
-
-    type Built = {
-      user_id: string; headline: string; insight: string; summary: string;
-      source: string; url: string; canonical_url: string;
-      content_markdown: string; content_text: string;
-      content_raw: string; content_clean: string;
-      relevance_score: number; validation_score: number;
-      topic_relevance_score: number; snapshot_quality: number;
-      content_quality_score: number; final_score: number;
-      validation_status: string; last_checked_at: string;
-      published_at: null; status: string;
-      selection_reason: string;
-      category: string | null; impact_level: string | null;
-      confidence_level: string; signal_type: string; opportunity_type: string;
-      action_recommendation: string; content_angle: string;
-      decision_label: string; is_valid: boolean;
-    };
-
-    // Weighted scoring (per spec section 8):
-    // final_score = validation*0.5 + topic_relevance*0.3 + content_quality*0.2
-    const built: Built[] = [];
-    for (const s of synthesized) {
-      const src = scraped[s.index];
-      if (!src) continue;
-      const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
-      const final_score = Math.round(
-        src.validation_score * 0.5 +
-        src.topic_relevance_score * 0.3 +
-        src.content_quality_score * 0.2
-      );
-
-      const rawCategory  = typeof s.category === "string" ? s.category.trim() : "";
-      const category     = VALID_CATEGORIES.has(rawCategory) ? rawCategory : null;
-      const rawImpact    = typeof s.impact_level === "string" ? s.impact_level.trim() : "";
-      const impact_level = VALID_IMPACT.has(rawImpact) ? rawImpact : "Watch";
-
-      const trusted = isTrustedDomain(src.source);
-      const inferredConf = inferConfidence(src.validation_score, src.snapshot_quality, trusted);
-      const rawConf      = typeof s.confidence_level === "string" ? s.confidence_level.trim() : "";
-      const confidence_level = VALID_CONFIDENCE.has(rawConf) ? rawConf : inferredConf;
-
-      const rawSig  = typeof s.signal_type === "string" ? s.signal_type.trim() : "";
-      const signal_type = VALID_SIGNAL_TYPE.has(rawSig) ? rawSig : "Trend";
-
-      const rawOpp  = typeof s.opportunity_type === "string" ? s.opportunity_type.trim() : "";
-      const opportunity_type = VALID_OPPORTUNITY.has(rawOpp) ? rawOpp : "Content";
-
-      const action_recommendation = (typeof s.action_recommendation === "string" ? s.action_recommendation : "").slice(0, 200).trim();
-      const content_angle = (typeof s.content_angle === "string" ? s.content_angle : "").slice(0, 200).trim();
-      const decision_label = computeDecisionLabel(impact_level, confidence_level);
-
-      // Stage 6 enforcement: insight MUST start with one of the strict openers.
-      const ALLOWED_OPENERS = ["This signals", "This indicates", "This exposes a gap", "This creates an opportunity"];
-      const BANNED_OPENERS = /^(this highlights|this discusses|this article|according to|the report|the article|sets a precedent|highlights|discusses)/i;
-      let rawInsight = (s.insight || "").trim();
-      const startsAllowed = ALLOWED_OPENERS.some(p => rawInsight.toLowerCase().startsWith(p.toLowerCase()));
-      if (!startsAllowed || BANNED_OPENERS.test(rawInsight)) {
-        const stripped = rawInsight.replace(BANNED_OPENERS, "").replace(/^[\s,;:.-]+/, "").trim();
-        const opener = impact_level === "Emerging" ? "This indicates"
-          : opportunity_type === "Consulting" ? "This creates an opportunity to address"
-          : "This signals";
-        rawInsight = `${opener} ${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}`.slice(0, 500);
-      }
-      const insightFinal = rawInsight.slice(0, 500);
-
-      const selection_reason = buildSelectionReason({
-        domain: src.source, validation: src.validation_score,
-        topic: src.topic_relevance_score, snapshot: src.snapshot_quality,
-        decision: decision_label, opportunity: opportunity_type,
-      });
-
-      built.push({
-        user_id: userId,
-        headline: (s.headline || src.title || "").slice(0, 200),
-        insight: insightFinal,
-        summary: (s.summary || "").slice(0, 2000),
-        source: src.source.slice(0, 100),
-        url: src.canonical, canonical_url: src.canonical,
-        // content_markdown defaults to the CLEAN copy for default reading experience
-        content_markdown: src.clean_markdown.slice(0, 50000),
-        content_text: src.text.slice(0, 50000),
-        content_raw: src.raw_markdown.slice(0, 80000),
-        content_clean: src.clean_markdown.slice(0, 50000),
-        relevance_score: ai_relevance,
-        validation_score: src.validation_score,
-        topic_relevance_score: src.topic_relevance_score,
-        snapshot_quality: src.snapshot_quality,
-        content_quality_score: src.content_quality_score,
-        final_score,
-        validation_status: src.validation_score >= 50 ? "ok" : "weak",
-        last_checked_at: new Date().toISOString(),
-        published_at: null, status: "new",
-        selection_reason,
-        category, impact_level,
-        confidence_level, signal_type, opportunity_type,
-        action_recommendation, content_angle,
-        decision_label, is_valid: true,
-      });
-    }
-
-    // Adaptive selection: try strict floor first, relax until we have >=3
-    const isLight = mode === "light";
-    const targetCount = isLight ? 3 : 5;
-    let selected: Built[] = [];
-    let usedFloor = ADAPTIVE_FLOORS[0];
-    for (const floor of ADAPTIVE_FLOORS) {
-      const eligible = built.filter(b => b.final_score >= floor && b.is_valid);
-      const picked = diversifyByDomain(eligible, 2, targetCount);
-      if (picked.length >= MIN_TARGET_SIGNALS || floor === ADAPTIVE_FLOORS[ADAPTIVE_FLOORS.length - 1]) {
-        selected = picked;
-        usedFloor = floor;
-        break;
-      }
-    }
-    console.log(`[trends] selected ${selected.length} signals (floor=${usedFloor})`);
-
-    // Full refresh expires existing "new" trends BEFORE inserting fresh ones.
-    if (!isLight && selected.length > 0) {
-      await adminClient
-        .from("industry_trends")
-        .update({ status: "expired" })
-        .eq("user_id", userId)
-        .eq("status", "new");
-    }
-
-    let inserted = 0;
-    if (selected.length > 0) {
-      const { error: insertErr, count } = await adminClient
-        .from("industry_trends")
-        .insert(selected, { count: "exact" });
-      if (insertErr) console.error("[trends] insert error:", insertErr);
-      else inserted = count || selected.length;
-    }
-
-    // Cap active at 5
-    const { data: activeAfter } = await adminClient
-      .from("industry_trends")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "new")
-      .order("final_score", { ascending: false })
-      .order("fetched_at", { ascending: false });
-    const ids = (activeAfter || []).map((r: any) => r.id);
-    if (ids.length > 5) {
-      await adminClient.from("industry_trends").update({ status: "expired" }).in("id", ids.slice(5));
-    }
 
     return new Response(JSON.stringify({
-      inserted, scraped: scraped.length, candidates: candidates.length,
-      selected: selected.length, total_active: Math.min(ids.length, 5),
-      adaptive_floor: usedFloor,
-      firecrawl_quota_exhausted: firecrawlQuotaExhausted,
-      warning: firecrawlQuotaExhausted
-        ? "Firecrawl returned 402 (insufficient credits). No new snapshots could be scraped. Top up Firecrawl credits to restore signal generation."
-        : undefined,
+      status: result.status, discovered: result.discovered, queued: result.queued,
+      message: result.queued > 0
+        ? "Signals are being enriched in the background. They will appear as they're ready."
+        : (result.status === "no_new_candidates" ? "No new candidates found." : "Enrichment could not start."),
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("fetch-industry-trends error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error", inserted: 0 }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
