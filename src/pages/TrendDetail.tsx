@@ -59,7 +59,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
