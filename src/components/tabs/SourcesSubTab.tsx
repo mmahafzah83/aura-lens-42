@@ -320,60 +320,71 @@ const SourcesSubTab = ({
     return counts;
   }, [entries]);
 
-  const loadEntries = useCallback(async (offset: number, append: boolean) => {
-    if (offset === 0) setLoading(true);
-    else setLoadingMore(true);
+  const loadEntries = useCallback(async () => {
+    setLoading(true);
 
-    let query = supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at", { count: offset === 0 ? "exact" : undefined });
+    const [entriesRes, docsRes] = await Promise.all([
+      supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at"),
+    ]);
 
-    if (filter !== "all") {
-      const typeMatch = FILTER_LABELS.find(f => f.key === filter)?.typeMatch;
-      if (typeMatch) query = query.eq("type", typeMatch);
-    }
+    if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
 
-    if (search.trim()) {
-      query = query.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%,summary.ilike.%${search.trim()}%`);
-    }
+    const entryItems: SourceEntry[] = (entriesRes.data || []) as any[];
+    const docItems: SourceEntry[] = (docsRes.data || []).map((d: any) => ({
+      id: d.id,
+      type: "document",
+      title: d.filename,
+      content: d.summary || d.filename,
+      summary: d.summary,
+      image_url: d.file_url,
+      skill_pillar: null,
+      framework_tag: null,
+      pinned: false,
+      created_at: d.created_at,
+      file_url: d.file_url,
+      file_type: d.file_type,
+      page_count: d.page_count,
+      status: d.status,
+    }));
 
-    switch (sortKey) {
-      case "recent": query = query.order("created_at", { ascending: false }); break;
-      case "oldest": query = query.order("created_at", { ascending: true }); break;
-      case "pinned": query = query.order("pinned", { ascending: false }).order("created_at", { ascending: false }); break;
-    }
-
-    query = query.range(offset, offset + PAGE_SIZE - 1);
-
-    const { data, count, error } = await query;
-    if (error) { toast.error("Failed to load sources"); setLoading(false); setLoadingMore(false); return; }
-
-    const items = (data || []) as unknown as SourceEntry[];
-    if (offset === 0 && count !== null) setTotalCount(count);
-    if (items.length < PAGE_SIZE) setHasMore(false);
-
-    if (append) setEntries(prev => [...prev, ...items]);
-    else { setEntries(items); setHasMore(items.length === PAGE_SIZE); }
-
+    const combined = [...entryItems, ...docItems];
+    setEntries(combined);
+    setTotalCount(combined.length);
+    setHasMore(false);
     setLoading(false);
     setLoadingMore(false);
-  }, [filter, search, sortKey]);
-
-  useEffect(() => { loadEntries(0, false); }, [loadEntries]);
-
-  // Also get total count for "all" (not filtered)
-  useEffect(() => {
-    (async () => {
-      const { count } = await supabase.from("entries").select("id", { count: "exact", head: true });
-      if (count !== null) setTotalCount(count);
-    })();
   }, []);
 
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current || loadingMore || !hasMore) return;
-    const el = scrollRef.current;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
-      loadEntries(entries.length, true);
+  useEffect(() => { loadEntries(); }, [loadEntries]);
+
+  // Client-side filter + search + sort
+  const visibleEntries = useMemo(() => {
+    let list = entries;
+    if (filter !== "all") {
+      const typeMatch = FILTER_LABELS.find(f => f.key === filter)?.typeMatch;
+      if (typeMatch) list = list.filter(e => e.type === typeMatch);
     }
-  }, [entries.length, loadingMore, hasMore, loadEntries]);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(e =>
+        (e.title || "").toLowerCase().includes(q) ||
+        (e.content || "").toLowerCase().includes(q) ||
+        (e.summary || "").toLowerCase().includes(q),
+      );
+    }
+    const sorted = [...list];
+    switch (sortKey) {
+      case "recent": sorted.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)); break;
+      case "oldest": sorted.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)); break;
+      case "pinned": sorted.sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || (+new Date(b.created_at) - +new Date(a.created_at))); break;
+    }
+    return sorted;
+  }, [entries, filter, search, sortKey]);
+
+  const handleScroll = useCallback(() => {
+    // No pagination — all loaded client-side
+  }, []);
 
   const togglePin = async (entry: SourceEntry) => {
     const newPinned = !entry.pinned;
