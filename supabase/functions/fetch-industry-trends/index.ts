@@ -925,21 +925,44 @@ function sourceFamily(domain: string): "consulting" | "research" | "blog" {
   return "blog";
 }
 
-// ───────── Pre-clean pollution gate ─────────
-const POLLUTION_PHRASES = [
-  "technical storage or access","accept preferences","manage options",
-  "view preferences","save preferences","thank you for visiting",
-  "open in a new tab","get a free estimate","tell us about your project",
-  "do not sell my personal information","your privacy choices",
+// ───────── Pre-clean pollution gate (density-based) ─────────
+const COOKIE_PHRASES = [
+  "technical storage or access", "accept preferences", "manage options",
+  "view preferences", "save preferences", "do not sell my personal information",
+  "your privacy choices", "cookie policy", "consent to the use", "we use cookies",
+  "manage cookies", "necessary cookies", "functional cookies",
 ];
-function pollutionReject(text: string): { reason: string } | null {
+const CTA_PHRASES = [
+  "thank you for visiting", "open in a new tab", "get a free estimate",
+  "tell us about your project", "subscribe to our newsletter", "subscribe now",
+  "request a demo", "book a demo", "contact us today", "talk to an expert",
+  "download the report", "download the pdf", "sign up for", "join our newsletter",
+];
+/**
+ * Density-based pollution check.
+ * Looks at the first ~window chars (default 800 raw / 600 cleaned).
+ * Reject only when junk DOMINATES the opening:
+ *   - 2+ cookie hits, OR
+ *   - 3+ CTA hits, OR
+ *   - cookie+CTA mix totaling 3+, OR
+ *   - any single-class hit AND head is short (<300 chars), AND no analytical verb in head
+ * One stray phrase inside a real article is NOT enough.
+ */
+function pollutionReject(text: string, window = 600): { reason: string } | null {
   if (!text) return { reason: "rejected_empty" };
-  const head = text.slice(0, 600).toLowerCase();
-  for (const p of POLLUTION_PHRASES) {
-    if (head.includes(p)) {
-      const isCookie = p.includes("storage") || p.includes("preferences") || p.includes("manage options") || p.includes("privacy");
-      return { reason: isCookie ? "rejected_cookie_pollution" : "rejected_cta_pollution" };
-    }
+  const head = text.slice(0, window).toLowerCase();
+  let cookie = 0, cta = 0;
+  for (const p of COOKIE_PHRASES) if (head.includes(p)) cookie++;
+  for (const p of CTA_PHRASES) if (head.includes(p)) cta++;
+  const total = cookie + cta;
+  const hasAnalytical = /\b(finds?|shows?|argues?|reveals?|warns?|suggests?|demonstrates?|exposes?|estimates?|projects?|forecasts?|concludes?|reports?)\b/i.test(head);
+  // Hard density triggers
+  if (cookie >= 2) return { reason: "rejected_cookie_wall" };
+  if (cta >= 3) return { reason: "rejected_cta_landing_page" };
+  if (total >= 3) return { reason: cookie >= cta ? "rejected_cookie_text_survived" : "rejected_nav_cta_survived" };
+  // Soft trigger: 1 hit + thin head + no narrative verb = junk-dominated opening
+  if (total >= 1 && head.length < 300 && !hasAnalytical) {
+    return { reason: cookie ? "rejected_cookie_pollution" : "rejected_cta_pollution" };
   }
   return null;
 }
@@ -1236,10 +1259,10 @@ async function runPhaseB(opts: {
       rejectedExtract++; continue;
     }
 
-    // Pre-clean reject on RAW (cookie/CTA pollution in first 600 chars)
-    const rawPollution = pollutionReject(fc.markdown);
+    // ── PREFILTER 1: RAW_POLLUTION_CHECK (density, first 800 chars) ──
+    const rawPollution = pollutionReject(fc.markdown, 800);
     if (rawPollution) {
-      console.log(`[extract] ${rawUrl} family=${family} ${rawPollution.reason} (raw)`);
+      console.log(`[prefilter] rejected_raw_pollution: ${rawUrl} — ${rawPollution.reason}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
@@ -1250,10 +1273,10 @@ async function runPhaseB(opts: {
     clean_markdown = dedupMediaInMarkdown(clean_markdown);
     const text = markdownToText(clean_markdown);
 
-    // Pre-clean reject on CLEANED
-    const cleanPollution = pollutionReject(clean_markdown);
+    // ── PREFILTER 2: CLEANED_POLLUTION_CHECK (density, first 600 chars) ──
+    const cleanPollution = pollutionReject(clean_markdown, 600);
     if (cleanPollution) {
-      console.log(`[extract] ${rawUrl} family=${family} ${cleanPollution.reason} (cleaned)`);
+      console.log(`[prefilter] rejected_cleaned_pollution: ${rawUrl} — ${cleanPollution.reason}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
@@ -1269,19 +1292,22 @@ async function runPhaseB(opts: {
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
+
+    // ── PREFILTER 3: START_DETECTION (real article body begins) ──
     const opening = openingLooksLikeArticle(text);
     if (!opening.ok) {
-      console.log(`[extract] ${rawUrl} family=${family} opening_${opening.reason}`);
+      console.log(`[prefilter] rejected_start_detection: ${rawUrl} — no_real_opening (${opening.reason})`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
-    // Stronger article start
     const narrative = hasNarrativeOpening(text);
     if (!narrative.ok) {
-      console.log(`[extract] ${rawUrl} family=${family} narrative_${narrative.reason}`);
+      const reasonLabel = narrative.reason === "no_long_paragraph" ? "no_meaningful_paragraph" : "no_real_opening";
+      console.log(`[prefilter] rejected_start_detection: ${rawUrl} — ${reasonLabel}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
+
     const blocked = detectBlockedContent(text);
     if (blocked.blocked) {
       console.log(`[extract] ${rawUrl} family=${family} blocked_${blocked.reason}`);
@@ -1294,13 +1320,16 @@ async function runPhaseB(opts: {
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
-    // Executive-relevance filter (new, between business-relevance and judge)
+
+    // ── PREFILTER 4: EXECUTIVE_FILTER (gap / shift / quant / leader / commerce) ──
     const exec = passesExecutiveRelevance(text);
     if (!exec.ok) {
-      console.log(`[extract] ${rawUrl} family=${family} exec_${exec.reason}`);
+      const reasonLabel = exec.reason === "descriptive_company_copy" ? "descriptive_content" : (exec.reason || "no_gap_or_shift");
+      console.log(`[prefilter] rejected_executive_filter: ${rawUrl} — ${reasonLabel}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
+    console.log(`[prefilter] passed_executive_filter: ${rawUrl} family=${family}`);
 
     const source = domainOf(canonical);
     const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
