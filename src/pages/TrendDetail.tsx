@@ -143,8 +143,19 @@ export default function TrendDetail() {
   const dStyle = decisionStyle(signal.decision_label);
   const iColor = impactColor(signal.impact_level);
 
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 10, fontWeight: 500, letterSpacing: "0.1em",
+    textTransform: "uppercase", color: "#F97316", marginBottom: 6,
+  };
+  const bodyText: React.CSSProperties = {
+    fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))",
+  };
+  const thinRule: React.CSSProperties = {
+    borderTop: "0.5px solid hsl(var(--border) / 0.5)", margin: "16px 0",
+  };
+
   return (
-    <div className="mx-auto" style={{ maxWidth: 760, padding: "28px 20px 80px" }}>
+    <div className="mx-auto" style={{ maxWidth: 760, padding: "20px 24px 80px" }}>
       <button
         onClick={() => navigate(-1)}
         style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", background: "transparent", border: "none", padding: 0, cursor: "pointer", marginBottom: 20 }}
@@ -152,7 +163,7 @@ export default function TrendDetail() {
         ← Back
       </button>
 
-      {/* Decision header */}
+      {/* Tags row */}
       <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 14 }}>
         {signal.decision_label && (
           <span style={{ fontSize: 10, color: dStyle.color, background: dStyle.bg, border: `0.5px solid ${dStyle.color}55`, padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
@@ -189,43 +200,55 @@ export default function TrendDetail() {
         </span>
       </div>
 
-      <h1 style={{ fontSize: 26, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 16, lineHeight: 1.25, letterSpacing: "-0.01em" }}>
+      {/* Headline */}
+      <h1 style={{ fontSize: 24, fontWeight: 500, lineHeight: 1.3, color: "hsl(var(--foreground))", margin: 0 }}>
         {signal.headline}
       </h1>
 
-      {/* Insight (top) */}
+      {/* Meta line */}
+      {signal.selection_reason && signal.selection_reason.trim().length > 0 && (
+        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.7)", marginTop: 6, marginBottom: 16 }}>
+          {signal.selection_reason}
+        </div>
+      )}
+
+      {/* Insight */}
       {signal.insight && (
-        <div style={{ fontSize: 14, color: "hsl(var(--foreground) / 0.9)", padding: "14px 16px", borderLeft: "2px solid #F97316", background: "hsl(var(--muted) / 0.3)", marginBottom: 16, borderRadius: "0 4px 4px 0", lineHeight: 1.55 }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "#F97316", marginBottom: 5, fontWeight: 700 }}>Insight</div>
-          {signal.insight}
+        <div style={{ marginBottom: 16, marginTop: signal.selection_reason ? 0 : 16 }}>
+          <div style={sectionLabel}>Insight</div>
+          <div style={bodyText}>{signal.insight}</div>
         </div>
       )}
 
-      {/* Action recommendation (highlighted) */}
+      {signal.insight && signal.action_recommendation && <div style={thinRule} />}
+
+      {/* What to do */}
       {signal.action_recommendation && (
-        <div style={{ fontSize: 13, color: "hsl(var(--foreground))", padding: "14px 16px", border: "0.5px solid #E24B4A55", background: "#E24B4A0A", marginBottom: 12, borderRadius: 6, lineHeight: 1.55 }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "#E24B4A", marginBottom: 5, fontWeight: 700 }}>What to do</div>
-          {signal.action_recommendation}
+        <div style={{ marginBottom: 16 }}>
+          <div style={sectionLabel}>What to do</div>
+          <div style={bodyText}>{signal.action_recommendation}</div>
         </div>
       )}
 
-      {/* Content angle (highlighted) */}
+      {signal.action_recommendation && signal.content_angle && <div style={thinRule} />}
+
+      {/* Content angle */}
       {signal.content_angle && (
-        <div style={{ fontSize: 13, color: "hsl(var(--foreground))", padding: "14px 16px", border: "0.5px solid #7ab64855", background: "#7ab6480A", marginBottom: 24, borderRadius: 6, lineHeight: 1.55 }}>
-          <div className="flex items-center justify-between" style={{ marginBottom: 5 }}>
-            <span style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7ab648", fontWeight: 700 }}>Content angle</span>
+        <div style={{ marginBottom: 16 }}>
+          <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
+            <span style={sectionLabel as React.CSSProperties}>Content angle</span>
             {signal.opportunity_type && (
-              <span style={{ fontSize: 9, color: "#7ab648", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+              <span style={{ fontSize: 9, color: "#7ab648", background: "#7ab64812", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
                 {signal.opportunity_type} opportunity
               </span>
             )}
           </div>
-          {signal.content_angle}
+          <div style={bodyText}>{signal.content_angle}</div>
         </div>
       )}
 
       {signal.summary && (
-        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", lineHeight: 1.65, marginBottom: 24 }}>
+        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", lineHeight: 1.65, marginBottom: 16 }}>
           {signal.summary}
         </div>
       )}
