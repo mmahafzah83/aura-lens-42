@@ -136,6 +136,51 @@ export default function TrendDetail() {
     return () => { cancelled = true; };
   }, [signal?.canonical_url, signal?.url]);
 
+  // Why this matters to you — use selection_reason if present, else AI
+  useEffect(() => {
+    if (!signal) return;
+    const existing = (signal.selection_reason || "").trim();
+    if (existing) {
+      setWhyMatters(existing);
+      setWhyFailed(false);
+      setWhyLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setWhyLoading(true);
+    setWhyFailed(false);
+    setWhyMatters(null);
+    const timeout = setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setWhyLoading(false);
+      setWhyFailed(true);
+    }, 6000);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("trend-why-matters", {
+          body: { headline: signal.headline, insight: signal.insight },
+        });
+        if (cancelled) return;
+        clearTimeout(timeout);
+        const text = (data?.text || "").trim();
+        if (error || !text) {
+          setWhyFailed(true);
+          setWhyMatters(null);
+        } else {
+          setWhyMatters(text);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        clearTimeout(timeout);
+        setWhyFailed(true);
+      } finally {
+        if (!cancelled) setWhyLoading(false);
+      }
+    })();
+    return () => { cancelled = true; clearTimeout(timeout); };
+  }, [signal?.id]);
+
   if (loading) {
     return (
       <div className="mx-auto" style={{ maxWidth: 720, padding: "32px 20px" }}>
