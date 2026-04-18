@@ -668,6 +668,15 @@ serve(async (req) => {
     const targetCount = isLight ? 3 : 5;
     const selected = diversifyByDomain(built, 2, targetCount);
 
+    // Full refresh expires existing "new" trends BEFORE inserting fresh ones.
+    if (!isLight && selected.length > 0) {
+      await adminClient
+        .from("industry_trends")
+        .update({ status: "expired" })
+        .eq("user_id", userId)
+        .eq("status", "new");
+    }
+
     let inserted = 0;
     if (selected.length > 0) {
       const { error: insertErr, count } = await adminClient
