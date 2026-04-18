@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionError from "@/components/ui/section-error";
 import { formatSmartDate } from "@/lib/formatDate";
+import { useAuthReady } from "@/hooks/useAuthReady";
+import { withTimeout } from "@/lib/safeQuery";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -66,6 +68,7 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // ────────────────────────────────────────────────
 
 const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
+  const { user: authUser, isReady: authReady } = useAuthReady();
   const [now, setNow] = useState(new Date());
   const [userName, setUserName] = useState<string>("");
 
@@ -99,38 +102,44 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return () => clearInterval(t);
   }, []);
 
-  // Load name
+  // Load name (gated on auth ready, uses cached user)
   useEffect(() => {
+    if (!authReady) return;
+    if (!authUser) {
+      setUserName("");
+      return;
+    }
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const meta: any = user.user_metadata || {};
-      const fallback = (user.email || "").split("@")[0];
+      const meta: any = authUser.user_metadata || {};
+      const fallback = (authUser.email || "").split("@")[0];
       let name = meta.first_name || meta.full_name || meta.name || "";
       try {
-        const { data } = await supabase
-          .from("diagnostic_profiles")
-          .select("first_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const { data } = await withTimeout(
+          supabase
+            .from("diagnostic_profiles")
+            .select("first_name")
+            .eq("user_id", authUser.id)
+            .maybeSingle(),
+          8000,
+        );
         if (data?.first_name) name = data.first_name;
-      } catch {}
+      } catch (e) {
+        console.warn("[HomeTab] profile name fetch failed", e);
+      }
       setUserName((name || fallback || "there").toString().split(" ")[0].toUpperCase());
     })();
-  }, []);
+  }, [authReady, authUser]);
 
-  // ─── Loaders ───
-  const loadBriefing = useCallback(async () => {
+  // ─── Loaders (each takes the user from auth-ready, no getUser() roundtrip) ───
+  const loadBriefing = useCallback(async (uid: string) => {
+    console.log("[HomeTab] briefing started");
     setBriefLoading(true);
     setBriefError(false);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("no user");
-      const uid = user.id;
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
-      const [latestRes, prevRes, lastEntryRes, lastDocRes, sigRes, moveRes, follRes] = await Promise.all([
+      const [latestRes, prevRes, lastEntryRes, lastDocRes, sigRes, moveRes, follRes] = await withTimeout(Promise.all([
         supabase.from("score_snapshots").select("score, components, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("score_snapshots").select("score").eq("user_id", uid).lte("created_at", sevenDaysAgo).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("entries").select("created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
@@ -138,7 +147,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         supabase.from("strategic_signals").select("signal_title, confidence").eq("user_id", uid).eq("status", "active").order("confidence", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("recommended_moves").select("id, title, rationale, output_type").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("influence_snapshots").select("follower_growth").eq("user_id", uid).eq("source_type", "linkedin_export").gte("snapshot_date", thirtyDaysAgo),
-      ]);
+      ]), 12000);
 
       setLatestScore(latestRes.data ?? null);
       setScore7dAgo(prevRes.data?.score ?? null);
@@ -154,6 +163,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       setTopSignal(sigRes.data ?? null);
       setTopMove(moveRes.data ?? null);
       setNewFollowers30d((follRes.data || []).reduce((s: number, r: any) => s + (r.follower_growth || 0), 0));
+      console.log("[HomeTab] briefing finished");
     } catch (e) {
       console.error("[HomeTab] briefing load failed", e);
       setBriefError(true);
@@ -162,21 +172,24 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }
   }, []);
 
-  const loadMoves = useCallback(async () => {
+  const loadMoves = useCallback(async (uid: string) => {
+    console.log("[HomeTab] moves started");
     setMovesLoading(true);
     setMovesError(false);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("no user");
-      const { data, error } = await supabase
-        .from("recommended_moves")
-        .select("id, title, rationale, output_type")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(3);
+      const { data, error } = await withTimeout(
+        supabase
+          .from("recommended_moves")
+          .select("id, title, rationale, output_type")
+          .eq("user_id", uid)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(3),
+        8000,
+      );
       if (error) throw error;
       setMoves(data || []);
+      console.log("[HomeTab] moves finished");
     } catch (e) {
       console.error("[HomeTab] moves load failed", e);
       setMovesError(true);
@@ -185,20 +198,23 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }
   }, []);
 
-  const loadTrends = useCallback(async () => {
+  const loadTrends = useCallback(async (uid: string) => {
+    console.log("[HomeTab] trends started");
     setTrendsLoading(true);
     setTrendsError(false);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("no user");
-      const { data, error } = await supabase
-        .from("industry_trends")
-        .select("id, headline, insight, url, source, fetched_at, status")
-        .eq("user_id", user.id)
-        .order("fetched_at", { ascending: false })
-        .limit(5);
+      const { data, error } = await withTimeout(
+        supabase
+          .from("industry_trends")
+          .select("id, headline, insight, url, source, fetched_at, status")
+          .eq("user_id", uid)
+          .order("fetched_at", { ascending: false })
+          .limit(5),
+        8000,
+      );
       if (error) throw error;
       setTrends((data || []) as Trend[]);
+      console.log("[HomeTab] trends finished");
     } catch (e) {
       console.error("[HomeTab] trends load failed", e);
       setTrendsError(true);
@@ -207,17 +223,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }
   }, []);
 
-  const loadTrendsBadge = useCallback(async () => {
+  const loadTrendsBadge = useCallback(async (uid: string) => {
     setTrendsCountLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
-      const { count } = await supabase
-        .from("industry_trends")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .gte("fetched_at", sevenDaysAgo);
+      const { count } = await withTimeout(
+        supabase
+          .from("industry_trends")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", uid)
+          .gte("fetched_at", sevenDaysAgo),
+        8000,
+      );
       setTrendsBadgeCount(count || 0);
     } catch (e) {
       console.error("[HomeTab] trends badge failed", e);
@@ -226,12 +243,24 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }
   }, []);
 
+  // Gate all loaders on auth-ready. If no user after ready → unblock skeletons
+  // and fall through to empty/error states (do not stay loading forever).
   useEffect(() => {
-    loadBriefing();
-    loadMoves();
-    loadTrends();
-    loadTrendsBadge();
-  }, [loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
+    if (!authReady) return;
+    if (!authUser) {
+      console.log("[HomeTab] blocked: auth ready but no user");
+      setBriefLoading(false);
+      setMovesLoading(false);
+      setTrendsLoading(false);
+      setTrendsCountLoading(false);
+      return;
+    }
+    const uid = authUser.id;
+    loadBriefing(uid);
+    loadMoves(uid);
+    loadTrends(uid);
+    loadTrendsBadge(uid);
+  }, [authReady, authUser, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
 
   // ─── Derived ───
   const scoreDiff = useMemo(() => {
@@ -379,7 +408,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* SECTION 2 — AI daily briefing */}
       {briefError ? (
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
-          <SectionError onRetry={loadBriefing} message="Couldn't load briefing. " />
+          <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
       ) : briefLoading ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
@@ -448,7 +477,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
           Today's Focus
         </div>
         {movesError ? (
-          <SectionError onRetry={loadMoves} message="Couldn't load moves. " />
+          <SectionError onRetry={() => authUser && loadMoves(authUser.id)} message="Couldn't load moves. " />
         ) : movesLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-20 w-full" />
@@ -525,7 +554,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
           Live Intelligence
         </div>
         {trendsError ? (
-          <SectionError onRetry={loadTrends} message="Couldn't load intelligence. " />
+          <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
         ) : trendsLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-14 w-full" />
