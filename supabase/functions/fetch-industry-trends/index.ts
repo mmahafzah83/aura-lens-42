@@ -202,9 +202,15 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
 
     if (!firecrawlKey) {
       return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured", inserted: 0 }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!perplexityKey) {
+      return new Response(JSON.stringify({ error: "PERPLEXITY_API_KEY not configured", inserted: 0 }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -243,14 +249,10 @@ serve(async (req) => {
       `${profile.core_practice || ""} consulting trends ${year}`.trim(),
     ].filter(q => q.length > 8);
 
-    // 2. Discovery via Firecrawl Search
-    console.log("[trends] discovery queries:", queries);
-    const discoveryResults: Array<{ url: string; title?: string; description?: string }> = [];
-    for (const q of queries) {
-      const found = await firecrawlSearch(firecrawlKey, q, 4);
-      discoveryResults.push(...found);
-    }
-    console.log("[trends] discovery raw:", discoveryResults.length);
+    // 2. Discovery via Perplexity (curated, high-credibility URLs)
+    console.log("[trends] perplexity discovery for queries:", queries);
+    const discoveryResults = await perplexityDiscover(perplexityKey, profileContext, queries);
+    console.log("[trends] perplexity returned:", discoveryResults.length);
 
     // De-dupe by URL + reject obvious bad domains
     const seen = new Set<string>();
