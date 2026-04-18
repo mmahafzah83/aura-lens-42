@@ -9,6 +9,8 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
+import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
+import { toast } from "sonner";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -465,14 +467,11 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
   const addTrendToSignals = async (trend: Trend) => {
     setAddedSignalIds(prev => new Set(prev).add(trend.id));
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      await supabase.functions.invoke("detect-signals", {
-        body: { user_id: user.id, entry_id: null, trend_title: trend.headline },
-      });
-    } catch (e) {
-      console.error("[HomeTab] add trend to signals failed", e);
+    const result = await wireTrendToSignals(trend);
+    if (result.ok) {
+      toast.success(`Added to ${result.signalTitle} — fragment count now ${result.newCount}`);
+    } else {
+      toast.error("Couldn't add to signals — try again");
     }
   };
 

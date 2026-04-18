@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { formatSmartDate } from "@/lib/formatDate";
+import { addTrendToSignals } from "@/lib/addTrendToSignals";
+import { toast } from "sonner";
 
 interface SignalRow {
   id: string;
@@ -76,6 +78,26 @@ export default function TrendDetail() {
   const [externalAlive, setExternalAlive] = useState<boolean | null>(null);
   const [showFullSnapshot, setShowFullSnapshot] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState<"clean" | "raw">("clean");
+  const [added, setAdded] = useState(false);
+
+  const handleAddToSignals = async () => {
+    if (!signal || added) return;
+    setAdded(true);
+    const result = await addTrendToSignals({
+      id: signal.id,
+      headline: signal.headline,
+      insight: signal.insight,
+      action_recommendation: signal.action_recommendation,
+      category: signal.category,
+      signal_type: signal.signal_type,
+      final_score: signal.final_score,
+    });
+    if (result.ok) {
+      toast.success(`Added to ${result.signalTitle} — fragment count now ${result.newCount}`);
+    } else {
+      toast.error("Couldn't add to signals — try again");
+    }
+  };
 
   useEffect(() => {
     if (!isReady || !user || !id) return;
@@ -350,17 +372,29 @@ export default function TrendDetail() {
         >
           Draft Post
         </button>
-        <button
-          onClick={() => navigate(`/dashboard?tab=intelligence&signal=${signal.id}`)}
-          style={{
-            fontSize: 13, padding: "8px 16px", borderRadius: 8,
-            border: "0.5px solid hsl(var(--border))",
-            background: "transparent", color: "hsl(var(--foreground))",
-            cursor: "pointer",
-          }}
-        >
-          Add to Signals
-        </button>
+        {added ? (
+          <span
+            style={{
+              fontSize: 13, padding: "8px 16px", borderRadius: 8,
+              border: "0.5px solid hsl(var(--border))",
+              background: "transparent", color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            Added ✓
+          </span>
+        ) : (
+          <button
+            onClick={handleAddToSignals}
+            style={{
+              fontSize: 13, padding: "8px 16px", borderRadius: 8,
+              border: "0.5px solid hsl(var(--border))",
+              background: "transparent", color: "hsl(var(--foreground))",
+              cursor: "pointer",
+            }}
+          >
+            Add to Signals
+          </button>
+        )}
         {externalUrl && externalAlive !== false && (
           <a
             href={externalUrl}
