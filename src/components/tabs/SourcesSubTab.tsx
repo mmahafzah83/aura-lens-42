@@ -678,9 +678,10 @@ const SourcesSubTab = ({
             const isProcessing = isDoc && (docStatus === "processing" || docStatus === "pending");
             const isErrored = isDoc && docStatus === "error";
             const isReady = isDoc && (docStatus === "completed" || docStatus === "ready");
-            const docMeta = isDoc && isReady
-              ? `${(entry.file_type || "FILE").toString().toUpperCase()}${entry.page_count ? ` · ${entry.page_count} pages` : ""}`
-              : null;
+            const docSizeLabel = isDoc ? formatBytes(entry.file_size) : null;
+            const docTypeLabel = isDoc && isReady ? (entry.file_type || "FILE").toString().toUpperCase() : null;
+            const docPagesLabel = isDoc && isReady && entry.page_count ? `${entry.page_count} ${entry.page_count === 1 ? "page" : "pages"}` : null;
+            const canDownload = (isDoc && !!entry.file_url) || (entry.type === "image" && !!entry.image_url);
             const preview = isDoc
               ? (isReady ? (entry.summary || "").slice(0, 120) : "")
               : (entry.summary || entry.content).slice(0, 120);
