@@ -634,9 +634,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               {!isRecording && !isTranscribing && (
                 <div className="w-full mt-2 space-y-2">
                   {transcriptionFailed && (
-                    <p className="text-xs" style={{ color: "#999999" }}>Auto-transcription unavailable. Type your notes manually.</p>
+                    <p className="text-xs text-foreground">Auto-transcription unavailable. Type your notes manually.</p>
                   )}
-                  <p className="text-xs" style={{ color: "#999999" }}>Transcript</p>
+                  <p className="text-xs text-muted-foreground">Transcript</p>
                   <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} dir="auto" className="bg-secondary border-border/30 resize-none text-sm" placeholder="Transcript will appear here…" />
                 </div>
               )}
@@ -646,7 +646,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           {saving && (
             <div className="flex items-center justify-center gap-2 py-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">Processing your capture…</span>
+              <span className="text-sm text-foreground">Processing your capture…</span>
             </div>
           )}
 
