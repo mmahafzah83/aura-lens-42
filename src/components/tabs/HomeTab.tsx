@@ -71,6 +71,11 @@ const qualityTier = (v?: number | null): { label: string; color: string } => {
 };
 
 const trendReason = (t: Trend): string => {
+  // Prefer the stored, AI-grounded explanation when available.
+  if (t.selection_reason && t.selection_reason.trim().length > 0) {
+    return t.selection_reason.trim();
+  }
+  // Fallback: derive a short reason from scores.
   const reasons: string[] = [];
   if (isTrusted(t.source)) reasons.push("trusted source");
   if ((t.topic_relevance_score ?? 0) >= 50) reasons.push("matches your focus");
