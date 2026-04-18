@@ -253,10 +253,12 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status")
+          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score")
           .eq("user_id", uid)
+          .eq("status", "new")
+          .order("final_score", { ascending: false })
           .order("fetched_at", { ascending: false })
-          .limit(5),
+          .limit(8),
         8000,
       );
       if (error) throw error;
