@@ -26,3 +26,4 @@ C-Suite Advisory, Strategic Architecture, Industry Foresight, Transformation Ste
 - [Mobile First](mem://features/mobile-first.md) — Mobile-first responsive design rules
 - [Intelligence Layer](mem://features/intelligence-layer.md) — source_registry + evidence_fragments for structured evidence extraction
 - [Influence Data Foundation](mem://features/influence-data-foundation.md) — DB schema extensions and 5 UI panels for LinkedIn authority analytics
+- [Auth-ready Bootstrap](mem://technical/auth-ready-bootstrap) — useAuthReady gates page loaders; never call getUser() in loaders; wrap with withTimeout
