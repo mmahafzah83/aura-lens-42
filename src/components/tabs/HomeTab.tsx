@@ -424,7 +424,31 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setDismissedTrendIds(prev => new Set(prev).add(id));
   };
 
-  const visibleTrends = trends.filter(t => !dismissedTrendIds.has(t.id));
+  const visibleTrends = useMemo(() => {
+    let arr = trends.filter(t => !dismissedTrendIds.has(t.id));
+    switch (trendFilter) {
+      case "high_confidence":
+        arr = arr.filter(t => (t.validation_score ?? 0) >= 60);
+        break;
+      case "top_relevance":
+        arr = [...arr].sort((a, b) =>
+          ((b.topic_relevance_score ?? 0) + (b.relevance_score ?? 0)) -
+          ((a.topic_relevance_score ?? 0) + (a.relevance_score ?? 0))
+        );
+        break;
+      case "trusted":
+        arr = arr.filter(t => isTrusted(t.source));
+        break;
+      case "newest":
+        arr = [...arr].sort((a, b) => +new Date(b.fetched_at) - +new Date(a.fetched_at));
+        break;
+      case "all":
+      default:
+        // Already ordered by final_score from query
+        break;
+    }
+    return arr.slice(0, 5);
+  }, [trends, dismissedTrendIds, trendFilter]);
 
   // ─── Render ───
   return (
