@@ -343,54 +343,59 @@ async function processDocument(
       error_message: null,
     }).eq("id", document_id);
 
-    // Fire-and-forget downstream pipeline
-    adminClient.functions.invoke("extract-evidence", {
-      body: { source_type: "document", source_id: document_id, user_id: userId },
-    }).then(({ data: extractResult, error: extractError }) => {
-      if (extractError) {
-        console.error("extract-evidence error:", extractError);
-        return;
+    // Defer ALL non-essential downstream work so the document row appears `completed`
+    // to the UI immediately. None of these block the perceived completion.
+    // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
+    EdgeRuntime.waitUntil((async () => {
+      try {
+        const { data: extractResult, error: extractError } = await adminClient.functions.invoke(
+          "extract-evidence",
+          { body: { source_type: "document", source_id: document_id, user_id: userId } },
+        );
+        if (extractError) {
+          console.error("[ingest-document] deferred extract-evidence error:", extractError);
+        } else {
+          const registryId = extractResult?.source_registry_id;
+          if (registryId) {
+            const { error: sigError } = await adminClient.functions.invoke("detect-signals-v2", {
+              body: { source_registry_id: registryId, user_id: userId },
+            });
+            if (sigError) console.error("[ingest-document] deferred detect-signals-v2 error:", sigError);
+          }
+        }
+      } catch (e) {
+        console.error("[ingest-document] deferred pipeline error:", e);
       }
-      const registryId = extractResult?.source_registry_id;
-      if (!registryId) return;
-      return adminClient.functions.invoke("detect-signals-v2", {
-        body: { source_registry_id: registryId, user_id: userId },
-      });
-    }).catch((e) => console.error("post-completion pipeline error:", e));
 
-    // Embeddings (non-critical)
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (OPENAI_API_KEY && chunkRows.length > 0) {
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY || chunkRows.length === 0) return;
       try {
         const embRes = await fetchWithTimeout("https://api.openai.com/v1/embeddings", {
           method: "POST",
           headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({ model: "text-embedding-3-small", input: chunkRows.map((r) => r.content) }),
         }, 30000);
-        if (embRes.ok) {
-          const embData = await embRes.json();
-          const { data: insertedChunks } = await adminClient
-            .from("document_chunks")
-            .select("id, chunk_index")
-            .eq("document_id", document_id)
-            .order("chunk_index", { ascending: true });
-
-          if (insertedChunks) {
-            for (const emb of embData.data || []) {
-              const chunk = insertedChunks[emb.index];
-              if (chunk) {
-                await adminClient
-                  .from("document_chunks")
-                  .update({ embedding: `[${emb.embedding.join(",")}]` } as any)
-                  .eq("id", chunk.id);
-              }
-            }
+        if (!embRes.ok) return;
+        const embData = await embRes.json();
+        const { data: insertedChunks } = await adminClient
+          .from("document_chunks")
+          .select("id, chunk_index")
+          .eq("document_id", document_id)
+          .order("chunk_index", { ascending: true });
+        if (!insertedChunks) return;
+        for (const emb of embData.data || []) {
+          const chunk = insertedChunks[emb.index];
+          if (chunk) {
+            await adminClient
+              .from("document_chunks")
+              .update({ embedding: `[${emb.embedding.join(",")}]` } as any)
+              .eq("id", chunk.id);
           }
         }
       } catch (embErr) {
-        console.error("[ingest-document] embedding error (non-fatal):", embErr);
+        console.error("[ingest-document] deferred embedding error:", embErr);
       }
-    }
+    })());
   } catch (e) {
     await markError(adminClient, document_id, `Unexpected: ${e instanceof Error ? e.message : String(e)}`);
   }

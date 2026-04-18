@@ -36,54 +36,68 @@ const startDocumentWatcher = ({
   documentId: string;
   filename: string;
 }) => {
-  clearWatcher(documentId);
+  // Dedupe: never start a second watcher / second loading toast for the same doc id.
+  if (activeDocumentWatchers.has(documentId)) {
+    console.log(`[DocumentUpload] processing_toast_skipped doc=${documentId} reason=already-active`);
+    return;
+  }
 
-  const toastId = sonnerToast.loading(`Processing ${filename}… this may take a minute`, {
+  // Use the document id as a deterministic toast id so any later code path
+  // (event handler, retry, unmount cleanup) can dismiss it without sharing refs.
+  const toastId: string = `doc-processing-${documentId}`;
+  sonnerToast.loading(`Processing ${filename}… this may take a minute`, {
+    id: toastId,
     duration: Infinity,
   });
-  console.log(`[DocumentUpload] processing toast shown doc=${documentId}`);
+  console.log(`[DocumentUpload] processing_toast_created doc=${documentId} toast=${toastId}`);
 
-  const intervalId = window.setInterval(async () => {
-    const { data } = await supabase
-      .from("documents")
-      .select("status, summary, page_count, error_message")
-      .eq("id", documentId)
-      .maybeSingle();
-
-    if (!data || !TERMINAL_DOCUMENT_STATUSES.has(data.status)) return;
-
-    console.log(`[DocumentUpload] terminal status detected doc=${documentId} status=${data.status}`);
+  const finalize = (status: string, errorMessage?: string | null, pageCount?: number | null) => {
+    if (!activeDocumentWatchers.has(documentId)) return;
+    console.log(`[DocumentUpload] terminal_status_detected doc=${documentId} status=${status}`);
     dismissWatcherToast(documentId);
     clearWatcher(documentId);
-    dispatchDocumentStatusEvent(documentId, data.status);
+    dispatchDocumentStatusEvent(documentId, status);
 
-    if (data.status === "completed" || data.status === "ready") {
-      sonnerToast.success(`✓ ${filename} processed successfully — ${data.page_count ?? 0} pages captured`, {
+    if (status === "completed" || status === "ready") {
+      sonnerToast.success(`✓ ${filename} processed successfully — ${pageCount ?? 0} pages captured`, {
         duration: 4000,
       });
-      console.log(`[DocumentUpload] final toast shown doc=${documentId} status=success`);
+      console.log(`[DocumentUpload] final_toast_shown doc=${documentId} type=success`);
       return;
     }
+    if (status === "timeout") {
+      sonnerToast.error(`Processing ${filename} timed out. Check Sources for the latest status.`, {
+        duration: Infinity,
+      });
+      console.log(`[DocumentUpload] final_toast_shown doc=${documentId} type=timeout`);
+      return;
+    }
+    const reason = errorMessage ? ` ${errorMessage}` : "";
+    sonnerToast.error(`Could not process ${filename}.${reason}`, { duration: Infinity });
+    console.log(`[DocumentUpload] final_toast_shown doc=${documentId} type=error`);
+  };
 
-    const reason = data.error_message ? ` ${data.error_message}` : "";
-    sonnerToast.error(`Could not process ${filename}.${reason}`, {
-      duration: Infinity,
-    });
-    console.log(`[DocumentUpload] final toast shown doc=${documentId} status=error`);
-  }, 4000);
+  const checkOnce = async () => {
+    const { data } = await supabase
+      .from("documents")
+      .select("status, page_count, error_message")
+      .eq("id", documentId)
+      .maybeSingle();
+    if (!data) return;
+    if (TERMINAL_DOCUMENT_STATUSES.has(data.status)) {
+      finalize(data.status, data.error_message, data.page_count);
+    }
+  };
 
-  const timeoutId = window.setTimeout(() => {
-    dismissWatcherToast(documentId);
-    clearWatcher(documentId);
-    dispatchDocumentStatusEvent(documentId, "timeout");
-    sonnerToast.error(`Processing ${filename} timed out. Check Sources for the latest status.`, {
-      duration: Infinity,
-    });
-    console.log(`[DocumentUpload] final toast shown doc=${documentId} status=timeout`);
-  }, 180000);
+  const intervalId = window.setInterval(checkOnce, 3000);
+  const timeoutId = window.setTimeout(() => finalize("timeout"), 180000);
 
   activeDocumentWatchers.set(documentId, { intervalId, timeoutId, toastId });
-  console.log(`[DocumentUpload] polling started doc=${documentId}`);
+  console.log(`[DocumentUpload] polling_started doc=${documentId}`);
+
+  // Fast first check: covers the race where the backend already reached
+  // completed/error before the first 3s tick (the original orphan-toast cause).
+  void checkOnce();
 };
 
 interface DocumentUploadProps {
