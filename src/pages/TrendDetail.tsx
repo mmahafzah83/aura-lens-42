@@ -200,12 +200,28 @@ export default function TrendDetail() {
       )}
 
       <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 12 }}>
-          Article snapshot
+        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+            Article snapshot · primary reading
+          </div>
+          {trend.content_markdown && (() => {
+            const { truncated } = previewMarkdown(trend.content_markdown, 400);
+            if (!truncated) return null;
+            return (
+              <button
+                onClick={() => setShowFullSnapshot(s => !s)}
+                style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+              >
+                {showFullSnapshot ? "Show preview" : "Show full snapshot"}
+              </button>
+            );
+          })()}
         </div>
         {trend.content_markdown ? (
           <div className="prose prose-sm max-w-none dark:prose-invert" style={{ fontSize: 13, lineHeight: 1.7 }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{trend.content_markdown}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {showFullSnapshot ? trend.content_markdown : previewMarkdown(trend.content_markdown, 400).preview}
+            </ReactMarkdown>
           </div>
         ) : (
           <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
@@ -215,6 +231,20 @@ export default function TrendDetail() {
       </div>
 
       {externalUrl && (
+        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 16, fontSize: 11, color: "hsl(var(--muted-foreground) / 0.7)" }}>
+          <span style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 8 }}>Reference</span>
+          {externalAlive === false ? (
+            <span>Original source unavailable.</span>
+          ) : (
+            <a href={externalUrl} target="_blank" rel="noopener noreferrer" style={{ color: "hsl(var(--muted-foreground))", textDecoration: "underline" }}>
+              View original on {trend.source || "publisher site"} ↗
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
         <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 16, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
           {externalAlive === false ? (
             <span>Original source unavailable.</span>
