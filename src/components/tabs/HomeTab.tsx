@@ -446,6 +446,29 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setDismissedTrendIds(prev => new Set(prev).add(id));
   };
 
+  const handleRefreshTrends = async () => {
+    if (refreshingTrends || !authUser) return;
+    setRefreshingTrends(true);
+    try {
+      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
+        body: { mode: "full" },
+      });
+      if (error) {
+        console.error("[HomeTab] refresh trends failed", error);
+        setTrendsError(true);
+      } else {
+        setDismissedTrendIds(new Set());
+        await loadTrends(authUser.id);
+        await loadTrendsBadge(authUser.id);
+      }
+    } catch (e) {
+      console.error("[HomeTab] refresh trends exception", e);
+      setTrendsError(true);
+    } finally {
+      setRefreshingTrends(false);
+    }
+  };
+
   const visibleTrends = useMemo(() => {
     let arr = trends.filter(t => !dismissedTrendIds.has(t.id));
     switch (trendFilter) {
