@@ -466,13 +466,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     if (refreshingTrends || !authUser) return;
     setRefreshingTrends(true);
     try {
-      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
+      const { data, error } = await supabase.functions.invoke("fetch-industry-trends", {
         body: { mode: "full" },
       });
       if (error) {
         console.error("[HomeTab] refresh trends failed", error);
         setTrendsError(true);
       } else {
+        if ((data as any)?.firecrawl_quota_exhausted) {
+          // Honest, surfaced failure: snapshot scraping unavailable
+          console.warn("[HomeTab] firecrawl quota exhausted", (data as any)?.warning);
+          setTrendsError(true);
+        }
         setDismissedTrendIds(new Set());
         await loadTrends(authUser.id);
         await loadTrendsBadge(authUser.id);
