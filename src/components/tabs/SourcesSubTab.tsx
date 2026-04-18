@@ -185,33 +185,52 @@ async function openEntryInNewTab(entry: SourceEntry) {
   }
 }
 
-/* ── Download a document via signed URL with download attribute ── */
-async function downloadDocument(entry: SourceEntry) {
-  if (!entry.file_url) {
-    toast.error("No file to download");
-    return;
-  }
+/* ── Download an entry's underlying file (documents = private signed URL, images = direct fetch) ── */
+async function downloadEntryFile(entry: SourceEntry) {
   try {
-    const raw = entry.file_url;
-    const path = raw.startsWith("http")
-      ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
-      : raw;
-    const filename = (entry.title || path.split("/").pop() || "document").replace(/^\d+-/, "");
-    const { data, error } = await supabase.storage
-      .from("documents")
-      .createSignedUrl(path, 60 * 10, { download: filename });
-    if (error || !data?.signedUrl) throw error || new Error("No signed URL");
-    const a = document.createElement("a");
-    a.href = data.signedUrl;
-    a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    if (entry.type === "document") {
+      if (!entry.file_url) { toast.error("No file to download"); return; }
+      const raw = entry.file_url;
+      const path = raw.startsWith("http")
+        ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
+        : raw;
+      const filename = (entry.title || path.split("/").pop() || "document").replace(/^\d+-/, "");
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(path, 60 * 10, { download: filename });
+      if (error || !data?.signedUrl) throw error || new Error("No signed URL");
+      triggerDownloadLink(data.signedUrl, filename);
+      return;
+    }
+
+    if (entry.type === "image" && entry.image_url) {
+      // Public bucket — fetch as blob so the download attribute is honored cross-origin.
+      const url = entry.image_url;
+      const filename = (entry.title || url.split("/").pop() || "image").split("?")[0];
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Image fetch failed (${res.status})`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      triggerDownloadLink(objectUrl, filename);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+      return;
+    }
+
+    toast.error("Nothing to download for this source");
   } catch (e: any) {
-    console.error("[SourcesSubTab] download document failed", e);
-    toast.error("Could not download document", { description: e?.message || "Please try again." });
+    console.error("[SourcesSubTab] download failed", e);
+    toast.error("Could not download file", { description: e?.message || "Please try again." });
   }
+}
+
+function triggerDownloadLink(href: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 /* ── Expanded Source View ── */
