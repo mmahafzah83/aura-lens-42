@@ -11,20 +11,30 @@ const MAX_BYTES = 20 * 1024 * 1024; // 20 MB safety guardrail
 function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   const chunks: string[] = [];
   if (!text || text.trim().length === 0) return chunks;
+
   let start = 0;
   while (start < text.length) {
     let end = Math.min(start + chunkSize, text.length);
+
     if (end < text.length) {
       const lastPeriod = text.lastIndexOf(".", end);
       const lastNewline = text.lastIndexOf("\n", end);
       const breakPoint = Math.max(lastPeriod, lastNewline);
       if (breakPoint > start + chunkSize * 0.5) end = breakPoint + 1;
     }
+
+    if (end <= start) {
+      end = Math.min(start + chunkSize, text.length);
+      if (end <= start) break;
+    }
+
     const chunk = text.slice(start, end).trim();
     if (chunk.length > 20) chunks.push(chunk);
-    start = end - overlap;
-    if (start >= text.length) break;
+
+    if (end >= text.length) break;
+    start = Math.max(end - overlap, start + 1);
   }
+
   return chunks;
 }
 
@@ -58,22 +68,50 @@ async function markError(adminClient: any, document_id: string, reason: string) 
 // Uses doc.file_type first (set by client to 'image'|'pdf'|'docx'),
 // falls back to filename extension.
 function classifyKind(fileType: string | null | undefined, filename: string): "image" | "pdf" | "docx" | "unsupported" {
-  const ft = (fileType || "").toLowerCase();
-  if (["image", "png", "jpg", "jpeg", "webp"].includes(ft)) return "image";
-  if (ft === "pdf" || ft === "application/pdf") return "pdf";
+  const ft = (fileType || "").trim().toLowerCase();
+  const normalizedFilename = (filename || "").trim().toLowerCase();
+  const ext = normalizedFilename.includes(".") ? normalizedFilename.split(".").pop() || "" : "";
+
+  if (
+    ft.startsWith("image/") ||
+    ["image", "png", "jpg", "jpeg", "webp"].includes(ft)
+  ) {
+    return "image";
+  }
+
+  if (
+    ft === "pdf" ||
+    ft === "application/pdf" ||
+    ft.includes("pdf") ||
+    ext === "pdf"
+  ) {
+    return "pdf";
+  }
+
   if (
     ft === "docx" ||
-    ft === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ft === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    ft.includes("wordprocessingml.document") ||
+    ext === "docx"
   ) {
     return "docx";
   }
-  if (ft.startsWith("image/")) return "image";
 
-  const ext = (filename.split(".").pop() || "").toLowerCase();
   if (["png", "jpg", "jpeg", "webp"].includes(ext)) return "image";
-  if (ext === "pdf") return "pdf";
-  if (ext === "docx") return "docx";
   return "unsupported";
+}
+
+function getExtractionPath(kind: "image" | "pdf" | "docx" | "unsupported") {
+  switch (kind) {
+    case "image":
+      return "image_url";
+    case "pdf":
+      return "pdf_base64";
+    case "docx":
+      return "docx_mammoth";
+    default:
+      return "unsupported";
+  }
 }
 
 function imageMime(filename: string, fileType: string | null | undefined): string {
@@ -115,6 +153,7 @@ async function extractFromImage(adminClient: any, doc: any, lovableApiKey: strin
   if (signErr || !signed?.signedUrl) {
     throw new Error(`Could not generate signed URL: ${signErr?.message || "unknown"}`);
   }
+  console.log(`[ingest-document] signed URL created for image path=${storagePath}`);
   const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
@@ -214,15 +253,28 @@ async function processDocument(
     }
 
     const kind = classifyKind(doc.file_type, doc.filename || "");
+    const extractionPath = getExtractionPath(kind);
     console.log(`[ingest-document] file_type=${doc.file_type} filename=${doc.filename} -> kind=${kind}`);
+    console.log(`[ingest-document] extraction_path=${extractionPath}`);
 
     if (kind === "unsupported") {
       await markError(adminClient, document_id, `Unsupported file type: ${doc.file_type || "unknown"}`);
       return;
     }
 
+    if (kind === "pdf" && extractionPath !== "pdf_base64") {
+      await markError(adminClient, document_id, "Routing error: PDF was not sent through pdf_base64 path");
+      return;
+    }
+
+    if (kind === "docx" && extractionPath !== "docx_mammoth") {
+      await markError(adminClient, document_id, "Routing error: DOCX was not sent through docx_mammoth path");
+      return;
+    }
+
     let extractedText = "";
     try {
+      console.log(`[ingest-document] before extraction path=${extractionPath}`);
       if (kind === "image") {
         extractedText = await extractFromImage(adminClient, doc, lovableApiKey);
       } else if (kind === "pdf") {
@@ -245,6 +297,7 @@ async function processDocument(
     // Summary (non-fatal)
     let docSummary = "";
     try {
+      console.log(`[ingest-document] before summary generation id=${document_id}`);
       const summaryRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
@@ -265,6 +318,7 @@ async function processDocument(
     }
 
     const chunks = chunkText(extractedText);
+    console.log(`[ingest-document] chunking complete count=${chunks.length}`);
     const chunkRows = chunks.map((content, i) => ({
       document_id,
       user_id: userId,

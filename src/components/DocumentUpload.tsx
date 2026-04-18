@@ -179,6 +179,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     );
     if (invokeError) {
       console.error("[DocumentUpload] ingest-document invoke error:", invokeError);
+      if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
       sonnerToast.error(`Could not start processing for ${file.name}: ${invokeError.message || "unknown error"}`, {
         duration: 6000,
       });
