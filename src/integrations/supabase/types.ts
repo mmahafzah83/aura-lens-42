@@ -466,6 +466,7 @@ export type Database = {
       documents: {
         Row: {
           created_at: string
+          error_message: string | null
           file_type: string
           file_url: string
           filename: string
@@ -477,6 +478,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
           file_type: string
           file_url: string
           filename: string
@@ -488,6 +490,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          error_message?: string | null
           file_type?: string
           file_url?: string
           filename?: string

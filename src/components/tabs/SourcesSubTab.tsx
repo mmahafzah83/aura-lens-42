@@ -26,6 +26,7 @@ interface SourceEntry {
   file_type?: string | null;
   page_count?: number | null;
   status?: string | null;
+  error_message?: string | null;
 }
 
 type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
@@ -325,7 +326,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at, error_message"),
     ]);
 
     if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
@@ -346,6 +347,7 @@ const SourcesSubTab = ({
       file_type: d.file_type,
       page_count: d.page_count,
       status: d.status,
+      error_message: d.error_message,
     }));
 
     const combined = [...entryItems, ...docItems];
@@ -354,6 +356,47 @@ const SourcesSubTab = ({
     setHasMore(false);
     setLoading(false);
     setLoadingMore(false);
+
+    // Auto-recover stuck pending docs (idempotent, capped). Avoids duplicate storms
+    // by only retrying once per page mount and skipping anything already processing.
+    const stuckPending = (docsRes.data || []).filter((d: any) => d.status === "pending").slice(0, 3);
+    if (stuckPending.length > 0) {
+      console.log(`[SourcesSubTab] auto-retrying ${stuckPending.length} pending document(s)`);
+      for (const d of stuckPending) {
+        supabase.functions.invoke("ingest-document", { body: { document_id: d.id } })
+          .then(({ error }) => {
+            if (error) console.error(`[SourcesSubTab] auto-retry failed for ${d.id}:`, error);
+          })
+          .catch((e) => console.error(`[SourcesSubTab] auto-retry exception for ${d.id}:`, e));
+      }
+    }
+  }, []);
+
+  // Manual retry (used by "Tap to retry" buttons)
+  const retryDocument = useCallback(async (documentId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { toast.error("Please sign in again."); return; }
+    await supabase
+      .from("documents")
+      .update({ status: "processing", error_message: null } as any)
+      .eq("id", documentId);
+    setEntries(prev => prev.map(x => x.id === documentId ? { ...x, status: "processing", error_message: null } : x));
+    const { error } = await supabase.functions.invoke("ingest-document", {
+      body: { document_id: documentId },
+    });
+    if (error) {
+      console.error("[SourcesSubTab] retry invoke error:", error);
+      toast.error(`Retry failed: ${error.message || "unknown"}`);
+      await supabase
+        .from("documents")
+        .update({ status: "error", error_message: `Retry trigger failed: ${error.message || "unknown"}` } as any)
+        .eq("id", documentId);
+      setEntries(prev => prev.map(x => x.id === documentId
+        ? { ...x, status: "error", error_message: `Retry trigger failed: ${error.message || "unknown"}` }
+        : x));
+      return;
+    }
+    toast("Retrying…");
   }, []);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
@@ -560,35 +603,34 @@ const SourcesSubTab = ({
                         <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
                       </div>
                       {isProcessing ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 0 6px", flexWrap: "wrap" }}>
-                          <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
-                          <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-                            {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
-                          </p>
-                          <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                        <div style={{ margin: "0 0 6px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
+                            <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                              {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
+                            </p>
+                            <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                          </div>
+                          {docStatus === "pending" && (
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
+                              style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
+                            >
+                              Tap to retry
+                            </button>
+                          )}
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
                           <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>Processing failed</p>
+                          {entry.error_message && (
+                            <p style={{ color: "#888", fontSize: 11, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {entry.error_message}
+                            </p>
+                          )}
                           <button
-                            onClick={async (ev) => {
-                              ev.stopPropagation();
-                              const { data: { session } } = await supabase.auth.getSession();
-                              if (!session) return;
-                              await supabase.from("documents").update({ status: "processing" }).eq("id", entry.id);
-                              setEntries(prev => prev.map(x => x.id === entry.id ? { ...x, status: "processing" } : x));
-                              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`, {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${session.access_token}`,
-                                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                                },
-                                body: JSON.stringify({ document_id: entry.id }),
-                              }).catch(() => {});
-                              toast("Retrying…");
-                            }}
-                            style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, cursor: "pointer", textDecoration: "underline" }}
+                            onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
+                            style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
                           >
                             Tap to retry
                           </button>

@@ -26,7 +26,6 @@ function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   return chunks;
 }
 
-// Fetch with timeout
 async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
@@ -35,6 +34,15 @@ async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
   } finally {
     clearTimeout(id);
   }
+}
+
+// Mark a doc as errored with a short reason
+async function markError(adminClient: any, document_id: string, reason: string) {
+  console.error(`[ingest-document] document ${document_id} -> error: ${reason}`);
+  await adminClient
+    .from("documents")
+    .update({ status: "error", error_message: reason.slice(0, 500) })
+    .eq("id", document_id);
 }
 
 // Heavy processing — runs in background via EdgeRuntime.waitUntil
@@ -46,9 +54,9 @@ async function processDocument(
   lovableApiKey: string,
 ) {
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
+  console.log(`[ingest-document] processDocument START id=${document_id} user=${userId}`);
 
   try {
-    // Fetch document record
     const { data: doc, error: docErr } = await adminClient
       .from("documents")
       .select("*")
@@ -56,12 +64,10 @@ async function processDocument(
       .single();
 
     if (docErr || !doc) {
-      console.error("Document not found:", docErr);
-      await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+      await markError(adminClient, document_id, `Document not found: ${docErr?.message || "missing"}`);
       return;
     }
 
-    // Generate signed URL for the file (1 hour) — avoids loading entire file into memory
     const storagePath = doc.file_url.includes("/storage/v1/")
       ? doc.file_url.split("/documents/")[1]
       : doc.file_url;
@@ -71,24 +77,18 @@ async function processDocument(
       .createSignedUrl(storagePath, 3600);
 
     if (signErr || !signed?.signedUrl) {
-      console.error("Signed URL error:", signErr);
-      await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+      await markError(adminClient, document_id, `Could not generate signed URL: ${signErr?.message || "unknown"}`);
       return;
     }
 
     const fileUrl = signed.signedUrl;
+    console.log(`[ingest-document] signed URL ok, file_type=${doc.file_type}`);
 
-    let mimeType = "application/octet-stream";
-    const ft = doc.file_type?.toLowerCase();
-    if (ft === "pdf") mimeType = "application/pdf";
-    else if (ft === "docx") mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    else if (ft === "image" || doc.filename?.match(/\.(png|jpg|jpeg|webp|gif)$/i)) {
-      const ext = doc.filename?.split(".").pop()?.toLowerCase();
-      mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
-    }
-
-    // Extract text with Gemini — pass signed URL directly (no base64, no OOM)
-    // 25-second timeout per spec
+    // TODO: PDF/DOCX extraction transport — passing a signed URL via image_url to
+    // Gemini chat completions is unreliable for non-image files. A proper fix would
+    // download bytes and send as base64 with the correct mime, or use a dedicated
+    // PDF text extractor before calling the LLM. For now we surface failures clearly.
+    console.log(`[ingest-document] extraction START`);
     let aiRes: Response;
     try {
       aiRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -109,15 +109,13 @@ async function processDocument(
         }),
       }, 25000);
     } catch (e) {
-      console.error("AI extraction timeout/error:", e);
-      await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+      await markError(adminClient, document_id, `Extraction request failed or timed out: ${e instanceof Error ? e.message : String(e)}`);
       return;
     }
 
     if (!aiRes.ok) {
       const errText = await aiRes.text().catch(() => "");
-      console.error("AI extraction failed:", aiRes.status, errText);
-      await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+      await markError(adminClient, document_id, `Extraction API ${aiRes.status}: ${errText.slice(0, 200)}`);
       return;
     }
 
@@ -125,11 +123,12 @@ async function processDocument(
     const extractedText = aiData.choices?.[0]?.message?.content || "";
 
     if (!extractedText.trim()) {
-      await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+      await markError(adminClient, document_id, "No text could be extracted from the document. PDF/DOCX transport may not be supported by the extraction model.");
       return;
     }
+    console.log(`[ingest-document] extraction OK, ${extractedText.length} chars`);
 
-    // Generate summary
+    console.log(`[ingest-document] summary START`);
     let docSummary = "";
     try {
       const summaryRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -151,10 +150,9 @@ async function processDocument(
         docSummary = sumData.choices?.[0]?.message?.content || "";
       }
     } catch (e) {
-      console.error("Summary error:", e);
+      console.error("[ingest-document] summary error (non-fatal):", e);
     }
 
-    // Chunk and insert
     const chunks = chunkText(extractedText);
     const chunkRows = chunks.map((content, i) => ({
       document_id,
@@ -167,20 +165,20 @@ async function processDocument(
     if (chunkRows.length > 0) {
       const { error: insertErr } = await adminClient.from("document_chunks").insert(chunkRows);
       if (insertErr) {
-        console.error("Chunk insert error:", insertErr);
-        await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+        await markError(adminClient, document_id, `Chunk insert failed: ${insertErr.message}`);
         return;
       }
     }
 
-    // Mark as completed
+    console.log(`[ingest-document] final status update -> completed (${chunks.length} chunks)`);
     await adminClient.from("documents").update({
       status: "completed",
       summary: docSummary || extractedText.slice(0, 300),
       page_count: chunks.length,
+      error_message: null,
     }).eq("id", document_id);
 
-    console.log(`Document ${document_id} processed: ${chunks.length} chunks`);
+    console.log(`[ingest-document] document ${document_id} processed: ${chunks.length} chunks`);
 
     // Fire-and-forget: feed into evidence + signals pipeline
     adminClient.functions.invoke("extract-evidence", {
@@ -197,7 +195,7 @@ async function processDocument(
       });
     }).catch((e) => console.error("post-completion pipeline error:", e));
 
-    // Generate embeddings (non-critical, after marking completed)
+    // Generate embeddings (non-critical)
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && chunkRows.length > 0) {
       try {
@@ -227,17 +225,17 @@ async function processDocument(
           }
         }
       } catch (embErr) {
-        console.error("Embedding error:", embErr);
+        console.error("[ingest-document] embedding error (non-fatal):", embErr);
       }
     }
   } catch (e) {
-    console.error("processDocument error:", e);
-    await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+    await markError(adminClient, document_id, `Unexpected: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
 // Main handler — validates auth, returns immediately, processes in background
 Deno.serve(async (req) => {
+  console.log(`[ingest-document] handler start method=${req.method}`);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -261,25 +259,31 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) {
+      console.error("[ingest-document] LOVABLE_API_KEY missing");
+      throw new Error("LOVABLE_API_KEY not configured");
+    }
 
-    // Verify user
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await userClient.auth.getUser(token);
     if (authError || !user) {
+      console.error("[ingest-document] auth failed:", authError?.message);
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log(`[ingest-document] auth OK user=${user.id} doc=${document_id}`);
 
-    // Mark as processing (in case retry)
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    await adminClient.from("documents").update({ status: "processing" }).eq("id", document_id);
+    await adminClient
+      .from("documents")
+      .update({ status: "processing", error_message: null })
+      .eq("id", document_id);
 
-    // Kick off background processing — does NOT block the response
+    console.log(`[ingest-document] kicking off background processDocument for ${document_id}`);
     // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
     EdgeRuntime.waitUntil(
       processDocument(document_id, user.id, supabaseUrl, serviceRoleKey, LOVABLE_API_KEY)
@@ -290,7 +294,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
-    console.error("ingest-document error:", e);
+    console.error("[ingest-document] handler error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
