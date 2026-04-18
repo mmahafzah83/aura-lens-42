@@ -633,10 +633,12 @@ const SourcesSubTab = ({
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
-                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>Processing failed</p>
-                          {entry.error_message && (
+                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                            {humanizeDocError(entry.error_message).headline}
+                          </p>
+                          {humanizeDocError(entry.error_message).detail && (
                             <p style={{ color: "#888", fontSize: 11, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                              {entry.error_message}
+                              {humanizeDocError(entry.error_message).detail}
                             </p>
                           )}
                           <button

@@ -162,6 +162,16 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       return;
     }
 
+    // Friendly heads-up for large PDFs/DOCX (>8MB) — extraction may take longer.
+    const LARGE_FILE_BYTES = 8 * 1024 * 1024;
+    if (file.size > LARGE_FILE_BYTES && (fileType === "pdf" || fileType === "docx")) {
+      const sizeMb = (file.size / 1024 / 1024).toFixed(1);
+      sonnerToast.message(
+        `Large ${fileType.toUpperCase()} detected (${sizeMb} MB). Processing may take longer than usual.`,
+        { duration: 6000 },
+      );
+    }
+
     // Duplicate check
     const dup = await checkDuplicate(file);
     if (dup) {
