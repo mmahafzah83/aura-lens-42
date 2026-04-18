@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,6 +71,7 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 
 const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const { user: authUser, isReady: authReady } = useAuthReady();
+  const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
   const [userName, setUserName] = useState<string>("");
 
@@ -600,13 +602,13 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 3 }}>
                       {t.source ? `FROM ${t.source.toUpperCase()}` : "FROM THE WEB"} · {timeAgo(t.fetched_at)}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 3 }}>
-                      {t.url ? (
-                        <a href={t.url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
-                          {t.headline}
-                        </a>
-                      ) : t.headline}
-                    </div>
+                    <button
+                      onClick={() => navigate(`/trends/${t.id}`)}
+                      className="text-left w-full"
+                      style={{ background: "transparent", border: "none", padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 500, color: "hsl(var(--foreground))", marginBottom: 3 }}
+                    >
+                      {t.headline}
+                    </button>
                     {t.insight && (
                       <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", lineHeight: 1.5, marginBottom: 6 }}>
                         {t.insight}

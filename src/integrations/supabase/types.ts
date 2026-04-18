@@ -733,37 +733,55 @@ export type Database = {
       }
       industry_trends: {
         Row: {
+          canonical_url: string | null
+          content_markdown: string | null
           fetched_at: string
           headline: string
           id: string
           insight: string
+          last_checked_at: string | null
           published_at: string | null
+          relevance_score: number
           source: string
           status: string
-          url: string
+          summary: string | null
+          url: string | null
           user_id: string
+          validation_status: string
         }
         Insert: {
+          canonical_url?: string | null
+          content_markdown?: string | null
           fetched_at?: string
           headline: string
           id?: string
           insight: string
+          last_checked_at?: string | null
           published_at?: string | null
+          relevance_score?: number
           source: string
           status?: string
-          url: string
+          summary?: string | null
+          url?: string | null
           user_id: string
+          validation_status?: string
         }
         Update: {
+          canonical_url?: string | null
+          content_markdown?: string | null
           fetched_at?: string
           headline?: string
           id?: string
           insight?: string
+          last_checked_at?: string | null
           published_at?: string | null
+          relevance_score?: number
           source?: string
           status?: string
-          url?: string
+          summary?: string | null
+          url?: string | null
           user_id?: string
+          validation_status?: string
         }
         Relationships: []
       }
