@@ -136,38 +136,51 @@ const ImpactTab = () => {
     setPeakScore30(peak?.score ?? null);
     setPeakDate30(peak?.created_at ?? null);
 
-    // Captures within range
-    const capRes = await safeQuery(
-      () => supabase
-        .from("entries")
-        .select("created_at")
-        .eq("user_id", user.id)
-        .gte("created_at", sinceIso)
-        .order("created_at", { ascending: true }),
-      { context: "Impact: captures", silent: true }
-    );
-    setCaptureRows((capRes.data as { created_at: string }[]) || []);
+    // Captures within range (entries + documents)
+    const [capRes, docRangeRes] = await Promise.all([
+      safeQuery(
+        () => supabase.from("entries").select("created_at")
+          .eq("user_id", user.id).gte("created_at", sinceIso)
+          .order("created_at", { ascending: true }),
+        { context: "Impact: captures", silent: true }
+      ),
+      safeQuery(
+        () => supabase.from("documents").select("created_at")
+          .eq("user_id", user.id).gte("created_at", sinceIso)
+          .order("created_at", { ascending: true }),
+        { context: "Impact: documents", silent: true }
+      ),
+    ]);
+    const combinedRange: { created_at: string }[] = [
+      ...((capRes.data as { created_at: string }[]) || []),
+      ...((docRangeRes.data as { created_at: string }[]) || []),
+    ];
+    setCaptureRows(combinedRange);
 
-    // Captures this calendar month
+    // Captures this calendar month (entries + documents)
     const monthStart = new Date();
     monthStart.setDate(1);
     monthStart.setHours(0, 0, 0, 0);
-    const { count: monthCount } = await supabase
-      .from("entries")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", monthStart.toISOString());
-    setCapturesThisMonth(monthCount ?? 0);
+    const [{ count: entryMonth }, { count: docMonth }] = await Promise.all([
+      supabase.from("entries").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).gte("created_at", monthStart.toISOString()),
+      supabase.from("documents").select("id", { count: "exact", head: true })
+        .eq("user_id", user.id).gte("created_at", monthStart.toISOString()),
+    ]);
+    setCapturesThisMonth((entryMonth ?? 0) + (docMonth ?? 0));
 
-    // Last capture all-time (for "days since last capture" narrative)
-    const lastCapRes = await supabase
-      .from("entries")
-      .select("created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    const lastCap = (lastCapRes.data as any)?.[0]?.created_at;
-    setLastCaptureAll(lastCap ? new Date(lastCap) : null);
+    // Last capture all-time (entries + documents) for "days since last capture" narrative
+    const [lastEntryRes, lastDocRes] = await Promise.all([
+      supabase.from("entries").select("created_at").eq("user_id", user.id)
+        .order("created_at", { ascending: false }).limit(1),
+      supabase.from("documents").select("created_at").eq("user_id", user.id)
+        .order("created_at", { ascending: false }).limit(1),
+    ]);
+    const lastTimes = [
+      (lastEntryRes.data as any)?.[0]?.created_at,
+      (lastDocRes.data as any)?.[0]?.created_at,
+    ].filter(Boolean).map((t: string) => new Date(t).getTime());
+    setLastCaptureAll(lastTimes.length ? new Date(Math.max(...lastTimes)) : null);
 
     // LinkedIn metrics count (overall, for empty state decisions)
     const { count: trueCount } = await supabase
