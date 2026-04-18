@@ -490,14 +490,10 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         console.error("[HomeTab] refresh trends failed", error);
         setTrendsError(true);
       } else {
-        if ((data as any)?.firecrawl_quota_exhausted) {
-          // Honest, surfaced failure: snapshot scraping unavailable
-          console.warn("[HomeTab] firecrawl quota exhausted", (data as any)?.warning);
-          setTrendsError(true);
-        }
+        // Phase A returns immediately with { status: 'enriching', queued: N }.
+        // Realtime subscription will refresh the list as Phase B finishes each row.
+        console.log("[HomeTab] refresh queued", data);
         setDismissedTrendIds(new Set());
-        await loadTrends(authUser.id);
-        await loadTrendsBadge(authUser.id);
       }
     } catch (e) {
       console.error("[HomeTab] refresh trends exception", e);
