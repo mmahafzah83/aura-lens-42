@@ -75,6 +75,7 @@ export default function TrendDetail() {
   const [loading, setLoading] = useState(true);
   const [externalAlive, setExternalAlive] = useState<boolean | null>(null);
   const [showFullSnapshot, setShowFullSnapshot] = useState(false);
+  const [snapshotMode, setSnapshotMode] = useState<"clean" | "raw">("clean");
 
   useEffect(() => {
     if (!isReady || !user || !id) return;
@@ -83,7 +84,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_score, relevance_score, topic_relevance_score, snapshot_quality, final_score, selection_reason, category, impact_level, confidence_level, signal_type, opportunity_type, action_recommendation, content_angle, decision_label")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, content_clean, content_raw, fetched_at, validation_score, relevance_score, topic_relevance_score, snapshot_quality, content_quality_score, final_score, selection_reason, category, impact_level, confidence_level, signal_type, opportunity_type, action_recommendation, content_angle, decision_label")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
