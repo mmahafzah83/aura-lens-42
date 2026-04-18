@@ -6,6 +6,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_BYTES = 20 * 1024 * 1024; // 20 MB safety guardrail
+
 function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   const chunks: string[] = [];
   if (!text || text.trim().length === 0) return chunks;
@@ -26,6 +28,14 @@ function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   return chunks;
 }
 
+function normalizeText(raw: string): string {
+  return raw
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), ms);
@@ -36,7 +46,6 @@ async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
   }
 }
 
-// Mark a doc as errored with a short reason
 async function markError(adminClient: any, document_id: string, reason: string) {
   console.error(`[ingest-document] document ${document_id} -> error: ${reason}`);
   await adminClient
@@ -45,7 +54,143 @@ async function markError(adminClient: any, document_id: string, reason: string) 
     .eq("id", document_id);
 }
 
-// Heavy processing — runs in background via EdgeRuntime.waitUntil
+// Classify the document into a stable extraction route.
+// Uses doc.file_type first (set by client to 'image'|'pdf'|'docx'),
+// falls back to filename extension.
+function classifyKind(fileType: string | null | undefined, filename: string): "image" | "pdf" | "docx" | "unsupported" {
+  const ft = (fileType || "").toLowerCase();
+  if (["image", "png", "jpg", "jpeg", "webp"].includes(ft)) return "image";
+  if (ft === "pdf" || ft === "application/pdf") return "pdf";
+  if (
+    ft === "docx" ||
+    ft === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return "docx";
+  }
+  if (ft.startsWith("image/")) return "image";
+
+  const ext = (filename.split(".").pop() || "").toLowerCase();
+  if (["png", "jpg", "jpeg", "webp"].includes(ext)) return "image";
+  if (ext === "pdf") return "pdf";
+  if (ext === "docx") return "docx";
+  return "unsupported";
+}
+
+function imageMime(filename: string, fileType: string | null | undefined): string {
+  const ft = (fileType || "").toLowerCase();
+  if (ft === "image/png" || ft === "png") return "image/png";
+  if (ft === "image/jpeg" || ft === "jpg" || ft === "jpeg") return "image/jpeg";
+  if (ft === "image/webp" || ft === "webp") return "image/webp";
+  const ext = (filename.split(".").pop() || "").toLowerCase();
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  return "image/jpeg";
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  // Chunked conversion to avoid call-stack issues on large files
+  let binary = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+async function downloadStorageBytes(adminClient: any, storagePath: string): Promise<Uint8Array> {
+  const { data, error } = await adminClient.storage.from("documents").download(storagePath);
+  if (error || !data) throw new Error(`Storage download failed: ${error?.message || "no data"}`);
+  const buf = await (data as Blob).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+// Extract text from an image via Gemini multimodal (signed URL is fine for real images)
+async function extractFromImage(adminClient: any, doc: any, lovableApiKey: string): Promise<string> {
+  const storagePath = doc.file_url.includes("/storage/v1/")
+    ? doc.file_url.split("/documents/")[1]
+    : doc.file_url;
+  const { data: signed, error: signErr } = await adminClient.storage
+    .from("documents")
+    .createSignedUrl(storagePath, 3600);
+  if (signErr || !signed?.signedUrl) {
+    throw new Error(`Could not generate signed URL: ${signErr?.message || "unknown"}`);
+  }
+  const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: "Extract ALL legible text from this image. Return ONLY raw text, preserving structure. No commentary." },
+          { type: "image_url", image_url: { url: signed.signedUrl } },
+        ],
+      }],
+    }),
+  }, 30000);
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`Image extraction API ${res.status}: ${t.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+// Extract text from a PDF by sending base64 bytes with proper mime to Gemini.
+async function extractFromPdf(adminClient: any, doc: any, lovableApiKey: string): Promise<string> {
+  const storagePath = doc.file_url.includes("/storage/v1/")
+    ? doc.file_url.split("/documents/")[1]
+    : doc.file_url;
+  const bytes = await downloadStorageBytes(adminClient, storagePath);
+  if (bytes.byteLength > MAX_BYTES) {
+    throw new Error(`PDF too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 20 MB)`);
+  }
+  const b64 = bytesToBase64(bytes);
+  console.log(`[ingest-document] PDF bytes=${bytes.byteLength}, base64 len=${b64.length}`);
+
+  // Lovable AI gateway / Gemini accepts file_data via data URLs in a generic file part.
+  // We use OpenAI-compatible 'image_url' with a data URL containing the PDF — this is
+  // the documented transport for non-image binaries on the gateway. If the gateway
+  // rejects this, we surface the API error verbatim via markError.
+  const dataUrl = `data:application/pdf;base64,${b64}`;
+  const res = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "google/gemini-2.5-flash",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "text", text: "Extract ALL text content from this PDF document. Return ONLY the raw text, preserving structure (headings, lists, paragraphs). No commentary." },
+          { type: "image_url", image_url: { url: dataUrl } },
+        ],
+      }],
+    }),
+  }, 60000);
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    throw new Error(`PDF extraction API ${res.status}: ${t.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+// Extract text from a DOCX using mammoth (pure JS, no native deps).
+async function extractFromDocx(adminClient: any, doc: any): Promise<string> {
+  const storagePath = doc.file_url.includes("/storage/v1/")
+    ? doc.file_url.split("/documents/")[1]
+    : doc.file_url;
+  const bytes = await downloadStorageBytes(adminClient, storagePath);
+  if (bytes.byteLength > MAX_BYTES) {
+    throw new Error(`DOCX too large (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB, max 20 MB)`);
+  }
+  // @ts-ignore dynamic esm import
+  const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
+  const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+  return result?.value || "";
+}
+
 async function processDocument(
   document_id: string,
   userId: string,
@@ -68,75 +213,41 @@ async function processDocument(
       return;
     }
 
-    const storagePath = doc.file_url.includes("/storage/v1/")
-      ? doc.file_url.split("/documents/")[1]
-      : doc.file_url;
+    const kind = classifyKind(doc.file_type, doc.filename || "");
+    console.log(`[ingest-document] file_type=${doc.file_type} filename=${doc.filename} -> kind=${kind}`);
 
-    const { data: signed, error: signErr } = await adminClient.storage
-      .from("documents")
-      .createSignedUrl(storagePath, 3600);
-
-    if (signErr || !signed?.signedUrl) {
-      await markError(adminClient, document_id, `Could not generate signed URL: ${signErr?.message || "unknown"}`);
+    if (kind === "unsupported") {
+      await markError(adminClient, document_id, `Unsupported file type: ${doc.file_type || "unknown"}`);
       return;
     }
 
-    const fileUrl = signed.signedUrl;
-    console.log(`[ingest-document] signed URL ok, file_type=${doc.file_type}`);
-
-    // TODO: PDF/DOCX extraction transport — passing a signed URL via image_url to
-    // Gemini chat completions is unreliable for non-image files. A proper fix would
-    // download bytes and send as base64 with the correct mime, or use a dedicated
-    // PDF text extractor before calling the LLM. For now we surface failures clearly.
-    console.log(`[ingest-document] extraction START`);
-    let aiRes: Response;
+    let extractedText = "";
     try {
-      aiRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{
-            role: "user",
-            content: [
-              { type: "text", text: "Extract ALL text content from this document. Return ONLY the raw text content, preserving structure (headings, lists, paragraphs). Do not add commentary or analysis." },
-              { type: "image_url", image_url: { url: fileUrl } },
-            ],
-          }],
-        }),
-      }, 25000);
+      if (kind === "image") {
+        extractedText = await extractFromImage(adminClient, doc, lovableApiKey);
+      } else if (kind === "pdf") {
+        extractedText = await extractFromPdf(adminClient, doc, lovableApiKey);
+      } else if (kind === "docx") {
+        extractedText = await extractFromDocx(adminClient, doc);
+      }
     } catch (e) {
-      await markError(adminClient, document_id, `Extraction request failed or timed out: ${e instanceof Error ? e.message : String(e)}`);
+      await markError(adminClient, document_id, e instanceof Error ? e.message : String(e));
       return;
     }
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text().catch(() => "");
-      await markError(adminClient, document_id, `Extraction API ${aiRes.status}: ${errText.slice(0, 200)}`);
+    extractedText = normalizeText(extractedText);
+    if (!extractedText || extractedText.length < 20) {
+      await markError(adminClient, document_id, `No usable text extracted from ${kind.toUpperCase()} document.`);
       return;
     }
+    console.log(`[ingest-document] extraction OK (${kind}), ${extractedText.length} chars`);
 
-    const aiData = await aiRes.json();
-    const extractedText = aiData.choices?.[0]?.message?.content || "";
-
-    if (!extractedText.trim()) {
-      await markError(adminClient, document_id, "No text could be extracted from the document. PDF/DOCX transport may not be supported by the extraction model.");
-      return;
-    }
-    console.log(`[ingest-document] extraction OK, ${extractedText.length} chars`);
-
-    console.log(`[ingest-document] summary START`);
+    // Summary (non-fatal)
     let docSummary = "";
     try {
       const summaryRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash-lite",
           messages: [
@@ -159,7 +270,7 @@ async function processDocument(
       user_id: userId,
       content,
       chunk_index: i,
-      metadata: { filename: doc.filename, file_type: doc.file_type },
+      metadata: { filename: doc.filename, file_type: doc.file_type, kind },
     }));
 
     if (chunkRows.length > 0) {
@@ -178,9 +289,7 @@ async function processDocument(
       error_message: null,
     }).eq("id", document_id);
 
-    console.log(`[ingest-document] document ${document_id} processed: ${chunks.length} chunks`);
-
-    // Fire-and-forget: feed into evidence + signals pipeline
+    // Fire-and-forget downstream pipeline
     adminClient.functions.invoke("extract-evidence", {
       body: { source_type: "document", source_id: document_id, user_id: userId },
     }).then(({ data: extractResult, error: extractError }) => {
@@ -195,7 +304,7 @@ async function processDocument(
       });
     }).catch((e) => console.error("post-completion pipeline error:", e));
 
-    // Generate embeddings (non-critical)
+    // Embeddings (non-critical)
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && chunkRows.length > 0) {
       try {
@@ -233,7 +342,6 @@ async function processDocument(
   }
 }
 
-// Main handler — validates auth, returns immediately, processes in background
 Deno.serve(async (req) => {
   console.log(`[ingest-document] handler start method=${req.method}`);
   if (req.method === "OPTIONS") {
