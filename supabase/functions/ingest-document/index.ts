@@ -105,7 +105,7 @@ async function processDocument(
               { type: "text", text: "Extract ALL text content from this document. Return ONLY the raw text content, preserving structure (headings, lists, paragraphs). Do not add commentary or analysis." },
               { type: "image_url", image_url: { url: fileUrl } },
             ],
-          }),
+          }],
         }),
       }, 25000);
     } catch (e) {
