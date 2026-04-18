@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Link, Type, FileUp, Mic, ImageIcon, Search, Pin, PinOff, Trash2,
-  Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil,
+  Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -166,12 +166,42 @@ async function openEntryInNewTab(entry: SourceEntry) {
   }
 
   const url = entry.image_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null);
+
   if (url && /^https?:\/\//.test(url)) {
     window.open(url, "_blank", "noopener");
   } else {
     // For notes/voice without a URL, open content as a text blob
     const blob = new Blob([`${entry.title || "Source"}\n\n${entry.content}`], { type: "text/plain" });
     window.open(URL.createObjectURL(blob), "_blank");
+  }
+}
+
+/* ── Download a document via signed URL with download attribute ── */
+async function downloadDocument(entry: SourceEntry) {
+  if (!entry.file_url) {
+    toast.error("No file to download");
+    return;
+  }
+  try {
+    const raw = entry.file_url;
+    const path = raw.startsWith("http")
+      ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
+      : raw;
+    const filename = (entry.title || path.split("/").pop() || "document").replace(/^\d+-/, "");
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(path, 60 * 10, { download: filename });
+    if (error || !data?.signedUrl) throw error || new Error("No signed URL");
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e: any) {
+    console.error("[SourcesSubTab] download document failed", e);
+    toast.error("Could not download document", { description: e?.message || "Please try again." });
   }
 }
 
@@ -331,6 +361,11 @@ const ExpandedSource = ({
             <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #F97316", background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <ExternalLink size={14} /> Open
             </button>
+            {entry.type === "document" && entry.file_url && (
+              <button onClick={() => downloadDocument(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#ccc", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                <Download size={14} /> Download
+              </button>
+            )}
             <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
               {detecting ? <Loader2 className="w-4 h-4 animate-spin" style={{ display: "inline" }} /> : <Zap size={14} style={{ display: "inline", marginRight: 4 }} />}
               Detect Signal
