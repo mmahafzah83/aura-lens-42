@@ -46,8 +46,8 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark";
-    return (localStorage.getItem("aura-theme") as "dark" | "light") || "dark";
+    if (typeof window === "undefined") return "light";
+    return (localStorage.getItem("aura-theme") as "dark" | "light") || "light";
   });
   const toggleTheme = () => {
     setTheme((prev) => {

@@ -15,9 +15,12 @@
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('aura-theme');
+          var t = localStorage.getItem('aura-theme') || 'light';
           if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
-        } catch (e) {}
+          else document.documentElement.removeAttribute('data-theme');
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
       })();
     </script>
 
