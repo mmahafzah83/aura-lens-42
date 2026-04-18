@@ -217,8 +217,11 @@ ${queries.map((q, i) => `${i + 1}. ${q}`).join("\n")}
 Rules:
 - Return ONLY high-credibility sources: top consulting firms (McKinsey, BCG, Bain, Deloitte, EY, PwC, KPMG, Accenture, Oliver Wyman, Roland Berger), research institutes (MIT Sloan, HBR, Brookings, Gartner, Forrester, IDC), reputable financial press (FT, WSJ, Bloomberg, Economist, Reuters), or official industry bodies.
 - Avoid forums, Reddit, YouTube, X/Twitter, Pinterest, personal blogs, low-trust aggregators.
-- Each URL must be a direct article, not a homepage or category page.
-- Return up to 12 distinct URLs across the topics, prioritizing source diversity.`;
+- Each URL must be a direct, openly readable article — NOT a homepage, category page, paywalled stub, or login-gated page.
+- SOURCE DIVERSITY IS MANDATORY: return articles from at least 6 DIFFERENT publisher domains. Never return more than 2 URLs from the same domain. Prefer breadth across consulting / research / press / industry-body sources.
+- Spread coverage across the topics above — do not concentrate all picks on a single topic.
+- Return up to 15 distinct URLs total.
+- For each article, include a short reason (max 15 words) explaining why this source is credible AND why it matches the profile.`;
 
   const res = await fetch(PERPLEXITY_URL, {
     method: "POST",
