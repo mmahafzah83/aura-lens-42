@@ -249,6 +249,7 @@ Rules:
                     url: { type: "string" },
                     title: { type: "string" },
                     description: { type: "string" },
+                    reason: { type: "string" },
                   },
                   required: ["url"],
                 },
@@ -267,7 +268,7 @@ Rules:
     return [];
   }
 
-  const collected = new Map<string, { url: string; title?: string; description?: string }>();
+  const collected = new Map<string, { url: string; title?: string; description?: string; reason?: string }>();
   const content: string = data?.choices?.[0]?.message?.content ?? "";
   if (content) {
     try {
@@ -275,7 +276,7 @@ Rules:
       const arr = Array.isArray(parsed?.articles) ? parsed.articles : [];
       for (const a of arr) {
         if (a?.url && typeof a.url === "string") {
-          collected.set(a.url, { url: a.url, title: a.title, description: a.description });
+          collected.set(a.url, { url: a.url, title: a.title, description: a.description, reason: a.reason });
         }
       }
     } catch (e) {
