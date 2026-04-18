@@ -219,6 +219,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
         filename: file.name,
         file_url: storagePath,
         file_type: fileType,
+        file_size: file.size,
         status: "processing",
       } as any)
       .select()

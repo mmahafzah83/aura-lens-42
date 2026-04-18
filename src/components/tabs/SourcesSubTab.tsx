@@ -27,6 +27,7 @@ interface SourceEntry {
   file_url?: string | null;
   file_type?: string | null;
   page_count?: number | null;
+  file_size?: number | null;
   status?: string | null;
   error_message?: string | null;
 }
@@ -86,6 +87,14 @@ function extractDomain(url: string | null | undefined): string | null {
   if (!url) return null;
   const m = url.match(/https?:\/\/([^\/\s]+)/);
   return m ? m[1].replace(/^www\./, "") : null;
+}
+
+function formatBytes(bytes: number | null | undefined): string | null {
+  if (!bytes && bytes !== 0) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 /* ── Humanize document error_message into a stage-named headline + detail ── */
@@ -176,33 +185,52 @@ async function openEntryInNewTab(entry: SourceEntry) {
   }
 }
 
-/* ── Download a document via signed URL with download attribute ── */
-async function downloadDocument(entry: SourceEntry) {
-  if (!entry.file_url) {
-    toast.error("No file to download");
-    return;
-  }
+/* ── Download an entry's underlying file (documents = private signed URL, images = direct fetch) ── */
+async function downloadEntryFile(entry: SourceEntry) {
   try {
-    const raw = entry.file_url;
-    const path = raw.startsWith("http")
-      ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
-      : raw;
-    const filename = (entry.title || path.split("/").pop() || "document").replace(/^\d+-/, "");
-    const { data, error } = await supabase.storage
-      .from("documents")
-      .createSignedUrl(path, 60 * 10, { download: filename });
-    if (error || !data?.signedUrl) throw error || new Error("No signed URL");
-    const a = document.createElement("a");
-    a.href = data.signedUrl;
-    a.download = filename;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    if (entry.type === "document") {
+      if (!entry.file_url) { toast.error("No file to download"); return; }
+      const raw = entry.file_url;
+      const path = raw.startsWith("http")
+        ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
+        : raw;
+      const filename = (entry.title || path.split("/").pop() || "document").replace(/^\d+-/, "");
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(path, 60 * 10, { download: filename });
+      if (error || !data?.signedUrl) throw error || new Error("No signed URL");
+      triggerDownloadLink(data.signedUrl, filename);
+      return;
+    }
+
+    if (entry.type === "image" && entry.image_url) {
+      // Public bucket — fetch as blob so the download attribute is honored cross-origin.
+      const url = entry.image_url;
+      const filename = (entry.title || url.split("/").pop() || "image").split("?")[0];
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Image fetch failed (${res.status})`);
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      triggerDownloadLink(objectUrl, filename);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+      return;
+    }
+
+    toast.error("Nothing to download for this source");
   } catch (e: any) {
-    console.error("[SourcesSubTab] download document failed", e);
-    toast.error("Could not download document", { description: e?.message || "Please try again." });
+    console.error("[SourcesSubTab] download failed", e);
+    toast.error("Could not download file", { description: e?.message || "Please try again." });
   }
+}
+
+function triggerDownloadLink(href: string, filename: string) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
 
 /* ── Expanded Source View ── */
@@ -361,8 +389,8 @@ const ExpandedSource = ({
             <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #F97316", background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <ExternalLink size={14} /> Open
             </button>
-            {entry.type === "document" && entry.file_url && (
-              <button onClick={() => downloadDocument(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#ccc", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            {((entry.type === "document" && entry.file_url) || (entry.type === "image" && entry.image_url)) && (
+              <button onClick={() => downloadEntryFile(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#ccc", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 <Download size={14} /> Download
               </button>
             )}
@@ -419,7 +447,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at, error_message"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message"),
     ]);
 
     if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
@@ -439,6 +467,7 @@ const SourcesSubTab = ({
       file_url: d.file_url,
       file_type: d.file_type,
       page_count: d.page_count,
+      file_size: d.file_size,
       status: d.status,
       error_message: d.error_message,
     }));
@@ -649,9 +678,10 @@ const SourcesSubTab = ({
             const isProcessing = isDoc && (docStatus === "processing" || docStatus === "pending");
             const isErrored = isDoc && docStatus === "error";
             const isReady = isDoc && (docStatus === "completed" || docStatus === "ready");
-            const docMeta = isDoc && isReady
-              ? `${(entry.file_type || "FILE").toString().toUpperCase()}${entry.page_count ? ` · ${entry.page_count} pages` : ""}`
-              : null;
+            const docSizeLabel = isDoc ? formatBytes(entry.file_size) : null;
+            const docTypeLabel = isDoc && isReady ? (entry.file_type || "FILE").toString().toUpperCase() : null;
+            const docPagesLabel = isDoc && isReady && entry.page_count ? `${entry.page_count} ${entry.page_count === 1 ? "page" : "pages"}` : null;
+            const canDownload = (isDoc && !!entry.file_url) || (entry.type === "image" && !!entry.image_url);
             const preview = isDoc
               ? (isReady ? (entry.summary || "").slice(0, 120) : "")
               : (entry.summary || entry.content).slice(0, 120);
@@ -663,11 +693,23 @@ const SourcesSubTab = ({
                 <button
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
                   title="Open in new tab"
-                  style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  style={{ position: "absolute", top: 12, right: canDownload ? 96 : 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
                   className="text-[#555] hover:text-[#F97316] transition-colors"
                 >
                   <ExternalLink size={14} />
                 </button>
+
+                {/* Download button (documents + images) */}
+                {canDownload && (
+                  <button
+                    onClick={e => { e.stopPropagation(); downloadEntryFile(entry); }}
+                    title="Download file"
+                    style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                    className="text-[#555] hover:text-[#F97316] transition-colors"
+                  >
+                    <Download size={14} />
+                  </button>
+                )}
 
                 {/* Pin button (entries only) */}
                 {!isDoc && (
@@ -742,8 +784,16 @@ const SourcesSubTab = ({
                       ) : preview ? (
                         <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
                       ) : null}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {docMeta && <span style={{ fontSize: 11, color: "#7F77DD" }}>{docMeta}</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        {docTypeLabel && (
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "rgba(127,119,221,0.12)", color: "#9b94e8", letterSpacing: "0.04em" }}>{docTypeLabel}</span>
+                        )}
+                        {docPagesLabel && (
+                          <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>{docPagesLabel}</span>
+                        )}
+                        {docSizeLabel && (
+                          <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>· {docSizeLabel}</span>
+                        )}
                         {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
                         <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
