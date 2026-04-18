@@ -178,7 +178,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       });
       if (!resp.ok) throw new Error("Failed");
       toast.success("Positioning regenerated");
-      loadAll();
+      if (authUser) loadAll(authUser.id);
     } catch {
       toast.error("Regeneration failed");
     } finally {
@@ -239,7 +239,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   return (
     <div className="space-y-6">
       {loadError && (
-        <SectionError onRetry={loadAll} message="Couldn't load your story. " />
+        <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
