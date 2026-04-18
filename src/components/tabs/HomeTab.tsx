@@ -130,10 +130,11 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
-      const [latestRes, prevRes, lastEntryRes, sigRes, moveRes, follRes] = await Promise.all([
+      const [latestRes, prevRes, lastEntryRes, lastDocRes, sigRes, moveRes, follRes] = await Promise.all([
         supabase.from("score_snapshots").select("score, components, created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("score_snapshots").select("score").eq("user_id", uid).lte("created_at", sevenDaysAgo).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("entries").select("created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+        supabase.from("documents").select("created_at").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("strategic_signals").select("signal_title, confidence").eq("user_id", uid).eq("status", "active").order("confidence", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("recommended_moves").select("id, title, rationale, output_type").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("influence_snapshots").select("follower_growth").eq("user_id", uid).eq("source_type", "linkedin_export").gte("snapshot_date", thirtyDaysAgo),
@@ -141,8 +142,11 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       setLatestScore(latestRes.data ?? null);
       setScore7dAgo(prevRes.data?.score ?? null);
-      if (lastEntryRes.data?.created_at) {
-        const diffMs = Date.now() - new Date(lastEntryRes.data.created_at).getTime();
+      const lastTimes = [lastEntryRes.data?.created_at, lastDocRes.data?.created_at]
+        .filter(Boolean)
+        .map((t: any) => new Date(t).getTime());
+      if (lastTimes.length) {
+        const diffMs = Date.now() - Math.max(...lastTimes);
         setDaysSinceCapture(Math.floor(diffMs / 86400_000));
       } else {
         setDaysSinceCapture(null);
