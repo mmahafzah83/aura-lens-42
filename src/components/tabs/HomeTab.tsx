@@ -347,6 +347,23 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     loadMoves(uid);
     loadTrends(uid);
     loadTrendsBadge(uid);
+
+    // Realtime: reload trends list whenever Phase B updates a row to status='new'
+    const channel = supabase
+      .channel(`industry_trends_${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "industry_trends", filter: `user_id=eq.${uid}` },
+        (payload) => {
+          const row: any = payload.new;
+          if (row?.status === "new" && row?.content_markdown) {
+            loadTrends(uid);
+            loadTrendsBadge(uid);
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [authReady, authUser, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
 
   // ─── Derived ───
