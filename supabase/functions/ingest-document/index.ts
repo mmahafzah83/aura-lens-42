@@ -283,7 +283,7 @@ async function processDocument(
 
     let extractedText = "";
     try {
-      console.log(`[ingest-document] before extraction path=${extractionPath}`);
+      console.log(`[ingest-document] stage=extracting path=${extractionPath}`);
       if (kind === "image") {
         extractedText = await extractFromImage(adminClient, doc, lovableApiKey);
       } else if (kind === "pdf") {
@@ -292,16 +292,18 @@ async function processDocument(
         extractedText = await extractFromDocx(adminClient, doc);
       }
     } catch (e) {
-      await markError(adminClient, document_id, e instanceof Error ? e.message : String(e));
+      const raw = e instanceof Error ? e.message : String(e);
+      // Prefix with stage so the UI can name the failure clearly.
+      await markError(adminClient, document_id, `Extraction failed (${kind}): ${raw}`);
       return;
     }
 
     extractedText = normalizeText(extractedText);
     if (!extractedText || extractedText.length < 20) {
-      await markError(adminClient, document_id, `No usable text extracted from ${kind.toUpperCase()} document.`);
+      await markError(adminClient, document_id, `No usable text extracted from ${kind.toUpperCase()} (empty extracted text).`);
       return;
     }
-    console.log(`[ingest-document] extraction OK (${kind}), ${extractedText.length} chars`);
+    console.log(`[ingest-document] stage=extracted ok (${kind}), ${extractedText.length} chars`);
 
     // Summary (non-fatal)
     let docSummary = "";
