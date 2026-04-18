@@ -44,6 +44,7 @@ interface Trend {
   relevance_score?: number | null;
   topic_relevance_score?: number | null;
   final_score?: number | null;
+  selection_reason?: string | null;
 }
 
 type TrendFilter = "all" | "high_confidence" | "top_relevance" | "trusted" | "newest";
@@ -70,6 +71,11 @@ const qualityTier = (v?: number | null): { label: string; color: string } => {
 };
 
 const trendReason = (t: Trend): string => {
+  // Prefer the stored, AI-grounded explanation when available.
+  if (t.selection_reason && t.selection_reason.trim().length > 0) {
+    return t.selection_reason.trim();
+  }
+  // Fallback: derive a short reason from scores.
   const reasons: string[] = [];
   if (isTrusted(t.source)) reasons.push("trusted source");
   if ((t.topic_relevance_score ?? 0) >= 50) reasons.push("matches your focus");
@@ -253,7 +259,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score")
+          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason")
           .eq("user_id", uid)
           .eq("status", "new")
           .order("final_score", { ascending: false })

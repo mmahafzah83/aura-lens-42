@@ -22,6 +22,7 @@ interface TrendRow {
   relevance_score: number | null;
   topic_relevance_score: number | null;
   final_score: number | null;
+  selection_reason: string | null;
 }
 
 const TRUSTED_SET = new Set([
@@ -58,7 +59,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -150,6 +151,11 @@ export default function TrendDetail() {
         </span>
       </div>
 
+      {trend.selection_reason && trend.selection_reason.trim().length > 0 && (
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 14, fontStyle: "italic" }}>
+          Why selected: {trend.selection_reason}
+        </div>
+      )}
       <h1 style={{ fontSize: 24, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 14, lineHeight: 1.3 }}>
         {trend.headline}
       </h1>

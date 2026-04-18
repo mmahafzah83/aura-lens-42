@@ -745,6 +745,7 @@ export type Database = {
           published_at: string | null
           rejection_reason: string | null
           relevance_score: number
+          selection_reason: string | null
           source: string
           status: string
           summary: string | null
@@ -767,6 +768,7 @@ export type Database = {
           published_at?: string | null
           rejection_reason?: string | null
           relevance_score?: number
+          selection_reason?: string | null
           source: string
           status?: string
           summary?: string | null
@@ -789,6 +791,7 @@ export type Database = {
           published_at?: string | null
           rejection_reason?: string | null
           relevance_score?: number
+          selection_reason?: string | null
           source?: string
           status?: string
           summary?: string | null

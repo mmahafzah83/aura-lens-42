@@ -35,6 +35,12 @@ const BLOCKED_PHRASES = [
   "checking your browser", "ddos protection by cloudflare",
   "this content is for subscribers", "premium subscribers only",
   "log in to continue", "sign in to continue", "register to continue",
+  // Login walls — pages that return HTML but require authentication
+  "please log in", "please sign in", "you must be logged in", "you must be signed in",
+  "members only", "for members only", "members-only content",
+  "this content requires a subscription", "subscriber-exclusive",
+  "create an account to continue", "sign up to read", "sign up to continue",
+  "login required", "authentication required", "session expired",
 ];
 
 // ─────────────────────────────────────────
@@ -200,7 +206,7 @@ async function perplexityDiscover(
   apiKey: string,
   profileContext: string,
   queries: string[],
-): Promise<Array<{ url: string; title?: string; description?: string }>> {
+): Promise<Array<{ url: string; title?: string; description?: string; reason?: string }>> {
   const prompt = `You are a research analyst sourcing recent (last 60 days) industry trend articles for a senior consultant.
 
 Profile: ${profileContext}
@@ -211,8 +217,11 @@ ${queries.map((q, i) => `${i + 1}. ${q}`).join("\n")}
 Rules:
 - Return ONLY high-credibility sources: top consulting firms (McKinsey, BCG, Bain, Deloitte, EY, PwC, KPMG, Accenture, Oliver Wyman, Roland Berger), research institutes (MIT Sloan, HBR, Brookings, Gartner, Forrester, IDC), reputable financial press (FT, WSJ, Bloomberg, Economist, Reuters), or official industry bodies.
 - Avoid forums, Reddit, YouTube, X/Twitter, Pinterest, personal blogs, low-trust aggregators.
-- Each URL must be a direct article, not a homepage or category page.
-- Return up to 12 distinct URLs across the topics, prioritizing source diversity.`;
+- Each URL must be a direct, openly readable article — NOT a homepage, category page, paywalled stub, or login-gated page.
+- SOURCE DIVERSITY IS MANDATORY: return articles from at least 6 DIFFERENT publisher domains. Never return more than 2 URLs from the same domain. Prefer breadth across consulting / research / press / industry-body sources.
+- Spread coverage across the topics above — do not concentrate all picks on a single topic.
+- Return up to 15 distinct URLs total.
+- For each article, include a short reason (max 15 words) explaining why this source is credible AND why it matches the profile.`;
 
   const res = await fetch(PERPLEXITY_URL, {
     method: "POST",
@@ -240,6 +249,7 @@ Rules:
                     url: { type: "string" },
                     title: { type: "string" },
                     description: { type: "string" },
+                    reason: { type: "string" },
                   },
                   required: ["url"],
                 },
@@ -258,7 +268,7 @@ Rules:
     return [];
   }
 
-  const collected = new Map<string, { url: string; title?: string; description?: string }>();
+  const collected = new Map<string, { url: string; title?: string; description?: string; reason?: string }>();
   const content: string = data?.choices?.[0]?.message?.content ?? "";
   if (content) {
     try {
@@ -266,7 +276,7 @@ Rules:
       const arr = Array.isArray(parsed?.articles) ? parsed.articles : [];
       for (const a of arr) {
         if (a?.url && typeof a.url === "string") {
-          collected.set(a.url, { url: a.url, title: a.title, description: a.description });
+          collected.set(a.url, { url: a.url, title: a.title, description: a.description, reason: a.reason });
         }
       }
     } catch (e) {
@@ -448,6 +458,8 @@ serve(async (req) => {
     const discoveryResults = await perplexityDiscover(perplexityKey, profileContext, queries);
     console.log("[trends] perplexity returned:", discoveryResults.length);
 
+    // No early slicing — keep ALL discovered candidates so validation/scoring
+    // decides what survives. We only slice once, after final ranking.
     const seen = new Set<string>();
     const candidates = discoveryResults.filter(r => {
       if (!r.url) return false;
@@ -457,7 +469,8 @@ serve(async (req) => {
       if (seen.has(r.url)) return false;
       seen.add(r.url);
       return true;
-    }).slice(0, 12);
+    });
+    console.log("[trends] candidates after dedupe (no slicing):", candidates.length);
 
     const { data: existingRows } = await adminClient
       .from("industry_trends")
@@ -474,6 +487,7 @@ serve(async (req) => {
     const scraped: Array<{
       url: string; canonical: string; title: string; markdown: string;
       text: string; source: string; validation_score: number; topic_relevance_score: number;
+      discovery_reason?: string;
     }> = [];
 
     for (const c of candidates) {
@@ -504,7 +518,7 @@ serve(async (req) => {
 
       const text = markdownToText(result.markdown);
 
-      // Post-scrape quality gate (cookie wall, JS placeholder, paywall, thin)
+      // Post-scrape quality gate (cookie wall, JS placeholder, paywall, login wall, thin)
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) {
         console.log("[trends] blocked content", c.url, blocked.reason);
@@ -524,8 +538,10 @@ serve(async (req) => {
         source,
         validation_score,
         topic_relevance_score,
+        discovery_reason: c.reason,
       });
-      if (scraped.length >= 8) break;
+      // No per-batch cap — let every validated candidate be scored,
+      // diversity + ranking will pick the final top-K.
     }
     console.log("[trends] validated articles:", scraped.length);
 
@@ -547,7 +563,33 @@ serve(async (req) => {
       topic_relevance_score: number; final_score: number;
       validation_status: string; last_checked_at: string;
       published_at: null; status: string;
+      selection_reason: string;
     };
+
+    function buildSelectionReason(opts: {
+      domain: string; validation: number; topic: number; ai: number; discoveryReason?: string;
+    }): string {
+      const parts: string[] = [];
+      const dom = opts.domain.toLowerCase();
+      const trusted = TRUSTED_DOMAINS.some(td => dom === td || dom.endsWith("." + td));
+      if (trusted) parts.push(`Trusted source (${opts.domain})`);
+      else parts.push(`Source: ${opts.domain}`);
+
+      if (opts.topic >= 60) parts.push("strong match to your focus areas");
+      else if (opts.topic >= 30) parts.push("relevant to your focus areas");
+
+      if (opts.ai >= 70) parts.push("high editorial relevance");
+      else if (opts.ai >= 50) parts.push("solid editorial relevance");
+
+      if (opts.validation >= 80) parts.push("high content quality");
+      else if (opts.validation >= 60) parts.push("good content quality");
+
+      let reason = parts.join(" · ");
+      if (opts.discoveryReason && opts.discoveryReason.length > 0) {
+        reason += ` — ${opts.discoveryReason.slice(0, 140)}`;
+      }
+      return reason.slice(0, 300);
+    }
 
     const built: Built[] = [];
     for (const s of synthesized) {
@@ -557,6 +599,13 @@ serve(async (req) => {
       const final_score = Math.round(
         src.validation_score * W_VAL + ai_relevance * W_REL + src.topic_relevance_score * W_TOPIC,
       );
+      const selection_reason = buildSelectionReason({
+        domain: src.source,
+        validation: src.validation_score,
+        topic: src.topic_relevance_score,
+        ai: ai_relevance,
+        discoveryReason: src.discovery_reason,
+      });
       built.push({
         user_id: userId,
         headline: (s.headline || src.title || "").slice(0, 200),
@@ -575,6 +624,7 @@ serve(async (req) => {
         last_checked_at: new Date().toISOString(),
         published_at: null,
         status: "new",
+        selection_reason,
       });
     }
 
