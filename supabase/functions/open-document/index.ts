@@ -62,7 +62,10 @@ Deno.serve(async (req) => {
       .from("documents")
       .createSignedUrl(path, 60 * 10, opts);
 
-    if (signErr || !signed?.signedUrl) return htmlError(500, "Could not generate file link");
+    if (signErr || !signed?.signedUrl) {
+      console.error("[open-document] signed_url_generation_failed", { path, err: signErr?.message });
+      return htmlError(500, "Could not generate file link");
+    }
 
     return new Response(null, {
       status: 302,
