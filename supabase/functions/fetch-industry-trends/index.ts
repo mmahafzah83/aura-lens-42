@@ -367,11 +367,19 @@ serve(async (req) => {
       if (r.url) existingUrls.add(r.url);
     });
 
-    // 4. Scrape + validate
-    const scraped: Array<{ url: string; canonical: string; title: string; markdown: string; source: string }> = [];
+    // 4. Preflight + Scrape + validate + score
+    const scraped: Array<{ url: string; canonical: string; title: string; markdown: string; text: string; source: string; score: number }> = [];
     for (const c of candidates) {
       if (existingUrls.has(c.url)) continue;
-      const result = await firecrawlScrape(firecrawlKey, c.url);
+
+      // Strict URL preflight (HEAD/GET, status 200, text/html)
+      const pre = await preflightUrl(c.url);
+      if (!pre.ok) {
+        console.log("[trends] preflight rejected", c.url, pre.reason);
+        continue;
+      }
+
+      const result = await firecrawlScrape(firecrawlKey, pre.finalUrl || c.url);
       if (!result.ok) {
         console.log("[trends] scrape failed", c.url, result.status);
         continue;
@@ -384,14 +392,21 @@ serve(async (req) => {
         console.log("[trends] thin content", c.url, result.markdown?.length || 0);
         continue;
       }
-      const canonical = result.sourceURL || c.url;
+      const canonical = result.sourceURL || pre.finalUrl || c.url;
       if (existingUrls.has(canonical)) continue;
+
+      const text = markdownToText(result.markdown);
+      const source = domainOf(canonical);
+      const score = computeValidationScore({ domain: source, markdown: result.markdown, text });
+
       scraped.push({
         url: c.url,
         canonical,
         title: result.title || c.title || canonical,
         markdown: result.markdown,
-        source: domainOf(canonical),
+        text,
+        source,
+        score,
       });
       if (scraped.length >= 6) break;
     }
@@ -403,11 +418,12 @@ serve(async (req) => {
       synthesized = await aiSynthesize(lovableKey, profileContext, scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.markdown })));
     }
 
-    // 6. Build rows + insert
+    // 6. Build rows + insert (rank by combined relevance + validation_score)
     const newRows = synthesized
       .map((s: any) => {
         const src = scraped[s.index];
         if (!src) return null;
+        const relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
         return {
           user_id: userId,
           headline: (s.headline || src.title || "").slice(0, 200),
@@ -417,15 +433,17 @@ serve(async (req) => {
           url: src.canonical,
           canonical_url: src.canonical,
           content_markdown: src.markdown.slice(0, 50000),
-          relevance_score: Math.max(0, Math.min(100, Number(s.relevance_score) || 0)),
-          validation_status: "ok",
+          content_text: src.text.slice(0, 50000),
+          relevance_score: relevance,
+          validation_score: src.score,
+          validation_status: src.score >= 50 ? "ok" : "weak",
           last_checked_at: new Date().toISOString(),
           published_at: null,
           status: "new",
         };
       })
       .filter(Boolean)
-      .sort((a: any, b: any) => b.relevance_score - a.relevance_score)
+      .sort((a: any, b: any) => (b.validation_score + b.relevance_score) - (a.validation_score + a.relevance_score))
       .slice(0, 5);
 
     let inserted = 0;
