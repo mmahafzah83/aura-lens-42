@@ -914,19 +914,583 @@ function buildSelectionReason(opts: {
 }
 
 // ───────── Handler ─────────
+// ───────── Publisher-aware extraction (consulting / research / blog) ─────────
+const CONSULTING_RE = /(accenture|kpmg|rolandberger|ey\.com|deloitte|mckinsey|bcg\.com|pwc|capgemini|oliverwyman|bain\.com|strategyand)/i;
+const RESEARCH_RE   = /(nature|sciencedirect|springer|wiley|nih|arxiv|nber|cell|lancet|nejm|plos|mdpi|frontiers|ieee|acm|biorxiv|hbr\.org|sloanreview)/i;
+
+function sourceFamily(domain: string): "consulting" | "research" | "blog" {
+  const d = (domain || "").toLowerCase();
+  if (CONSULTING_RE.test(d)) return "consulting";
+  if (RESEARCH_RE.test(d)) return "research";
+  return "blog";
+}
+
+// ───────── Pre-clean pollution gate ─────────
+const POLLUTION_PHRASES = [
+  "technical storage or access","accept preferences","manage options",
+  "view preferences","save preferences","thank you for visiting",
+  "open in a new tab","get a free estimate","tell us about your project",
+  "do not sell my personal information","your privacy choices",
+];
+function pollutionReject(text: string): { reason: string } | null {
+  if (!text) return { reason: "rejected_empty" };
+  const head = text.slice(0, 600).toLowerCase();
+  for (const p of POLLUTION_PHRASES) {
+    if (head.includes(p)) {
+      const isCookie = p.includes("storage") || p.includes("preferences") || p.includes("manage options") || p.includes("privacy");
+      return { reason: isCookie ? "rejected_cookie_pollution" : "rejected_cta_pollution" };
+    }
+  }
+  return null;
+}
+
+// ───────── Executive-relevance filter ─────────
+function passesExecutiveRelevance(text: string): { ok: boolean; reason?: string } {
+  if (!text) return { ok: false, reason: "empty" };
+  const sample = text.slice(0, 8000);
+  const hasQuant     = /\b\d+(\.\d+)?\s?(%|percent|x\b|bn|mn|billion|million|trillion)\b/i.test(sample) || /\$\s?\d/.test(sample);
+  const hasProblem   = /\b(gap|risk|broken|fails?|lacks?|shortage|bottleneck|crisis|stalled|stuck|barrier)\b/i.test(sample);
+  const hasShift     = /\b(shift|pivot|reshape|disruption|moves? from|moving from|transition to|reorient|rewire)\b/i.test(sample);
+  const hasLeader    = /\b(CFO|CEO|COO|CIO|CHRO|board|leaders? must|executives? must|c-suite)\b/i.test(sample);
+  const hasCommerce  = /\b(margin|cost|revenue|deal|pipeline|client|customer acquisition|EBITDA|profit|monetiz)\b/i.test(sample);
+  const score = [hasQuant, hasProblem, hasShift, hasLeader, hasCommerce].filter(Boolean).length;
+  if (score === 0) return { ok: false, reason: "descriptive_company_copy" };
+  return { ok: true };
+}
+
+// ───────── Stronger article start ─────────
+function hasNarrativeOpening(cleanText: string): { ok: boolean; reason?: string } {
+  if (!cleanText) return { ok: false, reason: "empty" };
+  const head = cleanText.slice(0, 500);
+  // first ~500 chars must contain a paragraph >=120 chars with an analytical verb
+  const hasAnalyticalVerb = /\b(finds?|shows?|argues?|reveals?|warns?|suggests?|demonstrates?|exposes?|estimates?|projects?|forecasts?|concludes?)\b/i.test(head);
+  const longParaIdx = (cleanText.split(/\n{2,}/).find(p => p.trim().length >= 120) || "").length;
+  if (longParaIdx < 120) return { ok: false, reason: "no_long_paragraph" };
+  if (!hasAnalyticalVerb) return { ok: false, reason: "no_analytical_verb_in_opening" };
+  return { ok: true };
+}
+
+// ───────── Media dedup in cleaned snapshot ─────────
+function dedupMediaInMarkdown(md: string): string {
+  if (!md) return md;
+  let seenImg = false;
+  const lines = md.split(/\r?\n/).map(line => {
+    let out = line;
+    // strip <img> html tags
+    out = out.replace(/<img\b[^>]*>/gi, "");
+    // keep only first markdown image; strip rest
+    out = out.replace(/!\[[^\]]*]\([^)]*\)/g, () => {
+      if (seenImg) return "";
+      seenImg = true;
+      return "<<KEEP_FIRST_IMG>>";
+    });
+    return out;
+  });
+  return lines.join("\n").replace(/<<KEEP_FIRST_IMG>>/, (md.match(/!\[[^\]]*]\([^)]*\)/) || [""])[0]);
+}
+
+// ───────── Post-generation signal validator ─────────
+type ValidatorResult =
+  | { decision: "ACCEPT" | "REJECT"; reason: string; bypassed: false }
+  | { decision: "UNAVAILABLE"; reason: string; bypassed: true };
+
+async function aiSignalValidator(signal: {
+  title: string; insight: string; what_to_do: string; content_angle: string;
+}): Promise<ValidatorResult> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return { decision: "UNAVAILABLE", reason: "no_api_key", bypassed: true };
+  const systemPrompt = `You are a strict signal quality validator.
+
+Your job is to decide if this generated signal is truly valuable for a senior executive audience.
+
+Reject anything that feels generic, descriptive, or weak.
+
+REJECT if:
+- Insight is just summarizing the article
+- No clear problem, gap, or shift
+- What_to_do is vague or generic (e.g. "explore", "consider", "invest")
+- Content angle is not sharp, contrarian, or distinctive
+- No clear consulting opportunity
+
+ACCEPT only if:
+- Insight reveals a non-obvious implication
+- There is a clear executive-level problem or opportunity
+- Action is specific and outcome-driven
+- Content angle is strong and publishable
+
+Return JSON only.`;
+
+  const ctrl = new AbortController();
+  const timeoutId = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: JSON.stringify(signal) },
+        ],
+        tools: [{
+          type: "function",
+          function: {
+            name: "validate_signal",
+            description: "Return ACCEPT or REJECT with a short reason.",
+            parameters: {
+              type: "object",
+              properties: {
+                decision: { type: "string", enum: ["ACCEPT", "REJECT"] },
+                reason: { type: "string" },
+              },
+              required: ["decision", "reason"],
+              additionalProperties: false,
+            },
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "validate_signal" } },
+      }),
+    });
+    clearTimeout(timeoutId);
+    if (!resp.ok) return { decision: "UNAVAILABLE", reason: `gateway_${resp.status}`, bypassed: true };
+    const json = await resp.json();
+    const args = json?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) return { decision: "UNAVAILABLE", reason: "no_tool_call", bypassed: true };
+    let parsed: any;
+    try { parsed = JSON.parse(args); } catch { return { decision: "UNAVAILABLE", reason: "parse_error", bypassed: true }; }
+    const decision = parsed.decision === "REJECT" ? "REJECT" : "ACCEPT";
+    return { decision, reason: String(parsed.reason || "").slice(0, 200), bypassed: false };
+  } catch (e) {
+    return { decision: "UNAVAILABLE", reason: `exception_${(e as Error).message?.slice(0, 40)}`, bypassed: true };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE A: Discovery + placeholder insert + self-invoke enrichment.
+// Returns in <15s so the UI can show "Refreshing signals…" and stream results
+// via realtime as Phase B updates rows.
+// ═══════════════════════════════════════════════════════════════════════════
+async function runPhaseA(opts: {
+  userId: string; mode: "light" | "full";
+  adminClient: any; exaKey: string; profile: any;
+  supabaseUrl: string; serviceKey: string;
+}): Promise<{ status: string; discovered: number; queued: number }> {
+  const { userId, mode, adminClient, exaKey, profile, supabaseUrl, serviceKey } = opts;
+
+  const year = new Date().getFullYear();
+  const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
+  const queries = [
+    `${profile.sector_focus || ""} ${profile.core_practice || ""} ${year}`.trim(),
+    `${profile.sector_focus || ""} digital transformation strategy ${year}`.trim(),
+    `${profile.core_practice || ""} consulting trends ${year}`.trim(),
+  ].filter(q => q.length > 8);
+
+  console.log("[phaseA] exa discovery:", queries);
+  const t0 = Date.now();
+  const discoveryResults = await exaDiscover(exaKey, profileContext, queries);
+  console.log(`[phaseA] exa returned: ${discoveryResults.length} in ${Date.now() - t0}ms`);
+
+  const seen = new Set<string>();
+  const candidates = discoveryResults.filter(r => {
+    if (!r.url) return false;
+    const dom = domainOf(r.url);
+    if (!dom) return false;
+    if (/(reddit|youtube|twitter|x\.com|facebook|pinterest|quora|tiktok)\./i.test(dom)) return false;
+    if (seen.has(r.url)) return false;
+    seen.add(r.url);
+    return true;
+  });
+
+  // Skip URLs already present in any non-expired status
+  const { data: existingRows } = await adminClient
+    .from("industry_trends")
+    .select("canonical_url, url, status")
+    .eq("user_id", userId)
+    .neq("status", "expired");
+  const existingUrls = new Set<string>();
+  (existingRows ?? []).forEach((r: any) => {
+    if (r.canonical_url) existingUrls.add(r.canonical_url);
+    if (r.url) existingUrls.add(r.url);
+  });
+  const fresh = candidates.filter(c => !existingUrls.has(c.url));
+  console.log(`[phaseA] candidates: ${candidates.length}, fresh: ${fresh.length}`);
+
+  // Cap at 12 placeholders so Phase B has 8 to work with after extraction failures
+  const QUEUE_CAP = 12;
+  const queueable = fresh.slice(0, QUEUE_CAP);
+
+  if (queueable.length === 0) {
+    return { status: "no_new_candidates", discovered: candidates.length, queued: 0 };
+  }
+
+  // Insert placeholder rows. content_markdown stays NULL → existing UI filter
+  // (`content_markdown IS NOT NULL`) hides them until Phase B populates.
+  const placeholders = queueable.map(c => ({
+    user_id: userId,
+    headline: (c.title || c.url).slice(0, 200),
+    insight: "",
+    summary: "",
+    source: domainOf(c.url).slice(0, 100),
+    url: c.url, canonical_url: c.url,
+    status: "enriching",
+    is_valid: true,
+    final_score: 0, validation_score: 0, topic_relevance_score: 0,
+    snapshot_quality: 0, content_quality_score: 0, relevance_score: 0,
+    validation_status: "pending",
+    last_checked_at: new Date().toISOString(),
+    selection_reason: c.reason ? String(c.reason).slice(0, 500) : null,
+  }));
+
+  const { data: inserted, error: insertErr } = await adminClient
+    .from("industry_trends")
+    .insert(placeholders)
+    .select("id, url");
+  if (insertErr) {
+    console.error("[phaseA] placeholder insert error", insertErr);
+    return { status: "insert_failed", discovered: candidates.length, queued: 0 };
+  }
+  const candidateIds = (inserted ?? []).map((r: any) => r.id);
+  console.log(`[phaseA] queued ${candidateIds.length} placeholders`);
+
+  // Fire-and-forget self-invoke to Phase B (no await on the body).
+  const enrichUrl = `${supabaseUrl}/functions/v1/fetch-industry-trends`;
+  fetch(enrichUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${serviceKey}`,
+      "Content-Type": "application/json",
+      apikey: serviceKey,
+    },
+    body: JSON.stringify({ phase: "enrich", user_id: userId, candidate_ids: candidateIds, mode }),
+  }).catch(e => console.error("[phaseA] self-invoke fetch error (non-fatal)", e));
+
+  return { status: "enriching", discovered: candidates.length, queued: candidateIds.length };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE B: Per-URL enrichment (scrape → publisher-aware clean → judge → gen → validator).
+// Runs in background (no client awaits this). Updates rows to status='new' or
+// deletes them on rejection.
+// ═══════════════════════════════════════════════════════════════════════════
+async function runPhaseB(opts: {
+  userId: string; candidateIds: string[]; mode: "light" | "full";
+  adminClient: any; firecrawlKey: string; lovableKey: string;
+}): Promise<{ accepted: number; rejected_extract: number; rejected_judge: number; rejected_validator: number }> {
+  const { userId, candidateIds, adminClient, firecrawlKey, lovableKey } = opts;
+  const runStart = Date.now();
+
+  const { data: rows } = await adminClient
+    .from("industry_trends")
+    .select("id, url, canonical_url, headline, selection_reason")
+    .in("id", candidateIds)
+    .eq("user_id", userId);
+  const placeholders = (rows ?? []) as Array<{ id: string; url: string; canonical_url: string; headline: string; selection_reason: string | null }>;
+  console.log(`[enrich] start user=${userId} placeholders=${placeholders.length}`);
+
+  const { data: profile } = await adminClient
+    .from("diagnostic_profiles")
+    .select("firm, level, core_practice, sector_focus, north_star_goal, leadership_style")
+    .eq("user_id", userId)
+    .single();
+  if (!profile) {
+    console.error("[enrich] no profile, aborting");
+    return { accepted: 0, rejected_extract: 0, rejected_judge: 0, rejected_validator: 0 };
+  }
+  const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
+  const profileTokens = tokenizeProfile(profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.leadership_style);
+
+  const MAX_VALIDATED = 8;
+  const MAX_JUDGE_BYPASSES = 2;
+  const MAX_VALIDATOR_BYPASSES = 2;
+  let judgeBypassCount = 0;
+  let validatorBypassCount = 0;
+  let firecrawlQuotaExhausted = false;
+
+  const accepted: any[] = [];
+  let rejectedExtract = 0, rejectedJudge = 0, rejectedValidator = 0;
+
+  for (const ph of placeholders) {
+    if (accepted.length >= MAX_VALIDATED) { console.log("[enrich] MAX_VALIDATED reached"); break; }
+    if (firecrawlQuotaExhausted) break;
+    const t0 = Date.now();
+    const rawUrl = ph.url || ph.canonical_url;
+    const family = sourceFamily(domainOf(rawUrl));
+
+    const pre = await preflightUrl(rawUrl);
+    if (!pre.ok) {
+      console.log(`[enrich] ${rawUrl} family=${family} preflight=${pre.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    const fc = await firecrawlScrape(firecrawlKey, pre.finalUrl || rawUrl);
+    if (!fc.ok) {
+      console.log(`[enrich] ${rawUrl} scrape_fail status=${fc.status} ms=${Date.now() - t0}`);
+      if (fc.status === 402) firecrawlQuotaExhausted = true;
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    if (fc.statusCode >= 400 || !fc.markdown || fc.markdown.length < MIN_CONTENT_CHARS) {
+      console.log(`[enrich] ${rawUrl} thin_or_http status=${fc.statusCode} len=${fc.markdown?.length || 0}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+
+    // Pre-clean reject on RAW (cookie/CTA pollution in first 600 chars)
+    const rawPollution = pollutionReject(fc.markdown);
+    if (rawPollution) {
+      console.log(`[extract] ${rawUrl} family=${family} ${rawPollution.reason} (raw)`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+
+    const canonical = fc.sourceURL || pre.finalUrl || rawUrl;
+    const raw_markdown = fc.markdown;
+    let clean_markdown = cleanArticleMarkdown(raw_markdown, canonical);
+    clean_markdown = dedupMediaInMarkdown(clean_markdown);
+    const text = markdownToText(clean_markdown);
+
+    // Pre-clean reject on CLEANED
+    const cleanPollution = pollutionReject(clean_markdown);
+    if (cleanPollution) {
+      console.log(`[extract] ${rawUrl} family=${family} ${cleanPollution.reason} (cleaned)`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+
+    const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
+    if (text.length < MIN_CLEAN_TEXT_CHARS) {
+      console.log(`[extract] ${rawUrl} family=${family} thin_clean_text len=${text.length}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    if (noiseRatio > MAX_NOISE_RATIO) {
+      console.log(`[extract] ${rawUrl} family=${family} high_noise ${noiseRatio.toFixed(2)}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    const opening = openingLooksLikeArticle(text);
+    if (!opening.ok) {
+      console.log(`[extract] ${rawUrl} family=${family} opening_${opening.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    // Stronger article start
+    const narrative = hasNarrativeOpening(text);
+    if (!narrative.ok) {
+      console.log(`[extract] ${rawUrl} family=${family} narrative_${narrative.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    const blocked = detectBlockedContent(text);
+    if (blocked.blocked) {
+      console.log(`[extract] ${rawUrl} family=${family} blocked_${blocked.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    const biz = passesBusinessRelevance(text);
+    if (!biz.ok) {
+      console.log(`[extract] ${rawUrl} family=${family} biz_${biz.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    // Executive-relevance filter (new, between business-relevance and judge)
+    const exec = passesExecutiveRelevance(text);
+    if (!exec.ok) {
+      console.log(`[extract] ${rawUrl} family=${family} exec_${exec.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+
+    const source = domainOf(canonical);
+    const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
+    if (validation_score <= 0) {
+      console.log(`[extract] ${rawUrl} zero_validation`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedExtract++; continue;
+    }
+    const topic_relevance_score = computeTopicRelevance(text, profileTokens);
+    const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
+    const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
+
+    // AI_JUDGE
+    const judge = await aiJudge(text);
+    if (judge.decision === "REJECT") {
+      console.log(`[judge] rejected: ${rawUrl} — ${judge.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedJudge++; continue;
+    }
+    if (judge.decision === "UNAVAILABLE") {
+      const highConf = validation_score >= 85 && content_quality_score >= 80;
+      if (!highConf || judgeBypassCount >= MAX_JUDGE_BYPASSES) {
+        console.log(`[judge] rejected: ${rawUrl} — judge_unavailable (v=${validation_score} q=${content_quality_score} reason=${judge.reason})`);
+        await adminClient.from("industry_trends").delete().eq("id", ph.id);
+        rejectedJudge++; continue;
+      }
+      judgeBypassCount++;
+      console.log(`[judge] accepted (bypass): ${rawUrl} — v=${validation_score} q=${content_quality_score}`);
+    } else {
+      console.log(`[judge] accepted: ${rawUrl} — ${judge.reason}`);
+    }
+
+    // generateSignal (single-item AI synth call)
+    const synth = await aiSynthesize(lovableKey, profileContext, [{
+      title: ph.headline || canonical, url: canonical, markdown: clean_markdown,
+    }]);
+    const s = synth?.[0];
+    if (!s) {
+      console.log(`[gen] empty_synth ${rawUrl}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedJudge++; continue;
+    }
+
+    // Insight enforcement (mirror legacy Stage 6)
+    const ALLOWED_OPENERS = ["This signals", "This indicates", "This exposes a gap", "This creates an opportunity"];
+    const BANNED_OPENERS = /^(this highlights|this discusses|this article|according to|the report|the article|sets a precedent|highlights|discusses)/i;
+    let rawInsight = (s.insight || "").trim();
+    const startsAllowed = ALLOWED_OPENERS.some(p => rawInsight.toLowerCase().startsWith(p.toLowerCase()));
+    if (!startsAllowed || BANNED_OPENERS.test(rawInsight)) {
+      const stripped = rawInsight.replace(BANNED_OPENERS, "").replace(/^[\s,;:.-]+/, "").trim();
+      const opener = (s.impact_level === "Emerging") ? "This indicates"
+        : (s.opportunity_type === "Consulting") ? "This creates an opportunity to address"
+        : "This signals";
+      rawInsight = `${opener} ${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}`.slice(0, 500);
+    }
+    const insightFinal = rawInsight.slice(0, 500);
+    const action_recommendation = (typeof s.action_recommendation === "string" ? s.action_recommendation : "").slice(0, 200).trim();
+    const content_angle = (typeof s.content_angle === "string" ? s.content_angle : "").slice(0, 200).trim();
+
+    // POST-GEN VALIDATOR (new): strict executive-grade gate on the generated signal
+    const validator = await aiSignalValidator({
+      title: (s.headline || ph.headline || "").slice(0, 200),
+      insight: insightFinal,
+      what_to_do: action_recommendation,
+      content_angle,
+    });
+    if (validator.decision === "REJECT") {
+      console.log(`[validator] rejected: ${rawUrl} — ${validator.reason}`);
+      await adminClient.from("industry_trends").delete().eq("id", ph.id);
+      rejectedValidator++; continue;
+    }
+    if (validator.decision === "UNAVAILABLE") {
+      const highConf = validation_score >= 80 && content_quality_score >= 80;
+      if (!highConf || validatorBypassCount >= MAX_VALIDATOR_BYPASSES) {
+        console.log(`[validator] rejected: ${rawUrl} — validator_unavailable (v=${validation_score} q=${content_quality_score} reason=${validator.reason})`);
+        await adminClient.from("industry_trends").delete().eq("id", ph.id);
+        rejectedValidator++; continue;
+      }
+      validatorBypassCount++;
+      console.log(`[validator] accepted (bypass): ${rawUrl} — v=${validation_score} q=${content_quality_score}`);
+    } else {
+      console.log(`[validator] accepted: ${rawUrl} — ${validator.reason}`);
+    }
+
+    // Build full row
+    const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
+    const final_score = Math.round(
+      validation_score * 0.5 + topic_relevance_score * 0.3 + content_quality_score * 0.2
+    );
+    const rawCategory  = typeof s.category === "string" ? s.category.trim() : "";
+    const category     = VALID_CATEGORIES.has(rawCategory) ? rawCategory : null;
+    const rawImpact    = typeof s.impact_level === "string" ? s.impact_level.trim() : "";
+    const impact_level = VALID_IMPACT.has(rawImpact) ? rawImpact : "Watch";
+    const trusted = isTrustedDomain(source);
+    const inferredConf = inferConfidence(validation_score, snapshot_quality, trusted);
+    const rawConf      = typeof s.confidence_level === "string" ? s.confidence_level.trim() : "";
+    const confidence_level = VALID_CONFIDENCE.has(rawConf) ? rawConf : inferredConf;
+    const rawSig  = typeof s.signal_type === "string" ? s.signal_type.trim() : "";
+    const signal_type = VALID_SIGNAL_TYPE.has(rawSig) ? rawSig : "Trend";
+    const rawOpp  = typeof s.opportunity_type === "string" ? s.opportunity_type.trim() : "";
+    const opportunity_type = VALID_OPPORTUNITY.has(rawOpp) ? rawOpp : "Content";
+    const decision_label = computeDecisionLabel(impact_level, confidence_level);
+    const selection_reason = buildSelectionReason({
+      domain: source, validation: validation_score,
+      topic: topic_relevance_score, snapshot: snapshot_quality,
+      decision: decision_label, opportunity: opportunity_type,
+    });
+
+    const { error: updErr } = await adminClient
+      .from("industry_trends")
+      .update({
+        headline: (s.headline || ph.headline || "").slice(0, 200),
+        insight: insightFinal,
+        summary: (s.summary || "").slice(0, 2000),
+        source: source.slice(0, 100),
+        url: canonical, canonical_url: canonical,
+        content_markdown: clean_markdown.slice(0, 50000),
+        content_text: text.slice(0, 50000),
+        content_raw: raw_markdown.slice(0, 80000),
+        content_clean: clean_markdown.slice(0, 50000),
+        relevance_score: ai_relevance,
+        validation_score, topic_relevance_score, snapshot_quality, content_quality_score,
+        final_score,
+        validation_status: validation_score >= 50 ? "ok" : "weak",
+        last_checked_at: new Date().toISOString(),
+        status: "new",
+        selection_reason,
+        category, impact_level, confidence_level, signal_type, opportunity_type,
+        action_recommendation, content_angle,
+        decision_label, is_valid: true,
+      })
+      .eq("id", ph.id);
+    if (updErr) {
+      console.error(`[enrich] update error ${rawUrl}`, updErr);
+      rejectedExtract++; continue;
+    }
+    accepted.push({ id: ph.id, url: canonical });
+    console.log(`[enrich] accepted ${rawUrl} family=${family} score=${final_score} ms=${Date.now() - t0}`);
+  }
+
+  // Delete leftover placeholders that we never got to (over MAX_VALIDATED or quota dead)
+  const processedIds = new Set([...accepted.map(a => a.id)]);
+  const leftover = placeholders.filter(p => !processedIds.has(p.id));
+  if (leftover.length > 0) {
+    const leftoverIds = leftover.map(p => p.id);
+    await adminClient.from("industry_trends").delete().in("id", leftoverIds).eq("status", "enriching");
+  }
+
+  // Cap active at 5
+  const { data: activeAfter } = await adminClient
+    .from("industry_trends")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "new")
+    .order("final_score", { ascending: false })
+    .order("fetched_at", { ascending: false });
+  const ids = (activeAfter || []).map((r: any) => r.id);
+  if (ids.length > 5) {
+    await adminClient.from("industry_trends").update({ status: "expired" }).in("id", ids.slice(5));
+  }
+
+  const ms = Date.now() - runStart;
+  console.log(`[enrich] run_complete user=${userId} accepted=${accepted.length} rejected_extract=${rejectedExtract} rejected_judge=${rejectedJudge} rejected_validator=${rejectedValidator} ms=${ms}`);
+
+  return {
+    accepted: accepted.length,
+    rejected_extract: rejectedExtract,
+    rejected_judge: rejectedJudge,
+    rejected_validator: rejectedValidator,
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     let mode: "light" | "full" = "full";
+    let phase: "discover" | "enrich" = "discover";
+    let bodyEnrichUserId: string | null = null;
+    let bodyCandidateIds: string[] = [];
     if (req.method === "POST") {
       try {
         const body = await req.json();
         if (body?.mode === "light") mode = "light";
+        if (body?.phase === "enrich") phase = "enrich";
+        if (typeof body?.user_id === "string") bodyEnrichUserId = body.user_id;
+        if (Array.isArray(body?.candidate_ids)) bodyCandidateIds = body.candidate_ids.filter((x: any) => typeof x === "string");
       } catch { /* no body */ }
     }
 
-    const authHeader = req.headers.get("Authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey     = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -935,19 +1499,50 @@ serve(async (req) => {
     const exaKey      = Deno.env.get("EXA_API_KEY");
 
     if (!firecrawlKey) {
-      return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured", inserted: 0 }), {
+      return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (!exaKey) {
-      return new Response(JSON.stringify({ error: "EXA_API_KEY not configured", inserted: 0 }), {
+      return new Response(JSON.stringify({ error: "EXA_API_KEY not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const adminClient = createClient(supabaseUrl, serviceKey);
+
+    // ── Phase B: self-invoked enrichment ──
+    if (phase === "enrich") {
+      const isServiceCall = authHeader.includes(serviceKey);
+      let userId = bodyEnrichUserId;
+      if (!isServiceCall) {
+        const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
+        const token = authHeader.replace("Bearer ", "");
+        const { data: claimsData } = await userClient.auth.getClaims(token);
+        userId = (claimsData?.claims?.sub as string | null) ?? null;
+      }
+      if (!userId || bodyCandidateIds.length === 0) {
+        return new Response(JSON.stringify({ error: "phase=enrich requires user_id and candidate_ids" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const enrichPromise = runPhaseB({
+        userId, candidateIds: bodyCandidateIds, mode,
+        adminClient, firecrawlKey, lovableKey,
+      }).catch(e => console.error("[enrich] uncaught", e));
+      // @ts-ignore Edge runtime global
+      if (typeof EdgeRuntime !== "undefined" && (EdgeRuntime as any).waitUntil) {
+        // @ts-ignore
+        (EdgeRuntime as any).waitUntil(enrichPromise);
+      }
+      return new Response(JSON.stringify({ status: "enriching_started", queued: bodyCandidateIds.length }), {
+        status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── Phase A: user-initiated discovery ──
+    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
     const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
     if (claimsErr || !claimsData?.claims?.sub) {
@@ -956,332 +1551,31 @@ serve(async (req) => {
       });
     }
     const userId = claimsData.claims.sub as string;
-    const adminClient = createClient(supabaseUrl, serviceKey);
 
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
       .select("firm, level, core_practice, sector_focus, north_star_goal, leadership_style")
       .eq("user_id", userId)
       .single();
-
     if (!profile) {
       return new Response(JSON.stringify({ error: "No profile found", inserted: 0 }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const year = new Date().getFullYear();
-    const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
-    const profileTokens = tokenizeProfile(
-      profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.leadership_style,
-    );
-    const queries = [
-      `${profile.sector_focus || ""} ${profile.core_practice || ""} ${year}`.trim(),
-      `${profile.sector_focus || ""} digital transformation strategy ${year}`.trim(),
-      `${profile.core_practice || ""} consulting trends ${year}`.trim(),
-    ].filter(q => q.length > 8);
-
-    console.log("[trends] exa discovery for queries:", queries);
-    const discoveryResults = await exaDiscover(exaKey, profileContext, queries);
-    console.log("[trends] exa returned:", discoveryResults.length);
-
-    const seen = new Set<string>();
-    const candidates = discoveryResults.filter(r => {
-      if (!r.url) return false;
-      const dom = domainOf(r.url);
-      if (!dom) return false;
-      if (/(reddit|youtube|twitter|x\.com|facebook|pinterest|quora|tiktok)\./i.test(dom)) return false;
-      if (seen.has(r.url)) return false;
-      seen.add(r.url);
-      return true;
+    const result = await runPhaseA({
+      userId, mode, adminClient, exaKey, profile, supabaseUrl, serviceKey,
     });
-    console.log("[trends] candidates after dedupe:", candidates.length);
-
-    const { data: existingRows } = await adminClient
-      .from("industry_trends")
-      .select("id, canonical_url, url")
-      .eq("user_id", userId)
-      .eq("status", "new");
-    const existingUrls = new Set<string>();
-    (existingRows ?? []).forEach((r: any) => {
-      if (r.canonical_url) existingUrls.add(r.canonical_url);
-      if (r.url) existingUrls.add(r.url);
-    });
-
-    // Scrape + clean + multi-stage validation
-    const scraped: Array<{
-      url: string; canonical: string; title: string;
-      raw_markdown: string; clean_markdown: string;
-      text: string; source: string;
-      validation_score: number; topic_relevance_score: number;
-      snapshot_quality: number; content_quality_score: number;
-      discovery_reason?: string;
-    }> = [];
-
-    // AI_JUDGE controlled fail-open: per-run cap on bypassed articles
-    const MAX_JUDGE_BYPASSES = 2;
-    let judgeBypassCount = 0;
-
-    const MAX_VALIDATED = 8; // early-exit cap to stay under 150s function timeout
-    let firecrawlQuotaExhausted = false;
-    for (const c of candidates) {
-      if (scraped.length >= MAX_VALIDATED) { console.log("[trends] reached MAX_VALIDATED, stopping"); break; }
-      if (existingUrls.has(c.url)) continue;
-      if (firecrawlQuotaExhausted) break; // stop hammering a dead key
-      const pre = await preflightUrl(c.url);
-      if (!pre.ok) { console.log("[trends] preflight reject", c.url, pre.reason); continue; }
-      const result = await firecrawlScrape(firecrawlKey, pre.finalUrl || c.url);
-      if (!result.ok) {
-        console.log("[trends] scrape failed", c.url, result.status);
-        if (result.status === 402) firecrawlQuotaExhausted = true;
-        continue;
-      }
-      if (result.statusCode >= 400) { console.log("[trends] http error", c.url, result.statusCode); continue; }
-      if (!result.markdown || result.markdown.length < MIN_CONTENT_CHARS) {
-        console.log("[trends] thin raw markdown", c.url, result.markdown?.length || 0); continue;
-      }
-      const canonical = result.sourceURL || pre.finalUrl || c.url;
-      if (existingUrls.has(canonical)) continue;
-
-      // ── Cleaning pipeline (per spec) ──
-      const raw_markdown = result.markdown;
-      const clean_markdown = cleanArticleMarkdown(raw_markdown, canonical);
-      const text = markdownToText(clean_markdown);
-      const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
-
-      // Stage 3: Hard rejection rules
-      if (text.length < MIN_CLEAN_TEXT_CHARS) {
-        console.log("[trends] reject thin_clean_text", c.url, text.length); continue;
-      }
-      if (noiseRatio > MAX_NOISE_RATIO) {
-        console.log("[trends] reject high_noise_ratio", c.url, noiseRatio.toFixed(2)); continue;
-      }
-      const opening = openingLooksLikeArticle(text);
-      if (!opening.ok) {
-        console.log("[trends] reject opening", c.url, opening.reason); continue;
-      }
-      const blocked = detectBlockedContent(text);
-      if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
-      // Stage 5: Business relevance filter
-      const biz = passesBusinessRelevance(text);
-      if (!biz.ok) {
-        console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
-      }
-
-      // Compute scores BEFORE AI_JUDGE so the controlled fail-open branch
-      // can read live in-scope validation_score / content_quality_score.
-      const source = domainOf(canonical);
-      const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
-      if (validation_score <= 0) {
-        console.log("[trends] reject zero_validation", c.url); continue;
-      }
-      const topic_relevance_score = computeTopicRelevance(text, profileTokens);
-      const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
-      const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
-
-      // Stage 5.5: AI_JUDGE — strict LLM final arbiter (controlled fail-open)
-      const judge = await aiJudge(text);
-
-      if (judge.decision === "REJECT") {
-        console.log(`[judge] rejected: ${c.url} — ${judge.reason}`);
-        continue;
-      }
-
-      if (judge.decision === "UNAVAILABLE") {
-        // passesBusinessRelevance already enforced upstream — implicit pass.
-        const highConfidence = validation_score >= 85 && content_quality_score >= 80;
-
-        if (!highConfidence) {
-          console.log(`[judge] rejected: ${c.url} — judge_unavailable (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
-          continue;
-        }
-
-        if (judgeBypassCount >= MAX_JUDGE_BYPASSES) {
-          console.log(`[judge] rejected: ${c.url} — bypass_limit_exceeded (validation=${validation_score}, quality=${content_quality_score})`);
-          continue;
-        }
-
-        judgeBypassCount++;
-        console.log(`[judge] accepted: ${c.url} — judge_bypass_high_confidence (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
-      } else {
-        console.log(`[judge] accepted: ${c.url} — ${judge.reason}`);
-      }
-
-      scraped.push({
-        url: c.url, canonical,
-        title: result.title || c.title || canonical,
-        raw_markdown, clean_markdown, text, source,
-        validation_score, topic_relevance_score, snapshot_quality, content_quality_score,
-        discovery_reason: c.reason,
-      });
-    }
-    console.log("[trends] validated articles:", scraped.length);
-
-    let synthesized: any[] = [];
-    if (scraped.length > 0) {
-      // Feed AI the CLEAN markdown only (per spec).
-      synthesized = await aiSynthesize(lovableKey, profileContext,
-        scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.clean_markdown })));
-    }
-
-    type Built = {
-      user_id: string; headline: string; insight: string; summary: string;
-      source: string; url: string; canonical_url: string;
-      content_markdown: string; content_text: string;
-      content_raw: string; content_clean: string;
-      relevance_score: number; validation_score: number;
-      topic_relevance_score: number; snapshot_quality: number;
-      content_quality_score: number; final_score: number;
-      validation_status: string; last_checked_at: string;
-      published_at: null; status: string;
-      selection_reason: string;
-      category: string | null; impact_level: string | null;
-      confidence_level: string; signal_type: string; opportunity_type: string;
-      action_recommendation: string; content_angle: string;
-      decision_label: string; is_valid: boolean;
-    };
-
-    // Weighted scoring (per spec section 8):
-    // final_score = validation*0.5 + topic_relevance*0.3 + content_quality*0.2
-    const built: Built[] = [];
-    for (const s of synthesized) {
-      const src = scraped[s.index];
-      if (!src) continue;
-      const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
-      const final_score = Math.round(
-        src.validation_score * 0.5 +
-        src.topic_relevance_score * 0.3 +
-        src.content_quality_score * 0.2
-      );
-
-      const rawCategory  = typeof s.category === "string" ? s.category.trim() : "";
-      const category     = VALID_CATEGORIES.has(rawCategory) ? rawCategory : null;
-      const rawImpact    = typeof s.impact_level === "string" ? s.impact_level.trim() : "";
-      const impact_level = VALID_IMPACT.has(rawImpact) ? rawImpact : "Watch";
-
-      const trusted = isTrustedDomain(src.source);
-      const inferredConf = inferConfidence(src.validation_score, src.snapshot_quality, trusted);
-      const rawConf      = typeof s.confidence_level === "string" ? s.confidence_level.trim() : "";
-      const confidence_level = VALID_CONFIDENCE.has(rawConf) ? rawConf : inferredConf;
-
-      const rawSig  = typeof s.signal_type === "string" ? s.signal_type.trim() : "";
-      const signal_type = VALID_SIGNAL_TYPE.has(rawSig) ? rawSig : "Trend";
-
-      const rawOpp  = typeof s.opportunity_type === "string" ? s.opportunity_type.trim() : "";
-      const opportunity_type = VALID_OPPORTUNITY.has(rawOpp) ? rawOpp : "Content";
-
-      const action_recommendation = (typeof s.action_recommendation === "string" ? s.action_recommendation : "").slice(0, 200).trim();
-      const content_angle = (typeof s.content_angle === "string" ? s.content_angle : "").slice(0, 200).trim();
-      const decision_label = computeDecisionLabel(impact_level, confidence_level);
-
-      // Stage 6 enforcement: insight MUST start with one of the strict openers.
-      const ALLOWED_OPENERS = ["This signals", "This indicates", "This exposes a gap", "This creates an opportunity"];
-      const BANNED_OPENERS = /^(this highlights|this discusses|this article|according to|the report|the article|sets a precedent|highlights|discusses)/i;
-      let rawInsight = (s.insight || "").trim();
-      const startsAllowed = ALLOWED_OPENERS.some(p => rawInsight.toLowerCase().startsWith(p.toLowerCase()));
-      if (!startsAllowed || BANNED_OPENERS.test(rawInsight)) {
-        const stripped = rawInsight.replace(BANNED_OPENERS, "").replace(/^[\s,;:.-]+/, "").trim();
-        const opener = impact_level === "Emerging" ? "This indicates"
-          : opportunity_type === "Consulting" ? "This creates an opportunity to address"
-          : "This signals";
-        rawInsight = `${opener} ${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}`.slice(0, 500);
-      }
-      const insightFinal = rawInsight.slice(0, 500);
-
-      const selection_reason = buildSelectionReason({
-        domain: src.source, validation: src.validation_score,
-        topic: src.topic_relevance_score, snapshot: src.snapshot_quality,
-        decision: decision_label, opportunity: opportunity_type,
-      });
-
-      built.push({
-        user_id: userId,
-        headline: (s.headline || src.title || "").slice(0, 200),
-        insight: insightFinal,
-        summary: (s.summary || "").slice(0, 2000),
-        source: src.source.slice(0, 100),
-        url: src.canonical, canonical_url: src.canonical,
-        // content_markdown defaults to the CLEAN copy for default reading experience
-        content_markdown: src.clean_markdown.slice(0, 50000),
-        content_text: src.text.slice(0, 50000),
-        content_raw: src.raw_markdown.slice(0, 80000),
-        content_clean: src.clean_markdown.slice(0, 50000),
-        relevance_score: ai_relevance,
-        validation_score: src.validation_score,
-        topic_relevance_score: src.topic_relevance_score,
-        snapshot_quality: src.snapshot_quality,
-        content_quality_score: src.content_quality_score,
-        final_score,
-        validation_status: src.validation_score >= 50 ? "ok" : "weak",
-        last_checked_at: new Date().toISOString(),
-        published_at: null, status: "new",
-        selection_reason,
-        category, impact_level,
-        confidence_level, signal_type, opportunity_type,
-        action_recommendation, content_angle,
-        decision_label, is_valid: true,
-      });
-    }
-
-    // Adaptive selection: try strict floor first, relax until we have >=3
-    const isLight = mode === "light";
-    const targetCount = isLight ? 3 : 5;
-    let selected: Built[] = [];
-    let usedFloor = ADAPTIVE_FLOORS[0];
-    for (const floor of ADAPTIVE_FLOORS) {
-      const eligible = built.filter(b => b.final_score >= floor && b.is_valid);
-      const picked = diversifyByDomain(eligible, 2, targetCount);
-      if (picked.length >= MIN_TARGET_SIGNALS || floor === ADAPTIVE_FLOORS[ADAPTIVE_FLOORS.length - 1]) {
-        selected = picked;
-        usedFloor = floor;
-        break;
-      }
-    }
-    console.log(`[trends] selected ${selected.length} signals (floor=${usedFloor})`);
-
-    // Full refresh expires existing "new" trends BEFORE inserting fresh ones.
-    if (!isLight && selected.length > 0) {
-      await adminClient
-        .from("industry_trends")
-        .update({ status: "expired" })
-        .eq("user_id", userId)
-        .eq("status", "new");
-    }
-
-    let inserted = 0;
-    if (selected.length > 0) {
-      const { error: insertErr, count } = await adminClient
-        .from("industry_trends")
-        .insert(selected, { count: "exact" });
-      if (insertErr) console.error("[trends] insert error:", insertErr);
-      else inserted = count || selected.length;
-    }
-
-    // Cap active at 5
-    const { data: activeAfter } = await adminClient
-      .from("industry_trends")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "new")
-      .order("final_score", { ascending: false })
-      .order("fetched_at", { ascending: false });
-    const ids = (activeAfter || []).map((r: any) => r.id);
-    if (ids.length > 5) {
-      await adminClient.from("industry_trends").update({ status: "expired" }).in("id", ids.slice(5));
-    }
 
     return new Response(JSON.stringify({
-      inserted, scraped: scraped.length, candidates: candidates.length,
-      selected: selected.length, total_active: Math.min(ids.length, 5),
-      adaptive_floor: usedFloor,
-      firecrawl_quota_exhausted: firecrawlQuotaExhausted,
-      warning: firecrawlQuotaExhausted
-        ? "Firecrawl returned 402 (insufficient credits). No new snapshots could be scraped. Top up Firecrawl credits to restore signal generation."
-        : undefined,
+      status: result.status, discovered: result.discovered, queued: result.queued,
+      message: result.queued > 0
+        ? "Signals are being enriched in the background. They will appear as they're ready."
+        : (result.status === "no_new_candidates" ? "No new candidates found." : "Enrichment could not start."),
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("fetch-industry-trends error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error", inserted: 0 }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

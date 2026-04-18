@@ -347,6 +347,23 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     loadMoves(uid);
     loadTrends(uid);
     loadTrendsBadge(uid);
+
+    // Realtime: reload trends list whenever Phase B updates a row to status='new'
+    const channel = supabase
+      .channel(`industry_trends_${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "industry_trends", filter: `user_id=eq.${uid}` },
+        (payload) => {
+          const row: any = payload.new;
+          if (row?.status === "new" && row?.content_markdown) {
+            loadTrends(uid);
+            loadTrendsBadge(uid);
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [authReady, authUser, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
 
   // ─── Derived ───
@@ -473,14 +490,10 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         console.error("[HomeTab] refresh trends failed", error);
         setTrendsError(true);
       } else {
-        if ((data as any)?.firecrawl_quota_exhausted) {
-          // Honest, surfaced failure: snapshot scraping unavailable
-          console.warn("[HomeTab] firecrawl quota exhausted", (data as any)?.warning);
-          setTrendsError(true);
-        }
+        // Phase A returns immediately with { status: 'enriching', queued: N }.
+        // Realtime subscription will refresh the list as Phase B finishes each row.
+        console.log("[HomeTab] refresh queued", data);
         setDismissedTrendIds(new Set());
-        await loadTrends(authUser.id);
-        await loadTrendsBadge(authUser.id);
       }
     } catch (e) {
       console.error("[HomeTab] refresh trends exception", e);
