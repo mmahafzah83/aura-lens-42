@@ -1028,6 +1028,20 @@ serve(async (req) => {
       const content_angle = (typeof s.content_angle === "string" ? s.content_angle : "").slice(0, 200).trim();
       const decision_label = computeDecisionLabel(impact_level, confidence_level);
 
+      // Stage 6 enforcement: insight MUST start with one of the strict openers.
+      const ALLOWED_OPENERS = ["This signals", "This indicates", "This exposes a gap", "This creates an opportunity"];
+      const BANNED_OPENERS = /^(this highlights|this discusses|this article|according to|the report|the article|sets a precedent|highlights|discusses)/i;
+      let rawInsight = (s.insight || "").trim();
+      const startsAllowed = ALLOWED_OPENERS.some(p => rawInsight.toLowerCase().startsWith(p.toLowerCase()));
+      if (!startsAllowed || BANNED_OPENERS.test(rawInsight)) {
+        const stripped = rawInsight.replace(BANNED_OPENERS, "").replace(/^[\s,;:.-]+/, "").trim();
+        const opener = impact_level === "Emerging" ? "This indicates"
+          : opportunity_type === "Consulting" ? "This creates an opportunity to address"
+          : "This signals";
+        rawInsight = `${opener} ${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}`.slice(0, 500);
+      }
+      const insightFinal = rawInsight.slice(0, 500);
+
       const selection_reason = buildSelectionReason({
         domain: src.source, validation: src.validation_score,
         topic: src.topic_relevance_score, snapshot: src.snapshot_quality,
