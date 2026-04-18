@@ -157,6 +157,21 @@ export default function TrendDetail() {
             FOCUS MATCH · {trend.topic_relevance_score}
           </span>
         )}
+        {trend.category && (
+          <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "1px 6px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.04em" }}>
+            {trend.category.toUpperCase()}
+          </span>
+        )}
+        {trend.impact_level && (
+          <span title={`Impact: ${trend.impact_level}`} style={{
+            fontSize: 9,
+            color: trend.impact_level === "High" ? "#E24B4A" : trend.impact_level === "Emerging" ? "#F97316" : "hsl(var(--muted-foreground))",
+            border: `0.5px solid ${trend.impact_level === "High" ? "#E24B4A55" : trend.impact_level === "Emerging" ? "#F9731655" : "hsl(var(--border))"}`,
+            padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em",
+          }}>
+            ◆ {trend.impact_level.toUpperCase()}
+          </span>
+        )}
         <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground) / 0.6)" }}>
           · {formatSmartDate(trend.fetched_at)}
         </span>
