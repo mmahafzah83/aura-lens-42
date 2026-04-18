@@ -31,15 +31,16 @@ serve(async (req) => {
     const userId = user.id;
     const now = new Date();
 
-    // --- capture_score: entries in last 7 days / 7 × 100, cap 100 ---
+    // --- capture_score: entries + documents in last 7 days / 7 × 100, cap 100 ---
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: entryCount } = await admin
-      .from("entries")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .gte("created_at", sevenDaysAgo);
-
-    const captureScore = Math.min(Math.round(((entryCount ?? 0) / 7) * 100), 100);
+    const [{ count: entryCount }, { count: docCount }] = await Promise.all([
+      admin.from("entries").select("id", { count: "exact", head: true })
+        .eq("user_id", userId).gte("created_at", sevenDaysAgo),
+      admin.from("documents").select("id", { count: "exact", head: true })
+        .eq("user_id", userId).gte("created_at", sevenDaysAgo),
+    ]);
+    const totalCaptures = (entryCount ?? 0) + (docCount ?? 0);
+    const captureScore = Math.min(Math.round((totalCaptures / 7) * 100), 100);
 
     // --- signal_score: AVG(confidence) × 100 from active signals ---
     const { data: signals } = await admin

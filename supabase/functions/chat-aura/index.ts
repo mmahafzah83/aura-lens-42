@@ -141,7 +141,7 @@ serve(async (req) => {
       .from("documents")
       .select("id, filename, file_type, summary, status, created_at")
       .eq("user_id", user.id)
-      .eq("status", "ready")
+      .in("status", ["ready", "completed"])
       .order("created_at", { ascending: false })
       .limit(20);
 

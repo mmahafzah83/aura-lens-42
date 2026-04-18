@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .from("documents")
       .select("id, filename, summary, file_type")
       .eq("user_id", user.id)
-      .eq("status", "ready")
+      .in("status", ["ready", "completed"])
       .limit(200);
     for (const d of docs || []) {
       sources.push({

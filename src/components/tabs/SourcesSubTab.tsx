@@ -500,12 +500,15 @@ const SourcesSubTab = ({
             const EntryIcon = Icon(entry.type);
             const isDoc = entry.type === "document";
             const displayTitle = entry.title || entry.content.slice(0, 60);
-            const isProcessing = isDoc && entry.status === "processing";
-            const docMeta = isDoc
+            const docStatus = isDoc ? (entry.status || "processing") : null;
+            const isProcessing = isDoc && (docStatus === "processing" || docStatus === "pending");
+            const isErrored = isDoc && docStatus === "error";
+            const isReady = isDoc && (docStatus === "completed" || docStatus === "ready");
+            const docMeta = isDoc && isReady
               ? `${(entry.file_type || "FILE").toString().toUpperCase()}${entry.page_count ? ` · ${entry.page_count} pages` : ""}`
               : null;
             const preview = isDoc
-              ? (isProcessing ? "" : (entry.summary || "").slice(0, 120))
+              ? (isReady ? (entry.summary || "").slice(0, 120) : "")
               : (entry.summary || entry.content).slice(0, 120);
             const domain = entry.type === "link" ? extractDomain(entry.image_url) || extractDomain(entry.content) : null;
 
@@ -557,7 +560,39 @@ const SourcesSubTab = ({
                         <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
                       </div>
                       {isProcessing ? (
-                        <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", fontWeight: 500 }}>Processing…</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 0 6px", flexWrap: "wrap" }}>
+                          <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
+                          <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                            {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
+                          </p>
+                          <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                        </div>
+                      ) : isErrored ? (
+                        <div style={{ margin: "0 0 6px" }}>
+                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>Processing failed</p>
+                          <button
+                            onClick={async (ev) => {
+                              ev.stopPropagation();
+                              const { data: { session } } = await supabase.auth.getSession();
+                              if (!session) return;
+                              await supabase.from("documents").update({ status: "processing" }).eq("id", entry.id);
+                              setEntries(prev => prev.map(x => x.id === entry.id ? { ...x, status: "processing" } : x));
+                              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`, {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  Authorization: `Bearer ${session.access_token}`,
+                                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                                },
+                                body: JSON.stringify({ document_id: entry.id }),
+                              }).catch(() => {});
+                              toast("Retrying…");
+                            }}
+                            style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, cursor: "pointer", textDecoration: "underline" }}
+                          >
+                            Tap to retry
+                          </button>
+                        </div>
                       ) : preview ? (
                         <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
                       ) : null}

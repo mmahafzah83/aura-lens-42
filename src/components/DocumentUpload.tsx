@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FileUp, FileText, Image as ImageIcon, Loader2, CheckCircle, AlertCircle, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 interface DocumentUploadProps {
@@ -16,12 +17,80 @@ const ACCEPTED_TYPES: Record<string, string> = {
   "image/webp": "image",
 };
 
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
 const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<"idle" | "uploading" | "processing" | "done" | "error">("idle");
   const [fileName, setFileName] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [duplicate, setDuplicate] = useState<{ filename: string; date: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const pollIntervalRef = useRef<number | null>(null);
+  const pollTimeoutRef = useRef<number | null>(null);
+  const toastIdRef = useRef<string | number | null>(null);
+
+  useEffect(() => () => {
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
+  }, []);
+
+  const stopPolling = () => {
+    if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+    if (pollTimeoutRef.current) { clearTimeout(pollTimeoutRef.current); pollTimeoutRef.current = null; }
+  };
+
+  const pollStatus = (documentId: string, filename: string) => {
+    stopPolling();
+    pollIntervalRef.current = window.setInterval(async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("status, summary, page_count")
+        .eq("id", documentId)
+        .maybeSingle();
+      if (!data) return;
+      if (data.status === "completed" || data.status === "ready") {
+        stopPolling();
+        if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
+        sonnerToast.success(`✓ ${filename} processed successfully — ${data.page_count ?? 0} pages captured`, {
+          duration: 4000,
+        });
+        setStatus("done");
+        onUploaded?.();
+      } else if (data.status === "error") {
+        stopPolling();
+        if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
+        sonnerToast.error(`Could not process ${filename}. Try uploading again or use a different format.`, {
+          duration: Infinity,
+        });
+        setStatus("error");
+      }
+    }, 5000);
+
+    pollTimeoutRef.current = window.setTimeout(() => {
+      stopPolling();
+      if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
+      sonnerToast.error(`Processing ${filename} timed out. Try uploading again.`, { duration: Infinity });
+      setStatus("error");
+    }, 60000);
+  };
+
+  const checkDuplicate = async (file: File): Promise<{ filename: string; date: string } | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data } = await supabase
+      .from("documents")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .eq("filename", file.name)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) return { filename: file.name, date: fmtDate(data.created_at) };
+    return null;
+  };
 
   const handleFile = async (file: File) => {
     const fileType = ACCEPTED_TYPES[file.type];
@@ -34,6 +103,20 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       return;
     }
 
+    // Duplicate check
+    const dup = await checkDuplicate(file);
+    if (dup) {
+      setPendingFile(file);
+      setDuplicate(dup);
+      return;
+    }
+
+    await processUpload(file, fileType);
+  };
+
+  const processUpload = async (file: File, fileType: string) => {
+    setDuplicate(null);
+    setPendingFile(null);
     setFileName(file.name);
     setUploading(true);
     setStatus("uploading");
@@ -80,60 +163,45 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     }
 
     setStatus("processing");
-    toast({ title: "Processing", description: "AI is reading and chunking your document…" });
 
-    // Trigger ingestion
+    // Persistent processing toast
+    toastIdRef.current = sonnerToast.loading(`Processing ${file.name}… this may take a minute`, {
+      duration: Infinity,
+    });
+
+    // Trigger ingestion (fire-and-forget — actual completion comes via polling)
     const { data: { session } } = await supabase.auth.getSession();
-    try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({ document_id: (doc as any).id }),
-        }
-      );
-
-      const result = await resp.json();
-      if (result.success) {
-        setStatus("done");
-        toast({
-          title: "Document Indexed",
-          description: `${result.chunks} chunks created. Aura can now search this document.`,
-        });
-        onUploaded?.();
-
-        // Evidence pipeline: extract structured fragments from document
-        supabase.functions.invoke("extract-evidence", {
-          body: { source_type: "document", source_id: (doc as any).id, user_id: session?.user?.id },
-        }).catch((e) => console.error("Evidence extraction error:", e));
-      } else {
-        setStatus("error");
-        toast({ title: "Processing failed", description: result.error, variant: "destructive" });
+    fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ document_id: (doc as any).id }),
       }
-    } catch (e: any) {
-      setStatus("error");
-      toast({ title: "Error", description: e.message || "Ingestion failed", variant: "destructive" });
-    }
+    ).catch((e) => console.error("ingest-document trigger error:", e));
 
     setUploading(false);
+    onUploaded?.();
+    pollStatus((doc as any).id, file.name);
   };
 
   const reset = () => {
     setStatus("idle");
     setFileName("");
     setUploading(false);
+    setPendingFile(null);
+    setDuplicate(null);
   };
 
   const statusIcon = {
     idle: <FileUp className="w-8 h-8 text-muted-foreground" />,
     uploading: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
     processing: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
-    done: <CheckCircle className="w-8 h-8 text-green-500" />,
+    done: <CheckCircle className="w-8 h-8" style={{ color: "#7ab648" }} />,
     error: <AlertCircle className="w-8 h-8 text-destructive" />,
   };
 
@@ -160,19 +228,51 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       />
 
       <div
-        onClick={() => !uploading && fileInputRef.current?.click()}
+        onClick={() => !uploading && !duplicate && fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
           uploading ? "border-primary/30 bg-primary/5" : "border-border/40 hover:border-primary/50"
         }`}
       >
         {statusIcon[status]}
-        <p className="text-sm text-muted-foreground mt-3">{statusText[status]}</p>
+        <p className="text-sm text-foreground mt-3">{statusText[status]}</p>
         <div className="flex items-center gap-3 mt-2">
           <span className="text-[10px] text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> PDF</span>
           <span className="text-[10px] text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> DOCX</span>
           <span className="text-[10px] text-muted-foreground flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image</span>
         </div>
       </div>
+
+      {duplicate && pendingFile && (
+        <div
+          style={{
+            background: "rgba(239, 159, 39, 0.1)",
+            border: "0.5px solid rgba(239, 159, 39, 0.4)",
+            borderRadius: 6,
+            padding: "8px 12px",
+          }}
+        >
+          <p className="text-foreground" style={{ fontSize: 12, fontWeight: 400, margin: 0 }}>
+            You already uploaded {duplicate.filename} on {duplicate.date}.
+          </p>
+          <div style={{ marginTop: 6 }}>
+            <button
+              type="button"
+              onClick={() => processUpload(pendingFile, ACCEPTED_TYPES[pendingFile.type])}
+              style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+            >
+              Upload again
+            </button>
+            <button
+              type="button"
+              onClick={() => { setDuplicate(null); setPendingFile(null); }}
+              className="text-muted-foreground"
+              style={{ fontSize: 11, background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
 
       {(status === "done" || status === "error") && (
         <Button variant="ghost" size="sm" onClick={reset} className="w-full text-xs">
