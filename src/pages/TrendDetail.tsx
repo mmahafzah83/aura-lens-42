@@ -79,6 +79,9 @@ export default function TrendDetail() {
   const [showFullSnapshot, setShowFullSnapshot] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState<"clean" | "raw">("clean");
   const [added, setAdded] = useState(false);
+  const [whyMatters, setWhyMatters] = useState<string | null>(null);
+  const [whyLoading, setWhyLoading] = useState(false);
+  const [whyFailed, setWhyFailed] = useState(false);
 
   const handleAddToSignals = async () => {
     if (!signal || added) return;
