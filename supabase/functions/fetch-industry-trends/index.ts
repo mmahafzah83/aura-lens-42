@@ -8,8 +8,9 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
 const EXA_URL = "https://api.exa.ai/search";
-const MIN_CONTENT_CHARS = 1500;       // markdown gate
-const MIN_CLEAN_TEXT_CHARS = 1500;    // post-clean gate (hard rule)
+const MIN_CONTENT_CHARS = 1200;       // raw markdown gate (relaxed; clean gate is the hard rule)
+const MIN_CLEAN_TEXT_CHARS = 800;     // post-clean hard gate (per spec)
+const MAX_NOISE_RATIO = 0.30;         // reject if >30% of raw is noise
 const ADAPTIVE_FLOORS = [60, 50, 40]; // adaptive final_score floors
 const MIN_TARGET_SIGNALS = 3;         // minimum we'll show before relaxing
 
