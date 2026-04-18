@@ -56,10 +56,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    loadAll();
-  }, []);
+    if (!authReady) return;
+    if (!authUser) {
+      console.log("[IdentityTab] blocked: auth ready but no user");
+      setLoading(false);
+      return;
+    }
+    loadAll(authUser.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authReady, authUser]);
 
-  const loadAll = async () => {
+  const loadAll = async (uid: string) => {
+    console.log("[IdentityTab] loadAll started");
     setLoadError(false);
     setLoading(true);
     try {
