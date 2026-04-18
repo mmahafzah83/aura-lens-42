@@ -6,7 +6,9 @@ type: feature
 
 Trends are Signal Objects with action_recommendation, content_angle, decision_label.
 
-Pipeline: Exa neural discovery (2 passes) → preflight HEAD → Firecrawl scrape → **6-stage extraction** → adaptive selection (floors 60/50/40, min 3) → AI synthesis (Gemini 2.5 Flash) → insert.
+Pipeline: Exa neural discovery (2 passes) → preflight HEAD → Firecrawl scrape → **6-stage extraction** → **Stage 5.5 consultant gate (LLM)** → adaptive selection (floors 60/50/40, min 3) → AI synthesis (Gemini 2.5 Flash) → insert.
+
+**Stage 5.5 — Consultant gate** (`consultantGate`, `google/gemini-2.5-flash-lite` via Lovable AI Gateway, tool-calling for strict JSON): runs AFTER all rule-based gates as final arbiter. Strict senior-consultant prompt: REJECT if describes a company / no numbers / no argument / marketing / generic / storytelling without insight. ACCEPT only if clear insight, numbers, or shows a gap/risk/shift. "If unsure → REJECT". Fail-open on gateway error/exception (ACCEPT with reason logged) so transient AI failures don't drop valid signals. Sample = first 6000 chars of cleaned text.
 
 **Stage 1 — Article start detection** (`detectArticleStart` + `scoreLine`):
 Each line scored: +3 full sentence (>100ch + punctuation), +2 verbs (is/are/will/enables/drives/improves/reveals/finds…), +2 business terms (strategy/transformation/efficiency/regulation/AI…), -3 nav words (skip/download/share/subscribe/login/view pdf/thank you for visiting), -2 short (<40ch), -2 ALL CAPS. Article starts at the first 3-line window where cumulative score ≥4 (or any single line ≥5). Everything before is dropped.

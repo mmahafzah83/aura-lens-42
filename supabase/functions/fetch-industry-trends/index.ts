@@ -352,6 +352,86 @@ function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: str
   return { ok: true };
 }
 
+// Stage 5.5: Consultant gate — strict LLM ACCEPT/REJECT arbiter on cleaned text.
+// Final filter after rule-based gates. Uses Lovable AI Gateway (Gemini 2.5 Flash Lite).
+// Returns { decision: "ACCEPT"|"REJECT", reason: string }. On any error → ACCEPT (fail-open
+// because rule gates already passed and we don't want to drop valid signals on transient errors).
+async function consultantGate(cleanText: string): Promise<{ decision: "ACCEPT" | "REJECT"; reason: string }> {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!LOVABLE_API_KEY) return { decision: "ACCEPT", reason: "no_api_key" };
+  const sample = cleanText.slice(0, 6000);
+  const systemPrompt = `You are a strict senior strategy consultant reviewing intelligence inputs.
+
+Your job is NOT to summarize.
+Your job is NOT to generate insights.
+
+Your ONLY job: Decide if this article is worth generating a strategic signal.
+
+REJECT if ANY:
+- Describes a company (who they are, what they do)
+- No numbers or data
+- No argument or claim
+- Marketing / PR style
+- Generic (can apply to any industry)
+- Storytelling without insight
+
+ACCEPT only if:
+- Contains a clear insight or argument
+- OR contains numbers (% / data / stats)
+- OR shows a gap, risk, or shift
+
+EXAMPLES:
+REJECT: "Water-link is a Flemish water company..."
+REJECT: "Digital transformation is important..."
+ACCEPT: "70% of utilities fail to scale transformation due to governance issues"
+
+RULE: If unsure → REJECT. Return JSON only.`;
+
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: sample },
+        ],
+        tools: [{
+          type: "function",
+          function: {
+            name: "consultant_decision",
+            description: "Return ACCEPT or REJECT with a short reason.",
+            parameters: {
+              type: "object",
+              properties: {
+                decision: { type: "string", enum: ["ACCEPT", "REJECT"] },
+                reason: { type: "string" },
+              },
+              required: ["decision", "reason"],
+              additionalProperties: false,
+            },
+          },
+        }],
+        tool_choice: { type: "function", function: { name: "consultant_decision" } },
+      }),
+    });
+    if (!resp.ok) {
+      console.log("[consultant_gate] gateway error", resp.status);
+      return { decision: "ACCEPT", reason: `gateway_${resp.status}` };
+    }
+    const json = await resp.json();
+    const args = json?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    if (!args) return { decision: "ACCEPT", reason: "no_tool_call" };
+    const parsed = JSON.parse(args);
+    const decision = parsed.decision === "REJECT" ? "REJECT" : "ACCEPT";
+    return { decision, reason: String(parsed.reason || "").slice(0, 200) };
+  } catch (e) {
+    console.log("[consultant_gate] error", (e as Error).message);
+    return { decision: "ACCEPT", reason: "exception" };
+  }
+}
+
 // Stage 5: Business relevance — reject pure company storytelling without insight.
 function passesBusinessRelevance(cleanText: string): { ok: boolean; reason?: string } {
   if (!cleanText) return { ok: false, reason: "empty" };
@@ -951,6 +1031,13 @@ serve(async (req) => {
       if (!biz.ok) {
         console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
       }
+
+      // Stage 5.5: Consultant gate (LLM final arbiter on cleaned text)
+      const gate = await consultantGate(text);
+      if (gate.decision === "REJECT") {
+        console.log("[trends] reject consultant_gate", c.url, gate.reason); continue;
+      }
+      console.log("[trends] consultant_gate ACCEPT", c.url, gate.reason);
 
       const source = domainOf(canonical);
       const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
