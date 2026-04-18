@@ -166,6 +166,7 @@ async function openEntryInNewTab(entry: SourceEntry) {
   }
 
   const url = entry.image_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null);
+
   if (url && /^https?:\/\//.test(url)) {
     window.open(url, "_blank", "noopener");
   } else {
