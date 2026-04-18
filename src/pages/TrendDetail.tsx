@@ -23,6 +23,16 @@ interface TrendRow {
   topic_relevance_score: number | null;
   final_score: number | null;
   selection_reason: string | null;
+  category: string | null;
+  impact_level: string | null;
+}
+
+// Truncate markdown to roughly N words while keeping basic structure intact.
+function previewMarkdown(md: string, words = 400): { preview: string; truncated: boolean } {
+  if (!md) return { preview: "", truncated: false };
+  const tokens = md.split(/\s+/);
+  if (tokens.length <= words) return { preview: md, truncated: false };
+  return { preview: tokens.slice(0, words).join(" ") + "…", truncated: true };
 }
 
 const TRUSTED_SET = new Set([
@@ -59,7 +69,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
