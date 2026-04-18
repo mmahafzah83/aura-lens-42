@@ -8,13 +8,101 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
 const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
-const MIN_CONTENT_CHARS = 500; // soft-404 / cookie wall guard
+const MIN_CONTENT_CHARS = 1500; // soft-404 / cookie wall guard — strict gate
+
+// Trusted publisher domains (boost validation_score)
+const TRUSTED_DOMAINS = [
+  "mckinsey.com", "bcg.com", "bain.com", "deloitte.com", "ey.com", "pwc.com",
+  "kpmg.com", "accenture.com", "oliverwyman.com", "rolandberger.com",
+  "hbr.org", "sloanreview.mit.edu", "brookings.edu", "gartner.com",
+  "forrester.com", "idc.com", "ft.com", "wsj.com", "bloomberg.com",
+  "economist.com", "reuters.com", "weforum.org", "imf.org", "worldbank.org",
+  "nature.com", "science.org", "nber.org",
+];
 
 // ─────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────
 function domainOf(u: string): string {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; }
+}
+
+// Convert markdown to clean text (strip md syntax, collapse whitespace)
+function markdownToText(md: string): string {
+  if (!md) return "";
+  return md
+    .replace(/```[\s\S]*?```/g, " ")              // fenced code blocks
+    .replace(/`[^`]*`/g, " ")                      // inline code
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")          // images
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")        // links → text
+    .replace(/^>\s?/gm, "")                        // blockquote markers
+    .replace(/^#{1,6}\s+/gm, "")                   // headings
+    .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, "$1") // bold/italic/strike
+    .replace(/^\s*[-*+]\s+/gm, "")                 // list bullets
+    .replace(/^\s*\d+\.\s+/gm, "")                 // numbered lists
+    .replace(/\|/g, " ")                           // table pipes
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Strict pre-scrape URL validation: HEAD, status 200, html content-type.
+// Falls back to a tiny GET because some CDNs reject HEAD.
+async function preflightUrl(url: string): Promise<{ ok: boolean; reason?: string; finalUrl?: string }> {
+  const check = (res: Response) => {
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    if (res.status !== 200) return { ok: false, reason: `status_${res.status}` };
+    if (!ct.includes("text/html")) return { ok: false, reason: `content_type_${ct || "missing"}` };
+    return { ok: true, finalUrl: res.url || url };
+  };
+  try {
+    const head = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; AuraTrendsBot/1.0)" },
+    });
+    if (head.status === 405 || head.status === 501) {
+      // method not allowed — fall back to GET range
+      const get = await fetch(url, {
+        method: "GET",
+        redirect: "follow",
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; AuraTrendsBot/1.0)", Range: "bytes=0-1024" },
+      });
+      return check(get);
+    }
+    return check(head);
+  } catch (e) {
+    return { ok: false, reason: `fetch_error_${(e as Error).message?.slice(0, 40)}` };
+  }
+}
+
+// Quality scoring 0-100: trusted domain (40) + length (40) + content density (20)
+function computeValidationScore(opts: { domain: string; markdown: string; text: string }): number {
+  let score = 0;
+
+  // Trusted domain — exact or subdomain match
+  const dom = opts.domain.toLowerCase();
+  if (TRUSTED_DOMAINS.some(td => dom === td || dom.endsWith("." + td))) {
+    score += 40;
+  } else if (/\.(edu|gov|org)$/.test(dom)) {
+    score += 20;
+  } else {
+    score += 5;
+  }
+
+  // Length — generous gradient
+  const len = opts.text.length;
+  if (len >= 6000) score += 40;
+  else if (len >= 3500) score += 30;
+  else if (len >= 2000) score += 20;
+  else if (len >= 1500) score += 10;
+
+  // Density — text/markdown ratio (penalize navigation-heavy pages)
+  const ratio = opts.markdown.length > 0 ? opts.text.length / opts.markdown.length : 0;
+  if (ratio >= 0.7) score += 20;
+  else if (ratio >= 0.5) score += 12;
+  else if (ratio >= 0.3) score += 6;
+
+  return Math.max(0, Math.min(100, score));
 }
 
 // Discovery via Perplexity sonar — returns curated, high-quality URLs.
