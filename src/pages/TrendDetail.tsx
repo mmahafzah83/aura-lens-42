@@ -126,8 +126,28 @@ export default function TrendDetail() {
         ← Back
       </button>
 
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 8 }}>
-        {trend.source ? `From ${trend.source}` : "From the web"} · {formatSmartDate(trend.fetched_at)}
+      <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 10 }}>
+        <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.8)", fontWeight: 500 }}>
+          {trend.source ? `From ${trend.source}` : "From the web"}
+        </span>
+        {isTrusted(trend.source) && (
+          <span style={{ fontSize: 9, color: "#7ab648", border: "0.5px solid #7ab64855", padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+            ✓ TRUSTED
+          </span>
+        )}
+        {(() => { const t = tier(trend.validation_score); return (
+          <span title={`Quality ${trend.validation_score ?? 0}/100`} style={{ fontSize: 9, color: t.color, border: `0.5px solid ${t.color}55`, padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+            {t.label.toUpperCase()} · {trend.validation_score ?? 0}
+          </span>
+        ); })()}
+        {(trend.topic_relevance_score ?? 0) >= 40 && (
+          <span title="Topic match with your profile" style={{ fontSize: 9, color: "#F97316", border: "0.5px solid #F9731655", padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+            FOCUS MATCH · {trend.topic_relevance_score}
+          </span>
+        )}
+        <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground) / 0.6)" }}>
+          · {formatSmartDate(trend.fetched_at)}
+        </span>
       </div>
 
       <h1 style={{ fontSize: 24, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 14, lineHeight: 1.3 }}>
