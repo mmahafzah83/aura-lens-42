@@ -138,13 +138,19 @@ const AutomationStrip = () => {
   };
 
   const cards = [
-    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
-    { iconBg: "#0a1020", iconBorder: "#1a3060", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
-    { iconBg: "#1a1200", iconBorder: "#3a2a00", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
+    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", iconColor: "#F97316", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
+    { iconBg: "#0a1020", iconBorder: "#1a3060", iconColor: "#111111", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
+    { iconBg: "#1a1200", iconBorder: "#3a2a00", iconColor: "#111111", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
   ];
 
   return (
     <div style={{ marginBottom: 14 }}>
+      <style>{`
+        [data-theme="light"] .intel-automation-card { background: #ffffff !important; border-color: #e8e8e8 !important; }
+        [data-theme="light"] .intel-automation-icon { background: #F3F3F3 !important; border-color: transparent !important; }
+        [data-theme="light"] .intel-automation-title { color: #111111 !important; }
+        [data-theme="light"] .intel-automation-desc { color: #666666 !important; }
+      `}</style>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
         <button onClick={toggle} style={{ background: "none", border: "none", color: "#444", fontSize: 10, cursor: "pointer", padding: "2px 0" }}>
           {collapsed ? "Show automation ↓" : "Hide automation ↑"}
@@ -153,13 +159,13 @@ const AutomationStrip = () => {
       <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 400, transition: "max-height 200ms ease-in-out" }}>
         <div className="intel-automation-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {cards.map((c, i) => (
-            <div key={i} style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
-              <div style={{ width: 26, height: 26, borderRadius: 6, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
+            <div key={i} className="intel-automation-card" style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <div className="intel-automation-icon" style={{ width: 36, height: 36, borderRadius: 8, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, color: c.iconColor, padding: 8, boxSizing: "border-box" }}>
                 {c.icon}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: "#d0d0d0", margin: 0 }}>{c.title}</p>
-                <p style={{ fontSize: 9, color: "#444", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
+                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "#d0d0d0", margin: 0 }}>{c.title}</p>
+                <p className="intel-automation-desc" style={{ fontSize: 9, color: "#444", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
                 <span style={{ fontSize: 9, fontWeight: 700, color: c.statusColor }}>● {c.status}</span>
               </div>
             </div>
