@@ -929,11 +929,11 @@ serve(async (req) => {
 
       // ── Cleaning pipeline (per spec) ──
       const raw_markdown = result.markdown;
-      const clean_markdown = cleanArticleMarkdown(raw_markdown);
+      const clean_markdown = cleanArticleMarkdown(raw_markdown, canonical);
       const text = markdownToText(clean_markdown);
       const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
 
-      // Hard rejection rules
+      // Stage 3: Hard rejection rules
       if (text.length < MIN_CLEAN_TEXT_CHARS) {
         console.log("[trends] reject thin_clean_text", c.url, text.length); continue;
       }
@@ -946,6 +946,11 @@ serve(async (req) => {
       }
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
+      // Stage 5: Business relevance filter
+      const biz = passesBusinessRelevance(text);
+      if (!biz.ok) {
+        console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
+      }
 
       const source = domainOf(canonical);
       const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
