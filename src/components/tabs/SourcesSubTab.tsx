@@ -149,23 +149,19 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
 /* ── Open entry in new tab helper ── */
 
 async function openEntryInNewTab(entry: SourceEntry) {
-  // Documents: stored in the private "documents" bucket; file_url is a raw storage path.
-  // Generate a fresh signed URL on click and open the actual file.
-  if (entry.type === "document" && entry.file_url) {
-    // Open a tab synchronously to avoid popup-blocker issues, then navigate it once the URL resolves.
+  // Documents: use a backend redirect endpoint so the URL the browser navigates to
+  // is on our edge-function host (not *.supabase.co/storage), avoiding ad-blocker
+  // ERR_BLOCKED_BY_CLIENT issues. The endpoint validates auth and 302s to a fresh signed URL.
+  if (entry.type === "document" && entry.id) {
     const newTab = window.open("about:blank", "_blank", "noopener");
     try {
-      const raw = entry.file_url;
-      // Strip any accidental absolute URL prefix; keep only the bucket-relative path.
-      const path = raw.startsWith("http")
-        ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
-        : raw;
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .createSignedUrl(path, 60 * 10); // 10 minutes
-      if (error || !data?.signedUrl) throw error || new Error("No signed URL");
-      if (newTab) newTab.location.href = data.signedUrl;
-      else window.open(data.signedUrl, "_blank", "noopener");
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess.session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const projectId = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID;
+      const endpoint = `https://${projectId}.functions.supabase.co/open-document?id=${encodeURIComponent(entry.id)}&token=${encodeURIComponent(token)}`;
+      if (newTab) newTab.location.href = endpoint;
+      else window.open(endpoint, "_blank", "noopener");
     } catch (e: any) {
       if (newTab) newTab.close();
       console.error("[SourcesSubTab] open document failed", e);
