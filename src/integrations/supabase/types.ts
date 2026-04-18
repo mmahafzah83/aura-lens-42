@@ -738,7 +738,10 @@ export type Database = {
           category: string | null
           confidence_level: string | null
           content_angle: string | null
+          content_clean: string | null
           content_markdown: string | null
+          content_quality_score: number
+          content_raw: string | null
           content_text: string | null
           decision_label: string | null
           fetched_at: string
@@ -771,7 +774,10 @@ export type Database = {
           category?: string | null
           confidence_level?: string | null
           content_angle?: string | null
+          content_clean?: string | null
           content_markdown?: string | null
+          content_quality_score?: number
+          content_raw?: string | null
           content_text?: string | null
           decision_label?: string | null
           fetched_at?: string
@@ -804,7 +810,10 @@ export type Database = {
           category?: string | null
           confidence_level?: string | null
           content_angle?: string | null
+          content_clean?: string | null
           content_markdown?: string | null
+          content_quality_score?: number
+          content_raw?: string | null
           content_text?: string | null
           decision_label?: string | null
           fetched_at?: string

@@ -16,11 +16,14 @@ interface SignalRow {
   url: string | null;
   canonical_url: string | null;
   content_markdown: string | null;
+  content_clean: string | null;
+  content_raw: string | null;
   fetched_at: string;
   validation_score: number | null;
   relevance_score: number | null;
   topic_relevance_score: number | null;
   snapshot_quality: number | null;
+  content_quality_score: number | null;
   final_score: number | null;
   selection_reason: string | null;
   category: string | null;
@@ -72,6 +75,7 @@ export default function TrendDetail() {
   const [loading, setLoading] = useState(true);
   const [externalAlive, setExternalAlive] = useState<boolean | null>(null);
   const [showFullSnapshot, setShowFullSnapshot] = useState(false);
+  const [snapshotMode, setSnapshotMode] = useState<"clean" | "raw">("clean");
 
   useEffect(() => {
     if (!isReady || !user || !id) return;
@@ -80,7 +84,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_score, relevance_score, topic_relevance_score, snapshot_quality, final_score, selection_reason, category, impact_level, confidence_level, signal_type, opportunity_type, action_recommendation, content_angle, decision_label")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, content_clean, content_raw, fetched_at, validation_score, relevance_score, topic_relevance_score, snapshot_quality, content_quality_score, final_score, selection_reason, category, impact_level, confidence_level, signal_type, opportunity_type, action_recommendation, content_angle, decision_label")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -226,45 +230,78 @@ export default function TrendDetail() {
         </div>
       )}
 
-      {/* Internal snapshot — primary reading. If absent, this is a legacy row. */}
-      {signal.content_markdown ? (
-        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
-          <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
-              Article snapshot · primary reading
+      {/* Internal snapshot — primary reading. Default = clean. Toggle to raw. */}
+      {(() => {
+        const cleanMd = signal.content_clean || signal.content_markdown;
+        const rawMd = signal.content_raw || signal.content_markdown;
+        const activeMd = snapshotMode === "raw" ? (rawMd || cleanMd) : (cleanMd || rawMd);
+        const hasAny = !!activeMd;
+        const hasBoth = !!(signal.content_clean && signal.content_raw && signal.content_clean !== signal.content_raw);
+        if (!hasAny) {
+          return (
+            <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24, padding: "20px 18px", background: "hsl(var(--muted) / 0.25)", borderRadius: 6 }}>
+              <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
+                Legacy signal · incomplete
+              </div>
+              <div style={{ fontSize: 13, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.6, marginBottom: 12 }}>
+                This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
+              </div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                Click <span style={{ color: "#F97316" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
+              </div>
             </div>
-            {(() => {
-              const { truncated } = previewMarkdown(signal.content_markdown!, 400);
-              if (!truncated) return null;
-              return (
-                <button
-                  onClick={() => setShowFullSnapshot(s => !s)}
-                  style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
-                >
-                  {showFullSnapshot ? "Show preview" : "Show full snapshot"}
-                </button>
-              );
-            })()}
+          );
+        }
+        const { truncated } = previewMarkdown(activeMd!, 400);
+        const tabBtn = (mode: "clean" | "raw", label: string) => {
+          const active = snapshotMode === mode;
+          return (
+            <button
+              onClick={() => setSnapshotMode(mode)}
+              style={{
+                fontSize: 10,
+                color: active ? "#F97316" : "hsl(var(--muted-foreground))",
+                background: active ? "#F9731612" : "transparent",
+                border: `0.5px solid ${active ? "#F9731644" : "hsl(var(--border))"}`,
+                padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em",
+                fontWeight: active ? 600 : 400,
+              }}
+            >
+              {label}
+            </button>
+          );
+        };
+        return (
+          <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
+            <div className="flex items-center justify-between flex-wrap" style={{ marginBottom: 12, gap: 8 }}>
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+                Article snapshot · {snapshotMode === "clean" ? "cleaned" : "raw"}
+              </div>
+              <div className="flex items-center" style={{ gap: 6 }}>
+                {hasBoth && (
+                  <>
+                    {tabBtn("clean", "View clean")}
+                    {tabBtn("raw", "View raw")}
+                  </>
+                )}
+                {truncated && (
+                  <button
+                    onClick={() => setShowFullSnapshot(s => !s)}
+                    style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                  >
+                    {showFullSnapshot ? "Show preview" : "Show full snapshot"}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="prose prose-sm max-w-none dark:prose-invert" style={{ fontSize: 13, lineHeight: 1.7 }}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {showFullSnapshot ? activeMd! : previewMarkdown(activeMd!, 400).preview}
+              </ReactMarkdown>
+            </div>
           </div>
-          <div className="prose prose-sm max-w-none dark:prose-invert" style={{ fontSize: 13, lineHeight: 1.7 }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {showFullSnapshot ? signal.content_markdown : previewMarkdown(signal.content_markdown, 400).preview}
-            </ReactMarkdown>
-          </div>
-        </div>
-      ) : (
-        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24, padding: "20px 18px", background: "hsl(var(--muted) / 0.25)", borderRadius: 6 }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
-            Legacy signal · incomplete
-          </div>
-          <div style={{ fontSize: 13, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.6, marginBottom: 12 }}>
-            This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
-          </div>
-          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-            Click <span style={{ color: "#F97316" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* External link — secondary reference */}
       {externalUrl && (

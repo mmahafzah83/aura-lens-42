@@ -8,8 +8,9 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
 const EXA_URL = "https://api.exa.ai/search";
-const MIN_CONTENT_CHARS = 1500;       // markdown gate
-const MIN_CLEAN_TEXT_CHARS = 1500;    // post-clean gate (hard rule)
+const MIN_CONTENT_CHARS = 1200;       // raw markdown gate (relaxed; clean gate is the hard rule)
+const MIN_CLEAN_TEXT_CHARS = 800;     // post-clean hard gate (per spec)
+const MAX_NOISE_RATIO = 0.30;         // reject if >30% of raw is noise
 const ADAPTIVE_FLOORS = [60, 50, 40]; // adaptive final_score floors
 const MIN_TARGET_SIGNALS = 3;         // minimum we'll show before relaxing
 
@@ -69,6 +70,161 @@ function markdownToText(md: string): string {
     .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, "$1")
     .replace(/^\s*[-*+]\s+/gm, "").replace(/^\s*\d+\.\s+/gm, "")
     .replace(/\|/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// ───────── Content cleaning pipeline ─────────
+// Phrases / patterns that indicate non-article noise. Lines containing these
+// (or starting with them) are stripped before scoring + AI synthesis.
+const NOISE_LINE_PATTERNS: RegExp[] = [
+  /^\s*skip to (main )?content\b/i,
+  /^\s*skip to navigation\b/i,
+  /^\s*jump to\b/i,
+  /^\s*back to top\b/i,
+  /^\s*subscribe( now| today)?\b/i,
+  /^\s*sign (in|up)\b/i,
+  /^\s*log ?in\b/i,
+  /^\s*follow us\b/i,
+  /^\s*share (this|on)\b/i,
+  /^\s*download( the)? pdf\b/i,
+  /^\s*print this\b/i,
+  /^\s*figure\s+\d+[:.]/i,
+  /^\s*table\s+\d+[:.]/i,
+  /^\s*image\s+\d+[:.]/i,
+  /^\s*photo(graph)?\s*[:.]/i,
+  /^\s*caption[:.]?/i,
+  /^\s*citation[:.]?/i,
+  /^\s*cite this article\b/i,
+  /^\s*how to cite\b/i,
+  /^\s*download citation\b/i,
+  /^\s*advertisement\b/i,
+  /^\s*sponsored content\b/i,
+  /^\s*related (articles?|reading|content|posts?)\b/i,
+  /^\s*read (more|next)\b/i,
+  /^\s*you may (also )?like\b/i,
+  /^\s*comments?\s*\(\d+\)/i,
+  /^\s*leave a (comment|reply)\b/i,
+  /^\s*privacy policy\b/i,
+  /^\s*terms of (service|use)\b/i,
+  /^\s*cookie (policy|preferences|settings)\b/i,
+  /^\s*all rights reserved\b/i,
+  /^\s*copyright\s+©/i,
+  /^\s*©\s*\d{4}/,
+  /^\s*table of contents\b/i,
+  /^\s*on this page\b/i,
+  /\bmathjax\b/i,
+  /\bcss warning\b/i,
+  /\bjavascript (is )?(required|disabled|enabled)\b/i,
+  /\benable javascript\b/i,
+  /^\s*(home|about|contact|services|products|blog|news|careers|press|investors)\s*$/i,
+];
+
+// Section headers that mark the start of "junk" trailing content.
+// Everything from these headers to the end of the document is removed.
+const TRAILING_SECTION_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|notes?|footnotes?|further reading|see also|related articles?|comments?|about the authors?|author information|acknowledg(e?)ments?|disclosures?|conflicts? of interest|funding|data availability|supplementary (material|information)|appendix)\s*$/im;
+
+function stripTrailingSections(md: string): string {
+  if (!md) return md;
+  const lines = md.split(/\r?\n/);
+  let cutAt = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (TRAILING_SECTION_RE.test(lines[i].trim())) {
+      // Only cut if it's reasonably late in the doc (avoid killing useful intros).
+      if (i >= Math.floor(lines.length * 0.4)) { cutAt = i; break; }
+    }
+  }
+  return cutAt > 0 ? lines.slice(0, cutAt).join("\n") : md;
+}
+
+function isNoiseLine(line: string): boolean {
+  const t = line.trim();
+  if (!t) return false;
+  // very short non-sentence lines that look like nav crumbs
+  if (t.length < 4) return true;
+  if (NOISE_LINE_PATTERNS.some(re => re.test(t))) return true;
+  // standalone citation markers: "[1]", "[12]", "[1, 2]"
+  if (/^\[\d+(\s*,\s*\d+)*]\s*$/.test(t)) return true;
+  // ALL-CAPS short lines (often nav/headers)
+  if (t.length <= 40 && /^[A-Z0-9\s\-:|·•]+$/.test(t) && /[A-Z]/.test(t) && !/[.!?]$/.test(t)) return true;
+  return false;
+}
+
+// Clean an article: remove trailing sections, drop noise lines, strip
+// citation markers like "[1]" / "[1,2]", normalize whitespace, dedupe paragraphs.
+function cleanArticleMarkdown(md: string): string {
+  if (!md) return "";
+  let out = stripTrailingSections(md);
+  const cleanedLines: string[] = [];
+  for (const raw of out.split(/\r?\n/)) {
+    if (isNoiseLine(raw)) continue;
+    cleanedLines.push(raw);
+  }
+  out = cleanedLines.join("\n");
+  // strip inline citation markers within sentences
+  out = out.replace(/\[\d+(\s*,\s*\d+)*]/g, "");
+  // strip MathJax / script residue
+  out = out.replace(/<script[\s\S]*?<\/script>/gi, " ");
+  out = out.replace(/\\\([\s\S]*?\\\)/g, " ");
+  out = out.replace(/\$\$[\s\S]*?\$\$/g, " ");
+  // collapse 3+ blank lines
+  out = out.replace(/\n{3,}/g, "\n\n");
+  // dedupe consecutive identical paragraphs
+  const paras = out.split(/\n{2,}/);
+  const dedup: string[] = [];
+  for (const p of paras) {
+    const norm = p.trim().toLowerCase();
+    if (!norm) continue;
+    if (dedup.length && dedup[dedup.length - 1].trim().toLowerCase() === norm) continue;
+    dedup.push(p.trim());
+  }
+  return dedup.join("\n\n").trim();
+}
+
+// 0–100 quality score: length + structure + readability + signal density.
+function computeContentQualityScore(opts: { clean: string; raw: string }): number {
+  const clean = opts.clean || "";
+  const raw = opts.raw || "";
+  if (!clean) return 0;
+  let s = 0;
+  // length (0-35)
+  const len = clean.length;
+  if (len >= 6000) s += 35;
+  else if (len >= 4000) s += 28;
+  else if (len >= 2500) s += 20;
+  else if (len >= 1500) s += 12;
+  else if (len >= 800) s += 6;
+  // structure: number of paragraphs ≥80 chars (0-25)
+  const paras = clean.split(/\n{2,}/).filter(p => p.trim().length >= 80).length;
+  if (paras >= 8) s += 25;
+  else if (paras >= 5) s += 18;
+  else if (paras >= 3) s += 10;
+  else if (paras >= 1) s += 4;
+  // readability: avg sentence length 12–28 words is healthy (0-15)
+  const sentences = clean.split(/(?<=[.!?])\s+/).filter(x => x.trim().length > 20);
+  if (sentences.length > 0) {
+    const avgWords = sentences.reduce((a, x) => a + x.split(/\s+/).length, 0) / sentences.length;
+    if (avgWords >= 12 && avgWords <= 28) s += 15;
+    else if (avgWords >= 8 && avgWords <= 36) s += 8;
+  }
+  // signal density: clean / raw (0-25)
+  if (raw.length > 0) {
+    const ratio = clean.length / raw.length;
+    if (ratio >= 0.7) s += 25;
+    else if (ratio >= 0.5) s += 18;
+    else if (ratio >= 0.3) s += 10;
+    else if (ratio >= 0.15) s += 4;
+  } else {
+    s += 10;
+  }
+  return Math.max(0, Math.min(100, s));
+}
+
+// noise_ratio: how much of the raw markdown was stripped during cleaning.
+function computeNoiseRatio(raw: string, clean: string): number {
+  if (!raw) return 1;
+  const rawLen = raw.replace(/\s+/g, " ").trim().length;
+  const cleanLen = (clean || "").replace(/\s+/g, " ").trim().length;
+  if (rawLen <= 0) return 1;
+  return Math.max(0, Math.min(1, 1 - cleanLen / rawLen));
 }
 
 function detectBlockedContent(text: string): { blocked: boolean; reason?: string } {
@@ -526,11 +682,13 @@ serve(async (req) => {
       if (r.url) existingUrls.add(r.url);
     });
 
-    // Scrape + multi-stage validation
+    // Scrape + clean + multi-stage validation
     const scraped: Array<{
-      url: string; canonical: string; title: string; markdown: string;
+      url: string; canonical: string; title: string;
+      raw_markdown: string; clean_markdown: string;
       text: string; source: string;
-      validation_score: number; topic_relevance_score: number; snapshot_quality: number;
+      validation_score: number; topic_relevance_score: number;
+      snapshot_quality: number; content_quality_score: number;
       discovery_reason?: string;
     }> = [];
 
@@ -548,24 +706,41 @@ serve(async (req) => {
       }
       if (result.statusCode >= 400) { console.log("[trends] http error", c.url, result.statusCode); continue; }
       if (!result.markdown || result.markdown.length < MIN_CONTENT_CHARS) {
-        console.log("[trends] thin markdown", c.url, result.markdown?.length || 0); continue;
+        console.log("[trends] thin raw markdown", c.url, result.markdown?.length || 0); continue;
       }
       const canonical = result.sourceURL || pre.finalUrl || c.url;
       if (existingUrls.has(canonical)) continue;
-      const text = markdownToText(result.markdown);
+
+      // ── Cleaning pipeline (per spec) ──
+      const raw_markdown = result.markdown;
+      const clean_markdown = cleanArticleMarkdown(raw_markdown);
+      const text = markdownToText(clean_markdown);
+      const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
+
+      // Hard rejection rules
+      if (text.length < MIN_CLEAN_TEXT_CHARS) {
+        console.log("[trends] reject thin_clean_text", c.url, text.length); continue;
+      }
+      if (noiseRatio > MAX_NOISE_RATIO) {
+        console.log("[trends] reject high_noise_ratio", c.url, noiseRatio.toFixed(2)); continue;
+      }
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
 
       const source = domainOf(canonical);
-      const validation_score = computeValidationScore({ domain: source, markdown: result.markdown, text });
+      const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
+      if (validation_score <= 0) {
+        console.log("[trends] reject zero_validation", c.url); continue;
+      }
       const topic_relevance_score = computeTopicRelevance(text, profileTokens);
-      const snapshot_quality = computeSnapshotQuality({ markdown: result.markdown, text });
+      const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
+      const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
 
       scraped.push({
         url: c.url, canonical,
         title: result.title || c.title || canonical,
-        markdown: result.markdown, text, source,
-        validation_score, topic_relevance_score, snapshot_quality,
+        raw_markdown, clean_markdown, text, source,
+        validation_score, topic_relevance_score, snapshot_quality, content_quality_score,
         discovery_reason: c.reason,
       });
     }
@@ -573,16 +748,19 @@ serve(async (req) => {
 
     let synthesized: any[] = [];
     if (scraped.length > 0) {
+      // Feed AI the CLEAN markdown only (per spec).
       synthesized = await aiSynthesize(lovableKey, profileContext,
-        scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.markdown })));
+        scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.clean_markdown })));
     }
 
     type Built = {
       user_id: string; headline: string; insight: string; summary: string;
       source: string; url: string; canonical_url: string;
       content_markdown: string; content_text: string;
+      content_raw: string; content_clean: string;
       relevance_score: number; validation_score: number;
-      topic_relevance_score: number; snapshot_quality: number; final_score: number;
+      topic_relevance_score: number; snapshot_quality: number;
+      content_quality_score: number; final_score: number;
       validation_status: string; last_checked_at: string;
       published_at: null; status: string;
       selection_reason: string;
@@ -592,17 +770,17 @@ serve(async (req) => {
       decision_label: string; is_valid: boolean;
     };
 
-    // Weighted scoring per spec section 5:
-    // final_score = validation*0.4 + topic_relevance*0.3 + snapshot_quality*0.3
+    // Weighted scoring (per spec section 8):
+    // final_score = validation*0.5 + topic_relevance*0.3 + content_quality*0.2
     const built: Built[] = [];
     for (const s of synthesized) {
       const src = scraped[s.index];
       if (!src) continue;
       const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
       const final_score = Math.round(
-        src.validation_score * 0.4 +
+        src.validation_score * 0.5 +
         src.topic_relevance_score * 0.3 +
-        src.snapshot_quality * 0.3
+        src.content_quality_score * 0.2
       );
 
       const rawCategory  = typeof s.category === "string" ? s.category.trim() : "";
@@ -638,12 +816,16 @@ serve(async (req) => {
         summary: (s.summary || "").slice(0, 2000),
         source: src.source.slice(0, 100),
         url: src.canonical, canonical_url: src.canonical,
-        content_markdown: src.markdown.slice(0, 50000),
+        // content_markdown defaults to the CLEAN copy for default reading experience
+        content_markdown: src.clean_markdown.slice(0, 50000),
         content_text: src.text.slice(0, 50000),
+        content_raw: src.raw_markdown.slice(0, 80000),
+        content_clean: src.clean_markdown.slice(0, 50000),
         relevance_score: ai_relevance,
         validation_score: src.validation_score,
         topic_relevance_score: src.topic_relevance_score,
         snapshot_quality: src.snapshot_quality,
+        content_quality_score: src.content_quality_score,
         final_score,
         validation_status: src.validation_score >= 50 ? "ok" : "weak",
         last_checked_at: new Date().toISOString(),
