@@ -141,6 +141,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // per-trend UI state
   const [addedSignalIds, setAddedSignalIds] = useState<Set<string>>(new Set());
   const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
+  const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
 
   // Live clock
   useEffect(() => {
