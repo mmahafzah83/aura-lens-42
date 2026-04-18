@@ -591,14 +591,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     setLoading(true);
     setLoadError(false);
     try {
-      const [signalsRes, entriesRes, movesRes] = await Promise.all([
+      const [signalsRes, entriesRes, documentsRes, movesRes] = await Promise.all([
         supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
+        supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
       ]);
       const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
       setSignals(loadedSignals);
-      setEntryCount(entriesRes.count || 0);
+      setEntryCount((entriesRes.count || 0) + (documentsRes.count || 0));
       setMovesCount(movesRes.count || 0);
       // Auto-select first signal
       if (loadedSignals.length > 0 && !selectedSignalId) {
