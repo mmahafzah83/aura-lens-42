@@ -603,35 +603,34 @@ const SourcesSubTab = ({
                         <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
                       </div>
                       {isProcessing ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 0 6px", flexWrap: "wrap" }}>
-                          <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
-                          <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-                            {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
-                          </p>
-                          <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                        <div style={{ margin: "0 0 6px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
+                            <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                              {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
+                            </p>
+                            <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                          </div>
+                          {docStatus === "pending" && (
+                            <button
+                              onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
+                              style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
+                            >
+                              Tap to retry
+                            </button>
+                          )}
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
                           <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>Processing failed</p>
+                          {entry.error_message && (
+                            <p style={{ color: "#888", fontSize: 11, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                              {entry.error_message}
+                            </p>
+                          )}
                           <button
-                            onClick={async (ev) => {
-                              ev.stopPropagation();
-                              const { data: { session } } = await supabase.auth.getSession();
-                              if (!session) return;
-                              await supabase.from("documents").update({ status: "processing" }).eq("id", entry.id);
-                              setEntries(prev => prev.map(x => x.id === entry.id ? { ...x, status: "processing" } : x));
-                              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`, {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  Authorization: `Bearer ${session.access_token}`,
-                                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                                },
-                                body: JSON.stringify({ document_id: entry.id }),
-                              }).catch(() => {});
-                              toast("Retrying…");
-                            }}
-                            style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, cursor: "pointer", textDecoration: "underline" }}
+                            onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
+                            style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
                           >
                             Tap to retry
                           </button>
