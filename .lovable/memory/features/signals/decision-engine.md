@@ -1,36 +1,40 @@
 ---
 name: signals-decision-engine
-description: Signal Engine pipeline (Exa 2-pass discovery → Firecrawl → clean → opening-gate → score → AI synth). Stores content_raw + content_clean; final_score = validation*0.5 + relevance*0.3 + content_quality*0.2.
+description: Signal Engine pipeline (Exa discovery → Firecrawl → strict 6-stage extraction → AI synth). Stages: line-scored start detection, section-aware extraction, hard rejection, business relevance filter, strict insight openers.
 type: feature
 ---
 
 Trends are Signal Objects with action_recommendation, content_angle, decision_label.
 
-Pipeline: Exa neural discovery (2 passes per query: consulting-biased + open) → preflight HEAD → Firecrawl scrape → **content cleaning** → opening-acceptance gate → validation/scoring → adaptive selection (floors 60/50/40, min 3) → AI synthesis (Gemini 2.5 Flash) → insert.
+Pipeline: Exa neural discovery (2 passes) → preflight HEAD → Firecrawl scrape → **6-stage extraction** → adaptive selection (floors 60/50/40, min 3) → AI synthesis (Gemini 2.5 Flash) → insert.
 
-Cleaning pipeline (`cleanArticleMarkdown`):
-- `unwrapMarkdownArtifacts` strips link/image/URL wrappers BEFORE noise matching, so `[Skip to main content](url)` is caught.
-- `stripLeadingChrome` drops top-of-doc nav until a real sentence-like paragraph (≥120 chars + punctuation) appears.
-- `stripTrailingSections` cuts at References/Bibliography/Notes/Related/About this article/Cite this article/Metrics/Author info/Acknowledgements past 35% of the doc.
-- Drops noise lines anywhere: nav, cookie banners, "Subscribe", "Sign in", figure/table captions, ALL-CAPS short lines, citation markers `[1]`, MathJax `\(...\)` / `$$...$$`, script tags, journal chrome ("Thank you for visiting", "Download PDF", "you are using a browser version", "open access", "article open access").
-- Two-pass clean: after wrappers are removed, re-runs noise-line check.
-- Dedupes consecutive identical paragraphs, normalizes whitespace.
+**Stage 1 — Article start detection** (`detectArticleStart` + `scoreLine`):
+Each line scored: +3 full sentence (>100ch + punctuation), +2 verbs (is/are/will/enables/drives/improves/reveals/finds…), +2 business terms (strategy/transformation/efficiency/regulation/AI…), -3 nav words (skip/download/share/subscribe/login/view pdf/thank you for visiting), -2 short (<40ch), -2 ALL CAPS. Article starts at the first 3-line window where cumulative score ≥4 (or any single line ≥5). Everything before is dropped.
 
-Opening gate (`openingLooksLikeArticle`): rejects if first 500 chars contain ≥2 noise phrases, or if no sentence-like construct appears in the first 800 chars.
+**Stage 2 — Section-aware extraction** (`sectionAwareExtract`):
+- Scientific domains (nature/science/sciencedirect/springer/wiley/nih/arxiv/nber/cell/lancet/nejm/plos/mdpi/frontiers/ieee/acm/biorxiv): keep ONLY Abstract, Summary, Introduction, Background, Results, Findings, Discussion, Conclusions, Implications. Drop References/Bibliography/Citations/Author info/Affiliations/Acknowledgements/Funding/Data availability/Supplementary/Appendix/Cite/Metrics/Peer review/Ethics.
+- Business domains: drop Related/More from/Newsletter/Subscribe/Footer/Comments/Share/About author/Tags blocks.
 
-Hard rejection rules: cleaned text < 800 chars, noise_ratio > 30%, validation_score == 0, blocked phrases, opening fails article-shape check.
+**Stage 3 — Hard rejection** (`openingLooksLikeArticle` + `passesBusinessRelevance` + base gates):
+- cleaned text < 800 chars → reject
+- noise_ratio > 30% → reject
+- 2+ system phrases in first 500 chars → reject (`chrome_in_opening`)
+- no full sentence in first 800 chars → reject
+- first paragraph scoreLine < 3 → reject (`weak_opening_paragraph`)
+- descriptive company copy without analytical verb → reject (`descriptive_company_copy`)
+- no analytical verb (finds/shows/indicates/reveals/argues/concludes/estimates/projects/warns/demonstrates/exposes) AND no number/percentage in first 4000 chars → reject
 
-Stores both `content_raw` (original markdown) and `content_clean` (cleaned). `content_markdown` mirrors clean for backward-compat. AI synthesis uses CLEAN only.
+Cleaning helpers retained: `unwrapMarkdownArtifacts` strips link/image wrappers BEFORE noise matching; `stripTrailingSections` cuts at References/Metrics/etc past 35% of doc; noise lines (cookie banners, ALL-CAPS short, citation markers `[1]`, MathJax `\(...\)` / `$$...$$`, script tags) dropped anywhere; consecutive duplicate paragraphs deduped; cleaning runs `stripLeadingChrome` again after section extraction.
 
-Scoring: `final_score = validation_score*0.5 + topic_relevance_score*0.3 + content_quality_score*0.2`. content_quality_score (0-100) = length + paragraph structure + readability (avg sentence length 12-28 words) + signal density (clean/raw ratio).
+Stores both `content_raw` (original) and `content_clean` (cleaned). `content_markdown` mirrors clean. AI synthesis uses CLEAN only.
 
-Diversity: `diversifyByDomain` enforces per-domain cap (2) AND per-domain-family cap (2). Families: nature-family (all *.nature.com), science-family, springer-family, elsevier-family, plus mckinsey/bcg/deloitte/ey/pwc/kpmg/accenture as their own families. Family cap relaxes if pool is too small but domain cap is hard.
+Scoring: `final_score = validation_score*0.5 + topic_relevance_score*0.3 + content_quality_score*0.2`.
 
-Discovery: 2 passes per query — pass 1 restricted to consulting/business domains (Nature/NBER excluded), pass 2 open neural search. No `category: "research paper"` lock. 120-day window.
+Diversity: per-domain cap 2 AND per-domain-family cap 2. Families: nature/science/springer/elsevier + mckinsey/bcg/deloitte/ey/pwc/kpmg/accenture.
 
-AI prompt enforces:
-- insight must start with "This signals…" / "This creates an opportunity to…" / "This indicates a shift…" / "This raises the bar for…" / "This exposes a gap in…". Bans "highlights", "discusses", "sets a precedent".
-- action_recommendation must name SPECIFIC audience + action + value (e.g. "Open a CFO conversation at 2 utility clients this quarter…").
-- content_angle must be specific/contrarian/counted (e.g. "3 things water utility CFOs get wrong about digital twins…").
+**Stage 6 — Signal generation** (AI prompt + post-validator):
+- `insight` MUST start with EXACTLY one of: "This signals", "This indicates", "This exposes a gap", "This creates an opportunity". Banned openers (highlights/discusses/article/according to/the report/sets a precedent) are auto-rewritten by stripping the banned head and prepending an allowed opener (chosen by impact_level/opportunity_type).
+- `action_recommendation` must contain audience + concrete verb + business value.
+- `content_angle` must be specific/sharp/engaging — preferably contrarian or counted.
 
-TrendDetail UI: snapshot defaults to cleaned view; "View clean" / "View raw" toggle shown when both differ. Legacy rows (no snapshot) show "Legacy signal · incomplete" panel.
+TrendDetail UI: defaults to cleaned view; clean/raw toggle when both differ. Legacy rows (no snapshot) show "Legacy signal · incomplete" panel.
