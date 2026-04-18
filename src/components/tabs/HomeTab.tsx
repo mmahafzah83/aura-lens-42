@@ -760,6 +760,8 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
               const tier = qualityTier(t.validation_score);
               const trusted = isTrusted(t.source);
               const reason = trendReason(t);
+              const fresh = freshnessOf(t.fetched_at);
+              const impact = impactStyle(t.impact_level);
               return (
                 <div
                   key={t.id}
@@ -783,6 +785,19 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                       <span title={`Quality score ${t.validation_score ?? 0}/100`} style={{ fontSize: 9, color: tier.color, border: `0.5px solid ${tier.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
                         {tier.label.toUpperCase()} · {t.validation_score ?? 0}
                       </span>
+                      <span title="Freshness" style={{ fontSize: 9, color: fresh.color, border: `0.5px solid ${fresh.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+                        {fresh.label.toUpperCase()}
+                      </span>
+                      {t.category && (
+                        <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "1px 5px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.04em" }}>
+                          {t.category.toUpperCase()}
+                        </span>
+                      )}
+                      {t.impact_level && (
+                        <span title={`Impact: ${t.impact_level}`} style={{ fontSize: 9, color: impact.color, border: `0.5px solid ${impact.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+                          ◆ {t.impact_level.toUpperCase()}
+                        </span>
+                      )}
                       <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground) / 0.6)" }}>
                         · {timeAgo(t.fetched_at)}
                       </span>
