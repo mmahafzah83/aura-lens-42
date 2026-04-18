@@ -46,11 +46,20 @@ function normalizeText(raw: string): string {
     .trim();
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
+async function fetchWithTimeout(url: string, options: RequestInit, ms: number, label = "request") {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+  let timedOut = false;
+  const id = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, ms);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
+  } catch (e) {
+    if (timedOut) {
+      throw new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
+    }
+    throw e;
   } finally {
     clearTimeout(id);
   }
@@ -167,7 +176,7 @@ async function extractFromImage(adminClient: any, doc: any, lovableApiKey: strin
         ],
       }],
     }),
-  }, 30000);
+  }, 60000, "Image extraction");
   if (!res.ok) {
     const t = await res.text().catch(() => "");
     throw new Error(`Image extraction API ${res.status}: ${t.slice(0, 200)}`);
@@ -206,7 +215,7 @@ async function extractFromPdf(adminClient: any, doc: any, lovableApiKey: string)
         ],
       }],
     }),
-  }, 60000);
+  }, 240000, "PDF extraction");
   if (!res.ok) {
     const t = await res.text().catch(() => "");
     throw new Error(`PDF extraction API ${res.status}: ${t.slice(0, 200)}`);
@@ -308,7 +317,7 @@ async function processDocument(
             { role: "user", content: extractedText.slice(0, 4000) },
           ],
         }),
-      }, 20000);
+      }, 30000, "Summary generation");
       if (summaryRes.ok) {
         const sumData = await summaryRes.json();
         docSummary = sumData.choices?.[0]?.message?.content || "";
@@ -374,7 +383,7 @@ async function processDocument(
           method: "POST",
           headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({ model: "text-embedding-3-small", input: chunkRows.map((r) => r.content) }),
-        }, 30000);
+        }, 30000, "Embedding generation");
         if (!embRes.ok) return;
         const embData = await embRes.json();
         const { data: insertedChunks } = await adminClient
