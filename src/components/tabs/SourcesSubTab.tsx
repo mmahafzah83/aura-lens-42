@@ -88,6 +88,37 @@ function extractDomain(url: string | null | undefined): string | null {
   return m ? m[1].replace(/^www\./, "") : null;
 }
 
+/* ── Humanize document error_message into a stage-named headline + detail ── */
+function humanizeDocError(raw: string | null | undefined): { headline: string; detail: string | null } {
+  if (!raw) return { headline: "Processing failed", detail: null };
+  const msg = raw.toLowerCase();
+  if (msg.includes("timed out") || msg.includes("aborted") || msg.includes("timeout")) {
+    return { headline: "Timed out during extraction", detail: raw };
+  }
+  if (msg.includes("unsupported file") || msg.includes("unsupported")) {
+    return { headline: "Unsupported file type", detail: raw };
+  }
+  if (msg.includes("no usable text") || msg.includes("empty")) {
+    return { headline: "No readable text found", detail: raw };
+  }
+  if (msg.includes("too large")) {
+    return { headline: "File too large to process", detail: raw };
+  }
+  if (msg.includes("storage download")) {
+    return { headline: "Could not read uploaded file", detail: raw };
+  }
+  if (msg.includes("extraction api") || msg.includes("pdf extraction") || msg.includes("image extraction")) {
+    return { headline: "Extraction failed", detail: raw };
+  }
+  if (msg.includes("chunk insert")) {
+    return { headline: "Chunking failed", detail: raw };
+  }
+  if (msg.includes("trigger failed")) {
+    return { headline: "Could not start processing", detail: raw };
+  }
+  return { headline: "Processing failed", detail: raw };
+}
+
 /* ── Delete Confirmation Dialog ── */
 
 const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) =>
@@ -633,10 +664,12 @@ const SourcesSubTab = ({
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
-                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>Processing failed</p>
-                          {entry.error_message && (
+                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                            {humanizeDocError(entry.error_message).headline}
+                          </p>
+                          {humanizeDocError(entry.error_message).detail && (
                             <p style={{ color: "#888", fontSize: 11, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                              {entry.error_message}
+                              {humanizeDocError(entry.error_message).detail}
                             </p>
                           )}
                           <button
