@@ -404,10 +404,13 @@ If unsure → REJECT.
 
 Return JSON only.`;
 
+  const ctrl = new AbortController();
+  const timeoutId = setTimeout(() => ctrl.abort(), 10_000); // 10s hard cap
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      signal: ctrl.signal,
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
@@ -433,6 +436,7 @@ Return JSON only.`;
         tool_choice: { type: "function", function: { name: "ai_judge_decision" } },
       }),
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) {
       console.log("[judge] gateway_error", resp.status);
       return { decision: "UNAVAILABLE", reason: `gateway_${resp.status}`, bypassed: true };
