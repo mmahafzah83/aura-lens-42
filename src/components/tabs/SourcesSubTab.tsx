@@ -693,11 +693,23 @@ const SourcesSubTab = ({
                 <button
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
                   title="Open in new tab"
-                  style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  style={{ position: "absolute", top: 12, right: canDownload ? 96 : 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
                   className="text-[#555] hover:text-[#F97316] transition-colors"
                 >
                   <ExternalLink size={14} />
                 </button>
+
+                {/* Download button (documents + images) */}
+                {canDownload && (
+                  <button
+                    onClick={e => { e.stopPropagation(); downloadEntryFile(entry); }}
+                    title="Download file"
+                    style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                    className="text-[#555] hover:text-[#F97316] transition-colors"
+                  >
+                    <Download size={14} />
+                  </button>
+                )}
 
                 {/* Pin button (entries only) */}
                 {!isDoc && (
@@ -772,8 +784,16 @@ const SourcesSubTab = ({
                       ) : preview ? (
                         <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
                       ) : null}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {docMeta && <span style={{ fontSize: 11, color: "#7F77DD" }}>{docMeta}</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        {docTypeLabel && (
+                          <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: "rgba(127,119,221,0.12)", color: "#9b94e8", letterSpacing: "0.04em" }}>{docTypeLabel}</span>
+                        )}
+                        {docPagesLabel && (
+                          <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>{docPagesLabel}</span>
+                        )}
+                        {docSizeLabel && (
+                          <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>· {docSizeLabel}</span>
+                        )}
                         {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
                         <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
