@@ -169,20 +169,27 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       duration: Infinity,
     });
 
-    // Trigger ingestion (fire-and-forget — actual completion comes via polling)
-    const { data: { session } } = await supabase.auth.getSession();
-    fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-document`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.access_token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ document_id: (doc as any).id }),
-      }
-    ).catch((e) => console.error("ingest-document trigger error:", e));
+    // Trigger ingestion via Supabase invoke (auth handled, errors surfaced)
+    const { data: invokeData, error: invokeError } = await supabase.functions.invoke(
+      "ingest-document",
+      { body: { document_id: (doc as any).id } },
+    );
+    if (invokeError) {
+      console.error("[DocumentUpload] ingest-document invoke error:", invokeError);
+      sonnerToast.error(`Could not start processing for ${file.name}: ${invokeError.message || "unknown error"}`, {
+        duration: 6000,
+      });
+      // Mark the row as errored so the UI offers retry
+      await supabase
+        .from("documents")
+        .update({ status: "error", error_message: `Trigger failed: ${invokeError.message || "unknown"}` } as any)
+        .eq("id", (doc as any).id);
+      setStatus("error");
+      setUploading(false);
+      onUploaded?.();
+      return;
+    }
+    console.log("[DocumentUpload] ingest-document invoke ok:", invokeData);
 
     setUploading(false);
     onUploaded?.();
