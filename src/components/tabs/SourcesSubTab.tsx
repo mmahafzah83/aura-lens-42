@@ -489,21 +489,28 @@ const SourcesSubTab = ({
         <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
         </div>
-      ) : entries.length === 0 ? (
+      ) : visibleEntries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
           <p style={{ color: "#666", fontSize: 13 }}>No sources match your search.</p>
         </div>
       ) : (
         <div ref={scrollRef} onScroll={handleScroll} style={{ maxHeight: "calc(100vh - 460px)", overflowY: "auto" }} className="scrollbar-hide">
-          {entries.map(entry => {
+          {visibleEntries.map(entry => {
             const isExpanded = expandedId === entry.id;
             const EntryIcon = Icon(entry.type);
+            const isDoc = entry.type === "document";
             const displayTitle = entry.title || entry.content.slice(0, 60);
-            const preview = (entry.summary || entry.content).slice(0, 120);
+            const isProcessing = isDoc && entry.status === "processing";
+            const docMeta = isDoc
+              ? `${(entry.file_type || "FILE").toString().toUpperCase()}${entry.page_count ? ` · ${entry.page_count} pages` : ""}`
+              : null;
+            const preview = isDoc
+              ? (isProcessing ? "" : (entry.summary || "").slice(0, 120))
+              : (entry.summary || entry.content).slice(0, 120);
             const domain = entry.type === "link" ? extractDomain(entry.image_url) || extractDomain(entry.content) : null;
 
             return (
-              <div key={entry.id} style={{ background: "#141414", borderRadius: 14, border: "1px solid #252525", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
+              <div key={`${entry.type}-${entry.id}`} style={{ background: "#141414", borderRadius: 14, border: "1px solid #252525", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
                 {/* Open button */}
                 <button
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
@@ -514,15 +521,17 @@ const SourcesSubTab = ({
                   <ExternalLink size={14} />
                 </button>
 
-                {/* Pin button */}
-                <button
-                  onClick={e => { e.stopPropagation(); togglePin(entry); }}
-                  style={{ position: "absolute", top: 12, right: 40, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                >
-                  {entry.pinned
-                    ? <Pin size={14} fill="#F97316" color="#F97316" />
-                    : <PinOff size={14} color="#3a3a3a" />}
-                </button>
+                {/* Pin button (entries only) */}
+                {!isDoc && (
+                  <button
+                    onClick={e => { e.stopPropagation(); togglePin(entry); }}
+                    style={{ position: "absolute", top: 12, right: 40, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  >
+                    {entry.pinned
+                      ? <Pin size={14} fill="#F97316" color="#F97316" />
+                      : <PinOff size={14} color="#3a3a3a" />}
+                  </button>
+                )}
 
                 {/* Delete button */}
                 <button
@@ -535,17 +544,25 @@ const SourcesSubTab = ({
 
                 {/* Card content */}
                 <div
-                  onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                  style={{ padding: 16, cursor: "pointer" }}
+                  onClick={() => !isDoc && setExpandedId(isExpanded ? null : entry.id)}
+                  style={{ padding: 16, cursor: isDoc ? "default" : "pointer" }}
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(197,165,90,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <EntryIcon size={16} style={{ color: "#F97316" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 60 }}>
-                      <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayTitle}</p>
-                      <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "..." : ""}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <TypeBadge type={entry.type} />
+                        <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
+                      </div>
+                      {isProcessing ? (
+                        <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", fontWeight: 500 }}>Processing…</p>
+                      ) : preview ? (
+                        <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
+                      ) : null}
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {docMeta && <span style={{ fontSize: 11, color: "#7F77DD" }}>{docMeta}</span>}
                         {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
                         <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
@@ -558,8 +575,8 @@ const SourcesSubTab = ({
                   </div>
                 </div>
 
-                {/* Expanded */}
-                {isExpanded && (
+                {/* Expanded (entries only) */}
+                {isExpanded && !isDoc && (
                   <ExpandedSource
                     entry={entry}
                     onDelete={() => handleDelete(entry.id)}
@@ -577,7 +594,7 @@ const SourcesSubTab = ({
               <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#F97316" }} />
             </div>
           )}
-          {!hasMore && entries.length > 0 && (
+          {!hasMore && visibleEntries.length > 0 && (
             <p style={{ color: "#3a3a3a", fontSize: 11, textAlign: "center", padding: 12 }}>All sources loaded</p>
           )}
         </div>
