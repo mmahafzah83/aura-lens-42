@@ -21,20 +21,45 @@ interface SourceEntry {
   pinned: boolean;
   created_at: string;
   has_signal?: boolean;
+  // Document-specific fields
+  file_url?: string | null;
+  file_type?: string | null;
+  page_count?: number | null;
+  status?: string | null;
 }
 
-type FilterKey = "all" | "link" | "text" | "document" | "voice" | "image";
+type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
 type SortKey = "recent" | "oldest" | "pinned";
 
 const ICONS: Record<string, typeof Link> = { link: Link, text: Type, document: FileUp, voice: Mic, image: ImageIcon };
 const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
   { key: "all", label: "All" },
-  { key: "link", label: "URLs", typeMatch: "link" },
-  { key: "text", label: "Notes", typeMatch: "text" },
-  { key: "document", label: "Documents", typeMatch: "document" },
-  { key: "voice", label: "Voice", typeMatch: "voice" },
+  { key: "link", label: "Links", typeMatch: "link" },
   { key: "image", label: "Images", typeMatch: "image" },
+  { key: "text", label: "Notes", typeMatch: "text" },
+  { key: "voice", label: "Voice", typeMatch: "voice" },
+  { key: "document", label: "Documents", typeMatch: "document" },
 ];
+
+const TYPE_BADGES: Record<string, { label: string; color: string }> = {
+  link: { label: "URL", color: "#5b8def" },
+  image: { label: "IMAGE", color: "#7ab648" },
+  text: { label: "NOTE", color: "#EF9F27" },
+  voice: { label: "VOICE", color: "#F97316" },
+  document: { label: "DOC", color: "#7F77DD" },
+};
+
+const TypeBadge = ({ type }: { type: string }) => {
+  const b = TYPE_BADGES[type];
+  if (!b) return null;
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 3,
+      background: `${b.color}1f`, color: b.color, border: `0.5px solid ${b.color}66`,
+      letterSpacing: "0.04em",
+    }}>{b.label}</span>
+  );
+};
 
 const PAGE_SIZE = 20;
 
@@ -295,60 +320,71 @@ const SourcesSubTab = ({
     return counts;
   }, [entries]);
 
-  const loadEntries = useCallback(async (offset: number, append: boolean) => {
-    if (offset === 0) setLoading(true);
-    else setLoadingMore(true);
+  const loadEntries = useCallback(async () => {
+    setLoading(true);
 
-    let query = supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at", { count: offset === 0 ? "exact" : undefined });
+    const [entriesRes, docsRes] = await Promise.all([
+      supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at"),
+    ]);
 
-    if (filter !== "all") {
-      const typeMatch = FILTER_LABELS.find(f => f.key === filter)?.typeMatch;
-      if (typeMatch) query = query.eq("type", typeMatch);
-    }
+    if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
 
-    if (search.trim()) {
-      query = query.or(`title.ilike.%${search.trim()}%,content.ilike.%${search.trim()}%,summary.ilike.%${search.trim()}%`);
-    }
+    const entryItems: SourceEntry[] = (entriesRes.data || []) as any[];
+    const docItems: SourceEntry[] = (docsRes.data || []).map((d: any) => ({
+      id: d.id,
+      type: "document",
+      title: d.filename,
+      content: d.summary || d.filename,
+      summary: d.summary,
+      image_url: d.file_url,
+      skill_pillar: null,
+      framework_tag: null,
+      pinned: false,
+      created_at: d.created_at,
+      file_url: d.file_url,
+      file_type: d.file_type,
+      page_count: d.page_count,
+      status: d.status,
+    }));
 
-    switch (sortKey) {
-      case "recent": query = query.order("created_at", { ascending: false }); break;
-      case "oldest": query = query.order("created_at", { ascending: true }); break;
-      case "pinned": query = query.order("pinned", { ascending: false }).order("created_at", { ascending: false }); break;
-    }
-
-    query = query.range(offset, offset + PAGE_SIZE - 1);
-
-    const { data, count, error } = await query;
-    if (error) { toast.error("Failed to load sources"); setLoading(false); setLoadingMore(false); return; }
-
-    const items = (data || []) as unknown as SourceEntry[];
-    if (offset === 0 && count !== null) setTotalCount(count);
-    if (items.length < PAGE_SIZE) setHasMore(false);
-
-    if (append) setEntries(prev => [...prev, ...items]);
-    else { setEntries(items); setHasMore(items.length === PAGE_SIZE); }
-
+    const combined = [...entryItems, ...docItems];
+    setEntries(combined);
+    setTotalCount(combined.length);
+    setHasMore(false);
     setLoading(false);
     setLoadingMore(false);
-  }, [filter, search, sortKey]);
-
-  useEffect(() => { loadEntries(0, false); }, [loadEntries]);
-
-  // Also get total count for "all" (not filtered)
-  useEffect(() => {
-    (async () => {
-      const { count } = await supabase.from("entries").select("id", { count: "exact", head: true });
-      if (count !== null) setTotalCount(count);
-    })();
   }, []);
 
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current || loadingMore || !hasMore) return;
-    const el = scrollRef.current;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
-      loadEntries(entries.length, true);
+  useEffect(() => { loadEntries(); }, [loadEntries]);
+
+  // Client-side filter + search + sort
+  const visibleEntries = useMemo(() => {
+    let list = entries;
+    if (filter !== "all") {
+      const typeMatch = FILTER_LABELS.find(f => f.key === filter)?.typeMatch;
+      if (typeMatch) list = list.filter(e => e.type === typeMatch);
     }
-  }, [entries.length, loadingMore, hasMore, loadEntries]);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter(e =>
+        (e.title || "").toLowerCase().includes(q) ||
+        (e.content || "").toLowerCase().includes(q) ||
+        (e.summary || "").toLowerCase().includes(q),
+      );
+    }
+    const sorted = [...list];
+    switch (sortKey) {
+      case "recent": sorted.sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)); break;
+      case "oldest": sorted.sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at)); break;
+      case "pinned": sorted.sort((a, b) => (Number(b.pinned) - Number(a.pinned)) || (+new Date(b.created_at) - +new Date(a.created_at))); break;
+    }
+    return sorted;
+  }, [entries, filter, search, sortKey]);
+
+  const handleScroll = useCallback(() => {
+    // No pagination — all loaded client-side
+  }, []);
 
   const togglePin = async (entry: SourceEntry) => {
     const newPinned = !entry.pinned;
@@ -359,7 +395,9 @@ const SourcesSubTab = ({
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("entries").delete().eq("id", id);
+    const target = entries.find(e => e.id === id);
+    const table = target?.type === "document" ? "documents" : "entries";
+    const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) { toast.error("Failed to delete"); return; }
     setEntries(prev => prev.filter(e => e.id !== id));
     setTotalCount(prev => prev - 1);
@@ -451,21 +489,28 @@ const SourcesSubTab = ({
         <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
         </div>
-      ) : entries.length === 0 ? (
+      ) : visibleEntries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
           <p style={{ color: "#666", fontSize: 13 }}>No sources match your search.</p>
         </div>
       ) : (
         <div ref={scrollRef} onScroll={handleScroll} style={{ maxHeight: "calc(100vh - 460px)", overflowY: "auto" }} className="scrollbar-hide">
-          {entries.map(entry => {
+          {visibleEntries.map(entry => {
             const isExpanded = expandedId === entry.id;
             const EntryIcon = Icon(entry.type);
+            const isDoc = entry.type === "document";
             const displayTitle = entry.title || entry.content.slice(0, 60);
-            const preview = (entry.summary || entry.content).slice(0, 120);
+            const isProcessing = isDoc && entry.status === "processing";
+            const docMeta = isDoc
+              ? `${(entry.file_type || "FILE").toString().toUpperCase()}${entry.page_count ? ` · ${entry.page_count} pages` : ""}`
+              : null;
+            const preview = isDoc
+              ? (isProcessing ? "" : (entry.summary || "").slice(0, 120))
+              : (entry.summary || entry.content).slice(0, 120);
             const domain = entry.type === "link" ? extractDomain(entry.image_url) || extractDomain(entry.content) : null;
 
             return (
-              <div key={entry.id} style={{ background: "#141414", borderRadius: 14, border: "1px solid #252525", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
+              <div key={`${entry.type}-${entry.id}`} style={{ background: "#141414", borderRadius: 14, border: "1px solid #252525", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
                 {/* Open button */}
                 <button
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
@@ -476,15 +521,17 @@ const SourcesSubTab = ({
                   <ExternalLink size={14} />
                 </button>
 
-                {/* Pin button */}
-                <button
-                  onClick={e => { e.stopPropagation(); togglePin(entry); }}
-                  style={{ position: "absolute", top: 12, right: 40, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                >
-                  {entry.pinned
-                    ? <Pin size={14} fill="#F97316" color="#F97316" />
-                    : <PinOff size={14} color="#3a3a3a" />}
-                </button>
+                {/* Pin button (entries only) */}
+                {!isDoc && (
+                  <button
+                    onClick={e => { e.stopPropagation(); togglePin(entry); }}
+                    style={{ position: "absolute", top: 12, right: 40, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
+                  >
+                    {entry.pinned
+                      ? <Pin size={14} fill="#F97316" color="#F97316" />
+                      : <PinOff size={14} color="#3a3a3a" />}
+                  </button>
+                )}
 
                 {/* Delete button */}
                 <button
@@ -497,17 +544,25 @@ const SourcesSubTab = ({
 
                 {/* Card content */}
                 <div
-                  onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                  style={{ padding: 16, cursor: "pointer" }}
+                  onClick={() => !isDoc && setExpandedId(isExpanded ? null : entry.id)}
+                  style={{ padding: 16, cursor: isDoc ? "default" : "pointer" }}
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(197,165,90,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                       <EntryIcon size={16} style={{ color: "#F97316" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 60 }}>
-                      <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: "0 0 4px", lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayTitle}</p>
-                      <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "..." : ""}</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <TypeBadge type={entry.type} />
+                        <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
+                      </div>
+                      {isProcessing ? (
+                        <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", fontWeight: 500 }}>Processing…</p>
+                      ) : preview ? (
+                        <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
+                      ) : null}
                       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {docMeta && <span style={{ fontSize: 11, color: "#7F77DD" }}>{docMeta}</span>}
                         {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
                         <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
@@ -520,8 +575,8 @@ const SourcesSubTab = ({
                   </div>
                 </div>
 
-                {/* Expanded */}
-                {isExpanded && (
+                {/* Expanded (entries only) */}
+                {isExpanded && !isDoc && (
                   <ExpandedSource
                     entry={entry}
                     onDelete={() => handleDelete(entry.id)}
@@ -539,7 +594,7 @@ const SourcesSubTab = ({
               <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#F97316" }} />
             </div>
           )}
-          {!hasMore && entries.length > 0 && (
+          {!hasMore && visibleEntries.length > 0 && (
             <p style={{ color: "#3a3a3a", fontSize: 11, textAlign: "center", padding: 12 }}>All sources loaded</p>
           )}
         </div>

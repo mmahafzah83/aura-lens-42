@@ -510,17 +510,59 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 placeholder="Paste a URL..."
                 value={content}
                 onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
+                onBlur={async (e) => {
+                  const url = e.target.value.trim();
+                  if (!url || !isValidUrl(url)) return;
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return;
+                  const { data: dup } = await supabase
+                    .from("entries")
+                    .select("id, created_at")
+                    .eq("user_id", user.id)
+                    .eq("type", "link")
+                    .eq("image_url", url)
+                    .limit(1)
+                    .maybeSingle();
+                  if (dup) {
+                    setDuplicateInfo({
+                      id: dup.id,
+                      date: new Date(dup.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                    });
+                  }
+                }}
                 className={`bg-secondary border-border/30 ${urlError ? "border-destructive" : ""}`}
               />
               {urlError && <p className="text-xs text-destructive">{urlError}</p>}
               {duplicateInfo && (
-                <div className="flex items-center gap-2 rounded-lg bg-accent/10 border border-accent/20 px-3 py-2">
-                  <p className="text-xs text-accent-foreground flex-1">
-                    You already captured this URL on {duplicateInfo.date}.
+                <div
+                  style={{
+                    background: "rgba(239, 159, 39, 0.1)",
+                    border: "0.5px solid rgba(239, 159, 39, 0.4)",
+                    borderRadius: 6,
+                    padding: "8px 12px",
+                    marginTop: 6,
+                  }}
+                >
+                  <p className="text-foreground" style={{ fontSize: 12, fontWeight: 400, margin: 0 }}>
+                    You already captured this source on {duplicateInfo.date}.
                   </p>
-                  <a href={content.trim()} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:text-primary/80 underline flex items-center gap-1 shrink-0">
-                    <ExternalLink className="w-3 h-3" /> View original
-                  </a>
+                  <div style={{ marginTop: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => { setDuplicateInfo(null); handleSave(); }}
+                      style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+                    >
+                      Capture anyway
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setContent(""); setDuplicateInfo(null); }}
+                      className="text-muted-foreground"
+                      style={{ fontSize: 11, background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}
+                    >
+                      Skip
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -592,9 +634,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               {!isRecording && !isTranscribing && (
                 <div className="w-full mt-2 space-y-2">
                   {transcriptionFailed && (
-                    <p className="text-xs" style={{ color: "#999999" }}>Auto-transcription unavailable. Type your notes manually.</p>
+                    <p className="text-xs text-foreground">Auto-transcription unavailable. Type your notes manually.</p>
                   )}
-                  <p className="text-xs" style={{ color: "#999999" }}>Transcript</p>
+                  <p className="text-xs text-muted-foreground">Transcript</p>
                   <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} dir="auto" className="bg-secondary border-border/30 resize-none text-sm" placeholder="Transcript will appear here…" />
                 </div>
               )}
@@ -604,7 +646,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           {saving && (
             <div className="flex items-center justify-center gap-2 py-2">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">Processing your capture…</span>
+              <span className="text-sm text-foreground">Processing your capture…</span>
             </div>
           )}
 
