@@ -811,6 +811,10 @@ serve(async (req) => {
       if (noiseRatio > MAX_NOISE_RATIO) {
         console.log("[trends] reject high_noise_ratio", c.url, noiseRatio.toFixed(2)); continue;
       }
+      const opening = openingLooksLikeArticle(text);
+      if (!opening.ok) {
+        console.log("[trends] reject opening", c.url, opening.reason); continue;
+      }
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
 
