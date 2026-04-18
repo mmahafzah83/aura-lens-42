@@ -151,6 +151,11 @@ export default function TrendDetail() {
         </span>
       </div>
 
+      {trend.selection_reason && trend.selection_reason.trim().length > 0 && (
+        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginBottom: 14, fontStyle: "italic" }}>
+          Why selected: {trend.selection_reason}
+        </div>
+      )}
       <h1 style={{ fontSize: 24, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 14, lineHeight: 1.3 }}>
         {trend.headline}
       </h1>
