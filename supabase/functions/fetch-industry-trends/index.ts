@@ -1032,6 +1032,13 @@ serve(async (req) => {
         console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
       }
 
+      // Stage 5.5: Consultant gate (LLM final arbiter on cleaned text)
+      const gate = await consultantGate(text);
+      if (gate.decision === "REJECT") {
+        console.log("[trends] reject consultant_gate", c.url, gate.reason); continue;
+      }
+      console.log("[trends] consultant_gate ACCEPT", c.url, gate.reason);
+
       const source = domainOf(canonical);
       const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
       if (validation_score <= 0) {
