@@ -61,6 +61,7 @@ export default function TrendDetail() {
   const [trend, setTrend] = useState<TrendRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [externalAlive, setExternalAlive] = useState<boolean | null>(null);
+  const [showFullSnapshot, setShowFullSnapshot] = useState(false);
 
   useEffect(() => {
     if (!isReady || !user || !id) return;
