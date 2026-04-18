@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.detect-signals-v2]
 verify_jwt = false
+
+[functions.open-document]
+verify_jwt = false
