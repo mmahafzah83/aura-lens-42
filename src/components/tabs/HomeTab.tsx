@@ -408,7 +408,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* SECTION 2 — AI daily briefing */}
       {briefError ? (
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
-          <SectionError onRetry={loadBriefing} message="Couldn't load briefing. " />
+          <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
       ) : briefLoading ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
@@ -477,7 +477,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
           Today's Focus
         </div>
         {movesError ? (
-          <SectionError onRetry={loadMoves} message="Couldn't load moves. " />
+          <SectionError onRetry={() => authUser && loadMoves(authUser.id)} message="Couldn't load moves. " />
         ) : movesLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-20 w-full" />
@@ -554,7 +554,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
           Live Intelligence
         </div>
         {trendsError ? (
-          <SectionError onRetry={loadTrends} message="Couldn't load intelligence. " />
+          <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
         ) : trendsLoading ? (
           <div className="space-y-3">
             <Skeleton className="h-14 w-full" />
