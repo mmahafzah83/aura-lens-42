@@ -206,7 +206,7 @@ async function perplexityDiscover(
   apiKey: string,
   profileContext: string,
   queries: string[],
-): Promise<Array<{ url: string; title?: string; description?: string }>> {
+): Promise<Array<{ url: string; title?: string; description?: string; reason?: string }>> {
   const prompt = `You are a research analyst sourcing recent (last 60 days) industry trend articles for a senior consultant.
 
 Profile: ${profileContext}
