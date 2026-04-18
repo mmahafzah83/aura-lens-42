@@ -417,7 +417,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
-      ) : briefLoading ? (
+      ) : showBriefSkeleton ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
@@ -427,6 +427,8 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <Skeleton className="h-8 w-32" />
           </div>
         </div>
+      ) : briefLoading ? (
+        <div className="min-h-[120px]" aria-busy="true" />
       ) : (
         <div
           className="rounded-r-lg border"
@@ -485,11 +487,13 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
         {movesError ? (
           <SectionError onRetry={() => authUser && loadMoves(authUser.id)} message="Couldn't load moves. " />
-        ) : movesLoading ? (
+        ) : showMovesSkeleton ? (
           <div className="space-y-2">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
           </div>
+        ) : movesLoading && moves.length === 0 ? (
+          <div className="min-h-[80px]" aria-busy="true" />
         ) : moves.length === 0 ? (
           <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px", color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
             No moves yet — Aura will generate your first strategic move after you capture more sources
@@ -562,12 +566,14 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
         {trendsError ? (
           <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
-        ) : trendsLoading ? (
+        ) : showTrendsSkeleton ? (
           <div className="space-y-3">
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
           </div>
+        ) : trendsLoading && trends.length === 0 ? (
+          <div className="min-h-[80px]" aria-busy="true" />
         ) : visibleTrends.length === 0 ? (
           <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px" }}>
             <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>No live intelligence yet</div>
