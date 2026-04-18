@@ -13,6 +13,7 @@ import VoiceEngineSection from "@/components/VoiceEngineSection";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { createPortal } from "react-dom";
 
 interface IdentityTabProps {
@@ -221,7 +222,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     { key: "core_practice", label: "Specialises in", value: profile?.core_practice || "" },
   ];
 
-  if (loading) {
+  const showSkeleton = useDelayedFlag(loading && !profile, 200);
+  if (loading && !profile) {
+    if (!showSkeleton) {
+      // Brief boot window — render nothing instead of flashing a skeleton
+      return <div className="min-h-[400px]" aria-busy="true" />;
+    }
     return (
       <div className="flex gap-6 animate-fade-in">
         <div className="w-[200px] shrink-0 space-y-4">
