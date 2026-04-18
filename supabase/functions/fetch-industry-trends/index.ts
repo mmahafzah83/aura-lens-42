@@ -487,6 +487,7 @@ serve(async (req) => {
     const scraped: Array<{
       url: string; canonical: string; title: string; markdown: string;
       text: string; source: string; validation_score: number; topic_relevance_score: number;
+      discovery_reason?: string;
     }> = [];
 
     for (const c of candidates) {
@@ -517,7 +518,7 @@ serve(async (req) => {
 
       const text = markdownToText(result.markdown);
 
-      // Post-scrape quality gate (cookie wall, JS placeholder, paywall, thin)
+      // Post-scrape quality gate (cookie wall, JS placeholder, paywall, login wall, thin)
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) {
         console.log("[trends] blocked content", c.url, blocked.reason);
@@ -537,8 +538,10 @@ serve(async (req) => {
         source,
         validation_score,
         topic_relevance_score,
+        discovery_reason: c.reason,
       });
-      if (scraped.length >= 8) break;
+      // No per-batch cap — let every validated candidate be scored,
+      // diversity + ranking will pick the final top-K.
     }
     console.log("[trends] validated articles:", scraped.length);
 
