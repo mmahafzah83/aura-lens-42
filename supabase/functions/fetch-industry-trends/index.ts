@@ -404,10 +404,13 @@ If unsure → REJECT.
 
 Return JSON only.`;
 
+  const ctrl = new AbortController();
+  const timeoutId = setTimeout(() => ctrl.abort(), 10_000); // 10s hard cap
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      signal: ctrl.signal,
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
@@ -433,6 +436,7 @@ Return JSON only.`;
         tool_choice: { type: "function", function: { name: "ai_judge_decision" } },
       }),
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) {
       console.log("[judge] gateway_error", resp.status);
       return { decision: "UNAVAILABLE", reason: `gateway_${resp.status}`, bypassed: true };
@@ -1018,8 +1022,10 @@ serve(async (req) => {
     const MAX_JUDGE_BYPASSES = 2;
     let judgeBypassCount = 0;
 
+    const MAX_VALIDATED = 8; // early-exit cap to stay under 150s function timeout
     let firecrawlQuotaExhausted = false;
     for (const c of candidates) {
+      if (scraped.length >= MAX_VALIDATED) { console.log("[trends] reached MAX_VALIDATED, stopping"); break; }
       if (existingUrls.has(c.url)) continue;
       if (firecrawlQuotaExhausted) break; // stop hammering a dead key
       const pre = await preflightUrl(c.url);
