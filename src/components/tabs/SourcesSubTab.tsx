@@ -27,6 +27,7 @@ interface SourceEntry {
   file_url?: string | null;
   file_type?: string | null;
   page_count?: number | null;
+  file_size?: number | null;
   status?: string | null;
   error_message?: string | null;
 }
@@ -419,7 +420,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at, error_message"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message"),
     ]);
 
     if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
@@ -439,6 +440,7 @@ const SourcesSubTab = ({
       file_url: d.file_url,
       file_type: d.file_type,
       page_count: d.page_count,
+      file_size: d.file_size,
       status: d.status,
       error_message: d.error_message,
     }));
