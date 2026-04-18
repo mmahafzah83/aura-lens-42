@@ -515,10 +515,14 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
         {!trendsCountLoading && trendsBadgeCount > 0 && (
           <span style={{
-            background: ACCENT, color: "#fff", fontSize: 11, fontWeight: 500,
-            padding: "3px 12px", borderRadius: 20,
+            background: "transparent",
+            color: "hsl(var(--muted-foreground))",
+            fontSize: 10, fontWeight: 500,
+            padding: "3px 10px", borderRadius: 20,
+            border: "0.5px solid hsl(var(--border))",
+            letterSpacing: "0.04em",
           }}>
-            {trendsBadgeCount} new trend{trendsBadgeCount === 1 ? "" : "s"}
+            {trendsBadgeCount} this week
           </span>
         )}
       </header>
