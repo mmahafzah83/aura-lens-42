@@ -290,26 +290,21 @@ export default function TrendDetail() {
         </div>
       )}
 
-      {signal.insight && <div style={thinRule} />}
+      {signal.insight && (whyLoading || whyMatters || signal.action_recommendation) && <div style={thinRule} />}
 
       {/* Why this matters to you */}
       {(whyLoading || whyMatters) && (
-        <>
-          <div style={{ marginBottom: 16 }}>
-            <div style={sectionLabel}>Why this matters to you</div>
-            {whyLoading ? (
-              <Skeleton className="h-4 w-3/4" />
-            ) : (
-              <div style={{ ...bodyText, fontStyle: "italic" }}>{whyMatters}</div>
-            )}
-          </div>
-          {signal.action_recommendation && <div style={thinRule} />}
-        </>
+        <div style={{ marginBottom: 16 }}>
+          <div style={sectionLabel}>Why this matters to you</div>
+          {whyLoading ? (
+            <Skeleton className="h-4 w-3/4" />
+          ) : (
+            <div style={{ ...bodyText, fontStyle: "italic" }}>{whyMatters}</div>
+          )}
+        </div>
       )}
-      {!whyLoading && !whyMatters && !whyFailed === false && signal.insight && signal.action_recommendation && null}
-      {!whyLoading && !whyMatters && signal.insight && signal.action_recommendation && (
-        <div style={thinRule} />
-      )}
+
+      {(whyLoading || whyMatters) && signal.action_recommendation && <div style={thinRule} />}
 
       {/* What to do */}
       {signal.action_recommendation && (
