@@ -29,17 +29,26 @@ Deno.serve(async (req) => {
   let mode = url.searchParams.get("mode") === "download" ? "download" : "inline";
   // "json" → return { signedUrl } instead of 302. Used by supabase.functions.invoke
   // to avoid top-level browser navigation to *.functions.supabase.co (ad-blocker safe).
-  let format: "redirect" | "json" = url.searchParams.get("format") === "json" ? "json" : "redirect";
+  // POST/invoke flows default to JSON; GET defaults to redirect unless ?format=json.
+  let format: "redirect" | "json" =
+    req.method === "POST"
+      ? (url.searchParams.get("format") === "redirect" ? "redirect" : "json")
+      : (url.searchParams.get("format") === "json" ? "json" : "redirect");
   let token = url.searchParams.get("token") || req.headers.get("Authorization")?.replace("Bearer ", "");
 
   if (req.method === "POST") {
     try {
-      const body = await req.json();
-      if (body?.id) documentId = body.id;
-      if (body?.mode === "download") mode = "download";
-      // Default JSON for POST/invoke flows.
-      format = body?.format === "redirect" ? "redirect" : "json";
-    } catch { /* empty body is fine */ }
+      const raw = await req.text();
+      if (raw) {
+        const body = JSON.parse(raw);
+        if (body?.id) documentId = body.id;
+        if (body?.mode === "download") mode = "download";
+        if (body?.format === "redirect") format = "redirect";
+        else if (body?.format === "json") format = "json";
+      }
+    } catch (e) {
+      console.error("[open-document] body_parse_failed", (e as Error).message);
+    }
   }
 
   const fail = (status: number, msg: string, stage: string) =>
