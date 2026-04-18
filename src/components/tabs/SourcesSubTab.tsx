@@ -89,6 +89,14 @@ function extractDomain(url: string | null | undefined): string | null {
   return m ? m[1].replace(/^www\./, "") : null;
 }
 
+function formatBytes(bytes: number | null | undefined): string | null {
+  if (!bytes && bytes !== 0) return null;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
 /* ── Humanize document error_message into a stage-named headline + detail ── */
 function humanizeDocError(raw: string | null | undefined): { headline: string; detail: string | null } {
   if (!raw) return { headline: "Processing failed", detail: null };
