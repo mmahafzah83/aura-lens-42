@@ -263,12 +263,43 @@ function stripLeadingChrome(md: string): string {
   return md.split(/\r?\n/).slice(startIdx).join("\n");
 }
 
-// Clean an article: strip leading chrome, trailing sections, drop noise lines,
-// strip citation markers, normalize, dedupe paragraphs.
-function cleanArticleMarkdown(md: string): string {
+// ───────── Stage 2: Section-aware extraction ─────────
+const SCIENTIFIC_DOMAINS_RE = /(nature\.com|science\.org|sciencedirect\.com|springer\.com|wiley\.com|tandfonline\.com|nih\.gov|pubmed|arxiv\.org|nber\.org|jstor\.org|cell\.com|thelancet\.com|nejm\.org|plos\.org|mdpi\.com|frontiersin\.org|acs\.org|aip\.org|ieee\.org|acm\.org|biorxiv\.org)/i;
+
+const SCI_KEEP_RE = /^(#{1,6}\s*)?(abstract|summary|introduction|background|results?|key findings?|main findings?|findings|discussion|conclusions?|implications?|policy implications?)\s*[:.]?\s*$/i;
+const SCI_DROP_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|citations?|notes?|footnotes?|further reading|see also|related (articles?|topics?|content|reading)|similar (content|articles?)|metrics|author (information|contributions?)|about (the )?authors?|affiliations?|acknowledg(e?)ments?|funding|data availability|supplementary (material|information)|appendix|reprints? and permissions?|rights and permissions?|cite this article|how to cite|peer review|ethics declarations?|conflicts? of interest|disclosures?)\s*[:.]?\s*$/i;
+const BIZ_DROP_RE = /^(#{1,6}\s*)?(related (articles?|topics?|content|reading|insights?|stories)|more (from|on|in)|newsletter|sign up( for)?|subscribe( to)?|footer|comments?|share this|about( the)? author|tags?|categories?)\s*[:.]?\s*$/i;
+
+function sectionAwareExtract(md: string, isScientific: boolean): string {
+  const lines = md.split(/\r?\n/);
+  if (isScientific) {
+    let keep = true;
+    const out: string[] = [];
+    for (const line of lines) {
+      const probe = unwrapMarkdownArtifacts(line).trim();
+      if (SCI_KEEP_RE.test(probe)) { keep = true; out.push(line); continue; }
+      if (SCI_DROP_RE.test(probe)) { keep = false; continue; }
+      if (keep) out.push(line);
+    }
+    return out.join("\n");
+  }
+  let keep = true;
+  const out: string[] = [];
+  for (const line of lines) {
+    const probe = unwrapMarkdownArtifacts(line).trim();
+    if (BIZ_DROP_RE.test(probe)) { keep = false; continue; }
+    if (/^#{1,3}\s+\S/.test(line) && !BIZ_DROP_RE.test(probe)) keep = true;
+    if (keep) out.push(line);
+  }
+  return out.join("\n");
+}
+
+function cleanArticleMarkdown(md: string, sourceUrl?: string): string {
   if (!md) return "";
+  const isScientific = !!sourceUrl && SCIENTIFIC_DOMAINS_RE.test(sourceUrl);
   let out = stripLeadingChrome(md);
   out = stripTrailingSections(out);
+  out = sectionAwareExtract(out, isScientific);
   const cleanedLines: string[] = [];
   for (const raw of out.split(/\r?\n/)) {
     if (isNoiseLine(raw)) continue;
@@ -280,14 +311,14 @@ function cleanArticleMarkdown(md: string): string {
   out = out.replace(/\\\([\s\S]*?\\\)/g, " ");
   out = out.replace(/\$\$[\s\S]*?\$\$/g, " ");
   out = out.replace(/\n{3,}/g, "\n\n");
-  // Run a second pass: now that wrappers are gone, recheck noise lines
   const pass2: string[] = [];
   for (const raw of out.split(/\r?\n/)) {
     if (isNoiseLine(raw)) continue;
     pass2.push(raw);
   }
   out = pass2.join("\n");
-  // dedupe consecutive identical paragraphs
+  // Re-run leading chrome removal in case section extraction left dross at the top
+  out = stripLeadingChrome(out);
   const paras = out.split(/\n{2,}/);
   const dedup: string[] = [];
   for (const p of paras) {
@@ -299,21 +330,40 @@ function cleanArticleMarkdown(md: string): string {
   return dedup.join("\n\n").trim();
 }
 
-// Acceptance gate: opening must look like article body, not chrome.
-// Reject if first 400 chars (plain text) are dominated by nav/system phrases.
+// ───────── Stage 3: Hard rejection rules ─────────
+const SYSTEM_PHRASES_500 = [
+  "skip", "download pdf", "share", "login", "log in", "sign in", "subscribe",
+  "thank you for visiting", "view pdf", "newsletter",
+];
+const DESCRIPTIVE_COMPANY_RE = /\b(is (a|an) (flemish|belgian|dutch|french|german|italian|spanish|swiss|american|british|european|leading|global|international) (company|firm|provider|organization|organisation|group|corporation|operator)|provides? (water|energy|telecom|cloud|software|consulting|advisory) services?)\b/i;
+
 function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: string } {
   if (!cleanText || cleanText.length < 200) return { ok: false, reason: "thin_opening" };
   const head = cleanText.slice(0, 500).toLowerCase();
-  const noiseHits = [
-    "skip to", "thank you for visiting", "download pdf", "view pdf",
-    "you are using a browser", "displaying the site", "enable javascript",
-    "accept cookies", "subscribe", "sign in", "log in",
-    "table of contents", "on this page", "related articles", "similar content",
-  ].filter(p => head.includes(p)).length;
+  const noiseHits = SYSTEM_PHRASES_500.filter(p => head.includes(p)).length;
   if (noiseHits >= 2) return { ok: false, reason: "chrome_in_opening" };
-  // Must contain at least one sentence-like construct in the first 500 chars.
   if (!/[a-z][a-z ,;:'"-]{40,}[.!?]/i.test(cleanText.slice(0, 800))) {
     return { ok: false, reason: "no_sentence_in_opening" };
+  }
+  const firstPara = cleanText.split(/\n{2,}/)[0] || cleanText.slice(0, 600);
+  if (scoreLine(firstPara) < 3) {
+    return { ok: false, reason: "weak_opening_paragraph" };
+  }
+  return { ok: true };
+}
+
+// Stage 5: Business relevance — reject pure company storytelling without insight.
+function passesBusinessRelevance(cleanText: string): { ok: boolean; reason?: string } {
+  if (!cleanText) return { ok: false, reason: "empty" };
+  const head = cleanText.slice(0, 1500);
+  const hasAnalytical = /\b(finds?|shows?|indicates?|reveals?|argues?|concludes?|estimates?|projects?|warns?|implies?|forecasts?|demonstrates?|exposes?)\b/i.test(head);
+  const isDescriptive = DESCRIPTIVE_COMPANY_RE.test(head);
+  if (isDescriptive && !hasAnalytical) {
+    return { ok: false, reason: "descriptive_company_copy" };
+  }
+  const hasNumber = /\b\d+(\.\d+)?\s?%|\b\d{2,}\s?(billion|million|trillion|bn|mn|years?|months?|companies|firms|utilities|clients|customers|patients|hospitals|banks)\b/i.test(cleanText.slice(0, 4000));
+  if (!hasAnalytical && !hasNumber) {
+    return { ok: false, reason: "no_analytical_or_quantitative_content" };
   }
   return { ok: true };
 }
