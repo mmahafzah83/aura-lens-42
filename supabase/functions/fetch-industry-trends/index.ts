@@ -682,11 +682,13 @@ serve(async (req) => {
       if (r.url) existingUrls.add(r.url);
     });
 
-    // Scrape + multi-stage validation
+    // Scrape + clean + multi-stage validation
     const scraped: Array<{
-      url: string; canonical: string; title: string; markdown: string;
+      url: string; canonical: string; title: string;
+      raw_markdown: string; clean_markdown: string;
       text: string; source: string;
-      validation_score: number; topic_relevance_score: number; snapshot_quality: number;
+      validation_score: number; topic_relevance_score: number;
+      snapshot_quality: number; content_quality_score: number;
       discovery_reason?: string;
     }> = [];
 
@@ -704,24 +706,41 @@ serve(async (req) => {
       }
       if (result.statusCode >= 400) { console.log("[trends] http error", c.url, result.statusCode); continue; }
       if (!result.markdown || result.markdown.length < MIN_CONTENT_CHARS) {
-        console.log("[trends] thin markdown", c.url, result.markdown?.length || 0); continue;
+        console.log("[trends] thin raw markdown", c.url, result.markdown?.length || 0); continue;
       }
       const canonical = result.sourceURL || pre.finalUrl || c.url;
       if (existingUrls.has(canonical)) continue;
-      const text = markdownToText(result.markdown);
+
+      // ── Cleaning pipeline (per spec) ──
+      const raw_markdown = result.markdown;
+      const clean_markdown = cleanArticleMarkdown(raw_markdown);
+      const text = markdownToText(clean_markdown);
+      const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
+
+      // Hard rejection rules
+      if (text.length < MIN_CLEAN_TEXT_CHARS) {
+        console.log("[trends] reject thin_clean_text", c.url, text.length); continue;
+      }
+      if (noiseRatio > MAX_NOISE_RATIO) {
+        console.log("[trends] reject high_noise_ratio", c.url, noiseRatio.toFixed(2)); continue;
+      }
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
 
       const source = domainOf(canonical);
-      const validation_score = computeValidationScore({ domain: source, markdown: result.markdown, text });
+      const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
+      if (validation_score <= 0) {
+        console.log("[trends] reject zero_validation", c.url); continue;
+      }
       const topic_relevance_score = computeTopicRelevance(text, profileTokens);
-      const snapshot_quality = computeSnapshotQuality({ markdown: result.markdown, text });
+      const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
+      const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
 
       scraped.push({
         url: c.url, canonical,
         title: result.title || c.title || canonical,
-        markdown: result.markdown, text, source,
-        validation_score, topic_relevance_score, snapshot_quality,
+        raw_markdown, clean_markdown, text, source,
+        validation_score, topic_relevance_score, snapshot_quality, content_quality_score,
         discovery_reason: c.reason,
       });
     }
@@ -729,16 +748,19 @@ serve(async (req) => {
 
     let synthesized: any[] = [];
     if (scraped.length > 0) {
+      // Feed AI the CLEAN markdown only (per spec).
       synthesized = await aiSynthesize(lovableKey, profileContext,
-        scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.markdown })));
+        scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.clean_markdown })));
     }
 
     type Built = {
       user_id: string; headline: string; insight: string; summary: string;
       source: string; url: string; canonical_url: string;
       content_markdown: string; content_text: string;
+      content_raw: string; content_clean: string;
       relevance_score: number; validation_score: number;
-      topic_relevance_score: number; snapshot_quality: number; final_score: number;
+      topic_relevance_score: number; snapshot_quality: number;
+      content_quality_score: number; final_score: number;
       validation_status: string; last_checked_at: string;
       published_at: null; status: string;
       selection_reason: string;
@@ -748,17 +770,17 @@ serve(async (req) => {
       decision_label: string; is_valid: boolean;
     };
 
-    // Weighted scoring per spec section 5:
-    // final_score = validation*0.4 + topic_relevance*0.3 + snapshot_quality*0.3
+    // Weighted scoring (per spec section 8):
+    // final_score = validation*0.5 + topic_relevance*0.3 + content_quality*0.2
     const built: Built[] = [];
     for (const s of synthesized) {
       const src = scraped[s.index];
       if (!src) continue;
       const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
       const final_score = Math.round(
-        src.validation_score * 0.4 +
+        src.validation_score * 0.5 +
         src.topic_relevance_score * 0.3 +
-        src.snapshot_quality * 0.3
+        src.content_quality_score * 0.2
       );
 
       const rawCategory  = typeof s.category === "string" ? s.category.trim() : "";
@@ -794,12 +816,16 @@ serve(async (req) => {
         summary: (s.summary || "").slice(0, 2000),
         source: src.source.slice(0, 100),
         url: src.canonical, canonical_url: src.canonical,
-        content_markdown: src.markdown.slice(0, 50000),
+        // content_markdown defaults to the CLEAN copy for default reading experience
+        content_markdown: src.clean_markdown.slice(0, 50000),
         content_text: src.text.slice(0, 50000),
+        content_raw: src.raw_markdown.slice(0, 80000),
+        content_clean: src.clean_markdown.slice(0, 50000),
         relevance_score: ai_relevance,
         validation_score: src.validation_score,
         topic_relevance_score: src.topic_relevance_score,
         snapshot_quality: src.snapshot_quality,
+        content_quality_score: src.content_quality_score,
         final_score,
         validation_status: src.validation_score >= 50 ? "ok" : "weak",
         last_checked_at: new Date().toISOString(),
