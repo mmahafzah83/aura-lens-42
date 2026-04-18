@@ -26,17 +26,15 @@ function chunkText(text: string, chunkSize = 800, overlap = 100): string[] {
   return chunks;
 }
 
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  const chunkSize = 8192;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-    for (let j = 0; j < chunk.length; j++) {
-      binary += String.fromCharCode(chunk[j]);
-    }
+// Fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
   }
-  return btoa(binary);
 }
 
 // Heavy processing — runs in background via EdgeRuntime.waitUntil
@@ -50,7 +48,7 @@ async function processDocument(
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    // Fetch document record (using admin since user token may expire)
+    // Fetch document record
     const { data: doc, error: docErr } = await adminClient
       .from("documents")
       .select("*")
@@ -63,23 +61,22 @@ async function processDocument(
       return;
     }
 
-    // Download file
+    // Generate signed URL for the file (1 hour) — avoids loading entire file into memory
     const storagePath = doc.file_url.includes("/storage/v1/")
       ? doc.file_url.split("/documents/")[1]
       : doc.file_url;
 
-    const { data: fileData, error: dlErr } = await adminClient.storage
+    const { data: signed, error: signErr } = await adminClient.storage
       .from("documents")
-      .download(storagePath);
+      .createSignedUrl(storagePath, 3600);
 
-    if (dlErr || !fileData) {
-      console.error("Download error:", dlErr);
+    if (signErr || !signed?.signedUrl) {
+      console.error("Signed URL error:", signErr);
       await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
       return;
     }
 
-    const arrayBuffer = await fileData.arrayBuffer();
-    const base64 = arrayBufferToBase64(arrayBuffer);
+    const fileUrl = signed.signedUrl;
 
     let mimeType = "application/octet-stream";
     const ft = doc.file_type?.toLowerCase();
@@ -90,27 +87,36 @@ async function processDocument(
       mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
     }
 
-    // Extract text with Gemini
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{
-          role: "user",
-          content: [
-            { type: "text", text: "Extract ALL text content from this document. Return ONLY the raw text content, preserving structure (headings, lists, paragraphs). Do not add commentary or analysis." },
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
-          ],
-        }],
-      }),
-    });
+    // Extract text with Gemini — pass signed URL directly (no base64, no OOM)
+    // 25-second timeout per spec
+    let aiRes: Response;
+    try {
+      aiRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{
+            role: "user",
+            content: [
+              { type: "text", text: "Extract ALL text content from this document. Return ONLY the raw text content, preserving structure (headings, lists, paragraphs). Do not add commentary or analysis." },
+              { type: "image_url", image_url: { url: fileUrl } },
+            ],
+          }),
+        }),
+      }, 25000);
+    } catch (e) {
+      console.error("AI extraction timeout/error:", e);
+      await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
+      return;
+    }
 
     if (!aiRes.ok) {
-      console.error("AI extraction failed:", aiRes.status, await aiRes.text());
+      const errText = await aiRes.text().catch(() => "");
+      console.error("AI extraction failed:", aiRes.status, errText);
       await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
       return;
     }
@@ -126,7 +132,7 @@ async function processDocument(
     // Generate summary
     let docSummary = "";
     try {
-      const summaryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const summaryRes = await fetchWithTimeout("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${lovableApiKey}`,
@@ -139,7 +145,7 @@ async function processDocument(
             { role: "user", content: extractedText.slice(0, 4000) },
           ],
         }),
-      });
+      }, 20000);
       if (summaryRes.ok) {
         const sumData = await summaryRes.json();
         docSummary = sumData.choices?.[0]?.message?.content || "";
@@ -167,15 +173,39 @@ async function processDocument(
       }
     }
 
-    // Generate embeddings
+    // Mark as completed
+    await adminClient.from("documents").update({
+      status: "completed",
+      summary: docSummary || extractedText.slice(0, 300),
+      page_count: chunks.length,
+    }).eq("id", document_id);
+
+    console.log(`Document ${document_id} processed: ${chunks.length} chunks`);
+
+    // Fire-and-forget: feed into evidence + signals pipeline
+    adminClient.functions.invoke("extract-evidence", {
+      body: { source_type: "document", source_id: document_id, user_id: userId },
+    }).then(({ data: extractResult, error: extractError }) => {
+      if (extractError) {
+        console.error("extract-evidence error:", extractError);
+        return;
+      }
+      const registryId = extractResult?.source_registry_id;
+      if (!registryId) return;
+      return adminClient.functions.invoke("detect-signals-v2", {
+        body: { source_registry_id: registryId, user_id: userId },
+      });
+    }).catch((e) => console.error("post-completion pipeline error:", e));
+
+    // Generate embeddings (non-critical, after marking completed)
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (OPENAI_API_KEY && chunkRows.length > 0) {
       try {
-        const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+        const embRes = await fetchWithTimeout("https://api.openai.com/v1/embeddings", {
           method: "POST",
           headers: { Authorization: `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({ model: "text-embedding-3-small", input: chunkRows.map((r) => r.content) }),
-        });
+        }, 30000);
         if (embRes.ok) {
           const embData = await embRes.json();
           const { data: insertedChunks } = await adminClient
@@ -200,15 +230,6 @@ async function processDocument(
         console.error("Embedding error:", embErr);
       }
     }
-
-    // Mark as ready
-    await adminClient.from("documents").update({
-      status: "ready",
-      summary: docSummary,
-      page_count: chunks.length,
-    }).eq("id", document_id);
-
-    console.log(`Document ${document_id} processed: ${chunks.length} chunks`);
   } catch (e) {
     console.error("processDocument error:", e);
     await adminClient.from("documents").update({ status: "error" }).eq("id", document_id);
@@ -253,6 +274,10 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Mark as processing (in case retry)
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    await adminClient.from("documents").update({ status: "processing" }).eq("id", document_id);
 
     // Kick off background processing — does NOT block the response
     // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
