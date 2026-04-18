@@ -45,7 +45,22 @@ interface Trend {
   topic_relevance_score?: number | null;
   final_score?: number | null;
   selection_reason?: string | null;
+  category?: string | null;
+  impact_level?: string | null;
 }
+
+const freshnessOf = (iso: string): { label: string; color: string } => {
+  const ageH = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  if (ageH <= 24) return { label: "Fresh", color: "#7ab648" };
+  if (ageH <= 24 * 7) return { label: "This week", color: "#F97316" };
+  return { label: "Aging", color: "hsl(var(--muted-foreground))" };
+};
+
+const impactStyle = (level?: string | null): { color: string } => {
+  if (level === "High") return { color: "#E24B4A" };
+  if (level === "Emerging") return { color: "#F97316" };
+  return { color: "hsl(var(--muted-foreground))" };
+};
 
 type TrendFilter = "all" | "high_confidence" | "top_relevance" | "trusted" | "newest";
 
@@ -148,6 +163,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [addedSignalIds, setAddedSignalIds] = useState<Set<string>>(new Set());
   const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
   const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
+  const [refreshingTrends, setRefreshingTrends] = useState(false);
 
   // Live clock
   useEffect(() => {
