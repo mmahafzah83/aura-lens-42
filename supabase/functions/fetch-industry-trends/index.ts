@@ -458,6 +458,8 @@ serve(async (req) => {
     const discoveryResults = await perplexityDiscover(perplexityKey, profileContext, queries);
     console.log("[trends] perplexity returned:", discoveryResults.length);
 
+    // No early slicing — keep ALL discovered candidates so validation/scoring
+    // decides what survives. We only slice once, after final ranking.
     const seen = new Set<string>();
     const candidates = discoveryResults.filter(r => {
       if (!r.url) return false;
@@ -467,7 +469,8 @@ serve(async (req) => {
       if (seen.has(r.url)) return false;
       seen.add(r.url);
       return true;
-    }).slice(0, 12);
+    });
+    console.log("[trends] candidates after dedupe (no slicing):", candidates.length);
 
     const { data: existingRows } = await adminClient
       .from("industry_trends")
