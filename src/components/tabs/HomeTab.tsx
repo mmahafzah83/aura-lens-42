@@ -40,7 +40,44 @@ interface Trend {
   source: string;
   fetched_at: string;
   status?: string;
+  validation_score?: number | null;
+  relevance_score?: number | null;
+  topic_relevance_score?: number | null;
+  final_score?: number | null;
 }
+
+type TrendFilter = "all" | "high_confidence" | "top_relevance" | "trusted" | "newest";
+
+const TRUSTED_SET = new Set([
+  "mckinsey.com","bcg.com","bain.com","deloitte.com","ey.com","pwc.com",
+  "kpmg.com","accenture.com","oliverwyman.com","rolandberger.com",
+  "hbr.org","sloanreview.mit.edu","brookings.edu","gartner.com",
+  "forrester.com","idc.com","ft.com","wsj.com","bloomberg.com",
+  "economist.com","reuters.com","weforum.org","imf.org","worldbank.org",
+  "nature.com","science.org","nber.org",
+]);
+
+const isTrusted = (source: string) => {
+  const s = (source || "").toLowerCase();
+  return Array.from(TRUSTED_SET).some(d => s === d || s.endsWith("." + d));
+};
+
+const qualityTier = (v?: number | null): { label: string; color: string } => {
+  const n = v ?? 0;
+  if (n >= 75) return { label: "High quality", color: "#7ab648" };
+  if (n >= 50) return { label: "Solid", color: "#F97316" };
+  return { label: "Low signal", color: "hsl(var(--muted-foreground))" };
+};
+
+const trendReason = (t: Trend): string => {
+  const reasons: string[] = [];
+  if (isTrusted(t.source)) reasons.push("trusted source");
+  if ((t.topic_relevance_score ?? 0) >= 50) reasons.push("matches your focus");
+  if ((t.relevance_score ?? 0) >= 70) reasons.push("strategically relevant");
+  if ((t.validation_score ?? 0) >= 70) reasons.push("strong content");
+  if (reasons.length === 0) return "Selected for breadth";
+  return `Selected for ${reasons.slice(0, 2).join(" + ")}`;
+};
 interface TopSignal {
   signal_title: string;
   confidence: number;
