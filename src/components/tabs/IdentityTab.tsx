@@ -12,6 +12,7 @@ import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import VoiceEngineSection from "@/components/VoiceEngineSection";
 import SectionError from "@/components/ui/section-error";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { createPortal } from "react-dom";
 
 interface IdentityTabProps {
