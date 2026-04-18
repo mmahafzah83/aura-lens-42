@@ -8,7 +8,8 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
 const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
-const MIN_CONTENT_CHARS = 1500; // soft-404 / cookie wall guard — strict gate
+const MIN_CONTENT_CHARS = 1500; // markdown gate
+const MIN_CLEAN_TEXT_CHARS = 1200; // post-clean gate
 
 // Trusted publisher domains (boost validation_score)
 const TRUSTED_DOMAINS = [
@@ -20,6 +21,22 @@ const TRUSTED_DOMAINS = [
   "nature.com", "science.org", "nber.org",
 ];
 
+// Phrases that indicate a blocked / cookie-wall / JS-required / paywall page.
+// Matched against the lowercased clean text.
+const BLOCKED_PHRASES = [
+  "enable javascript", "please enable javascript", "javascript is required",
+  "javascript must be enabled", "you need to enable javascript",
+  "accept cookies", "accept all cookies", "we use cookies", "cookie preferences",
+  "manage cookie", "cookie consent",
+  "page not found", "404 not found", "this page does not exist",
+  "subscribe to continue", "subscribe to read", "subscribe for unlimited",
+  "subscribe now", "create a free account to read",
+  "access denied", "request blocked", "are you a robot", "verify you are human",
+  "checking your browser", "ddos protection by cloudflare",
+  "this content is for subscribers", "premium subscribers only",
+  "log in to continue", "sign in to continue", "register to continue",
+];
+
 // ─────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────
@@ -27,26 +44,57 @@ function domainOf(u: string): string {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; }
 }
 
-// Convert markdown to clean text (strip md syntax, collapse whitespace)
 function markdownToText(md: string): string {
   if (!md) return "";
   return md
-    .replace(/```[\s\S]*?```/g, " ")              // fenced code blocks
-    .replace(/`[^`]*`/g, " ")                      // inline code
-    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")          // images
-    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")        // links → text
-    .replace(/^>\s?/gm, "")                        // blockquote markers
-    .replace(/^#{1,6}\s+/gm, "")                   // headings
-    .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, "$1") // bold/italic/strike
-    .replace(/^\s*[-*+]\s+/gm, "")                 // list bullets
-    .replace(/^\s*\d+\.\s+/gm, "")                 // numbered lists
-    .replace(/\|/g, " ")                           // table pipes
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")
+    .replace(/^>\s?/gm, "")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, "$1")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\|/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-// Strict pre-scrape URL validation: HEAD, status 200, html content-type.
-// Falls back to a tiny GET because some CDNs reject HEAD.
+// Detect cookie walls / JS-required pages / 404 / paywalls / placeholder noise.
+function detectBlockedContent(text: string): { blocked: boolean; reason?: string } {
+  if (!text) return { blocked: true, reason: "empty_text" };
+  const lower = text.toLowerCase();
+
+  // Hard keyword match
+  for (const phrase of BLOCKED_PHRASES) {
+    if (lower.includes(phrase)) {
+      // For a real article that briefly mentions cookies, require the page to be SHORT
+      // before flagging it. Long articles can mention "cookies" without being a wall.
+      if (text.length < 3000) {
+        return { blocked: true, reason: `phrase_${phrase.replace(/\s+/g, "_").slice(0, 24)}` };
+      }
+    }
+  }
+
+  // Thin placeholder
+  if (text.length < MIN_CLEAN_TEXT_CHARS) {
+    return { blocked: true, reason: "thin_clean_text" };
+  }
+
+  // Repetition heuristic — navigation-only pages repeat the same short tokens
+  const tokens = lower.split(/\s+/).filter(Boolean);
+  if (tokens.length > 0) {
+    const unique = new Set(tokens);
+    const ratio = unique.size / tokens.length;
+    if (tokens.length > 200 && ratio < 0.18) {
+      return { blocked: true, reason: "low_lexical_diversity" };
+    }
+  }
+
+  return { blocked: false };
+}
+
 async function preflightUrl(url: string): Promise<{ ok: boolean; reason?: string; finalUrl?: string }> {
   const check = (res: Response) => {
     const ct = (res.headers.get("content-type") || "").toLowerCase();
@@ -61,7 +109,6 @@ async function preflightUrl(url: string): Promise<{ ok: boolean; reason?: string
       headers: { "User-Agent": "Mozilla/5.0 (compatible; AuraTrendsBot/1.0)" },
     });
     if (head.status === 405 || head.status === 501) {
-      // method not allowed — fall back to GET range
       const get = await fetch(url, {
         method: "GET",
         redirect: "follow",
@@ -75,11 +122,9 @@ async function preflightUrl(url: string): Promise<{ ok: boolean; reason?: string
   }
 }
 
-// Quality scoring 0-100: trusted domain (40) + length (40) + content density (20)
+// Validation: trusted domain (40) + length (40) + density (20)
 function computeValidationScore(opts: { domain: string; markdown: string; text: string }): number {
   let score = 0;
-
-  // Trusted domain — exact or subdomain match
   const dom = opts.domain.toLowerCase();
   if (TRUSTED_DOMAINS.some(td => dom === td || dom.endsWith("." + td))) {
     score += 40;
@@ -89,14 +134,12 @@ function computeValidationScore(opts: { domain: string; markdown: string; text: 
     score += 5;
   }
 
-  // Length — generous gradient
   const len = opts.text.length;
   if (len >= 6000) score += 40;
   else if (len >= 3500) score += 30;
   else if (len >= 2000) score += 20;
   else if (len >= 1500) score += 10;
 
-  // Density — text/markdown ratio (penalize navigation-heavy pages)
   const ratio = opts.markdown.length > 0 ? opts.text.length / opts.markdown.length : 0;
   if (ratio >= 0.7) score += 20;
   else if (ratio >= 0.5) score += 12;
@@ -105,8 +148,54 @@ function computeValidationScore(opts: { domain: string; markdown: string; text: 
   return Math.max(0, Math.min(100, score));
 }
 
-// Discovery via Perplexity sonar — returns curated, high-quality URLs.
-// Prefers consulting firms, research institutes, and credible publishers.
+// Topic relevance: keyword overlap with profile context (sector/practice/goal).
+// 0-100 score. Cheap, deterministic, transparent.
+function computeTopicRelevance(text: string, profileTokens: string[]): number {
+  if (!text || profileTokens.length === 0) return 0;
+  const lower = text.toLowerCase().slice(0, 12000); // cap for perf
+  let hits = 0;
+  let weighted = 0;
+  for (const tok of profileTokens) {
+    if (!tok || tok.length < 3) continue;
+    // count occurrences (capped at 5 per token)
+    const re = new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "gi");
+    const matches = lower.match(re);
+    if (matches) {
+      const c = Math.min(matches.length, 5);
+      hits += 1;
+      weighted += c;
+    }
+  }
+  // Normalize: coverage (how many tokens matched) + density (total weighted hits)
+  const coverage = profileTokens.length > 0 ? hits / profileTokens.length : 0; // 0-1
+  const density = Math.min(weighted / 15, 1); // 0-1, plateaus at 15 weighted hits
+  return Math.round(coverage * 60 + density * 40);
+}
+
+// Tokenize profile fields → meaningful keywords (drop stopwords / short tokens).
+const STOPWORDS = new Set([
+  "the","a","an","and","or","of","in","on","for","to","with","at","by","from",
+  "is","are","was","were","be","been","being","this","that","these","those",
+  "it","its","as","but","not","no","yes","you","your","i","we","our","they",
+  "their","my","me","us","do","does","did","done","have","has","had","will",
+  "would","could","should","can","may","might","must","shall","2024","2025","2026",
+]);
+function tokenizeProfile(...fields: (string | null | undefined)[]): string[] {
+  const set = new Set<string>();
+  for (const f of fields) {
+    if (!f) continue;
+    f.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter(t => t.length >= 4 && !STOPWORDS.has(t))
+      .forEach(t => set.add(t));
+  }
+  return Array.from(set);
+}
+
+// ─────────────────────────────────────────
+// Perplexity discovery
+// ─────────────────────────────────────────
 async function perplexityDiscover(
   apiKey: string,
   profileContext: string,
@@ -123,7 +212,7 @@ Rules:
 - Return ONLY high-credibility sources: top consulting firms (McKinsey, BCG, Bain, Deloitte, EY, PwC, KPMG, Accenture, Oliver Wyman, Roland Berger), research institutes (MIT Sloan, HBR, Brookings, Gartner, Forrester, IDC), reputable financial press (FT, WSJ, Bloomberg, Economist, Reuters), or official industry bodies.
 - Avoid forums, Reddit, YouTube, X/Twitter, Pinterest, personal blogs, low-trust aggregators.
 - Each URL must be a direct article, not a homepage or category page.
-- Return up to 10 distinct URLs across the topics.`;
+- Return up to 12 distinct URLs across the topics, prioritizing source diversity.`;
 
   const res = await fetch(PERPLEXITY_URL, {
     method: "POST",
@@ -169,9 +258,7 @@ Rules:
     return [];
   }
 
-  // Merge model-returned articles with raw citations as a fallback
   const collected = new Map<string, { url: string; title?: string; description?: string }>();
-
   const content: string = data?.choices?.[0]?.message?.content ?? "";
   if (content) {
     try {
@@ -201,19 +288,13 @@ async function firecrawlScrape(apiKey: string, url: string) {
   const res = await fetch(`${FIRECRAWL_BASE}/scrape`, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      url,
-      formats: ["markdown"],
-      onlyMainContent: true,
-    }),
+    body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     return { ok: false as const, status: res.status, error: data?.error || "scrape failed" };
   }
-  // v2 may return either { data: { markdown, metadata } } or top-level fields
-  const markdown: string =
-    data?.data?.markdown ?? data?.markdown ?? "";
+  const markdown: string = data?.data?.markdown ?? data?.markdown ?? "";
   const metadata = data?.data?.metadata ?? data?.metadata ?? {};
   const sourceURL: string = metadata?.sourceURL ?? metadata?.url ?? url;
   const title: string = metadata?.title ?? "";
@@ -277,6 +358,30 @@ async function aiSynthesize(lovableKey: string, profileContext: string, items: A
   try { return JSON.parse(args).trends ?? []; } catch { return []; }
 }
 
+// Domain diversity: greedily pick top-ranked items but cap per-domain to 2.
+function diversifyByDomain<T extends { source: string; final_score: number }>(rows: T[], perDomainCap = 2, max = 5): T[] {
+  const sorted = [...rows].sort((a, b) => b.final_score - a.final_score);
+  const counts = new Map<string, number>();
+  const picked: T[] = [];
+  for (const r of sorted) {
+    const dom = (r.source || "").toLowerCase();
+    const c = counts.get(dom) || 0;
+    if (c >= perDomainCap) continue;
+    counts.set(dom, c + 1);
+    picked.push(r);
+    if (picked.length >= max) break;
+  }
+  // If we couldn't fill `max` (e.g. very few sources), backfill ignoring cap.
+  if (picked.length < max) {
+    for (const r of sorted) {
+      if (picked.includes(r)) continue;
+      picked.push(r);
+      if (picked.length >= max) break;
+    }
+  }
+  return picked;
+}
+
 // ─────────────────────────────────────────
 // Handler
 // ─────────────────────────────────────────
@@ -316,7 +421,6 @@ serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    // 1. Profile → query
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
       .select("firm, level, core_practice, sector_focus, north_star_goal, leadership_style")
@@ -331,31 +435,30 @@ serve(async (req) => {
 
     const year = new Date().getFullYear();
     const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
+    const profileTokens = tokenizeProfile(
+      profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.leadership_style,
+    );
     const queries = [
       `${profile.sector_focus || ""} ${profile.core_practice || ""} ${year}`.trim(),
       `${profile.sector_focus || ""} digital transformation strategy ${year}`.trim(),
       `${profile.core_practice || ""} consulting trends ${year}`.trim(),
     ].filter(q => q.length > 8);
 
-    // 2. Discovery via Perplexity (curated, high-credibility URLs)
     console.log("[trends] perplexity discovery for queries:", queries);
     const discoveryResults = await perplexityDiscover(perplexityKey, profileContext, queries);
     console.log("[trends] perplexity returned:", discoveryResults.length);
 
-    // De-dupe by URL + reject obvious bad domains
     const seen = new Set<string>();
     const candidates = discoveryResults.filter(r => {
       if (!r.url) return false;
       const dom = domainOf(r.url);
       if (!dom) return false;
-      // Skip aggregators / forums / tracking domains
       if (/(reddit|youtube|twitter|x\.com|facebook|pinterest|quora|tiktok)\./i.test(dom)) return false;
       if (seen.has(r.url)) return false;
       seen.add(r.url);
       return true;
-    }).slice(0, 10); // scrape budget
+    }).slice(0, 12);
 
-    // 3. Existing canonical URLs (skip already-saved)
     const { data: existingRows } = await adminClient
       .from("industry_trends")
       .select("id, canonical_url, url")
@@ -367,12 +470,15 @@ serve(async (req) => {
       if (r.url) existingUrls.add(r.url);
     });
 
-    // 4. Preflight + Scrape + validate + score
-    const scraped: Array<{ url: string; canonical: string; title: string; markdown: string; text: string; source: string; score: number }> = [];
+    // Scrape + multi-stage validation
+    const scraped: Array<{
+      url: string; canonical: string; title: string; markdown: string;
+      text: string; source: string; validation_score: number; topic_relevance_score: number;
+    }> = [];
+
     for (const c of candidates) {
       if (existingUrls.has(c.url)) continue;
 
-      // Strict URL preflight (HEAD/GET, status 200, text/html)
       const pre = await preflightUrl(c.url);
       if (!pre.ok) {
         console.log("[trends] preflight rejected", c.url, pre.reason);
@@ -389,15 +495,25 @@ serve(async (req) => {
         continue;
       }
       if (!result.markdown || result.markdown.length < MIN_CONTENT_CHARS) {
-        console.log("[trends] thin content", c.url, result.markdown?.length || 0);
+        console.log("[trends] thin markdown", c.url, result.markdown?.length || 0);
         continue;
       }
+
       const canonical = result.sourceURL || pre.finalUrl || c.url;
       if (existingUrls.has(canonical)) continue;
 
       const text = markdownToText(result.markdown);
+
+      // Post-scrape quality gate (cookie wall, JS placeholder, paywall, thin)
+      const blocked = detectBlockedContent(text);
+      if (blocked.blocked) {
+        console.log("[trends] blocked content", c.url, blocked.reason);
+        continue;
+      }
+
       const source = domainOf(canonical);
-      const score = computeValidationScore({ domain: source, markdown: result.markdown, text });
+      const validation_score = computeValidationScore({ domain: source, markdown: result.markdown, text });
+      const topic_relevance_score = computeTopicRelevance(text, profileTokens);
 
       scraped.push({
         url: c.url,
@@ -406,61 +522,81 @@ serve(async (req) => {
         markdown: result.markdown,
         text,
         source,
-        score,
+        validation_score,
+        topic_relevance_score,
       });
-      if (scraped.length >= 6) break;
+      if (scraped.length >= 8) break;
     }
     console.log("[trends] validated articles:", scraped.length);
 
-    // 5. AI synthesis (headline / insight / summary / relevance)
+    // AI synthesis
     let synthesized: any[] = [];
     if (scraped.length > 0) {
       synthesized = await aiSynthesize(lovableKey, profileContext, scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.markdown })));
     }
 
-    // 6. Build rows + insert (rank by combined relevance + validation_score)
-    const newRows = synthesized
-      .map((s: any) => {
-        const src = scraped[s.index];
-        if (!src) return null;
-        const relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
-        return {
-          user_id: userId,
-          headline: (s.headline || src.title || "").slice(0, 200),
-          insight: (s.insight || "").slice(0, 500),
-          summary: (s.summary || "").slice(0, 2000),
-          source: src.source.slice(0, 100),
-          url: src.canonical,
-          canonical_url: src.canonical,
-          content_markdown: src.markdown.slice(0, 50000),
-          content_text: src.text.slice(0, 50000),
-          relevance_score: relevance,
-          validation_score: src.score,
-          validation_status: src.score >= 50 ? "ok" : "weak",
-          last_checked_at: new Date().toISOString(),
-          published_at: null,
-          status: "new",
-        };
-      })
-      .filter(Boolean)
-      .sort((a: any, b: any) => (b.validation_score + b.relevance_score) - (a.validation_score + a.relevance_score))
-      .slice(0, 5);
+    // Build rows with weighted final_score
+    // weights: validation 0.5, ai-relevance 0.3, topic-relevance 0.2
+    const W_VAL = 0.5, W_REL = 0.3, W_TOPIC = 0.2;
 
-    let inserted = 0;
-    if (newRows.length > 0) {
-      const { error: insertErr, count } = await adminClient
-        .from("industry_trends")
-        .insert(newRows, { count: "exact" });
-      if (insertErr) console.error("[trends] insert error:", insertErr);
-      else inserted = count || newRows.length;
+    type Built = {
+      user_id: string; headline: string; insight: string; summary: string;
+      source: string; url: string; canonical_url: string;
+      content_markdown: string; content_text: string;
+      relevance_score: number; validation_score: number;
+      topic_relevance_score: number; final_score: number;
+      validation_status: string; last_checked_at: string;
+      published_at: null; status: string;
+    };
+
+    const built: Built[] = [];
+    for (const s of synthesized) {
+      const src = scraped[s.index];
+      if (!src) continue;
+      const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
+      const final_score = Math.round(
+        src.validation_score * W_VAL + ai_relevance * W_REL + src.topic_relevance_score * W_TOPIC,
+      );
+      built.push({
+        user_id: userId,
+        headline: (s.headline || src.title || "").slice(0, 200),
+        insight: (s.insight || "").slice(0, 500),
+        summary: (s.summary || "").slice(0, 2000),
+        source: src.source.slice(0, 100),
+        url: src.canonical,
+        canonical_url: src.canonical,
+        content_markdown: src.markdown.slice(0, 50000),
+        content_text: src.text.slice(0, 50000),
+        relevance_score: ai_relevance,
+        validation_score: src.validation_score,
+        topic_relevance_score: src.topic_relevance_score,
+        final_score,
+        validation_status: src.validation_score >= 50 ? "ok" : "weak",
+        last_checked_at: new Date().toISOString(),
+        published_at: null,
+        status: "new",
+      });
     }
 
-    // 7. Cap active at 5 — expire oldest beyond
+    // Diversity-aware top-K selection
+    const selected = diversifyByDomain(built, 2, 5);
+
+    let inserted = 0;
+    if (selected.length > 0) {
+      const { error: insertErr, count } = await adminClient
+        .from("industry_trends")
+        .insert(selected, { count: "exact" });
+      if (insertErr) console.error("[trends] insert error:", insertErr);
+      else inserted = count || selected.length;
+    }
+
+    // Cap active at 5 — expire weakest beyond
     const { data: activeAfter } = await adminClient
       .from("industry_trends")
       .select("id")
       .eq("user_id", userId)
       .eq("status", "new")
+      .order("final_score", { ascending: false })
       .order("fetched_at", { ascending: false });
     const ids = (activeAfter || []).map((r: any) => r.id);
     if (ids.length > 5) {
@@ -471,6 +607,7 @@ serve(async (req) => {
       inserted,
       scraped: scraped.length,
       candidates: candidates.length,
+      selected: selected.length,
       total_active: Math.min(ids.length, 5),
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
