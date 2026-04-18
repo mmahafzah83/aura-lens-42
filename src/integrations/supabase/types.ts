@@ -734,12 +734,14 @@ export type Database = {
       industry_trends: {
         Row: {
           canonical_url: string | null
+          category: string | null
           content_markdown: string | null
           content_text: string | null
           fetched_at: string
           final_score: number
           headline: string
           id: string
+          impact_level: string | null
           insight: string
           last_checked_at: string | null
           published_at: string | null
@@ -757,12 +759,14 @@ export type Database = {
         }
         Insert: {
           canonical_url?: string | null
+          category?: string | null
           content_markdown?: string | null
           content_text?: string | null
           fetched_at?: string
           final_score?: number
           headline: string
           id?: string
+          impact_level?: string | null
           insight: string
           last_checked_at?: string | null
           published_at?: string | null
@@ -780,12 +784,14 @@ export type Database = {
         }
         Update: {
           canonical_url?: string | null
+          category?: string | null
           content_markdown?: string | null
           content_text?: string | null
           fetched_at?: string
           final_score?: number
           headline?: string
           id?: string
+          impact_level?: string | null
           insight?: string
           last_checked_at?: string | null
           published_at?: string | null
