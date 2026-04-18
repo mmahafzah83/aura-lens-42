@@ -39,6 +39,7 @@ interface ProfileRow {
 }
 
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
+  const { user: authUser, isReady: authReady } = useAuthReady();
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
