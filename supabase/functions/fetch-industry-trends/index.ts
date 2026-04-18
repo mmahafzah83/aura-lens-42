@@ -8,13 +8,101 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
 const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
-const MIN_CONTENT_CHARS = 500; // soft-404 / cookie wall guard
+const MIN_CONTENT_CHARS = 1500; // soft-404 / cookie wall guard — strict gate
+
+// Trusted publisher domains (boost validation_score)
+const TRUSTED_DOMAINS = [
+  "mckinsey.com", "bcg.com", "bain.com", "deloitte.com", "ey.com", "pwc.com",
+  "kpmg.com", "accenture.com", "oliverwyman.com", "rolandberger.com",
+  "hbr.org", "sloanreview.mit.edu", "brookings.edu", "gartner.com",
+  "forrester.com", "idc.com", "ft.com", "wsj.com", "bloomberg.com",
+  "economist.com", "reuters.com", "weforum.org", "imf.org", "worldbank.org",
+  "nature.com", "science.org", "nber.org",
+];
 
 // ─────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────
 function domainOf(u: string): string {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; }
+}
+
+// Convert markdown to clean text (strip md syntax, collapse whitespace)
+function markdownToText(md: string): string {
+  if (!md) return "";
+  return md
+    .replace(/```[\s\S]*?```/g, " ")              // fenced code blocks
+    .replace(/`[^`]*`/g, " ")                      // inline code
+    .replace(/!\[[^\]]*]\([^)]*\)/g, " ")          // images
+    .replace(/\[([^\]]+)]\([^)]+\)/g, "$1")        // links → text
+    .replace(/^>\s?/gm, "")                        // blockquote markers
+    .replace(/^#{1,6}\s+/gm, "")                   // headings
+    .replace(/[*_~]{1,3}([^*_~]+)[*_~]{1,3}/g, "$1") // bold/italic/strike
+    .replace(/^\s*[-*+]\s+/gm, "")                 // list bullets
+    .replace(/^\s*\d+\.\s+/gm, "")                 // numbered lists
+    .replace(/\|/g, " ")                           // table pipes
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Strict pre-scrape URL validation: HEAD, status 200, html content-type.
+// Falls back to a tiny GET because some CDNs reject HEAD.
+async function preflightUrl(url: string): Promise<{ ok: boolean; reason?: string; finalUrl?: string }> {
+  const check = (res: Response) => {
+    const ct = (res.headers.get("content-type") || "").toLowerCase();
+    if (res.status !== 200) return { ok: false, reason: `status_${res.status}` };
+    if (!ct.includes("text/html")) return { ok: false, reason: `content_type_${ct || "missing"}` };
+    return { ok: true, finalUrl: res.url || url };
+  };
+  try {
+    const head = await fetch(url, {
+      method: "HEAD",
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; AuraTrendsBot/1.0)" },
+    });
+    if (head.status === 405 || head.status === 501) {
+      // method not allowed — fall back to GET range
+      const get = await fetch(url, {
+        method: "GET",
+        redirect: "follow",
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; AuraTrendsBot/1.0)", Range: "bytes=0-1024" },
+      });
+      return check(get);
+    }
+    return check(head);
+  } catch (e) {
+    return { ok: false, reason: `fetch_error_${(e as Error).message?.slice(0, 40)}` };
+  }
+}
+
+// Quality scoring 0-100: trusted domain (40) + length (40) + content density (20)
+function computeValidationScore(opts: { domain: string; markdown: string; text: string }): number {
+  let score = 0;
+
+  // Trusted domain — exact or subdomain match
+  const dom = opts.domain.toLowerCase();
+  if (TRUSTED_DOMAINS.some(td => dom === td || dom.endsWith("." + td))) {
+    score += 40;
+  } else if (/\.(edu|gov|org)$/.test(dom)) {
+    score += 20;
+  } else {
+    score += 5;
+  }
+
+  // Length — generous gradient
+  const len = opts.text.length;
+  if (len >= 6000) score += 40;
+  else if (len >= 3500) score += 30;
+  else if (len >= 2000) score += 20;
+  else if (len >= 1500) score += 10;
+
+  // Density — text/markdown ratio (penalize navigation-heavy pages)
+  const ratio = opts.markdown.length > 0 ? opts.text.length / opts.markdown.length : 0;
+  if (ratio >= 0.7) score += 20;
+  else if (ratio >= 0.5) score += 12;
+  else if (ratio >= 0.3) score += 6;
+
+  return Math.max(0, Math.min(100, score));
 }
 
 // Discovery via Perplexity sonar — returns curated, high-quality URLs.
@@ -279,11 +367,19 @@ serve(async (req) => {
       if (r.url) existingUrls.add(r.url);
     });
 
-    // 4. Scrape + validate
-    const scraped: Array<{ url: string; canonical: string; title: string; markdown: string; source: string }> = [];
+    // 4. Preflight + Scrape + validate + score
+    const scraped: Array<{ url: string; canonical: string; title: string; markdown: string; text: string; source: string; score: number }> = [];
     for (const c of candidates) {
       if (existingUrls.has(c.url)) continue;
-      const result = await firecrawlScrape(firecrawlKey, c.url);
+
+      // Strict URL preflight (HEAD/GET, status 200, text/html)
+      const pre = await preflightUrl(c.url);
+      if (!pre.ok) {
+        console.log("[trends] preflight rejected", c.url, pre.reason);
+        continue;
+      }
+
+      const result = await firecrawlScrape(firecrawlKey, pre.finalUrl || c.url);
       if (!result.ok) {
         console.log("[trends] scrape failed", c.url, result.status);
         continue;
@@ -296,14 +392,21 @@ serve(async (req) => {
         console.log("[trends] thin content", c.url, result.markdown?.length || 0);
         continue;
       }
-      const canonical = result.sourceURL || c.url;
+      const canonical = result.sourceURL || pre.finalUrl || c.url;
       if (existingUrls.has(canonical)) continue;
+
+      const text = markdownToText(result.markdown);
+      const source = domainOf(canonical);
+      const score = computeValidationScore({ domain: source, markdown: result.markdown, text });
+
       scraped.push({
         url: c.url,
         canonical,
         title: result.title || c.title || canonical,
         markdown: result.markdown,
-        source: domainOf(canonical),
+        text,
+        source,
+        score,
       });
       if (scraped.length >= 6) break;
     }
@@ -315,11 +418,12 @@ serve(async (req) => {
       synthesized = await aiSynthesize(lovableKey, profileContext, scraped.map(s => ({ title: s.title, url: s.canonical, markdown: s.markdown })));
     }
 
-    // 6. Build rows + insert
+    // 6. Build rows + insert (rank by combined relevance + validation_score)
     const newRows = synthesized
       .map((s: any) => {
         const src = scraped[s.index];
         if (!src) return null;
+        const relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
         return {
           user_id: userId,
           headline: (s.headline || src.title || "").slice(0, 200),
@@ -329,15 +433,17 @@ serve(async (req) => {
           url: src.canonical,
           canonical_url: src.canonical,
           content_markdown: src.markdown.slice(0, 50000),
-          relevance_score: Math.max(0, Math.min(100, Number(s.relevance_score) || 0)),
-          validation_status: "ok",
+          content_text: src.text.slice(0, 50000),
+          relevance_score: relevance,
+          validation_score: src.score,
+          validation_status: src.score >= 50 ? "ok" : "weak",
           last_checked_at: new Date().toISOString(),
           published_at: null,
           status: "new",
         };
       })
       .filter(Boolean)
-      .sort((a: any, b: any) => b.relevance_score - a.relevance_score)
+      .sort((a: any, b: any) => (b.validation_score + b.relevance_score) - (a.validation_score + a.relevance_score))
       .slice(0, 5);
 
     let inserted = 0;

@@ -735,6 +735,7 @@ export type Database = {
         Row: {
           canonical_url: string | null
           content_markdown: string | null
+          content_text: string | null
           fetched_at: string
           headline: string
           id: string
@@ -747,11 +748,13 @@ export type Database = {
           summary: string | null
           url: string | null
           user_id: string
+          validation_score: number
           validation_status: string
         }
         Insert: {
           canonical_url?: string | null
           content_markdown?: string | null
+          content_text?: string | null
           fetched_at?: string
           headline: string
           id?: string
@@ -764,11 +767,13 @@ export type Database = {
           summary?: string | null
           url?: string | null
           user_id: string
+          validation_score?: number
           validation_status?: string
         }
         Update: {
           canonical_url?: string | null
           content_markdown?: string | null
+          content_text?: string | null
           fetched_at?: string
           headline?: string
           id?: string
@@ -781,6 +786,7 @@ export type Database = {
           summary?: string | null
           url?: string | null
           user_id?: string
+          validation_score?: number
           validation_status?: string
         }
         Relationships: []
