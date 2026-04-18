@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import SectionError from "@/components/ui/section-error";
 import { formatSmartDate } from "@/lib/formatDate";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
@@ -91,6 +92,12 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [moves, setMoves] = useState<RecMove[]>([]);
   const [trends, setTrends] = useState<Trend[]>([]);
   const [trendsBadgeCount, setTrendsBadgeCount] = useState<number>(0);
+
+  // Delayed loading flags — only show skeleton if loading exceeds 200ms.
+  // Prevents flicker on fast refreshes while preserving real long-load states.
+  const showBriefSkeleton = useDelayedFlag(briefLoading, 200);
+  const showMovesSkeleton = useDelayedFlag(movesLoading && moves.length === 0, 200);
+  const showTrendsSkeleton = useDelayedFlag(trendsLoading && trends.length === 0, 200);
 
   // per-trend UI state
   const [addedSignalIds, setAddedSignalIds] = useState<Set<string>>(new Set());
