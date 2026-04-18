@@ -149,19 +149,21 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
 /* ── Open entry in new tab helper ── */
 
 async function openEntryInNewTab(entry: SourceEntry) {
-  // Documents: use a backend redirect endpoint so the URL the browser navigates to
-  // is on our edge-function host (not *.supabase.co/storage), avoiding ad-blocker
-  // ERR_BLOCKED_BY_CLIENT issues. The endpoint validates auth and 302s to a fresh signed URL.
+  // Documents: ask the edge function for a fresh signed URL via supabase.functions.invoke
+  // (same XHR path the rest of the app uses — not a top-level navigation to
+  // *.functions.supabase.co), then open the resulting storage signed URL in a new tab.
   if (entry.type === "document" && entry.id) {
     const newTab = window.open("about:blank", "_blank", "noopener");
     try {
-      const { data: sess } = await supabase.auth.getSession();
-      const token = sess.session?.access_token;
-      if (!token) throw new Error("Not signed in");
-      const projectId = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID;
-      const endpoint = `https://${projectId}.functions.supabase.co/open-document?id=${encodeURIComponent(entry.id)}&token=${encodeURIComponent(token)}`;
-      if (newTab) newTab.location.href = endpoint;
-      else window.open(endpoint, "_blank", "noopener");
+      const { data, error } = await supabase.functions.invoke("open-document", {
+        body: { id: entry.id, format: "json" },
+      });
+      if (error) throw error;
+      if (!data?.ok || !data?.signedUrl) {
+        throw new Error(data?.error || "Could not open document");
+      }
+      if (newTab) newTab.location.href = data.signedUrl;
+      else window.open(data.signedUrl, "_blank", "noopener");
     } catch (e: any) {
       if (newTab) newTab.close();
       console.error("[SourcesSubTab] open document failed", e);
