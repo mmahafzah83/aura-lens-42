@@ -676,12 +676,31 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 4 — Live intelligence */}
       <section>
-        <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
-            Live Intelligence
+        <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 10 }}>
+          <div className="flex items-center gap-2">
+            <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+              Live Intelligence
+            </div>
+            <button
+              onClick={handleRefreshTrends}
+              disabled={refreshingTrends}
+              title="Refresh trends now"
+              style={{
+                background: "transparent",
+                border: "0.5px solid hsl(var(--border))",
+                color: refreshingTrends ? "hsl(var(--muted-foreground) / 0.5)" : "hsl(var(--muted-foreground))",
+                fontSize: 10,
+                padding: "3px 10px",
+                borderRadius: 3,
+                cursor: refreshingTrends ? "wait" : "pointer",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {refreshingTrends ? "Refreshing…" : "↻ Refresh trends"}
+            </button>
           </div>
           {!trendsError && !showTrendsSkeleton && trends.length > 0 && (
-            <div className="flex items-center gap-1" style={{ fontSize: 10 }}>
+            <div className="flex items-center gap-1 flex-wrap" style={{ fontSize: 10 }}>
               {([
                 { key: "all", label: "Top picks" },
                 { key: "high_confidence", label: "High confidence" },
