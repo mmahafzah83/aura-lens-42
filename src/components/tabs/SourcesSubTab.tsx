@@ -26,6 +26,7 @@ interface SourceEntry {
   file_type?: string | null;
   page_count?: number | null;
   status?: string | null;
+  error_message?: string | null;
 }
 
 type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
@@ -325,7 +326,7 @@ const SourcesSubTab = ({
 
     const [entriesRes, docsRes] = await Promise.all([
       supabase.from("entries").select("id, type, title, content, summary, image_url, skill_pillar, framework_tag, pinned, created_at"),
-      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at"),
+      supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, created_at, error_message"),
     ]);
 
     if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
@@ -346,6 +347,7 @@ const SourcesSubTab = ({
       file_type: d.file_type,
       page_count: d.page_count,
       status: d.status,
+      error_message: d.error_message,
     }));
 
     const combined = [...entryItems, ...docItems];
@@ -354,6 +356,47 @@ const SourcesSubTab = ({
     setHasMore(false);
     setLoading(false);
     setLoadingMore(false);
+
+    // Auto-recover stuck pending docs (idempotent, capped). Avoids duplicate storms
+    // by only retrying once per page mount and skipping anything already processing.
+    const stuckPending = (docsRes.data || []).filter((d: any) => d.status === "pending").slice(0, 3);
+    if (stuckPending.length > 0) {
+      console.log(`[SourcesSubTab] auto-retrying ${stuckPending.length} pending document(s)`);
+      for (const d of stuckPending) {
+        supabase.functions.invoke("ingest-document", { body: { document_id: d.id } })
+          .then(({ error }) => {
+            if (error) console.error(`[SourcesSubTab] auto-retry failed for ${d.id}:`, error);
+          })
+          .catch((e) => console.error(`[SourcesSubTab] auto-retry exception for ${d.id}:`, e));
+      }
+    }
+  }, []);
+
+  // Manual retry (used by "Tap to retry" buttons)
+  const retryDocument = useCallback(async (documentId: string) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { toast.error("Please sign in again."); return; }
+    await supabase
+      .from("documents")
+      .update({ status: "processing", error_message: null } as any)
+      .eq("id", documentId);
+    setEntries(prev => prev.map(x => x.id === documentId ? { ...x, status: "processing", error_message: null } : x));
+    const { error } = await supabase.functions.invoke("ingest-document", {
+      body: { document_id: documentId },
+    });
+    if (error) {
+      console.error("[SourcesSubTab] retry invoke error:", error);
+      toast.error(`Retry failed: ${error.message || "unknown"}`);
+      await supabase
+        .from("documents")
+        .update({ status: "error", error_message: `Retry trigger failed: ${error.message || "unknown"}` } as any)
+        .eq("id", documentId);
+      setEntries(prev => prev.map(x => x.id === documentId
+        ? { ...x, status: "error", error_message: `Retry trigger failed: ${error.message || "unknown"}` }
+        : x));
+      return;
+    }
+    toast("Retrying…");
   }, []);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
