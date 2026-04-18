@@ -22,6 +22,7 @@ interface TrendRow {
   relevance_score: number | null;
   topic_relevance_score: number | null;
   final_score: number | null;
+  selection_reason: string | null;
 }
 
 const TRUSTED_SET = new Set([
