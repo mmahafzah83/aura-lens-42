@@ -18,7 +18,30 @@ interface TrendRow {
   content_markdown: string | null;
   fetched_at: string;
   validation_status: string | null;
+  validation_score: number | null;
+  relevance_score: number | null;
+  topic_relevance_score: number | null;
+  final_score: number | null;
 }
+
+const TRUSTED_SET = new Set([
+  "mckinsey.com","bcg.com","bain.com","deloitte.com","ey.com","pwc.com",
+  "kpmg.com","accenture.com","oliverwyman.com","rolandberger.com",
+  "hbr.org","sloanreview.mit.edu","brookings.edu","gartner.com",
+  "forrester.com","idc.com","ft.com","wsj.com","bloomberg.com",
+  "economist.com","reuters.com","weforum.org","imf.org","worldbank.org",
+  "nature.com","science.org","nber.org",
+]);
+const isTrusted = (s: string | null) => {
+  const x = (s || "").toLowerCase();
+  return Array.from(TRUSTED_SET).some(d => x === d || x.endsWith("." + d));
+};
+const tier = (v: number | null | undefined): { label: string; color: string } => {
+  const n = v ?? 0;
+  if (n >= 75) return { label: "High quality", color: "#7ab648" };
+  if (n >= 50) return { label: "Solid", color: "#F97316" };
+  return { label: "Low signal", color: "hsl(var(--muted-foreground))" };
+};
 
 export default function TrendDetail() {
   const { id } = useParams<{ id: string }>();
