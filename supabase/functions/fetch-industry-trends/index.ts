@@ -1022,8 +1022,10 @@ serve(async (req) => {
     const MAX_JUDGE_BYPASSES = 2;
     let judgeBypassCount = 0;
 
+    const MAX_VALIDATED = 8; // early-exit cap to stay under 150s function timeout
     let firecrawlQuotaExhausted = false;
     for (const c of candidates) {
+      if (scraped.length >= MAX_VALIDATED) { console.log("[trends] reached MAX_VALIDATED, stopping"); break; }
       if (existingUrls.has(c.url)) continue;
       if (firecrawlQuotaExhausted) break; // stop hammering a dead key
       const pre = await preflightUrl(c.url);
