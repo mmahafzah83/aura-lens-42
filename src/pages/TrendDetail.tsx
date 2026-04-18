@@ -245,16 +245,4 @@ export default function TrendDetail() {
     </div>
   );
 }
-        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 16, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-          {externalAlive === false ? (
-            <span>Original source unavailable.</span>
-          ) : (
-            <a href={externalUrl} target="_blank" rel="noopener noreferrer" style={{ color: "hsl(var(--muted-foreground))", textDecoration: "underline" }}>
-              View original on {trend.source || "publisher site"} ↗
-            </a>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+
