@@ -1259,10 +1259,10 @@ async function runPhaseB(opts: {
       rejectedExtract++; continue;
     }
 
-    // Pre-clean reject on RAW (cookie/CTA pollution in first 600 chars)
-    const rawPollution = pollutionReject(fc.markdown);
+    // ── PREFILTER 1: RAW_POLLUTION_CHECK (density, first 800 chars) ──
+    const rawPollution = pollutionReject(fc.markdown, 800);
     if (rawPollution) {
-      console.log(`[extract] ${rawUrl} family=${family} ${rawPollution.reason} (raw)`);
+      console.log(`[prefilter] rejected_raw_pollution: ${rawUrl} — ${rawPollution.reason}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
@@ -1273,10 +1273,10 @@ async function runPhaseB(opts: {
     clean_markdown = dedupMediaInMarkdown(clean_markdown);
     const text = markdownToText(clean_markdown);
 
-    // Pre-clean reject on CLEANED
-    const cleanPollution = pollutionReject(clean_markdown);
+    // ── PREFILTER 2: CLEANED_POLLUTION_CHECK (density, first 600 chars) ──
+    const cleanPollution = pollutionReject(clean_markdown, 600);
     if (cleanPollution) {
-      console.log(`[extract] ${rawUrl} family=${family} ${cleanPollution.reason} (cleaned)`);
+      console.log(`[prefilter] rejected_cleaned_pollution: ${rawUrl} — ${cleanPollution.reason}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
@@ -1292,19 +1292,22 @@ async function runPhaseB(opts: {
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
+
+    // ── PREFILTER 3: START_DETECTION (real article body begins) ──
     const opening = openingLooksLikeArticle(text);
     if (!opening.ok) {
-      console.log(`[extract] ${rawUrl} family=${family} opening_${opening.reason}`);
+      console.log(`[prefilter] rejected_start_detection: ${rawUrl} — no_real_opening (${opening.reason})`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
-    // Stronger article start
     const narrative = hasNarrativeOpening(text);
     if (!narrative.ok) {
-      console.log(`[extract] ${rawUrl} family=${family} narrative_${narrative.reason}`);
+      const reasonLabel = narrative.reason === "no_long_paragraph" ? "no_meaningful_paragraph" : "no_real_opening";
+      console.log(`[prefilter] rejected_start_detection: ${rawUrl} — ${reasonLabel}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
+
     const blocked = detectBlockedContent(text);
     if (blocked.blocked) {
       console.log(`[extract] ${rawUrl} family=${family} blocked_${blocked.reason}`);
@@ -1317,13 +1320,16 @@ async function runPhaseB(opts: {
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
-    // Executive-relevance filter (new, between business-relevance and judge)
+
+    // ── PREFILTER 4: EXECUTIVE_FILTER (gap / shift / quant / leader / commerce) ──
     const exec = passesExecutiveRelevance(text);
     if (!exec.ok) {
-      console.log(`[extract] ${rawUrl} family=${family} exec_${exec.reason}`);
+      const reasonLabel = exec.reason === "descriptive_company_copy" ? "descriptive_content" : (exec.reason || "no_gap_or_shift");
+      console.log(`[prefilter] rejected_executive_filter: ${rawUrl} — ${reasonLabel}`);
       await adminClient.from("industry_trends").delete().eq("id", ph.id);
       rejectedExtract++; continue;
     }
+    console.log(`[prefilter] passed_executive_filter: ${rawUrl} family=${family}`);
 
     const source = domainOf(canonical);
     const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
