@@ -46,11 +46,20 @@ function normalizeText(raw: string): string {
     .trim();
 }
 
-async function fetchWithTimeout(url: string, options: RequestInit, ms: number) {
+async function fetchWithTimeout(url: string, options: RequestInit, ms: number, label = "request") {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), ms);
+  let timedOut = false;
+  const id = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, ms);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
+  } catch (e) {
+    if (timedOut) {
+      throw new Error(`${label} timed out after ${Math.round(ms / 1000)}s`);
+    }
+    throw e;
   } finally {
     clearTimeout(id);
   }
