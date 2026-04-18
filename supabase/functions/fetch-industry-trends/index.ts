@@ -73,100 +73,168 @@ function markdownToText(md: string): string {
 }
 
 // ───────── Content cleaning pipeline ─────────
-// Phrases / patterns that indicate non-article noise. Lines containing these
-// (or starting with them) are stripped before scoring + AI synthesis.
-const NOISE_LINE_PATTERNS: RegExp[] = [
-  /^\s*skip to (main )?content\b/i,
-  /^\s*skip to navigation\b/i,
-  /^\s*jump to\b/i,
-  /^\s*back to top\b/i,
-  /^\s*subscribe( now| today)?\b/i,
-  /^\s*sign (in|up)\b/i,
-  /^\s*log ?in\b/i,
-  /^\s*follow us\b/i,
-  /^\s*share (this|on)\b/i,
-  /^\s*download( the)? pdf\b/i,
-  /^\s*print this\b/i,
-  /^\s*figure\s+\d+[:.]/i,
-  /^\s*table\s+\d+[:.]/i,
-  /^\s*image\s+\d+[:.]/i,
-  /^\s*photo(graph)?\s*[:.]/i,
-  /^\s*caption[:.]?/i,
-  /^\s*citation[:.]?/i,
-  /^\s*cite this article\b/i,
-  /^\s*how to cite\b/i,
-  /^\s*download citation\b/i,
-  /^\s*advertisement\b/i,
-  /^\s*sponsored content\b/i,
-  /^\s*related (articles?|reading|content|posts?)\b/i,
-  /^\s*read (more|next)\b/i,
-  /^\s*you may (also )?like\b/i,
+// Phrases that, if present anywhere in a line, mark the line as non-article
+// noise (site chrome, journal boilerplate, related content, system text).
+const NOISE_PHRASE_PATTERNS: RegExp[] = [
+  /skip to (main )?content/i,
+  /skip to navigation/i,
+  /jump to (content|navigation|main)/i,
+  /back to top/i,
+  /thank you for visiting/i,
+  /you are using a browser version/i,
+  /to obtain the best experience/i,
+  /turn off compatibility mode/i,
+  /displaying the site without styles/i,
+  /we are displaying the site/i,
+  /(view|download)( the)? pdf\b/i,
+  /^\s*pdf\s*$/i,
+  /print this/i,
+  /^\s*subscribe( now| today)?\s*$/i,
+  /^\s*sign (in|up)\s*$/i,
+  /^\s*log ?in\s*$/i,
+  /follow us( on)?/i,
+  /^\s*share (this|on|via)\b/i,
+  /(figure|table|image|fig\.?|tbl\.?)\s+\d+[:.]/i,
+  /^\s*caption\b/i,
+  /^\s*citation\b/i,
+  /cite this (article|paper|chapter)/i,
+  /how to cite/i,
+  /download citation/i,
+  /export citation/i,
+  /metrics\s*$/i,
+  /^\s*advertisement\s*$/i,
+  /sponsored content/i,
+  /^\s*related (articles?|reading|content|posts?|topics?|stories|insights?)/i,
+  /similar content( being)? viewed/i,
+  /you may (also )?like/i,
+  /^\s*read (more|next|on)\b/i,
+  /more (from|on|in)( this)?( author| topic| section)?/i,
   /^\s*comments?\s*\(\d+\)/i,
-  /^\s*leave a (comment|reply)\b/i,
-  /^\s*privacy policy\b/i,
-  /^\s*terms of (service|use)\b/i,
-  /^\s*cookie (policy|preferences|settings)\b/i,
-  /^\s*all rights reserved\b/i,
-  /^\s*copyright\s+©/i,
-  /^\s*©\s*\d{4}/,
-  /^\s*table of contents\b/i,
-  /^\s*on this page\b/i,
+  /leave a (comment|reply)/i,
+  /privacy policy/i,
+  /terms of (service|use)/i,
+  /cookie (policy|preferences|settings|notice)/i,
+  /all rights reserved/i,
+  /copyright\s+©/i,
+  /©\s*\d{4}/,
+  /^\s*table of contents/i,
+  /^\s*on this page/i,
+  /^\s*(home|about|contact|services|products|blog|news|careers|press|investors)\s*$/i,
+  // Scientific / journal chrome
+  /^\s*open access\s*$/i,
+  /^\s*article open access/i,
+  /^\s*author information/i,
+  /^\s*about (the )?authors?/i,
+  /^\s*about this article/i,
+  /^\s*affiliations?\s*$/i,
+  /^\s*corresponding author/i,
+  /^\s*editor['']?s? note/i,
+  /^\s*peer review information/i,
+  /^\s*ethics declarations?/i,
+  /^\s*supplementary (material|information)/i,
+  /^\s*data availability/i,
+  /^\s*acknowledg(e?)ments?/i,
+  /^\s*funding\s*$/i,
+  /^\s*disclosures?/i,
+  /^\s*conflicts? of interest/i,
+  /^\s*reprints? and permissions?/i,
+  /^\s*rights and permissions?/i,
+  // System / runtime
   /\bmathjax\b/i,
   /\bcss warning\b/i,
-  /\bjavascript (is )?(required|disabled|enabled)\b/i,
-  /\benable javascript\b/i,
-  /^\s*(home|about|contact|services|products|blog|news|careers|press|investors)\s*$/i,
+  /\bjavascript (is )?(required|disabled|enabled|must be enabled)\b/i,
+  /enable javascript/i,
+  /accept( all)? cookies/i,
+  /we use cookies/i,
 ];
 
 // Section headers that mark the start of "junk" trailing content.
-// Everything from these headers to the end of the document is removed.
-const TRAILING_SECTION_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|notes?|footnotes?|further reading|see also|related articles?|comments?|about the authors?|author information|acknowledg(e?)ments?|disclosures?|conflicts? of interest|funding|data availability|supplementary (material|information)|appendix)\s*$/im;
+const TRAILING_SECTION_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|notes?|footnotes?|further reading|see also|related (articles?|topics?|content|reading)|similar (content|articles?)|comments?|about (the )?authors?|author information|about this article|acknowledg(e?)ments?|disclosures?|conflicts? of interest|funding|data availability|supplementary (material|information)|appendix|reprints? and permissions?|rights and permissions?|cite this article|how to cite|metrics|peer review information|ethics declarations?|publisher['']?s note)\s*[:.]?\s*$/im;
+
+// Strip markdown link wrappers so line-start matches work on "[Skip…](url)"
+function unwrapMarkdownArtifacts(line: string): string {
+  let s = line;
+  // images: ![alt](url) → ""
+  s = s.replace(/!\[[^\]]*]\([^)]*\)/g, "");
+  // links: [text](url) → text
+  s = s.replace(/\[([^\]]*)]\([^)]*\)/g, "$1");
+  // bare URLs
+  s = s.replace(/https?:\/\/\S+/g, "");
+  // emphasis markers
+  s = s.replace(/[*_~`]+/g, "");
+  return s.trim();
+}
 
 function stripTrailingSections(md: string): string {
   if (!md) return md;
   const lines = md.split(/\r?\n/);
   let cutAt = -1;
   for (let i = 0; i < lines.length; i++) {
-    if (TRAILING_SECTION_RE.test(lines[i].trim())) {
-      // Only cut if it's reasonably late in the doc (avoid killing useful intros).
-      if (i >= Math.floor(lines.length * 0.4)) { cutAt = i; break; }
+    const probe = unwrapMarkdownArtifacts(lines[i]).trim();
+    if (TRAILING_SECTION_RE.test(probe)) {
+      // Cut at section if it's past 35% of doc (intros stay safe).
+      if (i >= Math.floor(lines.length * 0.35)) { cutAt = i; break; }
     }
   }
   return cutAt > 0 ? lines.slice(0, cutAt).join("\n") : md;
 }
 
 function isNoiseLine(line: string): boolean {
-  const t = line.trim();
+  const stripped = unwrapMarkdownArtifacts(line);
+  const t = stripped.trim();
   if (!t) return false;
-  // very short non-sentence lines that look like nav crumbs
   if (t.length < 4) return true;
-  if (NOISE_LINE_PATTERNS.some(re => re.test(t))) return true;
-  // standalone citation markers: "[1]", "[12]", "[1, 2]"
+  if (NOISE_PHRASE_PATTERNS.some(re => re.test(t))) return true;
+  // standalone citation markers
   if (/^\[\d+(\s*,\s*\d+)*]\s*$/.test(t)) return true;
-  // ALL-CAPS short lines (often nav/headers)
+  // ALL-CAPS short lines (nav/section labels)
   if (t.length <= 40 && /^[A-Z0-9\s\-:|·•]+$/.test(t) && /[A-Z]/.test(t) && !/[.!?]$/.test(t)) return true;
+  // pure numeric / DOI-ish
+  if (/^(doi[:\s]|https?:|www\.|10\.\d{4,})/i.test(t) && t.length < 120) return true;
   return false;
 }
 
-// Clean an article: remove trailing sections, drop noise lines, strip
-// citation markers like "[1]" / "[1,2]", normalize whitespace, dedupe paragraphs.
+// Heuristic: chrome lines at the very top before the article body.
+// Strip until we hit a real paragraph (≥120 chars sentence-like text).
+function stripLeadingChrome(md: string): string {
+  const lines = md.split(/\r?\n/);
+  let firstReal = 0;
+  for (let i = 0; i < Math.min(lines.length, 60); i++) {
+    const probe = unwrapMarkdownArtifacts(lines[i]).trim();
+    if (!probe) continue;
+    if (isNoiseLine(lines[i])) { firstReal = i + 1; continue; }
+    // Sentence-ish line with ≥120 chars and contains a period → article body started
+    if (probe.length >= 120 && /[.!?]/.test(probe)) break;
+    // Heading that is clearly the article title (has letters + spaces, not nav)
+    if (/^#{1,3}\s+\S/.test(lines[i])) break;
+  }
+  return lines.slice(firstReal).join("\n");
+}
+
+// Clean an article: strip leading chrome, trailing sections, drop noise lines,
+// strip citation markers, normalize, dedupe paragraphs.
 function cleanArticleMarkdown(md: string): string {
   if (!md) return "";
-  let out = stripTrailingSections(md);
+  let out = stripLeadingChrome(md);
+  out = stripTrailingSections(out);
   const cleanedLines: string[] = [];
   for (const raw of out.split(/\r?\n/)) {
     if (isNoiseLine(raw)) continue;
     cleanedLines.push(raw);
   }
   out = cleanedLines.join("\n");
-  // strip inline citation markers within sentences
   out = out.replace(/\[\d+(\s*,\s*\d+)*]/g, "");
-  // strip MathJax / script residue
   out = out.replace(/<script[\s\S]*?<\/script>/gi, " ");
   out = out.replace(/\\\([\s\S]*?\\\)/g, " ");
   out = out.replace(/\$\$[\s\S]*?\$\$/g, " ");
-  // collapse 3+ blank lines
   out = out.replace(/\n{3,}/g, "\n\n");
+  // Run a second pass: now that wrappers are gone, recheck noise lines
+  const pass2: string[] = [];
+  for (const raw of out.split(/\r?\n/)) {
+    if (isNoiseLine(raw)) continue;
+    pass2.push(raw);
+  }
+  out = pass2.join("\n");
   // dedupe consecutive identical paragraphs
   const paras = out.split(/\n{2,}/);
   const dedup: string[] = [];
@@ -177,6 +245,25 @@ function cleanArticleMarkdown(md: string): string {
     dedup.push(p.trim());
   }
   return dedup.join("\n\n").trim();
+}
+
+// Acceptance gate: opening must look like article body, not chrome.
+// Reject if first 400 chars (plain text) are dominated by nav/system phrases.
+function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: string } {
+  if (!cleanText || cleanText.length < 200) return { ok: false, reason: "thin_opening" };
+  const head = cleanText.slice(0, 500).toLowerCase();
+  const noiseHits = [
+    "skip to", "thank you for visiting", "download pdf", "view pdf",
+    "you are using a browser", "displaying the site", "enable javascript",
+    "accept cookies", "subscribe", "sign in", "log in",
+    "table of contents", "on this page", "related articles", "similar content",
+  ].filter(p => head.includes(p)).length;
+  if (noiseHits >= 2) return { ok: false, reason: "chrome_in_opening" };
+  // Must contain at least one sentence-like construct in the first 500 chars.
+  if (!/[a-z][a-z ,;:'"-]{40,}[.!?]/i.test(cleanText.slice(0, 800))) {
+    return { ok: false, reason: "no_sentence_in_opening" };
+  }
+  return { ok: true };
 }
 
 // 0–100 quality score: length + structure + readability + signal density.
@@ -353,68 +440,61 @@ async function exaDiscover(
 ): Promise<Array<{ url: string; title?: string; description?: string; reason?: string }>> {
   const collected = new Map<string, { url: string; title?: string; description?: string; reason?: string }>();
 
-  // Run one Exa call per query and merge. Exa's neural search returns highly
-  // relevant articles ranked by semantic match.
+  // Strategy: run two passes per query — one biased to consulting/business
+  // sources, one open. This avoids monoculture from a single category.
+  const consultingDomains = TRUSTED_DOMAINS.filter(d =>
+    !/(nature|science|nber)\.org?$/.test(d) && !/^nature\.com$/.test(d)
+  );
+
   for (const q of queries) {
     if (!q || q.length < 6) continue;
-    try {
-      const res = await fetch(EXA_URL, {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          query: `${q} — recent strategic article for senior consultants (${profileContext})`,
-          numResults: 8,
-          type: "neural",
-          useAutoprompt: true,
-          category: "research paper",
-          startPublishedDate: new Date(Date.now() - 90 * 86400_000).toISOString(),
-          contents: { text: false, summary: { query: "Why this matters strategically" } },
-          includeDomains: TRUSTED_DOMAINS,
-        }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        // Retry without the domain restriction (Exa returns no results if filter is too tight)
-        const fallback = await fetch(EXA_URL, {
+    const passes: Array<Record<string, unknown>> = [
+      // Pass 1: business/consulting bias (no category, restricted domains)
+      {
+        query: `${q} — strategic implications for senior consultants (${profileContext})`,
+        numResults: 6,
+        type: "neural",
+        useAutoprompt: true,
+        startPublishedDate: new Date(Date.now() - 120 * 86400_000).toISOString(),
+        contents: { text: false, summary: { query: "Why this matters strategically" } },
+        includeDomains: consultingDomains,
+      },
+      // Pass 2: open neural search (broader pool, no domain/category lock)
+      {
+        query: `${q} executive briefing OR analysis OR report`,
+        numResults: 5,
+        type: "neural",
+        useAutoprompt: true,
+        startPublishedDate: new Date(Date.now() - 120 * 86400_000).toISOString(),
+      },
+    ];
+
+    for (const body of passes) {
+      try {
+        const res = await fetch(EXA_URL, {
           method: "POST",
           headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: q,
-            numResults: 8,
-            type: "neural",
-            useAutoprompt: true,
-            startPublishedDate: new Date(Date.now() - 90 * 86400_000).toISOString(),
-          }),
+          body: JSON.stringify(body),
         });
-        const fb = await fallback.json().catch(() => null);
-        if (!fallback.ok) {
-          console.error("[trends] exa query failed", q, fallback.status, fb);
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          console.error("[trends] exa pass failed", res.status, data);
           continue;
         }
-        const results = Array.isArray(fb?.results) ? fb.results : [];
+        const results = Array.isArray(data?.results) ? data.results : [];
         for (const r of results) {
           if (r?.url && !collected.has(r.url)) {
-            collected.set(r.url, { url: r.url, title: r.title, description: r.summary || r.text?.slice(0, 200) });
+            collected.set(r.url, {
+              url: r.url,
+              title: r.title,
+              description: r.summary || r.text?.slice(0, 200),
+              reason: r.summary,
+            });
           }
         }
-        continue;
+      } catch (e) {
+        console.error("[trends] exa pass exception", e);
       }
-      const results = Array.isArray(data?.results) ? data.results : [];
-      for (const r of results) {
-        if (r?.url && !collected.has(r.url)) {
-          collected.set(r.url, {
-            url: r.url,
-            title: r.title,
-            description: r.summary || r.text?.slice(0, 200),
-            reason: r.summary,
-          });
-        }
-      }
-    } catch (e) {
-      console.error("[trends] exa query exception", q, e);
     }
   }
 
@@ -458,23 +538,25 @@ You receive raw articles. For EACH one you must turn it into a SIGNAL OBJECT —
 A signal must answer: WHAT is changing? WHY does it matter? WHAT should I do? HOW can I use it?
 
 For EACH article return:
-- headline: punchy, <= 10 words, no clickbait, no "How to…", no questions.
+- headline: punchy, <= 10 words, no clickbait, no "How to…", no questions. Lead with the shift, not the topic.
 - insight: ONE sentence (<= 25 words). MUST start with one of:
-    "This signals…", "This creates an opportunity to…", "This indicates a shift…", "This raises the bar for…".
-    NEVER write "The article says", "This article discusses", "According to".
-- summary: 2–3 strategic sentences. What changed, what it means for this consultant. No fluff. No filler.
+    "This signals…", "This creates an opportunity to…", "This indicates a shift…", "This raises the bar for…", "This exposes a gap in…".
+    NEVER write "The article says", "This article discusses", "According to", "highlights", "discusses", "sets a precedent".
+- summary: 2–3 strategic sentences. State the shift, the implication for THIS consultant's clients, and the second-order effect. No fluff. No filler. No restating the article.
 - relevance_score: 0-100 — how relevant to THIS consultant's profile.
 - category: ONE of [Strategy, AI, Operations, Regulation, Technology, Market, Talent, Sustainability, Finance].
-- impact_level: ONE of [High, Emerging, Watch]. High = major shift already underway. Emerging = early but credible. Watch = monitor.
+- impact_level: ONE of [High, Emerging, Watch]. High = major shift already underway with money/regulation behind it. Emerging = early but credible signal. Watch = monitor.
 - confidence_level: ONE of [High, Medium, Low]. Based on how strongly the article evidences its claim.
 - signal_type: ONE of [Trend, Insight, Disruption, Benchmark, Risk].
 - opportunity_type: ONE of [Content, Consulting, Product, Partnership, Internal] — the most natural way THIS consultant can act on it.
-- action_recommendation: <= 200 chars. Concrete, decision-oriented. Example:
-    "Position digital transformation as a financial lever in client conversations with utilities CFOs."
-    NOT: "Read more about this."
-- content_angle: <= 200 chars. A LinkedIn-ready angle. Example:
-    "Why water utilities must connect IT KPIs to CFO metrics — and the 3 mistakes most are making."
-    NOT: "AI in operations."`,
+- action_recommendation: <= 200 chars. Concrete, decision-grade, commercially useful. Must name a SPECIFIC audience, action, and value.
+    GOOD: "Open a CFO conversation at 2 utility clients this quarter: frame digital twin investment as opex reduction, not IT spend."
+    GOOD: "Build a 90-day diagnostic offer for water utilities exposed to the new EU regulation; lead with risk quantification."
+    BAD: "Read more about this." / "Stay informed." / "Consider how this applies." / "Position digital transformation."
+- content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, contrarian, or counted.
+    GOOD: "3 things water utility CFOs get wrong about digital twins — and the one number that fixes the conversation."
+    GOOD: "Why most utilities will miss the AI compliance window: a 4-question audit before you spend a euro."
+    BAD: "AI in operations." / "The future of utilities." / "Digital transformation matters." / "Why this trend is important."`,
         },
         {
           role: "user",
@@ -531,24 +613,56 @@ For EACH article return:
   try { return JSON.parse(args).signals ?? []; } catch { return []; }
 }
 
-// Diversity: cap per-domain to 2.
+// Domain "family" — collapse subdomains and journal siblings so we don't
+// get 5x nature.com just because Nature has many sub-journals.
+function domainFamily(domain: string): string {
+  const d = (domain || "").toLowerCase();
+  if (!d) return "";
+  // Nature family: nature.com, www.nature.com, nature.com/articles/* (all same family)
+  if (/(^|\.)nature\.com$/.test(d)) return "nature-family";
+  if (/(^|\.)science\.org$/.test(d)) return "science-family";
+  if (/(^|\.)springer\.com$/.test(d) || /(^|\.)springernature\.com$/.test(d)) return "springer-family";
+  if (/(^|\.)sciencedirect\.com$/.test(d) || /(^|\.)elsevier\.com$/.test(d)) return "elsevier-family";
+  if (/(^|\.)mckinsey\.com$/.test(d)) return "mckinsey";
+  if (/(^|\.)bcg\.com$/.test(d)) return "bcg";
+  if (/(^|\.)deloitte\.com$/.test(d)) return "deloitte";
+  if (/(^|\.)ey\.com$/.test(d)) return "ey";
+  if (/(^|\.)pwc\.com$/.test(d)) return "pwc";
+  if (/(^|\.)kpmg\.com$/.test(d)) return "kpmg";
+  if (/(^|\.)accenture\.com$/.test(d)) return "accenture";
+  // Default: registrable domain (last 2 labels)
+  const parts = d.split(".");
+  return parts.length >= 2 ? parts.slice(-2).join(".") : d;
+}
+
+// Diversity: cap per-domain AND per-domain-family. Prefer broad variety.
 function diversifyByDomain<T extends { source: string; final_score: number }>(
-  rows: T[], perDomainCap = 2, max = 5,
+  rows: T[], perDomainCap = 2, max = 5, perFamilyCap = 2,
 ): T[] {
   const sorted = [...rows].sort((a, b) => b.final_score - a.final_score);
-  const counts = new Map<string, number>();
+  const domCounts = new Map<string, number>();
+  const famCounts = new Map<string, number>();
   const picked: T[] = [];
   for (const r of sorted) {
     const dom = (r.source || "").toLowerCase();
-    const c = counts.get(dom) || 0;
-    if (c >= perDomainCap) continue;
-    counts.set(dom, c + 1);
+    const fam = domainFamily(dom);
+    const dc = domCounts.get(dom) || 0;
+    const fc = famCounts.get(fam) || 0;
+    if (dc >= perDomainCap) continue;
+    if (fc >= perFamilyCap) continue;
+    domCounts.set(dom, dc + 1);
+    famCounts.set(fam, fc + 1);
     picked.push(r);
     if (picked.length >= max) break;
   }
+  // Relax family cap as a last resort — but never breach domain cap
   if (picked.length < max) {
     for (const r of sorted) {
       if (picked.includes(r)) continue;
+      const dom = (r.source || "").toLowerCase();
+      const dc = domCounts.get(dom) || 0;
+      if (dc >= perDomainCap) continue;
+      domCounts.set(dom, dc + 1);
       picked.push(r);
       if (picked.length >= max) break;
     }
@@ -723,6 +837,10 @@ serve(async (req) => {
       }
       if (noiseRatio > MAX_NOISE_RATIO) {
         console.log("[trends] reject high_noise_ratio", c.url, noiseRatio.toFixed(2)); continue;
+      }
+      const opening = openingLooksLikeArticle(text);
+      if (!opening.ok) {
+        console.log("[trends] reject opening", c.url, opening.reason); continue;
       }
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
