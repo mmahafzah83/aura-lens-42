@@ -5,6 +5,87 @@ import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { Button } from "@/components/ui/button";
 
+const DOCUMENT_STATUS_EVENT = "aura:document-status-changed";
+const TERMINAL_DOCUMENT_STATUSES = new Set(["completed", "ready", "error"]);
+const activeDocumentWatchers = new Map<string, { intervalId: number; timeoutId: number; toastId: string | number | null }>();
+
+const dispatchDocumentStatusEvent = (documentId: string, status: string) => {
+  window.dispatchEvent(new CustomEvent(DOCUMENT_STATUS_EVENT, { detail: { documentId, status } }));
+};
+
+const dismissWatcherToast = (documentId: string) => {
+  const watcher = activeDocumentWatchers.get(documentId);
+  if (!watcher?.toastId) return;
+  console.log(`[DocumentUpload] processing toast dismissed doc=${documentId}`);
+  sonnerToast.dismiss(watcher.toastId);
+  watcher.toastId = null;
+};
+
+const clearWatcher = (documentId: string) => {
+  const watcher = activeDocumentWatchers.get(documentId);
+  if (!watcher) return;
+  window.clearInterval(watcher.intervalId);
+  window.clearTimeout(watcher.timeoutId);
+  activeDocumentWatchers.delete(documentId);
+};
+
+const startDocumentWatcher = ({
+  documentId,
+  filename,
+}: {
+  documentId: string;
+  filename: string;
+}) => {
+  clearWatcher(documentId);
+
+  const toastId = sonnerToast.loading(`Processing ${filename}… this may take a minute`, {
+    duration: Infinity,
+  });
+  console.log(`[DocumentUpload] processing toast shown doc=${documentId}`);
+
+  const intervalId = window.setInterval(async () => {
+    const { data } = await supabase
+      .from("documents")
+      .select("status, summary, page_count, error_message")
+      .eq("id", documentId)
+      .maybeSingle();
+
+    if (!data || !TERMINAL_DOCUMENT_STATUSES.has(data.status)) return;
+
+    console.log(`[DocumentUpload] terminal status detected doc=${documentId} status=${data.status}`);
+    dismissWatcherToast(documentId);
+    clearWatcher(documentId);
+    dispatchDocumentStatusEvent(documentId, data.status);
+
+    if (data.status === "completed" || data.status === "ready") {
+      sonnerToast.success(`✓ ${filename} processed successfully — ${data.page_count ?? 0} pages captured`, {
+        duration: 4000,
+      });
+      console.log(`[DocumentUpload] final toast shown doc=${documentId} status=success`);
+      return;
+    }
+
+    const reason = data.error_message ? ` ${data.error_message}` : "";
+    sonnerToast.error(`Could not process ${filename}.${reason}`, {
+      duration: Infinity,
+    });
+    console.log(`[DocumentUpload] final toast shown doc=${documentId} status=error`);
+  }, 4000);
+
+  const timeoutId = window.setTimeout(() => {
+    dismissWatcherToast(documentId);
+    clearWatcher(documentId);
+    dispatchDocumentStatusEvent(documentId, "timeout");
+    sonnerToast.error(`Processing ${filename} timed out. Check Sources for the latest status.`, {
+      duration: Infinity,
+    });
+    console.log(`[DocumentUpload] final toast shown doc=${documentId} status=timeout`);
+  }, 180000);
+
+  activeDocumentWatchers.set(documentId, { intervalId, timeoutId, toastId });
+  console.log(`[DocumentUpload] polling started doc=${documentId}`);
+};
+
 interface DocumentUploadProps {
   onUploaded?: () => void;
 }
@@ -30,7 +111,6 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
   const { toast } = useToast();
   const pollIntervalRef = useRef<number | null>(null);
   const pollTimeoutRef = useRef<number | null>(null);
-  const toastIdRef = useRef<string | number | null>(null);
 
   useEffect(() => () => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -40,44 +120,6 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
   const stopPolling = () => {
     if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
     if (pollTimeoutRef.current) { clearTimeout(pollTimeoutRef.current); pollTimeoutRef.current = null; }
-  };
-
-  const pollStatus = (documentId: string, filename: string) => {
-    stopPolling();
-    pollIntervalRef.current = window.setInterval(async () => {
-      const { data } = await supabase
-        .from("documents")
-        .select("status, summary, page_count, error_message")
-        .eq("id", documentId)
-        .maybeSingle();
-      if (!data) return;
-      if (data.status === "completed" || data.status === "ready") {
-        stopPolling();
-        if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
-        sonnerToast.success(`✓ ${filename} processed successfully — ${data.page_count ?? 0} pages captured`, {
-          duration: 4000,
-        });
-        setStatus("done");
-        onUploaded?.();
-      } else if (data.status === "error") {
-        stopPolling();
-        if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
-        const reason = (data as any).error_message ? ` ${(data as any).error_message}` : "";
-        sonnerToast.error(`Could not process ${filename}.${reason}`, {
-          duration: Infinity,
-        });
-        setStatus("error");
-        onUploaded?.();
-      }
-    }, 4000);
-
-    // Allow up to 3 minutes for large PDFs
-    pollTimeoutRef.current = window.setTimeout(() => {
-      stopPolling();
-      if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
-      sonnerToast.error(`Processing ${filename} is taking longer than expected. It may still complete in the background — refresh in a minute.`, { duration: Infinity });
-      setStatus("error");
-    }, 180000);
   };
 
   const checkDuplicate = async (file: File): Promise<{ filename: string; date: string } | null> => {
@@ -165,12 +207,11 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
       return;
     }
 
-    setStatus("processing");
+    console.log(`[DocumentUpload] upload row created doc=${(doc as any).id} status=${(doc as any).status}`);
+    dispatchDocumentStatusEvent((doc as any).id, "processing");
 
-    // Persistent processing toast
-    toastIdRef.current = sonnerToast.loading(`Processing ${file.name}… this may take a minute`, {
-      duration: Infinity,
-    });
+    setStatus("processing");
+    startDocumentWatcher({ documentId: (doc as any).id, filename: file.name });
 
     // Trigger ingestion via Supabase invoke (auth handled, errors surfaced)
     const { data: invokeData, error: invokeError } = await supabase.functions.invoke(
@@ -179,15 +220,18 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     );
     if (invokeError) {
       console.error("[DocumentUpload] ingest-document invoke error:", invokeError);
-      if (toastIdRef.current) sonnerToast.dismiss(toastIdRef.current);
+      dismissWatcherToast((doc as any).id);
+      clearWatcher((doc as any).id);
       sonnerToast.error(`Could not start processing for ${file.name}: ${invokeError.message || "unknown error"}`, {
         duration: 6000,
       });
+      console.log(`[DocumentUpload] final toast shown doc=${(doc as any).id} status=invoke-error`);
       // Mark the row as errored so the UI offers retry
       await supabase
         .from("documents")
         .update({ status: "error", error_message: `Trigger failed: ${invokeError.message || "unknown"}` } as any)
         .eq("id", (doc as any).id);
+      dispatchDocumentStatusEvent((doc as any).id, "error");
       setStatus("error");
       setUploading(false);
       onUploaded?.();
@@ -197,7 +241,6 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
 
     setUploading(false);
     onUploaded?.();
-    pollStatus((doc as any).id, file.name);
   };
 
   const reset = () => {

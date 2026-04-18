@@ -7,6 +7,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const DOCUMENT_STATUS_EVENT = "aura:document-status-changed";
+
 /* ── Types ── */
 
 interface SourceEntry {
@@ -400,6 +402,15 @@ const SourcesSubTab = ({
   }, []);
 
   useEffect(() => { loadEntries(); }, [loadEntries]);
+
+  useEffect(() => {
+    const handleDocumentStatusChange = () => {
+      void loadEntries();
+    };
+
+    window.addEventListener(DOCUMENT_STATUS_EVENT, handleDocumentStatusChange);
+    return () => window.removeEventListener(DOCUMENT_STATUS_EVENT, handleDocumentStatusChange);
+  }, [loadEntries]);
 
   // Client-side filter + search + sort
   const visibleEntries = useMemo(() => {
