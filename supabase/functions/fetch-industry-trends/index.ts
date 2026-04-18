@@ -194,21 +194,73 @@ function isNoiseLine(line: string): boolean {
   return false;
 }
 
-// Heuristic: chrome lines at the very top before the article body.
-// Strip until we hit a real paragraph (≥120 chars sentence-like text).
-function stripLeadingChrome(md: string): string {
+// ───────── Stage 1: Article start detection via line scoring ─────────
+// Each line is scored. The article begins at the first BLOCK of consecutive
+// lines whose cumulative score reaches >= 4. Everything before is dropped.
+const NAV_SYSTEM_WORDS = [
+  "skip", "download", "share", "subscribe", "login", "log in", "sign in", "sign up",
+  "view pdf", "download pdf", "thank you for visiting", "menu", "navigation",
+  "follow us", "newsletter", "cookie", "accept all", "privacy policy",
+];
+const BUSINESS_TERMS = [
+  "strategy", "transformation", "efficiency", "operations", "regulation",
+  "investment", "growth", "market", "industry", "leadership", "innovation",
+  "performance", "revenue", "risk", "governance", "compliance", "scale",
+  "digital", "technology", "ai ", "artificial intelligence", "data",
+  "consulting", "client", "executive", "stakeholder", "decision",
+  "research", "analysis", "evidence", "finding", "outcome", "impact",
+  "policy", "framework", "model", "infrastructure", "supply chain",
+  "sustainability", "emission", "energy", "utility", "utilities",
+  "healthcare", "financial", "bank", "manufacturing", "retail",
+];
+const VERB_TOKENS = [
+  " is ", " are ", " was ", " were ", " will ", " enables ", " drives ",
+  " improves ", " reduces ", " increases ", " creates ", " transforms ",
+  " requires ", " demands ", " shows ", " finds ", " reveals ", " indicates ",
+  " suggests ", " demonstrates ", " confirms ", " forces ", " unlocks ",
+  " accelerates ", " disrupts ", " threatens ", " enables ", " allows ",
+];
+
+function scoreLine(line: string): number {
+  const stripped = unwrapMarkdownArtifacts(line).trim();
+  if (!stripped) return 0;
+  const lower = " " + stripped.toLowerCase() + " ";
+  let s = 0;
+  // +3 full sentence (>100 chars with sentence-ending punctuation)
+  if (stripped.length > 100 && /[.!?]/.test(stripped)) s += 3;
+  // +2 verbs
+  if (VERB_TOKENS.some(v => lower.includes(v))) s += 2;
+  // +2 business/analytical language
+  if (BUSINESS_TERMS.some(t => lower.includes(t))) s += 2;
+  // -3 navigation/system words
+  if (NAV_SYSTEM_WORDS.some(w => lower.includes(" " + w + " ") || lower.includes(" " + w))) s -= 3;
+  // -2 very short
+  if (stripped.length < 40) s -= 2;
+  // -2 ALL CAPS line
+  if (stripped.length <= 80 && /^[^a-z]+$/.test(stripped) && /[A-Z]/.test(stripped)) s -= 2;
+  return s;
+}
+
+function detectArticleStart(md: string): number {
   const lines = md.split(/\r?\n/);
-  let firstReal = 0;
-  for (let i = 0; i < Math.min(lines.length, 60); i++) {
-    const probe = unwrapMarkdownArtifacts(lines[i]).trim();
-    if (!probe) continue;
-    if (isNoiseLine(lines[i])) { firstReal = i + 1; continue; }
-    // Sentence-ish line with ≥120 chars and contains a period → article body started
-    if (probe.length >= 120 && /[.!?]/.test(probe)) break;
-    // Heading that is clearly the article title (has letters + spaces, not nav)
-    if (/^#{1,3}\s+\S/.test(lines[i])) break;
+  // Scan a sliding window over the first 80 lines; cumulative score over a
+  // 3-line window must reach ≥4 to declare "article body started".
+  const SCAN_LIMIT = Math.min(lines.length, 80);
+  for (let i = 0; i < SCAN_LIMIT; i++) {
+    if (!unwrapMarkdownArtifacts(lines[i]).trim()) continue;
+    const s1 = scoreLine(lines[i]);
+    const s2 = i + 1 < SCAN_LIMIT ? scoreLine(lines[i + 1]) : 0;
+    const s3 = i + 2 < SCAN_LIMIT ? scoreLine(lines[i + 2]) : 0;
+    if (s1 + s2 + s3 >= 4 && s1 >= 0) return i;
+    // Single very strong line (≥5) also qualifies
+    if (s1 >= 5) return i;
   }
-  return lines.slice(firstReal).join("\n");
+  return 0;
+}
+
+function stripLeadingChrome(md: string): string {
+  const startIdx = detectArticleStart(md);
+  return md.split(/\r?\n/).slice(startIdx).join("\n");
 }
 
 // Clean an article: strip leading chrome, trailing sections, drop noise lines,
