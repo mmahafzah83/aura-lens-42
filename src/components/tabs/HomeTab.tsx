@@ -8,6 +8,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
+import AurasRead from "@/components/AurasRead";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
