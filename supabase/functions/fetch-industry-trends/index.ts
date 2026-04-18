@@ -321,7 +321,15 @@ async function aiSynthesize(lovableKey: string, profileContext: string, items: A
       messages: [
         {
           role: "system",
-          content: `You are a strategic intelligence editor for a senior consultant with this profile: ${profileContext}. For each article, write a punchy headline (<= 10 words), a one-sentence "why this matters to you" insight (<= 25 words), a 2-3 sentence summary, and a relevance_score 0-100.`,
+          content: `You are a strategic intelligence editor for a senior consultant with this profile: ${profileContext}.
+
+For EACH article return:
+- headline: punchy, <= 10 words, no clickbait
+- insight: one sentence (<= 25 words) written in DECISION-ORIENTED language. Start with phrases like "This signals…", "This creates an opportunity to…", "This indicates a shift toward…", "This raises the bar for…". NEVER write "The article says…" or "This article discusses…".
+- summary: 2-3 sentences, what changed and why it matters strategically (no fluff)
+- relevance_score: 0-100, how relevant to THIS consultant's profile
+- category: ONE of [Strategy, AI, Operations, Regulation, Technology, Market, Talent, Sustainability, Finance]
+- impact_level: ONE of [High, Emerging, Watch] — "High" for major shifts already underway, "Emerging" for early but credible signals, "Watch" for things to monitor.`,
         },
         {
           role: "user",
@@ -346,6 +354,8 @@ async function aiSynthesize(lovableKey: string, profileContext: string, items: A
                     insight: { type: "string" },
                     summary: { type: "string" },
                     relevance_score: { type: "integer", minimum: 0, maximum: 100 },
+                    category: { type: "string" },
+                    impact_level: { type: "string" },
                   },
                   required: ["index", "headline", "insight", "summary", "relevance_score"],
                 },
@@ -399,6 +409,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Refresh mode: "full" (default) re-runs full pipeline; "light" tops up with fewer items.
+    let mode: "light" | "full" = "full";
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        if (body?.mode === "light") mode = "light";
+      } catch { /* no body */ }
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -552,8 +571,9 @@ serve(async (req) => {
     }
 
     // Build rows with weighted final_score
-    // weights: validation 0.5, ai-relevance 0.3, topic-relevance 0.2
-    const W_VAL = 0.5, W_REL = 0.3, W_TOPIC = 0.2;
+    // Per spec: validation 0.6, relevance 0.4. Topic-relevance folded into the
+    // relevance bucket (60/40 split) so we keep one combined "relevance" weight.
+    const W_VAL = 0.6, W_REL = 0.4;
 
     type Built = {
       user_id: string; headline: string; insight: string; summary: string;
@@ -564,6 +584,8 @@ serve(async (req) => {
       validation_status: string; last_checked_at: string;
       published_at: null; status: string;
       selection_reason: string;
+      category: string | null;
+      impact_level: string | null;
     };
 
     function buildSelectionReason(opts: {
@@ -591,14 +613,25 @@ serve(async (req) => {
       return reason.slice(0, 300);
     }
 
+    const VALID_CATEGORIES = new Set([
+      "Strategy", "AI", "Operations", "Regulation", "Technology",
+      "Market", "Talent", "Sustainability", "Finance",
+    ]);
+    const VALID_IMPACT = new Set(["High", "Emerging", "Watch"]);
+
     const built: Built[] = [];
     for (const s of synthesized) {
       const src = scraped[s.index];
       if (!src) continue;
       const ai_relevance = Math.max(0, Math.min(100, Number(s.relevance_score) || 0));
-      const final_score = Math.round(
-        src.validation_score * W_VAL + ai_relevance * W_REL + src.topic_relevance_score * W_TOPIC,
-      );
+      // Combine AI editorial relevance + topic-keyword relevance into a single
+      // relevance bucket (60% AI / 40% topic) before applying the 0.6/0.4 split.
+      const combined_relevance = Math.round(ai_relevance * 0.6 + src.topic_relevance_score * 0.4);
+      const final_score = Math.round(src.validation_score * W_VAL + combined_relevance * W_REL);
+      const rawCategory = typeof s.category === "string" ? s.category.trim() : "";
+      const category = VALID_CATEGORIES.has(rawCategory) ? rawCategory : null;
+      const rawImpact = typeof s.impact_level === "string" ? s.impact_level.trim() : "";
+      const impact_level = VALID_IMPACT.has(rawImpact) ? rawImpact : null;
       const selection_reason = buildSelectionReason({
         domain: src.source,
         validation: src.validation_score,
@@ -616,7 +649,7 @@ serve(async (req) => {
         canonical_url: src.canonical,
         content_markdown: src.markdown.slice(0, 50000),
         content_text: src.text.slice(0, 50000),
-        relevance_score: ai_relevance,
+        relevance_score: combined_relevance,
         validation_score: src.validation_score,
         topic_relevance_score: src.topic_relevance_score,
         final_score,
@@ -625,11 +658,24 @@ serve(async (req) => {
         published_at: null,
         status: "new",
         selection_reason,
+        category,
+        impact_level,
       });
     }
 
-    // Diversity-aware top-K selection
-    const selected = diversifyByDomain(built, 2, 5);
+    // Refresh mode: light = top up to 3 new, full = replace top 5 with diversity
+    const isLight = mode === "light";
+    const targetCount = isLight ? 3 : 5;
+    const selected = diversifyByDomain(built, 2, targetCount);
+
+    // Full refresh expires existing "new" trends BEFORE inserting fresh ones.
+    if (!isLight && selected.length > 0) {
+      await adminClient
+        .from("industry_trends")
+        .update({ status: "expired" })
+        .eq("user_id", userId)
+        .eq("status", "new");
+    }
 
     let inserted = 0;
     if (selected.length > 0) {

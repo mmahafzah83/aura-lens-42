@@ -45,7 +45,22 @@ interface Trend {
   topic_relevance_score?: number | null;
   final_score?: number | null;
   selection_reason?: string | null;
+  category?: string | null;
+  impact_level?: string | null;
 }
+
+const freshnessOf = (iso: string): { label: string; color: string } => {
+  const ageH = (Date.now() - new Date(iso).getTime()) / 3_600_000;
+  if (ageH <= 24) return { label: "Fresh", color: "#7ab648" };
+  if (ageH <= 24 * 7) return { label: "This week", color: "#F97316" };
+  return { label: "Aging", color: "hsl(var(--muted-foreground))" };
+};
+
+const impactStyle = (level?: string | null): { color: string } => {
+  if (level === "High") return { color: "#E24B4A" };
+  if (level === "Emerging") return { color: "#F97316" };
+  return { color: "hsl(var(--muted-foreground))" };
+};
 
 type TrendFilter = "all" | "high_confidence" | "top_relevance" | "trusted" | "newest";
 
@@ -148,6 +163,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [addedSignalIds, setAddedSignalIds] = useState<Set<string>>(new Set());
   const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
   const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
+  const [refreshingTrends, setRefreshingTrends] = useState(false);
 
   // Live clock
   useEffect(() => {
@@ -259,7 +275,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason")
+          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level")
           .eq("user_id", uid)
           .eq("status", "new")
           .order("final_score", { ascending: false })
@@ -430,6 +446,29 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setDismissedTrendIds(prev => new Set(prev).add(id));
   };
 
+  const handleRefreshTrends = async () => {
+    if (refreshingTrends || !authUser) return;
+    setRefreshingTrends(true);
+    try {
+      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
+        body: { mode: "full" },
+      });
+      if (error) {
+        console.error("[HomeTab] refresh trends failed", error);
+        setTrendsError(true);
+      } else {
+        setDismissedTrendIds(new Set());
+        await loadTrends(authUser.id);
+        await loadTrendsBadge(authUser.id);
+      }
+    } catch (e) {
+      console.error("[HomeTab] refresh trends exception", e);
+      setTrendsError(true);
+    } finally {
+      setRefreshingTrends(false);
+    }
+  };
+
   const visibleTrends = useMemo(() => {
     let arr = trends.filter(t => !dismissedTrendIds.has(t.id));
     switch (trendFilter) {
@@ -476,10 +515,14 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
         {!trendsCountLoading && trendsBadgeCount > 0 && (
           <span style={{
-            background: ACCENT, color: "#fff", fontSize: 11, fontWeight: 500,
-            padding: "3px 12px", borderRadius: 20,
+            background: "transparent",
+            color: "hsl(var(--muted-foreground))",
+            fontSize: 10, fontWeight: 500,
+            padding: "3px 10px", borderRadius: 20,
+            border: "0.5px solid hsl(var(--border))",
+            letterSpacing: "0.04em",
           }}>
-            {trendsBadgeCount} new trend{trendsBadgeCount === 1 ? "" : "s"}
+            {trendsBadgeCount} this week
           </span>
         )}
       </header>
@@ -633,12 +676,31 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 4 — Live intelligence */}
       <section>
-        <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
-            Live Intelligence
+        <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 10 }}>
+          <div className="flex items-center gap-2">
+            <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+              Live Intelligence
+            </div>
+            <button
+              onClick={handleRefreshTrends}
+              disabled={refreshingTrends}
+              title="Refresh trends now"
+              style={{
+                background: "transparent",
+                border: "0.5px solid hsl(var(--border))",
+                color: refreshingTrends ? "hsl(var(--muted-foreground) / 0.5)" : "hsl(var(--muted-foreground))",
+                fontSize: 10,
+                padding: "3px 10px",
+                borderRadius: 3,
+                cursor: refreshingTrends ? "wait" : "pointer",
+                letterSpacing: "0.04em",
+              }}
+            >
+              {refreshingTrends ? "Refreshing…" : "↻ Refresh trends"}
+            </button>
           </div>
           {!trendsError && !showTrendsSkeleton && trends.length > 0 && (
-            <div className="flex items-center gap-1" style={{ fontSize: 10 }}>
+            <div className="flex items-center gap-1 flex-wrap" style={{ fontSize: 10 }}>
               {([
                 { key: "all", label: "Top picks" },
                 { key: "high_confidence", label: "High confidence" },
@@ -698,6 +760,8 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
               const tier = qualityTier(t.validation_score);
               const trusted = isTrusted(t.source);
               const reason = trendReason(t);
+              const fresh = freshnessOf(t.fetched_at);
+              const impact = impactStyle(t.impact_level);
               return (
                 <div
                   key={t.id}
@@ -721,6 +785,19 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                       <span title={`Quality score ${t.validation_score ?? 0}/100`} style={{ fontSize: 9, color: tier.color, border: `0.5px solid ${tier.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
                         {tier.label.toUpperCase()} · {t.validation_score ?? 0}
                       </span>
+                      <span title="Freshness" style={{ fontSize: 9, color: fresh.color, border: `0.5px solid ${fresh.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+                        {fresh.label.toUpperCase()}
+                      </span>
+                      {t.category && (
+                        <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "1px 5px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.04em" }}>
+                          {t.category.toUpperCase()}
+                        </span>
+                      )}
+                      {t.impact_level && (
+                        <span title={`Impact: ${t.impact_level}`} style={{ fontSize: 9, color: impact.color, border: `0.5px solid ${impact.color}55`, padding: "1px 5px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em" }}>
+                          ◆ {t.impact_level.toUpperCase()}
+                        </span>
+                      )}
                       <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground) / 0.6)" }}>
                         · {timeAgo(t.fetched_at)}
                       </span>

@@ -23,6 +23,16 @@ interface TrendRow {
   topic_relevance_score: number | null;
   final_score: number | null;
   selection_reason: string | null;
+  category: string | null;
+  impact_level: string | null;
+}
+
+// Truncate markdown to roughly N words while keeping basic structure intact.
+function previewMarkdown(md: string, words = 400): { preview: string; truncated: boolean } {
+  if (!md) return { preview: "", truncated: false };
+  const tokens = md.split(/\s+/);
+  if (tokens.length <= words) return { preview: md, truncated: false };
+  return { preview: tokens.slice(0, words).join(" ") + "…", truncated: true };
 }
 
 const TRUSTED_SET = new Set([
@@ -51,6 +61,7 @@ export default function TrendDetail() {
   const [trend, setTrend] = useState<TrendRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [externalAlive, setExternalAlive] = useState<boolean | null>(null);
+  const [showFullSnapshot, setShowFullSnapshot] = useState(false);
 
   useEffect(() => {
     if (!isReady || !user || !id) return;
@@ -59,7 +70,7 @@ export default function TrendDetail() {
       setLoading(true);
       const { data, error } = await supabase
         .from("industry_trends")
-        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason")
+        .select("id, headline, insight, summary, source, url, canonical_url, content_markdown, fetched_at, validation_status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level")
         .eq("id", id)
         .eq("user_id", user.id)
         .maybeSingle();
@@ -146,6 +157,21 @@ export default function TrendDetail() {
             FOCUS MATCH · {trend.topic_relevance_score}
           </span>
         )}
+        {trend.category && (
+          <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "1px 6px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.04em" }}>
+            {trend.category.toUpperCase()}
+          </span>
+        )}
+        {trend.impact_level && (
+          <span title={`Impact: ${trend.impact_level}`} style={{
+            fontSize: 9,
+            color: trend.impact_level === "High" ? "#E24B4A" : trend.impact_level === "Emerging" ? "#F97316" : "hsl(var(--muted-foreground))",
+            border: `0.5px solid ${trend.impact_level === "High" ? "#E24B4A55" : trend.impact_level === "Emerging" ? "#F9731655" : "hsl(var(--border))"}`,
+            padding: "1px 6px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.04em",
+          }}>
+            ◆ {trend.impact_level.toUpperCase()}
+          </span>
+        )}
         <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground) / 0.6)" }}>
           · {formatSmartDate(trend.fetched_at)}
         </span>
@@ -174,12 +200,28 @@ export default function TrendDetail() {
       )}
 
       <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
-        <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 12 }}>
-          Article snapshot
+        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+            Article snapshot · primary reading
+          </div>
+          {trend.content_markdown && (() => {
+            const { truncated } = previewMarkdown(trend.content_markdown, 400);
+            if (!truncated) return null;
+            return (
+              <button
+                onClick={() => setShowFullSnapshot(s => !s)}
+                style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+              >
+                {showFullSnapshot ? "Show preview" : "Show full snapshot"}
+              </button>
+            );
+          })()}
         </div>
         {trend.content_markdown ? (
           <div className="prose prose-sm max-w-none dark:prose-invert" style={{ fontSize: 13, lineHeight: 1.7 }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{trend.content_markdown}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {showFullSnapshot ? trend.content_markdown : previewMarkdown(trend.content_markdown, 400).preview}
+            </ReactMarkdown>
           </div>
         ) : (
           <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
@@ -189,7 +231,8 @@ export default function TrendDetail() {
       </div>
 
       {externalUrl && (
-        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 16, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 16, fontSize: 11, color: "hsl(var(--muted-foreground) / 0.7)" }}>
+          <span style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 8 }}>Reference</span>
           {externalAlive === false ? (
             <span>Original source unavailable.</span>
           ) : (
@@ -202,3 +245,4 @@ export default function TrendDetail() {
     </div>
   );
 }
+
