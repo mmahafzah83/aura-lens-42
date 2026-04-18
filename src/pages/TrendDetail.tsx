@@ -295,9 +295,10 @@ export default function TrendDetail() {
           );
         };
         return (
-          <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
+          <div style={{ marginBottom: 20, marginTop: 4 }}>
+            <div style={thinRule} />
             <div className="flex items-center justify-between flex-wrap" style={{ marginBottom: 12, gap: 8 }}>
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
                 Article snapshot · {snapshotMode === "clean" ? "cleaned" : "raw"}
               </div>
               <div className="flex items-center" style={{ gap: 6 }}>
@@ -307,44 +308,75 @@ export default function TrendDetail() {
                     {tabBtn("raw", "View raw")}
                   </>
                 )}
-                {truncated && (
-                  <button
-                    onClick={() => setShowFullSnapshot(s => !s)}
-                    style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
-                  >
-                    {showFullSnapshot ? "Show preview" : "Show full snapshot"}
-                  </button>
-                )}
+                <button
+                  onClick={() => setShowFullSnapshot(s => !s)}
+                  style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                >
+                  {showFullSnapshot ? "Show less" : "Show more"}
+                </button>
               </div>
             </div>
-            <div className="prose prose-sm max-w-none dark:prose-invert" style={{ fontSize: 13, lineHeight: 1.7 }}>
+            <div
+              className="prose prose-sm max-w-none dark:prose-invert"
+              style={{
+                fontSize: 13,
+                lineHeight: 1.7,
+                ...(showFullSnapshot ? {} : {
+                  display: "-webkit-box",
+                  WebkitLineClamp: 4,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
+                }),
+              }}
+            >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {showFullSnapshot ? activeMd! : previewMarkdown(activeMd!, 400).preview}
+                {activeMd!}
               </ReactMarkdown>
             </div>
           </div>
         );
       })()}
 
-      {/* External link — secondary reference */}
-      {externalUrl && (
-        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 16, fontSize: 11, color: "hsl(var(--muted-foreground) / 0.7)" }}>
-          <span style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", marginRight: 8 }}>Reference</span>
-          {externalAlive === false ? (
-            <span>Original source unavailable.</span>
-          ) : (
-            <a href={externalUrl} target="_blank" rel="noopener noreferrer" style={{ color: "hsl(var(--muted-foreground))", textDecoration: "underline" }}>
-              View original on {signal.source || "publisher site"} ↗
-            </a>
-          )}
-        </div>
-      )}
-
-      {signal.selection_reason && signal.selection_reason.trim().length > 0 && (
-        <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground) / 0.6)", marginTop: 16, fontStyle: "italic" }}>
-          ◆ Why selected: {signal.selection_reason}
-        </div>
-      )}
+      {/* Footer actions */}
+      <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 24 }}>
+        <button
+          onClick={() => navigate(`/dashboard?tab=publish&signal=${signal.id}`)}
+          style={{
+            fontSize: 13, padding: "8px 16px", borderRadius: 8,
+            border: "0.5px solid #F9731566",
+            background: "#F97316", color: "#fff",
+            fontWeight: 500, cursor: "pointer",
+          }}
+        >
+          Draft Post
+        </button>
+        <button
+          onClick={() => navigate(`/dashboard?tab=intelligence&signal=${signal.id}`)}
+          style={{
+            fontSize: 13, padding: "8px 16px", borderRadius: 8,
+            border: "0.5px solid hsl(var(--border))",
+            background: "transparent", color: "hsl(var(--foreground))",
+            cursor: "pointer",
+          }}
+        >
+          Add to Signals
+        </button>
+        {externalUrl && externalAlive !== false && (
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: 13, padding: "8px 16px", borderRadius: 8,
+              border: "0.5px solid hsl(var(--border))",
+              background: "transparent", color: "hsl(var(--foreground))",
+              textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4,
+            }}
+          >
+            View original ↗
+          </a>
+        )}
+      </div>
     </div>
   );
 }
