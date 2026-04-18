@@ -641,24 +641,24 @@ A signal must answer: WHAT is changing? WHY does it matter? WHAT should I do? HO
 
 For EACH article return:
 - headline: punchy, <= 10 words, no clickbait, no "How to…", no questions. Lead with the shift, not the topic.
-- insight: ONE sentence (<= 25 words). MUST start with one of:
-    "This signals…", "This creates an opportunity to…", "This indicates a shift…", "This raises the bar for…", "This exposes a gap in…".
-    NEVER write "The article says", "This article discusses", "According to", "highlights", "discusses", "sets a precedent".
-- summary: 2–3 strategic sentences. State the shift, the implication for THIS consultant's clients, and the second-order effect. No fluff. No filler. No restating the article.
+- insight: ONE sentence (<= 25 words). MUST start with EXACTLY one of:
+    "This signals", "This indicates", "This exposes a gap", "This creates an opportunity".
+    NEVER use: "This highlights", "This discusses", "This article", "According to", "The report says", "sets a precedent".
+- summary: 2–3 strategic sentences. State the shift, the implication for THIS consultant's clients, and the second-order effect. No fluff. No restating the article.
 - relevance_score: 0-100 — how relevant to THIS consultant's profile.
 - category: ONE of [Strategy, AI, Operations, Regulation, Technology, Market, Talent, Sustainability, Finance].
 - impact_level: ONE of [High, Emerging, Watch]. High = major shift already underway with money/regulation behind it. Emerging = early but credible signal. Watch = monitor.
 - confidence_level: ONE of [High, Medium, Low]. Based on how strongly the article evidences its claim.
 - signal_type: ONE of [Trend, Insight, Disruption, Benchmark, Risk].
 - opportunity_type: ONE of [Content, Consulting, Product, Partnership, Internal] — the most natural way THIS consultant can act on it.
-- action_recommendation: <= 200 chars. Concrete, decision-grade, commercially useful. Must name a SPECIFIC audience, action, and value.
-    GOOD: "Open a CFO conversation at 2 utility clients this quarter: frame digital twin investment as opex reduction, not IT spend."
+- action_recommendation: <= 200 chars. MUST contain THREE elements: (1) a specific target audience (CFO/COO/board/regulator/specific industry leader), (2) a concrete action verb (engage/diagnose/propose/build/pilot/launch), (3) the business value or outcome.
+    GOOD: "Engage utility CFOs to assess digital twin ROI and position a predictive maintenance offering."
     GOOD: "Build a 90-day diagnostic offer for water utilities exposed to the new EU regulation; lead with risk quantification."
-    BAD: "Read more about this." / "Stay informed." / "Consider how this applies." / "Position digital transformation."
-- content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, contrarian, or counted.
+    BAD: "Consider exploring digital twins." / "Stay informed." / "Read more." / "Position digital transformation."
+- content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, sharp, and engaging — preferably contrarian or counted.
+    GOOD: "Why 70% of utility transformations fail before scaling — and how to fix it."
     GOOD: "3 things water utility CFOs get wrong about digital twins — and the one number that fixes the conversation."
-    GOOD: "Why most utilities will miss the AI compliance window: a 4-question audit before you spend a euro."
-    BAD: "AI in operations." / "The future of utilities." / "Digital transformation matters." / "Why this trend is important."`,
+    BAD: "Digital transformation in utilities." / "AI in operations." / "The future of utilities." / "Why this trend is important."`,
         },
         {
           role: "user",
