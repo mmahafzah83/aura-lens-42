@@ -8,6 +8,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
+import AurasRead from "@/components/AurasRead";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -618,84 +619,12 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
 
-      {/* SECTION 3 — Today's focus */}
-      <section>
-        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)", marginBottom: 10 }}>
-          Today's Focus
-        </div>
-        {movesError ? (
-          <SectionError onRetry={() => authUser && loadMoves(authUser.id)} message="Couldn't load moves. " />
-        ) : showMovesSkeleton ? (
-          <div className="space-y-2">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        ) : movesLoading && moves.length === 0 ? (
-          <div className="min-h-[80px]" aria-busy="true" />
-        ) : moves.length === 0 ? (
-          <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px", color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
-            No moves yet — Aura will generate your first strategic move after you capture more sources
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {moves.map((m, i) => {
-              const badge =
-                m.output_type === "carousel" ? { label: "⊞ CAROUSEL", bg: "#5b8def18", color: "#5b8def", border: "#5b8def44" }
-                : m.output_type === "framework" ? { label: "◈ FRAMEWORK", bg: "#7ab64818", color: GREEN, border: "#7ab64840" }
-                : { label: "✦ POST", bg: "#F9731618", color: ACCENT, border: "#F9731644" };
-              const isHero = i === 0;
-              return (
-                <div
-                  key={m.id}
-                  style={{
-                    background: isHero ? "hsl(var(--card))" : "hsl(var(--card))",
-                    border: "0.5px solid hsl(var(--border))",
-                    borderLeftWidth: isHero ? 3 : 0.5,
-                    borderLeftColor: isHero ? ACCENT : "hsl(var(--border))",
-                    borderRadius: isHero ? "0 8px 8px 0" : 8,
-                    padding: "14px 16px",
-                    backgroundImage: isHero ? "linear-gradient(90deg, rgba(249,115,22,0.04), transparent 60%)" : "none",
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4, color: "hsl(var(--foreground))" }}>
-                      {m.title}
-                    </div>
-                    <span style={{ background: badge.bg, color: badge.color, border: `0.5px solid ${badge.border}`, fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 3, whiteSpace: "nowrap" }}>
-                      {badge.label}
-                    </span>
-                  </div>
-                  {m.rationale && (
-                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", lineHeight: 1.5, marginTop: 4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                      {m.rationale}
-                    </div>
-                  )}
-                  <div className="flex items-center" style={{ marginTop: 10 }}>
-                    <button
-                      onClick={() => onSwitchTab?.("authority")}
-                      style={{ color: ACCENT, fontSize: 11, fontWeight: 500, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
-                    >
-                      Draft It
-                    </button>
-                    <button
-                      onClick={() => onSwitchTab?.("intelligence")}
-                      style={{ color: "hsl(var(--muted-foreground) / 0.7)", fontSize: 11, marginLeft: 14, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
-                    >
-                      Explore
-                    </button>
-                    <button
-                      onClick={() => dismissMove(m.id)}
-                      style={{ color: "hsl(var(--muted-foreground) / 0.7)", fontSize: 11, marginLeft: 14, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+      {/* SECTION 3 — Aura's Read */}
+      <AurasRead
+        userId={authUser?.id ?? null}
+        onOpenCapture={onOpenCapture}
+        onSwitchTab={onSwitchTab}
+      />
 
       {/* SECTION 4 — Live intelligence */}
       <section>
