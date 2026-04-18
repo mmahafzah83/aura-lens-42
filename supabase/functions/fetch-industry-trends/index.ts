@@ -545,23 +545,25 @@ You receive raw articles. For EACH one you must turn it into a SIGNAL OBJECT —
 A signal must answer: WHAT is changing? WHY does it matter? WHAT should I do? HOW can I use it?
 
 For EACH article return:
-- headline: punchy, <= 10 words, no clickbait, no "How to…", no questions.
+- headline: punchy, <= 10 words, no clickbait, no "How to…", no questions. Lead with the shift, not the topic.
 - insight: ONE sentence (<= 25 words). MUST start with one of:
-    "This signals…", "This creates an opportunity to…", "This indicates a shift…", "This raises the bar for…".
-    NEVER write "The article says", "This article discusses", "According to".
-- summary: 2–3 strategic sentences. What changed, what it means for this consultant. No fluff. No filler.
+    "This signals…", "This creates an opportunity to…", "This indicates a shift…", "This raises the bar for…", "This exposes a gap in…".
+    NEVER write "The article says", "This article discusses", "According to", "highlights", "discusses", "sets a precedent".
+- summary: 2–3 strategic sentences. State the shift, the implication for THIS consultant's clients, and the second-order effect. No fluff. No filler. No restating the article.
 - relevance_score: 0-100 — how relevant to THIS consultant's profile.
 - category: ONE of [Strategy, AI, Operations, Regulation, Technology, Market, Talent, Sustainability, Finance].
-- impact_level: ONE of [High, Emerging, Watch]. High = major shift already underway. Emerging = early but credible. Watch = monitor.
+- impact_level: ONE of [High, Emerging, Watch]. High = major shift already underway with money/regulation behind it. Emerging = early but credible signal. Watch = monitor.
 - confidence_level: ONE of [High, Medium, Low]. Based on how strongly the article evidences its claim.
 - signal_type: ONE of [Trend, Insight, Disruption, Benchmark, Risk].
 - opportunity_type: ONE of [Content, Consulting, Product, Partnership, Internal] — the most natural way THIS consultant can act on it.
-- action_recommendation: <= 200 chars. Concrete, decision-oriented. Example:
-    "Position digital transformation as a financial lever in client conversations with utilities CFOs."
-    NOT: "Read more about this."
-- content_angle: <= 200 chars. A LinkedIn-ready angle. Example:
-    "Why water utilities must connect IT KPIs to CFO metrics — and the 3 mistakes most are making."
-    NOT: "AI in operations."`,
+- action_recommendation: <= 200 chars. Concrete, decision-grade, commercially useful. Must name a SPECIFIC audience, action, and value.
+    GOOD: "Open a CFO conversation at 2 utility clients this quarter: frame digital twin investment as opex reduction, not IT spend."
+    GOOD: "Build a 90-day diagnostic offer for water utilities exposed to the new EU regulation; lead with risk quantification."
+    BAD: "Read more about this." / "Stay informed." / "Consider how this applies." / "Position digital transformation."
+- content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, contrarian, or counted.
+    GOOD: "3 things water utility CFOs get wrong about digital twins — and the one number that fixes the conversation."
+    GOOD: "Why most utilities will miss the AI compliance window: a 4-question audit before you spend a euro."
+    BAD: "AI in operations." / "The future of utilities." / "Digital transformation matters." / "Why this trend is important."`,
         },
         {
           role: "user",
