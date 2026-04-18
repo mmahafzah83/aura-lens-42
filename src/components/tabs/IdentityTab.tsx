@@ -63,21 +63,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     setLoadError(false);
     setLoading(true);
     try {
-      const { data: { user } } = await withTimeout(supabase.auth.getUser());
-      if (!user) { setLoading(false); return; }
-
       const [profileRes, scoreRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
           .select("first_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
-          .eq("user_id", user.id).maybeSingle(),
+          .eq("user_id", uid).maybeSingle(),
         (supabase.from("authority_scores") as any)
-          .select("authority_score").eq("user_id", user.id)
+          .select("authority_score").eq("user_id", uid)
           .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
           .select("signal_title, confidence, unique_orgs, theme_tags")
-          .eq("user_id", user.id).eq("status", "active")
+          .eq("user_id", uid).eq("status", "active")
           .order("confidence", { ascending: false }).limit(20),
-      ]));
+      ]), 12000);
 
       if (profileRes.data) setProfile(profileRes.data);
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
