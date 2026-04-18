@@ -79,6 +79,9 @@ export default function TrendDetail() {
   const [showFullSnapshot, setShowFullSnapshot] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState<"clean" | "raw">("clean");
   const [added, setAdded] = useState(false);
+  const [whyMatters, setWhyMatters] = useState<string | null>(null);
+  const [whyLoading, setWhyLoading] = useState(false);
+  const [whyFailed, setWhyFailed] = useState(false);
 
   const handleAddToSignals = async () => {
     if (!signal || added) return;
@@ -132,6 +135,51 @@ export default function TrendDetail() {
     })();
     return () => { cancelled = true; };
   }, [signal?.canonical_url, signal?.url]);
+
+  // Why this matters to you — use selection_reason if present, else AI
+  useEffect(() => {
+    if (!signal) return;
+    const existing = (signal.selection_reason || "").trim();
+    if (existing) {
+      setWhyMatters(existing);
+      setWhyFailed(false);
+      setWhyLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setWhyLoading(true);
+    setWhyFailed(false);
+    setWhyMatters(null);
+    const timeout = setTimeout(() => {
+      if (cancelled) return;
+      cancelled = true;
+      setWhyLoading(false);
+      setWhyFailed(true);
+    }, 6000);
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("trend-why-matters", {
+          body: { headline: signal.headline, insight: signal.insight },
+        });
+        if (cancelled) return;
+        clearTimeout(timeout);
+        const text = (data?.text || "").trim();
+        if (error || !text) {
+          setWhyFailed(true);
+          setWhyMatters(null);
+        } else {
+          setWhyMatters(text);
+        }
+      } catch (e) {
+        if (cancelled) return;
+        clearTimeout(timeout);
+        setWhyFailed(true);
+      } finally {
+        if (!cancelled) setWhyLoading(false);
+      }
+    })();
+    return () => { cancelled = true; clearTimeout(timeout); };
+  }, [signal?.id]);
 
   if (loading) {
     return (
@@ -242,7 +290,21 @@ export default function TrendDetail() {
         </div>
       )}
 
-      {signal.insight && signal.action_recommendation && <div style={thinRule} />}
+      {signal.insight && (whyLoading || whyMatters || signal.action_recommendation) && <div style={thinRule} />}
+
+      {/* Why this matters to you */}
+      {(whyLoading || whyMatters) && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={sectionLabel}>Why this matters to you</div>
+          {whyLoading ? (
+            <Skeleton className="h-4 w-3/4" />
+          ) : (
+            <div style={{ ...bodyText, fontStyle: "italic" }}>{whyMatters}</div>
+          )}
+        </div>
+      )}
+
+      {(whyLoading || whyMatters) && signal.action_recommendation && <div style={thinRule} />}
 
       {/* What to do */}
       {signal.action_recommendation && (
