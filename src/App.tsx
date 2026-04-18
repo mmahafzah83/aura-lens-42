@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import LinkedInCallback from "./pages/LinkedInCallback";
+import TrendDetail from "./pages/TrendDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
+            <Route path="/trends/:id" element={<TrendDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
