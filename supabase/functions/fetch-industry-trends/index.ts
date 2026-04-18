@@ -1051,7 +1051,7 @@ serve(async (req) => {
       built.push({
         user_id: userId,
         headline: (s.headline || src.title || "").slice(0, 200),
-        insight: (s.insight || "").slice(0, 500),
+        insight: insightFinal,
         summary: (s.summary || "").slice(0, 2000),
         source: src.source.slice(0, 100),
         url: src.canonical, canonical_url: src.canonical,
