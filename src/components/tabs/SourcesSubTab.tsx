@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Link, Type, FileUp, Mic, ImageIcon, Search, Pin, PinOff, Trash2,
-  Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil,
+  Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -173,6 +173,35 @@ async function openEntryInNewTab(entry: SourceEntry) {
     // For notes/voice without a URL, open content as a text blob
     const blob = new Blob([`${entry.title || "Source"}\n\n${entry.content}`], { type: "text/plain" });
     window.open(URL.createObjectURL(blob), "_blank");
+  }
+}
+
+/* ── Download a document via signed URL with download attribute ── */
+async function downloadDocument(entry: SourceEntry) {
+  if (!entry.file_url) {
+    toast.error("No file to download");
+    return;
+  }
+  try {
+    const raw = entry.file_url;
+    const path = raw.startsWith("http")
+      ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
+      : raw;
+    const filename = (entry.title || path.split("/").pop() || "document").replace(/^\d+-/, "");
+    const { data, error } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(path, 60 * 10, { download: filename });
+    if (error || !data?.signedUrl) throw error || new Error("No signed URL");
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e: any) {
+    console.error("[SourcesSubTab] download document failed", e);
+    toast.error("Could not download document", { description: e?.message || "Please try again." });
   }
 }
 
