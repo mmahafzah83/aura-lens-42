@@ -618,24 +618,56 @@ For EACH article return:
   try { return JSON.parse(args).signals ?? []; } catch { return []; }
 }
 
-// Diversity: cap per-domain to 2.
+// Domain "family" — collapse subdomains and journal siblings so we don't
+// get 5x nature.com just because Nature has many sub-journals.
+function domainFamily(domain: string): string {
+  const d = (domain || "").toLowerCase();
+  if (!d) return "";
+  // Nature family: nature.com, www.nature.com, nature.com/articles/* (all same family)
+  if (/(^|\.)nature\.com$/.test(d)) return "nature-family";
+  if (/(^|\.)science\.org$/.test(d)) return "science-family";
+  if (/(^|\.)springer\.com$/.test(d) || /(^|\.)springernature\.com$/.test(d)) return "springer-family";
+  if (/(^|\.)sciencedirect\.com$/.test(d) || /(^|\.)elsevier\.com$/.test(d)) return "elsevier-family";
+  if (/(^|\.)mckinsey\.com$/.test(d)) return "mckinsey";
+  if (/(^|\.)bcg\.com$/.test(d)) return "bcg";
+  if (/(^|\.)deloitte\.com$/.test(d)) return "deloitte";
+  if (/(^|\.)ey\.com$/.test(d)) return "ey";
+  if (/(^|\.)pwc\.com$/.test(d)) return "pwc";
+  if (/(^|\.)kpmg\.com$/.test(d)) return "kpmg";
+  if (/(^|\.)accenture\.com$/.test(d)) return "accenture";
+  // Default: registrable domain (last 2 labels)
+  const parts = d.split(".");
+  return parts.length >= 2 ? parts.slice(-2).join(".") : d;
+}
+
+// Diversity: cap per-domain AND per-domain-family. Prefer broad variety.
 function diversifyByDomain<T extends { source: string; final_score: number }>(
-  rows: T[], perDomainCap = 2, max = 5,
+  rows: T[], perDomainCap = 2, max = 5, perFamilyCap = 2,
 ): T[] {
   const sorted = [...rows].sort((a, b) => b.final_score - a.final_score);
-  const counts = new Map<string, number>();
+  const domCounts = new Map<string, number>();
+  const famCounts = new Map<string, number>();
   const picked: T[] = [];
   for (const r of sorted) {
     const dom = (r.source || "").toLowerCase();
-    const c = counts.get(dom) || 0;
-    if (c >= perDomainCap) continue;
-    counts.set(dom, c + 1);
+    const fam = domainFamily(dom);
+    const dc = domCounts.get(dom) || 0;
+    const fc = famCounts.get(fam) || 0;
+    if (dc >= perDomainCap) continue;
+    if (fc >= perFamilyCap) continue;
+    domCounts.set(dom, dc + 1);
+    famCounts.set(fam, fc + 1);
     picked.push(r);
     if (picked.length >= max) break;
   }
+  // Relax family cap as a last resort — but never breach domain cap
   if (picked.length < max) {
     for (const r of sorted) {
       if (picked.includes(r)) continue;
+      const dom = (r.source || "").toLowerCase();
+      const dc = domCounts.get(dom) || 0;
+      if (dc >= perDomainCap) continue;
+      domCounts.set(dom, dc + 1);
       picked.push(r);
       if (picked.length >= max) break;
     }
