@@ -286,7 +286,8 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level")
+          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level, confidence_level, decision_label, signal_type, opportunity_type, action_recommendation")
+          .eq("is_valid", true)
           .eq("user_id", uid)
           .eq("status", "new")
           .order("final_score", { ascending: false })
@@ -524,18 +525,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             {getGreeting(now.getHours())}{userName ? `, ${userName}` : ""}
           </div>
         </div>
-        {!trendsCountLoading && trendsBadgeCount > 0 && (
-          <span style={{
-            background: "transparent",
-            color: "hsl(var(--muted-foreground))",
-            fontSize: 10, fontWeight: 500,
-            padding: "3px 10px", borderRadius: 20,
-            border: "0.5px solid hsl(var(--border))",
-            letterSpacing: "0.04em",
-          }}>
-            {trendsBadgeCount} this week
-          </span>
-        )}
+{/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
       {/* SECTION 2 — AI daily briefing */}
@@ -809,6 +799,16 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                           ◆ {t.impact_level.toUpperCase()}
                         </span>
                       )}
+                      {t.confidence_level && (
+                        <span title={`Confidence: ${t.confidence_level}`} style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "1px 5px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.04em" }}>
+                          {t.confidence_level.toUpperCase()} CONF
+                        </span>
+                      )}
+                      {t.decision_label && (() => { const ds = decisionStyle(t.decision_label); return (
+                        <span title="Decision priority" style={{ fontSize: 9, color: ds.color, background: ds.bg, border: `0.5px solid ${ds.color}55`, padding: "1px 6px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.05em" }}>
+                          {t.decision_label.toUpperCase()}
+                        </span>
+                      ); })()}
                       <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground) / 0.6)" }}>
                         · {timeAgo(t.fetched_at)}
                       </span>
