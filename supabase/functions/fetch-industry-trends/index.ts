@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const FIRECRAWL_BASE = "https://api.firecrawl.dev/v2";
+const PERPLEXITY_URL = "https://api.perplexity.ai/chat/completions";
 const MIN_CONTENT_CHARS = 500; // soft-404 / cookie wall guard
 
 // ─────────────────────────────────────────
@@ -16,24 +17,96 @@ function domainOf(u: string): string {
   try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; }
 }
 
-async function firecrawlSearch(apiKey: string, query: string, limit = 5) {
-  const res = await fetch(`${FIRECRAWL_BASE}/search`, {
+// Discovery via Perplexity sonar — returns curated, high-quality URLs.
+// Prefers consulting firms, research institutes, and credible publishers.
+async function perplexityDiscover(
+  apiKey: string,
+  profileContext: string,
+  queries: string[],
+): Promise<Array<{ url: string; title?: string; description?: string }>> {
+  const prompt = `You are a research analyst sourcing recent (last 60 days) industry trend articles for a senior consultant.
+
+Profile: ${profileContext}
+
+Topics to cover:
+${queries.map((q, i) => `${i + 1}. ${q}`).join("\n")}
+
+Rules:
+- Return ONLY high-credibility sources: top consulting firms (McKinsey, BCG, Bain, Deloitte, EY, PwC, KPMG, Accenture, Oliver Wyman, Roland Berger), research institutes (MIT Sloan, HBR, Brookings, Gartner, Forrester, IDC), reputable financial press (FT, WSJ, Bloomberg, Economist, Reuters), or official industry bodies.
+- Avoid forums, Reddit, YouTube, X/Twitter, Pinterest, personal blogs, low-trust aggregators.
+- Each URL must be a direct article, not a homepage or category page.
+- Return up to 10 distinct URLs across the topics.`;
+
+  const res = await fetch(PERPLEXITY_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      query,
-      limit,
-      tbs: "qdr:m", // last month — recent trends
+      model: "sonar",
+      messages: [
+        { role: "system", content: "You return curated, recent, high-credibility article URLs only. Be precise." },
+        { role: "user", content: prompt },
+      ],
+      search_recency_filter: "month",
+      temperature: 0.2,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "discovered_articles",
+          schema: {
+            type: "object",
+            properties: {
+              articles: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    url: { type: "string" },
+                    title: { type: "string" },
+                    description: { type: "string" },
+                  },
+                  required: ["url"],
+                },
+              },
+            },
+            required: ["articles"],
+          },
+        },
+      },
     }),
   });
+
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    console.error("Firecrawl search failed", res.status, data);
-    return [] as Array<{ url: string; title?: string; description?: string }>;
+    console.error("[trends] perplexity discovery failed", res.status, data);
+    return [];
   }
-  // v2 returns { data: { web: [...] } } or { data: [...] }
-  const web = data?.data?.web ?? data?.data ?? [];
-  return Array.isArray(web) ? web : [];
+
+  // Merge model-returned articles with raw citations as a fallback
+  const collected = new Map<string, { url: string; title?: string; description?: string }>();
+
+  const content: string = data?.choices?.[0]?.message?.content ?? "";
+  if (content) {
+    try {
+      const parsed = JSON.parse(content);
+      const arr = Array.isArray(parsed?.articles) ? parsed.articles : [];
+      for (const a of arr) {
+        if (a?.url && typeof a.url === "string") {
+          collected.set(a.url, { url: a.url, title: a.title, description: a.description });
+        }
+      }
+    } catch (e) {
+      console.warn("[trends] could not parse perplexity content as JSON, falling back to citations", e);
+    }
+  }
+
+  const citations: string[] = Array.isArray(data?.citations) ? data.citations : [];
+  for (const url of citations) {
+    if (typeof url === "string" && !collected.has(url)) {
+      collected.set(url, { url });
+    }
+  }
+
+  return Array.from(collected.values());
 }
 
 async function firecrawlScrape(apiKey: string, url: string) {
@@ -129,9 +202,15 @@ serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const lovableKey = Deno.env.get("LOVABLE_API_KEY")!;
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
+    const perplexityKey = Deno.env.get("PERPLEXITY_API_KEY");
 
     if (!firecrawlKey) {
       return new Response(JSON.stringify({ error: "FIRECRAWL_API_KEY not configured", inserted: 0 }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!perplexityKey) {
+      return new Response(JSON.stringify({ error: "PERPLEXITY_API_KEY not configured", inserted: 0 }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -170,14 +249,10 @@ serve(async (req) => {
       `${profile.core_practice || ""} consulting trends ${year}`.trim(),
     ].filter(q => q.length > 8);
 
-    // 2. Discovery via Firecrawl Search
-    console.log("[trends] discovery queries:", queries);
-    const discoveryResults: Array<{ url: string; title?: string; description?: string }> = [];
-    for (const q of queries) {
-      const found = await firecrawlSearch(firecrawlKey, q, 4);
-      discoveryResults.push(...found);
-    }
-    console.log("[trends] discovery raw:", discoveryResults.length);
+    // 2. Discovery via Perplexity (curated, high-credibility URLs)
+    console.log("[trends] perplexity discovery for queries:", queries);
+    const discoveryResults = await perplexityDiscover(perplexityKey, profileContext, queries);
+    console.log("[trends] perplexity returned:", discoveryResults.length);
 
     // De-dupe by URL + reject obvious bad domains
     const seen = new Set<string>();
