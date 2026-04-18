@@ -226,37 +226,45 @@ export default function TrendDetail() {
         </div>
       )}
 
-      {/* Internal snapshot — primary reading */}
-      <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
-        <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
-            Article snapshot · primary reading
+      {/* Internal snapshot — primary reading. If absent, this is a legacy row. */}
+      {signal.content_markdown ? (
+        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24 }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+              Article snapshot · primary reading
+            </div>
+            {(() => {
+              const { truncated } = previewMarkdown(signal.content_markdown!, 400);
+              if (!truncated) return null;
+              return (
+                <button
+                  onClick={() => setShowFullSnapshot(s => !s)}
+                  style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                >
+                  {showFullSnapshot ? "Show preview" : "Show full snapshot"}
+                </button>
+              );
+            })()}
           </div>
-          {signal.content_markdown && (() => {
-            const { truncated } = previewMarkdown(signal.content_markdown, 400);
-            if (!truncated) return null;
-            return (
-              <button
-                onClick={() => setShowFullSnapshot(s => !s)}
-                style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
-              >
-                {showFullSnapshot ? "Show preview" : "Show full snapshot"}
-              </button>
-            );
-          })()}
-        </div>
-        {signal.content_markdown ? (
           <div className="prose prose-sm max-w-none dark:prose-invert" style={{ fontSize: 13, lineHeight: 1.7 }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
               {showFullSnapshot ? signal.content_markdown : previewMarkdown(signal.content_markdown, 400).preview}
             </ReactMarkdown>
           </div>
-        ) : (
-          <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
-            No internal snapshot stored for this signal.
+        </div>
+      ) : (
+        <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24, padding: "20px 18px", background: "hsl(var(--muted) / 0.25)", borderRadius: 6 }}>
+          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
+            Legacy signal · incomplete
           </div>
-        )}
-      </div>
+          <div style={{ fontSize: 13, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.6, marginBottom: 12 }}>
+            This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
+          </div>
+          <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+            Click <span style={{ color: "#F97316" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
+          </div>
+        </div>
+      )}
 
       {/* External link — secondary reference */}
       {externalUrl && (

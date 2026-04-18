@@ -283,13 +283,17 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setTrendsLoading(true);
     setTrendsError(false);
     try {
+      // Only show real signals: must have a final_score AND a stored snapshot.
+      // Legacy backfilled rows (final_score=0, no content_markdown) are excluded.
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level, confidence_level, decision_label, signal_type, opportunity_type, action_recommendation")
+          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level, confidence_level, decision_label, signal_type, opportunity_type, action_recommendation, content_markdown")
           .eq("is_valid", true)
           .eq("user_id", uid)
           .eq("status", "new")
+          .gt("final_score", 0)
+          .not("content_markdown", "is", null)
           .order("final_score", { ascending: false })
           .order("fetched_at", { ascending: false })
           .limit(8),
@@ -462,13 +466,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     if (refreshingTrends || !authUser) return;
     setRefreshingTrends(true);
     try {
-      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
+      const { data, error } = await supabase.functions.invoke("fetch-industry-trends", {
         body: { mode: "full" },
       });
       if (error) {
         console.error("[HomeTab] refresh trends failed", error);
         setTrendsError(true);
       } else {
+        if ((data as any)?.firecrawl_quota_exhausted) {
+          // Honest, surfaced failure: snapshot scraping unavailable
+          console.warn("[HomeTab] firecrawl quota exhausted", (data as any)?.warning);
+          setTrendsError(true);
+        }
         setDismissedTrendIds(new Set());
         await loadTrends(authUser.id);
         await loadTrendsBadge(authUser.id);
