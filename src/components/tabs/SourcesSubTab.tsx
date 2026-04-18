@@ -139,9 +139,34 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
 
 /* ── Open entry in new tab helper ── */
 
-function openEntryInNewTab(entry: SourceEntry) {
+async function openEntryInNewTab(entry: SourceEntry) {
+  // Documents: stored in the private "documents" bucket; file_url is a raw storage path.
+  // Generate a fresh signed URL on click and open the actual file.
+  if (entry.type === "document" && entry.file_url) {
+    // Open a tab synchronously to avoid popup-blocker issues, then navigate it once the URL resolves.
+    const newTab = window.open("about:blank", "_blank", "noopener");
+    try {
+      const raw = entry.file_url;
+      // Strip any accidental absolute URL prefix; keep only the bucket-relative path.
+      const path = raw.startsWith("http")
+        ? raw.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(public|sign)\/documents\//, "")
+        : raw;
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(path, 60 * 10); // 10 minutes
+      if (error || !data?.signedUrl) throw error || new Error("No signed URL");
+      if (newTab) newTab.location.href = data.signedUrl;
+      else window.open(data.signedUrl, "_blank", "noopener");
+    } catch (e: any) {
+      if (newTab) newTab.close();
+      console.error("[SourcesSubTab] open document failed", e);
+      toast.error("Could not open document", { description: e?.message || "Please try again." });
+    }
+    return;
+  }
+
   const url = entry.image_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null);
-  if (url) {
+  if (url && /^https?:\/\//.test(url)) {
     window.open(url, "_blank", "noopener");
   } else {
     // For notes/voice without a URL, open content as a text blob
