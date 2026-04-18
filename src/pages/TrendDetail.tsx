@@ -16,11 +16,14 @@ interface SignalRow {
   url: string | null;
   canonical_url: string | null;
   content_markdown: string | null;
+  content_clean: string | null;
+  content_raw: string | null;
   fetched_at: string;
   validation_score: number | null;
   relevance_score: number | null;
   topic_relevance_score: number | null;
   snapshot_quality: number | null;
+  content_quality_score: number | null;
   final_score: number | null;
   selection_reason: string | null;
   category: string | null;
