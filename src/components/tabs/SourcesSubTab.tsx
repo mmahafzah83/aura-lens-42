@@ -154,20 +154,40 @@ async function openEntryInNewTab(entry: SourceEntry) {
   // *.functions.supabase.co), then open the resulting storage signed URL in a new tab.
   if (entry.type === "document" && entry.id) {
     const newTab = window.open("about:blank", "_blank", "noopener");
+    let stage: "invoke" | "auth_failed" | "signed_url_failed" | "browser_blocked" = "invoke";
+    let signedUrl: string | null = null;
     try {
       const { data, error } = await supabase.functions.invoke("open-document", {
         body: { id: entry.id, format: "json" },
       });
       if (error) throw error;
       if (!data?.ok || !data?.signedUrl) {
+        const errMsg = String(data?.error || "").toLowerCase();
+        stage = errMsg.includes("auth") ? "auth_failed" : "signed_url_failed";
         throw new Error(data?.error || "Could not open document");
       }
-      if (newTab) newTab.location.href = data.signedUrl;
-      else window.open(data.signedUrl, "_blank", "noopener");
+      signedUrl = data.signedUrl;
+      if (!newTab || newTab.closed) {
+        stage = "browser_blocked";
+        throw new Error("Popup or navigation blocked");
+      }
+      newTab.location.href = signedUrl;
     } catch (e: any) {
-      if (newTab) newTab.close();
-      console.error("[SourcesSubTab] open document failed", e);
-      toast.error("Could not open document", { description: e?.message || "Please try again." });
+      if (newTab && !newTab.closed) newTab.close();
+      console.error(`[SourcesSubTab] open document failed (stage=${stage})`, e);
+      toast.error("Could not open document", {
+        description:
+          "Your browser or an extension may be blocking document access. Try disabling blockers or opening in another browser.",
+        action: signedUrl
+          ? {
+              label: "Copy link",
+              onClick: () => {
+                navigator.clipboard?.writeText(signedUrl!);
+                toast.success("Link copied");
+              },
+            }
+          : undefined,
+      });
     }
     return;
   }
