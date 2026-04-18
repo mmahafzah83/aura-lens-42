@@ -409,6 +409,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Refresh mode: "full" (default) re-runs full pipeline; "light" tops up with fewer items.
+    let mode: "light" | "full" = "full";
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        if (body?.mode === "light") mode = "light";
+      } catch { /* no body */ }
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
