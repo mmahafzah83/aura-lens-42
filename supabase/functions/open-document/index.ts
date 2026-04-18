@@ -29,13 +29,14 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Validate the user via the provided JWT.
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    });
-    const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) return htmlError(401, "Not authorized");
-    const userId = claims.claims.sub;
+    // Validate the user via the provided JWT (use getUser — getClaims is not in v2.45.0).
+    const userClient = createClient(supabaseUrl, anonKey);
+    const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+    if (userErr || !userData?.user?.id) {
+      console.error("[open-document] auth_failed", userErr?.message);
+      return htmlError(401, "Authentication failed");
+    }
+    const userId = userData.user.id;
 
     // Look up the document, scoped to the requesting user.
     const admin = createClient(supabaseUrl, serviceKey);
@@ -61,7 +62,10 @@ Deno.serve(async (req) => {
       .from("documents")
       .createSignedUrl(path, 60 * 10, opts);
 
-    if (signErr || !signed?.signedUrl) return htmlError(500, "Could not generate file link");
+    if (signErr || !signed?.signedUrl) {
+      console.error("[open-document] signed_url_generation_failed", { path, err: signErr?.message });
+      return htmlError(500, "Could not generate file link");
+    }
 
     return new Response(null, {
       status: 302,
