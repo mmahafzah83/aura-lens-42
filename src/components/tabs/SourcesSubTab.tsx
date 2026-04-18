@@ -21,20 +21,45 @@ interface SourceEntry {
   pinned: boolean;
   created_at: string;
   has_signal?: boolean;
+  // Document-specific fields
+  file_url?: string | null;
+  file_type?: string | null;
+  page_count?: number | null;
+  status?: string | null;
 }
 
-type FilterKey = "all" | "link" | "text" | "document" | "voice" | "image";
+type FilterKey = "all" | "link" | "image" | "text" | "voice" | "document";
 type SortKey = "recent" | "oldest" | "pinned";
 
 const ICONS: Record<string, typeof Link> = { link: Link, text: Type, document: FileUp, voice: Mic, image: ImageIcon };
 const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
   { key: "all", label: "All" },
-  { key: "link", label: "URLs", typeMatch: "link" },
-  { key: "text", label: "Notes", typeMatch: "text" },
-  { key: "document", label: "Documents", typeMatch: "document" },
-  { key: "voice", label: "Voice", typeMatch: "voice" },
+  { key: "link", label: "Links", typeMatch: "link" },
   { key: "image", label: "Images", typeMatch: "image" },
+  { key: "text", label: "Notes", typeMatch: "text" },
+  { key: "voice", label: "Voice", typeMatch: "voice" },
+  { key: "document", label: "Documents", typeMatch: "document" },
 ];
+
+const TYPE_BADGES: Record<string, { label: string; color: string }> = {
+  link: { label: "URL", color: "#5b8def" },
+  image: { label: "IMAGE", color: "#7ab648" },
+  text: { label: "NOTE", color: "#EF9F27" },
+  voice: { label: "VOICE", color: "#F97316" },
+  document: { label: "DOC", color: "#7F77DD" },
+};
+
+const TypeBadge = ({ type }: { type: string }) => {
+  const b = TYPE_BADGES[type];
+  if (!b) return null;
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 3,
+      background: `${b.color}1f`, color: b.color, border: `0.5px solid ${b.color}66`,
+      letterSpacing: "0.04em",
+    }}>{b.label}</span>
+  );
+};
 
 const PAGE_SIZE = 20;
 
