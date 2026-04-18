@@ -194,29 +194,112 @@ function isNoiseLine(line: string): boolean {
   return false;
 }
 
-// Heuristic: chrome lines at the very top before the article body.
-// Strip until we hit a real paragraph (≥120 chars sentence-like text).
-function stripLeadingChrome(md: string): string {
-  const lines = md.split(/\r?\n/);
-  let firstReal = 0;
-  for (let i = 0; i < Math.min(lines.length, 60); i++) {
-    const probe = unwrapMarkdownArtifacts(lines[i]).trim();
-    if (!probe) continue;
-    if (isNoiseLine(lines[i])) { firstReal = i + 1; continue; }
-    // Sentence-ish line with ≥120 chars and contains a period → article body started
-    if (probe.length >= 120 && /[.!?]/.test(probe)) break;
-    // Heading that is clearly the article title (has letters + spaces, not nav)
-    if (/^#{1,3}\s+\S/.test(lines[i])) break;
-  }
-  return lines.slice(firstReal).join("\n");
+// ───────── Stage 1: Article start detection via line scoring ─────────
+// Each line is scored. The article begins at the first BLOCK of consecutive
+// lines whose cumulative score reaches >= 4. Everything before is dropped.
+const NAV_SYSTEM_WORDS = [
+  "skip", "download", "share", "subscribe", "login", "log in", "sign in", "sign up",
+  "view pdf", "download pdf", "thank you for visiting", "menu", "navigation",
+  "follow us", "newsletter", "cookie", "accept all", "privacy policy",
+];
+const BUSINESS_TERMS = [
+  "strategy", "transformation", "efficiency", "operations", "regulation",
+  "investment", "growth", "market", "industry", "leadership", "innovation",
+  "performance", "revenue", "risk", "governance", "compliance", "scale",
+  "digital", "technology", "ai ", "artificial intelligence", "data",
+  "consulting", "client", "executive", "stakeholder", "decision",
+  "research", "analysis", "evidence", "finding", "outcome", "impact",
+  "policy", "framework", "model", "infrastructure", "supply chain",
+  "sustainability", "emission", "energy", "utility", "utilities",
+  "healthcare", "financial", "bank", "manufacturing", "retail",
+];
+const VERB_TOKENS = [
+  " is ", " are ", " was ", " were ", " will ", " enables ", " drives ",
+  " improves ", " reduces ", " increases ", " creates ", " transforms ",
+  " requires ", " demands ", " shows ", " finds ", " reveals ", " indicates ",
+  " suggests ", " demonstrates ", " confirms ", " forces ", " unlocks ",
+  " accelerates ", " disrupts ", " threatens ", " enables ", " allows ",
+];
+
+function scoreLine(line: string): number {
+  const stripped = unwrapMarkdownArtifacts(line).trim();
+  if (!stripped) return 0;
+  const lower = " " + stripped.toLowerCase() + " ";
+  let s = 0;
+  // +3 full sentence (>100 chars with sentence-ending punctuation)
+  if (stripped.length > 100 && /[.!?]/.test(stripped)) s += 3;
+  // +2 verbs
+  if (VERB_TOKENS.some(v => lower.includes(v))) s += 2;
+  // +2 business/analytical language
+  if (BUSINESS_TERMS.some(t => lower.includes(t))) s += 2;
+  // -3 navigation/system words
+  if (NAV_SYSTEM_WORDS.some(w => lower.includes(" " + w + " ") || lower.includes(" " + w))) s -= 3;
+  // -2 very short
+  if (stripped.length < 40) s -= 2;
+  // -2 ALL CAPS line
+  if (stripped.length <= 80 && /^[^a-z]+$/.test(stripped) && /[A-Z]/.test(stripped)) s -= 2;
+  return s;
 }
 
-// Clean an article: strip leading chrome, trailing sections, drop noise lines,
-// strip citation markers, normalize, dedupe paragraphs.
-function cleanArticleMarkdown(md: string): string {
+function detectArticleStart(md: string): number {
+  const lines = md.split(/\r?\n/);
+  // Scan a sliding window over the first 80 lines; cumulative score over a
+  // 3-line window must reach ≥4 to declare "article body started".
+  const SCAN_LIMIT = Math.min(lines.length, 80);
+  for (let i = 0; i < SCAN_LIMIT; i++) {
+    if (!unwrapMarkdownArtifacts(lines[i]).trim()) continue;
+    const s1 = scoreLine(lines[i]);
+    const s2 = i + 1 < SCAN_LIMIT ? scoreLine(lines[i + 1]) : 0;
+    const s3 = i + 2 < SCAN_LIMIT ? scoreLine(lines[i + 2]) : 0;
+    if (s1 + s2 + s3 >= 4 && s1 >= 0) return i;
+    // Single very strong line (≥5) also qualifies
+    if (s1 >= 5) return i;
+  }
+  return 0;
+}
+
+function stripLeadingChrome(md: string): string {
+  const startIdx = detectArticleStart(md);
+  return md.split(/\r?\n/).slice(startIdx).join("\n");
+}
+
+// ───────── Stage 2: Section-aware extraction ─────────
+const SCIENTIFIC_DOMAINS_RE = /(nature\.com|science\.org|sciencedirect\.com|springer\.com|wiley\.com|tandfonline\.com|nih\.gov|pubmed|arxiv\.org|nber\.org|jstor\.org|cell\.com|thelancet\.com|nejm\.org|plos\.org|mdpi\.com|frontiersin\.org|acs\.org|aip\.org|ieee\.org|acm\.org|biorxiv\.org)/i;
+
+const SCI_KEEP_RE = /^(#{1,6}\s*)?(abstract|summary|introduction|background|results?|key findings?|main findings?|findings|discussion|conclusions?|implications?|policy implications?)\s*[:.]?\s*$/i;
+const SCI_DROP_RE = /^(#{1,6}\s*)?(references?|bibliography|works cited|citations?|notes?|footnotes?|further reading|see also|related (articles?|topics?|content|reading)|similar (content|articles?)|metrics|author (information|contributions?)|about (the )?authors?|affiliations?|acknowledg(e?)ments?|funding|data availability|supplementary (material|information)|appendix|reprints? and permissions?|rights and permissions?|cite this article|how to cite|peer review|ethics declarations?|conflicts? of interest|disclosures?)\s*[:.]?\s*$/i;
+const BIZ_DROP_RE = /^(#{1,6}\s*)?(related (articles?|topics?|content|reading|insights?|stories)|more (from|on|in)|newsletter|sign up( for)?|subscribe( to)?|footer|comments?|share this|about( the)? author|tags?|categories?)\s*[:.]?\s*$/i;
+
+function sectionAwareExtract(md: string, isScientific: boolean): string {
+  const lines = md.split(/\r?\n/);
+  if (isScientific) {
+    let keep = true;
+    const out: string[] = [];
+    for (const line of lines) {
+      const probe = unwrapMarkdownArtifacts(line).trim();
+      if (SCI_KEEP_RE.test(probe)) { keep = true; out.push(line); continue; }
+      if (SCI_DROP_RE.test(probe)) { keep = false; continue; }
+      if (keep) out.push(line);
+    }
+    return out.join("\n");
+  }
+  let keep = true;
+  const out: string[] = [];
+  for (const line of lines) {
+    const probe = unwrapMarkdownArtifacts(line).trim();
+    if (BIZ_DROP_RE.test(probe)) { keep = false; continue; }
+    if (/^#{1,3}\s+\S/.test(line) && !BIZ_DROP_RE.test(probe)) keep = true;
+    if (keep) out.push(line);
+  }
+  return out.join("\n");
+}
+
+function cleanArticleMarkdown(md: string, sourceUrl?: string): string {
   if (!md) return "";
+  const isScientific = !!sourceUrl && SCIENTIFIC_DOMAINS_RE.test(sourceUrl);
   let out = stripLeadingChrome(md);
   out = stripTrailingSections(out);
+  out = sectionAwareExtract(out, isScientific);
   const cleanedLines: string[] = [];
   for (const raw of out.split(/\r?\n/)) {
     if (isNoiseLine(raw)) continue;
@@ -228,14 +311,14 @@ function cleanArticleMarkdown(md: string): string {
   out = out.replace(/\\\([\s\S]*?\\\)/g, " ");
   out = out.replace(/\$\$[\s\S]*?\$\$/g, " ");
   out = out.replace(/\n{3,}/g, "\n\n");
-  // Run a second pass: now that wrappers are gone, recheck noise lines
   const pass2: string[] = [];
   for (const raw of out.split(/\r?\n/)) {
     if (isNoiseLine(raw)) continue;
     pass2.push(raw);
   }
   out = pass2.join("\n");
-  // dedupe consecutive identical paragraphs
+  // Re-run leading chrome removal in case section extraction left dross at the top
+  out = stripLeadingChrome(out);
   const paras = out.split(/\n{2,}/);
   const dedup: string[] = [];
   for (const p of paras) {
@@ -247,21 +330,40 @@ function cleanArticleMarkdown(md: string): string {
   return dedup.join("\n\n").trim();
 }
 
-// Acceptance gate: opening must look like article body, not chrome.
-// Reject if first 400 chars (plain text) are dominated by nav/system phrases.
+// ───────── Stage 3: Hard rejection rules ─────────
+const SYSTEM_PHRASES_500 = [
+  "skip", "download pdf", "share", "login", "log in", "sign in", "subscribe",
+  "thank you for visiting", "view pdf", "newsletter",
+];
+const DESCRIPTIVE_COMPANY_RE = /\b(is (a|an) (flemish|belgian|dutch|french|german|italian|spanish|swiss|american|british|european|leading|global|international) (company|firm|provider|organization|organisation|group|corporation|operator)|provides? (water|energy|telecom|cloud|software|consulting|advisory) services?)\b/i;
+
 function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: string } {
   if (!cleanText || cleanText.length < 200) return { ok: false, reason: "thin_opening" };
   const head = cleanText.slice(0, 500).toLowerCase();
-  const noiseHits = [
-    "skip to", "thank you for visiting", "download pdf", "view pdf",
-    "you are using a browser", "displaying the site", "enable javascript",
-    "accept cookies", "subscribe", "sign in", "log in",
-    "table of contents", "on this page", "related articles", "similar content",
-  ].filter(p => head.includes(p)).length;
+  const noiseHits = SYSTEM_PHRASES_500.filter(p => head.includes(p)).length;
   if (noiseHits >= 2) return { ok: false, reason: "chrome_in_opening" };
-  // Must contain at least one sentence-like construct in the first 500 chars.
   if (!/[a-z][a-z ,;:'"-]{40,}[.!?]/i.test(cleanText.slice(0, 800))) {
     return { ok: false, reason: "no_sentence_in_opening" };
+  }
+  const firstPara = cleanText.split(/\n{2,}/)[0] || cleanText.slice(0, 600);
+  if (scoreLine(firstPara) < 3) {
+    return { ok: false, reason: "weak_opening_paragraph" };
+  }
+  return { ok: true };
+}
+
+// Stage 5: Business relevance — reject pure company storytelling without insight.
+function passesBusinessRelevance(cleanText: string): { ok: boolean; reason?: string } {
+  if (!cleanText) return { ok: false, reason: "empty" };
+  const head = cleanText.slice(0, 1500);
+  const hasAnalytical = /\b(finds?|shows?|indicates?|reveals?|argues?|concludes?|estimates?|projects?|warns?|implies?|forecasts?|demonstrates?|exposes?)\b/i.test(head);
+  const isDescriptive = DESCRIPTIVE_COMPANY_RE.test(head);
+  if (isDescriptive && !hasAnalytical) {
+    return { ok: false, reason: "descriptive_company_copy" };
+  }
+  const hasNumber = /\b\d+(\.\d+)?\s?%|\b\d{2,}\s?(billion|million|trillion|bn|mn|years?|months?|companies|firms|utilities|clients|customers|patients|hospitals|banks)\b/i.test(cleanText.slice(0, 4000));
+  if (!hasAnalytical && !hasNumber) {
+    return { ok: false, reason: "no_analytical_or_quantitative_content" };
   }
   return { ok: true };
 }
@@ -539,24 +641,24 @@ A signal must answer: WHAT is changing? WHY does it matter? WHAT should I do? HO
 
 For EACH article return:
 - headline: punchy, <= 10 words, no clickbait, no "How to…", no questions. Lead with the shift, not the topic.
-- insight: ONE sentence (<= 25 words). MUST start with one of:
-    "This signals…", "This creates an opportunity to…", "This indicates a shift…", "This raises the bar for…", "This exposes a gap in…".
-    NEVER write "The article says", "This article discusses", "According to", "highlights", "discusses", "sets a precedent".
-- summary: 2–3 strategic sentences. State the shift, the implication for THIS consultant's clients, and the second-order effect. No fluff. No filler. No restating the article.
+- insight: ONE sentence (<= 25 words). MUST start with EXACTLY one of:
+    "This signals", "This indicates", "This exposes a gap", "This creates an opportunity".
+    NEVER use: "This highlights", "This discusses", "This article", "According to", "The report says", "sets a precedent".
+- summary: 2–3 strategic sentences. State the shift, the implication for THIS consultant's clients, and the second-order effect. No fluff. No restating the article.
 - relevance_score: 0-100 — how relevant to THIS consultant's profile.
 - category: ONE of [Strategy, AI, Operations, Regulation, Technology, Market, Talent, Sustainability, Finance].
 - impact_level: ONE of [High, Emerging, Watch]. High = major shift already underway with money/regulation behind it. Emerging = early but credible signal. Watch = monitor.
 - confidence_level: ONE of [High, Medium, Low]. Based on how strongly the article evidences its claim.
 - signal_type: ONE of [Trend, Insight, Disruption, Benchmark, Risk].
 - opportunity_type: ONE of [Content, Consulting, Product, Partnership, Internal] — the most natural way THIS consultant can act on it.
-- action_recommendation: <= 200 chars. Concrete, decision-grade, commercially useful. Must name a SPECIFIC audience, action, and value.
-    GOOD: "Open a CFO conversation at 2 utility clients this quarter: frame digital twin investment as opex reduction, not IT spend."
+- action_recommendation: <= 200 chars. MUST contain THREE elements: (1) a specific target audience (CFO/COO/board/regulator/specific industry leader), (2) a concrete action verb (engage/diagnose/propose/build/pilot/launch), (3) the business value or outcome.
+    GOOD: "Engage utility CFOs to assess digital twin ROI and position a predictive maintenance offering."
     GOOD: "Build a 90-day diagnostic offer for water utilities exposed to the new EU regulation; lead with risk quantification."
-    BAD: "Read more about this." / "Stay informed." / "Consider how this applies." / "Position digital transformation."
-- content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, contrarian, or counted.
+    BAD: "Consider exploring digital twins." / "Stay informed." / "Read more." / "Position digital transformation."
+- content_angle: <= 200 chars. A LinkedIn-ready angle that ONLY this consultant could credibly write. Must be specific, sharp, and engaging — preferably contrarian or counted.
+    GOOD: "Why 70% of utility transformations fail before scaling — and how to fix it."
     GOOD: "3 things water utility CFOs get wrong about digital twins — and the one number that fixes the conversation."
-    GOOD: "Why most utilities will miss the AI compliance window: a 4-question audit before you spend a euro."
-    BAD: "AI in operations." / "The future of utilities." / "Digital transformation matters." / "Why this trend is important."`,
+    BAD: "Digital transformation in utilities." / "AI in operations." / "The future of utilities." / "Why this trend is important."`,
         },
         {
           role: "user",
@@ -827,11 +929,11 @@ serve(async (req) => {
 
       // ── Cleaning pipeline (per spec) ──
       const raw_markdown = result.markdown;
-      const clean_markdown = cleanArticleMarkdown(raw_markdown);
+      const clean_markdown = cleanArticleMarkdown(raw_markdown, canonical);
       const text = markdownToText(clean_markdown);
       const noiseRatio = computeNoiseRatio(raw_markdown, clean_markdown);
 
-      // Hard rejection rules
+      // Stage 3: Hard rejection rules
       if (text.length < MIN_CLEAN_TEXT_CHARS) {
         console.log("[trends] reject thin_clean_text", c.url, text.length); continue;
       }
@@ -844,6 +946,11 @@ serve(async (req) => {
       }
       const blocked = detectBlockedContent(text);
       if (blocked.blocked) { console.log("[trends] blocked", c.url, blocked.reason); continue; }
+      // Stage 5: Business relevance filter
+      const biz = passesBusinessRelevance(text);
+      if (!biz.ok) {
+        console.log("[trends] reject business_relevance", c.url, biz.reason); continue;
+      }
 
       const source = domainOf(canonical);
       const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
@@ -921,6 +1028,20 @@ serve(async (req) => {
       const content_angle = (typeof s.content_angle === "string" ? s.content_angle : "").slice(0, 200).trim();
       const decision_label = computeDecisionLabel(impact_level, confidence_level);
 
+      // Stage 6 enforcement: insight MUST start with one of the strict openers.
+      const ALLOWED_OPENERS = ["This signals", "This indicates", "This exposes a gap", "This creates an opportunity"];
+      const BANNED_OPENERS = /^(this highlights|this discusses|this article|according to|the report|the article|sets a precedent|highlights|discusses)/i;
+      let rawInsight = (s.insight || "").trim();
+      const startsAllowed = ALLOWED_OPENERS.some(p => rawInsight.toLowerCase().startsWith(p.toLowerCase()));
+      if (!startsAllowed || BANNED_OPENERS.test(rawInsight)) {
+        const stripped = rawInsight.replace(BANNED_OPENERS, "").replace(/^[\s,;:.-]+/, "").trim();
+        const opener = impact_level === "Emerging" ? "This indicates"
+          : opportunity_type === "Consulting" ? "This creates an opportunity to address"
+          : "This signals";
+        rawInsight = `${opener} ${stripped.charAt(0).toLowerCase()}${stripped.slice(1)}`.slice(0, 500);
+      }
+      const insightFinal = rawInsight.slice(0, 500);
+
       const selection_reason = buildSelectionReason({
         domain: src.source, validation: src.validation_score,
         topic: src.topic_relevance_score, snapshot: src.snapshot_quality,
@@ -930,7 +1051,7 @@ serve(async (req) => {
       built.push({
         user_id: userId,
         headline: (s.headline || src.title || "").slice(0, 200),
-        insight: (s.insight || "").slice(0, 500),
+        insight: insightFinal,
         summary: (s.summary || "").slice(0, 2000),
         source: src.source.slice(0, 100),
         url: src.canonical, canonical_url: src.canonical,
