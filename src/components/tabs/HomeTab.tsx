@@ -47,7 +47,18 @@ interface Trend {
   selection_reason?: string | null;
   category?: string | null;
   impact_level?: string | null;
+  confidence_level?: string | null;
+  decision_label?: string | null;
+  signal_type?: string | null;
+  opportunity_type?: string | null;
+  action_recommendation?: string | null;
 }
+
+const decisionStyle = (label?: string | null): { color: string; bg: string } => {
+  if (label === "Act Now") return { color: "#E24B4A", bg: "#E24B4A12" };
+  if (label === "Early Opportunity") return { color: "#F97316", bg: "#F9731612" };
+  return { color: "hsl(var(--muted-foreground))", bg: "transparent" };
+};
 
 const freshnessOf = (iso: string): { label: string; color: string } => {
   const ageH = (Date.now() - new Date(iso).getTime()) / 3_600_000;
