@@ -233,6 +233,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
+  const [trendPrefillLabel, setTrendPrefillLabel] = useState<string | null>(null);
   const [framework, setFramework] = useState<ContentFramework>("auto");
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
@@ -367,6 +368,12 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       setShowingShort(false);
       setVisualUrl(null);
       setPlanRef(null);
+      if (signalPrefill.trendHeadline) {
+        setTrendPrefillLabel(signalPrefill.trendHeadline);
+        setTimeout(() => {
+          document.getElementById("aura-generate-btn")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 250);
+      }
       onSignalPrefillConsumed?.();
     }
   }, [signalPrefill]);
