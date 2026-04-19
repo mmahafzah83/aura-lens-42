@@ -204,6 +204,7 @@ interface SignalPrefill {
   sourceType?: string;
   sourceTitle?: string;
   contentFormat?: "post" | "carousel" | "framework_summary";
+  trendHeadline?: string;
 }
 
 interface SignalSuggestion {
