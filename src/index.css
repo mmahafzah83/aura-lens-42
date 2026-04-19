@@ -62,6 +62,11 @@ html.dark  { background-color: #0c0c0c; }
   border-radius: 4px;
 }
 
+[data-theme="light"] .aura-skeleton {
+  background: linear-gradient(90deg, #ececec 25%, #f4f4f4 50%, #ececec 75%);
+  background-size: 200% 100%;
+}
+
 @layer base {
   :root {
     --background: 0 0% 5%;
