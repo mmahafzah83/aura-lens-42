@@ -42,6 +42,7 @@ interface Trend {
   url: string | null;
   source: string;
   fetched_at: string;
+  last_checked_at?: string | null;
   status?: string;
   validation_score?: number | null;
   relevance_score?: number | null;
@@ -291,7 +292,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       const { data, error } = await withTimeout(
         supabase
           .from("industry_trends")
-          .select("id, headline, insight, url, source, fetched_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level, confidence_level, decision_label, signal_type, opportunity_type, action_recommendation, content_markdown")
+          .select("id, headline, insight, url, source, fetched_at, last_checked_at, status, validation_score, relevance_score, topic_relevance_score, final_score, selection_reason, category, impact_level, confidence_level, decision_label, signal_type, opportunity_type, action_recommendation, content_markdown")
           .eq("is_valid", true)
           .eq("user_id", uid)
           .eq("status", "new")
@@ -482,22 +483,32 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const handleRefreshTrends = async () => {
     if (refreshingTrends || !authUser) return;
     setRefreshingTrends(true);
+    const prevCount = trends.length;
     try {
-      const { data, error } = await supabase.functions.invoke("fetch-industry-trends", {
+      const { error } = await supabase.functions.invoke("fetch-industry-trends", {
         body: { mode: "full" },
       });
       if (error) {
         console.error("[HomeTab] refresh trends failed", error);
-        setTrendsError(true);
-      } else {
-        // Phase A returns immediately with { status: 'enriching', queued: N }.
-        // Realtime subscription will refresh the list as Phase B finishes each row.
-        console.log("[HomeTab] refresh queued", data);
-        setDismissedTrendIds(new Set());
+        toast.error("Refresh failed — try again in a moment");
+        return;
       }
+      setDismissedTrendIds(new Set());
+      // Re-query immediately to reflect any newly available rows.
+      await loadTrends(authUser.id);
+      loadTrendsBadge(authUser.id);
+      // Compare against the latest state via functional setter.
+      setTrends(curr => {
+        if (curr.length > prevCount) {
+          toast.success("Trends refreshed");
+        } else {
+          toast("No new trends found");
+        }
+        return curr;
+      });
     } catch (e) {
       console.error("[HomeTab] refresh trends exception", e);
-      setTrendsError(true);
+      toast.error("Refresh failed — try again in a moment");
     } finally {
       setRefreshingTrends(false);
     }
@@ -760,7 +771,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                         </span>
                       ); })()}
                       <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground) / 0.6)" }}>
-                        · {timeAgo(t.fetched_at)}
+                        · {timeAgo(t.last_checked_at || t.fetched_at)}
                       </span>
                     </div>
                     <button
