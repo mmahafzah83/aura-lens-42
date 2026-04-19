@@ -327,16 +327,9 @@ export default function TrendDetail() {
         {signal.headline}
       </h1>
 
-      {/* Meta line */}
-      {signal.selection_reason && signal.selection_reason.trim().length > 0 && (
-        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.7)", marginTop: 6, marginBottom: 16 }}>
-          {signal.selection_reason}
-        </div>
-      )}
-
       {/* Insight */}
       {signal.insight && (
-        <div style={{ marginBottom: 16, marginTop: signal.selection_reason ? 0 : 16 }}>
+        <div style={{ marginBottom: 16, marginTop: 16 }}>
           <div style={sectionLabel}>Insight</div>
           <div style={bodyText}>{signal.insight}</div>
         </div>
