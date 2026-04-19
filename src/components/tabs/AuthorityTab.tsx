@@ -558,8 +558,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Topic */}
             <div>
+              {trendPrefillLabel && (
+                <p className="text-xs text-muted-foreground/70 mb-1.5 italic">
+                  Pre-filled from trend: {trendPrefillLabel.length > 40 ? trendPrefillLabel.slice(0, 40) + "…" : trendPrefillLabel}
+                </p>
+              )}
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
-              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
+              <Input value={topic} onChange={(e) => { setTopic(e.target.value); if (trendPrefillLabel) setTrendPrefillLabel(null); }} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
             </div>
 
             {/* Context */}
@@ -578,7 +583,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             </div>
 
             {/* Generate */}
-            <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
+            <Button id="aura-generate-btn" onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Generate {FORMAT_LABELS[contentType]?.label || "Content"}
             </Button>
