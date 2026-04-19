@@ -1141,8 +1141,23 @@ async function runPhaseA(opts: {
     if (r.canonical_url) existingUrls.add(r.canonical_url);
     if (r.url) existingUrls.add(r.url);
   });
-  const fresh = candidates.filter(c => !existingUrls.has(c.url));
-  console.log(`[phaseA] candidates: ${candidates.length}, fresh: ${fresh.length}`);
+  // Deduplicate regional variants by canonical path (strip /sa-en/, /ae-en/, /au/en/, etc.)
+  const canonicalUrl = (url: string): string => {
+    try {
+      const u = new URL(url);
+      const path = u.pathname.replace(/^\/(([a-z]{2}-[a-z]{2}|[a-z]{2}\/[a-z]{2})\/)/, '/');
+      return u.hostname + path;
+    } catch { return url; }
+  };
+  const seenCanonical = new Set<string>();
+  const deduped = candidates.filter(c => {
+    const canon = canonicalUrl(c.url);
+    if (seenCanonical.has(canon)) return false;
+    seenCanonical.add(canon);
+    return true;
+  });
+  const fresh = deduped.filter(c => !existingUrls.has(c.url));
+  console.log(`[phaseA] candidates: ${candidates.length}, deduped: ${deduped.length}, fresh: ${fresh.length}`);
 
   // Cap at 6 placeholders so Phase B has 4 to work with after extraction failures
   const QUEUE_CAP = 6;
