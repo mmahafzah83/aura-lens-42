@@ -210,7 +210,12 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       } catch (e) {
         console.warn("[HomeTab] profile name fetch failed", e);
       }
-      setUserName((name || fallback || "there").toString().split(" ")[0].toUpperCase());
+      const raw = (name || "").toString().trim();
+      const first = raw ? raw.split(/\s+/)[0] : "";
+      const pretty = first
+        ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+        : "there";
+      setUserName(pretty);
     })();
   }, [authReady, authUser]);
 
