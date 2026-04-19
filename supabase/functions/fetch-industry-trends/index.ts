@@ -1107,9 +1107,10 @@ async function runPhaseA(opts: {
   const year = new Date().getFullYear();
   const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
   const queries = [
-    `${profile.sector_focus || ""} ${profile.core_practice || ""} ${year}`.trim(),
-    `${profile.sector_focus || ""} digital transformation strategy ${year}`.trim(),
-    `${profile.core_practice || ""} consulting trends ${year}`.trim(),
+    `${profile.sector_focus || "utilities"} digital transformation report ${year}`,
+    `water utility AI IoT investment trend ${year}`,
+    `GCC digital transformation consulting insight ${year}`,
+    `utility sector technology adoption analysis ${year}`,
   ].filter(q => q.length > 8);
 
   console.log("[phaseA] exa discovery:", queries);
