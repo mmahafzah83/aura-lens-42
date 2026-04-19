@@ -59,7 +59,9 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
       setLoading(true);
       setFailed(false);
       try {
-        const { data, error } = await supabase.functions.invoke("auras-read", { body: {} });
+        const { data, error } = await supabase.functions.invoke("auras-read", {
+          body: { user_id: userId },
+        });
         if (cancelled) return;
         if (error) throw error;
         const list = Array.isArray(data?.items) ? data.items : [];
