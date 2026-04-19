@@ -681,6 +681,7 @@ async function exaDiscover(
         type: "neural",
         useAutoprompt: true,
         startPublishedDate,
+        category: "research report",
       },
     ];
 
@@ -1107,9 +1108,10 @@ async function runPhaseA(opts: {
   const year = new Date().getFullYear();
   const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
   const queries = [
-    `${profile.sector_focus || ""} ${profile.core_practice || ""} ${year}`.trim(),
-    `${profile.sector_focus || ""} digital transformation strategy ${year}`.trim(),
-    `${profile.core_practice || ""} consulting trends ${year}`.trim(),
+    `${profile.sector_focus || "utilities"} digital transformation report ${year}`,
+    `water utility AI IoT investment trend ${year}`,
+    `GCC digital transformation consulting insight ${year}`,
+    `utility sector technology adoption analysis ${year}`,
   ].filter(q => q.length > 8);
 
   console.log("[phaseA] exa discovery:", queries);
@@ -1139,8 +1141,23 @@ async function runPhaseA(opts: {
     if (r.canonical_url) existingUrls.add(r.canonical_url);
     if (r.url) existingUrls.add(r.url);
   });
-  const fresh = candidates.filter(c => !existingUrls.has(c.url));
-  console.log(`[phaseA] candidates: ${candidates.length}, fresh: ${fresh.length}`);
+  // Deduplicate regional variants by canonical path (strip /sa-en/, /ae-en/, /au/en/, etc.)
+  const canonicalUrl = (url: string): string => {
+    try {
+      const u = new URL(url);
+      const path = u.pathname.replace(/^\/(([a-z]{2}-[a-z]{2}|[a-z]{2}\/[a-z]{2})\/)/, '/');
+      return u.hostname + path;
+    } catch { return url; }
+  };
+  const seenCanonical = new Set<string>();
+  const deduped = candidates.filter(c => {
+    const canon = canonicalUrl(c.url);
+    if (seenCanonical.has(canon)) return false;
+    seenCanonical.add(canon);
+    return true;
+  });
+  const fresh = deduped.filter(c => !existingUrls.has(c.url));
+  console.log(`[phaseA] candidates: ${candidates.length}, deduped: ${deduped.length}, fresh: ${fresh.length}`);
 
   // Cap at 6 placeholders so Phase B has 4 to work with after extraction failures
   const QUEUE_CAP = 6;
