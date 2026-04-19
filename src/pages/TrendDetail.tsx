@@ -79,9 +79,41 @@ export default function TrendDetail() {
   const [showFullSnapshot, setShowFullSnapshot] = useState(false);
   const [snapshotMode, setSnapshotMode] = useState<"clean" | "raw">("clean");
   const [added, setAdded] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const [whyMatters, setWhyMatters] = useState<string | null>(null);
   const [whyLoading, setWhyLoading] = useState(false);
   const [whyFailed, setWhyFailed] = useState(false);
+
+  const handleDraftPost = async () => {
+    if (!signal || drafting) return;
+    setDrafting(true);
+    const fallbackContext = `${signal.insight || ""}${signal.action_recommendation ? "\n\n" + signal.action_recommendation : ""}`.trim();
+    try {
+      const { data, error } = await supabase.functions.invoke("draft-post", {
+        body: {
+          title: signal.headline,
+          summary: signal.insight || "",
+          content: fallbackContext,
+          type: "default",
+          lang: "en",
+        },
+      });
+      if (error) throw error;
+      const draft = (data?.post as string | undefined)?.trim() || fallbackContext;
+      navigate("/dashboard?tab=authority", {
+        state: {
+          prefill_topic: signal.headline,
+          prefill_context: draft,
+          source: "trend",
+          trend_id: signal.id,
+        },
+      });
+    } catch (e) {
+      console.error("[TrendDetail] draft-post failed", e);
+      toast.error("Couldn't create draft — try again");
+      setDrafting(false);
+    }
+  };
 
   const handleAddToSignals = async () => {
     if (!signal || added) return;
@@ -424,22 +456,17 @@ export default function TrendDetail() {
       {/* Footer actions */}
       <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 24 }}>
         <button
-          onClick={() => navigate("/dashboard?tab=authority", {
-            state: {
-              prefill_topic: signal.headline,
-              prefill_context: `${signal.insight || ""}${signal.action_recommendation ? "\n\n" + signal.action_recommendation : ""}`.trim(),
-              source: "trend",
-              trend_id: signal.id,
-            }
-          })}
+          onClick={handleDraftPost}
+          disabled={drafting}
           style={{
             fontSize: 13, padding: "8px 16px", borderRadius: 8,
             border: "0.5px solid #F9731566",
             background: "#F97316", color: "#fff",
-            fontWeight: 500, cursor: "pointer",
+            fontWeight: 500, cursor: drafting ? "not-allowed" : "pointer",
+            opacity: drafting ? 0.7 : 1,
           }}
         >
-          Draft Post
+          {drafting ? "Drafting..." : "Draft Post"}
         </button>
         {added ? (
           <span
