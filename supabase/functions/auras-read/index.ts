@@ -167,7 +167,21 @@ serve(async (req) => {
       if (m) try { parsed = JSON.parse(m[0]); } catch {}
     }
 
-    const items = Array.isArray(parsed.items) ? parsed.items.slice(0, 3) : [];
+    const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
+    const items = rawItems
+      .filter((it: any) => it && (it.urgency === "HIGH" || it.urgency === "MEDIUM"))
+      .filter((it: any) => ["PUBLISH", "CAPTURE", "WATCH"].includes(it.action_type))
+      .slice(0, 3)
+      .map((it: any) => ({
+        ...it,
+        destination:
+          it.destination ||
+          (it.action_type === "PUBLISH"
+            ? "/publish"
+            : it.action_type === "CAPTURE"
+            ? "capture_modal"
+            : "/intelligence"),
+      }));
 
     return new Response(JSON.stringify({ items, context_summary: {
       signals: context.top_signals.length,
