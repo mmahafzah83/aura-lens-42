@@ -345,7 +345,7 @@ function openingLooksLikeArticle(cleanText: string): { ok: boolean; reason?: str
   if (!/[a-z][a-z ,;:'"-]{40,}[.!?]/i.test(cleanText.slice(0, 800))) {
     return { ok: false, reason: "no_sentence_in_opening" };
   }
-  const firstPara = cleanText.split(/\n{2,}/)[0] || cleanText.slice(0, 600);
+  const firstPara = cleanText.split(/\n{2,}/).find(p => p.trim().length >= 80) || cleanText.slice(0, 600);
   if (scoreLine(firstPara) < 3) {
     return { ok: false, reason: "weak_opening_paragraph" };
   }
@@ -988,12 +988,8 @@ function passesExecutiveRelevance(text: string): { ok: boolean; reason?: string 
 // ───────── Stronger article start ─────────
 function hasNarrativeOpening(cleanText: string): { ok: boolean; reason?: string } {
   if (!cleanText) return { ok: false, reason: "empty" };
-  const head = cleanText.slice(0, 500);
-  // first ~500 chars must contain a paragraph >=120 chars with an analytical verb
-  const hasAnalyticalVerb = /\b(finds?|shows?|argues?|reveals?|warns?|suggests?|demonstrates?|exposes?|estimates?|projects?|forecasts?|concludes?)\b/i.test(head);
-  const longParaIdx = (cleanText.split(/\n{2,}/).find(p => p.trim().length >= 120) || "").length;
-  if (longParaIdx < 120) return { ok: false, reason: "no_long_paragraph" };
-  if (!hasAnalyticalVerb) return { ok: false, reason: "no_analytical_verb_in_opening" };
+  const longPara = cleanText.split(/\n{2,}/).find(p => p.trim().length >= 120) || "";
+  if (longPara.length < 120) return { ok: false, reason: "no_long_paragraph" };
   return { ok: true };
 }
 
