@@ -488,35 +488,52 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const handleRefreshTrends = async () => {
     if (refreshingTrends || !authUser) return;
     setRefreshingTrends(true);
-    const prevCount = trends.length;
     try {
+      // 1. Record count before refresh
+      const { count: countBefore } = await supabase
+        .from("industry_trends")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", authUser.id)
+        .eq("status", "new");
+
+      // 2. Call edge function (Phase A — returns quickly)
+      toast.loading("Finding new trends...", { id: "refresh-trends" });
       const { error } = await supabase.functions.invoke("fetch-industry-trends", {
         body: { mode: "full" },
       });
       if (error) {
         console.error("[HomeTab] refresh trends failed", error);
-        toast.error("Refresh failed — try again in a moment");
+        toast.error("Refresh failed — try again in a moment", { id: "refresh-trends" });
         return;
       }
-      // Phase A returned. Phase B (enrichment + write) runs in background.
-      toast.loading("Finding new trends — this takes about 30 seconds...", {
-        id: "refresh-trends",
-      });
-      await new Promise(resolve => setTimeout(resolve, 35000));
+
+      // 3. Wait for Phase B to complete (~30s async enrichment)
+      toast.loading("Enriching trends — just a moment...", { id: "refresh-trends" });
+      await new Promise(resolve => setTimeout(resolve, 32000));
+
+      // 4. Re-query and compare
+      const { data: freshTrends, count: countAfter } = await supabase
+        .from("industry_trends")
+        .select("*", { count: "exact" })
+        .eq("user_id", authUser.id)
+        .eq("status", "new")
+        .order("final_score", { ascending: false })
+        .limit(10);
+
+      // 5. Update feed with fresh data
       setDismissedTrendIds(new Set());
-      await loadTrends(authUser.id);
+      setTrends((freshTrends as any) || []);
       loadTrendsBadge(authUser.id);
-      setTrends(curr => {
-        const delta = curr.length - prevCount;
-        if (delta > 0) {
-          toast.success(`Done — ${delta} new trend${delta === 1 ? "" : "s"} in your feed`, {
-            id: "refresh-trends",
-          });
-        } else {
-          toast("No new trends found", { id: "refresh-trends" });
-        }
-        return curr;
-      });
+
+      // 6. Toast based on actual delta
+      const newCount = (countAfter || 0) - (countBefore || 0);
+      if (newCount > 0) {
+        toast.success(`${newCount} new trend${newCount > 1 ? "s" : ""} added`, {
+          id: "refresh-trends",
+        });
+      } else {
+        toast("Feed is up to date", { id: "refresh-trends", icon: "✓" });
+      }
     } catch (e) {
       console.error("[HomeTab] refresh trends exception", e);
       toast.error("Refresh failed — try again in a moment", { id: "refresh-trends" });
