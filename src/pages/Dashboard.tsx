@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
@@ -74,8 +74,10 @@ const Dashboard = () => {
     sourceType?: string;
     sourceTitle?: string;
     contentFormat?: "post" | "carousel" | "framework_summary";
+    trendHeadline?: string;
   } | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
 
