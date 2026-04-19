@@ -1,6 +1,18 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('aura-theme');
+          var theme = (t === 'dark' || t === 'light') ? t : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(theme);
+          document.documentElement.style.backgroundColor = theme === 'dark' ? '#0c0c0c' : '#f7f7f7';
+        } catch(e) {}
+      })();
+    </script>
     <meta charset="UTF-8" />
     <meta name="description" content="Aura — Premium executive intelligence and personal brand dashboard">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -10,19 +22,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Theme bootstrap (prevents FOUC) -->
-    <script>
-      (function () {
-        try {
-          var t = localStorage.getItem('aura-theme') || 'light';
-          if (t === 'light') document.documentElement.setAttribute('data-theme', 'light');
-          else document.documentElement.removeAttribute('data-theme');
-        } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'light');
-        }
-      })();
-    </script>
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
@@ -46,7 +45,7 @@
   <meta name="twitter:description" content="Aura — Premium executive intelligence and personal brand dashboard">
 </head>
 
-  <body>
+  <body style="background-color: inherit;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

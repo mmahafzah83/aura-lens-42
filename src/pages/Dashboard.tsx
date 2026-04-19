@@ -31,6 +31,13 @@ const NAV_ITEMS = [
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
 
+const applyThemeToRoot = (theme: "dark" | "light") => {
+  document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.classList.remove("light", "dark");
+  document.documentElement.classList.add(theme);
+  document.documentElement.style.backgroundColor = theme === "dark" ? "#0c0c0c" : "#f7f7f7";
+};
+
 const Dashboard = () => {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("home");
@@ -54,8 +61,7 @@ const Dashboard = () => {
       const next = prev === "dark" ? "light" : "dark";
       try {
         localStorage.setItem("aura-theme", next);
-        if (next === "light") document.documentElement.setAttribute("data-theme", "light");
-        else document.documentElement.removeAttribute("data-theme");
+        applyThemeToRoot(next);
       } catch {}
       return next;
     });
@@ -72,6 +78,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
+
+  useEffect(() => {
+    applyThemeToRoot(theme);
+  }, [theme]);
 
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
