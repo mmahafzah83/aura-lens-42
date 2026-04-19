@@ -204,6 +204,7 @@ interface SignalPrefill {
   sourceType?: string;
   sourceTitle?: string;
   contentFormat?: "post" | "carousel" | "framework_summary";
+  trendHeadline?: string;
 }
 
 interface SignalSuggestion {
@@ -232,6 +233,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
+  const [trendPrefillLabel, setTrendPrefillLabel] = useState<string | null>(null);
   const [framework, setFramework] = useState<ContentFramework>("auto");
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
@@ -366,6 +368,12 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       setShowingShort(false);
       setVisualUrl(null);
       setPlanRef(null);
+      if (signalPrefill.trendHeadline) {
+        setTrendPrefillLabel(signalPrefill.trendHeadline);
+        setTimeout(() => {
+          document.getElementById("aura-generate-btn")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 250);
+      }
       onSignalPrefillConsumed?.();
     }
   }, [signalPrefill]);
@@ -557,8 +565,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Topic */}
             <div>
+              {trendPrefillLabel && (
+                <p className="text-xs text-muted-foreground/70 mb-1.5 italic">
+                  Pre-filled from trend: {trendPrefillLabel.length > 40 ? trendPrefillLabel.slice(0, 40) + "…" : trendPrefillLabel}
+                </p>
+              )}
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
-              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
+              <Input value={topic} onChange={(e) => { setTopic(e.target.value); if (trendPrefillLabel) setTrendPrefillLabel(null); }} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
             </div>
 
             {/* Context */}
@@ -577,7 +590,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             </div>
 
             {/* Generate */}
-            <Button onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
+            <Button id="aura-generate-btn" onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Generate {FORMAT_LABELS[contentType]?.label || "Content"}
             </Button>

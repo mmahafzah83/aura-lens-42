@@ -424,7 +424,14 @@ export default function TrendDetail() {
       {/* Footer actions */}
       <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 24 }}>
         <button
-          onClick={() => navigate(`/dashboard?tab=publish&signal=${signal.id}`)}
+          onClick={() => navigate("/dashboard?tab=authority", {
+            state: {
+              prefill_topic: signal.headline,
+              prefill_context: `${signal.insight || ""}${signal.action_recommendation ? "\n\n" + signal.action_recommendation : ""}`.trim(),
+              source: "trend",
+              trend_id: signal.id,
+            }
+          })}
           style={{
             fontSize: 13, padding: "8px 16px", borderRadius: 8,
             border: "0.5px solid #F9731566",
@@ -457,15 +464,25 @@ export default function TrendDetail() {
             Add to Signals
           </button>
         )}
+        <button
+          onClick={() => navigate(-1)}
+          style={{
+            fontSize: 13, padding: "8px 12px",
+            background: "transparent", border: "none",
+            color: "hsl(var(--muted-foreground))", cursor: "pointer",
+          }}
+        >
+          Dismiss
+        </button>
         {externalUrl && externalAlive !== false && (
           <a
             href={externalUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              fontSize: 13, padding: "8px 16px", borderRadius: 8,
-              border: "0.5px solid hsl(var(--border))",
-              background: "transparent", color: "hsl(var(--foreground))",
+              fontSize: 13, padding: "8px 12px",
+              background: "transparent", border: "none",
+              color: "hsl(var(--muted-foreground))",
               textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4,
             }}
           >

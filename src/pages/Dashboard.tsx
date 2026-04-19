@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
@@ -74,8 +74,10 @@ const Dashboard = () => {
     sourceType?: string;
     sourceTitle?: string;
     contentFormat?: "post" | "carousel" | "framework_summary";
+    trendHeadline?: string;
   } | null>(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { t } = useLanguage();
 
@@ -91,6 +93,25 @@ const Dashboard = () => {
     if (resolvedTab && NAV_ITEMS.some(n => n.value === resolvedTab)) {
       setActiveTab(resolvedTab as TabValue);
     }
+  }, []);
+
+  // Handle prefill from trend Draft Post (passed via React Router state)
+  useEffect(() => {
+    const st = location.state as any;
+    if (st?.prefill_topic) {
+      setSignalDraftPrefill({
+        topic: st.prefill_topic,
+        context: st.prefill_context || "",
+        sourceType: st.source || "trend",
+        sourceTitle: st.prefill_topic,
+        contentFormat: "post",
+        trendHeadline: st.prefill_topic,
+      });
+      setActiveTab("authority");
+      // Clear router state so refresh doesn't re-prefill
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const navigateToSignal = (signalId: string) => {
