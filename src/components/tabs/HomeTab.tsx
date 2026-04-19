@@ -498,22 +498,28 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         toast.error("Refresh failed — try again in a moment");
         return;
       }
+      // Phase A returned. Phase B (enrichment + write) runs in background.
+      toast.loading("Finding new trends — this takes about 30 seconds...", {
+        id: "refresh-trends",
+      });
+      await new Promise(resolve => setTimeout(resolve, 35000));
       setDismissedTrendIds(new Set());
-      // Re-query immediately to reflect any newly available rows.
       await loadTrends(authUser.id);
       loadTrendsBadge(authUser.id);
-      // Compare against the latest state via functional setter.
       setTrends(curr => {
-        if (curr.length > prevCount) {
-          toast.success("Trends refreshed");
+        const delta = curr.length - prevCount;
+        if (delta > 0) {
+          toast.success(`Done — ${delta} new trend${delta === 1 ? "" : "s"} in your feed`, {
+            id: "refresh-trends",
+          });
         } else {
-          toast("No new trends found");
+          toast("No new trends found", { id: "refresh-trends" });
         }
         return curr;
       });
     } catch (e) {
       console.error("[HomeTab] refresh trends exception", e);
-      toast.error("Refresh failed — try again in a moment");
+      toast.error("Refresh failed — try again in a moment", { id: "refresh-trends" });
     } finally {
       setRefreshingTrends(false);
     }
