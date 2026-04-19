@@ -202,6 +202,36 @@ Deno.serve(async (req) => {
       .eq("id", capture.id)
       .single();
 
+    let newEntryId: string | null = null;
+    try {
+      const { data: entryRow, error: entryErr } = await supabase
+        .from("entries")
+        .insert({
+          user_id: user.id,
+          type: type === "link" ? "link" : type,
+          title: extracted_title || null,
+          content: extracted_text?.slice(0, 10000) || content,
+          summary: finalCapture?.metadata?.summary || null,
+          image_url: (type === "link") ? (source_url || content) : null,
+          skill_pillar: finalCapture?.metadata?.skill_pillar || null,
+        })
+        .select("id")
+        .single();
+
+      if (!entryErr && entryRow?.id) {
+        newEntryId = entryRow.id;
+        console.log("[ingest-capture] entries insert ok:", newEntryId);
+        supabase.functions.invoke("detect-signals", {
+          body: { entry_id: newEntryId, user_id: user.id },
+        }).catch((e: any) =>
+          console.warn("[ingest-capture] detect-signals invoke failed:", e?.message)
+        );
+        console.log("[ingest-capture] detect-signals invoked for entry:", newEntryId);
+      }
+    } catch (entryWriteErr: any) {
+      console.warn("[ingest-capture] entries write failed (non-fatal):", entryWriteErr?.message);
+    }
+
     // Include extracted content for the frontend to use
     return new Response(JSON.stringify({
       ...finalCapture,
