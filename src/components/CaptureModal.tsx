@@ -151,11 +151,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         setIsTranscribing(true);
         setTranscriptionFailed(false);
         try {
-          const formData = new FormData();
           const ext = mimeType.includes("webm") ? "webm" : "mp4";
-          formData.append("audio", blob, `recording.${ext}`);
           const { data: { session } } = await supabase.auth.getSession();
           const freshToken = session?.access_token;
+          if (!freshToken) {
+            setTranscriptionFailed(true);
+            sonnerToast.error("Transcription failed — type your note instead");
+            setIsTranscribing(false);
+            return;
+          }
 
           // Upload audio to storage for later reference
           if (session?.user?.id) {
@@ -167,18 +171,35 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             }
           }
 
-          const { data: fnData, error: fnError } = await supabase.functions.invoke("transcribe-voice", {
+          // NOTE: supabase.functions.invoke does not properly forward FormData,
+          // so we POST directly to the function URL with multipart body.
+          const formData = new FormData();
+          formData.append("audio", blob, `recording.${ext}`);
+
+          const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-voice`;
+          const resp = await fetch(fnUrl, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${freshToken}` },
             body: formData,
-            ...(freshToken ? { headers: { Authorization: `Bearer ${freshToken}` } } : {}),
           });
-          if (fnError || fnData?.error || !fnData?.transcript) {
+          const fnData = await resp.json().catch(() => null);
+
+          if (!resp.ok || !fnData?.transcript) {
+            console.error("transcribe-voice failed:", resp.status, fnData);
             setTranscriptionFailed(true);
+            sonnerToast.error("Transcription failed — type your note instead");
+            setTimeout(() => {
+              const ta = document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Transcript will appear here…"]');
+              ta?.focus();
+            }, 50);
           } else {
             setContent(fnData.transcript);
             if (fnData.audio_url) setVoiceAudioUrl(fnData.audio_url);
           }
-        } catch {
+        } catch (err) {
+          console.error("transcribe-voice exception:", err);
           setTranscriptionFailed(true);
+          sonnerToast.error("Transcription failed — type your note instead");
         }
         setIsTranscribing(false);
       };
