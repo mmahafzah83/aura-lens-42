@@ -221,12 +221,12 @@ Deno.serve(async (req) => {
       if (!entryErr && entryRow?.id) {
         newEntryId = entryRow.id;
         console.log("[ingest-capture] entries insert ok:", newEntryId);
-        supabase.functions.invoke("detect-signals", {
+        supabase.functions.invoke("detect-signals-v2", {
           body: { entry_id: newEntryId, user_id: user.id },
         }).catch((e: any) =>
-          console.warn("[ingest-capture] detect-signals invoke failed:", e?.message)
+          console.warn("[ingest-capture] detect-signals-v2 invoke failed:", e?.message)
         );
-        console.log("[ingest-capture] detect-signals invoked for entry:", newEntryId);
+        console.log("[ingest-capture] detect-signals-v2 invoked for entry:", newEntryId);
       }
     } catch (entryWriteErr: any) {
       console.warn("[ingest-capture] entries write failed (non-fatal):", entryWriteErr?.message);
