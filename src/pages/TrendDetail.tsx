@@ -168,11 +168,17 @@ export default function TrendDetail() {
     return () => { cancelled = true; };
   }, [signal?.canonical_url, signal?.url]);
 
-  // Why this matters to you — use selection_reason if present, else AI
+  // Why this matters to you — use selection_reason if it's meaningful prose, else call edge fn
   useEffect(() => {
-    if (!signal) return;
+    if (!signal || !user) return;
     const existing = (signal.selection_reason || "").trim();
-    if (existing) {
+    // Treat as meaningful only if it looks like a sentence (>= 6 words and contains a space).
+    // Reject tag/metadata strings like "Act Now · trusted source" or "High impact".
+    const isMeaningful =
+      existing.length >= 30 &&
+      existing.split(/\s+/).length >= 6 &&
+      !/^[A-Z][a-z]+( [A-Z][a-z]+)*( · |, )/.test(existing); // not just "Act Now · trusted source"
+    if (isMeaningful) {
       setWhyMatters(existing);
       setWhyFailed(false);
       setWhyLoading(false);
@@ -191,16 +197,30 @@ export default function TrendDetail() {
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke("trend-why-matters", {
-          body: { headline: signal.headline, insight: signal.insight },
+          body: {
+            trend_id: signal.id,
+            headline: signal.headline,
+            insight: signal.insight,
+            category: signal.category,
+            user_id: user.id,
+          },
         });
         if (cancelled) return;
         clearTimeout(timeout);
-        const text = (data?.text || "").trim();
+        const text = ((data?.text || (data as any)?.reason) || "").trim();
         if (error || !text) {
           setWhyFailed(true);
           setWhyMatters(null);
         } else {
           setWhyMatters(text);
+          // Cache back so future loads skip the API call.
+          supabase
+            .from("industry_trends")
+            .update({ selection_reason: text })
+            .eq("id", signal.id)
+            .then(({ error: upErr }) => {
+              if (upErr) console.warn("[TrendDetail] cache selection_reason failed", upErr);
+            });
         }
       } catch (e) {
         if (cancelled) return;
@@ -211,7 +231,7 @@ export default function TrendDetail() {
       }
     })();
     return () => { cancelled = true; clearTimeout(timeout); };
-  }, [signal?.id]);
+  }, [signal?.id, user?.id]);
 
   if (loading) {
     return (
@@ -307,16 +327,9 @@ export default function TrendDetail() {
         {signal.headline}
       </h1>
 
-      {/* Meta line */}
-      {signal.selection_reason && signal.selection_reason.trim().length > 0 && (
-        <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.7)", marginTop: 6, marginBottom: 16 }}>
-          {signal.selection_reason}
-        </div>
-      )}
-
       {/* Insight */}
       {signal.insight && (
-        <div style={{ marginBottom: 16, marginTop: signal.selection_reason ? 0 : 16 }}>
+        <div style={{ marginBottom: 16, marginTop: 16 }}>
           <div style={sectionLabel}>Insight</div>
           <div style={bodyText}>{signal.insight}</div>
         </div>
