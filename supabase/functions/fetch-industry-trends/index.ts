@@ -649,7 +649,10 @@ async function exaDiscover(
   apiKey: string,
   profileContext: string,
   queries: string[],
+  mode: "light" | "full" = "light",
 ): Promise<Array<{ url: string; title?: string; description?: string; reason?: string }>> {
+  const lookbackDays = mode === "full" ? 14 : 120;
+  const startPublishedDate = new Date(Date.now() - lookbackDays * 86400_000).toISOString();
   const collected = new Map<string, { url: string; title?: string; description?: string; reason?: string }>();
 
   // Strategy: run two passes per query — one biased to consulting/business
@@ -667,7 +670,7 @@ async function exaDiscover(
         numResults: 6,
         type: "neural",
         useAutoprompt: true,
-        startPublishedDate: new Date(Date.now() - 120 * 86400_000).toISOString(),
+        startPublishedDate,
         contents: { text: false, summary: { query: "Why this matters strategically" } },
         includeDomains: consultingDomains,
       },
@@ -677,7 +680,7 @@ async function exaDiscover(
         numResults: 5,
         type: "neural",
         useAutoprompt: true,
-        startPublishedDate: new Date(Date.now() - 120 * 86400_000).toISOString(),
+        startPublishedDate,
       },
     ];
 
@@ -1111,7 +1114,7 @@ async function runPhaseA(opts: {
 
   console.log("[phaseA] exa discovery:", queries);
   const t0 = Date.now();
-  const discoveryResults = await exaDiscover(exaKey, profileContext, queries);
+  const discoveryResults = await exaDiscover(exaKey, profileContext, queries, opts.mode);
   console.log(`[phaseA] exa returned: ${discoveryResults.length} in ${Date.now() - t0}ms`);
 
   const seen = new Set<string>();
@@ -1130,7 +1133,7 @@ async function runPhaseA(opts: {
     .from("industry_trends")
     .select("canonical_url, url, status")
     .eq("user_id", userId)
-    .neq("status", "expired");
+    .in("status", ["new", "enriching"]);
   const existingUrls = new Set<string>();
   (existingRows ?? []).forEach((r: any) => {
     if (r.canonical_url) existingUrls.add(r.canonical_url);
@@ -1139,8 +1142,8 @@ async function runPhaseA(opts: {
   const fresh = candidates.filter(c => !existingUrls.has(c.url));
   console.log(`[phaseA] candidates: ${candidates.length}, fresh: ${fresh.length}`);
 
-  // Cap at 12 placeholders so Phase B has 8 to work with after extraction failures
-  const QUEUE_CAP = 12;
+  // Cap at 6 placeholders so Phase B has 4 to work with after extraction failures
+  const QUEUE_CAP = 6;
   const queueable = fresh.slice(0, QUEUE_CAP);
 
   if (queueable.length === 0) {
@@ -1223,7 +1226,7 @@ async function runPhaseB(opts: {
   const profileContext = [profile.sector_focus, profile.core_practice, profile.firm, profile.level, profile.north_star_goal].filter(Boolean).join(", ");
   const profileTokens = tokenizeProfile(profile.sector_focus, profile.core_practice, profile.north_star_goal, profile.leadership_style);
 
-  const MAX_VALIDATED = 8;
+  const MAX_VALIDATED = 4;
   const MAX_JUDGE_BYPASSES = 2;
   const MAX_VALIDATOR_BYPASSES = 2;
   let judgeBypassCount = 0;
