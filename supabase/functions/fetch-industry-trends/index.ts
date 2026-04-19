@@ -681,6 +681,7 @@ async function exaDiscover(
         type: "neural",
         useAutoprompt: true,
         startPublishedDate,
+        category: "research report",
       },
     ];
 
