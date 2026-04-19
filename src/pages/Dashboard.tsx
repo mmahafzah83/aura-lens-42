@@ -95,6 +95,25 @@ const Dashboard = () => {
     }
   }, []);
 
+  // Handle prefill from trend Draft Post (passed via React Router state)
+  useEffect(() => {
+    const st = location.state as any;
+    if (st?.prefill_topic) {
+      setSignalDraftPrefill({
+        topic: st.prefill_topic,
+        context: st.prefill_context || "",
+        sourceType: st.source || "trend",
+        sourceTitle: st.prefill_topic,
+        contentFormat: "post",
+        trendHeadline: st.prefill_topic,
+      });
+      setActiveTab("authority");
+      // Clear router state so refresh doesn't re-prefill
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const navigateToSignal = (signalId: string) => {
     setSearchParams({ signal: signalId });
     setActiveTab("intelligence");
