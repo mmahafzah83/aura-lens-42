@@ -501,14 +501,14 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines }: CardProps) 
       </div>
       <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap" }}>{tag}</span>
+          <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>{tag}</span>
           <div style={{ flex: 1, height: 1, background: "#d4b896" }} />
         </div>
-        <p style={{ color: "#1a1005", fontSize: 22, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14 }}>
+        <p style={{ color: "#1a1005", fontSize: 22, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: "#6a5840", fontSize: 11, lineHeight: 1.6, flex: 1 }}>{lines[0] || ""}</p>
+        <p style={{ color: "#6a5840", fontSize: 11, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
       </div>
       <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
         <p style={{ color: "#1a1005", fontSize: 10, fontWeight: 700 }}>{editName}</p>
