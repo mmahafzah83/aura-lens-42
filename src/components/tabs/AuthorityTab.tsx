@@ -2232,12 +2232,12 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
                   {/* Date + Actions */}
                   <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
-                    <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(p.created_at)}</span>
+                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{formatSmartDate(p.created_at)}</span>
                     <div className="flex-1" />
                     <button
                       onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
                       disabled={!p.post_text}
-                      style={{ fontSize: 13, color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -2245,7 +2245,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                     </button>
                     <button
                       onClick={() => markPublished(p.id)}
-                      style={{ fontSize: 13, color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
                       <Check className="w-3.5 h-3.5" /> Mark as Published
@@ -2327,12 +2327,12 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                     </div>
                   </div>
                   <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
-                    <span style={{ fontSize: 12, color: "#666" }}>{formatSmartDate(p.created_at)}</span>
+                    <span style={{ fontSize: 12, color: "var(--color-muted)" }}>{formatSmartDate(p.created_at)}</span>
                     <div className="flex-1" />
                     <button
                       onClick={() => p.post_text && handleCopy(p.id, p.post_text)}
                       disabled={!p.post_text}
-                      style={{ fontSize: 13, color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
+                      style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
