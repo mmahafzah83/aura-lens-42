@@ -108,6 +108,30 @@ interface CardProps {
 const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
 const TITLE_SIZES = { xs: 11, s: 13, m: 16, l: 19, xl: 22 } as const;
 
+type CardStyleConfig = {
+  bodySize: "xs" | "s" | "m" | "l" | "xl";
+  titleSize: "xs" | "s" | "m" | "l" | "xl";
+  accentColor: string;
+  cardFont: string;
+  preset: "default" | "bold" | "warm" | "minimal" | "midnight";
+};
+
+const DEFAULT_CARD_STYLE: CardStyleConfig = {
+  bodySize: "m",
+  titleSize: "m",
+  accentColor: "#F97316",
+  cardFont: "Inter, sans-serif",
+  preset: "default",
+};
+
+const PRESETS = (accent: string) => ({
+  default: { bg: "#111111", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
+  minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
+  midnight: { bg: "#0a0a14", text: "#ffffff", tagCol: "#7b7bff", roleCol: "#444466" },
+});
+
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   const len = value.length;
   const color = len <= ideal ? "#7ab648" : len <= ideal * 1.4 ? "#EF9F27" : "#e24b4a";
@@ -155,22 +179,25 @@ export default function ImageCardGenerator({
   const [frameTitle, setFrameTitle] = useState(topicLabel);
   const [framePoints, setFramePoints] = useState<string[]>(lines.slice(0, 3));
 
-  // ── Style controls state ──
-  const [bodySize, setBodySize] = useState<"xs" | "s" | "m" | "l" | "xl">("m");
-  const [titleSize, setTitleSize] = useState<"xs" | "s" | "m" | "l" | "xl">("m");
-  const [accentColor, setAccentColor] = useState("#F97316");
-  const [cardFont, setCardFont] = useState("Inter, sans-serif");
-  const [cardPreset, setCardPreset] = useState<
-    "default" | "bold" | "warm" | "minimal" | "midnight"
-  >("default");
+  // ── Per-card independent style state ──
+  const [cardStyles, setCardStyles] = useState<Record<string, CardStyleConfig>>({});
 
-  const PRESETS = {
-    default: { bg: "#111111", text: "#ffffff", tagCol: accentColor, roleCol: "#555555" },
-    bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accentColor, roleCol: "#555555" },
-    warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accentColor, roleCol: "#9a8060" },
-    minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
-    midnight: { bg: "#0a0a14", text: "#ffffff", tagCol: "#7b7bff", roleCol: "#444466" },
+  const getCardStyle = (cardName: string): CardStyleConfig => ({
+    ...DEFAULT_CARD_STYLE,
+    ...cardStyles[cardName],
+  });
+
+  const updateCardStyle = <K extends keyof CardStyleConfig>(key: K, value: CardStyleConfig[K]) => {
+    setCardStyles((prev) => ({
+      ...prev,
+      [selectedStyle]: {
+        ...getCardStyle(selectedStyle),
+        [key]: value,
+      },
+    }));
   };
+
+  const activeStyle = getCardStyle(selectedStyle);
 
   useEffect(() => {
     setHookText(hook);
@@ -258,7 +285,7 @@ export default function ImageCardGenerator({
     );
   }
 
-  const cardProps: CardProps = {
+  const buildCardProps = (cfg: CardStyleConfig): CardProps => ({
     tag,
     hookText,
     editName,
@@ -270,12 +297,12 @@ export default function ImageCardGenerator({
     frameTitle,
     framePoints,
     hasStat,
-    bodyFontSize: BODY_SIZES[bodySize],
-    titleFontSize: TITLE_SIZES[titleSize],
-    accentColor,
-    cardFont,
-    preset: PRESETS[cardPreset],
-  };
+    bodyFontSize: BODY_SIZES[cfg.bodySize],
+    titleFontSize: TITLE_SIZES[cfg.titleSize],
+    accentColor: cfg.accentColor,
+    cardFont: cfg.cardFont,
+    preset: PRESETS(cfg.accentColor)[cfg.preset],
+  });
 
   const renderCard = (style: CardStyle, props: CardProps) => {
     switch (style) {
@@ -357,7 +384,7 @@ export default function ImageCardGenerator({
                       pointerEvents: "none",
                     }}
                   >
-                    {renderCard(s.key, cardProps)}
+                    {renderCard(s.key, buildCardProps(getCardStyle(s.key)))}
                   </div>
                 </div>
                 <span className="text-[8px] text-muted-foreground text-center max-w-[64px] truncate">
@@ -373,7 +400,7 @@ export default function ImageCardGenerator({
         {/* Full-size preview */}
         <div className="flex-1 p-6 flex items-center justify-center bg-[#161616] min-h-[480px]">
           <div ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
-            {renderCard(selectedStyle, cardProps)}
+            {renderCard(selectedStyle, buildCardProps(activeStyle))}
           </div>
         </div>
 
@@ -383,7 +410,7 @@ export default function ImageCardGenerator({
             Edit Card
           </p>
 
-          {/* ── Style Controls ── */}
+          {/* ── Style Controls (per-card) ── */}
           <div style={{ marginBottom: 16 }}>
             {/* Title size */}
             <div style={{ marginBottom: 10 }}>
@@ -394,13 +421,13 @@ export default function ImageCardGenerator({
                 {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
                   <button
                     key={s}
-                    onClick={() => setTitleSize(s)}
+                    onClick={() => updateCardStyle("titleSize", s)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: titleSize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: titleSize === s ? "#F97316" : "#555",
+                      background: activeStyle.titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.titleSize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.titleSize === s ? "#F97316" : "#555",
                     }}
                   >
                     {s.toUpperCase()}
@@ -417,13 +444,13 @@ export default function ImageCardGenerator({
                 {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
                   <button
                     key={s}
-                    onClick={() => setBodySize(s)}
+                    onClick={() => updateCardStyle("bodySize", s)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: bodySize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: bodySize === s ? "#F97316" : "#555",
+                      background: activeStyle.bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.bodySize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.bodySize === s ? "#F97316" : "#555",
                     }}
                   >
                     {s.toUpperCase()}
@@ -440,13 +467,13 @@ export default function ImageCardGenerator({
                 {(["default", "bold", "warm", "minimal", "midnight"] as const).map((p) => (
                   <button
                     key={p}
-                    onClick={() => setCardPreset(p)}
+                    onClick={() => updateCardStyle("preset", p)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 9, fontWeight: 600, cursor: "pointer",
-                      background: cardPreset === p ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: cardPreset === p ? "rgba(249,115,22,.4)" : "#252525",
-                      color: cardPreset === p ? "#F97316" : "#555",
+                      background: activeStyle.preset === p ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.preset === p ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.preset === p ? "#F97316" : "#555",
                       textTransform: "capitalize",
                     }}
                   >
@@ -464,12 +491,12 @@ export default function ImageCardGenerator({
                 {["#F97316", "#e24b4a", "#7ab648", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
                   <div
                     key={c}
-                    onClick={() => setAccentColor(c)}
+                    onClick={() => updateCardStyle("accentColor", c)}
                     style={{
                       width: 22, height: 22, borderRadius: "50%", background: c,
                       cursor: "pointer", flexShrink: 0,
-                      border: accentColor === c ? "2px solid #fff" : "1.5px solid #333",
-                      transform: accentColor === c ? "scale(1.2)" : "scale(1)",
+                      border: activeStyle.accentColor === c ? "2px solid #fff" : "1.5px solid #333",
+                      transform: activeStyle.accentColor === c ? "scale(1.2)" : "scale(1)",
                       transition: "all .15s",
                     }}
                   />
@@ -483,8 +510,8 @@ export default function ImageCardGenerator({
                   }}>+</div>
                   <input
                     type="color"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
+                    value={activeStyle.accentColor}
+                    onChange={(e) => updateCardStyle("accentColor", e.target.value)}
                     style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
                   />
                 </div>
@@ -503,14 +530,14 @@ export default function ImageCardGenerator({
                 ].map((f) => (
                   <button
                     key={f.value}
-                    onClick={() => setCardFont(f.value)}
+                    onClick={() => updateCardStyle("cardFont", f.value)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       fontFamily: f.value,
-                      background: cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: cardFont === f.value ? "rgba(249,115,22,.4)" : "#252525",
-                      color: cardFont === f.value ? "#F97316" : "#555",
+                      background: activeStyle.cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.cardFont === f.value ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.cardFont === f.value ? "#F97316" : "#555",
                     }}
                   >
                     {f.label}
@@ -671,7 +698,7 @@ const baseCard: React.CSSProperties = {
 };
 
 /* CARD 1: Manifesto */
-function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
+function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontSize, titleFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: accentColor }} />
@@ -679,7 +706,7 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontS
         <p style={{ color: preset.tagCol, fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {tag}
         </p>
-        <p style={{ color: accentColor, fontSize: 64, fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
+        <p style={{ color: accentColor, fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
         <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, maxHeight: 120, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
@@ -698,7 +725,7 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontS
 }
 
 /* CARD 2: Newspaper */
-function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize, accentColor, cardFont, preset }: CardProps) {
+function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -710,11 +737,11 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize
           <span style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>{tag}</span>
           <div style={{ flex: 1, height: 1, background: "#d4b896" }} />
         </div>
-        <p style={{ color: preset.text, fontSize: titleFontSize + 6, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: preset.roleCol, fontSize: 11, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
+        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
       </div>
       <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
         <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700 }}>{editName}</p>
@@ -725,7 +752,7 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize
 }
 
 /* CARD 3: Tension Split */
-function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
+function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, titleFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -734,12 +761,12 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <div style={{ width: 100, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
-          <p style={{ color: "#fff", fontSize: 48, fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
+          <p style={{ color: "#fff", fontSize: Math.min(48, titleFontSize * 2.5), fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: preset.text, fontSize: Math.max(10, bodyFontSize - 5), fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
+            <p key={i} style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
               {pt}
             </p>
           ))}
@@ -762,7 +789,7 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, acce
       </div>
       <div style={{ position: "relative", zIndex: 1, padding: "32px 24px 24px", display: "flex", flexDirection: "column", height: "100%" }}>
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize + 6, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {quoteText}
         </p>
         <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
@@ -775,7 +802,7 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, acce
 }
 
 /* CARD 5: Dark Editorial */
-function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFontSize, accentColor, cardFont, preset }: CardProps) {
+function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFontSize, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
@@ -787,10 +814,10 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFont
       </div>
       <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>01 / Key Insight</p>
-        <p style={{ color: preset.text, fontSize: titleFontSize + 8, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
-        <p style={{ color: "#555", fontSize: 11, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{lines[0] || ""}</p>
+        <p style={{ color: "#555", fontSize: bodyFontSize, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{lines[0] || ""}</p>
       </div>
       <div style={{ borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
@@ -804,12 +831,12 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFont
 }
 
 /* CARD 6: Contrast Framework */
-function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, accentColor, cardFont, preset }: CardProps) {
+function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ background: "#0d0d0d", padding: 20 }}>
         <p style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.25 }}>{frameTitle}</p>
+        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{frameTitle}</p>
         <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12 }} />
       </div>
       <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -818,7 +845,7 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
             <span style={{ color: accentColor, fontSize: 28, fontWeight: 900, minWidth: 32, lineHeight: 1 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p style={{ color: preset.text, fontSize: 12, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
               {framePoints[i] || ""}
             </p>
           </div>
@@ -844,7 +871,7 @@ function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, acc
       <p style={{ color: "#333", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
       <div>
         <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20 }} />
-        <p style={{ color: preset.text, fontSize: titleFontSize + 4, fontWeight: 700, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }}>
           {words.map((w, i) => (
             <span key={i} style={{ color: i === highlightIdx ? accentColor : preset.text }}>
               {w}{i < words.length - 1 ? " " : ""}
@@ -907,7 +934,7 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
 }
 
 /* CARD 10: Arabic (preserved) */
-function ArabicCard({ tag, hookText, editName, editRole, accentColor, cardFont, preset }: CardProps) {
+function ArabicCard({ tag, hookText, editName, editRole, titleFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32 }}>
       <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
@@ -919,7 +946,7 @@ function ArabicCard({ tag, hookText, editName, editRole, accentColor, cardFont, 
       <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>
         {tag}
       </p>
-      <p style={{ color: preset.text, fontSize: 16, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl" }}>
+      <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl" }}>
         {hookText || "اكتب النص العربي هنا..."}
       </p>
       <div style={{ width: 32, height: 2, background: accentColor, marginTop: 20, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
