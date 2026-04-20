@@ -124,6 +124,7 @@ export default function ImageCardGenerator({
   const [editRole, setEditRole] = useState(userRole || "Your Role");
   const [statValue, setStatValue] = useState(statData.stat);
   const [statContext, setStatContext] = useState(statData.context);
+  const [hasStat, setHasStat] = useState(statData.hasStat);
   const [quoteText, setQuoteText] = useState(quote);
   const [frameTitle, setFrameTitle] = useState(topicLabel);
   const [framePoints, setFramePoints] = useState<string[]>(lines.slice(0, 3));
@@ -133,6 +134,7 @@ export default function ImageCardGenerator({
     setTag(topicLabel);
     setStatValue(statData.stat);
     setStatContext(statData.context);
+    setHasStat(statData.hasStat);
     setQuoteText(quote);
     setFrameTitle(topicLabel);
     setFramePoints(lines.slice(0, 3));
@@ -154,6 +156,7 @@ export default function ImageCardGenerator({
       const s = extractStat(postText);
       setStatValue(s.stat);
       setStatContext(s.context);
+      setHasStat(s.hasStat);
     } else if (contentVariant === "quote") {
       setQuoteText(extractQuote(postText));
     } else if (contentVariant === "lines") {
@@ -172,6 +175,7 @@ export default function ImageCardGenerator({
       const s = extractStat(postText);
       setStatValue(s.stat);
       setStatContext(s.context);
+      setHasStat(s.hasStat);
     }
     if (next === "lines") {
       const l = extractLines(postText);
@@ -222,6 +226,7 @@ export default function ImageCardGenerator({
     quoteText,
     frameTitle,
     framePoints,
+    hasStat,
   };
 
   const renderCard = (style: CardStyle, props: CardProps) => {
