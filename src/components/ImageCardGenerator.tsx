@@ -809,14 +809,14 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
 }
 
 /* CARD 4: Bold Quote */
-function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, accentColor, cardFont }: CardProps) {
+function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont }: CardProps) {
   return (
     <div style={{ ...baseCard, background: accentColor, fontFamily: cardFont }}>
       <div style={{ position: "absolute", top: -20, left: 16, fontSize: 200, color: "rgba(0,0,0,0.12)", fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none", zIndex: 0 }}>
         “
       </div>
       <div style={{ position: "relative", zIndex: 1, padding: "32px 24px 24px", display: "flex", flexDirection: "column", height: "100%" }}>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
         <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {quoteText}
         </p>
