@@ -155,6 +155,23 @@ export default function ImageCardGenerator({
   const [frameTitle, setFrameTitle] = useState(topicLabel);
   const [framePoints, setFramePoints] = useState<string[]>(lines.slice(0, 3));
 
+  // ── Style controls state ──
+  const [bodySize, setBodySize] = useState<"xs" | "s" | "m" | "l" | "xl">("m");
+  const [titleSize, setTitleSize] = useState<"xs" | "s" | "m" | "l" | "xl">("m");
+  const [accentColor, setAccentColor] = useState("#F97316");
+  const [cardFont, setCardFont] = useState("Inter, sans-serif");
+  const [cardPreset, setCardPreset] = useState<
+    "default" | "bold" | "warm" | "minimal" | "midnight"
+  >("default");
+
+  const PRESETS = {
+    default: { bg: "#111111", text: "#ffffff", tagCol: accentColor, roleCol: "#555555" },
+    bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accentColor, roleCol: "#555555" },
+    warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accentColor, roleCol: "#9a8060" },
+    minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
+    midnight: { bg: "#0a0a14", text: "#ffffff", tagCol: "#7b7bff", roleCol: "#444466" },
+  };
+
   useEffect(() => {
     setHookText(hook);
     setTag(topicLabel);
