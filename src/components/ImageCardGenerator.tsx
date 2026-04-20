@@ -440,6 +440,29 @@ export default function ImageCardGenerator({
                 ))}
               </div>
             </div>
+            {/* Header size */}
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+                Header size
+              </p>
+              <div style={{ display: "flex", gap: 4 }}>
+                {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => updateCardStyle("headerSize", s)}
+                    style={{
+                      flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      background: activeStyle.headerSize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.headerSize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.headerSize === s ? "#F97316" : "#555",
+                    }}
+                  >
+                    {s.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* Body size */}
             <div style={{ marginBottom: 10 }}>
               <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
