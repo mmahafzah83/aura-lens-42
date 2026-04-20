@@ -634,11 +634,11 @@ function MinimalDarkCard({ tag, hookText, editName, editRole }: CardProps) {
   const words = hookText.split(/\s+/);
   const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
   return (
-    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column", padding: "36px 28px", justifyContent: "space-between" }}>
+    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column", padding: "36px 28px", justifyContent: "space-between", position: "relative" }}>
       <p style={{ color: "#333", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
       <div>
         <div style={{ width: 24, height: 2, background: "#F97316", marginBottom: 20 }} />
-        <p style={{ color: "#fff", fontSize: 20, fontWeight: 700, lineHeight: 1.4 }}>
+        <p style={{ color: "#fff", fontSize: 20, fontWeight: 700, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }}>
           {words.map((w, i) => (
             <span key={i} style={{ color: i === highlightIdx ? "#F97316" : "#fff" }}>
               {w}{i < words.length - 1 ? " " : ""}
@@ -649,8 +649,8 @@ function MinimalDarkCard({ tag, hookText, editName, editRole }: CardProps) {
       <div>
         <p style={{ color: "#fff", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
         <p style={{ color: "#444", fontSize: 9, marginTop: 3 }}>{editRole}</p>
-        <p style={{ color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", marginTop: 16 }}>AURA</p>
       </div>
+      <p style={{ position: "absolute", bottom: 16, right: 16, color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
   );
 }
