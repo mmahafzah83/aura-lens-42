@@ -465,7 +465,7 @@ const baseCard: React.CSSProperties = {
 };
 
 /* CARD 1: Manifesto */
-function ManifestoCard({ tag, hookText, editName, editRole, lines, statValue }: CardProps) {
+function ManifestoCard({ tag, hookText, editName, editRole, statValue }: CardProps) {
   return (
     <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
       <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: "#F97316" }} />
@@ -476,10 +476,9 @@ function ManifestoCard({ tag, hookText, editName, editRole, lines, statValue }: 
         <p style={{ color: "#F97316", fontSize: 72, fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
-        <p style={{ color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1.35, marginBottom: 14 }}>
+        <p style={{ color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
-        <p style={{ color: "#555", fontSize: 12, lineHeight: 1.55 }}>{lines[0] || ""}</p>
       </div>
       <div style={{ borderTop: "1px solid #141414", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
