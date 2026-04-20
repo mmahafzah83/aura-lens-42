@@ -177,6 +177,86 @@ Deno.serve(async (req) => {
         }
 
         await supabase.from("captures").update({
+        // Fallback: save URL as content, domain as title
+        if (!fetchSuccess) {
+          extracted_text = targetUrl;
+          try {
+            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
+            const parts = hostname.split('.');
+            const domain = parts[parts.length - 2] || hostname;
+            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
+          } catch {
+            extracted_title = 'Captured article';
+          }
+        }
+
+        // Also call summarize-link for AI summary (fire-and-forget style, but await for capture record)
+        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+          body: { url: targetUrl },
+        });
+
+        const captureMetadata = { ...metadata };
+        if (!summaryError && summaryData && !summaryData.error) {
+          captureMetadata.title = summaryData.title || extracted_title;
+          captureMetadata.summary = summaryData.summary;
+          captureMetadata.skill_pillar = summaryData.skill_pillar;
+          extracted_title = summaryData.title || extracted_title;
+        }
+
+        // Guard against blank/domain-only titles reaching detect-signals-v2
+        const domainPattern = /^(www\.)?[a-z0-9-]+\.[a-z]{2,}(\.[a-z]{2,})?$/i;
+        if (!extracted_title || domainPattern.test(extracted_title.trim())) {
+          try {
+            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
+            const parts = hostname.split('.');
+            const domain = parts[parts.length - 2] || hostname;
+            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
+          } catch {
+            extracted_title = 'Captured article';
+          }
+        }
+
+        await supabase.from("captures").update({
+        // Fallback: save URL as content, domain as title
+        if (!fetchSuccess) {
+          extracted_text = targetUrl;
+          try {
+            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
+            const parts = hostname.split('.');
+            const domain = parts[parts.length - 2] || hostname;
+            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
+          } catch {
+            extracted_title = 'Captured article';
+          }
+        }
+
+        // Also call summarize-link for AI summary (fire-and-forget style, but await for capture record)
+        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
+          body: { url: targetUrl },
+        });
+
+        const captureMetadata = { ...metadata };
+        if (!summaryError && summaryData && !summaryData.error) {
+          captureMetadata.title = summaryData.title || extracted_title;
+          captureMetadata.summary = summaryData.summary;
+          captureMetadata.skill_pillar = summaryData.skill_pillar;
+          extracted_title = summaryData.title || extracted_title;
+        }
+
+        // Guard against blank/domain-only titles reaching detect-signals-v2
+        const domainPattern = /^(www\.)?[a-z0-9-]+\.[a-z]{2,}(\.[a-z]{2,})?$/i;
+        if (!extracted_title || domainPattern.test(extracted_title.trim())) {
+          try {
+            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
+            const parts = hostname.split('.');
+            const domain = parts[parts.length - 2] || hostname;
+            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
+          } catch {
+            extracted_title = 'Captured article';
+          }
+        }
+
+        await supabase.from("captures").update({
           extracted_text,
           metadata: captureMetadata,
           processing_status: "completed",
