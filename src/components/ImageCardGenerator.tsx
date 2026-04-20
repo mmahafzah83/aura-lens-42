@@ -31,8 +31,10 @@ interface ImageCardGeneratorProps {
 /* ── Extraction helpers ── */
 
 function extractHook(text: string): string {
-  const sentences = text.replace(/\*\*/g, "").replace(/\*/g, "").split(/(?<=[.!?،؟])\s+/);
-  return sentences.slice(0, 2).join(" ").trim();
+  const clean = text.replace(/\*\*/g, "").replace(/\*/g, "").trim();
+  const sentences = clean.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10);
+  const first = sentences[0] || clean;
+  return first.length > 120 ? first.slice(0, 117) + "..." : first;
 }
 
 function extractLines(text: string): string[] {
@@ -44,15 +46,20 @@ function extractLines(text: string): string[] {
     .filter((l) => l.length > 0);
 }
 
-function extractStat(text: string): { stat: string; context: string } {
+function extractStat(text: string): { stat: string; context: string; hasStat: boolean } {
   const clean = text.replace(/\*\*/g, "").replace(/\*/g, "");
-  const match = clean.match(/(\d+(?:\.\d+)?(?:M|B|K|%|\+)?)/);
+  const match = clean.match(/(\d+(?:\.\d+)?(?:M|B|K|%|\+|x)?)/);
   if (match) {
     const idx = clean.indexOf(match[0]);
-    const context = clean.slice(Math.max(0, idx - 20), idx + 80).trim();
-    return { stat: match[0], context };
+    const context = clean.slice(Math.max(0, idx - 10), idx + 80).trim();
+    return { stat: match[0], context, hasStat: true };
   }
-  return { stat: "—", context: clean.slice(0, 100) };
+  const lines = clean.split(/\n/).filter((l) => l.trim().length > 20);
+  return {
+    stat: String(Math.min(lines.length, 9)),
+    context: "key insights from this analysis",
+    hasStat: false,
+  };
 }
 
 function extractQuote(text: string): string {
