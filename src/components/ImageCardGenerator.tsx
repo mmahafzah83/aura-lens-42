@@ -108,6 +108,30 @@ interface CardProps {
 const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
 const TITLE_SIZES = { xs: 11, s: 13, m: 16, l: 19, xl: 22 } as const;
 
+type CardStyleConfig = {
+  bodySize: "xs" | "s" | "m" | "l" | "xl";
+  titleSize: "xs" | "s" | "m" | "l" | "xl";
+  accentColor: string;
+  cardFont: string;
+  preset: "default" | "bold" | "warm" | "minimal" | "midnight";
+};
+
+const DEFAULT_CARD_STYLE: CardStyleConfig = {
+  bodySize: "m",
+  titleSize: "m",
+  accentColor: "#F97316",
+  cardFont: "Inter, sans-serif",
+  preset: "default",
+};
+
+const PRESETS = (accent: string) => ({
+  default: { bg: "#111111", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
+  minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
+  midnight: { bg: "#0a0a14", text: "#ffffff", tagCol: "#7b7bff", roleCol: "#444466" },
+});
+
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   const len = value.length;
   const color = len <= ideal ? "#7ab648" : len <= ideal * 1.4 ? "#EF9F27" : "#e24b4a";
