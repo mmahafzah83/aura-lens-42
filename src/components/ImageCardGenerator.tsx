@@ -306,12 +306,17 @@ function FrameworkCard({ title, points, name }: { title: string; points: { title
   );
 }
 
-function SplitCard({ leftItems, rightItems, name, hook }: { leftItems: string[]; rightItems: string[]; name: string; hook: string }) {
+function SplitCard({ leftItems, rightItems, name, hook, tag }: { leftItems: string[]; rightItems: string[]; name: string; hook: string; tag: string }) {
+  const subtitle = (tag || "").slice(0, 40);
   return (
     <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid #1e1e1e", minHeight: 300 }}>
       {/* Header */}
-      <div style={{ background: "#0d0d0d", padding: "16px 24px", borderBottom: "2px solid #F97316" }}>
+      <div style={{ background: "#0d0d0d", padding: "16px 24px", borderBottom: "2px solid #F97316", position: "relative" }}>
         <p style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>Compare & Contrast</p>
+        {subtitle && (
+          <p style={{ color: "#888", fontSize: 9, marginTop: 2 }}>{subtitle}</p>
+        )}
+        <p style={{ position: "absolute", top: 14, right: 20, color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>AURA</p>
       </div>
       {/* Columns */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
