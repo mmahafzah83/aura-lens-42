@@ -917,12 +917,12 @@ function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, hea
 }
 
 /* CARD 8: Statement Light */
-function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, accentColor, cardFont, preset }: CardProps) {
+function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont }}>
       <div style={{ position: "absolute", top: 0, right: 0, width: 68, height: 68, background: accentColor, borderBottomLeftRadius: 14 }} />
       <div style={{ padding: "28px 24px 24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
-        <p style={{ color: accentColor, fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20 }}>
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20 }}>
           {tag}
         </p>
         <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.32, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
