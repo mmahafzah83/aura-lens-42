@@ -303,6 +303,7 @@ export default function ImageCardGenerator({
     hasStat,
     bodyFontSize: BODY_SIZES[cfg.bodySize],
     titleFontSize: TITLE_SIZES[cfg.titleSize],
+    headerFontSize: HEADER_SIZES[cfg.headerSize],
     accentColor: cfg.accentColor,
     cardFont: cfg.cardFont,
     preset: PRESETS(cfg.accentColor)[cfg.preset],
