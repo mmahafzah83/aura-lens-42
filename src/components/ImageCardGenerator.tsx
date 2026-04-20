@@ -671,25 +671,25 @@ const baseCard: React.CSSProperties = {
 };
 
 /* CARD 1: Manifesto */
-function ManifestoCard({ tag, hookText, editName, editRole, statValue }: CardProps) {
+function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: "#F97316" }} />
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: accentColor }} />
       <div style={{ padding: "28px 24px 0 32px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: "#F97316", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <p style={{ color: preset.tagCol, fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {tag}
         </p>
-        <p style={{ color: "#F97316", fontSize: 64, fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
+        <p style={{ color: accentColor, fontSize: 64, fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
-        <p style={{ color: "#fff", fontSize: 16, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, maxHeight: 120, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
+        <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, maxHeight: 120, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
           {hookText}
         </p>
       </div>
       <div style={{ borderTop: "1px solid #141414", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
-          <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-          <p style={{ color: "#444", fontSize: 9, marginTop: 2 }}>{editRole}</p>
+          <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
+          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
         </div>
         <p style={{ color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
@@ -698,27 +698,27 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue }: CardPro
 }
 
 /* CARD 2: Newspaper */
-function NewspaperCard({ tag, hookText, editName, editRole, lines }: CardProps) {
+function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#f5ede0", display: "flex", flexDirection: "column" }}>
-      <div style={{ background: "#F97316", padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+      <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
         <span style={{ color: "#fff", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>{tag}</span>
+          <span style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>{tag}</span>
           <div style={{ flex: 1, height: 1, background: "#d4b896" }} />
         </div>
-        <p style={{ color: "#1a1005", fontSize: 22, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize + 6, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: "#6a5840", fontSize: 11, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
+        <p style={{ color: preset.roleCol, fontSize: 11, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
       </div>
       <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
-        <p style={{ color: "#1a1005", fontSize: 10, fontWeight: 700 }}>{editName}</p>
-        <p style={{ color: "#9a8060", fontSize: 9, marginTop: 2 }}>{editRole}</p>
+        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700 }}>{editName}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
       </div>
     </div>
   );
