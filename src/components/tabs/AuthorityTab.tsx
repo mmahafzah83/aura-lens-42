@@ -246,6 +246,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generationTimestamp, setGenerationTimestamp] = useState<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
+  const [profileName, setProfileName] = useState<string>("");
+  const [profileRole, setProfileRole] = useState<string>("");
   const [planRef, setPlanRef] = useState<string | null>(null);
 
   // Short version state
