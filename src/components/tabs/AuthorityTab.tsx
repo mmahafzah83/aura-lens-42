@@ -2053,13 +2053,38 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const markPublished = async (id: string) => {
     const item = drafts.find(p => p.id === id);
     if (!item) return;
-    const { error } = await supabase
-      .from("content_items")
-      .update({ status: "published" })
-      .eq("id", id);
-    if (error) { toast.error("Failed to update status"); return; }
-    setDrafts(prev => prev.filter(p => p.id !== id));
-    toast.success("Marked as published");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const { error } = await supabase
+        .from("linkedin_posts")
+        .insert({
+          user_id: session.user.id,
+          post_text: item.post_text || "",
+          format_type: item.format_type || "post",
+          tracking_status: "published",
+          source_type: "aura_generated",
+          published_at: new Date().toISOString(),
+          like_count: 0,
+          comment_count: 0,
+          repost_count: 0,
+          engagement_score: 0,
+          source_trust: 100,
+          source_metadata: item.source_metadata || {},
+          enriched_by: [],
+          synced_at: new Date().toISOString(),
+        });
+      if (error) throw error;
+      await supabase
+        .from("content_items")
+        .update({ status: "published" })
+        .eq("id", id);
+      setDrafts(prev => prev.filter(p => p.id !== id));
+      toast.success("Marked as published — visible in your library.");
+      loadPosts();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to mark as published");
+    }
   };
 
   const deletePost = async (id: string) => {
