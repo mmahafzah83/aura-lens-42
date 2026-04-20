@@ -266,6 +266,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [_frameworks, setFrameworks] = useState<FrameworkSuggestion[]>([]);
   const [_suggestionsLoading, setSuggestionsLoading] = useState(true);
 
+  const [critiqueLoading, setCritiqueLoading] = useState(false);
+  const [critique, setCritique] = useState<any>(null);
+  const [critiqueError, setCritiqueError] = useState<string | null>(null);
+
   // Load monthly generation count
   useEffect(() => {
     (async () => {
