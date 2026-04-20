@@ -146,7 +146,7 @@ export default function ImageCardGenerator({ postText, topicLabel, lang, userNam
               <FrameworkCard title={frameworkTitle} points={frameworkPoints} name={name} />
             )}
             {style === "split" && (
-              <SplitCard leftItems={leftArr} rightItems={rightArr} name={name} hook={hookText} />
+              <SplitCard leftItems={leftArr} rightItems={rightArr} name={name} hook={hookText} tag={tag} />
             )}
             {style === "arabic" && (
               <ArabicCard hook={lang === "ar" ? hookText : ""} name={name} role={role} tag={tag} />
