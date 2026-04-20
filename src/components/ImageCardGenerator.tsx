@@ -139,6 +139,20 @@ export default function ImageCardGenerator({
     if (userRole) setEditRole(userRole);
   }, [userRole]);
 
+  useEffect(() => {
+    if (contentVariant === "hook") {
+      setHookText(extractHook(postText));
+    } else if (contentVariant === "stat") {
+      const s = extractStat(postText);
+      setStatValue(s.stat);
+      setStatContext(s.context);
+    } else if (contentVariant === "quote") {
+      setQuoteText(extractQuote(postText));
+    } else if (contentVariant === "lines") {
+      setFramePoints(extractLines(postText).slice(0, 3));
+    }
+  }, [contentVariant, postText]);
+
   const shuffle = () => {
     const variants: ContentVariant[] = ["hook", "stat", "lines", "quote"];
     const next = variants[Math.floor(Math.random() * variants.length)];
