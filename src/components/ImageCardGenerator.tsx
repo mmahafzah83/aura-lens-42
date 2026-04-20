@@ -938,11 +938,11 @@ function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, 
 }
 
 /* CARD 9: Data Point */
-function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, accentColor, cardFont, preset }: CardProps) {
+function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ background: accentColor, padding: "28px 24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: "auto" }}>
+        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: "auto" }}>
           {tag}
         </p>
         <p style={{ color: "#fff", fontSize: 64, fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>
