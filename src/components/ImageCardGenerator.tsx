@@ -285,7 +285,7 @@ export default function ImageCardGenerator({
     );
   }
 
-  const cardProps: CardProps = {
+  const buildCardProps = (cfg: CardStyleConfig): CardProps => ({
     tag,
     hookText,
     editName,
@@ -297,12 +297,12 @@ export default function ImageCardGenerator({
     frameTitle,
     framePoints,
     hasStat,
-    bodyFontSize: BODY_SIZES[bodySize],
-    titleFontSize: TITLE_SIZES[titleSize],
-    accentColor,
-    cardFont,
-    preset: PRESETS[cardPreset],
-  };
+    bodyFontSize: BODY_SIZES[cfg.bodySize],
+    titleFontSize: TITLE_SIZES[cfg.titleSize],
+    accentColor: cfg.accentColor,
+    cardFont: cfg.cardFont,
+    preset: PRESETS(cfg.accentColor)[cfg.preset],
+  });
 
   const renderCard = (style: CardStyle, props: CardProps) => {
     switch (style) {
@@ -384,7 +384,7 @@ export default function ImageCardGenerator({
                       pointerEvents: "none",
                     }}
                   >
-                    {renderCard(s.key, cardProps)}
+                    {renderCard(s.key, buildCardProps(getCardStyle(s.key)))}
                   </div>
                 </div>
                 <span className="text-[8px] text-muted-foreground text-center max-w-[64px] truncate">
@@ -400,7 +400,7 @@ export default function ImageCardGenerator({
         {/* Full-size preview */}
         <div className="flex-1 p-6 flex items-center justify-center bg-[#161616] min-h-[480px]">
           <div ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
-            {renderCard(selectedStyle, cardProps)}
+            {renderCard(selectedStyle, buildCardProps(activeStyle))}
           </div>
         </div>
 
