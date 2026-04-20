@@ -455,6 +455,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     if (contentType === "carousel") { setShowCarousel(true); return; }
     setGenerating(true);
     setOutput("");
+    setCritique(null);
+    setCritiqueError(null);
     setFullVersion("");
     setShortVersion("");
     setShowingShort(false);
@@ -466,6 +468,34 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       toast.error(e.message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const fetchCritique = async () => {
+    setCritiqueLoading(true);
+    setCritiqueError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-critique`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      if (!response.ok) throw new Error("Review failed");
+      const data = await response.json();
+      setCritique(data.critique);
+    } catch (e: any) {
+      setCritiqueError(e.message || "Failed to load review");
+    } finally {
+      setCritiqueLoading(false);
     }
   };
 
