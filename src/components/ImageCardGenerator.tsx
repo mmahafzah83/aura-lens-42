@@ -532,21 +532,21 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines }: CardProps) 
 }
 
 /* CARD 3: Tension Split */
-function TensionSplitCard({ tag, editName, editRole, framePoints, statValue }: CardProps) {
+function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#0d0d0d", display: "grid", gridTemplateRows: "auto 1fr auto" }}>
+    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</span>
+        <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>{tag}</span>
         <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", height: "100%" }}>
-        <div style={{ background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, height: "100%", alignSelf: "stretch" }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+        <div style={{ width: 100, background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
           <p style={{ color: "#fff", fontSize: 48, fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>KEY INSIGHT</p>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
-        <div style={{ padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", height: "100%", alignSelf: "stretch" }}>
+        <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
               {pt}
             </p>
           ))}
