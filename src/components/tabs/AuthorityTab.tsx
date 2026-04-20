@@ -2001,7 +2001,6 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       supabase
         .from("linkedin_posts")
         .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at")
-        .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
