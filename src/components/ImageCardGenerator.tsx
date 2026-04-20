@@ -287,7 +287,7 @@ function FrameworkCard({ title, points, name }: { title: string; points: { title
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {points.map((pt, i) => (
           <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 12, background: "#1a1a1a", color: "#F97316", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 24, height: 24, borderRadius: 12, background: "#F97316", color: "#ffffff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {i + 1}
             </div>
             <div>
