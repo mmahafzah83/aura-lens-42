@@ -526,14 +526,14 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue }: C
         <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</span>
         <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr" }}>
-        <div style={{ background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", height: "100%" }}>
+        <div style={{ background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, height: "100%", alignSelf: "stretch" }}>
           <p style={{ color: "#fff", fontSize: 48, fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>KEY INSIGHT</p>
         </div>
-        <div style={{ padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center" }}>
+        <div style={{ padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", height: "100%", alignSelf: "stretch" }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4 }}>
+            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
               {pt}
             </p>
           ))}
