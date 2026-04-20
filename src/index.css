@@ -276,6 +276,20 @@ html.dark  { background-color: #0c0c0c; }
                 inset 0 1px 0 hsl(0 0% 100% / 0.9);
   }
 
+  :root {
+    --bg-card: hsl(0 0% 8%);
+    --bg-subtle: hsl(0 0% 15%);
+    --color-muted: hsl(0 0% 60%);
+    --color-border: hsl(0 0% 100% / 0.06);
+  }
+
+  .light {
+    --bg-card: hsl(0 0% 100%);
+    --bg-subtle: hsl(0 0% 96%);
+    --color-muted: hsl(0 0% 45%);
+    --color-border: hsl(0 0% 0% / 0.08);
+  }
+
   .glass-card-elevated {
     background: linear-gradient(
       180deg,
