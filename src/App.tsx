@@ -12,7 +12,17 @@ import LinkedInCallback from "./pages/LinkedInCallback";
 import TrendDetail from "./pages/TrendDetail";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 3,
+      gcTime: 1000 * 60 * 10,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
