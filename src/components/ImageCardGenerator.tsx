@@ -100,6 +100,7 @@ interface CardProps {
   hasStat: boolean;
   bodyFontSize: number;
   titleFontSize: number;
+  headerFontSize: number;
   accentColor: string;
   cardFont: string;
   preset: { bg: string; text: string; tagCol: string; roleCol: string };
@@ -107,10 +108,12 @@ interface CardProps {
 
 const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
 const TITLE_SIZES = { xs: 11, s: 13, m: 16, l: 19, xl: 22 } as const;
+const HEADER_SIZES = { xs: 7, s: 9, m: 11, l: 13, xl: 15 } as const;
 
 type CardStyleConfig = {
   bodySize: "xs" | "s" | "m" | "l" | "xl";
   titleSize: "xs" | "s" | "m" | "l" | "xl";
+  headerSize: "xs" | "s" | "m" | "l" | "xl";
   accentColor: string;
   cardFont: string;
   preset: "default" | "bold" | "warm" | "minimal" | "midnight";
@@ -119,6 +122,7 @@ type CardStyleConfig = {
 const DEFAULT_CARD_STYLE: CardStyleConfig = {
   bodySize: "m",
   titleSize: "m",
+  headerSize: "m",
   accentColor: "#F97316",
   cardFont: "Inter, sans-serif",
   preset: "default",
