@@ -270,6 +270,11 @@ export default function ImageCardGenerator({
     frameTitle,
     framePoints,
     hasStat,
+    bodyFontSize: BODY_SIZES[bodySize],
+    titleFontSize: TITLE_SIZES[titleSize],
+    accentColor,
+    cardFont,
+    preset: PRESETS[cardPreset],
   };
 
   const renderCard = (style: CardStyle, props: CardProps) => {
