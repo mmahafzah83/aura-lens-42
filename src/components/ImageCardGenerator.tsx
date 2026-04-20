@@ -12,6 +12,8 @@ interface ImageCardGeneratorProps {
   postText: string;
   topicLabel: string;
   lang: "en" | "ar";
+  userName?: string;
+  userRole?: string;
 }
 
 function extractHook(text: string): string {
@@ -35,10 +37,7 @@ const STYLES: { key: CardStyle; label: string }[] = [
   { key: "arabic", label: "Arabic (RTL)" },
 ];
 
-const NAME = "Mohammad Mahafzah";
-const ROLE = "Digital Transformation · EY GCC";
-
-export default function ImageCardGenerator({ postText, topicLabel, lang }: ImageCardGeneratorProps) {
+export default function ImageCardGenerator({ postText, topicLabel, lang, userName, userRole }: ImageCardGeneratorProps) {
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CardStyle>("statement");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -48,8 +47,8 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
 
   const [hookText, setHookText] = useState(hook);
   const [tag, setTag] = useState(topicLabel);
-  const [name, setName] = useState(NAME);
-  const [role, setRole] = useState(ROLE);
+  const [name, setName] = useState(userName || "Your Name");
+  const [role, setRole] = useState(userRole || "Your Role");
   const [leftItems, setLeftItems] = useState(lines.slice(0, 4).join("\n"));
   const [rightItems, setRightItems] = useState(lines.slice(4, 8).join("\n"));
   const [frameworkTitle, setFrameworkTitle] = useState(topicLabel);
@@ -68,6 +67,14 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
       lines.slice(0, 3).map(l => ({ title: l.slice(0, 60), subtitle: "" }))
     );
   }, [postText, topicLabel]);
+
+  useEffect(() => {
+    if (userName) setName(userName);
+  }, [userName]);
+
+  useEffect(() => {
+    if (userRole) setRole(userRole);
+  }, [userRole]);
 
   const downloadPNG = async () => {
     if (!cardRef.current) return;
