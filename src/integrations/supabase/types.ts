@@ -1788,6 +1788,19 @@ export type Database = {
         }
         Relationships: []
       }
+      unified_content: {
+        Row: {
+          content_body: string | null
+          created_at: string | null
+          format_type: string | null
+          id: string | null
+          source_table: string | null
+          status: string | null
+          title: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       search_vault:
