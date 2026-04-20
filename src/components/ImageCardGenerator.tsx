@@ -97,6 +97,7 @@ interface CardProps {
   quoteText: string;
   frameTitle: string;
   framePoints: string[];
+  hasStat: boolean;
 }
 
 export default function ImageCardGenerator({
