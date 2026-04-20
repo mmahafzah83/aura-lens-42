@@ -910,7 +910,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Image Card Generator */}
             {displayedOutput && !isGeneratingAny && (
-              <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
+              <ImageCardGenerator
+                postText={displayedOutput}
+                topicLabel={topic}
+                lang={lang}
+                userName={profileName}
+                userRole={profileRole}
+              />
             )}
 
             {/* Visual Companion — LinkedIn Post Visual */}
