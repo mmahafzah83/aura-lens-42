@@ -890,13 +890,13 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
 }
 
 /* CARD 7: Minimal Dark */
-function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, accentColor, cardFont, preset }: CardProps) {
+function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   // Highlight first word over 5 chars in orange
   const words = hookText.split(/\s+/);
   const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", padding: "36px 28px", justifyContent: "space-between", position: "relative" }}>
-      <p style={{ color: "#333", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
+      <p style={{ color: "#333", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
       <div>
         <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20 }} />
         <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }}>
