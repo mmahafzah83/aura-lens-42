@@ -7,23 +7,18 @@ const corsHeaders = {
 };
 
 function extractTextFromHtml(html: string): string {
-  // Remove script and style blocks
   let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
   text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-  // Remove nav and footer blocks
   text = text.replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "");
   text = text.replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "");
   text = text.replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "");
-  // Remove all remaining HTML tags
   text = text.replace(/<[^>]+>/g, " ");
-  // Decode common HTML entities
   text = text.replace(/&nbsp;/g, " ");
   text = text.replace(/&amp;/g, "&");
   text = text.replace(/&lt;/g, "<");
   text = text.replace(/&gt;/g, ">");
   text = text.replace(/&quot;/g, '"');
   text = text.replace(/&#39;/g, "'");
-  // Collapse whitespace
   text = text.replace(/\s+/g, " ").trim();
   return text;
 }
@@ -31,6 +26,17 @@ function extractTextFromHtml(html: string): string {
 function extractTitle(html: string): string {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   return match ? match[1].replace(/\s+/g, " ").trim() : "";
+}
+
+function fallbackTitleFromUrl(targetUrl: string): string {
+  try {
+    const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
+    const parts = hostname.split('.');
+    const domain = parts[parts.length - 2] || hostname;
+    return domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
+  } catch {
+    return 'Captured article';
+  }
 }
 
 Deno.serve(async (req) => {
@@ -51,7 +57,6 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify user
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: { user }, error: authError } = await anonClient.auth.getUser(
       authHeader.replace("Bearer ", "")
@@ -73,7 +78,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check for duplicate URL
     if (type === "link" && source_url) {
       const { data: existing } = await supabase
         .from("captures")
@@ -96,7 +100,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Insert the capture record
     const { data: capture, error: insertError } = await supabase
       .from("captures")
       .insert({
@@ -117,7 +120,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Process based on type
     let extracted_text = content;
     let extracted_title: string | null = null;
 
@@ -153,44 +155,13 @@ Deno.serve(async (req) => {
           console.warn("Failed to fetch link content:", (fetchErr as Error).message);
         }
 
-        // Fallback: save URL as content, domain as title
+        // Fallback: save URL as content, friendly domain-based title
         if (!fetchSuccess) {
           extracted_text = targetUrl;
-          try {
-            extracted_title = new URL(targetUrl).hostname;
-          } catch {
-            extracted_title = targetUrl.slice(0, 60);
-          }
+          extracted_title = fallbackTitleFromUrl(targetUrl);
         }
 
-        // Also call summarize-link for AI summary (fire-and-forget style, but await for capture record)
-        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
-          body: { url: targetUrl },
-        });
-
-        const captureMetadata = { ...metadata };
-        if (!summaryError && summaryData && !summaryData.error) {
-          captureMetadata.title = summaryData.title || extracted_title;
-          captureMetadata.summary = summaryData.summary;
-          captureMetadata.skill_pillar = summaryData.skill_pillar;
-          extracted_title = summaryData.title || extracted_title;
-        }
-
-        await supabase.from("captures").update({
-        // Fallback: save URL as content, domain as title
-        if (!fetchSuccess) {
-          extracted_text = targetUrl;
-          try {
-            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
-            const parts = hostname.split('.');
-            const domain = parts[parts.length - 2] || hostname;
-            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
-          } catch {
-            extracted_title = 'Captured article';
-          }
-        }
-
-        // Also call summarize-link for AI summary (fire-and-forget style, but await for capture record)
+        // Also call summarize-link for AI summary
         const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
           body: { url: targetUrl },
         });
@@ -206,54 +177,7 @@ Deno.serve(async (req) => {
         // Guard against blank/domain-only titles reaching detect-signals-v2
         const domainPattern = /^(www\.)?[a-z0-9-]+\.[a-z]{2,}(\.[a-z]{2,})?$/i;
         if (!extracted_title || domainPattern.test(extracted_title.trim())) {
-          try {
-            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
-            const parts = hostname.split('.');
-            const domain = parts[parts.length - 2] || hostname;
-            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
-          } catch {
-            extracted_title = 'Captured article';
-          }
-        }
-
-        await supabase.from("captures").update({
-        // Fallback: save URL as content, domain as title
-        if (!fetchSuccess) {
-          extracted_text = targetUrl;
-          try {
-            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
-            const parts = hostname.split('.');
-            const domain = parts[parts.length - 2] || hostname;
-            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
-          } catch {
-            extracted_title = 'Captured article';
-          }
-        }
-
-        // Also call summarize-link for AI summary (fire-and-forget style, but await for capture record)
-        const { data: summaryData, error: summaryError } = await supabase.functions.invoke("summarize-link", {
-          body: { url: targetUrl },
-        });
-
-        const captureMetadata = { ...metadata };
-        if (!summaryError && summaryData && !summaryData.error) {
-          captureMetadata.title = summaryData.title || extracted_title;
-          captureMetadata.summary = summaryData.summary;
-          captureMetadata.skill_pillar = summaryData.skill_pillar;
-          extracted_title = summaryData.title || extracted_title;
-        }
-
-        // Guard against blank/domain-only titles reaching detect-signals-v2
-        const domainPattern = /^(www\.)?[a-z0-9-]+\.[a-z]{2,}(\.[a-z]{2,})?$/i;
-        if (!extracted_title || domainPattern.test(extracted_title.trim())) {
-          try {
-            const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
-            const parts = hostname.split('.');
-            const domain = parts[parts.length - 2] || hostname;
-            extracted_title = domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
-          } catch {
-            extracted_title = 'Captured article';
-          }
+          extracted_title = fallbackTitleFromUrl(targetUrl);
         }
 
         await supabase.from("captures").update({
@@ -262,7 +186,6 @@ Deno.serve(async (req) => {
           processing_status: "completed",
         }).eq("id", capture.id);
       } else {
-        // For text, voice, image, document — store content directly
         await supabase.from("captures").update({
           extracted_text,
           processing_status: "completed",
@@ -275,7 +198,6 @@ Deno.serve(async (req) => {
       }).eq("id", capture.id);
     }
 
-    // Fetch the final state
     const { data: finalCapture } = await supabase
       .from("captures")
       .select("*")
@@ -312,7 +234,6 @@ Deno.serve(async (req) => {
       console.warn("[ingest-capture] entries write failed (non-fatal):", entryWriteErr?.message);
     }
 
-    // Include extracted content for the frontend to use
     return new Response(JSON.stringify({
       ...finalCapture,
       extracted_title: extracted_title,
