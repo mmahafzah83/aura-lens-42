@@ -612,7 +612,7 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole }: 
             <span style={{ color: "#F97316", fontSize: 28, fontWeight: 900, minWidth: 32, lineHeight: 1 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p style={{ color: "#1a1005", fontSize: 12, fontWeight: 800, lineHeight: 1.35, paddingTop: 4 }}>
+            <p style={{ color: "#1a1005", fontSize: 12, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
               {framePoints[i] || ""}
             </p>
           </div>
