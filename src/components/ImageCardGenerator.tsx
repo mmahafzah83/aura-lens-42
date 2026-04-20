@@ -58,7 +58,7 @@ function extractStat(text: string): { stat: string; context: string } {
 function extractQuote(text: string): string {
   const clean = text.replace(/\*\*/g, "").replace(/\*/g, "");
   const sentences = clean.split(/(?<=[.!?])\s+/).filter((s) => s.length > 20);
-  return sentences.sort((a, b) => b.length - a.length)[0]?.trim() || clean.slice(0, 120);
+  return sentences[0]?.trim() || clean.slice(0, 120);
 }
 
 /* ── Card style metadata ── */
