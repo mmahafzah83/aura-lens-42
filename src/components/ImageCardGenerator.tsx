@@ -155,11 +155,11 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
             <>
               <div>
                 <label className="text-[11px] text-muted-foreground/60 mb-1 block">Topic Tag</label>
-                <Input value={tag} onChange={e => setTag(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
+                <Input value={tag} onChange={e => setTag(e.target.value)} className="bg-background border-border text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
               </div>
               <div>
                 <label className="text-[11px] text-muted-foreground/60 mb-1 block">Hook Text</label>
-                <Textarea value={hookText} onChange={e => setHookText(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs min-h-[80px] focus:border-[hsl(43_80%_45%)]" />
+                <Textarea value={hookText} onChange={e => setHookText(e.target.value)} className="bg-background border-border text-foreground text-xs min-h-[80px] focus:border-[hsl(43_80%_45%)]" />
               </div>
             </>
           )}
@@ -168,7 +168,7 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
             <>
               <div>
                 <label className="text-[11px] text-muted-foreground/60 mb-1 block">Headline</label>
-                <Input value={frameworkTitle} onChange={e => setFrameworkTitle(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
+                <Input value={frameworkTitle} onChange={e => setFrameworkTitle(e.target.value)} className="bg-background border-border text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
               </div>
               {frameworkPoints.map((pt, idx) => (
                 <div key={idx}>
@@ -180,7 +180,7 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
                       next[idx] = { ...next[idx], title: e.target.value };
                       setFrameworkPoints(next);
                     }}
-                    className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs mb-1 focus:border-[hsl(43_80%_45%)]"
+                    className="bg-background border-border text-foreground text-xs mb-1 focus:border-[hsl(43_80%_45%)]"
                     placeholder="Title"
                   />
                   <Input
@@ -190,7 +190,7 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
                       next[idx] = { ...next[idx], subtitle: e.target.value };
                       setFrameworkPoints(next);
                     }}
-                    className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs focus:border-[hsl(43_80%_45%)]"
+                    className="bg-background border-border text-foreground text-xs focus:border-[hsl(43_80%_45%)]"
                     placeholder="Subtitle (optional)"
                   />
                 </div>
@@ -202,26 +202,26 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
             <>
               <div>
                 <label className="text-[11px] text-muted-foreground/60 mb-1 block">Left Column (one per line)</label>
-                <Textarea value={leftItems} onChange={e => setLeftItems(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs min-h-[80px] focus:border-[hsl(43_80%_45%)]" />
+                <Textarea value={leftItems} onChange={e => setLeftItems(e.target.value)} className="bg-background border-border text-foreground text-xs min-h-[80px] focus:border-[hsl(43_80%_45%)]" />
               </div>
               <div>
                 <label className="text-[11px] text-muted-foreground/60 mb-1 block">Right Column (one per line)</label>
-                <Textarea value={rightItems} onChange={e => setRightItems(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs min-h-[80px] focus:border-[hsl(43_80%_45%)]" />
+                <Textarea value={rightItems} onChange={e => setRightItems(e.target.value)} className="bg-background border-border text-foreground text-xs min-h-[80px] focus:border-[hsl(43_80%_45%)]" />
               </div>
               <div>
                 <label className="text-[11px] text-muted-foreground/60 mb-1 block">Closing Line</label>
-                <Input value={hookText} onChange={e => setHookText(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
+                <Input value={hookText} onChange={e => setHookText(e.target.value)} className="bg-background border-border text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
               </div>
             </>
           )}
 
           <div>
             <label className="text-[11px] text-muted-foreground/60 mb-1 block">Name</label>
-            <Input value={name} onChange={e => setName(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
+            <Input value={name} onChange={e => setName(e.target.value)} className="bg-background border-border text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
           </div>
           <div>
             <label className="text-[11px] text-muted-foreground/60 mb-1 block">Role</label>
-            <Input value={role} onChange={e => setRole(e.target.value)} className="bg-[#1a1a1a] border-[#2a2a2a] text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
+            <Input value={role} onChange={e => setRole(e.target.value)} className="bg-background border-border text-foreground text-xs focus:border-[hsl(43_80%_45%)]" />
           </div>
 
           <Button
