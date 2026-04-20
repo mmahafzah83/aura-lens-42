@@ -266,6 +266,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [_frameworks, setFrameworks] = useState<FrameworkSuggestion[]>([]);
   const [_suggestionsLoading, setSuggestionsLoading] = useState(true);
 
+  const [critiqueLoading, setCritiqueLoading] = useState(false);
+  const [critique, setCritique] = useState<any>(null);
+  const [critiqueError, setCritiqueError] = useState<string | null>(null);
+
   // Load monthly generation count
   useEffect(() => {
     (async () => {
@@ -451,6 +455,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     if (contentType === "carousel") { setShowCarousel(true); return; }
     setGenerating(true);
     setOutput("");
+    setCritique(null);
+    setCritiqueError(null);
     setFullVersion("");
     setShortVersion("");
     setShowingShort(false);
@@ -462,6 +468,34 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       toast.error(e.message);
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const fetchCritique = async () => {
+    setCritiqueLoading(true);
+    setCritiqueError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-critique`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      if (!response.ok) throw new Error("Review failed");
+      const data = await response.json();
+      setCritique(data.critique);
+    } catch (e: any) {
+      setCritiqueError(e.message || "Failed to load review");
+    } finally {
+      setCritiqueLoading(false);
     }
   };
 
@@ -672,6 +706,75 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   {renderMarkdown(displayedOutput)}
                   {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
                 </div>
+
+                {/* Aura's Strategic Review */}
+                {(fullVersion || shortVersion) && (
+                  <div className="mt-4 border border-border/20 rounded-lg overflow-hidden">
+                    <button
+                      onClick={fetchCritique}
+                      disabled={critiqueLoading}
+                      className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
+                    >
+                      <span>Aura's Strategic Review</span>
+                      {critiqueLoading ? (
+                        <span className="text-[10px] normal-case font-normal animate-pulse">Analysing...</span>
+                      ) : critique ? (
+                        <span className="text-[10px] normal-case font-normal text-primary">Refresh</span>
+                      ) : (
+                        <span className="text-[10px] normal-case font-normal">Tap to review</span>
+                      )}
+                    </button>
+                    {critiqueError && (
+                      <div className="px-4 py-3 text-xs text-destructive border-t border-border/20">
+                        {critiqueError}
+                      </div>
+                    )}
+                    {critique && !critiqueLoading && (
+                      <div className="px-4 py-4 space-y-4 border-t border-border/20 text-xs">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pattern Detected</p>
+                          <p className="text-foreground/90 leading-relaxed">{critique.observation?.summary}</p>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {(critique.observation?.key_themes || []).map((t: string) => (
+                              <span key={t} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Strategic Insight</p>
+                          <p className="text-foreground/90 leading-relaxed">{critique.synthesis?.insight}</p>
+                          <p className="mt-1.5 text-primary/80 italic">{critique.synthesis?.emerging_thesis}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Challenge</p>
+                          <p className="text-foreground/90 leading-relaxed">{critique.challenge?.assumption_gap}</p>
+                          <p className="mt-1.5 text-primary font-medium">{critique.challenge?.question}</p>
+                        </div>
+                        <div className="bg-primary/5 border border-primary/15 rounded-md px-3 py-2.5">
+                          <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">Highest Leverage Move</p>
+                          <p className="text-foreground/90 leading-relaxed">{critique.recommendation?.action}</p>
+                          <p className="text-muted-foreground mt-1 leading-relaxed">{critique.recommendation?.reason}</p>
+                        </div>
+                        {(critique.alerts || []).length > 0 && (
+                          <div className="space-y-2">
+                            {critique.alerts.map((alert: any, i: number) => (
+                              <div key={i} className={`px-3 py-2 rounded-md border text-[11px] ${
+                                alert.urgency === "high"
+                                  ? "border-destructive/30 bg-destructive/5 text-destructive"
+                                  : alert.urgency === "medium"
+                                  ? "border-amber-500/30 bg-amber-500/5 text-amber-600"
+                                  : "border-border/20 bg-muted/20 text-muted-foreground"
+                              }`}>
+                                <span className="font-semibold">{alert.title}: </span>
+                                {alert.message}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Generate shorter version button */}
                 {!isGeneratingAny && !showingShort && fullVersion && (
