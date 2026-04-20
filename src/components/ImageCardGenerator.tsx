@@ -859,11 +859,11 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFont
 }
 
 /* CARD 6: Contrast Framework */
-function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
+function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ background: "#0d0d0d", padding: 20 }}>
-        <p style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
         <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{frameTitle}</p>
         <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12 }} />
       </div>
