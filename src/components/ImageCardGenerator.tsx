@@ -410,7 +410,7 @@ export default function ImageCardGenerator({
             Edit Card
           </p>
 
-          {/* ── Style Controls ── */}
+          {/* ── Style Controls (per-card) ── */}
           <div style={{ marginBottom: 16 }}>
             {/* Title size */}
             <div style={{ marginBottom: 10 }}>
@@ -421,13 +421,13 @@ export default function ImageCardGenerator({
                 {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
                   <button
                     key={s}
-                    onClick={() => setTitleSize(s)}
+                    onClick={() => updateCardStyle("titleSize", s)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: titleSize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: titleSize === s ? "#F97316" : "#555",
+                      background: activeStyle.titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.titleSize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.titleSize === s ? "#F97316" : "#555",
                     }}
                   >
                     {s.toUpperCase()}
@@ -444,13 +444,13 @@ export default function ImageCardGenerator({
                 {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
                   <button
                     key={s}
-                    onClick={() => setBodySize(s)}
+                    onClick={() => updateCardStyle("bodySize", s)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: bodySize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: bodySize === s ? "#F97316" : "#555",
+                      background: activeStyle.bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.bodySize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.bodySize === s ? "#F97316" : "#555",
                     }}
                   >
                     {s.toUpperCase()}
@@ -467,13 +467,13 @@ export default function ImageCardGenerator({
                 {(["default", "bold", "warm", "minimal", "midnight"] as const).map((p) => (
                   <button
                     key={p}
-                    onClick={() => setCardPreset(p)}
+                    onClick={() => updateCardStyle("preset", p)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 9, fontWeight: 600, cursor: "pointer",
-                      background: cardPreset === p ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: cardPreset === p ? "rgba(249,115,22,.4)" : "#252525",
-                      color: cardPreset === p ? "#F97316" : "#555",
+                      background: activeStyle.preset === p ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.preset === p ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.preset === p ? "#F97316" : "#555",
                       textTransform: "capitalize",
                     }}
                   >
@@ -491,12 +491,12 @@ export default function ImageCardGenerator({
                 {["#F97316", "#e24b4a", "#7ab648", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
                   <div
                     key={c}
-                    onClick={() => setAccentColor(c)}
+                    onClick={() => updateCardStyle("accentColor", c)}
                     style={{
                       width: 22, height: 22, borderRadius: "50%", background: c,
                       cursor: "pointer", flexShrink: 0,
-                      border: accentColor === c ? "2px solid #fff" : "1.5px solid #333",
-                      transform: accentColor === c ? "scale(1.2)" : "scale(1)",
+                      border: activeStyle.accentColor === c ? "2px solid #fff" : "1.5px solid #333",
+                      transform: activeStyle.accentColor === c ? "scale(1.2)" : "scale(1)",
                       transition: "all .15s",
                     }}
                   />
@@ -510,8 +510,8 @@ export default function ImageCardGenerator({
                   }}>+</div>
                   <input
                     type="color"
-                    value={accentColor}
-                    onChange={(e) => setAccentColor(e.target.value)}
+                    value={activeStyle.accentColor}
+                    onChange={(e) => updateCardStyle("accentColor", e.target.value)}
                     style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
                   />
                 </div>
@@ -530,14 +530,14 @@ export default function ImageCardGenerator({
                 ].map((f) => (
                   <button
                     key={f.value}
-                    onClick={() => setCardFont(f.value)}
+                    onClick={() => updateCardStyle("cardFont", f.value)}
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       fontFamily: f.value,
-                      background: cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: cardFont === f.value ? "rgba(249,115,22,.4)" : "#252525",
-                      color: cardFont === f.value ? "#F97316" : "#555",
+                      background: activeStyle.cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: activeStyle.cardFont === f.value ? "rgba(249,115,22,.4)" : "#252525",
+                      color: activeStyle.cardFont === f.value ? "#F97316" : "#555",
                     }}
                   >
                     {f.label}
