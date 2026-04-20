@@ -597,11 +597,16 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     setLoading(true);
     setLoadError(false);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
       const [signalsRes, entriesRes, documentsRes, movesRes] = await Promise.all([
         supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
-        supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
       ]);
       const loadedSignals = (signalsRes.data || []) as unknown as Signal[];
       setSignals(loadedSignals);
