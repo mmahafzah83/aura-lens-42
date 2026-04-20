@@ -31,8 +31,10 @@ interface ImageCardGeneratorProps {
 /* ── Extraction helpers ── */
 
 function extractHook(text: string): string {
-  const sentences = text.replace(/\*\*/g, "").replace(/\*/g, "").split(/(?<=[.!?،؟])\s+/);
-  return sentences.slice(0, 2).join(" ").trim();
+  const clean = text.replace(/\*\*/g, "").replace(/\*/g, "").trim();
+  const sentences = clean.split(/(?<=[.!?])\s+/).filter((s) => s.length > 10);
+  const first = sentences[0] || clean;
+  return first.length > 120 ? first.slice(0, 117) + "..." : first;
 }
 
 function extractLines(text: string): string[] {
@@ -44,15 +46,20 @@ function extractLines(text: string): string[] {
     .filter((l) => l.length > 0);
 }
 
-function extractStat(text: string): { stat: string; context: string } {
+function extractStat(text: string): { stat: string; context: string; hasStat: boolean } {
   const clean = text.replace(/\*\*/g, "").replace(/\*/g, "");
-  const match = clean.match(/(\d+(?:\.\d+)?(?:M|B|K|%|\+)?)/);
+  const match = clean.match(/(\d+(?:\.\d+)?(?:M|B|K|%|\+|x)?)/);
   if (match) {
     const idx = clean.indexOf(match[0]);
-    const context = clean.slice(Math.max(0, idx - 20), idx + 80).trim();
-    return { stat: match[0], context };
+    const context = clean.slice(Math.max(0, idx - 10), idx + 80).trim();
+    return { stat: match[0], context, hasStat: true };
   }
-  return { stat: "—", context: clean.slice(0, 100) };
+  const lines = clean.split(/\n/).filter((l) => l.trim().length > 20);
+  return {
+    stat: String(Math.min(lines.length, 9)),
+    context: "key insights from this analysis",
+    hasStat: false,
+  };
 }
 
 function extractQuote(text: string): string {
@@ -90,6 +97,7 @@ interface CardProps {
   quoteText: string;
   frameTitle: string;
   framePoints: string[];
+  hasStat: boolean;
 }
 
 export default function ImageCardGenerator({
@@ -116,6 +124,7 @@ export default function ImageCardGenerator({
   const [editRole, setEditRole] = useState(userRole || "Your Role");
   const [statValue, setStatValue] = useState(statData.stat);
   const [statContext, setStatContext] = useState(statData.context);
+  const [hasStat, setHasStat] = useState(statData.hasStat);
   const [quoteText, setQuoteText] = useState(quote);
   const [frameTitle, setFrameTitle] = useState(topicLabel);
   const [framePoints, setFramePoints] = useState<string[]>(lines.slice(0, 3));
@@ -125,6 +134,7 @@ export default function ImageCardGenerator({
     setTag(topicLabel);
     setStatValue(statData.stat);
     setStatContext(statData.context);
+    setHasStat(statData.hasStat);
     setQuoteText(quote);
     setFrameTitle(topicLabel);
     setFramePoints(lines.slice(0, 3));
@@ -146,6 +156,7 @@ export default function ImageCardGenerator({
       const s = extractStat(postText);
       setStatValue(s.stat);
       setStatContext(s.context);
+      setHasStat(s.hasStat);
     } else if (contentVariant === "quote") {
       setQuoteText(extractQuote(postText));
     } else if (contentVariant === "lines") {
@@ -164,6 +175,7 @@ export default function ImageCardGenerator({
       const s = extractStat(postText);
       setStatValue(s.stat);
       setStatContext(s.context);
+      setHasStat(s.hasStat);
     }
     if (next === "lines") {
       const l = extractLines(postText);
@@ -214,6 +226,7 @@ export default function ImageCardGenerator({
     quoteText,
     frameTitle,
     framePoints,
+    hasStat,
   };
 
   const renderCard = (style: CardStyle, props: CardProps) => {
@@ -470,13 +483,13 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue }: CardPro
     <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
       <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: "#F97316" }} />
       <div style={{ padding: "28px 24px 0 32px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: "#F97316", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>
+        <p style={{ color: "#F97316", fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {tag}
         </p>
-        <p style={{ color: "#F97316", fontSize: 72, fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
+        <p style={{ color: "#F97316", fontSize: 64, fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
-        <p style={{ color: "#fff", fontSize: 18, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: "#fff", fontSize: 16, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, maxHeight: 120, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
           {hookText}
         </p>
       </div>
@@ -519,21 +532,21 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines }: CardProps) 
 }
 
 /* CARD 3: Tension Split */
-function TensionSplitCard({ tag, editName, editRole, framePoints, statValue }: CardProps) {
+function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#0d0d0d", display: "grid", gridTemplateRows: "auto 1fr auto" }}>
+    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</span>
+        <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>{tag}</span>
         <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "100px 1fr", height: "100%" }}>
-        <div style={{ background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, height: "100%", alignSelf: "stretch" }}>
+      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+        <div style={{ width: 100, background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
           <p style={{ color: "#fff", fontSize: 48, fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>KEY INSIGHT</p>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
-        <div style={{ padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", height: "100%", alignSelf: "stretch" }}>
+        <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
               {pt}
             </p>
           ))}
