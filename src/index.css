@@ -242,11 +242,38 @@ html.dark  { background-color: #0c0c0c; }
     transition: box-shadow 250ms ease-in-out, border-color 250ms ease-in-out;
   }
 
-  .glass-card:hover {
+.glass-card:hover {
     box-shadow: 0 0 20px hsl(43 80% 45% / 0.15),
                 0 8px 32px hsl(0 0% 0% / 0.25),
                 inset 0 1px 0 hsl(0 0% 100% / 0.04);
     border-color: hsl(0 0% 100% / 0.06);
+  }
+
+  .light .glass-card {
+    background: hsl(0 0% 100% / 0.85);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid hsl(0 0% 0% / 0.06);
+    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.05),
+                0 8px 32px hsl(0 0% 0% / 0.07),
+                inset 0 1px 0 hsl(0 0% 100% / 0.8);
+  }
+
+  .light .glass-card:hover {
+    box-shadow: 0 0 20px hsl(43 80% 45% / 0.12),
+                0 8px 32px hsl(0 0% 0% / 0.09),
+                inset 0 1px 0 hsl(0 0% 100% / 0.9);
+    border-color: hsl(0 0% 0% / 0.10);
+  }
+
+  .light .glass-card-elevated {
+    background: hsl(0 0% 100% / 0.95);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border: 1px solid hsl(0 0% 0% / 0.08);
+    box-shadow: 0 2px 4px hsl(0 0% 0% / 0.06),
+                0 12px 40px hsl(0 0% 0% / 0.09),
+                inset 0 1px 0 hsl(0 0% 100% / 0.9);
   }
 
   .glass-card-elevated {
