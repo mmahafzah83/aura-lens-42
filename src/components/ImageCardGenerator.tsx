@@ -98,7 +98,33 @@ interface CardProps {
   frameTitle: string;
   framePoints: string[];
   hasStat: boolean;
+  bodyFontSize: number;
+  titleFontSize: number;
+  accentColor: string;
+  cardFont: string;
+  preset: { bg: string; text: string; tagCol: string; roleCol: string };
 }
+
+const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
+const TITLE_SIZES = { xs: 11, s: 13, m: 16, l: 19, xl: 22 } as const;
+
+const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
+  const len = value.length;
+  const color = len <= ideal ? "#7ab648" : len <= ideal * 1.4 ? "#EF9F27" : "#e24b4a";
+  return (
+    <div
+      style={{
+        fontSize: 9,
+        color,
+        textAlign: "right",
+        marginTop: 2,
+        fontVariantNumeric: "tabular-nums",
+      }}
+    >
+      {len} / {ideal}
+    </div>
+  );
+};
 
 export default function ImageCardGenerator({
   postText,
