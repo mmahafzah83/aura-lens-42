@@ -383,12 +383,151 @@ export default function ImageCardGenerator({
             Edit Card
           </p>
 
+          {/* ── Style Controls ── */}
+          <div style={{ marginBottom: 16 }}>
+            {/* Title size */}
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+                Title size
+              </p>
+              <div style={{ display: "flex", gap: 4 }}>
+                {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setTitleSize(s)}
+                    style={{
+                      flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      background: titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: titleSize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: titleSize === s ? "#F97316" : "#555",
+                    }}
+                  >
+                    {s.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Body size */}
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+                Body size
+              </p>
+              <div style={{ display: "flex", gap: 4 }}>
+                {(["xs", "s", "m", "l", "xl"] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setBodySize(s)}
+                    style={{
+                      flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      background: bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: bodySize === s ? "rgba(249,115,22,.4)" : "#252525",
+                      color: bodySize === s ? "#F97316" : "#555",
+                    }}
+                  >
+                    {s.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Card preset */}
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+                Style
+              </p>
+              <div style={{ display: "flex", gap: 4 }}>
+                {(["default", "bold", "warm", "minimal", "midnight"] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setCardPreset(p)}
+                    style={{
+                      flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
+                      fontSize: 9, fontWeight: 600, cursor: "pointer",
+                      background: cardPreset === p ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: cardPreset === p ? "rgba(249,115,22,.4)" : "#252525",
+                      color: cardPreset === p ? "#F97316" : "#555",
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Accent color */}
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+                Accent color
+              </p>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                {["#F97316", "#e24b4a", "#7ab648", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
+                  <div
+                    key={c}
+                    onClick={() => setAccentColor(c)}
+                    style={{
+                      width: 22, height: 22, borderRadius: "50%", background: c,
+                      cursor: "pointer", flexShrink: 0,
+                      border: accentColor === c ? "2px solid #fff" : "1.5px solid #333",
+                      transform: accentColor === c ? "scale(1.2)" : "scale(1)",
+                      transition: "all .15s",
+                    }}
+                  />
+                ))}
+                <div style={{ position: "relative", width: 22, height: 22 }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%",
+                    border: "1.5px dashed #444", display: "flex",
+                    alignItems: "center", justifyContent: "center",
+                    fontSize: 14, color: "#555", cursor: "pointer",
+                  }}>+</div>
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => setAccentColor(e.target.value)}
+                    style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%", height: "100%" }}
+                  />
+                </div>
+              </div>
+            </div>
+            {/* Font */}
+            <div>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+                Font
+              </p>
+              <div style={{ display: "flex", gap: 4 }}>
+                {[
+                  { label: "Inter", value: "Inter, sans-serif" },
+                  { label: "Serif", value: "Georgia, serif" },
+                  { label: "Mono", value: "monospace" },
+                ].map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => setCardFont(f.value)}
+                    style={{
+                      flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      fontFamily: f.value,
+                      background: cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
+                      borderColor: cardFont === f.value ? "rgba(249,115,22,.4)" : "#252525",
+                      color: cardFont === f.value ? "#F97316" : "#555",
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{ borderTop: "0.5px solid #1e1e1e", marginBottom: 12 }} />
+
           <Field label="Topic Tag">
             <Input
               value={tag}
               onChange={(e) => setTag(e.target.value)}
               className="bg-background border-border text-foreground text-xs"
             />
+            <CharHint value={tag} ideal={40} />
           </Field>
 
           {isStat && (
@@ -406,6 +545,7 @@ export default function ImageCardGenerator({
                   onChange={(e) => setStatContext(e.target.value)}
                   className="bg-background border-border text-foreground text-xs min-h-[60px]"
                 />
+                <CharHint value={statContext} ideal={60} />
               </Field>
             </>
           )}
@@ -417,6 +557,7 @@ export default function ImageCardGenerator({
                 onChange={(e) => setQuoteText(e.target.value)}
                 className="bg-background border-border text-foreground text-xs min-h-[80px]"
               />
+              <CharHint value={quoteText} ideal={90} />
             </Field>
           )}
 
@@ -427,6 +568,7 @@ export default function ImageCardGenerator({
                 onChange={(e) => setHookText(e.target.value)}
                 className="bg-background border-border text-foreground text-xs min-h-[80px]"
               />
+              <CharHint value={hookText} ideal={80} />
             </Field>
           )}
 
@@ -438,6 +580,7 @@ export default function ImageCardGenerator({
                   onChange={(e) => setFrameTitle(e.target.value)}
                   className="bg-background border-border text-foreground text-xs"
                 />
+                <CharHint value={frameTitle} ideal={50} />
               </Field>
               {[0, 1, 2].map((i) => (
                 <Field key={i} label={`Point ${i + 1}`}>
@@ -450,6 +593,7 @@ export default function ImageCardGenerator({
                     }}
                     className="bg-background border-border text-foreground text-xs"
                   />
+                  <CharHint value={framePoints[i] || ""} ideal={50} />
                 </Field>
               ))}
             </>
@@ -468,6 +612,7 @@ export default function ImageCardGenerator({
                     }}
                     className="bg-background border-border text-foreground text-xs"
                   />
+                  <CharHint value={framePoints[i] || ""} ideal={50} />
                 </Field>
               ))}
             </>
