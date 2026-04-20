@@ -1122,7 +1122,7 @@ export type Database = {
           hook_style: string | null
           id: string
           like_count: number
-          linkedin_post_id: string
+          linkedin_post_id: string | null
           media_type: string | null
           post_text: string | null
           post_url: string | null
@@ -1157,7 +1157,7 @@ export type Database = {
           hook_style?: string | null
           id?: string
           like_count?: number
-          linkedin_post_id: string
+          linkedin_post_id?: string | null
           media_type?: string | null
           post_text?: string | null
           post_url?: string | null
@@ -1192,7 +1192,7 @@ export type Database = {
           hook_style?: string | null
           id?: string
           like_count?: number
-          linkedin_post_id?: string
+          linkedin_post_id?: string | null
           media_type?: string | null
           post_text?: string | null
           post_url?: string | null
