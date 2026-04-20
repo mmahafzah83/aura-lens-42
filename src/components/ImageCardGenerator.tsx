@@ -725,44 +725,44 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize
 }
 
 /* CARD 3: Tension Split */
-function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat }: CardProps) {
+function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>{tag}</span>
-        <span style={{ color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
+        <span style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ width: 100, background: "#F97316", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
+        <div style={{ width: 100, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
           <p style={{ color: "#fff", fontSize: 48, fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, paddingLeft: 12, borderLeft: "1px solid #252525", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
+            <p key={i} style={{ color: preset.text, fontSize: Math.max(10, bodyFontSize - 5), fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
               {pt}
             </p>
           ))}
         </div>
       </div>
       <div style={{ borderTop: "1px solid #141414", padding: "14px 20px" }}>
-        <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: "#444", fontSize: 9, marginTop: 2 }}>{editRole}</p>
+        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
       </div>
     </div>
   );
 }
 
 /* CARD 4: Bold Quote */
-function BoldQuoteCard({ tag, quoteText, editName, editRole }: CardProps) {
+function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, accentColor, cardFont }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#F97316" }}>
+    <div style={{ ...baseCard, background: accentColor, fontFamily: cardFont }}>
       <div style={{ position: "absolute", top: -20, left: 16, fontSize: 200, color: "rgba(0,0,0,0.12)", fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none", zIndex: 0 }}>
         “
       </div>
       <div style={{ position: "relative", zIndex: 1, padding: "32px 24px 24px", display: "flex", flexDirection: "column", height: "100%" }}>
         <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
-        <p style={{ color: "#fff", fontSize: 22, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: "#fff", fontSize: titleFontSize + 6, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {quoteText}
         </p>
         <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
@@ -775,27 +775,27 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole }: CardProps) {
 }
 
 /* CARD 5: Dark Editorial */
-function DarkEditorialCard({ tag, hookText, editName, editRole, lines }: CardProps) {
+function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#0d0d0d", display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
         <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
-        <div style={{ width: 4, height: 4, borderRadius: 2, background: "#F97316" }} />
+        <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
         <span style={{ color: "#555", fontSize: 8, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap" }}>{tag}</span>
-        <div style={{ width: 4, height: 4, borderRadius: 2, background: "#F97316" }} />
+        <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
         <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
       </div>
       <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <p style={{ color: "#F97316", fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>01 / Key Insight</p>
-        <p style={{ color: "#fff", fontSize: 24, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>01 / Key Insight</p>
+        <p style={{ color: preset.text, fontSize: titleFontSize + 8, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
         <p style={{ color: "#555", fontSize: 11, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{lines[0] || ""}</p>
       </div>
       <div style={{ borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
-          <p style={{ color: "#F97316", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-          <p style={{ color: "#444", fontSize: 9, marginTop: 2 }}>{editRole}</p>
+          <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
+          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
         </div>
         <p style={{ color: "#252525", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
