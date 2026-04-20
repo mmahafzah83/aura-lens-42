@@ -246,6 +246,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generationTimestamp, setGenerationTimestamp] = useState<string | null>(null);
   const [voiceWords, setVoiceWords] = useState<string[]>([]);
   const [preferredStructures, setPreferredStructures] = useState<string[]>([]);
+  const [profileName, setProfileName] = useState<string>("");
+  const [profileRole, setProfileRole] = useState<string>("");
   const [planRef, setPlanRef] = useState<string | null>(null);
 
   // Short version state
@@ -291,10 +293,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
       supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
       supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").limit(1).single(),
-    ]).then(([sRes, fRes, vRes]) => {
+      supabase.from("diagnostic_profiles").select("first_name, level, firm").limit(1).maybeSingle(),
+    ]).then(([sRes, fRes, vRes, pRes]) => {
       setSignals((sRes.data || []) as any);
       setFrameworks((fRes.data || []) as any);
       setSuggestionsLoading(false);
+      if (pRes?.data) {
+        setProfileName(pRes.data.first_name || "");
+        setProfileRole([pRes.data.level, pRes.data.firm].filter(Boolean).join(" · "));
+      }
       if (vRes.data) {
         const words: string[] = [];
         const vp = vRes.data.vocabulary_preferences;
@@ -903,7 +910,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Image Card Generator */}
             {displayedOutput && !isGeneratingAny && (
-              <ImageCardGenerator postText={displayedOutput} topicLabel={topic} lang={lang} />
+              <ImageCardGenerator
+                postText={displayedOutput}
+                topicLabel={topic}
+                lang={lang}
+                userName={profileName}
+                userRole={profileRole}
+              />
             )}
 
             {/* Visual Companion — LinkedIn Post Visual */}

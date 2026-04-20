@@ -12,6 +12,8 @@ interface ImageCardGeneratorProps {
   postText: string;
   topicLabel: string;
   lang: "en" | "ar";
+  userName?: string;
+  userRole?: string;
 }
 
 function extractHook(text: string): string {
@@ -35,10 +37,7 @@ const STYLES: { key: CardStyle; label: string }[] = [
   { key: "arabic", label: "Arabic (RTL)" },
 ];
 
-const NAME = "Mohammad Mahafzah";
-const ROLE = "Digital Transformation · EY GCC";
-
-export default function ImageCardGenerator({ postText, topicLabel, lang }: ImageCardGeneratorProps) {
+export default function ImageCardGenerator({ postText, topicLabel, lang, userName, userRole }: ImageCardGeneratorProps) {
   const [open, setOpen] = useState(false);
   const [style, setStyle] = useState<CardStyle>("statement");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -48,8 +47,8 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
 
   const [hookText, setHookText] = useState(hook);
   const [tag, setTag] = useState(topicLabel);
-  const [name, setName] = useState(NAME);
-  const [role, setRole] = useState(ROLE);
+  const [name, setName] = useState(userName || "Your Name");
+  const [role, setRole] = useState(userRole || "Your Role");
   const [leftItems, setLeftItems] = useState(lines.slice(0, 4).join("\n"));
   const [rightItems, setRightItems] = useState(lines.slice(4, 8).join("\n"));
   const [frameworkTitle, setFrameworkTitle] = useState(topicLabel);
@@ -68,6 +67,14 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
       lines.slice(0, 3).map(l => ({ title: l.slice(0, 60), subtitle: "" }))
     );
   }, [postText, topicLabel]);
+
+  useEffect(() => {
+    if (userName) setName(userName);
+  }, [userName]);
+
+  useEffect(() => {
+    if (userRole) setRole(userRole);
+  }, [userRole]);
 
   const downloadPNG = async () => {
     if (!cardRef.current) return;
@@ -139,7 +146,7 @@ export default function ImageCardGenerator({ postText, topicLabel, lang }: Image
               <FrameworkCard title={frameworkTitle} points={frameworkPoints} name={name} />
             )}
             {style === "split" && (
-              <SplitCard leftItems={leftArr} rightItems={rightArr} name={name} hook={hookText} />
+              <SplitCard leftItems={leftArr} rightItems={rightArr} name={name} hook={hookText} tag={tag} />
             )}
             {style === "arabic" && (
               <ArabicCard hook={lang === "ar" ? hookText : ""} name={name} role={role} tag={tag} />
@@ -280,7 +287,7 @@ function FrameworkCard({ title, points, name }: { title: string; points: { title
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {points.map((pt, i) => (
           <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-            <div style={{ width: 24, height: 24, borderRadius: 12, background: "#1a1a1a", color: "#F97316", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 24, height: 24, borderRadius: 12, background: "#F97316", color: "#ffffff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               {i + 1}
             </div>
             <div>
@@ -299,12 +306,17 @@ function FrameworkCard({ title, points, name }: { title: string; points: { title
   );
 }
 
-function SplitCard({ leftItems, rightItems, name, hook }: { leftItems: string[]; rightItems: string[]; name: string; hook: string }) {
+function SplitCard({ leftItems, rightItems, name, hook, tag }: { leftItems: string[]; rightItems: string[]; name: string; hook: string; tag: string }) {
+  const subtitle = (tag || "").slice(0, 40);
   return (
     <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid #1e1e1e", minHeight: 300 }}>
       {/* Header */}
-      <div style={{ background: "#0d0d0d", padding: "16px 24px", borderBottom: "2px solid #F97316" }}>
+      <div style={{ background: "#0d0d0d", padding: "16px 24px", borderBottom: "2px solid #F97316", position: "relative" }}>
         <p style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>Compare & Contrast</p>
+        {subtitle && (
+          <p style={{ color: "#888", fontSize: 9, marginTop: 2 }}>{subtitle}</p>
+        )}
+        <p style={{ position: "absolute", top: 14, right: 20, color: "#F97316", fontSize: 8, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>AURA</p>
       </div>
       {/* Columns */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
