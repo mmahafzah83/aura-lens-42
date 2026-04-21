@@ -20,7 +20,7 @@ import StartFromPanel from "@/components/StartFromPanel";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
-type AuthoritySubTab = "create" | "plan" | "analyze" | "library";
+type AuthoritySubTab = "create" | "plan" | "library";
 type ContentFramework = "auto" | "hook_insight_question" | "slap" | "bab" | "pas" | "wwh" | "chef" | "story_lesson_question";
 
 const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
@@ -1254,7 +1254,10 @@ const AnalyzeTab = () => {
       setPosts(rows);
 
       // External posts = synced from LinkedIn
-      const externalPosts = rows.filter((p: any) => p.source_type === "external_reference");
+      const externalPosts = rows.filter((p: any) =>
+        p.source_type === "linkedin_export" ||
+        p.source_type === "external_reference"
+      );
       // Aura drafts
       const auraDrafts = rows.filter((p: any) => p.source_type === "aura_generated" && p.tracking_status === "draft");
       // Aura published with real engagement
@@ -2388,7 +2391,6 @@ interface AuthorityTabProps {
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
   { key: "plan", label: "Plan", icon: Calendar },
   { key: "create", label: "Create", icon: PenTool },
-  { key: "analyze", label: "Analyze", icon: BarChart3 },
   { key: "library", label: "Library", icon: BookOpen },
 ];
 
@@ -2453,7 +2455,6 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
       {activeTab === "create" && <CreateTab planPrefill={planPrefill} signalPrefill={signalPrefill} onSignalPrefillConsumed={onSignalPrefillConsumed} />}
       {activeTab === "plan" && <PlanTab onGenerateFromPlan={handleGenerateFromPlan} />}
-      {activeTab === "analyze" && <AnalyzeTab />}
       {activeTab === "library" && <LibraryTab onSwitchToCreate={() => setActiveTab("create")} />}
     </div>
   );
