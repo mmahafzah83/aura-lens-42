@@ -875,7 +875,7 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
 }
 
 /* CARD 5: Dark Editorial */
-function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
@@ -890,7 +890,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFont
         <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
-        <p style={{ color: "#555", fontSize: bodyFontSize, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{lines[0] || ""}</p>
+        <p style={{ color: "#555", fontSize: bodyFontSize, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{bodyText}</p>
       </div>
       <div style={{ borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
