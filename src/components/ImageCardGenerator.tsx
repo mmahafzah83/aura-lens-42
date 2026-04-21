@@ -1031,22 +1031,26 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 10: Arabic (preserved) */
 function ArabicCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32 }}>
+    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
         {[0, 1, 2].map((i) => (
           <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: accentColor }} />
         ))}
       </div>
       <p style={{ position: "absolute", top: 20, right: 24, color: accentColor, fontSize: 10, fontWeight: 700, letterSpacing: 3 }}>AURA</p>
-      <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>
-        {tag}
-      </p>
-      <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl" }}>
-        {hookText || "اكتب النص العربي هنا..."}
-      </p>
-      <div style={{ width: 32, height: 2, background: accentColor, marginTop: 20, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
-      <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textAlign: "right" }}>{editName}</p>
-      <p style={{ color: preset.roleCol, fontSize: 10, textAlign: "right", marginTop: 2 }}>{editRole}</p>
+      <div style={{ flex: 1 }}>
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>
+          {trunc(tag, 35)}
+        </p>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl", wordBreak: "break-word" }}>
+          {trunc(hookText || "اكتب النص العربي هنا...", 90)}
+        </p>
+      </div>
+      <div style={{ marginTop: "auto", paddingTop: 12 }}>
+        <div style={{ width: 32, height: 2, background: accentColor, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
+        <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textAlign: "right" }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 10, textAlign: "right", marginTop: 2 }}>{trunc(editRole, 45)}</p>
+      </div>
     </div>
   );
 }
