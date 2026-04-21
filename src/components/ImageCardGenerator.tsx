@@ -218,13 +218,15 @@ export default function ImageCardGenerator({
 
   useEffect(() => {
     setHookText(hook);
-    setTag(topicLabel);
+    setTag(extractTag(topicLabel));
     setStatValue(statData.stat);
     setStatContext(statData.context);
     setHasStat(statData.hasStat);
     setQuoteText(quote);
     setFrameTitle(topicLabel);
     setFramePoints(lines.slice(0, 3));
+    setLedeText(lines[1] || lines[0] || "");
+    setBodyText(lines[0] || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postText, topicLabel]);
 
@@ -237,19 +239,20 @@ export default function ImageCardGenerator({
   }, [userRole]);
 
   useEffect(() => {
-    if (contentVariant === "hook") {
-      setHookText(extractHook(postText));
-    } else if (contentVariant === "stat") {
-      const s = extractStat(postText);
-      setStatValue(s.stat);
-      setStatContext(s.context);
-      setHasStat(s.hasStat);
-    } else if (contentVariant === "quote") {
-      setQuoteText(extractQuote(postText));
-    } else if (contentVariant === "lines") {
-      setFramePoints(extractLines(postText).slice(0, 3));
-    }
-  }, [contentVariant, postText]);
+    const newHook = extractHook(postText);
+    const newStat = extractStat(postText);
+    const newQuote = extractQuote(postText);
+    const newLines = extractLines(postText);
+    setHookText(newHook);
+    setStatValue(newStat.stat);
+    setStatContext(newStat.context);
+    setHasStat(newStat.hasStat);
+    setQuoteText(newQuote);
+    setFramePoints(newLines.slice(0, 3));
+    setLedeText(newLines[1] || newLines[0] || "");
+    setBodyText(newLines[0] || "");
+    setTag(extractTag(topicLabel));
+  }, [contentVariant, postText, topicLabel]);
 
   const shuffle = () => {
     const variants: ContentVariant[] = ["hook", "stat", "lines", "quote"];
