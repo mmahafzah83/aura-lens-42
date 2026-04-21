@@ -798,7 +798,7 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
 }
 
 /* CARD 2: Newspaper */
-function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -814,7 +814,7 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize
           {hookText}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
+        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{ledeText}</p>
       </div>
       <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
         <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700 }}>{editName}</p>
