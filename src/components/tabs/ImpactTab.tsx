@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -99,6 +99,15 @@ const ImpactTab = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Content performance
+  const [contentPerf, setContentPerf] = useState<{
+    postCount: number;
+    topTheme: string;
+    topFormat: string;
+    avgEngagement: number;
+    tones: Array<{ tone: string; count: number }>;
+  } | null>(null);
 
   const loadAll = async (rangeDays: RangeDays) => {
     setLoading(true);
@@ -249,6 +258,58 @@ const ImpactTab = () => {
   };
 
   useEffect(() => { loadAll(selectedDays); /* eslint-disable-next-line */ }, [selectedDays]);
+
+  // Load content performance (independent of time range)
+  useEffect(() => {
+    (async () => {
+      const { data: allPosts } = await supabase
+        .from("linkedin_posts")
+        .select("theme, tone, format_type, engagement_score, like_count, comment_count, source_type, tracking_status, post_text, published_at")
+        .neq("tracking_status", "rejected")
+        .order("published_at", { ascending: false })
+        .limit(200);
+
+      const analyzablePosts = (allPosts || []).filter((p: any) =>
+        p.source_type === "linkedin_export" ||
+        p.source_type === "external_reference" ||
+        (p.source_type === "aura_generated" && p.tracking_status === "published")
+      );
+
+      const themeCounts: Record<string, number> = {};
+      const toneCounts: Record<string, number> = {};
+      analyzablePosts.forEach((p: any) => {
+        if (p.theme) themeCounts[p.theme] = (themeCounts[p.theme] || 0) + 1;
+        if (p.tone) toneCounts[p.tone] = (toneCounts[p.tone] || 0) + 1;
+      });
+      const topTheme = Object.entries(themeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+      const tones = Object.entries(toneCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([tone, count]) => ({ tone, count }));
+
+      const avgEngagement = analyzablePosts.length > 0
+        ? Math.round((analyzablePosts.reduce((sum: number, p: any) => sum + (Number(p.engagement_score) || 0), 0) / analyzablePosts.length) * 10) / 10
+        : 0;
+
+      const sorted = [...analyzablePosts].sort((a: any, b: any) =>
+        (Number(b.engagement_score) || 0) - (Number(a.engagement_score) || 0)
+      );
+      const top25 = sorted.slice(0, Math.max(1, Math.ceil(sorted.length * 0.25)));
+      const fmtCounts: Record<string, number> = {};
+      top25.forEach((p: any) => {
+        if (p.format_type) fmtCounts[p.format_type] = (fmtCounts[p.format_type] || 0) + 1;
+      });
+      const topFormat = Object.entries(fmtCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+
+      setContentPerf({
+        postCount: analyzablePosts.length,
+        topTheme,
+        topFormat,
+        avgEngagement,
+        tones,
+      });
+    })();
+  }, []);
 
   /* ── Score derivations ── */
   const latest = snapshots[snapshots.length - 1];
@@ -1091,6 +1152,93 @@ const ImpactTab = () => {
             />
           </div>
         </div>
+      </section>
+
+      {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
+      <section>
+        <h2
+          className="text-label uppercase tracking-wider text-xs font-semibold mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Content performance
+        </h2>
+
+        {!contentPerf || contentPerf.postCount === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {/* Stat cards */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
+                <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
+              </div>
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
+                <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+              </div>
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
+                <div className="text-xs text-muted-foreground mt-1">Avg Engagement</div>
+              </div>
+            </div>
+
+            {/* Tone distribution */}
+            {contentPerf.tones.length > 0 && (() => {
+              const maxToneCount = Math.max(...contentPerf.tones.map(t => t.count), 1);
+              return (
+                <div className="space-y-3">
+                  <div
+                    className="text-label uppercase tracking-wider text-xs font-semibold"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    Tone distribution
+                  </div>
+                  <div className="glass-card rounded-2xl p-6 border border-border/8 space-y-3">
+                    {contentPerf.tones.map(({ tone, count }) => {
+                      const pct = (count / maxToneCount) * 100;
+                      return (
+                        <div key={tone} className="flex items-center gap-3">
+                          <span className="text-sm text-foreground capitalize w-28 shrink-0">{tone}</span>
+                          <div className="flex-1 bg-secondary/20 rounded-full h-2 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.6 }}
+                              className="h-full bg-primary/40 rounded-full"
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* AI insight */}
+            <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-primary/60" />
+                <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">
+                  Content insight
+                </span>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed">
+                {contentPerf.topTheme !== "—" && contentPerf.topFormat !== "—"
+                  ? `Your strongest content theme is "${contentPerf.topTheme}". ${contentPerf.topFormat} format drives your highest engagement. Double down on this combination to compound your authority.`
+                  : contentPerf.topTheme !== "—"
+                  ? `Your strongest content theme is "${contentPerf.topTheme}". Publish more consistently to unlock format performance insights.`
+                  : "Publish and mark content as published to unlock content performance insights."}
+              </p>
+            </div>
+          </div>
+        )}
       </section>
     </motion.div>
   );
