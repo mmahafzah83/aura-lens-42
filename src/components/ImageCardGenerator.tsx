@@ -693,6 +693,28 @@ export default function ImageCardGenerator({
             </>
           )}
 
+          {isNewspaper && (
+            <Field label="Lede text">
+              <Textarea
+                value={ledeText}
+                onChange={(e) => setLedeText(e.target.value)}
+                className="bg-background border-border text-foreground text-xs min-h-[60px]"
+              />
+              <CharHint value={ledeText} ideal={80} />
+            </Field>
+          )}
+
+          {isDarkEditorial && (
+            <Field label="Body text">
+              <Textarea
+                value={bodyText}
+                onChange={(e) => setBodyText(e.target.value)}
+                className="bg-background border-border text-foreground text-xs min-h-[60px]"
+              />
+              <CharHint value={bodyText} ideal={80} />
+            </Field>
+          )}
+
           <Field label="Name">
             <Input
               value={editName}
