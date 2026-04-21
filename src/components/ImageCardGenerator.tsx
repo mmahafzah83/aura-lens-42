@@ -833,9 +833,9 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ width: 100, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
-          <p style={{ color: "#fff", fontSize: Math.min(48, titleFontSize * 2.5), fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
+        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch", overflow: "hidden" }}>
+          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, overflow: "hidden", wordBreak: "break-all", textAlign: "center" }}>{statValue}</p>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 7, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
