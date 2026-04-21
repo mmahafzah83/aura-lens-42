@@ -357,6 +357,8 @@ export default function ImageCardGenerator({
   const isHook = ["newspaper", "dark_editorial", "statement_light", "arabic"].includes(selectedStyle);
   const isFramework = selectedStyle === "contrast_framework";
   const isTension = selectedStyle === "tension_split";
+  const isNewspaper = selectedStyle === "newspaper";
+  const isDarkEditorial = selectedStyle === "dark_editorial";
 
   return (
     <motion.div
