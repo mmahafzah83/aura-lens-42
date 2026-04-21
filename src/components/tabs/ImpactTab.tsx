@@ -1153,6 +1153,93 @@ const ImpactTab = () => {
           </div>
         </div>
       </section>
+
+      {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
+      <section>
+        <h2
+          className="text-label uppercase tracking-wider text-xs font-semibold mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Content performance
+        </h2>
+
+        {!contentPerf || contentPerf.postCount === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {/* Stat cards */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
+                <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
+              </div>
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
+                <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+              </div>
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
+                <div className="text-xs text-muted-foreground mt-1">Avg Engagement</div>
+              </div>
+            </div>
+
+            {/* Tone distribution */}
+            {contentPerf.tones.length > 0 && (() => {
+              const maxToneCount = Math.max(...contentPerf.tones.map(t => t.count), 1);
+              return (
+                <div className="space-y-3">
+                  <div
+                    className="text-label uppercase tracking-wider text-xs font-semibold"
+                    style={{ color: "var(--color-text-secondary)" }}
+                  >
+                    Tone distribution
+                  </div>
+                  <div className="glass-card rounded-2xl p-6 border border-border/8 space-y-3">
+                    {contentPerf.tones.map(({ tone, count }) => {
+                      const pct = (count / maxToneCount) * 100;
+                      return (
+                        <div key={tone} className="flex items-center gap-3">
+                          <span className="text-sm text-foreground capitalize w-28 shrink-0">{tone}</span>
+                          <div className="flex-1 bg-secondary/20 rounded-full h-2 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.6 }}
+                              className="h-full bg-primary/40 rounded-full"
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* AI insight */}
+            <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-primary/60" />
+                <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">
+                  Content insight
+                </span>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed">
+                {contentPerf.topTheme !== "—" && contentPerf.topFormat !== "—"
+                  ? `Your strongest content theme is "${contentPerf.topTheme}". ${contentPerf.topFormat} format drives your highest engagement. Double down on this combination to compound your authority.`
+                  : contentPerf.topTheme !== "—"
+                  ? `Your strongest content theme is "${contentPerf.topTheme}". Publish more consistently to unlock format performance insights.`
+                  : "Publish and mark content as published to unlock content performance insights."}
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
     </motion.div>
   );
 };
