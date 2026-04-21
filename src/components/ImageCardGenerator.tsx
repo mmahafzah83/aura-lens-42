@@ -113,6 +113,8 @@ interface CardProps {
   accentColor: string;
   cardFont: string;
   preset: { bg: string; text: string; tagCol: string; roleCol: string };
+  ledeText: string;
+  bodyText: string;
 }
 
 const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
