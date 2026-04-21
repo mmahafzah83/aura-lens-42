@@ -20,6 +20,18 @@ type CardStyle =
 
 type ContentVariant = "hook" | "stat" | "lines" | "quote";
 
+const VARIANT_ORDER: ContentVariant[] = ["hook", "stat", "lines", "quote"];
+
+/* Universal text truncation for html2canvas (CSS clamp is invisible to it) */
+function trunc(text: string, maxChars: number): string {
+  if (!text) return "";
+  const clean = text.trim();
+  if (clean.length <= maxChars) return clean;
+  const cut = clean.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(" ");
+  return cut.slice(0, lastSpace > maxChars * 0.5 ? lastSpace : maxChars) + "…";
+}
+
 interface ImageCardGeneratorProps {
   postText: string;
   topicLabel: string;
