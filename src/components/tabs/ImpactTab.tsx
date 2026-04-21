@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -99,6 +99,15 @@ const ImpactTab = () => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Content performance
+  const [contentPerf, setContentPerf] = useState<{
+    postCount: number;
+    topTheme: string;
+    topFormat: string;
+    avgEngagement: number;
+    tones: Array<{ tone: string; count: number }>;
+  } | null>(null);
 
   const loadAll = async (rangeDays: RangeDays) => {
     setLoading(true);
