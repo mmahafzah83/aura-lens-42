@@ -955,16 +955,16 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
 }
 
 /* CARD 7: Minimal Dark */
-function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
-  // Highlight first word over 5 chars in orange
-  const words = hookText.split(/\s+/);
+function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+  const truncated = trunc(quoteText || hookText, 100);
+  const words = truncated.split(/\s+/);
   const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", padding: "36px 28px", justifyContent: "space-between", position: "relative" }}>
-      <p style={{ color: "#333", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
-      <div>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%", padding: "36px 28px", position: "relative" }}>
+      <p style={{ color: "#888", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20 }} />
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, wordBreak: "break-word" }}>
           {words.map((w, i) => (
             <span key={i} style={{ color: i === highlightIdx ? accentColor : preset.text }}>
               {w}{i < words.length - 1 ? " " : ""}
@@ -972,9 +972,9 @@ function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, hea
           ))}
         </p>
       </div>
-      <div>
-        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12 }}>
+        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3 }}>{trunc(editRole, 45)}</p>
       </div>
       <p style={{ position: "absolute", bottom: 16, right: 16, color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
