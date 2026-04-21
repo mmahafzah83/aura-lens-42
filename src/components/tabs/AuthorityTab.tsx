@@ -7,7 +7,6 @@ import {
   Sparkles, Zap, Target, ArrowRight, Layers,
   Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, ChevronDown, Image as ImageIcon, Download
 } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
