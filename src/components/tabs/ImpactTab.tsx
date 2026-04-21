@@ -259,6 +259,58 @@ const ImpactTab = () => {
 
   useEffect(() => { loadAll(selectedDays); /* eslint-disable-next-line */ }, [selectedDays]);
 
+  // Load content performance (independent of time range)
+  useEffect(() => {
+    (async () => {
+      const { data: allPosts } = await supabase
+        .from("linkedin_posts")
+        .select("theme, tone, format_type, engagement_score, like_count, comment_count, source_type, tracking_status, post_text, published_at")
+        .neq("tracking_status", "rejected")
+        .order("published_at", { ascending: false })
+        .limit(200);
+
+      const analyzablePosts = (allPosts || []).filter((p: any) =>
+        p.source_type === "linkedin_export" ||
+        p.source_type === "external_reference" ||
+        (p.source_type === "aura_generated" && p.tracking_status === "published")
+      );
+
+      const themeCounts: Record<string, number> = {};
+      const toneCounts: Record<string, number> = {};
+      analyzablePosts.forEach((p: any) => {
+        if (p.theme) themeCounts[p.theme] = (themeCounts[p.theme] || 0) + 1;
+        if (p.tone) toneCounts[p.tone] = (toneCounts[p.tone] || 0) + 1;
+      });
+      const topTheme = Object.entries(themeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+      const tones = Object.entries(toneCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([tone, count]) => ({ tone, count }));
+
+      const avgEngagement = analyzablePosts.length > 0
+        ? Math.round((analyzablePosts.reduce((sum: number, p: any) => sum + (Number(p.engagement_score) || 0), 0) / analyzablePosts.length) * 10) / 10
+        : 0;
+
+      const sorted = [...analyzablePosts].sort((a: any, b: any) =>
+        (Number(b.engagement_score) || 0) - (Number(a.engagement_score) || 0)
+      );
+      const top25 = sorted.slice(0, Math.max(1, Math.ceil(sorted.length * 0.25)));
+      const fmtCounts: Record<string, number> = {};
+      top25.forEach((p: any) => {
+        if (p.format_type) fmtCounts[p.format_type] = (fmtCounts[p.format_type] || 0) + 1;
+      });
+      const topFormat = Object.entries(fmtCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "—";
+
+      setContentPerf({
+        postCount: analyzablePosts.length,
+        topTheme,
+        topFormat,
+        avgEngagement,
+        tones,
+      });
+    })();
+  }, []);
+
   /* ── Score derivations ── */
   const latest = snapshots[snapshots.length - 1];
   const latestScore = latest?.score ?? 0;
