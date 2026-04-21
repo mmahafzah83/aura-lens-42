@@ -189,6 +189,7 @@ export default function ImageCardGenerator({
   const [contentVariant, setContentVariant] = useState<ContentVariant>("hook");
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [variantIndex, setVariantIndex] = useState(0);
 
   const hook = extractHook(postText);
   const lines = extractLines(postText);
@@ -267,8 +268,9 @@ export default function ImageCardGenerator({
   }, [contentVariant, postText, topicLabel]);
 
   const shuffle = () => {
-    const variants: ContentVariant[] = ["hook", "stat", "lines", "quote"];
-    const next = variants[Math.floor(Math.random() * variants.length)];
+    const nextIdx = (variantIndex + 1) % VARIANT_ORDER.length;
+    const next = VARIANT_ORDER[nextIdx];
+    setVariantIndex(nextIdx);
     setContentVariant(next);
     // Re-derive content from postText with the new variant emphasis
     if (next === "hook") setHookText(extractHook(postText));
