@@ -860,14 +860,18 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
       <div style={{ position: "absolute", top: -20, left: 16, fontSize: 200, color: "rgba(0,0,0,0.12)", fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none", zIndex: 0 }}>
         “
       </div>
-      <div style={{ position: "relative", zIndex: 1, padding: "32px 24px 24px", display: "flex", flexDirection: "column", height: "100%" }}>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
-          {quoteText}
-        </p>
-        <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
-        <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 2 }}>{editRole}</p>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%", padding: "28px 24px", justifyContent: "center" }}>
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>{tag}</p>
+        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+          <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
+            {quoteText}
+          </p>
+        </div>
+        <div style={{ marginTop: "auto" }}>
+          <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
+          <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 2 }}>{editRole}</p>
+        </div>
       </div>
       <p style={{ position: "absolute", bottom: 18, right: 20, color: "rgba(0,0,0,0.2)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
