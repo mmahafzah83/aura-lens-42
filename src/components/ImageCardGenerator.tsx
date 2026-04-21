@@ -37,6 +37,11 @@ function extractHook(text: string): string {
   return first.length > 120 ? first.slice(0, 117) + "..." : first;
 }
 
+function extractTag(topicLabel: string): string {
+  const words = topicLabel.trim().split(/\s+/);
+  return words.slice(0, 5).join(" ");
+}
+
 function extractLines(text: string): string[] {
   return text
     .replace(/\*\*/g, "")
@@ -51,12 +56,16 @@ function extractStat(text: string): { stat: string; context: string; hasStat: bo
   const match = clean.match(/(\d+(?:\.\d+)?(?:M|B|K|%|\+|x)?)/);
   if (match) {
     const idx = clean.indexOf(match[0]);
-    const context = clean.slice(Math.max(0, idx - 10), idx + 80).trim();
-    return { stat: match[0], context, hasStat: true };
+    const before = clean.slice(Math.max(0, idx - 30), idx).trim();
+    const after = clean.slice(idx + match[0].length, idx + match[0].length + 60).trim();
+    const context = (before + " " + match[0] + " " + after).trim();
+    const firstWord = context.split(/\s+/)[0];
+    const contextClean = /^[a-z]/.test(firstWord) ? context.replace(/^\S+\s/, "") : context;
+    return { stat: match[0], context: contextClean, hasStat: true };
   }
-  const lines = clean.split(/\n/).filter((l) => l.trim().length > 20);
+  const lineCount = clean.split(/\n/).filter((l) => l.trim().length > 20).length;
   return {
-    stat: String(Math.min(lines.length, 9)),
+    stat: String(Math.min(lineCount || 3, 9)),
     context: "key insights from this analysis",
     hasStat: false,
   };
@@ -104,6 +113,8 @@ interface CardProps {
   accentColor: string;
   cardFont: string;
   preset: { bg: string; text: string; tagCol: string; roleCol: string };
+  ledeText: string;
+  bodyText: string;
 }
 
 const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
@@ -133,7 +144,7 @@ const PRESETS = (accent: string) => ({
   bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
   warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
   minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
-  midnight: { bg: "#0a0a14", text: "#ffffff", tagCol: "#7b7bff", roleCol: "#444466" },
+  midnight: { bg: "#080818", text: "#e8e8ff", tagCol: "#a78bfa", roleCol: "#4b4b7a" },
 });
 
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
@@ -173,7 +184,7 @@ export default function ImageCardGenerator({
   const quote = extractQuote(postText);
 
   const [hookText, setHookText] = useState(hook);
-  const [tag, setTag] = useState(topicLabel);
+  const [tag, setTag] = useState(extractTag(topicLabel));
   const [editName, setEditName] = useState(userName || "Your Name");
   const [editRole, setEditRole] = useState(userRole || "Your Role");
   const [statValue, setStatValue] = useState(statData.stat);
@@ -182,6 +193,8 @@ export default function ImageCardGenerator({
   const [quoteText, setQuoteText] = useState(quote);
   const [frameTitle, setFrameTitle] = useState(topicLabel);
   const [framePoints, setFramePoints] = useState<string[]>(lines.slice(0, 3));
+  const [ledeText, setLedeText] = useState(lines[1] || lines[0] || "");
+  const [bodyText, setBodyText] = useState(lines[0] || "");
 
   // ── Per-card independent style state ──
   const [cardStyles, setCardStyles] = useState<Record<string, CardStyleConfig>>({});
@@ -205,13 +218,15 @@ export default function ImageCardGenerator({
 
   useEffect(() => {
     setHookText(hook);
-    setTag(topicLabel);
+    setTag(extractTag(topicLabel));
     setStatValue(statData.stat);
     setStatContext(statData.context);
     setHasStat(statData.hasStat);
     setQuoteText(quote);
     setFrameTitle(topicLabel);
     setFramePoints(lines.slice(0, 3));
+    setLedeText(lines[1] || lines[0] || "");
+    setBodyText(lines[0] || "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postText, topicLabel]);
 
@@ -224,19 +239,20 @@ export default function ImageCardGenerator({
   }, [userRole]);
 
   useEffect(() => {
-    if (contentVariant === "hook") {
-      setHookText(extractHook(postText));
-    } else if (contentVariant === "stat") {
-      const s = extractStat(postText);
-      setStatValue(s.stat);
-      setStatContext(s.context);
-      setHasStat(s.hasStat);
-    } else if (contentVariant === "quote") {
-      setQuoteText(extractQuote(postText));
-    } else if (contentVariant === "lines") {
-      setFramePoints(extractLines(postText).slice(0, 3));
-    }
-  }, [contentVariant, postText]);
+    const newHook = extractHook(postText);
+    const newStat = extractStat(postText);
+    const newQuote = extractQuote(postText);
+    const newLines = extractLines(postText);
+    setHookText(newHook);
+    setStatValue(newStat.stat);
+    setStatContext(newStat.context);
+    setHasStat(newStat.hasStat);
+    setQuoteText(newQuote);
+    setFramePoints(newLines.slice(0, 3));
+    setLedeText(newLines[1] || newLines[0] || "");
+    setBodyText(newLines[0] || "");
+    setTag(extractTag(topicLabel));
+  }, [contentVariant, postText, topicLabel]);
 
   const shuffle = () => {
     const variants: ContentVariant[] = ["hook", "stat", "lines", "quote"];
@@ -301,6 +317,8 @@ export default function ImageCardGenerator({
     frameTitle,
     framePoints,
     hasStat,
+    ledeText,
+    bodyText,
     bodyFontSize: BODY_SIZES[cfg.bodySize],
     titleFontSize: TITLE_SIZES[cfg.titleSize],
     headerFontSize: HEADER_SIZES[cfg.headerSize],
@@ -339,6 +357,8 @@ export default function ImageCardGenerator({
   const isHook = ["newspaper", "dark_editorial", "statement_light", "arabic"].includes(selectedStyle);
   const isFramework = selectedStyle === "contrast_framework";
   const isTension = selectedStyle === "tension_split";
+  const isNewspaper = selectedStyle === "newspaper";
+  const isDarkEditorial = selectedStyle === "dark_editorial";
 
   return (
     <motion.div
@@ -404,7 +424,7 @@ export default function ImageCardGenerator({
       <div className="flex flex-col lg:flex-row gap-0">
         {/* Full-size preview */}
         <div className="flex-1 p-6 flex items-center justify-center bg-[#161616] min-h-[480px]">
-          <div ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
+          <div key={`${selectedStyle}-${contentVariant}`} ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
             {renderCard(selectedStyle, buildCardProps(activeStyle))}
           </div>
         </div>
@@ -673,6 +693,28 @@ export default function ImageCardGenerator({
             </>
           )}
 
+          {isNewspaper && (
+            <Field label="Lede text">
+              <Textarea
+                value={ledeText}
+                onChange={(e) => setLedeText(e.target.value)}
+                className="bg-background border-border text-foreground text-xs min-h-[60px]"
+              />
+              <CharHint value={ledeText} ideal={80} />
+            </Field>
+          )}
+
+          {isDarkEditorial && (
+            <Field label="Body text">
+              <Textarea
+                value={bodyText}
+                onChange={(e) => setBodyText(e.target.value)}
+                className="bg-background border-border text-foreground text-xs min-h-[60px]"
+              />
+              <CharHint value={bodyText} ideal={80} />
+            </Field>
+          )}
+
           <Field label="Name">
             <Input
               value={editName}
@@ -726,7 +768,7 @@ const baseCard: React.CSSProperties = {
 };
 
 /* CARD 1: Manifesto */
-function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function ManifestoCard({ tag, hookText, editName, editRole, statValue, statContext, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: accentColor }} />
@@ -737,6 +779,9 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontS
         <p style={{ color: accentColor, fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
+        <div style={{ fontSize: bodyFontSize * 0.75, color: preset.text, opacity: 0.6, marginTop: -8, marginBottom: 12, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {statContext}
+        </div>
         <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, maxHeight: 120, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
           {hookText}
         </p>
@@ -753,7 +798,7 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, bodyFontS
 }
 
 /* CARD 2: Newspaper */
-function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -769,7 +814,7 @@ function NewspaperCard({ tag, hookText, editName, editRole, lines, titleFontSize
           {hookText}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{lines[1] || lines[0] || ""}</p>
+        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{ledeText}</p>
       </div>
       <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
         <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700 }}>{editName}</p>
@@ -788,9 +833,9 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ width: 100, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
-          <p style={{ color: "#fff", fontSize: Math.min(48, titleFontSize * 2.5), fontWeight: 900, lineHeight: 1, letterSpacing: -2 }}>{statValue}</p>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
+        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch", overflow: "hidden" }}>
+          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, overflow: "hidden", wordBreak: "break-all", textAlign: "center" }}>{statValue}</p>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 7, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
@@ -815,14 +860,18 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
       <div style={{ position: "absolute", top: -20, left: 16, fontSize: 200, color: "rgba(0,0,0,0.12)", fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none", zIndex: 0 }}>
         “
       </div>
-      <div style={{ position: "relative", zIndex: 1, padding: "32px 24px 24px", display: "flex", flexDirection: "column", height: "100%" }}>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, marginTop: "auto", marginBottom: 20, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
-          {quoteText}
-        </p>
-        <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
-        <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 2 }}>{editRole}</p>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%", padding: "28px 24px", justifyContent: "center" }}>
+        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>{tag}</p>
+        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+          <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
+            {quoteText}
+          </p>
+        </div>
+        <div style={{ marginTop: "auto" }}>
+          <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
+          <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 2 }}>{editRole}</p>
+        </div>
       </div>
       <p style={{ position: "absolute", bottom: 18, right: 20, color: "rgba(0,0,0,0.2)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
@@ -830,7 +879,7 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
 }
 
 /* CARD 5: Dark Editorial */
-function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
     <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
@@ -845,7 +894,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, lines, titleFont
         <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
           {hookText}
         </p>
-        <p style={{ color: "#555", fontSize: bodyFontSize, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{lines[0] || ""}</p>
+        <p style={{ color: "#555", fontSize: bodyFontSize, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{bodyText}</p>
       </div>
       <div style={{ borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
