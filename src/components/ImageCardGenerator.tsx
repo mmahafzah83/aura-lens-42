@@ -1005,24 +1005,24 @@ function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, 
 }
 
 /* CARD 9: Data Point */
-function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "28px 24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
         <p style={{ color: "rgba(255,255,255,0.65)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: "auto" }}>
-          {tag}
+          {trunc(tag, 35)}
         </p>
-        <p style={{ color: "#fff", fontSize: 64, fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>
+        <p style={{ color: "#fff", fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>
           {statValue}
         </p>
         <p style={{ color: "#fff", fontSize: 11, fontWeight: 600, lineHeight: 1.3, marginTop: 8 }}>
-          {(statContext || "").slice(0, 60)}
+          {trunc(statContext, 75)}
         </p>
       </div>
-      <div style={{ background: preset.bg, padding: "20px 24px" }}>
-        <p style={{ color: preset.text, fontSize: 12, lineHeight: 1.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{hookText}</p>
-        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12, background: preset.bg, padding: "20px 24px" }}>
+        <p style={{ color: preset.text, fontSize: bodyFontSize, lineHeight: 1.5, marginBottom: 16 }}>{trunc(hookText, 100)}</p>
+        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
