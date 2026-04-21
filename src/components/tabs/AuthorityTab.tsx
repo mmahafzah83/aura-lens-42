@@ -2387,8 +2387,8 @@ interface AuthorityTabProps {
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
-  { key: "create", label: "Create", icon: PenTool },
   { key: "plan", label: "Plan", icon: Calendar },
+  { key: "create", label: "Create", icon: PenTool },
   { key: "analyze", label: "Analyze", icon: BarChart3 },
   { key: "library", label: "Library", icon: BookOpen },
 ];
@@ -2417,13 +2417,6 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        icon={Crown}
-        title="Content Studio"
-        question="Content Studio"
-        processLogic="Signal → Insight → Framework → Content → Audience"
-      />
-
       {brandDone === false && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
           <Target className="w-4 h-4 text-primary shrink-0" />
