@@ -20,6 +20,18 @@ type CardStyle =
 
 type ContentVariant = "hook" | "stat" | "lines" | "quote";
 
+const VARIANT_ORDER: ContentVariant[] = ["hook", "stat", "lines", "quote"];
+
+/* Universal text truncation for html2canvas (CSS clamp is invisible to it) */
+function trunc(text: string, maxChars: number): string {
+  if (!text) return "";
+  const clean = text.trim();
+  if (clean.length <= maxChars) return clean;
+  const cut = clean.slice(0, maxChars);
+  const lastSpace = cut.lastIndexOf(" ");
+  return cut.slice(0, lastSpace > maxChars * 0.5 ? lastSpace : maxChars) + "…";
+}
+
 interface ImageCardGeneratorProps {
   postText: string;
   topicLabel: string;
@@ -177,6 +189,7 @@ export default function ImageCardGenerator({
   const [contentVariant, setContentVariant] = useState<ContentVariant>("hook");
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [variantIndex, setVariantIndex] = useState(0);
 
   const hook = extractHook(postText);
   const lines = extractLines(postText);
@@ -255,8 +268,9 @@ export default function ImageCardGenerator({
   }, [contentVariant, postText, topicLabel]);
 
   const shuffle = () => {
-    const variants: ContentVariant[] = ["hook", "stat", "lines", "quote"];
-    const next = variants[Math.floor(Math.random() * variants.length)];
+    const nextIdx = (variantIndex + 1) % VARIANT_ORDER.length;
+    const next = VARIANT_ORDER[nextIdx];
+    setVariantIndex(nextIdx);
     setContentVariant(next);
     // Re-derive content from postText with the new variant emphasis
     if (next === "hook") setHookText(extractHook(postText));
@@ -376,7 +390,7 @@ export default function ImageCardGenerator({
           onClick={shuffle}
           className="flex items-center gap-1.5 text-[11px] font-semibold text-[#F97316] bg-[rgba(249,115,22,0.1)] border border-[rgba(249,115,22,0.2)] rounded-md px-3 py-1.5 hover:bg-[rgba(249,115,22,0.18)] transition"
         >
-          <Shuffle className="w-3 h-3" /> Shuffle content
+          <Shuffle className="w-3 h-3" /> {VARIANT_ORDER[variantIndex]} content →
         </button>
       </div>
 
@@ -770,26 +784,26 @@ const baseCard: React.CSSProperties = {
 /* CARD 1: Manifesto */
 function ManifestoCard({ tag, hookText, editName, editRole, statValue, statContext, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: accentColor }} />
       <div style={{ padding: "28px 24px 0 32px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: preset.tagCol, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {tag}
+        <p style={{ color: preset.tagCol, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>
+          {trunc(tag, 35)}
         </p>
         <p style={{ color: accentColor, fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
-        <div style={{ fontSize: bodyFontSize * 0.75, color: preset.text, opacity: 0.6, marginTop: -8, marginBottom: 12, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-          {statContext}
+        <div style={{ fontSize: bodyFontSize * 0.75, color: preset.text, opacity: 0.6, marginTop: -8, marginBottom: 12, lineHeight: 1.4 }}>
+          {trunc(statContext, 75)}
         </div>
-        <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, maxHeight: 120, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
-          {hookText}
+        <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, wordBreak: "break-word" }}>
+          {trunc(hookText, 85)}
         </p>
       </div>
-      <div style={{ borderTop: "1px solid #141414", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #141414", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
-          <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+          <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
         </div>
         <p style={{ color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
@@ -800,25 +814,25 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 2: Newspaper */
 function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: "#f5ede0", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
         <span style={{ color: "#fff", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>{tag}</span>
-          <div style={{ flex: 1, height: 1, background: "#d4b896" }} />
+      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "#f5ede0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflow: "hidden" }}>
+          <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0, maxWidth: "55%" }}>{trunc(tag, 35)}</span>
+          <div style={{ flex: 1, height: 1, background: "#d4b896", flexShrink: 1 }} />
         </div>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
-          {hookText}
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, wordBreak: "break-word" }}>
+          {trunc(hookText, 75)}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{ledeText}</p>
+        <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: 1.6 }}>{trunc(ledeText, 110)}</p>
       </div>
-      <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
-        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "#f5ede0" }}>
+        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: "#9a8060", fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
@@ -827,27 +841,27 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontS
 /* CARD 3: Tension Split */
 function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>{tag}</span>
+        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch", overflow: "hidden" }}>
-          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, overflow: "hidden", wordBreak: "break-all", textAlign: "center" }}>{statValue}</p>
+        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
+          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, wordBreak: "break-all", textAlign: "center" }}>{trunc(statValue, 8)}</p>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 7, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
-              {pt}
+            <p key={i} style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, wordBreak: "break-word" }}>
+              {trunc(pt, 60)}
             </p>
           ))}
         </div>
       </div>
-      <div style={{ borderTop: "1px solid #141414", padding: "14px 20px" }}>
-        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #141414", padding: "14px 20px" }}>
+        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
@@ -857,20 +871,22 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
 function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont }: CardProps) {
   return (
     <div style={{ ...baseCard, background: accentColor, fontFamily: cardFont }}>
-      <div style={{ position: "absolute", top: -20, left: 16, fontSize: 200, color: "rgba(0,0,0,0.12)", fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none", zIndex: 0 }}>
-        “
-      </div>
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%", padding: "28px 24px", justifyContent: "center" }}>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>{tag}</p>
-        <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-          <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
-            {quoteText}
-          </p>
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "28px 24px", position: "relative" }}>
+        <div style={{ position: "absolute", top: 50, left: 16, fontSize: 100, color: "rgba(0,0,0,0.10)", fontFamily: "Georgia, serif", lineHeight: 1, zIndex: 0, pointerEvents: "none" }}>
+          “
         </div>
-        <div style={{ marginTop: "auto" }}>
-          <div style={{ width: 32, height: 3, background: "rgba(255,255,255,0.4)", borderRadius: 2, marginBottom: 12 }} />
-          <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
-          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, marginTop: 2 }}>{editRole}</p>
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</p>
+          <div style={{ flex: 1, display: "flex", alignItems: "center", paddingTop: 16, paddingBottom: 16 }}>
+            <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, wordBreak: "break-word" }}>
+              {trunc(quoteText, 110)}
+            </p>
+          </div>
+          <div style={{ marginTop: "auto", paddingTop: 12 }}>
+            <div style={{ width: 28, height: 3, background: "rgba(255,255,255,0.85)", marginBottom: 10 }} />
+            <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{trunc(editName, 30)}</p>
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, marginTop: 2 }}>{trunc(editRole, 45)}</p>
+          </div>
         </div>
       </div>
       <p style={{ position: "absolute", bottom: 18, right: 20, color: "rgba(0,0,0,0.2)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
@@ -881,25 +897,25 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
 /* CARD 5: Dark Editorial */
 function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
         <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap" }}>{tag}</span>
+        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
         <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
       </div>
       <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>01 / Key Insight</p>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
-          {hookText}
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, wordBreak: "break-word" }}>
+          {trunc(hookText, 80)}
         </p>
-        <p style={{ color: "#555", fontSize: bodyFontSize, lineHeight: 1.65, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{bodyText}</p>
+        <p style={{ color: "#888", fontSize: bodyFontSize, lineHeight: 1.65 }}>{trunc(bodyText, 100)}</p>
       </div>
-      <div style={{ borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
-          <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+          <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
         </div>
         <p style={{ color: "#252525", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
@@ -910,10 +926,10 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
 /* CARD 6: Contrast Framework */
 function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: "#0d0d0d", padding: 20 }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{frameTitle}</p>
+        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{trunc(frameTitle, 65)}</p>
         <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12 }} />
       </div>
       <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -922,15 +938,15 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
             <span style={{ color: accentColor, fontSize: 28, fontWeight: 900, minWidth: 32, lineHeight: 1 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-              {framePoints[i] || ""}
+            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, wordBreak: "break-word" }}>
+              {trunc(framePoints[i] || "", 60)}
             </p>
           </div>
         ))}
       </div>
-      <div style={{ borderTop: "1px solid #e0d0bc", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #e0d0bc", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <p style={{ color: preset.text, fontSize: 10 }}>
-          <span style={{ fontWeight: 700 }}>{editName}</span> · {editRole}
+          <span style={{ fontWeight: 700 }}>{trunc(editName, 30)}</span> · {trunc(editRole, 45)}
         </p>
         <p style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
@@ -939,16 +955,16 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
 }
 
 /* CARD 7: Minimal Dark */
-function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
-  // Highlight first word over 5 chars in orange
-  const words = hookText.split(/\s+/);
+function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+  const truncated = trunc(quoteText || hookText, 100);
+  const words = truncated.split(/\s+/);
   const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", padding: "36px 28px", justifyContent: "space-between", position: "relative" }}>
-      <p style={{ color: "#333", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{tag}</p>
-      <div>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%", padding: "36px 28px", position: "relative" }}>
+      <p style={{ color: "#888", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20 }} />
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, wordBreak: "break-word" }}>
           {words.map((w, i) => (
             <span key={i} style={{ color: i === highlightIdx ? accentColor : preset.text }}>
               {w}{i < words.length - 1 ? " " : ""}
@@ -956,9 +972,9 @@ function MinimalDarkCard({ tag, hookText, editName, editRole, titleFontSize, hea
           ))}
         </p>
       </div>
-      <div>
-        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12 }}>
+        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3 }}>{trunc(editRole, 45)}</p>
       </div>
       <p style={{ position: "absolute", bottom: 16, right: 16, color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
@@ -972,14 +988,16 @@ function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, 
       <div style={{ position: "absolute", top: 0, right: 0, width: 68, height: 68, background: accentColor, borderBottomLeftRadius: 14 }} />
       <div style={{ padding: "28px 24px 24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20 }}>
-          {tag}
+          {trunc(tag, 35)}
         </p>
-        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.32, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
-          {hookText}
+        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.32, flex: 1, wordBreak: "break-word" }}>
+          {trunc(hookText, 90)}
         </p>
-        <div style={{ width: 36, height: 3, background: accentColor, marginTop: 16, marginBottom: 12 }} />
-        <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3 }}>{editRole}</p>
+        <div style={{ marginTop: "auto", paddingTop: 12 }}>
+          <div style={{ width: 36, height: 3, background: accentColor, marginBottom: 12 }} />
+          <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{trunc(editName, 30)}</p>
+          <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3 }}>{trunc(editRole, 45)}</p>
+        </div>
       </div>
       <p style={{ position: "absolute", bottom: 16, right: 18, color: "#d4b896", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
@@ -987,24 +1005,24 @@ function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, 
 }
 
 /* CARD 9: Data Point */
-function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "28px 24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
         <p style={{ color: "rgba(255,255,255,0.65)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: "auto" }}>
-          {tag}
+          {trunc(tag, 35)}
         </p>
-        <p style={{ color: "#fff", fontSize: 64, fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>
+        <p style={{ color: "#fff", fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>
           {statValue}
         </p>
         <p style={{ color: "#fff", fontSize: 11, fontWeight: 600, lineHeight: 1.3, marginTop: 8 }}>
-          {(statContext || "").slice(0, 60)}
+          {trunc(statContext, 75)}
         </p>
       </div>
-      <div style={{ background: preset.bg, padding: "20px 24px" }}>
-        <p style={{ color: preset.text, fontSize: 12, lineHeight: 1.5, marginBottom: 16, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>{hookText}</p>
-        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12, background: preset.bg, padding: "20px 24px" }}>
+        <p style={{ color: preset.text, fontSize: bodyFontSize, lineHeight: 1.5, marginBottom: 16 }}>{trunc(hookText, 100)}</p>
+        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
@@ -1013,22 +1031,26 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 10: Arabic (preserved) */
 function ArabicCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32 }}>
+    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
         {[0, 1, 2].map((i) => (
           <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: accentColor }} />
         ))}
       </div>
       <p style={{ position: "absolute", top: 20, right: 24, color: accentColor, fontSize: 10, fontWeight: 700, letterSpacing: 3 }}>AURA</p>
-      <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>
-        {tag}
-      </p>
-      <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl" }}>
-        {hookText || "اكتب النص العربي هنا..."}
-      </p>
-      <div style={{ width: 32, height: 2, background: accentColor, marginTop: 20, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
-      <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textAlign: "right" }}>{editName}</p>
-      <p style={{ color: preset.roleCol, fontSize: 10, textAlign: "right", marginTop: 2 }}>{editRole}</p>
+      <div style={{ flex: 1 }}>
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>
+          {trunc(tag, 35)}
+        </p>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl", wordBreak: "break-word" }}>
+          {trunc(hookText || "اكتب النص العربي هنا...", 90)}
+        </p>
+      </div>
+      <div style={{ marginTop: "auto", paddingTop: 12 }}>
+        <div style={{ width: 32, height: 2, background: accentColor, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
+        <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textAlign: "right" }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 10, textAlign: "right", marginTop: 2 }}>{trunc(editRole, 45)}</p>
+      </div>
     </div>
   );
 }
