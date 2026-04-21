@@ -988,14 +988,16 @@ function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, 
       <div style={{ position: "absolute", top: 0, right: 0, width: 68, height: 68, background: accentColor, borderBottomLeftRadius: 14 }} />
       <div style={{ padding: "28px 24px 24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20 }}>
-          {tag}
+          {trunc(tag, 35)}
         </p>
-        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.32, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
-          {hookText}
+        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.32, flex: 1, wordBreak: "break-word" }}>
+          {trunc(hookText, 90)}
         </p>
-        <div style={{ width: 36, height: 3, background: accentColor, marginTop: 16, marginBottom: 12 }} />
-        <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3 }}>{editRole}</p>
+        <div style={{ marginTop: "auto", paddingTop: 12 }}>
+          <div style={{ width: 36, height: 3, background: accentColor, marginBottom: 12 }} />
+          <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{trunc(editName, 30)}</p>
+          <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3 }}>{trunc(editRole, 45)}</p>
+        </div>
       </div>
       <p style={{ position: "absolute", bottom: 16, right: 18, color: "#d4b896", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
