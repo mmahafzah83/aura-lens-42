@@ -390,7 +390,7 @@ export default function ImageCardGenerator({
           onClick={shuffle}
           className="flex items-center gap-1.5 text-[11px] font-semibold text-[#F97316] bg-[rgba(249,115,22,0.1)] border border-[rgba(249,115,22,0.2)] rounded-md px-3 py-1.5 hover:bg-[rgba(249,115,22,0.18)] transition"
         >
-          <Shuffle className="w-3 h-3" /> Shuffle content
+          <Shuffle className="w-3 h-3" /> {VARIANT_ORDER[variantIndex]} content →
         </button>
       </div>
 
