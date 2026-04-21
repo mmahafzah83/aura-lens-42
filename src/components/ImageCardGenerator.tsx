@@ -37,6 +37,11 @@ function extractHook(text: string): string {
   return first.length > 120 ? first.slice(0, 117) + "..." : first;
 }
 
+function extractTag(topicLabel: string): string {
+  const words = topicLabel.trim().split(/\s+/);
+  return words.slice(0, 5).join(" ");
+}
+
 function extractLines(text: string): string[] {
   return text
     .replace(/\*\*/g, "")
@@ -51,12 +56,16 @@ function extractStat(text: string): { stat: string; context: string; hasStat: bo
   const match = clean.match(/(\d+(?:\.\d+)?(?:M|B|K|%|\+|x)?)/);
   if (match) {
     const idx = clean.indexOf(match[0]);
-    const context = clean.slice(Math.max(0, idx - 10), idx + 80).trim();
-    return { stat: match[0], context, hasStat: true };
+    const before = clean.slice(Math.max(0, idx - 30), idx).trim();
+    const after = clean.slice(idx + match[0].length, idx + match[0].length + 60).trim();
+    const context = (before + " " + match[0] + " " + after).trim();
+    const firstWord = context.split(/\s+/)[0];
+    const contextClean = /^[a-z]/.test(firstWord) ? context.replace(/^\S+\s/, "") : context;
+    return { stat: match[0], context: contextClean, hasStat: true };
   }
-  const lines = clean.split(/\n/).filter((l) => l.trim().length > 20);
+  const lineCount = clean.split(/\n/).filter((l) => l.trim().length > 20).length;
   return {
-    stat: String(Math.min(lines.length, 9)),
+    stat: String(Math.min(lineCount || 3, 9)),
     context: "key insights from this analysis",
     hasStat: false,
   };
