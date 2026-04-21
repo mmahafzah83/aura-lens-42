@@ -926,10 +926,10 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
 /* CARD 6: Contrast Framework */
 function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: "#0d0d0d", padding: 20 }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{frameTitle}</p>
+        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{trunc(frameTitle, 65)}</p>
         <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12 }} />
       </div>
       <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -938,15 +938,15 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
             <span style={{ color: accentColor, fontSize: 28, fontWeight: 900, minWidth: 32, lineHeight: 1 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-              {framePoints[i] || ""}
+            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, wordBreak: "break-word" }}>
+              {trunc(framePoints[i] || "", 60)}
             </p>
           </div>
         ))}
       </div>
-      <div style={{ borderTop: "1px solid #e0d0bc", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #e0d0bc", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <p style={{ color: preset.text, fontSize: 10 }}>
-          <span style={{ fontWeight: 700 }}>{editName}</span> · {editRole}
+          <span style={{ fontWeight: 700 }}>{trunc(editName, 30)}</span> · {trunc(editRole, 45)}
         </p>
         <p style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
