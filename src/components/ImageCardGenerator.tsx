@@ -424,7 +424,7 @@ export default function ImageCardGenerator({
       <div className="flex flex-col lg:flex-row gap-0">
         {/* Full-size preview */}
         <div className="flex-1 p-6 flex items-center justify-center bg-[#161616] min-h-[480px]">
-          <div ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
+          <div key={`${selectedStyle}-${contentVariant}`} ref={cardRef} style={{ width: CARD_W, height: CARD_H }}>
             {renderCard(selectedStyle, buildCardProps(activeStyle))}
           </div>
         </div>
