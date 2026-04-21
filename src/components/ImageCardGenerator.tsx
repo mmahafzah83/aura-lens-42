@@ -841,27 +841,27 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontS
 /* CARD 3: Tension Split */
 function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 220 }}>{tag}</span>
+        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch", overflow: "hidden" }}>
-          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, overflow: "hidden", wordBreak: "break-all", textAlign: "center" }}>{statValue}</p>
+        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
+          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, wordBreak: "break-all", textAlign: "center" }}>{trunc(statValue, 8)}</p>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 7, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", wordBreak: "break-word" }}>
-              {pt}
+            <p key={i} style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, wordBreak: "break-word" }}>
+              {trunc(pt, 60)}
             </p>
           ))}
         </div>
       </div>
-      <div style={{ borderTop: "1px solid #141414", padding: "14px 20px" }}>
-        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #141414", padding: "14px 20px" }}>
+        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
