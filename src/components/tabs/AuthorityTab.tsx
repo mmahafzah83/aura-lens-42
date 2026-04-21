@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
-  Sparkles, Zap, Target, ArrowRight, Crown, Layers,
+  Sparkles, Zap, Target, ArrowRight, Layers,
   Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, ChevronDown, Image as ImageIcon, Download
 } from "lucide-react";
 import PageHeader from "@/components/PageHeader";
