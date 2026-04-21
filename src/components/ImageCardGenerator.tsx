@@ -184,7 +184,7 @@ export default function ImageCardGenerator({
   const quote = extractQuote(postText);
 
   const [hookText, setHookText] = useState(hook);
-  const [tag, setTag] = useState(topicLabel);
+  const [tag, setTag] = useState(extractTag(topicLabel));
   const [editName, setEditName] = useState(userName || "Your Name");
   const [editRole, setEditRole] = useState(userRole || "Your Role");
   const [statValue, setStatValue] = useState(statData.stat);
@@ -193,6 +193,8 @@ export default function ImageCardGenerator({
   const [quoteText, setQuoteText] = useState(quote);
   const [frameTitle, setFrameTitle] = useState(topicLabel);
   const [framePoints, setFramePoints] = useState<string[]>(lines.slice(0, 3));
+  const [ledeText, setLedeText] = useState(lines[1] || lines[0] || "");
+  const [bodyText, setBodyText] = useState(lines[0] || "");
 
   // ── Per-card independent style state ──
   const [cardStyles, setCardStyles] = useState<Record<string, CardStyleConfig>>({});
