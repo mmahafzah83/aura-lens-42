@@ -130,18 +130,40 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Context data:\n${JSON.stringify(context, null, 2)}\n\nReturn the 3-item JSON now.` },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    // Guard the AI call with a hard timeout so the function never hits the
+    // 150s platform idle timeout (which surfaces as a 504 blank screen).
+    const aiController = new AbortController();
+    const aiTimeout = setTimeout(() => aiController.abort(), 25_000);
+    let aiRes: Response;
+    try {
+      aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: `Context data:\n${JSON.stringify(context, null, 2)}\n\nReturn the 3-item JSON now.` },
+          ],
+          response_format: { type: "json_object" },
+        }),
+        signal: aiController.signal,
+      });
+    } catch (err: any) {
+      clearTimeout(aiTimeout);
+      console.error("auras-read: AI fetch failed/timeout", err?.message || err);
+      return new Response(JSON.stringify({
+        items: [],
+        context_summary: {
+          signals: context.top_signals.length,
+          trends: context.recent_trends.length,
+          captures_7d: context.captures_last_7_days,
+          days_since_last_post: daysSinceLastPost,
+        },
+        degraded: "ai_timeout",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    clearTimeout(aiTimeout);
 
     if (!aiRes.ok) {
       if (aiRes.status === 429) {
