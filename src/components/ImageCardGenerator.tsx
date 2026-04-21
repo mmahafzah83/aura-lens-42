@@ -814,25 +814,25 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 2: Newspaper */
 function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column" }}>
+    <div style={{ ...baseCard, background: "#f5ede0", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
         <span style={{ color: "#fff", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>{tag}</span>
-          <div style={{ flex: 1, height: 1, background: "#d4b896" }} />
+      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "#f5ede0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflow: "hidden" }}>
+          <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0, maxWidth: "55%" }}>{trunc(tag, 35)}</span>
+          <div style={{ flex: 1, height: 1, background: "#d4b896", flexShrink: 1 }} />
         </div>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
-          {hookText}
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, wordBreak: "break-word" }}>
+          {trunc(hookText, 75)}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: preset.roleCol, fontSize: bodyFontSize, lineHeight: 1.6, flex: 1, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>{ledeText}</p>
+        <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: 1.6 }}>{trunc(ledeText, 110)}</p>
       </div>
-      <div style={{ borderTop: "1px solid #d4b896", padding: "12px 20px" }}>
-        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700 }}>{editName}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{editRole}</p>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "#f5ede0" }}>
+        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700 }}>{trunc(editName, 30)}</p>
+        <p style={{ color: "#9a8060", fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
