@@ -144,7 +144,7 @@ const PRESETS = (accent: string) => ({
   bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
   warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
   minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
-  midnight: { bg: "#0a0a14", text: "#ffffff", tagCol: "#7b7bff", roleCol: "#444466" },
+  midnight: { bg: "#080818", text: "#e8e8ff", tagCol: "#a78bfa", roleCol: "#4b4b7a" },
 });
 
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
