@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
-  Sparkles, Zap, Target, ArrowRight, Crown, Layers,
+  Sparkles, Zap, Target, ArrowRight, Layers,
   Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, ChevronDown, Image as ImageIcon, Download
 } from "lucide-react";
-import PageHeader from "@/components/PageHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2387,8 +2386,8 @@ interface AuthorityTabProps {
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
-  { key: "create", label: "Create", icon: PenTool },
   { key: "plan", label: "Plan", icon: Calendar },
+  { key: "create", label: "Create", icon: PenTool },
   { key: "analyze", label: "Analyze", icon: BarChart3 },
   { key: "library", label: "Library", icon: BookOpen },
 ];
@@ -2417,13 +2416,6 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        icon={Crown}
-        title="Content Studio"
-        question="Content Studio"
-        processLogic="Signal → Insight → Framework → Content → Audience"
-      />
-
       {brandDone === false && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
           <Target className="w-4 h-4 text-primary shrink-0" />
