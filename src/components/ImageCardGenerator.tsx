@@ -883,8 +883,8 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
             </p>
           </div>
           <div style={{ marginTop: "auto", paddingTop: 12 }}>
-            <div style={{ width: 28, height: 3, background: accentColor, marginBottom: 10, filter: "brightness(1.2)" }} />
-            <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, mixBlendMode: "screen" }}>{trunc(editName, 30)}</p>
+            <div style={{ width: 28, height: 3, background: "rgba(255,255,255,0.85)", marginBottom: 10 }} />
+            <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{trunc(editName, 30)}</p>
             <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, marginTop: 2 }}>{trunc(editRole, 45)}</p>
           </div>
         </div>
