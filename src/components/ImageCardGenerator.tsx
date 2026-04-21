@@ -317,6 +317,8 @@ export default function ImageCardGenerator({
     frameTitle,
     framePoints,
     hasStat,
+    ledeText,
+    bodyText,
     bodyFontSize: BODY_SIZES[cfg.bodySize],
     titleFontSize: TITLE_SIZES[cfg.titleSize],
     headerFontSize: HEADER_SIZES[cfg.headerSize],
