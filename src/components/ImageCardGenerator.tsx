@@ -208,6 +208,14 @@ export default function ImageCardGenerator({
   const cardRef = useRef<HTMLDivElement>(null);
   const [variantIndex, setVariantIndex] = useState(0);
 
+  // Detect Arabic from the main post body (not from topic tag or stat field).
+  const isArabic = lang === "ar" || isArabicText(postText);
+
+  // Inject Cairo font once when this component mounts.
+  useEffect(() => {
+    ensureCairoFont();
+  }, []);
+
   const hook = extractHook(postText);
   const lines = extractLines(postText);
   const statData = extractStat(postText);
