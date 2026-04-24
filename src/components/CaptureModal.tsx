@@ -185,7 +185,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           const fnData = await resp.json().catch(() => null);
 
           if (!resp.ok || !fnData?.transcript) {
-            console.error("transcribe-voice failed:", resp.status, fnData);
+            // 422 = expected "no speech detected" — log as warning, not error,
+            // so the dev runtime-error overlay doesn't treat it as a crash.
+            if (resp.status === 422) {
+              console.warn("transcribe-voice: no speech detected", fnData);
+            } else {
+              console.error("transcribe-voice failed:", resp.status, fnData);
+            }
             setTranscriptionFailed(true);
             const msg = resp.status === 422
               ? "No clear speech detected — type your note manually"
