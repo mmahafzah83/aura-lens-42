@@ -305,6 +305,24 @@ export default function FlashPanel() {
       {mode === "theme" && (
         <>
           <div>
+            <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2" style={lang === "ar" ? arabicFontStyle : undefined}>
+              {t.sectorLabel}
+            </p>
+            <Select value={sector} onValueChange={setSector} dir={dirAttr}>
+              <SelectTrigger className="w-full bg-secondary/30 border-border/20 text-sm" style={lang === "ar" ? arabicFontStyle : undefined}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SECTORS.map(s => (
+                  <SelectItem key={s.value} value={s.value} style={lang === "ar" ? arabicFontStyle : undefined}>
+                    {lang === "ar" ? s.ar : s.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">{t.postTypeLabel}</p>
             <div className="grid grid-cols-2 gap-2">
               {POST_TYPES.map(pt => {
@@ -336,28 +354,21 @@ export default function FlashPanel() {
           </div>
 
           <div>
-            <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">{t.themesLabel}</p>
-            <div className="flex gap-1.5 overflow-x-auto pb-1" dir={dirAttr}>
-              {themeChips.map(chip => {
-                const selected = selectedTheme === chip;
-                return (
-                  <button
-                    key={chip}
-                    onClick={() => setSelectedTheme(chip)}
-                    style={selected
-                      ? { backgroundColor: "#F97316", borderColor: "#F97316", color: "#fff" }
-                      : undefined}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
-                      selected
-                        ? ""
-                        : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
-                    }`}
-                  >
-                    <span style={lang === "ar" ? arabicFontStyle : undefined}>{chip}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2" style={lang === "ar" ? arabicFontStyle : undefined}>
+              {t.themeSelectLabel}
+            </p>
+            <Select value={selectedTheme || ""} onValueChange={setSelectedTheme} dir={dirAttr}>
+              <SelectTrigger className="w-full bg-secondary/30 border-border/20 text-sm" style={lang === "ar" ? arabicFontStyle : undefined}>
+                <SelectValue placeholder={t.themePlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {themeChips.map(chip => (
+                  <SelectItem key={chip} value={chip} style={lang === "ar" ? arabicFontStyle : undefined}>
+                    {chip}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </>
       )}
