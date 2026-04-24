@@ -429,6 +429,8 @@ export default function FlashPanel() {
           {results.map((r, idx) => (
             <div
               key={idx}
+              dir={dirAttr}
+              style={lang === "ar" ? { direction: "rtl", textAlign: "right" } : undefined}
               className="relative rounded-xl border border-border/15 bg-card/60 backdrop-blur-sm p-4 space-y-3"
             >
               <span
@@ -445,12 +447,17 @@ export default function FlashPanel() {
               <div
                 dir={dirAttr}
                 className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap pt-4"
-                style={lang === "ar" ? { fontFamily: "Cairo, sans-serif" } : { fontFamily: "Inter, sans-serif" }}
+                style={lang === "ar"
+                  ? { fontFamily: "Cairo, sans-serif", textAlign: "right", direction: "rtl" }
+                  : { fontFamily: "Inter, sans-serif" }}
               >
                 {r.text}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="flex flex-wrap items-center gap-2"
+                style={lang === "ar" ? { flexDirection: "row-reverse" } : undefined}
+              >
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => onCopy(idx)}>
                   {r.copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.copy}</span>
