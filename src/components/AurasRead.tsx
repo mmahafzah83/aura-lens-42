@@ -89,29 +89,19 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
   }, [userId]);
 
   const handleClick = (item: AuraItem) => {
-    const dest =
-      item.destination ||
-      (item.action_type === "PUBLISH"
-        ? "/publish"
-        : item.action_type === "CAPTURE"
-        ? "capture_modal"
-        : "/intelligence");
-
-    if (dest === "capture_modal") {
+    // Always route via tab switching to avoid 404s on non-existent routes.
+    if (item.action_type === "PUBLISH") {
+      if (onSwitchTab) onSwitchTab("authority");
+      else navigate("/?tab=authority", { state: { prefill_topic: item.title } });
+      return;
+    }
+    if (item.action_type === "CAPTURE") {
       onOpenCapture?.();
       return;
     }
-    if (dest === "/publish") {
-      navigate("/publish", { state: { prefill_topic: item.title } });
-      return;
-    }
-    if (dest === "/intelligence") {
-      if (onSwitchTab) onSwitchTab("intelligence");
-      else navigate("/intelligence");
-      return;
-    }
-    // Fallback: treat as path
-    navigate(dest);
+    // WATCH or default → Intelligence tab
+    if (onSwitchTab) onSwitchTab("intelligence");
+    else navigate("/?tab=intelligence");
   };
 
   return (
