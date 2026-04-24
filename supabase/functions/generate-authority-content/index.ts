@@ -184,7 +184,7 @@ serve(async (req) => {
     const identityContext = buildIdentityContext(profile);
 
     if (action === "generate_content") {
-      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang } = params;
+      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector } = params;
       const effectiveLanguage = language || lang;
       const isFlash = flash === true;
       const isNonStream = stream === false;
@@ -230,6 +230,15 @@ Never open with 'I am excited', 'In today's world', or a generic statistic. Stru
           flashAddendum = `\n\nوضع Flash — أنتج بوستاً واحداً مكتملاً جاهزاً للنشر فوراً.\nلا مقدمة. لا شرح. البوست مباشرة.\nالنسخة رقم ${variationNum}: غيّر الـ Hook والزاوية مع نفس الموضوع والصوت.`;
         } else {
           flashAddendum = `\n\nFlash mode: output one complete publish-ready post. No preamble.\nVariation ${variationNum}: different hook and angle, same topic and voice.`;
+        }
+        const sectorStr = typeof sector === "string" ? sector.trim() : "";
+        const isGeneral = !sectorStr || /^عام/.test(sectorStr) || /^general/i.test(sectorStr);
+        if (sectorStr && !isGeneral) {
+          if (effectiveLanguage === "ar") {
+            flashAddendum += `\nالقطاع المستهدف: ${sectorStr}. اربط البوست بهذا القطاع تحديداً.`;
+          } else {
+            flashAddendum += `\nTarget sector: ${sectorStr}. Ground the post in this specific sector.`;
+          }
         }
       }
 
