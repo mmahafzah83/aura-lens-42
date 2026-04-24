@@ -9,14 +9,21 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { topic, lang, post_text } = await req.json();
+    const { topic, lang, post_text, sector } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const subject = String(post_text || "").split(/\s+/).slice(0, 10).join(" ");
-    const safeTopic = String(topic || subject || "digital transformation").slice(0, 200);
-
-    const prompt = `Cinematic, dramatic, high-contrast editorial photograph representing ${safeTopic}. Dark atmospheric background. Professional, architectural, or abstract industrial subject matter. No people. No text. No Arabic script. No letters of any kind. Suitable for a GCC executive LinkedIn post about digital transformation and infrastructure. Style: editorial, authoritative, dark. Aspect ratio 4:5.`;
+    const sectorStr = String(sector || "").toLowerCase();
+    let prompt: string;
+    if (sectorStr.includes("مياه") || sectorStr.includes("utilities") || sectorStr.includes("water")) {
+      prompt = "Cinematic aerial photograph of a large water treatment facility or desalination plant in the GCC desert landscape. Golden hour lighting. Industrial pipes and infrastructure. No people. No text. No letters. Dark dramatic sky. Editorial style. Professional.";
+    } else if (sectorStr.includes("تحول رقمي") || sectorStr.includes("digital")) {
+      prompt = "Cinematic photograph of a modern operations control room with multiple screens showing dashboards. Dark environment, blue and orange accent lighting. No people. No text. No letters. Authoritative, editorial style.";
+    } else if (sectorStr.includes("بنية تحتية") || sectorStr.includes("infrastructure")) {
+      prompt = "Dramatic aerial photograph of GCC critical infrastructure — power grid, smart city, or industrial complex. Dark cinematic lighting. No people. No text. No letters. Editorial, authoritative.";
+    } else {
+      prompt = "Cinematic, high-contrast editorial photograph of an executive boardroom or modern office in the Gulf region. Dark atmospheric lighting. Abstract geometric architecture. No people. No text. No letters. Professional, authoritative style.";
+    }
 
     // Use Lovable AI Gateway image generation (chat completions with image modality)
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
