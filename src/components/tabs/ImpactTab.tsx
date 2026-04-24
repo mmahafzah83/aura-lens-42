@@ -74,7 +74,10 @@ const formatCompact = (n: number): string => {
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
 /* ── Component ── */
-const ImpactTab = () => {
+interface ImpactTabProps {
+  onOpenCapture?: () => void;
+}
+const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [selectedDays, setSelectedDays] = useState<RangeDays>(30);
@@ -612,7 +615,7 @@ const ImpactTab = () => {
 
             {captureScore < 80 && (
               <button
-                onClick={() => navigate("/home")}
+                onClick={() => onOpenCapture?.()}
                 className="mt-4 inline-flex items-center gap-1.5"
                 style={{
                   background: "#F97316",

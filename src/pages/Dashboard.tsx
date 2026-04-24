@@ -548,7 +548,7 @@ const Dashboard = () => {
             {activeTab === "influence" && (
               <div className="animate-tab-spring">
                 <ErrorBoundary>
-                  <ImpactTab />
+                  <ImpactTab onOpenCapture={() => setCaptureOpen(true)} />
                 </ErrorBoundary>
               </div>
             )}
