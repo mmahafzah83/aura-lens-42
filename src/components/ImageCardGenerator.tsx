@@ -6,6 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import html2canvas from "html2canvas";
 
+/* Arabic font: load Cairo once on first mount */
+const CAIRO_FONT_ID = "aura-cairo-font";
+function ensureCairoFont() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(CAIRO_FONT_ID)) return;
+  const link = document.createElement("link");
+  link.id = CAIRO_FONT_ID;
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap";
+  document.head.appendChild(link);
+}
+
+const AR_REGEX = /[\u0600-\u06FF]/;
+const isArabicText = (s: string | undefined | null) => !!s && AR_REGEX.test(s);
+const ARABIC_FONT = "'Cairo', sans-serif";
+
 type CardStyle =
   | "manifesto"
   | "newspaper"
