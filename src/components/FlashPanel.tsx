@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Eye, TrendingUp, AlertTriangle, HelpCircle, Loader2,
-  Copy, Check, BookmarkPlus, RefreshCw, LayoutTemplate,
+  Copy, Check, BookmarkPlus, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import FlashInfographicCards from "@/components/FlashInfographicCards";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
@@ -53,7 +52,6 @@ interface FlashResult {
   text: string;
   copied?: boolean;
   saving?: boolean;
-  showCards?: boolean;
 }
 
 const arabicNumerals = ["١", "٢", "٣"];
@@ -68,24 +66,6 @@ export default function FlashPanel() {
   const [spark, setSpark] = useState("");
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
-  const [authorName, setAuthorName] = useState<string>("Mohammad Mahafzah");
-  const [authorRole, setAuthorRole] = useState<string>("Business & Digital Transformation Expert");
-
-  // Load author info from diagnostic_profiles
-  useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
-      const { data } = await supabase
-        .from("diagnostic_profiles")
-        .select("first_name, level, firm")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      if (data?.first_name) setAuthorName(data.first_name);
-      const roleParts = [data?.level, data?.firm].filter(Boolean);
-      if (roleParts.length > 0) setAuthorRole(roleParts.join(" | "));
-    })();
-  }, []);
 
   // Load themes from authority_voice_profiles.storytelling_patterns
   useEffect(() => {
@@ -128,8 +108,6 @@ export default function FlashPanel() {
     copy: lang === "ar" ? "نسخ" : "Copy",
     saveDraft: lang === "ar" ? "حفظ مسودة" : "Save Draft",
     saved: lang === "ar" ? "تم الحفظ" : "Saved",
-    visualCard: lang === "ar" ? "🎨 إنشاء بطاقة مرئية" : "🎨 Create Visual Card",
-    hideCards: lang === "ar" ? "إخفاء البطاقات" : "Hide cards",
     newVariations: lang === "ar" ? "🔄 نسخ جديدة" : "🔄 New Variations",
     versionWord: lang === "ar" ? "النسخة" : "Version",
   }), [lang]);
@@ -239,10 +217,6 @@ export default function FlashPanel() {
     } finally {
       setResults(prev => prev.map((x, i) => i === idx ? { ...x, saving: false } : x));
     }
-  };
-
-  const toggleCards = (idx: number) => {
-    setResults(prev => prev.map((x, i) => i === idx ? { ...x, showCards: !x.showCards } : x));
   };
 
   const versionLabel = (n: number) => lang === "ar"
@@ -468,30 +442,7 @@ export default function FlashPanel() {
                   {r.saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookmarkPlus className="w-3 h-3" />}
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.saveDraft}</span>
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 gap-1.5 text-[11px] text-muted-foreground"
-                  onClick={() => toggleCards(idx)}
-                >
-                  <LayoutTemplate className="w-3 h-3" />
-                  <span style={lang === "ar" ? arabicFontStyle : undefined}>
-                    {r.showCards ? t.hideCards : t.visualCard}
-                  </span>
-                </Button>
               </div>
-
-              {r.showCards && (
-                <FlashInfographicCards
-                  postText={r.text}
-                  lang={lang}
-                  topic={buildTopic()}
-                  sector={sectorPayloadValue()}
-                  postType={postType ? (POST_TYPES.find(p => p.key === postType)?.labelAr || "") : ""}
-                  authorName={authorName}
-                  authorRole={authorRole}
-                />
-              )}
             </div>
           ))}
 
