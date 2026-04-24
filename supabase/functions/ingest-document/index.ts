@@ -235,7 +235,7 @@ async function extractFromDocx(adminClient: any, doc: any): Promise<string> {
   }
   // @ts-ignore dynamic esm import
   const mammoth = await import("https://esm.sh/mammoth@1.8.0?target=deno");
-  const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+  const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer as ArrayBuffer });
   return result?.value || "";
 }
 
