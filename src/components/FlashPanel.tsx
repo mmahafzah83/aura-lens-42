@@ -7,6 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 type FlashLang = "ar" | "en";
@@ -31,6 +38,15 @@ const POST_TYPES: PostTypeDef[] = [
 
 const FALLBACK_THEMES = ["التحول الرقمي", "قطاع المياه", "الحوكمة", "فجوة IT وOT"];
 
+const SECTORS: { value: string; ar: string; en: string }[] = [
+  { value: "general",        ar: "عام — لجميع القطاعات",       en: "General — All Sectors" },
+  { value: "water",          ar: "قطاع المياه والمرافق",        en: "Water & Utilities" },
+  { value: "digital",        ar: "التحول الرقمي المؤسسي",       en: "Enterprise Digital Transformation" },
+  { value: "infrastructure", ar: "البنية التحتية الحيوية",       en: "Critical Infrastructure" },
+  { value: "governance",     ar: "الحوكمة والقيادة",            en: "Governance & Leadership" },
+  { value: "vision2030",     ar: "رؤية 2030 والقطاع العام",     en: "Vision 2030 & Public Sector" },
+];
+
 interface FlashResult {
   variation: number;
   text: string;
@@ -48,6 +64,7 @@ export default function FlashPanel() {
   const [postType, setPostType] = useState<PostTypeKey | null>(null);
   const [themeChips, setThemeChips] = useState<string[]>(FALLBACK_THEMES);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [sector, setSector] = useState<string>("general");
   const [spark, setSpark] = useState("");
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
@@ -79,6 +96,9 @@ export default function FlashPanel() {
     langEn: "English",
     modeTheme: lang === "ar" ? "بالموضوع" : "By Theme",
     modeSpark: lang === "ar" ? "بكلماتك" : "Your Spark",
+    sectorLabel: lang === "ar" ? "القطاع" : "Sector",
+    themeSelectLabel: lang === "ar" ? "الموضوع" : "Theme",
+    themePlaceholder: lang === "ar" ? "اختر موضوعاً" : "Select a theme",
     postTypeLabel: lang === "ar" ? "نوع البوست" : "Post type",
     themesLabel: lang === "ar" ? "المواضيع" : "Themes",
     sparkLabel: lang === "ar" ? "شرارة" : "Your spark",
@@ -115,6 +135,12 @@ export default function FlashPanel() {
     return lang === "ar" ? `نوع البوست: ${labelAr}` : `Post type: ${labelEn}`;
   };
 
+  const sectorPayloadValue = (): string => {
+    const s = SECTORS.find(s => s.value === sector);
+    if (!s) return "";
+    return lang === "ar" ? s.ar : s.en;
+  };
+
   const callOnce = async (variation: number, accessToken: string): Promise<string> => {
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
       method: "POST",
@@ -135,6 +161,7 @@ export default function FlashPanel() {
         flash: true,
         stream: false,
         variation,
+        sector: sectorPayloadValue(),
       }),
     });
     if (!resp.ok) throw new Error(`Generation failed (${resp.status})`);
@@ -211,7 +238,7 @@ export default function FlashPanel() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ topic: buildTopic(), lang, post_text: r.text }),
+        body: JSON.stringify({ topic: buildTopic(), lang, post_text: r.text, sector: sectorPayloadValue() }),
       });
       const data = await resp.json();
       if (!resp.ok || !data?.image_url) throw new Error(data?.error || "generation_failed");
