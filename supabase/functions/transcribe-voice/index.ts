@@ -99,7 +99,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "Transcribe the following audio recording exactly as spoken. Return only the transcript text, nothing else. Do not analyze, summarize, or interpret the content. Just return the exact words that were spoken. If the audio is in Arabic or any non-English language, transcribe in the original language.",
+            content: "You are a strict speech-to-text transcriber. Transcribe ONLY the actual spoken words in the audio, exactly as spoken. Rules: (1) Return ONLY the literal transcript text, nothing else. (2) Do NOT analyze, summarize, interpret, translate, or add commentary. (3) Do NOT invent, hallucinate, or add any content that was not actually spoken. (4) If the audio is silent, empty, unintelligible, or contains no clear speech, return the exact string: [NO_SPEECH_DETECTED]. (5) If the audio is in any language (Arabic, English, etc.), transcribe in that original language using its native script. (6) Never produce religious texts, jurisprudence, poetry, or any structured content unless those exact words were clearly spoken in the recording.",
           },
           {
             role: "user",
@@ -113,7 +113,7 @@ serve(async (req) => {
               },
               {
                 type: "text",
-                text: "Please transcribe this audio recording exactly as spoken.",
+                text: "Transcribe this audio. If you cannot clearly hear speech, respond with [NO_SPEECH_DETECTED]. Do not invent content.",
               },
             ],
           },
@@ -140,8 +140,29 @@ serve(async (req) => {
     }
 
     const aiData = await aiRes.json();
-    const transcript = aiData.choices?.[0]?.message?.content?.trim() || "";
-    console.log("Transcription complete, length:", transcript.length);
+    let transcript = aiData.choices?.[0]?.message?.content?.trim() || "";
+    console.log("Transcription complete, length:", transcript.length, "audio bytes:", audioBytes.length);
+
+    // Hallucination guards
+    const noSpeech = /\[NO_SPEECH_DETECTED\]/i.test(transcript) || transcript.length === 0;
+
+    // Heuristic: webm/opus voice ≈ 2–4 KB per spoken second. Anything claiming
+    // more than ~10 chars per audio-KB is almost certainly hallucinated.
+    const audioKb = Math.max(1, audioBytes.length / 1024);
+    const charsPerKb = transcript.length / audioKb;
+    const looksHallucinated = charsPerKb > 30 && transcript.length > 200;
+
+    if (noSpeech || looksHallucinated) {
+      console.warn("Rejecting transcript — noSpeech:", noSpeech, "charsPerKb:", charsPerKb.toFixed(1));
+      return new Response(
+        JSON.stringify({
+          error: "no_speech_detected",
+          message: "No clear speech detected in the recording. Please type your note manually.",
+          audio_url: audioUrl,
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(JSON.stringify({ transcript, audio_url: audioUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
