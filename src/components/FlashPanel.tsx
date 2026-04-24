@@ -52,8 +52,16 @@ interface FlashResult {
   text: string;
   copied?: boolean;
   imageLoading?: boolean;
-  imageUrl?: string | null;
+  visuals?: FlashVisual[] | null;
   saving?: boolean;
+}
+
+interface FlashVisual {
+  style: string;
+  label_ar: string;
+  label_en: string;
+  image_data?: string;
+  error?: string;
 }
 
 const arabicNumerals = ["١", "٢", "٣"];
@@ -115,6 +123,13 @@ export default function FlashPanel() {
     download: lang === "ar" ? "تحميل" : "Download",
     newVariations: lang === "ar" ? "🔄 نسخ جديدة" : "🔄 New Variations",
     versionWord: lang === "ar" ? "النسخة" : "Version",
+    genVisuals: lang === "ar" ? "🎨 توليد صور" : "🎨 Generate Visuals",
+    visualsLoading: lang === "ar" ? "⚡ جاري توليد 3 تصاميم مختلفة..." : "⚡ Generating 3 designs...",
+    chooseDesign: lang === "ar" ? "اختر التصميم المناسب" : "Choose your design",
+    select: lang === "ar" ? "اختر هذا" : "Select",
+    regenerateAll: lang === "ar" ? "🔄 أعد التوليد" : "🔄 Regenerate All",
+    visualFailed: lang === "ar" ? "فشل التوليد" : "Failed",
+    retry: lang === "ar" ? "أعد المحاولة" : "Retry",
   }), [lang]);
 
   const canGenerate = mode === "theme"
@@ -231,6 +246,8 @@ export default function FlashPanel() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
+      const ptDef = postType ? POST_TYPES.find(p => p.key === postType) : null;
+      const ptLabel = ptDef ? (lang === "ar" ? ptDef.labelAr : ptDef.labelEn) : "";
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-flash-image`, {
         method: "POST",
         headers: {
@@ -238,15 +255,31 @@ export default function FlashPanel() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ topic: buildTopic(), lang, post_text: r.text, sector: sectorPayloadValue() }),
+        body: JSON.stringify({
+          topic: buildTopic(),
+          lang,
+          post_text: r.text,
+          sector: sectorPayloadValue(),
+          post_type: ptLabel,
+        }),
       });
       const data = await resp.json();
-      if (!resp.ok || !data?.image_url) throw new Error(data?.error || "generation_failed");
-      setResults(prev => prev.map((x, i) => i === idx ? { ...x, imageUrl: data.image_url, imageLoading: false } : x));
+      if (!resp.ok || !Array.isArray(data?.visuals)) throw new Error(data?.error || "generation_failed");
+      setResults(prev => prev.map((x, i) => i === idx ? { ...x, visuals: data.visuals, imageLoading: false } : x));
     } catch (e: any) {
       toast.error(e.message || "Image generation failed");
       setResults(prev => prev.map((x, i) => i === idx ? { ...x, imageLoading: false } : x));
     }
+  };
+
+  const downloadVisual = (v: FlashVisual) => {
+    if (!v.image_data) return;
+    const a = document.createElement("a");
+    a.href = v.image_data;
+    a.download = `flash-${v.style}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const versionLabel = (n: number) => lang === "ar"
@@ -481,27 +514,88 @@ export default function FlashPanel() {
                 >
                   {r.imageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>
-                    {r.imageLoading ? t.visualLoading : t.genVisual}
+                    {r.imageLoading ? t.visualsLoading : t.genVisuals}
                   </span>
                 </Button>
               </div>
 
-              {r.imageUrl && (
-                <div className="space-y-2">
-                  <img
-                    src={r.imageUrl}
-                    alt="Generated visual"
-                    className="w-full rounded-xl object-cover"
-                    style={{ maxHeight: 400 }}
-                  />
+              {r.visuals && r.visuals.length > 0 && (
+                <div className="space-y-3 pt-2 border-t border-border/10">
+                  <p
+                    className="text-xs font-semibold text-foreground/80"
+                    style={lang === "ar" ? arabicFontStyle : undefined}
+                  >
+                    {t.chooseDesign}
+                  </p>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                    {r.visuals.map((v, vi) => (
+                      <div
+                        key={vi}
+                        className="flex-shrink-0 w-48 space-y-2"
+                        dir={dirAttr}
+                      >
+                        {v.image_data ? (
+                          <img
+                            src={v.image_data}
+                            alt={lang === "ar" ? v.label_ar : v.label_en}
+                            className="w-48 h-60 object-cover rounded-xl border border-border/15"
+                          />
+                        ) : (
+                          <div className="w-48 h-60 rounded-xl border border-border/15 bg-secondary/30 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                            <ImageIcon className="w-6 h-6 opacity-50" />
+                            <span className="text-[11px]" style={lang === "ar" ? arabicFontStyle : undefined}>
+                              {t.visualFailed}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1.5 text-[11px]"
+                              onClick={() => onGenerateVisual(idx)}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.retry}</span>
+                            </Button>
+                          </div>
+                        )}
+                        <div
+                          className="text-[11px] font-medium text-center text-foreground/80"
+                          style={lang === "ar" ? arabicFontStyle : undefined}
+                        >
+                          {lang === "ar" ? v.label_ar : v.label_en}
+                        </div>
+                        {v.image_data && (
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-[11px] flex-1"
+                              onClick={() => window.open(v.image_data!, "_blank")}
+                            >
+                              <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.select}</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={() => downloadVisual(v)}
+                              aria-label={t.download}
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={() => window.open(r.imageUrl!, "_blank")}
+                    className="w-full h-8 gap-1.5 text-xs"
+                    disabled={!!r.imageLoading}
+                    onClick={() => onGenerateVisual(idx)}
                   >
-                    <Download className="w-3 h-3" />
-                    <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.download}</span>
+                    {r.imageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.regenerateAll}</span>
                   </Button>
                 </div>
               )}
