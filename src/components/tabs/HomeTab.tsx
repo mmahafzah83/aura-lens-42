@@ -516,12 +516,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     if (refreshingTrends || !authUser) return;
     setRefreshingTrends(true);
     try {
-      // 1. Record count before refresh
-      const { count: countBefore } = await supabase
+      // 1. Record the newest fetched_at before refresh.
+      // (Counting rows is unreliable because fetch-industry-trends caps
+      // active trends at 5 — count stays flat even when rows are replaced.)
+      const { data: newestBefore } = await supabase
         .from("industry_trends")
-        .select("*", { count: "exact", head: true })
+        .select("fetched_at")
         .eq("user_id", authUser.id)
-        .eq("status", "new");
+        .eq("status", "new")
+        .order("fetched_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const newestBeforeTimestamp = newestBefore?.fetched_at ?? null;
 
       // 2. Call edge function (Phase A — returns quickly)
       toast.loading("Finding new trends...", { id: "refresh-trends" });
@@ -539,9 +545,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       await new Promise(resolve => setTimeout(resolve, 32000));
 
       // 4. Re-query and compare
-      const { data: freshTrends, count: countAfter } = await supabase
+      const { data: freshTrends } = await supabase
         .from("industry_trends")
-        .select("*", { count: "exact" })
+        .select("*")
         .eq("user_id", authUser.id)
         .eq("status", "new")
         .order("final_score", { ascending: false })
@@ -552,12 +558,13 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       setTrends((freshTrends as any) || []);
       loadTrendsBadge(authUser.id);
 
-      // 6. Toast based on actual delta
-      const newCount = (countAfter || 0) - (countBefore || 0);
-      if (newCount > 0) {
-        toast.success(`${newCount} new trend${newCount > 1 ? "s" : ""} added`, {
-          id: "refresh-trends",
-        });
+      // 6. Toast based on whether any returned row is newer than the
+      // pre-refresh newest timestamp.
+      const hasNewTrends = (freshTrends || []).some(
+        (t: any) => newestBeforeTimestamp === null || t.fetched_at > newestBeforeTimestamp
+      );
+      if (hasNewTrends) {
+        toast.success("Trends refreshed", { id: "refresh-trends" });
       } else {
         toast("Feed is up to date", { id: "refresh-trends", icon: "✓" });
       }
