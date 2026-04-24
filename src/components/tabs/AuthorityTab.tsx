@@ -558,18 +558,23 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         {/* Format Selector */}
         <div>
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3">Content Format</p>
-          <div className="grid grid-cols-3 gap-2">
-            {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any }][]).map(([key, { label, icon: Icon }]) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => (
               <button key={key} onClick={() => setContentType(key)} className={`p-3 rounded-xl border text-left transition-all ${contentType === key ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"}`}>
                 <Icon className="w-4 h-4 mb-1.5" />
-                <span className="text-xs font-medium">{label}</span>
+                <span className="block text-xs font-medium">{label}</span>
+                {subtitle && (
+                  <span className="block text-[10px] mt-0.5 opacity-70" style={{ fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
+                )}
               </button>
             ))}
           </div>
         </div>
 
         {/* Framework Builder Mode */}
-        {contentType === "framework_summary" ? (
+        {contentType === "flash" ? (
+          <FlashPanel />
+        ) : contentType === "framework_summary" ? (
           <FrameworkBuilderInline
             initialTitle={topic}
             initialDescription={context}
