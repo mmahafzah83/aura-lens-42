@@ -184,7 +184,10 @@ serve(async (req) => {
     const identityContext = buildIdentityContext(profile);
 
     if (action === "generate_content") {
-      const { content_type, topic, context, language, framework, extra_instruction } = params;
+      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang } = params;
+      const effectiveLanguage = language || lang;
+      const isFlash = flash === true;
+      const isNonStream = stream === false;
 
       const formatInstructions: Record<string, string> = {
         post: `Write a LinkedIn post (scroll-stopping hook → insight → framework/key points → closing question). Short paragraphs, spaced lines. Mobile-readable.`,
@@ -200,7 +203,7 @@ serve(async (req) => {
 
       // Language + voice handling
       let voiceSection: string;
-      if (language === "ar") {
+      if (effectiveLanguage === "ar") {
         // Arabic-native prompt replaces voice section
         voiceSection = ARABIC_VOICE_PROMPT;
         // If a specific framework is selected, use it; otherwise Arabic defaults to PAS/BAB (already in ARABIC_VOICE_PROMPT)
@@ -215,9 +218,20 @@ serve(async (req) => {
 
 Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.`;
 
-      const langLabel = language === "ar"
+      const langLabel = effectiveLanguage === "ar"
         ? `اكتب المنشور بالكامل باللغة العربية. لا تستخدم أي كلمة إنجليزية.`
         : `Write in English.`;
+
+      // Flash addendum (variation-aware)
+      const variationNum = Number.isFinite(Number(variation)) ? Number(variation) : 1;
+      let flashAddendum = "";
+      if (isFlash) {
+        if (effectiveLanguage === "ar") {
+          flashAddendum = `\n\nوضع Flash — أنتج بوستاً واحداً مكتملاً جاهزاً للنشر فوراً.\nلا مقدمة. لا شرح. البوست مباشرة.\nالنسخة رقم ${variationNum}: غيّر الـ Hook والزاوية مع نفس الموضوع والصوت.`;
+        } else {
+          flashAddendum = `\n\nFlash mode: output one complete publish-ready post. No preamble.\nVariation ${variationNum}: different hook and angle, same topic and voice.`;
+        }
+      }
 
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
@@ -229,7 +243,7 @@ ${identityContext}
 ${formatInstructions[content_type] || formatInstructions.post}
 ${langLabel}
 ${frameworkInstruction}
-${extraInstruction}
+${extraInstruction}${flashAddendum}
 
 Write with conviction. No generic statements. Every line should demonstrate strategic depth.`;
 
@@ -245,14 +259,28 @@ Write with conviction. No generic statements. Every line should demonstrate stra
             { role: "system", content: systemPrompt },
             { role: "user", content: `Topic: ${topic}\n\nContext: ${context || "Use your knowledge of the user's expertise and stored insights."}` },
           ],
-          stream: true,
+          stream: !isNonStream,
         }),
       });
 
       if (!response.ok) {
         const t = await response.text();
         console.error("AI error:", response.status, t);
+        if (isNonStream) {
+          return new Response(JSON.stringify({ success: false, error: `AI error: ${response.status}` }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         throw new Error(`AI error: ${response.status}`);
+      }
+
+      if (isNonStream) {
+        const aiJson = await response.json();
+        const content = aiJson.choices?.[0]?.message?.content || "";
+        return new Response(JSON.stringify({ content, success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       return new Response(response.body, {
