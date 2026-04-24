@@ -311,6 +311,33 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       if (error) throw error;
       setTrends((data || []) as Trend[]);
       console.log("[HomeTab] trends finished");
+
+      // ── Background staleness check (silent, fire-and-forget) ──
+      // If newest trend is >20h old, or there are no trends, kick off a
+      // light refresh. The realtime subscription will surface new rows.
+      try {
+        const rows = (data || []) as Array<{ fetched_at?: string | null }>;
+        const STALE_MS = 20 * 60 * 60 * 1000;
+        let shouldRefresh = false;
+        if (rows.length === 0) {
+          shouldRefresh = true;
+        } else {
+          const newestTs = rows.reduce((max, r) => {
+            const t = r.fetched_at ? new Date(r.fetched_at).getTime() : 0;
+            return t > max ? t : max;
+          }, 0);
+          if (newestTs === 0 || Date.now() - newestTs > STALE_MS) {
+            shouldRefresh = true;
+          }
+        }
+        if (shouldRefresh) {
+          supabase.functions
+            .invoke("fetch-industry-trends", { body: { mode: "light" } })
+            .catch((e) => console.warn("[HomeTab] background trends refresh failed", e));
+        }
+      } catch (e) {
+        console.warn("[HomeTab] staleness check error", e);
+      }
     } catch (e) {
       console.error("[HomeTab] trends load failed", e);
       setTrendsError(true);
