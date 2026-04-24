@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.open-document]
 verify_jwt = false
+
+[functions.voice-distill]
+verify_jwt = false
