@@ -123,6 +123,13 @@ export default function FlashPanel() {
     download: lang === "ar" ? "تحميل" : "Download",
     newVariations: lang === "ar" ? "🔄 نسخ جديدة" : "🔄 New Variations",
     versionWord: lang === "ar" ? "النسخة" : "Version",
+    genVisuals: lang === "ar" ? "🎨 توليد صور" : "🎨 Generate Visuals",
+    visualsLoading: lang === "ar" ? "⚡ جاري توليد 3 تصاميم مختلفة..." : "⚡ Generating 3 designs...",
+    chooseDesign: lang === "ar" ? "اختر التصميم المناسب" : "Choose your design",
+    select: lang === "ar" ? "اختر هذا" : "Select",
+    regenerateAll: lang === "ar" ? "🔄 أعد التوليد" : "🔄 Regenerate All",
+    visualFailed: lang === "ar" ? "فشل التوليد" : "Failed",
+    retry: lang === "ar" ? "أعد المحاولة" : "Retry",
   }), [lang]);
 
   const canGenerate = mode === "theme"
@@ -239,6 +246,8 @@ export default function FlashPanel() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Not authenticated");
+      const ptDef = postType ? POST_TYPES.find(p => p.key === postType) : null;
+      const ptLabel = ptDef ? (lang === "ar" ? ptDef.labelAr : ptDef.labelEn) : "";
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-flash-image`, {
         method: "POST",
         headers: {
@@ -246,15 +255,31 @@ export default function FlashPanel() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ topic: buildTopic(), lang, post_text: r.text, sector: sectorPayloadValue() }),
+        body: JSON.stringify({
+          topic: buildTopic(),
+          lang,
+          post_text: r.text,
+          sector: sectorPayloadValue(),
+          post_type: ptLabel,
+        }),
       });
       const data = await resp.json();
-      if (!resp.ok || !data?.image_url) throw new Error(data?.error || "generation_failed");
-      setResults(prev => prev.map((x, i) => i === idx ? { ...x, imageUrl: data.image_url, imageLoading: false } : x));
+      if (!resp.ok || !Array.isArray(data?.visuals)) throw new Error(data?.error || "generation_failed");
+      setResults(prev => prev.map((x, i) => i === idx ? { ...x, visuals: data.visuals, imageLoading: false } : x));
     } catch (e: any) {
       toast.error(e.message || "Image generation failed");
       setResults(prev => prev.map((x, i) => i === idx ? { ...x, imageLoading: false } : x));
     }
+  };
+
+  const downloadVisual = (v: FlashVisual) => {
+    if (!v.image_data) return;
+    const a = document.createElement("a");
+    a.href = v.image_data;
+    a.download = `flash-${v.style}-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const versionLabel = (n: number) => lang === "ar"
