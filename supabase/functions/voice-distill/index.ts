@@ -74,9 +74,10 @@ Deno.serve(async (req) => {
       .from("linkedin_posts")
       .select("post_text, engagement_score, like_count, comment_count, source_type")
       .eq("user_id", user_id)
+      .not("post_text", "is", null)
       .order("engagement_score", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .limit(40);
+      .limit(200);
 
     if (postsErr) {
       console.error("voice-distill: fetch posts error", postsErr);
@@ -88,7 +89,7 @@ Deno.serve(async (req) => {
 
     const filtered = (posts || []).filter(
       (p: any) => p.post_text && String(p.post_text).trim().length > 0,
-    );
+    ).slice(0, 40);
 
     if (filtered.length === 0) {
       console.error("voice-distill: no posts found for user", user_id);
