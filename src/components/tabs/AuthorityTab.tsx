@@ -1078,7 +1078,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       </div>
 
       <StartFromPanel
-        currentFormat={contentType}
+        currentFormat={(contentType === "flash" ? "post" : contentType) as any}
         hasDraft={!!(topic.trim() || output)}
         onSelect={(t, ctx, fmt, sigTitle, sigInsight) => {
           selectSuggestion(t, ctx, fmt, sigTitle, sigInsight);
