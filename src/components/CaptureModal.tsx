@@ -187,7 +187,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           if (!resp.ok || !fnData?.transcript) {
             console.error("transcribe-voice failed:", resp.status, fnData);
             setTranscriptionFailed(true);
-            sonnerToast.error("Transcription failed — type your note instead");
+            const msg = resp.status === 422
+              ? "No clear speech detected — type your note manually"
+              : "Transcription failed — type your note instead";
+            sonnerToast.error(msg);
             setTimeout(() => {
               const ta = document.querySelector<HTMLTextAreaElement>('textarea[placeholder="Transcript will appear here…"]');
               ta?.focus();
