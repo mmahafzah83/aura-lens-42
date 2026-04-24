@@ -7,6 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 type FlashLang = "ar" | "en";
@@ -31,6 +38,15 @@ const POST_TYPES: PostTypeDef[] = [
 
 const FALLBACK_THEMES = ["التحول الرقمي", "قطاع المياه", "الحوكمة", "فجوة IT وOT"];
 
+const SECTORS: { value: string; ar: string; en: string }[] = [
+  { value: "general",        ar: "عام — لجميع القطاعات",       en: "General — All Sectors" },
+  { value: "water",          ar: "قطاع المياه والمرافق",        en: "Water & Utilities" },
+  { value: "digital",        ar: "التحول الرقمي المؤسسي",       en: "Enterprise Digital Transformation" },
+  { value: "infrastructure", ar: "البنية التحتية الحيوية",       en: "Critical Infrastructure" },
+  { value: "governance",     ar: "الحوكمة والقيادة",            en: "Governance & Leadership" },
+  { value: "vision2030",     ar: "رؤية 2030 والقطاع العام",     en: "Vision 2030 & Public Sector" },
+];
+
 interface FlashResult {
   variation: number;
   text: string;
@@ -48,6 +64,7 @@ export default function FlashPanel() {
   const [postType, setPostType] = useState<PostTypeKey | null>(null);
   const [themeChips, setThemeChips] = useState<string[]>(FALLBACK_THEMES);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [sector, setSector] = useState<string>("general");
   const [spark, setSpark] = useState("");
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
@@ -79,6 +96,9 @@ export default function FlashPanel() {
     langEn: "English",
     modeTheme: lang === "ar" ? "بالموضوع" : "By Theme",
     modeSpark: lang === "ar" ? "بكلماتك" : "Your Spark",
+    sectorLabel: lang === "ar" ? "القطاع" : "Sector",
+    themeSelectLabel: lang === "ar" ? "الموضوع" : "Theme",
+    themePlaceholder: lang === "ar" ? "اختر موضوعاً" : "Select a theme",
     postTypeLabel: lang === "ar" ? "نوع البوست" : "Post type",
     themesLabel: lang === "ar" ? "المواضيع" : "Themes",
     sparkLabel: lang === "ar" ? "شرارة" : "Your spark",
@@ -115,6 +135,12 @@ export default function FlashPanel() {
     return lang === "ar" ? `نوع البوست: ${labelAr}` : `Post type: ${labelEn}`;
   };
 
+  const sectorPayloadValue = (): string => {
+    const s = SECTORS.find(s => s.value === sector);
+    if (!s) return "";
+    return lang === "ar" ? s.ar : s.en;
+  };
+
   const callOnce = async (variation: number, accessToken: string): Promise<string> => {
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
       method: "POST",
@@ -135,6 +161,7 @@ export default function FlashPanel() {
         flash: true,
         stream: false,
         variation,
+        sector: sectorPayloadValue(),
       }),
     });
     if (!resp.ok) throw new Error(`Generation failed (${resp.status})`);
@@ -211,7 +238,7 @@ export default function FlashPanel() {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ topic: buildTopic(), lang, post_text: r.text }),
+        body: JSON.stringify({ topic: buildTopic(), lang, post_text: r.text, sector: sectorPayloadValue() }),
       });
       const data = await resp.json();
       if (!resp.ok || !data?.image_url) throw new Error(data?.error || "generation_failed");
@@ -278,6 +305,24 @@ export default function FlashPanel() {
       {mode === "theme" && (
         <>
           <div>
+            <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2" style={lang === "ar" ? arabicFontStyle : undefined}>
+              {t.sectorLabel}
+            </p>
+            <Select value={sector} onValueChange={setSector} dir={dirAttr}>
+              <SelectTrigger className="w-full bg-secondary/30 border-border/20 text-sm" style={lang === "ar" ? arabicFontStyle : undefined}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SECTORS.map(s => (
+                  <SelectItem key={s.value} value={s.value} style={lang === "ar" ? arabicFontStyle : undefined}>
+                    {lang === "ar" ? s.ar : s.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">{t.postTypeLabel}</p>
             <div className="grid grid-cols-2 gap-2">
               {POST_TYPES.map(pt => {
@@ -309,28 +354,21 @@ export default function FlashPanel() {
           </div>
 
           <div>
-            <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">{t.themesLabel}</p>
-            <div className="flex gap-1.5 overflow-x-auto pb-1" dir={dirAttr}>
-              {themeChips.map(chip => {
-                const selected = selectedTheme === chip;
-                return (
-                  <button
-                    key={chip}
-                    onClick={() => setSelectedTheme(chip)}
-                    style={selected
-                      ? { backgroundColor: "#F97316", borderColor: "#F97316", color: "#fff" }
-                      : undefined}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${
-                      selected
-                        ? ""
-                        : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
-                    }`}
-                  >
-                    <span style={lang === "ar" ? arabicFontStyle : undefined}>{chip}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2" style={lang === "ar" ? arabicFontStyle : undefined}>
+              {t.themeSelectLabel}
+            </p>
+            <Select value={selectedTheme || ""} onValueChange={setSelectedTheme} dir={dirAttr}>
+              <SelectTrigger className="w-full bg-secondary/30 border-border/20 text-sm" style={lang === "ar" ? arabicFontStyle : undefined}>
+                <SelectValue placeholder={t.themePlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {themeChips.map(chip => (
+                  <SelectItem key={chip} value={chip} style={lang === "ar" ? arabicFontStyle : undefined}>
+                    {chip}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </>
       )}
@@ -391,6 +429,8 @@ export default function FlashPanel() {
           {results.map((r, idx) => (
             <div
               key={idx}
+              dir={dirAttr}
+              style={lang === "ar" ? { direction: "rtl", textAlign: "right" } : undefined}
               className="relative rounded-xl border border-border/15 bg-card/60 backdrop-blur-sm p-4 space-y-3"
             >
               <span
@@ -407,12 +447,17 @@ export default function FlashPanel() {
               <div
                 dir={dirAttr}
                 className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap pt-4"
-                style={lang === "ar" ? { fontFamily: "Cairo, sans-serif" } : { fontFamily: "Inter, sans-serif" }}
+                style={lang === "ar"
+                  ? { fontFamily: "Cairo, sans-serif", textAlign: "right", direction: "rtl" }
+                  : { fontFamily: "Inter, sans-serif" }}
               >
                 {r.text}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="flex flex-wrap items-center gap-2"
+                style={lang === "ar" ? { flexDirection: "row-reverse" } : undefined}
+              >
                 <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => onCopy(idx)}>
                   {r.copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.copy}</span>
