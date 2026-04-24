@@ -533,7 +533,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
   const renderMarkdown = (text: string) => {
     return text.split(/\n/).map((line, i) => {
-      const html = line
+      const escapeHtml = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const safe = escapeHtml(line);
+      const html = safe
         .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
         .replace(/\*(.+?)\*/g, "<em>$1</em>")
         .replace(/^#{1,6}\s+(.*)/, "<strong>$1</strong>")
