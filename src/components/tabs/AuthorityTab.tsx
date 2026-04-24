@@ -1416,6 +1416,7 @@ const VoiceTrainer = () => {
   const [pasteText, setPasteText] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [distilling, setDistilling] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const appendToVoice = async (newText: string) => {
@@ -1497,6 +1498,27 @@ const VoiceTrainer = () => {
     }
   };
 
+  const handleDistill = async () => {
+    setDistilling(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.functions.invoke("voice-distill", {
+        body: { user_id: session.user.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success("Voice profile updated — Aura learned from your posts");
+    } catch (e: any) {
+      console.error("Voice distill error:", e);
+      toast.error(e.message || "Failed to distill voice");
+    } finally {
+      setDistilling(false);
+    }
+  };
+
   return (
     <div className="glass-card rounded-xl p-5 border border-border/8">
       <div className="flex items-center gap-2 mb-4">
@@ -1544,6 +1566,19 @@ const VoiceTrainer = () => {
             Add to voice engine
           </Button>
         </div>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border/10">
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-2 text-xs border-border/15"
+          onClick={handleDistill}
+          disabled={distilling}
+        >
+          {distilling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {distilling ? "Analyzing your posts..." : "Distill voice from my posts"}
+        </Button>
       </div>
     </div>
   );
