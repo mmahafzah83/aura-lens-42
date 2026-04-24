@@ -315,8 +315,8 @@ ${identityCtx}`;
             user_id,
             source_registry_id: srcReg.id,
             fragment_type: "signal_evidence",
-            title: entry.title || "Supporting evidence",
-            content: (entry.content || "").slice(0, 2000),
+            title: entry!.title || "Supporting evidence",
+            content: (entry!.content || "").slice(0, 2000),
             tags: newTags,
             skill_pillars: [],
           }).select("id").single();
