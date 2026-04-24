@@ -52,8 +52,16 @@ interface FlashResult {
   text: string;
   copied?: boolean;
   imageLoading?: boolean;
-  imageUrl?: string | null;
+  visuals?: FlashVisual[] | null;
   saving?: boolean;
+}
+
+interface FlashVisual {
+  style: string;
+  label_ar: string;
+  label_en: string;
+  image_data?: string;
+  error?: string;
 }
 
 const arabicNumerals = ["١", "٢", "٣"];
