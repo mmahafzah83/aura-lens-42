@@ -514,27 +514,88 @@ export default function FlashPanel() {
                 >
                   {r.imageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>
-                    {r.imageLoading ? t.visualLoading : t.genVisual}
+                    {r.imageLoading ? t.visualsLoading : t.genVisuals}
                   </span>
                 </Button>
               </div>
 
-              {r.imageUrl && (
-                <div className="space-y-2">
-                  <img
-                    src={r.imageUrl}
-                    alt="Generated visual"
-                    className="w-full rounded-xl object-cover"
-                    style={{ maxHeight: 400 }}
-                  />
+              {r.visuals && r.visuals.length > 0 && (
+                <div className="space-y-3 pt-2 border-t border-border/10">
+                  <p
+                    className="text-xs font-semibold text-foreground/80"
+                    style={lang === "ar" ? arabicFontStyle : undefined}
+                  >
+                    {t.chooseDesign}
+                  </p>
+                  <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+                    {r.visuals.map((v, vi) => (
+                      <div
+                        key={vi}
+                        className="flex-shrink-0 w-48 space-y-2"
+                        dir={dirAttr}
+                      >
+                        {v.image_data ? (
+                          <img
+                            src={v.image_data}
+                            alt={lang === "ar" ? v.label_ar : v.label_en}
+                            className="w-48 h-60 object-cover rounded-xl border border-border/15"
+                          />
+                        ) : (
+                          <div className="w-48 h-60 rounded-xl border border-border/15 bg-secondary/30 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                            <ImageIcon className="w-6 h-6 opacity-50" />
+                            <span className="text-[11px]" style={lang === "ar" ? arabicFontStyle : undefined}>
+                              {t.visualFailed}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 gap-1.5 text-[11px]"
+                              onClick={() => onGenerateVisual(idx)}
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.retry}</span>
+                            </Button>
+                          </div>
+                        )}
+                        <div
+                          className="text-[11px] font-medium text-center text-foreground/80"
+                          style={lang === "ar" ? arabicFontStyle : undefined}
+                        >
+                          {lang === "ar" ? v.label_ar : v.label_en}
+                        </div>
+                        {v.image_data && (
+                          <div className="flex items-center gap-1.5 justify-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-[11px] flex-1"
+                              onClick={() => window.open(v.image_data!, "_blank")}
+                            >
+                              <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.select}</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                              onClick={() => downloadVisual(v)}
+                              aria-label={t.download}
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 gap-1.5 text-xs"
-                    onClick={() => window.open(r.imageUrl!, "_blank")}
+                    className="w-full h-8 gap-1.5 text-xs"
+                    disabled={!!r.imageLoading}
+                    onClick={() => onGenerateVisual(idx)}
                   >
-                    <Download className="w-3 h-3" />
-                    <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.download}</span>
+                    {r.imageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.regenerateAll}</span>
                   </Button>
                 </div>
               )}
