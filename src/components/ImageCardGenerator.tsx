@@ -362,8 +362,9 @@ export default function ImageCardGenerator({
     titleFontSize: TITLE_SIZES[cfg.titleSize],
     headerFontSize: HEADER_SIZES[cfg.headerSize],
     accentColor: cfg.accentColor,
-    cardFont: cfg.cardFont,
+    cardFont: isArabic ? ARABIC_FONT : cfg.cardFont,
     preset: PRESETS(cfg.accentColor)[cfg.preset],
+    isArabic,
   });
 
   const renderCard = (style: CardStyle, props: CardProps) => {
