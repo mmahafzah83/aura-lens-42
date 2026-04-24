@@ -1416,6 +1416,7 @@ const VoiceTrainer = () => {
   const [pasteText, setPasteText] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [distilling, setDistilling] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const appendToVoice = async (newText: string) => {
