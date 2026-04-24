@@ -1803,42 +1803,21 @@ export type Database = {
       }
     }
     Functions: {
-      search_vault:
-        | {
-            Args: { p_limit?: number; p_query: string; p_user_id: string }
-            Returns: {
-              content: string
-              created_at: string
-              id: string
-              pinned: boolean
-              rank: number
-              skill_pillar: string
-              source: string
-              summary: string
-              title: string
-              type: string
-            }[]
-          }
-        | {
-            Args: {
-              p_limit?: number
-              p_query: string
-              p_query_embedding?: string
-              p_user_id: string
-            }
-            Returns: {
-              content: string
-              created_at: string
-              id: string
-              pinned: boolean
-              rank: number
-              skill_pillar: string
-              source: string
-              summary: string
-              title: string
-              type: string
-            }[]
-          }
+      search_vault: {
+        Args: { p_limit?: number; p_query: string; p_query_embedding?: string }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          pinned: boolean
+          rank: number
+          skill_pillar: string
+          source: string
+          summary: string
+          title: string
+          type: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
