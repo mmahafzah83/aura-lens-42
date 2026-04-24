@@ -6,6 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import html2canvas from "html2canvas";
 
+/* Arabic font: load Cairo once on first mount */
+const CAIRO_FONT_ID = "aura-cairo-font";
+function ensureCairoFont() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(CAIRO_FONT_ID)) return;
+  const link = document.createElement("link");
+  link.id = CAIRO_FONT_ID;
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap";
+  document.head.appendChild(link);
+}
+
+const AR_REGEX = /[\u0600-\u06FF]/;
+const isArabicText = (s: string | undefined | null) => !!s && AR_REGEX.test(s);
+const ARABIC_FONT = "'Cairo', sans-serif";
+
 type CardStyle =
   | "manifesto"
   | "newspaper"
@@ -127,6 +143,7 @@ interface CardProps {
   preset: { bg: string; text: string; tagCol: string; roleCol: string };
   ledeText: string;
   bodyText: string;
+  isArabic: boolean;
 }
 
 const BODY_SIZES = { xs: 12, s: 14, m: 17, l: 20, xl: 23 } as const;
@@ -190,6 +207,14 @@ export default function ImageCardGenerator({
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const [variantIndex, setVariantIndex] = useState(0);
+
+  // Detect Arabic from the main post body (not from topic tag or stat field).
+  const isArabic = lang === "ar" || isArabicText(postText);
+
+  // Inject Cairo font once when this component mounts.
+  useEffect(() => {
+    ensureCairoFont();
+  }, []);
 
   const hook = extractHook(postText);
   const lines = extractLines(postText);
@@ -337,8 +362,9 @@ export default function ImageCardGenerator({
     titleFontSize: TITLE_SIZES[cfg.titleSize],
     headerFontSize: HEADER_SIZES[cfg.headerSize],
     accentColor: cfg.accentColor,
-    cardFont: cfg.cardFont,
+    cardFont: isArabic ? ARABIC_FONT : cfg.cardFont,
     preset: PRESETS(cfg.accentColor)[cfg.preset],
+    isArabic,
   });
 
   const renderCard = (style: CardStyle, props: CardProps) => {
@@ -781,22 +807,27 @@ const baseCard: React.CSSProperties = {
   fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
 };
 
+/* Arabic helpers: keep headings tight, give body text breathing room. */
+const arDir = (isArabic: boolean) => (isArabic ? ("rtl" as const) : undefined);
+const arAlign = (isArabic: boolean) => (isArabic ? ("right" as const) : undefined);
+const arBodyLh = (isArabic: boolean, fallback: number) => (isArabic ? 1.9 : fallback);
+
 /* CARD 1: Manifesto */
-function ManifestoCard({ tag, hookText, editName, editRole, statValue, statContext, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function ManifestoCard({ tag, hookText, editName, editRole, statValue, statContext, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: accentColor }} />
       <div style={{ padding: "28px 24px 0 32px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: preset.tagCol, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16 }}>
+        <p style={{ color: preset.tagCol, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, textAlign: arAlign(isArabic) }}>
           {trunc(tag, 35)}
         </p>
         <p style={{ color: accentColor, fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
           {statValue}
         </p>
-        <div style={{ fontSize: bodyFontSize * 0.75, color: preset.text, opacity: 0.6, marginTop: -8, marginBottom: 12, lineHeight: 1.4 }}>
+        <div style={{ fontSize: bodyFontSize * 0.75, color: preset.text, opacity: 0.6, marginTop: -8, marginBottom: 12, lineHeight: arBodyLh(isArabic, 1.4), textAlign: arAlign(isArabic) }}>
           {trunc(statContext, 75)}
         </div>
-        <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: 1.35, marginBottom: 14, wordBreak: "break-word" }}>
+        <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: arBodyLh(isArabic, 1.35), marginBottom: 14, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
           {trunc(hookText, 85)}
         </p>
       </div>
@@ -812,9 +843,9 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
 }
 
 /* CARD 2: Newspaper */
-function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: "#f5ede0", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: "#f5ede0", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
         <span style={{ color: "#fff", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
@@ -824,11 +855,11 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontS
           <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0, maxWidth: "55%" }}>{trunc(tag, 35)}</span>
           <div style={{ flex: 1, height: 1, background: "#d4b896", flexShrink: 1 }} />
         </div>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, wordBreak: "break-word" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
           {trunc(hookText, 75)}
         </p>
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: 1.6 }}>{trunc(ledeText, 110)}</p>
+        <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.6), textAlign: arAlign(isArabic) }}>{trunc(ledeText, 110)}</p>
       </div>
       <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "#f5ede0" }}>
         <p style={{ color: accentColor, fontSize: 10, fontWeight: 700 }}>{trunc(editName, 30)}</p>
@@ -839,9 +870,9 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontS
 }
 
 /* CARD 3: Tension Split */
-function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
@@ -853,7 +884,15 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
         </div>
         <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
           {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 600, paddingLeft: 12, borderLeft: `1px solid ${accentColor}33`, lineHeight: 1.4, wordBreak: "break-word" }}>
+            <p key={i} style={{
+              color: preset.text, fontSize: bodyFontSize, fontWeight: 600,
+              paddingLeft: isArabic ? 0 : 12,
+              paddingRight: isArabic ? 12 : 0,
+              borderLeft: isArabic ? undefined : `1px solid ${accentColor}33`,
+              borderRight: isArabic ? `1px solid ${accentColor}33` : undefined,
+              lineHeight: arBodyLh(isArabic, 1.4), wordBreak: "break-word",
+              textAlign: arAlign(isArabic),
+            }}>
               {trunc(pt, 60)}
             </p>
           ))}
@@ -868,24 +907,27 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
 }
 
 /* CARD 4: Bold Quote */
-function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont }: CardProps) {
+function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, isArabic }: CardProps) {
+  // Use guillemets for Arabic quote cards.
+  const openMark = isArabic ? "«" : "“";
+  const arabicQuote = isArabic ? `«${quoteText.replace(/[""„«»]/g, "")}»` : quoteText;
   return (
-    <div style={{ ...baseCard, background: accentColor, fontFamily: cardFont }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: accentColor, fontFamily: cardFont }}>
       <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "28px 24px", position: "relative" }}>
         <div style={{ position: "absolute", top: 50, left: 16, fontSize: 100, color: "rgba(0,0,0,0.10)", fontFamily: "Georgia, serif", lineHeight: 1, zIndex: 0, pointerEvents: "none" }}>
-          “
+          {openMark}
         </div>
         <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</p>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", textAlign: arAlign(isArabic) }}>{trunc(tag, 35)}</p>
           <div style={{ flex: 1, display: "flex", alignItems: "center", paddingTop: 16, paddingBottom: 16 }}>
-            <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.3, wordBreak: "break-word" }}>
-              {trunc(quoteText, 110)}
+            <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: arBodyLh(isArabic, 1.3), wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
+              {trunc(isArabic ? arabicQuote : quoteText, 110)}
             </p>
           </div>
           <div style={{ marginTop: "auto", paddingTop: 12 }}>
-            <div style={{ width: 28, height: 3, background: "rgba(255,255,255,0.85)", marginBottom: 10 }} />
-            <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{trunc(editName, 30)}</p>
-            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, marginTop: 2 }}>{trunc(editRole, 45)}</p>
+            <div style={{ width: 28, height: 3, background: "rgba(255,255,255,0.85)", marginBottom: 10, marginLeft: isArabic ? "auto" : 0 }} />
+            <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
+            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, marginTop: 2, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
           </div>
         </div>
       </div>
@@ -895,9 +937,9 @@ function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, head
 }
 
 /* CARD 5: Dark Editorial */
-function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
         <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
@@ -906,11 +948,11 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
         <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
       </div>
       <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>01 / Key Insight</p>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, wordBreak: "break-word" }}>
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, marginBottom: 10, textAlign: arAlign(isArabic) }}>01 / Key Insight</p>
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
           {trunc(hookText, 80)}
         </p>
-        <p style={{ color: "#888", fontSize: bodyFontSize, lineHeight: 1.65 }}>{trunc(bodyText, 100)}</p>
+        <p style={{ color: "#888", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.65), textAlign: arAlign(isArabic) }}>{trunc(bodyText, 100)}</p>
       </div>
       <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
@@ -924,13 +966,13 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
 }
 
 /* CARD 6: Contrast Framework */
-function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: "#0d0d0d", padding: 20 }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>FRAMEWORK</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25 }}>{trunc(frameTitle, 65)}</p>
-        <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12 }} />
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, textAlign: arAlign(isArabic) }}>FRAMEWORK</p>
+        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25, textAlign: arAlign(isArabic) }}>{trunc(frameTitle, 65)}</p>
+        <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12, marginLeft: isArabic ? "auto" : 0 }} />
       </div>
       <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
         {[0, 1, 2].map((i) => (
@@ -938,7 +980,7 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
             <span style={{ color: accentColor, fontSize: 28, fontWeight: 900, minWidth: 32, lineHeight: 1 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: 1.35, paddingTop: 4, wordBreak: "break-word" }}>
+            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: arBodyLh(isArabic, 1.35), paddingTop: 4, wordBreak: "break-word", textAlign: arAlign(isArabic), flex: 1 }}>
               {trunc(framePoints[i] || "", 60)}
             </p>
           </div>
@@ -955,16 +997,16 @@ function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, ti
 }
 
 /* CARD 7: Minimal Dark */
-function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   const truncated = trunc(quoteText || hookText, 100);
   const words = truncated.split(/\s+/);
   const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%", padding: "36px 28px", position: "relative" }}>
-      <p style={{ color: "#888", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</p>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%", padding: "36px 28px", position: "relative" }}>
+      <p style={{ color: "#888", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", textAlign: arAlign(isArabic) }}>{trunc(tag, 35)}</p>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20 }} />
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 1.4, wordBreak: "break-word" }}>
+        <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20, marginLeft: isArabic ? "auto" : 0 }} />
+        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: arBodyLh(isArabic, 1.4), wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
           {words.map((w, i) => (
             <span key={i} style={{ color: i === highlightIdx ? accentColor : preset.text }}>
               {w}{i < words.length - 1 ? " " : ""}
@@ -973,8 +1015,8 @@ function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFo
         </p>
       </div>
       <div style={{ marginTop: "auto", paddingTop: 12 }}>
-        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3 }}>{trunc(editRole, 45)}</p>
+        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
       </div>
       <p style={{ position: "absolute", bottom: 16, right: 16, color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
@@ -982,21 +1024,21 @@ function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFo
 }
 
 /* CARD 8: Statement Light */
-function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, background: preset.bg, fontFamily: cardFont }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont }}>
       <div style={{ position: "absolute", top: 0, right: 0, width: 68, height: 68, background: accentColor, borderBottomLeftRadius: 14 }} />
       <div style={{ padding: "28px 24px 24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20 }}>
+        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20, textAlign: arAlign(isArabic) }}>
           {trunc(tag, 35)}
         </p>
-        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: 1.32, flex: 1, wordBreak: "break-word" }}>
+        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: arBodyLh(isArabic, 1.32), flex: 1, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
           {trunc(hookText, 90)}
         </p>
         <div style={{ marginTop: "auto", paddingTop: 12 }}>
-          <div style={{ width: 36, height: 3, background: accentColor, marginBottom: 12 }} />
-          <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{trunc(editName, 30)}</p>
-          <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3 }}>{trunc(editRole, 45)}</p>
+          <div style={{ width: 36, height: 3, background: accentColor, marginBottom: 12, marginLeft: isArabic ? "auto" : 0 }} />
+          <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
+          <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
         </div>
       </div>
       <p style={{ position: "absolute", bottom: 16, right: 18, color: "#d4b896", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
@@ -1005,24 +1047,24 @@ function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, 
 }
 
 /* CARD 9: Data Point */
-function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "28px 24px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: "auto" }}>
+        <p style={{ color: "rgba(255,255,255,0.65)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: "auto", textAlign: arAlign(isArabic) }}>
           {trunc(tag, 35)}
         </p>
-        <p style={{ color: "#fff", fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16 }}>
+        <p style={{ color: "#fff", fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -2, lineHeight: 1, marginTop: 16, textAlign: arAlign(isArabic) }}>
           {statValue}
         </p>
-        <p style={{ color: "#fff", fontSize: 11, fontWeight: 600, lineHeight: 1.3, marginTop: 8 }}>
+        <p style={{ color: "#fff", fontSize: 11, fontWeight: 600, lineHeight: arBodyLh(isArabic, 1.3), marginTop: 8, textAlign: arAlign(isArabic) }}>
           {trunc(statContext, 75)}
         </p>
       </div>
       <div style={{ marginTop: "auto", paddingTop: 12, background: preset.bg, padding: "20px 24px" }}>
-        <p style={{ color: preset.text, fontSize: bodyFontSize, lineHeight: 1.5, marginBottom: 16 }}>{trunc(hookText, 100)}</p>
-        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
+        <p style={{ color: preset.text, fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.5), marginBottom: 16, textAlign: arAlign(isArabic) }}>{trunc(hookText, 100)}</p>
+        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
+        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
       </div>
     </div>
   );
