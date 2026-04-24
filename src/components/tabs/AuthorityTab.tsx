@@ -17,16 +17,18 @@ import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import ImageCardGenerator from "@/components/ImageCardGenerator";
 import StartFromPanel from "@/components/StartFromPanel";
+import FlashPanel from "@/components/FlashPanel";
 
 /* ── Shared Types ── */
-type ContentType = "post" | "carousel" | "essay" | "framework_summary";
+type ContentType = "post" | "carousel" | "essay" | "framework_summary" | "flash";
 type AuthoritySubTab = "create" | "plan" | "library";
 type ContentFramework = "auto" | "hook_insight_question" | "slap" | "bab" | "pas" | "wwh" | "chef" | "story_lesson_question";
 
-const FORMAT_LABELS: Record<string, { label: string; icon: any }> = {
+const FORMAT_LABELS: Record<string, { label: string; icon: any; subtitle?: string }> = {
   post: { label: "LinkedIn Post", icon: PenTool },
   carousel: { label: "Carousel", icon: LayoutGrid },
   framework_summary: { label: "Framework Builder", icon: BookOpen },
+  flash: { label: "Flash", icon: Zap, subtitle: "بوست في 60 ثانية" },
 };
 
 const FRAMEWORK_OPTIONS: { key: ContentFramework; label: string }[] = [
