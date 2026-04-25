@@ -211,10 +211,11 @@ serve(async (req) => {
         voiceSection = buildVoiceContext(voiceProfile);
       }
 
+      const sectorContextLabel = `${(typeof sector === "string" && sector.trim()) || profile?.sector_focus || "GCC transformation"} context`;
       const hookFramework = `You are writing for a senior GCC transformation leader. Always open with one of these two hook types:
 
 1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
-2. Specific tension: Name a contradiction the reader lives with daily. Be specific to GCC, utilities, or digital transformation context.
+2. Specific tension: Name a contradiction the reader lives with daily. Be specific to ${sectorContextLabel}.
 
 Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.`;
 
@@ -254,7 +255,17 @@ ${langLabel}
 ${frameworkInstruction}
 ${extraInstruction}${flashAddendum}
 
-Write with conviction. No generic statements. Every line should demonstrate strategic depth.`;
+Write with conviction. No generic statements. Every line should demonstrate strategic depth.${
+  isFlash
+    ? (variationNum === 1
+        ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."
+        : variationNum === 2
+        ? "\n\nWrite as a PATTERN REVEALER — expose a hidden structural pattern. Open with 'هناك نمط لم يلاحظه أحد...'"
+        : variationNum === 3
+        ? "\n\nWrite as a PRACTITIONER — share a specific operational tension from real project experience. Open with a scene."
+        : "")
+    : ""
+}`;
 
       const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
