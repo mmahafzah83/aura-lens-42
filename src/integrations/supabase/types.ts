@@ -89,6 +89,60 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_allowlist: {
+        Row: {
+          activated_at: string | null
+          created_at: string | null
+          email: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          name: string | null
+          personal_note: string | null
+          requested_at: string | null
+          sector: string | null
+          seniority: string | null
+          source: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          name?: string | null
+          personal_note?: string | null
+          requested_at?: string | null
+          sector?: string | null
+          seniority?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          name?: string | null
+          personal_note?: string | null
+          requested_at?: string | null
+          sector?: string | null
+          seniority?: string | null
+          source?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       captures: {
         Row: {
           created_at: string
