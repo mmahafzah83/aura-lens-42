@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -83,6 +93,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkNoteMode, setBulkNoteMode] = useState<"shared" | "per-row">("shared");
   const [bulkSending, setBulkSending] = useState(false);
@@ -530,7 +541,13 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setActiveInvite(activeInvite === r.id ? null : r.id)}
+                            onClick={() => {
+                              if (activeInvite === r.id) {
+                                setActiveInvite(null);
+                              } else {
+                                setConfirmInviteRow(r);
+                              }
+                            }}
                             className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
                           >
                             Invite
@@ -706,6 +723,44 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!confirmInviteRow}
+        onOpenChange={(open) => {
+          if (!open) setConfirmInviteRow(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invite this person to the beta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to start the invite flow for{" "}
+              <span className="text-foreground font-medium">
+                {confirmInviteRow?.name || confirmInviteRow?.email}
+              </span>
+              {confirmInviteRow?.name && (
+                <>
+                  {" "}
+                  (<span className="text-foreground">{confirmInviteRow.email}</span>)
+                </>
+              )}
+              . You'll be able to add a personal note before sending.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmInviteRow) setActiveInvite(confirmInviteRow.id);
+                setConfirmInviteRow(null);
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
