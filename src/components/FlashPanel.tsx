@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Eye, TrendingUp, AlertTriangle, HelpCircle, Loader2,
+  Eye, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Compass, Lightbulb, Star, Loader2,
   Copy, Check, BookmarkPlus, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +18,15 @@ import { toast } from "sonner";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
-type PostTypeKey = "reveal" | "pattern" | "problem" | "challenge";
+type PostTypeKey =
+  | "reveal"
+  | "pattern"
+  | "tension"
+  | "win"
+  | "prediction"
+  | "framework"
+  | "lesson"
+  | "inspiration";
 
 interface PostTypeDef {
   key: PostTypeKey;
@@ -30,13 +38,41 @@ interface PostTypeDef {
 }
 
 const POST_TYPES: PostTypeDef[] = [
-  { key: "reveal",    icon: Eye,            labelAr: "كشف",  labelEn: "Reveal",          subAr: "كشف واقع مخفي",        subEn: "Reveal a hidden truth" },
-  { key: "pattern",   icon: TrendingUp,     labelAr: "نمط",  labelEn: "Pattern",         subAr: "نمط متكرر في الجهات",   subEn: "Recurring industry pattern" },
-  { key: "problem",   icon: AlertTriangle,  labelAr: "خلل",  labelEn: "Problem Reframe", subAr: "المشكلة مش في X",       subEn: "The problem isn't X" },
-  { key: "challenge", icon: HelpCircle,     labelAr: "تحدي", labelEn: "Challenge",       subAr: "سؤال يعيد التقييم",     subEn: "A question that reframes" },
+  { key: "reveal",      icon: Eye,           labelAr: "كشف",   labelEn: "Reveal",      subAr: "كشف واقع مخفي",                  subEn: "Expose a hidden truth" },
+  { key: "pattern",     icon: TrendingUp,    labelAr: "نمط",   labelEn: "Pattern",     subAr: "نمط متكرر في الجهات",             subEn: "Recurring market signal" },
+  { key: "tension",     icon: AlertTriangle, labelAr: "خلل",   labelEn: "Tension",     subAr: "المشكلة مش في X",                 subEn: "A real problem nobody names" },
+  { key: "win",         icon: CheckCircle2,  labelAr: "إنجاز",  labelEn: "Win",         subAr: "نتيجة حققتها فعلاً",              subEn: "A concrete result or milestone you achieved" },
+  { key: "prediction",  icon: Sparkles,      labelAr: "تنبؤ",   labelEn: "Prediction",  subAr: "وين رايح القطاع",                 subEn: "Where your sector is heading" },
+  { key: "framework",   icon: Compass,       labelAr: "إطار",   labelEn: "Framework",   subAr: "نموذج أو منهجية تستخدمها",         subEn: "A model or approach you use" },
+  { key: "lesson",      icon: Lightbulb,     labelAr: "درس",   labelEn: "Lesson",      subAr: "اللي علّمك إياه التجربة",          subEn: "What experience taught you" },
+  { key: "inspiration", icon: Star,          labelAr: "إلهام",  labelEn: "Inspiration", subAr: "منظور يحفّز المجال",               subEn: "A perspective that motivates your field" },
 ];
 
-const FALLBACK_THEMES = ["التحول الرقمي", "قطاع المياه", "الحوكمة", "فجوة IT وOT"];
+const THEMES_EN = [
+  "Strategic foresight",
+  "Digital transformation",
+  "Leadership under pressure",
+  "Governance & compliance",
+  "Commercial impact",
+  "Talent & capability",
+  "AI & technology adoption",
+  "Vision 2030 & national agenda",
+  "Water & utilities",
+  "Infrastructure modernization",
+];
+
+const THEMES_AR = [
+  "الرؤية الاستراتيجية",
+  "التحول الرقمي",
+  "القيادة تحت الضغط",
+  "الحوكمة والامتثال",
+  "الأثر التجاري",
+  "الكفاءات والمواهب",
+  "الذكاء الاصطناعي واعتماد التقنية",
+  "رؤية 2030 والأجندة الوطنية",
+  "قطاع المياه والمرافق",
+  "تحديث البنية التحتية",
+];
 
 const SECTORS: { value: string; ar: string; en: string }[] = [
   { value: "general",        ar: "عام — لجميع القطاعات",       en: "General — All Sectors" },
@@ -63,7 +99,6 @@ export default function FlashPanel() {
   const [lang, setLang] = useState<FlashLang>("ar");
   const [mode, setMode] = useState<FlashMode>("theme");
   const [postType, setPostType] = useState<PostTypeKey | null>(null);
-  const [themeChips, setThemeChips] = useState<string[]>(FALLBACK_THEMES);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [sector, setSector] = useState<string>("general");
   const [userSector, setUserSector] = useState<{ value: string; ar: string; en: string } | null>(null);
@@ -71,27 +106,13 @@ export default function FlashPanel() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
 
-  // Load themes from authority_voice_profiles.storytelling_patterns
+  // Theme list is language-aware and static — see THEMES_EN / THEMES_AR.
+  const themeChips = useMemo(() => (lang === "ar" ? THEMES_AR : THEMES_EN), [lang]);
+
+  // Reset theme selection when language changes (EN ↔ AR)
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
-      const { data } = await supabase
-        .from("authority_voice_profiles")
-        .select("storytelling_patterns")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      const patterns = data?.storytelling_patterns;
-      if (Array.isArray(patterns) && patterns.length > 0) {
-        const chips = patterns
-          .map((p: any) => (typeof p === "string" ? p : (p?.text || p?.label || "")))
-          .filter((s: string) => !!s && s.trim().length > 0)
-          .map((s: string) => s.trim().split(/\s+/).slice(0, 4).join(" "))
-          .slice(0, 12);
-        if (chips.length > 0) setThemeChips(Array.from(new Set(chips)));
-      }
-    })();
-  }, []);
+    setSelectedTheme(null);
+  }, [lang]);
 
   // Load user's sector_focus from diagnostic_profiles and pre-select
   useEffect(() => {
@@ -189,6 +210,12 @@ export default function FlashPanel() {
         stream: false,
         variation,
         sector: sectorPayloadValue(),
+        post_type: postType
+          ? (lang === "ar"
+              ? POST_TYPES.find(p => p.key === postType)?.labelAr
+              : POST_TYPES.find(p => p.key === postType)?.labelEn)
+          : undefined,
+        theme: selectedTheme || undefined,
       }),
     });
     if (!resp.ok) throw new Error(`Generation failed (${resp.status})`);
