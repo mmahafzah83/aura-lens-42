@@ -1128,6 +1128,8 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
 
   const generatePlan = async () => {
     setGenerating(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -1135,14 +1137,25 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
         body: JSON.stringify({ action: "generate_narrative_plan" }),
+        signal: controller.signal,
       });
       if (!resp.ok) throw new Error("Generation failed");
       const data = await resp.json();
-      toast.success(`Generated ${data.suggestions?.length || 0} narrative suggestions`);
-      await loadSuggestions();
+      const count = data.suggestions?.length || 0;
+      if (count === 0) {
+        toast("No suggestions generated — try capturing more content first.");
+      } else {
+        toast.success(`Generated ${count} narrative suggestions`);
+        await loadSuggestions();
+      }
     } catch (e: any) {
-      toast.error(e.message);
+      if (e?.name === "AbortError") {
+        toast.error("Plan generation timed out. Please try again.");
+      } else {
+        toast.error(e.message);
+      }
     } finally {
+      clearTimeout(timeoutId);
       setGenerating(false);
     }
   };
