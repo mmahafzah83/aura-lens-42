@@ -45,6 +45,9 @@ const SECTORS: { value: string; ar: string; en: string }[] = [
   { value: "infrastructure", ar: "البنية التحتية الحيوية",       en: "Critical Infrastructure" },
   { value: "governance",     ar: "الحوكمة والقيادة",            en: "Governance & Leadership" },
   { value: "vision2030",     ar: "رؤية 2030 والقطاع العام",     en: "Vision 2030 & Public Sector" },
+  { value: "finance",        ar: "القطاع المالي والمصرفي",       en: "Financial & Banking Sector" },
+  { value: "healthcare",     ar: "الرعاية الصحية",              en: "Healthcare" },
+  { value: "energy",         ar: "قطاع الطاقة",                 en: "Energy Sector" },
 ];
 
 interface FlashResult {
@@ -63,6 +66,7 @@ export default function FlashPanel() {
   const [themeChips, setThemeChips] = useState<string[]>(FALLBACK_THEMES);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [sector, setSector] = useState<string>("general");
+  const [userSector, setUserSector] = useState<{ value: string; ar: string; en: string } | null>(null);
   const [spark, setSpark] = useState("");
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
@@ -85,6 +89,31 @@ export default function FlashPanel() {
           .map((s: string) => s.trim().split(/\s+/).slice(0, 4).join(" "))
           .slice(0, 12);
         if (chips.length > 0) setThemeChips(Array.from(new Set(chips)));
+      }
+    })();
+  }, []);
+
+  // Load user's sector_focus from diagnostic_profiles and pre-select
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) return;
+      const { data } = await supabase
+        .from("diagnostic_profiles")
+        .select("sector_focus")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      const focus = (data?.sector_focus || "").trim();
+      if (!focus) return;
+      const match = SECTORS.find(
+        s => s.ar === focus || s.en.toLowerCase() === focus.toLowerCase() || s.value === focus.toLowerCase()
+      );
+      if (match) {
+        setSector(match.value);
+      } else {
+        const custom = { value: `user:${focus}`, ar: focus, en: focus };
+        setUserSector(custom);
+        setSector(custom.value);
       }
     })();
   }, []);
@@ -131,6 +160,9 @@ export default function FlashPanel() {
   };
 
   const sectorPayloadValue = (): string => {
+    if (userSector && sector === userSector.value) {
+      return lang === "ar" ? userSector.ar : userSector.en;
+    }
     const s = SECTORS.find(s => s.value === sector);
     if (!s) return "";
     return lang === "ar" ? s.ar : s.en;
@@ -283,11 +315,18 @@ export default function FlashPanel() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SECTORS.map(s => (
-                  <SelectItem key={s.value} value={s.value} style={lang === "ar" ? arabicFontStyle : undefined}>
-                    {lang === "ar" ? s.ar : s.en}
-                  </SelectItem>
-                ))}
+                {(() => {
+                  const general = SECTORS[0];
+                  const rest = SECTORS.slice(1);
+                  const ordered = userSector
+                    ? [general, userSector, ...rest]
+                    : [general, ...rest];
+                  return ordered.map(s => (
+                    <SelectItem key={s.value} value={s.value} style={lang === "ar" ? arabicFontStyle : undefined}>
+                      {lang === "ar" ? s.ar : s.en}
+                    </SelectItem>
+                  ));
+                })()}
               </SelectContent>
             </Select>
           </div>
