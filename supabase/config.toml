@@ -92,3 +92,6 @@ verify_jwt = false
 
 [functions.voice-distill]
 verify_jwt = false
+
+[functions.submit-waitlist]
+verify_jwt = false
