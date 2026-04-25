@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
+import BetaAccessAdmin from "@/components/BetaAccessAdmin";
 
 interface Skill {
   name: string;
@@ -22,6 +23,7 @@ interface ProfileManagementProps {
 const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
   const [corePractice, setCorePractice] = useState("");
@@ -43,6 +45,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setUserId(user.id);
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("*").eq("user_id", user.id).maybeSingle();
       if (profile) {
@@ -108,6 +111,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
   if (loading) return <div className="glass-card rounded-2xl p-8 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
   return (
+    <>
     <div className="glass-card rounded-2xl p-6 sm:p-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -283,6 +287,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => { setRadarKey(k => k + 1); setAuditCompleted(true); }} onNavigate={onNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
     </div>
+    <BetaAccessAdmin userId={userId} />
+    </>
   );
 };
 
