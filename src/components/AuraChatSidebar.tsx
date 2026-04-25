@@ -753,7 +753,23 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                       style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
                     >
                       {msg.role === "assistant" ? (
-                        <AuraResponseBlock content={msg.content} />
+                        <ReactMarkdown
+                          components={{
+                            // Preserve the bubble's text-sm leading-relaxed styling
+                            p: ({ children }) => (
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap [&:not(:last-child)]:mb-2">
+                                {children}
+                              </p>
+                            ),
+                            strong: ({ children }) => (
+                              <strong className="font-semibold text-foreground">{children}</strong>
+                            ),
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            br: () => <br />,
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
                       ) : (
                         msg.content
                       )}
