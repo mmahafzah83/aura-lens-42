@@ -541,7 +541,13 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => setActiveInvite(activeInvite === r.id ? null : r.id)}
+                            onClick={() => {
+                              if (activeInvite === r.id) {
+                                setActiveInvite(null);
+                              } else {
+                                setConfirmInviteRow(r);
+                              }
+                            }}
                             className="h-7 text-xs border-primary/30 text-primary hover:bg-primary/10"
                           >
                             Invite
