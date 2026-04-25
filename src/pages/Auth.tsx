@@ -76,6 +76,76 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: "#0d0d0d", fontFamily: "Inter, sans-serif" }}>
+      {/* Scoped style overrides to defeat global input styles + autofill */}
+      <style>{`
+        .auth-input {
+          background-color: #1a1a1a !important;
+          border: 1px solid #2e2e2e !important;
+          color: #f0f0f0 !important;
+          border-radius: 8px !important;
+          padding: 10px 14px !important;
+          width: 100%;
+          font-size: 14px;
+          line-height: 1.4;
+          outline: none;
+          transition: border-color 0.15s ease;
+        }
+        .auth-input::placeholder {
+          color: #555 !important;
+          opacity: 1;
+        }
+        .auth-input:focus {
+          border-color: #F97316 !important;
+        }
+        /* Defeat browser autofill white background */
+        .auth-input:-webkit-autofill,
+        .auth-input:-webkit-autofill:hover,
+        .auth-input:-webkit-autofill:focus,
+        .auth-input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+          -webkit-text-fill-color: #f0f0f0 !important;
+          caret-color: #f0f0f0 !important;
+          transition: background-color 9999s ease-in-out 0s;
+        }
+        .auth-headline {
+          color: #f0f0f0 !important;
+          font-weight: 700 !important;
+          font-size: 28px !important;
+          opacity: 1 !important;
+          text-shadow: none !important;
+          background: none !important;
+          -webkit-text-fill-color: #f0f0f0 !important;
+        }
+        .auth-tagline {
+          color: #f0f0f0 !important;
+          opacity: 1 !important;
+          font-size: 20px !important;
+          font-weight: 500 !important;
+          text-align: center !important;
+          background: none !important;
+          -webkit-text-fill-color: #f0f0f0 !important;
+        }
+        .auth-feature-title {
+          color: #f0f0f0 !important;
+          font-weight: 600 !important;
+          font-size: 14px !important;
+          opacity: 1 !important;
+        }
+        .auth-feature-desc {
+          color: #888888 !important;
+          font-size: 13px !important;
+          opacity: 1 !important;
+        }
+        .auth-label {
+          color: #888888 !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          display: block;
+          margin-bottom: 6px;
+          opacity: 1 !important;
+        }
+      `}</style>
+
       {/* LEFT — auth form */}
       <div
         className="w-full md:w-[40%] min-h-screen flex items-center justify-center px-6 py-10"
@@ -110,10 +180,7 @@ const Auth = () => {
           </div>
 
           {/* Headline */}
-          <h1
-            className="text-3xl mb-2"
-            style={{ color: "#f0f0f0", fontWeight: 700, opacity: 1 }}
-          >
+          <h1 className="auth-headline mb-2">
             Welcome back
           </h1>
           <p className="text-sm leading-relaxed mb-8" style={{ color: "#888" }}>
@@ -123,17 +190,7 @@ const Auth = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label
-                htmlFor="email"
-                className="block mb-2 uppercase"
-                style={{
-                  color: "#888888",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  letterSpacing: "0.05em",
-                  opacity: 1,
-                }}
-              >
+              <label htmlFor="email" className="auth-label">
                 Email
               </label>
               <input
@@ -142,12 +199,8 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
                 required
-                className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors"
-                style={{
-                  backgroundColor: "#141414",
-                  border: "1px solid #252525",
-                  color: "#f0f0f0",
-                }}
+                placeholder="your@email.com"
+                className="auth-input"
               />
               {emailError && (
                 <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>{emailError}</p>
@@ -155,17 +208,7 @@ const Auth = () => {
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block mb-2 uppercase"
-                style={{
-                  color: "#888888",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  letterSpacing: "0.05em",
-                  opacity: 1,
-                }}
-              >
+              <label htmlFor="password" className="auth-label">
                 Password
               </label>
               <input
@@ -175,12 +218,8 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors"
-                style={{
-                  backgroundColor: "#141414",
-                  border: "1px solid #252525",
-                  color: "#f0f0f0",
-                }}
+                placeholder="••••••••"
+                className="auth-input"
               />
             </div>
 
@@ -264,7 +303,7 @@ const Auth = () => {
           >
             Aura
           </h2>
-          <p className="mt-4 text-xl leading-snug" style={{ color: "#f0f0f0" }}>
+          <p className="auth-tagline mt-4">
             Your expertise is invisible. Aura fixes that.
           </p>
 
@@ -317,8 +356,8 @@ const FeatureRow = ({
       {icon}
     </div>
     <div>
-      <div className="text-sm font-semibold" style={{ color: "#f0f0f0" }}>{title}</div>
-      <div className="text-xs mt-0.5" style={{ color: "#888" }}>{desc}</div>
+      <div className="auth-feature-title">{title}</div>
+      <div className="auth-feature-desc mt-0.5">{desc}</div>
     </div>
   </div>
 );
