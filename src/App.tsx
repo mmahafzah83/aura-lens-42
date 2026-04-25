@@ -11,7 +11,7 @@ import Onboarding from "./pages/Onboarding";
 import LinkedInCallback from "./pages/LinkedInCallback";
 import TrendDetail from "./pages/TrendDetail";
 import RequestAccess from "./pages/RequestAccess";
-import AdminRedirect from "./pages/AdminRedirect";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -40,7 +40,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
-            <Route path="/admin" element={<AdminRedirect />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<TrendDetail />} />
