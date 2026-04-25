@@ -184,7 +184,7 @@ serve(async (req) => {
     const identityContext = buildIdentityContext(profile);
 
     if (action === "generate_content") {
-      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector } = params;
+      const { content_type, topic, context, language, framework, extra_instruction, flash, stream, variation, lang, sector, post_type, theme } = params;
       const effectiveLanguage = language || lang;
       const isFlash = flash === true;
       const isNonStream = stream === false;
@@ -243,6 +243,37 @@ Never open with 'I am excited', 'In today's world', or a generic statistic. Stru
         }
       }
 
+      // ── Post-type instruction (Flash 2x4 grid) ──
+      const POST_TYPE_INSTRUCTIONS_EN: Record<string, string> = {
+        reveal: "Open by exposing a truth the industry avoids. The hook must make the reader uncomfortable.",
+        pattern: "Open by naming a recurring pattern you've observed across multiple organizations or projects.",
+        tension: "Open by naming a specific contradiction the reader lives with daily. Do not solve it immediately — sit in the tension.",
+        win: "Open with a concrete result or milestone. Be specific — name the number, the client type, or the outcome. No vague claims.",
+        prediction: "Open with a bold, specific prediction about where the sector is heading in the next 2-3 years.",
+        framework: "Open by introducing a model or approach. Give it a name. Explain the 3-4 steps or elements.",
+        lesson: "Open with a moment from real experience. Name the situation, then extract the transferable lesson.",
+        inspiration: "Open with a perspective that reframes how the reader sees their work or field. Elevate, don't lecture.",
+      };
+      const POST_TYPE_INSTRUCTIONS_AR: Record<string, string> = {
+        "كشف": "ابدأ بكشف حقيقة يتجنبها القطاع. يجب أن يشعر القارئ بعدم الارتياح من السطر الأول.",
+        "نمط": "ابدأ بتسمية نمط متكرر لاحظته في عدة جهات أو مشاريع.",
+        "خلل": "ابدأ بتسمية تناقض حقيقي يعيشه القارئ يومياً. لا تحله فوراً — ابقَ في التوتر.",
+        "إنجاز": "ابدأ بنتيجة ملموسة. كن محدداً — اذكر الرقم أو نوع العميل أو الأثر.",
+        "تنبؤ": "ابدأ بتنبؤ جريء ومحدد عن وجهة القطاع في السنتين أو الثلاث القادمة.",
+        "إطار": "ابدأ بتقديم نموذج أو منهجية. أعطها اسماً. اشرح الخطوات أو العناصر الثلاثة أو الأربعة.",
+        "درس": "ابدأ بلحظة من تجربة حقيقية. سمّ الموقف ثم استخرج الدرس القابل للتطبيق.",
+        "إلهام": "ابدأ بمنظور يُعيد تأطير كيفية رؤية القارئ لعمله أو مجاله.",
+      };
+      const postTypeStr = typeof post_type === "string" ? post_type.trim() : "";
+      let postTypeInstruction = "";
+      if (postTypeStr) {
+        const enKey = postTypeStr.toLowerCase();
+        const arHit = POST_TYPE_INSTRUCTIONS_AR[postTypeStr];
+        const enHit = POST_TYPE_INSTRUCTIONS_EN[enKey];
+        const chosen = effectiveLanguage === "ar" ? (arHit || enHit) : (enHit || arHit);
+        if (chosen) postTypeInstruction = `\n\n${chosen}`;
+      }
+
       const systemPrompt = `You are a world-class thought leadership ghostwriter for senior strategy consultants.
 
 ${hookFramework}
@@ -255,7 +286,7 @@ ${langLabel}
 ${frameworkInstruction}
 ${extraInstruction}${flashAddendum}
 
-Write with conviction. No generic statements. Every line should demonstrate strategic depth.${
+Write with conviction. No generic statements. Every line should demonstrate strategic depth.${postTypeInstruction}${
   isFlash
     ? (variationNum === 1
         ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."
@@ -277,7 +308,19 @@ Write with conviction. No generic statements. Every line should demonstrate stra
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `Topic: ${topic}\n\nContext: ${context || "Use your knowledge of the user's expertise and stored insights."}` },
+            {
+              role: "user",
+              content: (() => {
+                const themeStr = typeof theme === "string" ? theme.trim() : "";
+                const sectorStrUser = typeof sector === "string" ? sector.trim() : "";
+                const lines: string[] = [`Topic: ${topic}`];
+                if (themeStr) lines.push(`Post theme: ${themeStr}`);
+                if (sectorStrUser) lines.push(`Sector: ${sectorStrUser}`);
+                lines.push("");
+                lines.push(`Context: ${context || "Use your knowledge of the user's expertise and stored insights."}`);
+                return lines.join("\n");
+              })(),
+            },
           ],
           stream: !isNonStream,
         }),
