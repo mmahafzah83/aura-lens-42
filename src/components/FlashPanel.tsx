@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Eye, TrendingUp, AlertTriangle, CheckCircle2, Crystal, Compass, Lightbulb, Sparkles, Loader2,
+  Eye, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Compass, Lightbulb, Star, Loader2,
   Copy, Check, BookmarkPlus, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
