@@ -470,7 +470,6 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                   <th className="w-8 px-3 py-2 font-normal">
                     <Checkbox
                       checked={allPendingSelected}
-                      // @ts-expect-error: Radix supports indeterminate via data attribute
                       data-state={somePendingSelected ? "indeterminate" : allPendingSelected ? "checked" : "unchecked"}
                       onCheckedChange={toggleAllPending}
                       disabled={filteredPending.length === 0}
