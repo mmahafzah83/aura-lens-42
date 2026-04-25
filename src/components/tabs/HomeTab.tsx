@@ -292,6 +292,22 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setTrendsLoading(true);
     setTrendsError(false);
     try {
+      // Guard against auth race: ensure a real session is attached to the
+      // supabase client before issuing the RLS-gated query. On hard refresh,
+      // the client may briefly fire requests without an Authorization header,
+      // which causes the query to fail with no rows / 401 and surfaces a
+      // misleading "Couldn't load intelligence" error.
+      let { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        // Wait briefly and re-check once — session restore may still be in flight.
+        await new Promise((r) => setTimeout(r, 500));
+        ({ data: { session } } = await supabase.auth.getSession());
+      }
+      if (!session) {
+        console.log("[HomeTab] trends: no session yet, skipping (will retry when auth ready)");
+        // Leave loading=true so the skeleton stays; the auth effect will re-fire.
+        return;
+      }
       // Only show real signals: must have a final_score AND a stored snapshot.
       // Legacy backfilled rows (final_score=0, no content_markdown) are excluded.
       const { data, error } = await withTimeout(
