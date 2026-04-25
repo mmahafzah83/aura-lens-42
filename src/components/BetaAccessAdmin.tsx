@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CheckSquare, History, Loader2, Send, Shield, Square, StickyNote, X } from "lucide-react";
+import { CheckSquare, History, Loader2, Search, Send, Shield, Square, StickyNote, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -98,6 +98,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [bulkNoteMode, setBulkNoteMode] = useState<"shared" | "per-row">("shared");
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   if (userId !== ADMIN_USER_ID) return null;
 
@@ -131,13 +132,18 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   }, [rows]);
 
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (seniorityFilter !== "all" && r.seniority !== seniorityFilter) return false;
       if (sectorFilter !== "all" && r.sector !== sectorFilter) return false;
+      if (q) {
+        const hay = `${r.name || ""} ${r.email || ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [rows, statusFilter, seniorityFilter, sectorFilter]);
+  }, [rows, statusFilter, seniorityFilter, sectorFilter, searchQuery]);
 
   const auditLog = useMemo(() => {
     return rows
