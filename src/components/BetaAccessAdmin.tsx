@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Send, Shield } from "lucide-react";
+import { History, Loader2, Send, Shield, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +26,8 @@ type Row = {
   requested_at: string | null;
   created_at: string | null;
   invited_at: string | null;
+  invited_by: string | null;
+  personal_note: string | null;
 };
 
 const SENIORITY = ["C-Suite", "VP", "Director", "Manager", "Other"];
@@ -41,6 +43,18 @@ const formatDate = (iso: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+};
+
+const formatDateTime = (iso: string | null) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 };
 
 const statusBadge = (status: string) => {
@@ -73,7 +87,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const fetchRows = async () => {
     const { data, error } = await supabase
       .from("beta_allowlist")
-      .select("id,email,name,seniority,sector,status,source,requested_at,created_at,invited_at")
+      .select("id,email,name,seniority,sector,status,source,requested_at,created_at,invited_at,invited_by,personal_note")
       .order("requested_at", { ascending: false });
     if (error) {
       console.error("beta_allowlist fetch failed:", error);
@@ -107,6 +121,12 @@ const BetaAccessAdmin = ({ userId }: Props) => {
       return true;
     });
   }, [rows, statusFilter, seniorityFilter, sectorFilter]);
+
+  const auditLog = useMemo(() => {
+    return rows
+      .filter((r) => !!r.invited_at)
+      .sort((a, b) => new Date(b.invited_at!).getTime() - new Date(a.invited_at!).getTime());
+  }, [rows]);
 
   const sendInvite = async (row: Row) => {
     setSendingId(row.id);
@@ -367,6 +387,95 @@ const BetaAccessAdmin = ({ userId }: Props) => {
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* Audit Log */}
+      <div className="glass-card rounded-2xl p-6 sm:p-8 mt-6">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
+            <History className="w-4 h-4 text-orange-400" />
+          </div>
+          <div>
+            <h3
+              className="text-xs font-semibold uppercase tracking-[0.15em]"
+              style={{ color: "#F97316" }}
+            >
+              Invite Audit Log
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {auditLog.length} invite{auditLog.length === 1 ? "" : "s"} sent
+            </p>
+          </div>
+        </div>
+
+        {auditLog.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">
+            No invites have been sent yet.
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border/40">
+            <table className="w-full text-sm">
+              <thead className="bg-secondary/30">
+                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <th className="text-left px-3 py-2 font-normal">Recipient</th>
+                  <th className="text-left px-3 py-2 font-normal">Invited at</th>
+                  <th className="text-left px-3 py-2 font-normal">Invited by</th>
+                  <th className="text-left px-3 py-2 font-normal">Note</th>
+                  <th className="text-left px-3 py-2 font-normal">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLog.map((r) => {
+                  const hasNote = !!(r.personal_note && r.personal_note.trim().length > 0);
+                  const invitedBySelf = r.invited_by && r.invited_by === userId;
+                  return (
+                    <tr key={`audit-${r.id}`} className="border-t border-border/30 hover:bg-secondary/20">
+                      <td className="px-3 py-3">
+                        <div className="text-foreground truncate">{r.email}</div>
+                        {r.name && (
+                          <div className="text-xs text-muted-foreground truncate">{r.name}</div>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDateTime(r.invited_at)}
+                      </td>
+                      <td className="px-3 py-3 text-xs">
+                        {r.invited_by ? (
+                          <span
+                            className="font-mono text-muted-foreground"
+                            title={r.invited_by}
+                          >
+                            {invitedBySelf ? "You" : `${r.invited_by.slice(0, 8)}…`}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        {hasNote ? (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border bg-orange-500/10 text-orange-300 border-orange-500/30"
+                            title={r.personal_note || ""}
+                          >
+                            <StickyNote className="w-3 h-3" />
+                            With note
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
