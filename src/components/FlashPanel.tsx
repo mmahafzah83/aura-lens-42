@@ -18,7 +18,15 @@ import { toast } from "sonner";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
-type PostTypeKey = "reveal" | "pattern" | "problem" | "challenge";
+type PostTypeKey =
+  | "reveal"
+  | "pattern"
+  | "tension"
+  | "win"
+  | "prediction"
+  | "framework"
+  | "lesson"
+  | "inspiration";
 
 interface PostTypeDef {
   key: PostTypeKey;
@@ -30,13 +38,41 @@ interface PostTypeDef {
 }
 
 const POST_TYPES: PostTypeDef[] = [
-  { key: "reveal",    icon: Eye,            labelAr: "كشف",  labelEn: "Reveal",          subAr: "كشف واقع مخفي",        subEn: "Reveal a hidden truth" },
-  { key: "pattern",   icon: TrendingUp,     labelAr: "نمط",  labelEn: "Pattern",         subAr: "نمط متكرر في الجهات",   subEn: "Recurring industry pattern" },
-  { key: "problem",   icon: AlertTriangle,  labelAr: "خلل",  labelEn: "Problem Reframe", subAr: "المشكلة مش في X",       subEn: "The problem isn't X" },
-  { key: "challenge", icon: HelpCircle,     labelAr: "تحدي", labelEn: "Challenge",       subAr: "سؤال يعيد التقييم",     subEn: "A question that reframes" },
+  { key: "reveal",      icon: Eye,           labelAr: "كشف",   labelEn: "Reveal",      subAr: "كشف واقع مخفي",                  subEn: "Expose a hidden truth" },
+  { key: "pattern",     icon: TrendingUp,    labelAr: "نمط",   labelEn: "Pattern",     subAr: "نمط متكرر في الجهات",             subEn: "Recurring market signal" },
+  { key: "tension",     icon: AlertTriangle, labelAr: "خلل",   labelEn: "Tension",     subAr: "المشكلة مش في X",                 subEn: "A real problem nobody names" },
+  { key: "win",         icon: CheckCircle2,  labelAr: "إنجاز",  labelEn: "Win",         subAr: "نتيجة حققتها فعلاً",              subEn: "A concrete result or milestone you achieved" },
+  { key: "prediction",  icon: Sparkles,      labelAr: "تنبؤ",   labelEn: "Prediction",  subAr: "وين رايح القطاع",                 subEn: "Where your sector is heading" },
+  { key: "framework",   icon: Compass,       labelAr: "إطار",   labelEn: "Framework",   subAr: "نموذج أو منهجية تستخدمها",         subEn: "A model or approach you use" },
+  { key: "lesson",      icon: Lightbulb,     labelAr: "درس",   labelEn: "Lesson",      subAr: "اللي علّمك إياه التجربة",          subEn: "What experience taught you" },
+  { key: "inspiration", icon: Star,          labelAr: "إلهام",  labelEn: "Inspiration", subAr: "منظور يحفّز المجال",               subEn: "A perspective that motivates your field" },
 ];
 
-const FALLBACK_THEMES = ["التحول الرقمي", "قطاع المياه", "الحوكمة", "فجوة IT وOT"];
+const THEMES_EN = [
+  "Strategic foresight",
+  "Digital transformation",
+  "Leadership under pressure",
+  "Governance & compliance",
+  "Commercial impact",
+  "Talent & capability",
+  "AI & technology adoption",
+  "Vision 2030 & national agenda",
+  "Water & utilities",
+  "Infrastructure modernization",
+];
+
+const THEMES_AR = [
+  "الرؤية الاستراتيجية",
+  "التحول الرقمي",
+  "القيادة تحت الضغط",
+  "الحوكمة والامتثال",
+  "الأثر التجاري",
+  "الكفاءات والمواهب",
+  "الذكاء الاصطناعي واعتماد التقنية",
+  "رؤية 2030 والأجندة الوطنية",
+  "قطاع المياه والمرافق",
+  "تحديث البنية التحتية",
+];
 
 const SECTORS: { value: string; ar: string; en: string }[] = [
   { value: "general",        ar: "عام — لجميع القطاعات",       en: "General — All Sectors" },
