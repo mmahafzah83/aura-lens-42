@@ -169,8 +169,11 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
             <Shield className="w-4 h-4 text-orange-400" />
           </div>
-          <h3 className="text-lg font-semibold" style={{ color: "#F97316" }}>
-            Beta access — admin
+          <h3
+            className="text-xs font-semibold uppercase tracking-[0.15em]"
+            style={{ color: "#F97316" }}
+          >
+            Beta Access
           </h3>
         </div>
 
