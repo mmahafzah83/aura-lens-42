@@ -346,6 +346,28 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           </span>
         </div>
 
+        {/* Search */}
+        <div className="relative mb-3">
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name or email"
+            className="pl-9 pr-9 bg-secondary/40 border-border/50 h-9 text-sm"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
         {/* Filter bar */}
         <div className="flex flex-wrap gap-2 mb-4">
           {(["all", "pending", "approved", "active"] as const).map((s) => (
