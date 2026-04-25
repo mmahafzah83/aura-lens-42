@@ -9,6 +9,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 
@@ -628,6 +629,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
+      {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
+      <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
+
       {/* SECTION 1 — Header bar */}
       <header className="flex items-end justify-between gap-3 pt-1">
         <div>
