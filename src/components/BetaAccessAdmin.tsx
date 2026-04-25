@@ -1,10 +1,11 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { History, Loader2, Send, Shield, StickyNote } from "lucide-react";
+import { CheckSquare, History, Loader2, Send, Shield, Square, StickyNote, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -81,6 +82,11 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkNoteMode, setBulkNoteMode] = useState<"shared" | "per-row">("shared");
+  const [bulkSending, setBulkSending] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   if (userId !== ADMIN_USER_ID) return null;
 
@@ -127,6 +133,119 @@ const BetaAccessAdmin = ({ userId }: Props) => {
       .filter((r) => !!r.invited_at)
       .sort((a, b) => new Date(b.invited_at!).getTime() - new Date(a.invited_at!).getTime());
   }, [rows]);
+
+  const filteredPending = useMemo(
+    () => filtered.filter((r) => r.status === "pending"),
+    [filtered]
+  );
+
+  const allPendingSelected =
+    filteredPending.length > 0 && filteredPending.every((r) => selectedIds.has(r.id));
+  const somePendingSelected =
+    !allPendingSelected && filteredPending.some((r) => selectedIds.has(r.id));
+
+  const toggleRow = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllPending = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allPendingSelected) {
+        filteredPending.forEach((r) => next.delete(r.id));
+      } else {
+        filteredPending.forEach((r) => next.add(r.id));
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const sendBulkInvites = async () => {
+    const targets = rows.filter((r) => selectedIds.has(r.id) && r.status === "pending");
+    if (targets.length === 0) {
+      toast.error("No pending rows selected");
+      return;
+    }
+    setBulkSending(true);
+    setBulkProgress({ done: 0, total: targets.length });
+
+    let success = 0;
+    let failed = 0;
+    const succeededIds: string[] = [];
+
+    // Run in parallel but cap concurrency at 5 to be polite to the edge function
+    const concurrency = 5;
+    let cursor = 0;
+    const worker = async () => {
+      while (cursor < targets.length) {
+        const idx = cursor++;
+        const row = targets[idx];
+        const note =
+          bulkNoteMode === "shared"
+            ? bulkNote.trim() || null
+            : (noteByRow[row.id] || "").trim() || null;
+        try {
+          const { error } = await supabase.functions.invoke("send-invite", {
+            body: { email: row.email, personal_note: note },
+          });
+          if (error) throw error;
+          success++;
+          succeededIds.push(row.id);
+        } catch (err: any) {
+          failed++;
+          console.error(`Bulk invite failed for ${row.email}:`, err?.message || err);
+        } finally {
+          setBulkProgress({ done: success + failed, total: targets.length });
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(concurrency, targets.length) }, worker));
+
+    if (succeededIds.length > 0) {
+      const nowIso = new Date().toISOString();
+      setRows((prev) =>
+        prev.map((r) =>
+          succeededIds.includes(r.id)
+            ? {
+                ...r,
+                status: "approved",
+                invited_at: nowIso,
+                personal_note:
+                  bulkNoteMode === "shared"
+                    ? bulkNote.trim() || r.personal_note
+                    : (noteByRow[r.id] || "").trim() || r.personal_note,
+              }
+            : r
+        )
+      );
+    }
+
+    setBulkSending(false);
+    setBulkProgress(null);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      succeededIds.forEach((id) => next.delete(id));
+      return next;
+    });
+
+    if (failed === 0) {
+      toast.success(`Sent ${success} invite${success === 1 ? "" : "s"}`);
+      setBulkNote("");
+    } else if (success === 0) {
+      toast.error(`All ${failed} invites failed`);
+    } else {
+      toast.warning(`Sent ${success}, ${failed} failed`);
+    }
+    // Refresh from server to capture invited_by populated by the edge function
+    fetchRows();
+  };
 
   const sendInvite = async (row: Row) => {
     setSendingId(row.id);
