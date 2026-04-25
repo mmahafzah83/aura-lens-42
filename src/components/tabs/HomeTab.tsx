@@ -773,7 +773,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             </div>
           )}
         </div>
-        {trendsError ? (
+        {trendsError && authReady ? (
           <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
         ) : showTrendsSkeleton ? (
           <div className="space-y-3">
