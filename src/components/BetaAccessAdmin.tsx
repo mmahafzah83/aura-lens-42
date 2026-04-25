@@ -163,7 +163,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   };
 
   return (
-    <div className="mt-8 pt-8 border-t border-border/40">
+    <div id="beta-admin-section" className="mt-8 pt-8 border-t border-border/40 scroll-mt-24">
       <div className="glass-card rounded-2xl p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
