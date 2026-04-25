@@ -12,11 +12,15 @@ const AdminRedirect = () => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
-      if (!session || session.user.id !== ADMIN_USER_ID) {
-        navigate("/login", { replace: true });
+      if (!session) {
+        navigate("/auth", { replace: true });
         return;
       }
-      navigate("/home?tab=identity#beta-admin-section", { replace: true });
+      if (session.user.id !== ADMIN_USER_ID) {
+        navigate("/home", { replace: true });
+        return;
+      }
+      navigate("/settings", { replace: true });
       // After navigation, scroll the section into view
       const tryScroll = (attempt = 0) => {
         const el = document.getElementById("beta-admin-section");
