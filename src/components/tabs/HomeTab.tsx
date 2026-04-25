@@ -291,6 +291,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     console.log("[HomeTab] trends started");
     setTrendsLoading(true);
     setTrendsError(false);
+    let didAttempt = false;
     try {
       // Guard against auth race: ensure a real session is attached to the
       // supabase client before issuing the RLS-gated query. On hard refresh,
@@ -308,6 +309,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         // Leave loading=true so the skeleton stays; the auth effect will re-fire.
         return;
       }
+      didAttempt = true;
       // Only show real signals: must have a final_score AND a stored snapshot.
       // Legacy backfilled rows (final_score=0, no content_markdown) are excluded.
       const { data, error } = await withTimeout(
@@ -356,9 +358,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       }
     } catch (e) {
       console.error("[HomeTab] trends load failed", e);
-      setTrendsError(true);
+      if (didAttempt) setTrendsError(true);
     } finally {
-      setTrendsLoading(false);
+      if (didAttempt) setTrendsLoading(false);
     }
   }, []);
 
