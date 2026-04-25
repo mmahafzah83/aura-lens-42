@@ -7,6 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -83,6 +93,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
   const [bulkNote, setBulkNote] = useState("");
   const [bulkNoteMode, setBulkNoteMode] = useState<"shared" | "per-row">("shared");
   const [bulkSending, setBulkSending] = useState(false);
