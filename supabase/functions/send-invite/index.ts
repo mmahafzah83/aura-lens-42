@@ -85,14 +85,27 @@ serve(async (req) => {
       });
     }
 
-    if (!row) {
-      return new Response(JSON.stringify({ error: "Email not found in allowlist" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    let targetRow = row;
+
+    // If not in allowlist, insert a new pending row (direct-invite flow)
+    if (!targetRow) {
+      const { data: inserted, error: insertErr } = await admin
+        .from("beta_allowlist")
+        .insert({ email, status: "pending", source: "direct" })
+        .select("id, status")
+        .single();
+
+      if (insertErr || !inserted) {
+        console.error("Insert failed:", insertErr);
+        return new Response(JSON.stringify({ error: "Failed to create allowlist entry" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      targetRow = inserted;
     }
 
-    if (row.status === "approved" || row.status === "active") {
+    if (targetRow.status === "approved" || targetRow.status === "active") {
       return new Response(JSON.stringify({ error: "Already invited" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -121,7 +134,7 @@ serve(async (req) => {
         personal_note,
         invited_by: callerId,
       })
-      .eq("id", row.id);
+      .eq("id", targetRow.id);
 
     if (updateErr) {
       console.error("Update failed:", updateErr);
