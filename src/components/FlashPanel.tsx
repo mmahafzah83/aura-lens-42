@@ -210,6 +210,12 @@ export default function FlashPanel() {
         stream: false,
         variation,
         sector: sectorPayloadValue(),
+        post_type: postType
+          ? (lang === "ar"
+              ? POST_TYPES.find(p => p.key === postType)?.labelAr
+              : POST_TYPES.find(p => p.key === postType)?.labelEn)
+          : undefined,
+        theme: selectedTheme || undefined,
       }),
     });
     if (!resp.ok) throw new Error(`Generation failed (${resp.status})`);
