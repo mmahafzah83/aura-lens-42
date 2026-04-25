@@ -110,7 +110,10 @@ const Auth = () => {
           </div>
 
           {/* Headline */}
-          <h1 className="text-3xl font-bold mb-2" style={{ color: "#f0f0f0" }}>
+          <h1
+            className="text-3xl mb-2"
+            style={{ color: "#f0f0f0", fontWeight: 700, opacity: 1 }}
+          >
             Welcome back
           </h1>
           <p className="text-sm leading-relaxed mb-8" style={{ color: "#888" }}>
@@ -120,7 +123,17 @@ const Auth = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-xs font-medium mb-2" style={{ color: "#f0f0f0" }}>
+              <label
+                htmlFor="email"
+                className="block mb-2 uppercase"
+                style={{
+                  color: "#888888",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  letterSpacing: "0.05em",
+                  opacity: 1,
+                }}
+              >
                 Email
               </label>
               <input
@@ -142,7 +155,17 @@ const Auth = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-xs font-medium mb-2" style={{ color: "#f0f0f0" }}>
+              <label
+                htmlFor="password"
+                className="block mb-2 uppercase"
+                style={{
+                  color: "#888888",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                  letterSpacing: "0.05em",
+                  opacity: 1,
+                }}
+              >
                 Password
               </label>
               <input
