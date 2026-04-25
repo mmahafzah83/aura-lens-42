@@ -179,8 +179,11 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
 
   // Parse interpretation into sections for styled rendering
   const HEADER_RENAMES: Record<string, string> = {
-    "YOUR ZONE OF GENIUS": "WHAT I DO BEST",
+    "YOUR DISTINCTIVE CAPABILITY": "WHAT I DO BEST",
     "YOUR BLUE OCEAN ANGLE": "MY UNCONTESTED SPACE",
+    "YOUR PURPOSE-MARKET FIT": "WHY THIS WORK MATTERS TO ME",
+    // Legacy headers (kept for backwards-compatible parsing of older saved results):
+    "YOUR ZONE OF GENIUS": "WHAT I DO BEST",
     "YOUR PROFESSIONAL IKIGAI": "WHY THIS WORK MATTERS TO ME",
     "YOUR TOP 3 CONTENT PILLARS": "MY 3 AUTHORITY THEMES",
     "YOUR 2 BLIND SPOTS": "WHERE I NEED TO GROW",
@@ -190,7 +193,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
 
   const renderInterpretation = (text: string) => {
     // Split by known section headers (ALL CAPS lines)
-    const sectionRegex = /^(YOUR [A-Z0-9\s&']+(?:DOMAIN|GENIUS|ANGLE|IKIGAI|PILLARS|SPOTS|CONTENT PILLARS|BLIND SPOTS|BLUE OCEAN ANGLE|DOMINANT GALLUP DOMAIN|ZONE OF GENIUS|PROFESSIONAL IKIGAI|TOP 3 CONTENT PILLARS|2 BLIND SPOTS))$/gm;
+    const sectionRegex = /^(YOUR [A-Z0-9\s&'\-]+(?:DOMAIN|GENIUS|ANGLE|IKIGAI|PILLARS|SPOTS|CAPABILITY|FIT|CONTENT PILLARS|BLIND SPOTS|BLUE OCEAN ANGLE|DOMINANT GALLUP DOMAIN|ZONE OF GENIUS|PROFESSIONAL IKIGAI|DISTINCTIVE CAPABILITY|PURPOSE-MARKET FIT|TOP 3 CONTENT PILLARS|2 BLIND SPOTS))$/gm;
     const parts = text.split(sectionRegex);
     
     const sections: { header?: string; body: string }[] = [];
