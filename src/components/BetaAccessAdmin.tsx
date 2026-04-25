@@ -723,6 +723,44 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!confirmInviteRow}
+        onOpenChange={(open) => {
+          if (!open) setConfirmInviteRow(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invite this person to the beta?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're about to start the invite flow for{" "}
+              <span className="text-foreground font-medium">
+                {confirmInviteRow?.name || confirmInviteRow?.email}
+              </span>
+              {confirmInviteRow?.name && (
+                <>
+                  {" "}
+                  (<span className="text-foreground">{confirmInviteRow.email}</span>)
+                </>
+              )}
+              . You'll be able to add a personal note before sending.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmInviteRow) setActiveInvite(confirmInviteRow.id);
+                setConfirmInviteRow(null);
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
