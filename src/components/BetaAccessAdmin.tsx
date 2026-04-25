@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Send, Shield } from "lucide-react";
@@ -249,8 +249,8 @@ const BetaAccessAdmin = ({ userId }: Props) => {
               </thead>
               <tbody>
                 {filtered.map((r) => (
-                  <>
-                    <tr key={r.id} className="border-t border-border/30 hover:bg-secondary/20">
+                  <Fragment key={r.id}>
+                    <tr className="border-t border-border/30 hover:bg-secondary/20">
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-primary/15 text-primary border border-primary/30 flex items-center justify-center text-[11px] font-medium">
@@ -294,7 +294,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       </td>
                     </tr>
                     {activeInvite === r.id && r.status === "pending" && (
-                      <tr key={`${r.id}-invite`} className="border-t border-border/30 bg-secondary/20">
+                      <tr className="border-t border-border/30 bg-secondary/20">
                         <td colSpan={5} className="px-3 py-3">
                           <div className="space-y-2">
                             <Textarea
@@ -335,7 +335,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
