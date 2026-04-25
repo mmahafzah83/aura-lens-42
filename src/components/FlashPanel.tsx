@@ -99,7 +99,6 @@ export default function FlashPanel() {
   const [lang, setLang] = useState<FlashLang>("ar");
   const [mode, setMode] = useState<FlashMode>("theme");
   const [postType, setPostType] = useState<PostTypeKey | null>(null);
-  const [themeChips, setThemeChips] = useState<string[]>(FALLBACK_THEMES);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [sector, setSector] = useState<string>("general");
   const [userSector, setUserSector] = useState<{ value: string; ar: string; en: string } | null>(null);
@@ -107,27 +106,13 @@ export default function FlashPanel() {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState<FlashResult[]>([]);
 
-  // Load themes from authority_voice_profiles.storytelling_patterns
+  // Theme list is language-aware and static — see THEMES_EN / THEMES_AR.
+  const themeChips = useMemo(() => (lang === "ar" ? THEMES_AR : THEMES_EN), [lang]);
+
+  // Reset theme selection when language changes (EN ↔ AR)
   useEffect(() => {
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user?.id) return;
-      const { data } = await supabase
-        .from("authority_voice_profiles")
-        .select("storytelling_patterns")
-        .eq("user_id", session.user.id)
-        .maybeSingle();
-      const patterns = data?.storytelling_patterns;
-      if (Array.isArray(patterns) && patterns.length > 0) {
-        const chips = patterns
-          .map((p: any) => (typeof p === "string" ? p : (p?.text || p?.label || "")))
-          .filter((s: string) => !!s && s.trim().length > 0)
-          .map((s: string) => s.trim().split(/\s+/).slice(0, 4).join(" "))
-          .slice(0, 12);
-        if (chips.length > 0) setThemeChips(Array.from(new Set(chips)));
-      }
-    })();
-  }, []);
+    setSelectedTheme(null);
+  }, [lang]);
 
   // Load user's sector_focus from diagnostic_profiles and pre-select
   useEffect(() => {
