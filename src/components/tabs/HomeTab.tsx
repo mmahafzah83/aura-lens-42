@@ -9,6 +9,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
+import OnboardingChecklist from "@/components/OnboardingChecklist";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 
