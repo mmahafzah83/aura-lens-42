@@ -479,7 +479,18 @@ const SourcesSubTab = ({
     if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
 
     const entryItems: SourceEntry[] = (entriesRes.data || []) as any[];
-    const docItems: SourceEntry[] = (docsRes.data || []).map((d: any) => ({
+    // Dedupe documents by filename — keep the most recent row per filename so the
+    // list never shows the same file twice when it's been re-uploaded.
+    const rawDocs = (docsRes.data || []) as any[];
+    const dedupedDocsByName = new Map<string, any>();
+    for (const d of rawDocs) {
+      const key = d.filename ?? `__id__:${d.id}`;
+      const existing = dedupedDocsByName.get(key);
+      if (!existing || new Date(d.created_at).getTime() > new Date(existing.created_at).getTime()) {
+        dedupedDocsByName.set(key, d);
+      }
+    }
+    const docItems: SourceEntry[] = Array.from(dedupedDocsByName.values()).map((d: any) => ({
       id: d.id,
       type: "document",
       title: d.filename,
