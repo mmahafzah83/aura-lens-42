@@ -130,10 +130,10 @@ const Admin = () => {
     });
   }, [rows, statusFilter, seniorityFilter, sectorFilter]);
 
-  const callSendInvite = async (email: string, personal_note: string | null) => {
+  const callSendInvite = async (email: string, name: string | null) => {
     if (!accessToken) throw new Error("No session");
     const { error } = await supabase.functions.invoke("send-invite", {
-      body: { email, personal_note },
+      body: { email, name: name || "" },
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (error) throw error;
@@ -142,11 +142,11 @@ const Admin = () => {
   const sendInvite = async (row: Row) => {
     setSendingId(row.id);
     try {
-      await callSendInvite(row.email, noteByRow[row.id]?.trim() || null);
+      await callSendInvite(row.email, row.name);
       setRows((prev) =>
         prev.map((r) =>
           r.id === row.id
-            ? { ...r, status: "approved", invited_at: new Date().toISOString() }
+            ? { ...r, status: "invited", invited_at: new Date().toISOString() }
             : r
         )
       );
@@ -171,7 +171,7 @@ const Admin = () => {
     try {
       const { data: existing } = await supabase
         .from("beta_allowlist")
-        .select("id")
+        .select("id, name")
         .eq("email", email)
         .maybeSingle();
       if (!existing) {
@@ -180,7 +180,7 @@ const Admin = () => {
           .insert({ email, status: "pending", source: "direct" });
         if (insertErr) throw insertErr;
       }
-      await callSendInvite(email, null);
+      await callSendInvite(email, existing?.name ?? null);
       toast.success(`Invite sent to ${email}`);
       setDirectEmail("");
       fetchRows();
