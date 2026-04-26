@@ -95,3 +95,6 @@ verify_jwt = false
 
 [functions.submit-waitlist]
 verify_jwt = false
+
+[functions.ask-aura]
+verify_jwt = false
