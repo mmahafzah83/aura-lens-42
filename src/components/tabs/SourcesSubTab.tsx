@@ -468,6 +468,19 @@ const SourcesSubTab = ({
     return counts;
   }, [entries]);
 
+  // Documents chip: unique filenames whose status is a success state. Stuck,
+  // failed, or duplicate rows must NOT inflate this number.
+  const processedDocsCount = useMemo(() => {
+    const names = new Set<string>();
+    for (const e of entries) {
+      if (e.type !== "document") continue;
+      const status = (e.status || "").toLowerCase();
+      if (!DOC_SUCCESS_STATUSES.has(status)) continue;
+      names.add(e.title || e.id);
+    }
+    return names.size;
+  }, [entries]);
+
   const loadEntries = useCallback(async () => {
     setLoading(true);
 
@@ -664,7 +677,12 @@ const SourcesSubTab = ({
         <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, paddingBottom: 2 }} className="scrollbar-hide">
           {FILTER_LABELS.map(f => {
             const isActive = filter === f.key;
-            const count = f.key === "all" ? totalCount : (typeCounts[f.typeMatch || ""] || 0);
+            const count =
+              f.key === "all"
+                ? totalCount
+                : f.key === "document"
+                  ? processedDocsCount
+                  : (typeCounts[f.typeMatch || ""] || 0);
             return (
               <button
                 key={f.key}
