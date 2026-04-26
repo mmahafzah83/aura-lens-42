@@ -67,6 +67,14 @@ const TypeBadge = ({ type }: { type: string }) => {
 
 const PAGE_SIZE = 20;
 
+const DOC_PROCESSING_TIMEOUT_MS = 10 * 60 * 1000;
+const DOC_SUCCESS_STATUSES = new Set(["processed", "completed", "ready"]);
+
+function isDocProcessingStuck(status: string | null | undefined, createdAt: string): boolean {
+  if (status !== "processing") return false;
+  return Date.now() - new Date(createdAt).getTime() > DOC_PROCESSING_TIMEOUT_MS;
+}
+
 function relativeTime(dateStr: string): string {
   const ms = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(ms / 60000);
@@ -460,6 +468,19 @@ const SourcesSubTab = ({
     return counts;
   }, [entries]);
 
+  // Documents chip: unique filenames whose status is a success state. Stuck,
+  // failed, or duplicate rows must NOT inflate this number.
+  const processedDocsCount = useMemo(() => {
+    const names = new Set<string>();
+    for (const e of entries) {
+      if (e.type !== "document") continue;
+      const status = (e.status || "").toLowerCase();
+      if (!DOC_SUCCESS_STATUSES.has(status)) continue;
+      names.add(e.title || e.id);
+    }
+    return names.size;
+  }, [entries]);
+
   const loadEntries = useCallback(async () => {
     setLoading(true);
 
@@ -471,7 +492,18 @@ const SourcesSubTab = ({
     if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
 
     const entryItems: SourceEntry[] = (entriesRes.data || []) as any[];
-    const docItems: SourceEntry[] = (docsRes.data || []).map((d: any) => ({
+    // Dedupe documents by filename — keep the most recent row per filename so the
+    // list never shows the same file twice when it's been re-uploaded.
+    const rawDocs = (docsRes.data || []) as any[];
+    const dedupedDocsByName = new Map<string, any>();
+    for (const d of rawDocs) {
+      const key = d.filename ?? `__id__:${d.id}`;
+      const existing = dedupedDocsByName.get(key);
+      if (!existing || new Date(d.created_at).getTime() > new Date(existing.created_at).getTime()) {
+        dedupedDocsByName.set(key, d);
+      }
+    }
+    const docItems: SourceEntry[] = Array.from(dedupedDocsByName.values()).map((d: any) => ({
       id: d.id,
       type: "document",
       title: d.filename,
@@ -645,7 +677,12 @@ const SourcesSubTab = ({
         <div style={{ display: "flex", gap: 6, overflowX: "auto", flex: 1, paddingBottom: 2 }} className="scrollbar-hide">
           {FILTER_LABELS.map(f => {
             const isActive = filter === f.key;
-            const count = f.key === "all" ? totalCount : (typeCounts[f.typeMatch || ""] || 0);
+            const count =
+              f.key === "all"
+                ? totalCount
+                : f.key === "document"
+                  ? processedDocsCount
+                  : (typeCounts[f.typeMatch || ""] || 0);
             return (
               <button
                 key={f.key}
@@ -693,9 +730,10 @@ const SourcesSubTab = ({
             const isDoc = entry.type === "document";
             const displayTitle = entry.title || entry.content.slice(0, 60);
             const docStatus = isDoc ? (entry.status || "processing") : null;
-            const isProcessing = isDoc && (docStatus === "processing" || docStatus === "pending");
-            const isErrored = isDoc && docStatus === "error";
-            const isReady = isDoc && (docStatus === "completed" || docStatus === "ready");
+            const isStuckProcessing = isDoc && docStatus === "processing" && isDocProcessingStuck(docStatus, entry.created_at);
+            const isProcessing = isDoc && !isStuckProcessing && (docStatus === "processing" || docStatus === "pending");
+            const isErrored = isDoc && (docStatus === "error" || isStuckProcessing);
+            const isReady = isDoc && DOC_SUCCESS_STATUSES.has((docStatus || "").toLowerCase());
             const docSizeLabel = isDoc ? formatBytes(entry.file_size) : null;
             const docTypeLabel = isDoc && isReady ? (entry.file_type || "FILE").toString().toUpperCase() : null;
             const docPagesLabel = isDoc && isReady && entry.page_count ? `${entry.page_count} ${entry.page_count === 1 ? "page" : "pages"}` : null;
