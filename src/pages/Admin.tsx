@@ -347,18 +347,12 @@ const Admin = () => {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {r.seniority && (
-                              <span
-                                className="text-[10px] px-2 py-0.5 rounded"
-                                style={{ backgroundColor: "#1c1c1c", color: "#f0f0f0", border: "1px solid #252525" }}
-                              >
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "#1c1c1c", color: "#f0f0f0", border: "1px solid #252525" }}>
                                 {r.seniority}
                               </span>
                             )}
                             {r.sector && (
-                              <span
-                                className="text-[10px] px-2 py-0.5 rounded"
-                                style={{ backgroundColor: "#1c1c1c", color: "#888", border: "1px solid #252525" }}
-                              >
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "#1c1c1c", color: "#888", border: "1px solid #252525" }}>
                                 {r.sector}
                               </span>
                             )}
@@ -466,14 +460,7 @@ const Admin = () => {
             Send an invite straight to an email — they'll be added to the allowlist automatically.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="email"
-              value={directEmail}
-              onChange={(e) => setDirectEmail(e.target.value)}
-              placeholder="email@company.com"
-              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors"
-              style={{ backgroundColor: "#0d0d0d", border: "1px solid #252525", color: "#f0f0f0" }}
-            />
+            <input type="email" value={directEmail} onChange={(e) => setDirectEmail(e.target.value)} placeholder="email@company.com" className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors bg-primary-foreground" style={{ backgroundColor: "#0d0d0d", border: "1px solid #252525", color: "#f0f0f0" }} />
             <button
               onClick={sendDirectInvite}
               disabled={directSending || !directEmail}
