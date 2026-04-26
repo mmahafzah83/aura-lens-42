@@ -213,9 +213,15 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       }
       const raw = (name || "").toString().trim();
       const first = raw ? raw.split(/\s+/)[0] : "";
-      const pretty = first
-        ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
-        : "there";
+      // Never fall back to "there"/"THERE". Prefer first-name from profile/metadata,
+      // then email-local-part, otherwise leave empty so the greeting omits the name.
+      let chosen = first;
+      if (!chosen && authUser.email) {
+        chosen = authUser.email.split("@")[0];
+      }
+      const pretty = chosen
+        ? chosen.charAt(0).toUpperCase() + chosen.slice(1).toLowerCase()
+        : "";
       setUserName(pretty);
     })();
   }, [authReady, authUser]);
@@ -646,11 +652,11 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* SECTION 2 — AI daily briefing */}
-      {briefError ? (
+      {briefError && authReady && !!authUser ? (
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
-      ) : showBriefSkeleton ? (
+      ) : showBriefSkeleton || !authReady || !authUser ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
@@ -777,9 +783,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             </div>
           )}
         </div>
-        {trendsError && authReady ? (
+        {trendsError && authReady && !!authUser ? (
           <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
-        ) : showTrendsSkeleton ? (
+        ) : showTrendsSkeleton || !authReady || !authUser ? (
           <div className="space-y-3">
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
