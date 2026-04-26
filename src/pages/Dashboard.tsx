@@ -10,6 +10,7 @@ import AskAuraPresence from "@/components/AskAuraPresence";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import OnboardingWizard from "@/components/OnboardingWizard";
+import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
 import HomeTab from "@/components/tabs/HomeTab";
@@ -263,6 +264,7 @@ const Dashboard = () => {
       }} />}
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
       {showWizard && <OnboardingWizard userId={wizardUserId} onComplete={() => setShowWizard(false)} />}
+      <WhatsAppOptInModal />
 
       {/* ── Desktop Sidebar ── */}
       <aside
