@@ -141,7 +141,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-aura`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
 
 /* ── Linked context passed from outside ── */
 export interface ChatContext {
