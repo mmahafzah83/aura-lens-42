@@ -213,9 +213,15 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       }
       const raw = (name || "").toString().trim();
       const first = raw ? raw.split(/\s+/)[0] : "";
-      const pretty = first
-        ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
-        : "there";
+      // Never fall back to "there"/"THERE". Prefer first-name from profile/metadata,
+      // then email-local-part, otherwise leave empty so the greeting omits the name.
+      let chosen = first;
+      if (!chosen && authUser.email) {
+        chosen = authUser.email.split("@")[0];
+      }
+      const pretty = chosen
+        ? chosen.charAt(0).toUpperCase() + chosen.slice(1).toLowerCase()
+        : "";
       setUserName(pretty);
     })();
   }, [authReady, authUser]);
