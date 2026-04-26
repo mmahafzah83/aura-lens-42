@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
+import AskAuraPresence from "@/components/AskAuraPresence";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import OnboardingWizard from "@/components/OnboardingWizard";
@@ -344,13 +345,7 @@ const Dashboard = () => {
 
         {/* Bottom actions */}
         <div className="px-2 py-4 border-t border-border/8 flex flex-col gap-2">
-          <button
-            onClick={() => openChat()}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all tactile-press group"
-          >
-            <Sparkles className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
-            {!sidebarCollapsed && <span className="text-sm font-medium">Ask Aura</span>}
-          </button>
+          <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
           <button
             onClick={() => setCaptureOpen(true)}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all tactile-press group"
@@ -441,13 +436,10 @@ const Dashboard = () => {
               })}
             </nav>
             <div className="px-3 py-4 border-t border-border/8 space-y-2">
-              <button
-                onClick={() => { setMobileSidebarOpen(false); openChat(); }}
+              <AskAuraPresence
+                onOpen={() => { setMobileSidebarOpen(false); openChat(); }}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all"
-              >
-                <Sparkles className="w-4.5 h-4.5 shrink-0" />
-                <span className="text-sm font-medium">Ask Aura</span>
-              </button>
+              />
               <button
                 onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
