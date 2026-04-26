@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      aura_conversation_memory: {
+        Row: {
+          actions_committed: string[] | null
+          created_at: string | null
+          id: string
+          key_decisions: string[] | null
+          session_date: string
+          summary: string | null
+          topics_discussed: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actions_committed?: string[] | null
+          created_at?: string | null
+          id?: string
+          key_decisions?: string[] | null
+          session_date?: string
+          summary?: string | null
+          topics_discussed?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actions_committed?: string[] | null
+          created_at?: string | null
+          id?: string
+          key_decisions?: string[] | null
+          session_date?: string
+          summary?: string | null
+          topics_discussed?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       authority_scores: {
         Row: {
           authority_score: number
@@ -370,7 +406,10 @@ export type Database = {
           leadership_style: string | null
           level: string | null
           north_star_goal: string | null
+          notification_prefs: Json | null
           onboarding_completed: boolean
+          phone_verified: boolean | null
+          phone_whatsapp: string | null
           primary_strength: string | null
           sector_focus: string | null
           skill_ratings: Json
@@ -399,7 +438,10 @@ export type Database = {
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
+          notification_prefs?: Json | null
           onboarding_completed?: boolean
+          phone_verified?: boolean | null
+          phone_whatsapp?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
           skill_ratings?: Json
@@ -428,7 +470,10 @@ export type Database = {
           leadership_style?: string | null
           level?: string | null
           north_star_goal?: string | null
+          notification_prefs?: Json | null
           onboarding_completed?: boolean
+          phone_verified?: boolean | null
+          phone_whatsapp?: string | null
           primary_strength?: string | null
           sector_focus?: string | null
           skill_ratings?: Json
@@ -1356,6 +1401,51 @@ export type Database = {
           status?: string
           topic?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_events: {
+        Row: {
+          acted_on: boolean | null
+          body: string | null
+          channel: string
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          read: boolean | null
+          read_at: string | null
+          sent_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          acted_on?: boolean | null
+          body?: string | null
+          channel: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          read?: boolean | null
+          read_at?: string | null
+          sent_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          acted_on?: boolean | null
+          body?: string | null
+          channel?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          read?: boolean | null
+          read_at?: string | null
+          sent_at?: string | null
+          title?: string
+          type?: string
           user_id?: string
         }
         Relationships: []
