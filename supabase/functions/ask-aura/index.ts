@@ -210,7 +210,7 @@ ${
     : ""
 }`;
 
-    // STEP 3 — call AI
+    // STEP 3 — call AI (streaming so the existing sidebar SSE consumer works unchanged)
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -221,11 +221,12 @@ ${
         model: "google/gemini-3-flash-preview",
         max_tokens: 1000,
         temperature: 0.7,
+        stream: true,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
       }),
     });
 
-    if (!aiRes.ok) {
+    if (!aiRes.ok || !aiRes.body) {
       if (aiRes.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit reached. Try again in a moment." }),
@@ -238,7 +239,7 @@ ${
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      const t = await aiRes.text();
+      const t = await aiRes.text().catch(() => "");
       console.error("AI gateway error", aiRes.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
         status: 500,
@@ -246,89 +247,126 @@ ${
       });
     }
 
-    const aiJson = await aiRes.json();
-    const reply: string =
-      aiJson?.choices?.[0]?.message?.content?.trim() || "(no response)";
+    // Tee the upstream SSE: forward to client AND accumulate full reply for side effects.
+    const upstream = aiRes.body;
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    // STEP 4 — side effects (tolerate failures)
-    try {
-      await admin.from("notification_events").insert({
-        user_id,
-        type: "inapp",
-        channel: "inapp",
-        title: "Ask Aura response",
-        body: reply.slice(0, 240),
-        read: false,
-      });
-    } catch (e) {
-      console.error("notification insert failed:", e);
-    }
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = upstream.getReader();
+        let buffer = "";
+        let fullReply = "";
 
-    if (messages.length >= 4) {
-      try {
-        const summaryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
-            max_tokens: 120,
-            temperature: 0.3,
-            messages: [
-              {
-                role: "system",
-                content:
-                  "Summarize this advisory conversation in exactly 2 sentences. Plain prose, no preamble.",
-              },
-              ...messages,
-              { role: "assistant", content: reply },
-            ],
-          }),
-        });
-        if (summaryRes.ok) {
-          const sj = await summaryRes.json();
-          const summary: string = sj?.choices?.[0]?.message?.content?.trim() || "";
-          if (summary) {
-            const today = new Date().toISOString().slice(0, 10);
-            const { data: existing } = await admin
-              .from("aura_conversation_memory")
-              .select("id")
-              .eq("user_id", user_id)
-              .eq("session_date", today)
-              .maybeSingle();
-            if (existing?.id) {
-              await admin
-                .from("aura_conversation_memory")
-                .update({ summary, updated_at: new Date().toISOString() })
-                .eq("id", existing.id);
-            } else {
-              await admin.from("aura_conversation_memory").insert({
-                user_id,
-                session_date: today,
-                summary,
-              });
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            // Forward bytes immediately
+            controller.enqueue(value);
+            // Also parse to accumulate text for memory + notification
+            buffer += decoder.decode(value, { stream: true });
+            let idx: number;
+            while ((idx = buffer.indexOf("\n")) !== -1) {
+              let line = buffer.slice(0, idx);
+              buffer = buffer.slice(idx + 1);
+              if (line.endsWith("\r")) line = line.slice(0, -1);
+              if (!line.startsWith("data: ")) continue;
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const c = parsed?.choices?.[0]?.delta?.content;
+                if (typeof c === "string") fullReply += c;
+              } catch { /* partial — ignore */ }
             }
           }
-        }
-      } catch (e) {
-        console.error("memory upsert failed:", e);
-      }
-    }
 
-    return new Response(
-      JSON.stringify({
-        reply,
-        context_used: {
-          signals_count: sigs.length,
-          posts_count: pst.length,
-          memory_sessions: mem.length,
-          identity_loaded: !!profile,
-        },
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+          // Emit context_used as a custom SSE event (sidebar ignores non-delta events).
+          const contextEvent = {
+            choices: [{ delta: {} }],
+            context_used: {
+              signals_count: sigs.length,
+              posts_count: pst.length,
+              memory_sessions: mem.length,
+              identity_loaded: !!profile,
+            },
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(contextEvent)}\n\n`));
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        } catch (e) {
+          console.error("stream tee error:", e);
+        } finally {
+          controller.close();
+        }
+
+        // STEP 4 — fire-and-forget side effects
+        const reply = fullReply.trim();
+        if (reply) {
+          admin.from("notification_events").insert({
+            user_id,
+            type: "inapp",
+            channel: "inapp",
+            title: "Ask Aura response",
+            body: reply.slice(0, 240),
+            read: false,
+          }).then(({ error }) => { if (error) console.error("notif insert:", error.message); });
+        }
+
+        if (messages.length >= 4 && reply) {
+          try {
+            const summaryRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-3-flash-preview",
+                max_tokens: 120,
+                temperature: 0.3,
+                messages: [
+                  { role: "system", content: "Summarize this advisory conversation in exactly 2 sentences. Plain prose, no preamble." },
+                  ...messages,
+                  { role: "assistant", content: reply },
+                ],
+              }),
+            });
+            if (summaryRes.ok) {
+              const sj = await summaryRes.json();
+              const summary: string = sj?.choices?.[0]?.message?.content?.trim() || "";
+              if (summary) {
+                const today = new Date().toISOString().slice(0, 10);
+                const { data: existing } = await admin
+                  .from("aura_conversation_memory")
+                  .select("id")
+                  .eq("user_id", user_id)
+                  .eq("session_date", today)
+                  .maybeSingle();
+                if (existing?.id) {
+                  await admin
+                    .from("aura_conversation_memory")
+                    .update({ summary, updated_at: new Date().toISOString() })
+                    .eq("id", existing.id);
+                } else {
+                  await admin.from("aura_conversation_memory").insert({
+                    user_id,
+                    session_date: today,
+                    summary,
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            console.error("memory upsert failed:", e);
+          }
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+    });
   } catch (e) {
     console.error("ask-aura error:", e);
     return new Response(
