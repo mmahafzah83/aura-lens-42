@@ -730,9 +730,10 @@ const SourcesSubTab = ({
             const isDoc = entry.type === "document";
             const displayTitle = entry.title || entry.content.slice(0, 60);
             const docStatus = isDoc ? (entry.status || "processing") : null;
-            const isProcessing = isDoc && (docStatus === "processing" || docStatus === "pending");
-            const isErrored = isDoc && docStatus === "error";
-            const isReady = isDoc && (docStatus === "completed" || docStatus === "ready");
+            const isStuckProcessing = isDoc && docStatus === "processing" && isDocProcessingStuck(docStatus, entry.created_at);
+            const isProcessing = isDoc && !isStuckProcessing && (docStatus === "processing" || docStatus === "pending");
+            const isErrored = isDoc && (docStatus === "error" || isStuckProcessing);
+            const isReady = isDoc && DOC_SUCCESS_STATUSES.has((docStatus || "").toLowerCase());
             const docSizeLabel = isDoc ? formatBytes(entry.file_size) : null;
             const docTypeLabel = isDoc && isReady ? (entry.file_type || "FILE").toString().toUpperCase() : null;
             const docPagesLabel = isDoc && isReady && entry.page_count ? `${entry.page_count} ${entry.page_count === 1 ? "page" : "pages"}` : null;
