@@ -192,22 +192,36 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Generate invite link without sending Supabase's default email
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    // Try invite first; if user already exists, fall back to magiclink so
+    // the branded email still goes out with a working sign-in link.
+    let linkRes = await admin.auth.admin.generateLink({
       type: "invite",
       email,
       options: { redirectTo: REDIRECT_URL },
     });
 
-    if (linkErr || !linkData?.properties?.action_link) {
-      console.error("generateLink failed:", linkErr);
+    if (
+      linkRes.error &&
+      ((linkRes.error as any).code === "email_exists" ||
+        /already been registered/i.test(linkRes.error.message))
+    ) {
+      console.log(`User ${email} already exists — falling back to magiclink`);
+      linkRes = await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: { redirectTo: REDIRECT_URL },
+      });
+    }
+
+    if (linkRes.error || !linkRes.data?.properties?.action_link) {
+      console.error("generateLink failed:", linkRes.error);
       return new Response(
-        JSON.stringify({ error: linkErr?.message || "Failed to generate invite link" }),
+        JSON.stringify({ error: linkRes.error?.message || "Failed to generate invite link" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const confirmationUrl = linkData.properties.action_link;
+    const confirmationUrl = linkRes.data.properties.action_link;
 
     // Build email HTML
     const html = EMAIL_HTML
