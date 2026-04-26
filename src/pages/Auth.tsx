@@ -161,7 +161,7 @@ const Auth = () => {
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div className="leading-tight">
-              <div className="text-xl font-bold" style={{ color: "#f0f0f0" }}>Aura</div>
+              <div className="text-primary font-extrabold text-2xl">Aura</div>
               <div className="text-xs" style={{ color: "#888" }}>Strategic Intelligence</div>
             </div>
           </div>

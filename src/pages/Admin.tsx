@@ -209,12 +209,7 @@ const Admin = () => {
     >
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
-        <div
-          className="text-xs font-semibold uppercase tracking-[0.2em] mb-6"
-          style={{ color: "#F97316" }}
-        >
-          Aura
-        </div>
+        <div className="text-primary font-extrabold text-2xl mb-6">Aura</div>
         <h1 className="text-3xl font-bold mb-2" style={{ color: "#f0f0f0" }}>
           Beta Access — Admin
         </h1>
