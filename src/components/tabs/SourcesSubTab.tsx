@@ -67,6 +67,14 @@ const TypeBadge = ({ type }: { type: string }) => {
 
 const PAGE_SIZE = 20;
 
+const DOC_PROCESSING_TIMEOUT_MS = 10 * 60 * 1000;
+const DOC_SUCCESS_STATUSES = new Set(["processed", "completed", "ready"]);
+
+function isDocProcessingStuck(status: string | null | undefined, createdAt: string): boolean {
+  if (status !== "processing") return false;
+  return Date.now() - new Date(createdAt).getTime() > DOC_PROCESSING_TIMEOUT_MS;
+}
+
 function relativeTime(dateStr: string): string {
   const ms = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(ms / 60000);
