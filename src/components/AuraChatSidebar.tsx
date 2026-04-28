@@ -807,6 +807,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   <Plus className="w-4.5 h-4.5" />
                 </button>
                 <button
+                  onClick={() => setShowMemoryPanel(v => !v)}
+                  className={`p-2 transition-colors rounded-lg hover:bg-secondary tactile-press ${showMemoryPanel ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Memory history"
+                >
+                  <Clock className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => { loadConversations(); setViewMode("history"); }}
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press"
                   title="Chat History"
