@@ -251,13 +251,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT COLUMN */}
         <div className="w-full md:w-[200px] md:shrink-0 space-y-3">
-          {/* Avatar Block */}
-          <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: 16, textAlign: "center" }}>
-            {/* Avatar ring */}
+          {/* Profile Sidebar Card (light) */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 20,
+              boxShadow: "var(--shadow-sm)",
+              textAlign: "center",
+            }}
+          >
+            {/* Avatar with orange ring + green status dot */}
             <div className="mx-auto relative" style={{ width: 80, height: 80 }}>
               <div
                 className="w-full h-full rounded-full overflow-hidden flex items-center justify-center cursor-pointer group"
-                style={{ border: "2px solid #F97316" }}
+                style={{ border: "3px solid #F97316", background: "#F3F0EB" }}
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadingAvatar ? (
@@ -267,19 +275,83 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 ) : (
                   <span style={{ color: "#F97316", fontSize: 24, fontWeight: 600 }}>{initials}</span>
                 )}
-                {/* Hover overlay */}
                 <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Upload className="w-3.5 h-3.5" style={{ color: "#F97316" }} />
                   <span style={{ color: "#F97316", fontSize: 10 }}>Upload</span>
                 </div>
               </div>
+              {/* Green status dot */}
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  bottom: 2,
+                  right: 2,
+                  width: 14,
+                  height: 14,
+                  borderRadius: "50%",
+                  background: "#2E7D38",
+                  border: "2px solid #fff",
+                }}
+              />
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
             </div>
 
             {/* Name & role */}
-            <p style={{ fontSize: 14, fontWeight: 600, color: "#f0f0f0", marginTop: 10 }}>{userName}</p>
-            <p style={{ fontSize: 11, color: "#888", lineHeight: 1.4 }}>{profile?.level || "Executive"}</p>
+            <p
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontSize: 16,
+                color: "#1A1815",
+                marginTop: 12,
+                lineHeight: 1.2,
+              }}
+            >
+              {userName}
+            </p>
+            <p style={{ fontSize: 11, color: "#3D3A36", lineHeight: 1.4, marginTop: 2 }}>
+              {profile?.level || "Executive"}
+            </p>
 
+            {/* Stat tiles: Score + Followers (followers placeholder if not loaded) */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              {[
+                { label: "Score", value: authorityScore != null ? String(authorityScore) : "—" },
+                { label: "Signals", value: signalStats.count ? String(signalStats.count) : "0" },
+              ].map((tile) => (
+                <div
+                  key={tile.label}
+                  style={{
+                    background: "#F3F0EB",
+                    borderRadius: 10,
+                    padding: 10,
+                    textAlign: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'DM Serif Display', serif",
+                      fontSize: 18,
+                      color: "#F97316",
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {tile.value}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      textTransform: "uppercase",
+                      color: "#7A7670",
+                      letterSpacing: "0.06em",
+                      marginTop: 2,
+                    }}
+                  >
+                    {tile.label}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Identity Facts */}
@@ -312,27 +384,65 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </div>
 
           {/* Assessments */}
-          <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: 12 }}>
-            <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", marginBottom: 8, letterSpacing: "0.05em" }}>Completed</div>
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 16,
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                textTransform: "uppercase",
+                color: "#7A7670",
+                marginBottom: 10,
+                letterSpacing: "0.08em",
+                fontWeight: 600,
+              }}
+            >
+              Completed
+            </div>
             {assessments.map(a => (
-              <div key={a.name} className="flex items-center gap-2 mb-1.5 last:mb-0">
+              <div key={a.name} className="flex items-center gap-2 mb-2 last:mb-0">
                 {a.done ? (
-                  <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0" style={{ background: "#F97316" }}>
-                    <Check className="w-2 h-2 text-black" />
-                  </div>
+                  <span
+                    className="flex items-center justify-center shrink-0"
+                    style={{ background: "#2E7D38", borderRadius: 4, width: 14, height: 14 }}
+                  >
+                    <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />
+                  </span>
                 ) : (
-                  <div className="w-3.5 h-3.5 rounded-full border shrink-0" style={{ borderColor: "#555" }} />
+                  <span
+                    className="shrink-0"
+                    style={{
+                      background: "transparent",
+                      border: "1px solid rgba(0,0,0,0.18)",
+                      borderRadius: 4,
+                      width: 14,
+                      height: 14,
+                    }}
+                  />
                 )}
-                <span style={{ fontSize: 10, color: a.done ? "#888" : "#555", flex: 1 }}>{a.name}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: a.done ? "#2A2825" : "#7A7670",
+                    flex: 1,
+                  }}
+                >
+                  {a.name}
+                </span>
                 {a.done && a.date ? (
-                  <span style={{ fontSize: 9, color: "#555" }}>{new Date(a.date).toLocaleDateString()}</span>
+                  <span style={{ fontSize: 9, color: "#7A7670" }}>{new Date(a.date).toLocaleDateString()}</span>
                 ) : !a.done ? (
                   <button
                     onClick={() => {
                       if (a.name === "Evidence Audit") setAuditOpen(true);
                       else if (a.name === "Brand Assessment") setBrandOpen(true);
                     }}
-                    style={{ fontSize: 9, color: "#F97316" }}
+                    style={{ fontSize: 10, color: "#F97316", fontWeight: 600 }}
                   >
                     Start →
                   </button>
@@ -344,110 +454,307 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
         {/* RIGHT COLUMN */}
         <div className="flex-1 space-y-4">
-          {/* Positioning Card */}
-          <div className="aura-hero-card" style={{ background: "#141414", borderLeft: "2px solid #F97316", borderRadius: "0 10px 10px 0", padding: 16, position: "relative" }}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#F97316", letterSpacing: "0.1em", marginBottom: 6 }}>
-                  YOUR MARKET POSITION
+          {/* Market Position Hero Card (dark) */}
+          <div
+            className="aura-hero-card"
+            style={{
+              background: "#0E0D0C",
+              borderRadius: 16,
+              padding: 22,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {/* Radial glow top-right */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: -60,
+                right: -60,
+                width: 200,
+                height: 200,
+                background:
+                  "radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }}
+            />
+            <div className="relative flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: "uppercase",
+                    color: "#F97316",
+                    letterSpacing: "0.12em",
+                    marginBottom: 8,
+                    fontWeight: 600,
+                  }}
+                >
+                  Your market position
                 </div>
-                <h3 style={{ fontSize: 15, fontWeight: 600, color: "#f0f0f0", marginBottom: 8 }}>
+                <h3
+                  style={{
+                    fontFamily: "'DM Serif Display', serif",
+                    fontSize: 20,
+                    color: "#ffffff",
+                    marginBottom: 12,
+                    lineHeight: 1.25,
+                  }}
+                >
                   {positioningTitle || "Complete your profile to unlock positioning"}
                 </h3>
                 {profile?.brand_pillars && profile.brand_pillars.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-3">
-                    {profile.brand_pillars.map((p, i) => (
-                      <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#F97316", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{p}</span>
-                    ))}
+                    {profile.brand_pillars.map((p, i) => {
+                      const primary = i < 3;
+                      return (
+                        <span
+                          key={i}
+                          style={{
+                            background: primary
+                              ? "rgba(249,115,22,0.2)"
+                              : "rgba(255,255,255,0.07)",
+                            color: primary ? "#F97316" : "#C8C4BE",
+                            border: `0.5px solid ${
+                              primary ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)"
+                            }`,
+                            borderRadius: 20,
+                            fontSize: 10,
+                            padding: "3px 10px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {p}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
                 {positioningStatement && (
                   <div>
-                    <p style={{ fontSize: 12, color: "#888", lineHeight: 1.6, fontStyle: "italic" }} className={showFullPositioning ? "" : "line-clamp-4"}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: "#9A9690",
+                        lineHeight: 1.6,
+                        fontWeight: 300,
+                      }}
+                      className={showFullPositioning ? "" : "line-clamp-4"}
+                    >
                       {positioningStatement}
                     </p>
                     {positioningStatement.length > 200 && (
-                      <button onClick={() => setShowFullPositioning(!showFullPositioning)} style={{ fontSize: 10, color: "#F97316", marginTop: 4 }}>
+                      <button
+                        onClick={() => setShowFullPositioning(!showFullPositioning)}
+                        style={{ fontSize: 11, color: "#F97316", marginTop: 6, fontWeight: 500 }}
+                      >
                         {showFullPositioning ? "Show less" : "Show more"}
                       </button>
                     )}
                   </div>
                 )}
               </div>
-              <button onClick={regeneratePositioning} disabled={regenerating} style={{ fontSize: 10, color: "#555" }} className="shrink-0 ml-3 hover:text-[#F97316] transition-colors">
+              <button
+                onClick={regeneratePositioning}
+                disabled={regenerating}
+                style={{
+                  fontSize: 11,
+                  color: "#F97316",
+                  background: "transparent",
+                  cursor: regenerating ? "default" : "pointer",
+                }}
+                className="shrink-0 ml-3 hover:opacity-80 transition-opacity"
+              >
                 {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
               </button>
             </div>
           </div>
 
-          {/* Timeline */}
-          <div className="relative" style={{ paddingLeft: 20 }}>
-            {/* Vertical line */}
-            <div className="absolute" style={{ left: 5, top: 8, bottom: 8, width: 1, background: "linear-gradient(to bottom, #F97316, #252525)" }} />
-
-            {/* Node 1 — Where I Am Now */}
-            <div className="relative mb-4">
-              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", background: "#F97316" }} />
-              <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: "10px 12px" }}>
-                <div className="flex items-center justify-between group">
-                  <div>
-                    <p style={{ fontSize: 12, color: "#e0e0e0" }}>{[profile?.level, profile?.firm].filter(Boolean).join(" · ") || "Your current role"}</p>
-                    <p style={{ fontSize: 10, color: "#666" }}>{[profile?.sector_focus, profile?.core_practice].filter(Boolean).join(" · ")}</p>
-                  </div>
-                  <button onClick={() => startEdit("level", profile?.level || "")} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Pencil className="w-3 h-3 text-[#555] hover:text-[#F97316]" />
-                  </button>
-                </div>
-              </div>
+          {/* Active Focus Areas — pill chips */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 18,
+              boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 9,
+                textTransform: "uppercase",
+                color: "#7A7670",
+                marginBottom: 10,
+                letterSpacing: "0.08em",
+                fontWeight: 600,
+              }}
+            >
+              Active focus areas
             </div>
+            {signalStats.topTags.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {signalStats.topTags.map((s, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: "#FEF0E6",
+                      color: "#C05A10",
+                      borderRadius: 20,
+                      padding: "5px 13px",
+                      fontSize: 12,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {s}
+                  </span>
+                ))}
+                <button
+                  onClick={() => onSwitchTab && onSwitchTab("intelligence")}
+                  style={{
+                    background: "#F3F0EB",
+                    color: "#3D3A36",
+                    borderRadius: 20,
+                    padding: "5px 13px",
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                >
+                  + add area
+                </button>
+              </div>
+            ) : (
+              <p style={{ fontSize: 11, color: "#7A7670", fontStyle: "italic" }}>
+                Capture more to build your signal profile
+              </p>
+            )}
+          </div>
 
-            {/* Node 2 — Building Authority In */}
-            <div className="relative mb-4">
-              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", border: "2px solid #F97316", background: "transparent" }} />
-              <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: "10px 12px" }}>
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", marginBottom: 6, letterSpacing: "0.05em" }}>ACTIVE FOCUS AREAS</div>
-                {signalStats.topTags.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {signalStats.topTags.map((s, i) => (
-                      <span key={i} style={{ background: "#1a1400", border: "1px solid rgba(197,165,90,0.27)", color: "#F97316", fontSize: 9, padding: "2px 8px", borderRadius: 20 }}>{s}</span>
-                    ))}
-                  </div>
+          {/* 3-Year Target — Horizontal Timeline */}
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: 22,
+              boxShadow: "var(--shadow-sm)",
+              position: "relative",
+            }}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <div
+                  style={{
+                    fontSize: 9,
+                    textTransform: "uppercase",
+                    color: "#7A7670",
+                    letterSpacing: "0.08em",
+                    fontWeight: 600,
+                    marginBottom: 4,
+                  }}
+                >
+                  3-year target
+                </div>
+                {editingField === "north_star_goal" ? (
+                  <input
+                    value={editValue}
+                    onChange={e => setEditValue(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && saveEdit("north_star_goal")}
+                    onBlur={() => saveEdit("north_star_goal")}
+                    autoFocus
+                    className="bg-transparent border-b border-[#F97316] text-[13px] text-[#1A1815] outline-none"
+                    style={{ minWidth: 240 }}
+                  />
                 ) : (
-                  <p style={{ fontSize: 10, color: "#555", fontStyle: "italic" }}>Capture more to build your signal profile</p>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: "#1A1815",
+                      lineHeight: 1.5,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {profile?.north_star_goal || "Set your north star goal"}
+                  </p>
                 )}
               </div>
+              {editingField !== "north_star_goal" && (
+                <button
+                  onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")}
+                  className="opacity-50 hover:opacity-100 transition-opacity ml-2 shrink-0"
+                >
+                  <Pencil className="w-3 h-3" style={{ color: "#7A7670" }} />
+                </button>
+              )}
             </div>
 
-            {/* Node 3 — 3-Year Target */}
-            <div className="relative">
-              <div className="absolute" style={{ left: -20, top: 6, width: 8, height: 8, borderRadius: "50%", border: "2px solid #555", background: "transparent" }} />
-              <div style={{ background: "#0a120a", border: "1px solid #2a4a2a", borderRadius: 8, padding: "10px 12px" }}>
-                <div className="flex items-start justify-between group">
-                  <div className="flex-1">
-                    <div style={{ fontSize: 9, textTransform: "uppercase", color: "#4a8a4a", marginBottom: 4, letterSpacing: "0.05em" }}>3-YEAR TARGET</div>
-                    {editingField === "north_star_goal" ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          value={editValue}
-                          onChange={e => setEditValue(e.target.value)}
-                          onKeyDown={e => e.key === "Enter" && saveEdit("north_star_goal")}
-                          onBlur={() => saveEdit("north_star_goal")}
-                          autoFocus
-                          className="flex-1 bg-transparent border-b border-[#4a8a4a] text-[11px] text-[#88c488] outline-none"
-                        />
-                      </div>
-                    ) : (
-                      <p style={{ fontSize: 11, color: "#88c488", lineHeight: 1.5 }}>{profile?.north_star_goal || "Set your north star goal"}</p>
-                    )}
+            {/* Timeline rail */}
+            {(() => {
+              // 4 nodes: Foundation (onboarding), Building (signals), Now (positioning), Target (north star)
+              const onboardingDone = !!profile?.onboarding_completed;
+              const auditOrBrandDone = !!profile?.audit_completed_at || !!profile?.brand_assessment_completed_at;
+              const positioningDone = !!positioningTitle;
+              const nodes = [
+                { label: "Foundation", state: onboardingDone ? "done" : "future" as "done"|"current"|"future" },
+                { label: "Building", state: auditOrBrandDone ? "done" : (onboardingDone ? "current" : "future") as "done"|"current"|"future" },
+                { label: "Now", state: positioningDone ? "current" : (auditOrBrandDone ? "current" : "future") as "done"|"current"|"future" },
+                { label: "3-yr target", state: "future" as "done"|"current"|"future" },
+              ];
+              return (
+                <div className="relative" style={{ paddingTop: 6, paddingBottom: 4 }}>
+                  {/* Connecting line */}
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      top: 16,
+                      left: "8%",
+                      right: "8%",
+                      height: 1,
+                      background: "rgba(0,0,0,0.12)",
+                    }}
+                  />
+                  <div className="grid grid-cols-4 relative">
+                    {nodes.map((n, i) => {
+                      const isDone = n.state === "done";
+                      const isCurrent = n.state === "current";
+                      return (
+                        <div key={i} className="flex flex-col items-center">
+                          <span
+                            className="flex items-center justify-center"
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              background: isDone
+                                ? "#2E7D38"
+                                : isCurrent
+                                  ? "#F97316"
+                                  : "#F3F0EB",
+                              border: !isDone && !isCurrent ? "2px solid rgba(0,0,0,0.12)" : "none",
+                              boxShadow: isCurrent ? "0 0 0 4px rgba(249,115,22,0.15)" : "none",
+                              zIndex: 1,
+                            }}
+                          >
+                            {isDone && <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: 10,
+                              color: isCurrent ? "#F97316" : isDone ? "#2A2825" : "#7A7670",
+                              marginTop: 8,
+                              fontWeight: isCurrent ? 600 : 400,
+                              textAlign: "center",
+                            }}
+                          >
+                            {n.label}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {editingField !== "north_star_goal" && (
-                    <button onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")} className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                      <Pencil className="w-3 h-3 text-[#555] hover:text-[#4a8a4a]" />
-                    </button>
-                  )}
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
           {/* Full Profile Link */}
