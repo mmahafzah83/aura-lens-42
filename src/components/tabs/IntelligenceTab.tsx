@@ -138,7 +138,7 @@ const AutomationStrip = () => {
   };
 
   const cards = [
-    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
+    { iconBg: "var(--success-darkest)", iconBorder: "var(--success-dark)", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success-mid)" },
     { iconBg: "#0a1020", iconBorder: "#1a3060", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
     { iconBg: "#1a1200", iconBorder: "#3a2a00", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
   ];
@@ -374,7 +374,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
     switch (type) {
       case "signal": case "pattern": return { label: "Signal", bg: "#0a1628", border: "#1d4ed844", color: "#60a5fa" };
       case "insight": case "principle": return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "#F9731644", color: "var(--brand)" };
-      case "recommendation": case "framework_step": return { label: "Recommendation", bg: "#0a1a0a", border: "#2a4a2a", color: "#4a8a4a" };
+      case "recommendation": case "framework_step": return { label: "Recommendation", bg: "var(--success-darkest)", border: "var(--success-dark)", color: "var(--success-mid)" };
       case "blind_spot": case "claim": return { label: "Blind spot", bg: "#1a0a0a", border: "#4a2a2a", color: "#aa6060" };
       default: return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "#F9731644", color: "var(--brand)" };
     }
@@ -491,7 +491,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             const approved = isApproved(fw);
             return (
               <div key={fw.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--ink-3)", borderTop: approved ? "2px solid var(--brand)" : "0.5px solid var(--ink-3)", borderRadius: 10, padding: 16 }}>
-                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "#0a1a0a" : "var(--surface-ink-subtle)", border: `0.5px solid ${approved ? "#2a4a2a" : "var(--ink-3)"}`, color: approved ? "#4a8a4a" : "var(--ink-5)" }}>
+                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "var(--success-darkest)" : "var(--surface-ink-subtle)", border: `0.5px solid ${approved ? "var(--success-dark)" : "var(--ink-3)"}`, color: approved ? "var(--success-mid)" : "var(--ink-5)" }}>
                   {approved ? "Approved" : "Draft"}
                 </span>
                 <p style={{ color: "var(--ink-7)", fontSize: 12, fontWeight: 600, lineHeight: 1.4, margin: "0 0 6px" }}>{fw.title}</p>

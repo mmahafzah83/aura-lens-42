@@ -566,7 +566,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   style: {
                     background: "var(--surface-ink-subtle)",
                     color: "var(--brand)",
-                    border: "1px solid #F9731633",
+                    border: "1px solid var(--brand-muted)",
                   },
                 });
               }, 3000);
@@ -670,7 +670,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       >
         {/* Sheet handle */}
         <div className="flex justify-center cursor-grab">
-          <div style={{ width: 40, height: 4, background: "rgba(0,0,0,0.12)", borderRadius: 2, margin: "10px auto 0" }} />
+          <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "10px auto 0" }} />
         </div>
 
         {/* Header */}
@@ -757,7 +757,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid var(--ink)" : "0.5px solid rgba(0,0,0,0.07)",
+                    border: active ? "0.5px solid var(--ink)" : "0.5px solid var(--border-subtle)",
                     background: active ? "var(--ink)" : "transparent",
                     color: active ? "#FFFFFF" : "var(--ink-4)",
                     opacity: disabled ? 0.5 : 1,
@@ -796,10 +796,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = "var(--brand)";
                     e.currentTarget.style.background = "#FFFFFF";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "rgba(0,0,0,0.12)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "var(--border)";
                     e.currentTarget.style.background = "var(--surface-subtle)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
@@ -824,7 +824,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   style={{
                     width: "100%",
                     background: "var(--surface-subtle)",
-                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid rgba(0,0,0,0.12)",
+                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid var(--border)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 13,
@@ -870,7 +870,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 <div
                   style={{
                     background: "#FFFFFF",
-                    border: "0.5px solid rgba(0,0,0,0.07)",
+                    border: "0.5px solid var(--border-subtle)",
                     borderRadius: 12,
                     padding: "12px 14px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -911,8 +911,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "rgba(239, 159, 39, 0.1)",
-                    border: "0.5px solid rgba(239, 159, 39, 0.4)",
+                    background: "rgba(239, 159, 39, 0.1)" /* warning-pale tint */,
+                    border: "0.5px solid rgba(239, 159, 39, 0.4)" /* warning border */,
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
@@ -949,7 +949,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         padding: "5px 12px",
                         borderRadius: 20,
                         background: active ? "var(--ink)" : "var(--surface-subtle)",
-                        border: active ? "0.5px solid var(--ink)" : "0.5px solid rgba(0,0,0,0.07)",
+                        border: active ? "0.5px solid var(--ink)" : "0.5px solid var(--border-subtle)",
                         color: active ? "#FFFFFF" : "var(--ink-3)",
                         cursor: "pointer",
                         transition: "all 150ms ease",
@@ -968,17 +968,17 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--brand)";
                   e.currentTarget.style.background = "#FFFFFF";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.12)";
+                  e.currentTarget.style.borderColor = "var(--border)";
                   e.currentTarget.style.background = "var(--surface-subtle)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 style={{
                   width: "100%",
                   background: "var(--surface-subtle)",
-                  border: "0.5px solid rgba(0,0,0,0.12)",
+                  border: "0.5px solid var(--border)",
                   borderRadius: 12,
                   padding: "14px 16px",
                   fontSize: 13,
@@ -1006,12 +1006,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       e.currentTarget.style.background = "var(--brand-pale)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
+                      e.currentTarget.style.borderColor = "var(--border-strong)";
                       e.currentTarget.style.background = "var(--surface-subtle)";
                     }}
                     style={{
                       background: "var(--surface-subtle)",
-                      border: "1.5px dashed rgba(0,0,0,0.15)",
+                      border: "1.5px dashed var(--border-strong)",
                       borderRadius: 14,
                       padding: 32,
                       textAlign: "center",
@@ -1032,7 +1032,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid rgba(0,0,0,0.12)",
+                        border: "0.5px solid var(--border)",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
@@ -1051,7 +1051,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid rgba(0,0,0,0.12)",
+                        border: "0.5px solid var(--border)",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
@@ -1093,7 +1093,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "var(--danger)" : "#4F46E5";
+                      const iconBg = isPdf ? "var(--danger)" : "var(--color-indigo)";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1104,7 +1104,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                             gap: 12,
                             padding: "10px 12px",
                             background: "#FFFFFF",
-                            border: "0.5px solid rgba(0,0,0,0.07)",
+                            border: "0.5px solid var(--border-subtle)",
                             borderRadius: 12,
                           }}
                         >
@@ -1138,7 +1138,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                               textTransform: "uppercase",
                               padding: "3px 8px",
                               borderRadius: 6,
-                              background: isProcessed ? "#EAF4EB" : "var(--warning-pale)",
+                              background: isProcessed ? "var(--success-pale)" : "var(--warning-pale)",
                               color: isProcessed ? "var(--success)" : "var(--warning)",
                             }}
                           >
@@ -1201,8 +1201,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       justifyContent: "center",
                       background: isRecording ? "var(--danger)" : "var(--brand)",
                       boxShadow: isRecording
-                        ? "0 4px 20px rgba(184,48,37,0.4)"
-                        : "0 4px 20px rgba(249,115,22,0.4)",
+                        ? "0 4px 20px rgba(184,48,37,0.4)" /* danger glow */
+                        : "var(--shadow-brand)",
                       transition: "background 200ms ease",
                     }}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
@@ -1248,7 +1248,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     style={{
                       width: "100%",
                       background: "var(--surface-subtle)",
-                      border: "0.5px solid rgba(0,0,0,0.12)",
+                      border: "0.5px solid var(--border)",
                       borderRadius: 12,
                       padding: "12px 14px",
                       fontSize: 13,

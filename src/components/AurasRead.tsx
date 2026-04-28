@@ -22,16 +22,16 @@ const NUMBER_GLYPHS = ["①", "②", "③"];
 
 const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => {
   switch (u) {
-    case "HIGH":   return { bg: "#FEE2E2", color: "#991B1B" };
+    case "HIGH":   return { bg: "var(--danger-pale)", color: "var(--danger)" };
     case "MEDIUM":
-    default:       return { bg: "#FFF7ED", color: "#C2410C" };
+    default:       return { bg: "var(--warning-pale)", color: "var(--warning)" };
   }
 };
 
 const actionLabelColor = (a: AuraItem["action_type"]): string => {
   switch (a) {
     case "PUBLISH": return "var(--brand)";
-    case "CAPTURE": return "#185FA5";
+    case "CAPTURE": return "var(--color-info-text)";
     case "WATCH":
     default:        return "var(--ink-5)";
   }
