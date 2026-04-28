@@ -1411,6 +1411,22 @@ aside .aura-theme-toggle {
   --radius-2xl: 24px;
   --font-display: 'DM Serif Display', Georgia, serif;
   --font-body:    'DM Sans', system-ui, sans-serif;
+
+  /* DS-2 additions */
+  --border:           rgba(0,0,0,0.12);
+  --color-indigo:     #4F46E5;
+  --color-info-text:  #185FA5;
+  --success-dark:     #2a4a2a;
+  --success-darkest:  #0a1a0a;
+  --gold-pale:        #FEF8F3;
+  --gold-light:       #F9C88B;
+  --gold-mid:         #8a6a20;
+  --gold-text:        #7A4A12;
+  --gold-dark:        #5A3A0E;
+  --gold-pale-2:      #FFFCF8;
+  --gold-mid-2:       #9A6A2A;
+  --gold-pale-3:      #FEF1E1;
+  --gold-mid-3:       #B07A2A;
 }
 
 /* Badge variants — opt-in classes for the new design system.
