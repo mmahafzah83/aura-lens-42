@@ -1075,17 +1075,21 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
             >
               {/* Quick Actions */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-                {QUICK_ACTIONS.map(action => (
-                  <button
-                    key={action.mode}
-                    onClick={() => handleQuickAction(action)}
-                    disabled={isLoading}
-                    className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
-                  >
-                    <action.icon className="w-3.5 h-3.5" />
-                    {action.label}
-                  </button>
-                ))}
+                {QUICK_ACTIONS.map((action, idx) => {
+                  const isAdaptive = idx === 0 && !!adaptiveChipLabel;
+                  const label = isAdaptive ? (adaptiveChipLabel as string) : action.label;
+                  return (
+                    <button
+                      key={action.mode}
+                      onClick={() => isAdaptive ? send(label) : handleQuickAction(action)}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
+                    >
+                      <action.icon className="w-3.5 h-3.5" />
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="flex gap-2">
