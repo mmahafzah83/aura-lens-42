@@ -1413,6 +1413,26 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         {savedFlash.has(i) ? "Saved ✓" : "Save to Vault"}
                       </button>
                     )}
+                    {msg.role === "assistant" && msg.content && !isLoading && msg.isShadowTwin && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(msg.content);
+                            toast.success("Portrait copied");
+                          } catch {
+                            toast.error("Copy failed");
+                          }
+                        }}
+                        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press"
+                        style={{
+                          background: "#EEEDFE",
+                          color: "#3C3489",
+                          border: "0.5px solid #AFA9EC",
+                        }}
+                      >
+                        Copy portrait
+                      </button>
+                    )}
                   </div>
                 ))
               )}
