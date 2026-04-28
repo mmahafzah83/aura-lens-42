@@ -670,7 +670,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       >
         {/* Sheet handle */}
         <div className="flex justify-center cursor-grab">
-          <div style={{ width: 40, height: 4, background: "rgba(0,0,0,0.12)", borderRadius: 2, margin: "10px auto 0" }} />
+          <div style={{ width: 40, height: 4, background: "var(--border)", borderRadius: 2, margin: "10px auto 0" }} />
         </div>
 
         {/* Header */}
@@ -799,7 +799,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "rgba(0,0,0,0.12)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "var(--border)";
                     e.currentTarget.style.background = "var(--surface-subtle)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
@@ -971,7 +971,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
                 }}
                 onBlur={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.12)";
+                  e.currentTarget.style.borderColor = "var(--border)";
                   e.currentTarget.style.background = "var(--surface-subtle)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
@@ -1006,7 +1006,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       e.currentTarget.style.background = "var(--brand-pale)";
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
+                      e.currentTarget.style.borderColor = "var(--border-strong)";
                       e.currentTarget.style.background = "var(--surface-subtle)";
                     }}
                     style={{
