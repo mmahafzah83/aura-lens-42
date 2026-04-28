@@ -367,7 +367,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       onKeyDown={e => e.key === "Enter" && saveEdit(fact.key)}
                       onBlur={() => saveEdit(fact.key)}
                       autoFocus
-                      className="flex-1 bg-transparent border-b border-brand text-[11px] text-[#d0d0d0] outline-none py-0.5"
+                      className="flex-1 bg-transparent border-b border-brand text-[11px] text-ink-7 outline-none py-0.5"
                     />
                     {saving ? <Loader2 className="w-3 h-3 animate-spin text-brand" /> : <Check className="w-3 h-3 text-green-500" />}
                   </div>
@@ -375,7 +375,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   <div className="flex items-center justify-between group mt-0.5">
                     <span style={{ fontSize: 11, color: "var(--ink-7)", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
                     <button onClick={() => startEdit(fact.key, fact.value)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                      <Pencil className="w-2.5 h-2.5 text-[#555] hover:text-brand" />
+                      <Pencil className="w-2.5 h-2.5 text-ink-5 hover:text-brand" />
                     </button>
                   </div>
                 )}
@@ -661,7 +661,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     onKeyDown={e => e.key === "Enter" && saveEdit("north_star_goal")}
                     onBlur={() => saveEdit("north_star_goal")}
                     autoFocus
-                    className="bg-transparent border-b border-brand text-[13px] text-[#1A1815] outline-none"
+                    className="bg-transparent border-b border-brand text-[13px] text-surface-ink-subtle outline-none"
                     style={{ minWidth: 240 }}
                   />
                 ) : (
@@ -776,7 +776,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             style={{ width: 680, maxWidth: "90vw", maxHeight: "88vh", background: "var(--ink)", border: "1px solid var(--ink-3)", borderRadius: 12, padding: 24 }}
             onClick={e => e.stopPropagation()}
           >
-            <button onClick={() => setFullProfileOpen(false)} className="absolute top-4 right-4 text-[#555] hover:text-ink-7 transition-colors">
+            <button onClick={() => setFullProfileOpen(false)} className="absolute top-4 right-4 text-ink-5 hover:text-ink-7 transition-colors">
               <X className="w-5 h-5" />
             </button>
             <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-7)", marginBottom: 20 }}>Strategic Identity</h2>

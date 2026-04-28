@@ -342,7 +342,7 @@ const Landing = () => {
           <div className="relative w-[220px] h-[220px] mx-auto mb-10">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--brand), #a88c3a)", animation: "aura-breathe 3s ease-in-out infinite" }}>
-                <span className="text-[10px] font-bold text-[#0d0d0d] tracking-wider">AURA</span>
+                <span className="text-[10px] font-bold text-surface-ink tracking-wider">AURA</span>
               </div>
             </div>
             {[80, 100, 110].map((r, i) => (

@@ -750,7 +750,7 @@ const SourcesSubTab = ({
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
                   title="Open in new tab"
                   style={{ position: "absolute", top: 12, right: canDownload ? 96 : 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                  className="text-[#555] hover:text-brand transition-colors"
+                  className="text-ink-5 hover:text-brand transition-colors"
                 >
                   <ExternalLink size={14} />
                 </button>
@@ -761,7 +761,7 @@ const SourcesSubTab = ({
                     onClick={e => { e.stopPropagation(); downloadEntryFile(entry); }}
                     title="Download file"
                     style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                    className="text-[#555] hover:text-brand transition-colors"
+                    className="text-ink-5 hover:text-brand transition-colors"
                   >
                     <Download size={14} />
                   </button>

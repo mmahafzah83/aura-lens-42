@@ -100,7 +100,7 @@ const RequestAccess = () => {
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                   maxLength={200}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-[#555]"
+                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-ink-5"
                   style={inputStyle}
                 />
                 {errors.name && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.name}</p>}
@@ -118,7 +118,7 @@ const RequestAccess = () => {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                   maxLength={255}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-[#555]"
+                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-ink-5"
                   style={inputStyle}
                 />
                 {errors.email && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.email}</p>}

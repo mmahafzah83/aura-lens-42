@@ -314,7 +314,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!showResults && step > 0 && (
-                <button onClick={() => setStep((s) => s - 1)} className="text-[#3a3a3a] hover:text-[#666] p-1">
+                <button onClick={() => setStep((s) => s - 1)} className="text-ink-4 hover:text-ink-5 p-1">
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
@@ -323,13 +323,13 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                 <span className="text-[13px] text-ink-7 font-medium">Brand Assessment</span>
               </div>
             </div>
-            <button onClick={() => onOpenChange(false)} className="text-[#3a3a3a] hover:text-[#666] p-1">
+            <button onClick={() => onOpenChange(false)} className="text-ink-4 hover:text-ink-5 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {!showResults && step === 0 && (
-            <p className="text-[11px] text-[#666] mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
+            <p className="text-[11px] text-ink-5 mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
           )}
 
           {/* Progress bar */}
@@ -384,13 +384,13 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             </div>
           ) : (
             <div className="max-w-lg mx-auto pt-4">
-              <p className="text-[11px] text-[#666] mb-1 tracking-wider uppercase">
+              <p className="text-[11px] text-ink-5 mb-1 tracking-wider uppercase">
                 Question {step + 1} of {QUESTIONS.length}
               </p>
               <h2 className="text-[18px] text-ink-7 font-medium leading-snug mb-1">
                 {q.title}
               </h2>
-              {q.sub && <p className="text-[12px] text-[#666] mb-5">{q.sub}</p>}
+              {q.sub && <p className="text-[12px] text-ink-5 mb-5">{q.sub}</p>}
 
               {q.type === "text" ? (
                 <textarea
@@ -408,7 +408,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                       className={`w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all duration-200 ${
                         isSelected(opt)
                           ? "border-brand/50 bg-brand/10 text-ink-7"
-                          : "border-ink-3 bg-surface-ink-raised text-ink-5 hover:border-[#3a3a3a]"
+                          : "border-ink-3 bg-surface-ink-raised text-ink-5 hover:border-ink-4"
                       }`}
                     >
                       {opt}
@@ -436,7 +436,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               className={`w-full py-3.5 rounded-xl text-[13px] font-medium tracking-wide transition-all duration-200 ${
                 canProceed()
                   ? "hover:brightness-110 active:scale-[0.98]"
-                  : "bg-surface-ink-subtle text-[#3a3a3a] cursor-not-allowed"
+                  : "bg-surface-ink-subtle text-ink-4 cursor-not-allowed"
               }`}
               style={canProceed() ? {
                 background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",

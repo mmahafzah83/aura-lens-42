@@ -163,7 +163,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
               variant="outline"
               onClick={() => auditCompleted && setBrandOpen(true)}
               disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-[#3a3a3a] cursor-not-allowed"}`}
+              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
             >
               <Compass className="w-4 h-4" />
               Start Brand Assessment
@@ -252,7 +252,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
               variant="outline"
               onClick={() => auditCompleted && setBrandOpen(true)}
               disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-[#3a3a3a] cursor-not-allowed"}`}
+              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
             >
               <Compass className="w-4 h-4" />
               Start Brand Assessment

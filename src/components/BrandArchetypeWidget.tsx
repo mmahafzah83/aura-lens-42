@@ -61,11 +61,11 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <Crown className="w-4 h-4 text-brand" />
-          <span className="text-[11px] text-[#666] tracking-wider uppercase">How I am positioned</span>
+          <span className="text-[11px] text-ink-5 tracking-wider uppercase">How I am positioned</span>
         </div>
         <button
           onClick={onStartAssessment}
-          className="text-[10px] text-[#666] hover:text-brand transition-colors"
+          className="text-[10px] text-ink-5 hover:text-brand transition-colors"
         >
           Regenerate
         </button>
@@ -76,7 +76,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
         <p className="text-base text-brand font-semibold mb-2">Complete your assessment to reveal your positioning</p>
       )}
       {(primary || secondary) && (
-        <p className="text-[11px] text-[#666]">
+        <p className="text-[11px] text-ink-5">
           Archetype: {[primary, secondary].filter(Boolean).join(" · ")}
         </p>
       )}

@@ -148,7 +148,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                 {showResults ? "Audit Results" : "Objective Evidence Audit"}
               </span>
             </div>
-            <button onClick={() => onOpenChange(false)} className="text-[#666] hover:text-ink-6 text-lg leading-none">&times;</button>
+            <button onClick={() => onOpenChange(false)} className="text-ink-5 hover:text-ink-6 text-lg leading-none">&times;</button>
           </div>
           {!showResults && (
             <>
@@ -157,7 +157,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                 <p className="text-[10px] text-ink-5">
                   Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} · <span className="text-brand font-semibold">Running score: {calculateTotalScore(checks)}%</span>
                 </p>
-                <p className="text-[10px] text-[#666]">Answer honestly. Only verified evidence counts.</p>
+                <p className="text-[10px] text-ink-5">Answer honestly. Only verified evidence counts.</p>
               </div>
             </>
           )}
@@ -219,7 +219,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           >
             <div className="text-center mb-3">
               <span className="text-2xl font-bold text-brand">{calculateScore(checks[skill.name])}%</span>
-              <p className="text-[10px] text-[#666]">Calculated Score</p>
+              <p className="text-[10px] text-ink-5">Calculated Score</p>
             </div>
             <div className="flex items-center justify-between">
               <Button
@@ -234,7 +234,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
               {currentSkillIdx < EVIDENCE_MATRIX.length - 1 ? (
                 <Button
                   onClick={() => setCurrentSkillIdx((i) => i + 1)}
-                  className="gap-1 bg-brand text-[#0d0d0d] hover:brightness-110"
+                  className="gap-1 bg-brand text-surface-ink hover:brightness-110"
                 >
                   Next <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -242,7 +242,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                 <Button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="gap-1 bg-brand text-[#0d0d0d] hover:brightness-110"
+                  className="gap-1 bg-brand text-surface-ink hover:brightness-110"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                   Submit Audit

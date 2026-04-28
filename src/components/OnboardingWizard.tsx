@@ -104,7 +104,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
   const progressPct = (step / 3) * 100;
 
   const inputClass =
-    "w-full rounded-lg border border-[#333] bg-surface-ink-subtle px-4 py-3 text-sm text-ink-7 placeholder:text-[#555] focus:outline-none focus:border-brand transition-colors";
+    "w-full rounded-lg border border-ink-3 bg-surface-ink-subtle px-4 py-3 text-sm text-ink-7 placeholder:text-ink-5 focus:outline-none focus:border-brand transition-colors";
 
   const content = (
     <div
