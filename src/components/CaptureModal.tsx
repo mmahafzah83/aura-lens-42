@@ -359,11 +359,6 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       }
     }
 
-    // Voice metadata
-    if (captureType === "voice" && voiceAudioUrl) {
-      captureMetadata = { audio_url: voiceAudioUrl };
-    }
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -426,18 +421,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         : captureContent;
       const entryTitle = captureType === "link"
         ? (data?.extracted_title || (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })())
-        : captureType === "voice"
-          ? (captureContent || "").slice(0, 60) + (captureContent.length > 60 ? "..." : "") || "Voice capture"
-          : (captureContent || "").slice(0, 60) || "Untitled";
+        : (captureContent || "").slice(0, 60) || "Untitled";
 
       const { data: entryRow, error: entryError } = await supabase.from("entries").insert({
         user_id: session.user.id,
-        type: captureType === "link" ? "link" : captureType,
+        type: captureType,
         title: entryTitle,
         content: entryContent,
         summary: entryContent.slice(0, 300),
         ...(captureType === "link" && { image_url: data?.original_url || content.trim() }),
-        ...(captureType === "voice" && voiceAudioUrl && { image_url: voiceAudioUrl }),
       }).select("id").single();
 
       if (entryError) {
@@ -446,7 +438,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
       // Success
       toast({
-        title: captureType === "voice" ? "Source saved" : "Source saved",
+        title: "Source saved",
         description: "Your source has been saved.",
       });
 
