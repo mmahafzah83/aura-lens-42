@@ -562,15 +562,46 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         <div>
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3">Content Format</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => (
-              <button key={key} onClick={() => setContentType(key)} className={`p-3 rounded-xl border text-left transition-all ${contentType === key ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"}`}>
-                <Icon className="w-4 h-4 mb-1.5" />
-                <span className="block text-xs font-medium">{label}</span>
-                {subtitle && (
-                  <span className="block text-[10px] mt-0.5 opacity-70" style={{ fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
-                )}
-              </button>
-            ))}
+            {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => {
+              const active = contentType === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setContentType(key)}
+                  style={{
+                    background: active ? "#FEF0E6" : "#fff",
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    border: active ? "1.5px solid #F97316" : "0.5px solid rgba(0,0,0,0.07)",
+                    boxShadow: "var(--shadow-sm)",
+                    cursor: "pointer",
+                    textAlign: "center",
+                    transition: "box-shadow 0.15s, border-color 0.15s, background 0.15s",
+                  }}
+                  className="hover:shadow-md flex flex-col items-center"
+                >
+                  <span
+                    className="flex items-center justify-center"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: active ? "rgba(249,115,22,0.15)" : "#F3F0EB",
+                      color: active ? "#F97316" : "#3D3A36",
+                      marginBottom: 6,
+                    }}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? "#C05A10" : "#1A1815", lineHeight: 1.2 }}>
+                    {label}
+                  </span>
+                  {subtitle && (
+                    <span style={{ fontSize: 9, color: "#7A7670", marginTop: 2, fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -597,19 +628,28 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             <div>
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Framework</p>
               <div className="flex flex-wrap gap-1.5">
-                {FRAMEWORK_OPTIONS.map(fw => (
-                  <button
-                    key={fw.key}
-                    onClick={() => setFramework(fw.key)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                      framework === fw.key
-                        ? "bg-primary/10 border-primary/30 text-primary"
-                        : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
-                    }`}
-                  >
-                    {fw.label}
-                  </button>
-                ))}
+                {FRAMEWORK_OPTIONS.map(fw => {
+                  const active = framework === fw.key;
+                  return (
+                    <button
+                      key={fw.key}
+                      onClick={() => setFramework(fw.key)}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 500,
+                        padding: "5px 12px",
+                        borderRadius: 20,
+                        background: active ? "#0E0D0C" : "#fff",
+                        border: `0.5px solid ${active ? "#0E0D0C" : "rgba(0,0,0,0.07)"}`,
+                        color: active ? "#fff" : "#2A2825",
+                        cursor: "pointer",
+                        transition: "background 0.15s, color 0.15s, border-color 0.15s",
+                      }}
+                    >
+                      {fw.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -621,13 +661,23 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 </p>
               )}
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
-              <Input value={topic} onChange={(e) => { setTopic(e.target.value); if (trendPrefillLabel) setTrendPrefillLabel(null); }} placeholder="e.g. Why AI-native organizations will outperform digital transformations" className="bg-secondary/30 border-border/20 text-sm" />
+              <Input
+                value={topic}
+                onChange={(e) => { setTopic(e.target.value); if (trendPrefillLabel) setTrendPrefillLabel(null); }}
+                placeholder="e.g. Why AI-native organizations will outperform digital transformations"
+                className="aura-create-input"
+              />
             </div>
 
             {/* Context */}
             <div>
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Context <span className="text-muted-foreground/50 normal-case">(optional)</span></p>
-              <Textarea value={context} onChange={(e) => setContext(e.target.value)} placeholder="Add angles, data points, or frameworks to include…" className="min-h-[80px] bg-secondary/30 border-border/20 text-sm" />
+              <Textarea
+                value={context}
+                onChange={(e) => setContext(e.target.value)}
+                placeholder="Add angles, data points, or frameworks to include…"
+                className="aura-create-input min-h-[80px]"
+              />
             </div>
 
             {/* Language */}
@@ -640,10 +690,31 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             </div>
 
             {/* Generate */}
-            <Button id="aura-generate-btn" onClick={generate} disabled={isGeneratingAny || !topic.trim()} className="w-full gap-2">
+            <button
+              id="aura-generate-btn"
+              onClick={generate}
+              disabled={isGeneratingAny || !topic.trim()}
+              className="aura-generate-btn w-full"
+              style={{
+                background: isGeneratingAny || !topic.trim() ? "#E8B891" : "#F97316",
+                color: "#fff",
+                border: "none",
+                borderRadius: 12,
+                padding: 14,
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: isGeneratingAny || !topic.trim() ? "not-allowed" : "pointer",
+                transition: "background 0.15s",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Generate {FORMAT_LABELS[contentType]?.label || "Content"}
-            </Button>
+            </button>
 
             {/* Output */}
             {displayedOutput && (
