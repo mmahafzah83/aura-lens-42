@@ -842,6 +842,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* SECTION 3 — Aura's Read */}
       {competitorAlert && (
         <div
+          className="aura-alert-pulse"
           style={{
             background: "hsl(var(--card))",
             border: "0.5px solid hsl(var(--border))",

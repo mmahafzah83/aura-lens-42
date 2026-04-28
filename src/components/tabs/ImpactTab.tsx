@@ -1514,8 +1514,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
-                <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
-                <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                {contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
+                  <>
+                    <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-foreground font-medium text-sm leading-snug">Post 3+ times to unlock theme analysis</div>
+                    <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                  </>
+                )}
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
                 <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
@@ -1554,6 +1563,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                         </div>
                       );
                     })}
+                    {contentPerf.tones.length < 3 && (
+                      <div className="text-xs text-muted-foreground pt-1 italic">
+                        Publish more to build your full distribution
+                      </div>
+                    )}
                   </div>
                 </div>
               );

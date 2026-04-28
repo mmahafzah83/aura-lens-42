@@ -47,7 +47,7 @@ const Dashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
-  const [user, setUser] = useState<{ email?: string } | null>(null);
+  const [user, setUser] = useState<{ email?: string; fullName?: string | null } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -169,9 +169,13 @@ const Dashboard = () => {
         const uid = session.user.id;
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed")
+          .select("completed, onboarding_completed, full_name")
           .eq("user_id", uid)
           .maybeSingle();
+
+        if (profile) {
+          setUser((u) => ({ ...(u || {}), email: session.user.email, fullName: (profile as any).full_name ?? null }));
+        }
 
         // New wizard trigger: no profile row AND localStorage not set
         const wizardDone = localStorage.getItem("aura_onboarding_complete") === "true";
@@ -480,7 +484,32 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell />
-              <span className="text-[10px] text-muted-foreground/40 hidden sm:block tracking-widest uppercase">{user?.email}</span>
+              {(() => {
+                const fn = (user?.fullName || "").trim();
+                const parts = fn.split(/\s+/).filter(Boolean);
+                const initials = parts.length >= 2
+                  ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+                  : parts.length === 1
+                    ? parts[0][0]?.toUpperCase()
+                    : "";
+                return initials ? (
+                  <span
+                    className="aura-initials-avatar"
+                    title={fn || user?.email || ""}
+                    aria-label={fn || "Account"}
+                  >
+                    {initials}
+                  </span>
+                ) : (
+                  <span
+                    className="aura-initials-avatar"
+                    title={user?.email || "Account"}
+                    aria-label="Account"
+                  >
+                    <User className="w-4 h-4" />
+                  </span>
+                );
+              })()}
               <button onClick={handleLogout} className="text-muted-foreground/40 hover:text-foreground transition-colors tactile-press" title="Log out">
                 <LogOut className="w-4 h-4" />
               </button>
@@ -490,7 +519,7 @@ const Dashboard = () => {
           {/* Tab Content */}
           <div className="tab-content-spring">
             {activeTab === "home" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={() => setCaptureOpen(true)} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
                 </ErrorBoundary>
@@ -498,7 +527,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "identity" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <IdentityTab
                     onResetDiagnostic={() => setShowDiagnostic(true)}
@@ -514,7 +543,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "intelligence" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <IntelligenceTab
                     entries={entries}
@@ -532,7 +561,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "authority" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} />
                 </ErrorBoundary>
@@ -540,7 +569,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "influence" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <ImpactTab onOpenCapture={() => setCaptureOpen(true)} />
                 </ErrorBoundary>
