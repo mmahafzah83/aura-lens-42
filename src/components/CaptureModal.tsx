@@ -796,7 +796,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = "var(--brand)";
                     e.currentTarget.style.background = "#FFFFFF";
-                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                   }}
                   onBlur={async (e) => {
                     e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "var(--border)";
@@ -968,7 +968,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--brand)";
                   e.currentTarget.style.background = "#FFFFFF";
-                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = "var(--border)";
