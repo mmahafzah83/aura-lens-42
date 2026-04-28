@@ -730,8 +730,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         const flush = (chunk: string) => {
           acc += chunk;
           setMessages(prev => {
-            // update the brief placeholder (last assistant message with isBrief)
-            const idx = [...prev].map(m => m.isBrief && m.role === "assistant").lastIndexOf(true);
+            // Find last brief message index
+            let idx = -1;
+            for (let i = prev.length - 1; i >= 0; i--) {
+              if (prev[i].role === "assistant" && prev[i].isBrief) { idx = i; break; }
+            }
             if (idx === -1) return [...prev, { role: "assistant", content: acc, isBrief: true }];
             return prev.map((m, i) => i === idx ? { ...m, content: acc } : m);
           });
