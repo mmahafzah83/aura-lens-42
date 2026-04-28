@@ -292,6 +292,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [memoryRows, setMemoryRows] = useState<MemoryRow[]>([]);
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
   const sessionIdRef = useRef<string>(Date.now().toString());
+  // ── Adaptive first-chip label parsed from latest assistant response ──
+  const [adaptiveChipLabel, setAdaptiveChipLabel] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -571,6 +573,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setInput("");
     setIsLoading(true);
     setShowMemoryPanel(false);
+    // Reset adaptive chip when a new message is sent
+    setAdaptiveChipLabel(null);
 
     // Build silent cross-session memory prefix (last 5 user/assistant rows, chronological)
     const memoryPrefix: Msg[] = memoryRows
@@ -611,6 +615,17 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       // Save assistant message
       if (assistantContent) {
         await saveMessage(convId, "assistant", assistantContent);
+        // Parse adaptive chip label from latest response
+        const m = assistantContent.match(/\b(Draft|Write|Develop|Send|Create|Propose|Schedule|Prepare|Build)\s+(?:an?\s+|the\s+)?([A-Za-z][\w-]*(?:\s+[A-Za-z][\w-]*){0,2})/i);
+        if (m) {
+          const noun = m[2].replace(/[.,;:!?]+$/, "").trim();
+          const cap = noun.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+          let label = `Draft ${cap}`;
+          if (label.length > 20) label = label.slice(0, 20).trimEnd();
+          setAdaptiveChipLabel(label);
+        } else {
+          setAdaptiveChipLabel(null);
+        }
         // Persist assistant turn to cross-session memory (silent failure)
         (async () => {
           try {
@@ -1060,17 +1075,21 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
             >
               {/* Quick Actions */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-                {QUICK_ACTIONS.map(action => (
-                  <button
-                    key={action.mode}
-                    onClick={() => handleQuickAction(action)}
-                    disabled={isLoading}
-                    className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
-                  >
-                    <action.icon className="w-3.5 h-3.5" />
-                    {action.label}
-                  </button>
-                ))}
+                {QUICK_ACTIONS.map((action, idx) => {
+                  const isAdaptive = idx === 0 && !!adaptiveChipLabel;
+                  const label = isAdaptive ? (adaptiveChipLabel as string) : action.label;
+                  return (
+                    <button
+                      key={action.mode}
+                      onClick={() => isAdaptive ? send(label) : handleQuickAction(action)}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
+                    >
+                      <action.icon className="w-3.5 h-3.5" />
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="flex gap-2">
