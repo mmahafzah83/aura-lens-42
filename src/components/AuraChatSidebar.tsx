@@ -1057,6 +1057,76 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
           </div>
         )}
 
+        {/* ═══ VAULT VIEW ═══ */}
+        {viewMode === "vault" && (
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
+            {vaultLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : vaultItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <Bookmark className="w-10 h-10 text-muted-foreground/30 mb-3" />
+                <p className="text-xs text-muted-foreground/60 max-w-[260px] leading-relaxed">
+                  Your saved Aura responses appear here. Click Save to Vault after any response.
+                </p>
+              </div>
+            ) : (
+              vaultItems.map(item => {
+                const style = VAULT_TYPE_STYLES[item.type] || VAULT_TYPE_STYLES.analysis;
+                const date = new Date(item.created_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                const isExpanded = expandedVaultId === item.id;
+                const preview = (item.content || "").replace(/\s+/g, " ").trim().slice(0, 100);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setExpandedVaultId(isExpanded ? null : item.id)}
+                    className="group rounded-lg border border-border/30 bg-secondary/30 hover:bg-secondary/50 transition-colors p-3 cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span style={{ background: style.bg, color: style.color, fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        {item.type}
+                      </span>
+                      <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", opacity: 0.7 }}>
+                        {date}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", lineHeight: 1.45, whiteSpace: isExpanded ? "pre-wrap" : "normal" }}>
+                      {isExpanded ? item.content : (preview + (item.content.length > 100 ? "…" : ""))}
+                    </div>
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 md:opacity-0 max-md:opacity-100 transition-opacity"
+                    >
+                      <button
+                        onClick={() => vaultAskFollowUp(item.content)}
+                        className="text-[11px] font-medium px-2 py-1 rounded-md text-primary hover:bg-primary/10 tactile-press"
+                      >
+                        Ask follow-up →
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try { await navigator.clipboard.writeText(item.content); toast.success("Copied"); }
+                          catch { toast.error("Copy failed"); }
+                        }}
+                        className="text-[11px] font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 tactile-press"
+                      >
+                        Copy
+                      </button>
+                      <button
+                        onClick={() => vaultDelete(item)}
+                        className="text-[11px] font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 tactile-press"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
         {/* ═══ CHAT VIEW ═══ */}
         {viewMode === "chat" && (
           <>
