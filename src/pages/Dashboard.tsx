@@ -484,7 +484,32 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell />
-              <span className="text-[10px] text-muted-foreground/40 hidden sm:block tracking-widest uppercase">{user?.email}</span>
+              {(() => {
+                const fn = (user?.fullName || "").trim();
+                const parts = fn.split(/\s+/).filter(Boolean);
+                const initials = parts.length >= 2
+                  ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+                  : parts.length === 1
+                    ? parts[0][0]?.toUpperCase()
+                    : "";
+                return initials ? (
+                  <span
+                    className="aura-initials-avatar"
+                    title={fn || user?.email || ""}
+                    aria-label={fn || "Account"}
+                  >
+                    {initials}
+                  </span>
+                ) : (
+                  <span
+                    className="aura-initials-avatar"
+                    title={user?.email || "Account"}
+                    aria-label="Account"
+                  >
+                    <User className="w-4 h-4" />
+                  </span>
+                );
+              })()}
               <button onClick={handleLogout} className="text-muted-foreground/40 hover:text-foreground transition-colors tactile-press" title="Log out">
                 <LogOut className="w-4 h-4" />
               </button>
