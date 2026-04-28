@@ -20,18 +20,18 @@ interface AurasReadProps {
 const ACCENT = "var(--brand)";
 const NUMBER_GLYPHS = ["①", "②", "③"];
 
-const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => {
+const urgencyClass = (u: AuraItem["urgency"]): string => {
   switch (u) {
-    case "HIGH":   return { bg: "#FEE2E2", color: "#991B1B" };
+    case "HIGH":   return "badge-base badge-high";
     case "MEDIUM":
-    default:       return { bg: "#FFF7ED", color: "#C2410C" };
+    default:       return "badge-base badge-medium";
   }
 };
 
 const actionLabelColor = (a: AuraItem["action_type"]): string => {
   switch (a) {
     case "PUBLISH": return "var(--brand)";
-    case "CAPTURE": return "#185FA5";
+    case "CAPTURE": return "var(--color-info-text)";
     case "WATCH":
     default:        return "var(--ink-5)";
   }
