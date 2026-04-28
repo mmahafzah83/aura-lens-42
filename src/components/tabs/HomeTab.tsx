@@ -10,6 +10,7 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
+import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 
@@ -213,11 +214,38 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // Competitor alert (read-only, additive)
   const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
 
+  // First-login onboarding wizard (3 steps)
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
   // Live clock
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
+
+  // First-login onboarding gate — only after the session is confirmed,
+  // and only if there is no diagnostic_profiles row for this user yet.
+  useEffect(() => {
+    if (!sessionConfirmed || !authUser?.id) return;
+    let cancelled = false;
+    const checkOnboarding = async () => {
+      try {
+        const alreadyDone = localStorage.getItem("aura_onboarding_complete");
+        if (alreadyDone === "true") return;
+        const { data } = await supabase
+          .from("diagnostic_profiles")
+          .select("id")
+          .eq("user_id", authUser.id)
+          .maybeSingle();
+        if (!cancelled && !data) setShowOnboarding(true);
+      } catch (e) {
+        // Non-fatal: never block Home if this check fails.
+        console.warn("[HomeTab] onboarding check failed", e);
+      }
+    };
+    checkOnboarding();
+    return () => { cancelled = true; };
+  }, [sessionConfirmed, authUser?.id]);
 
 
   // ─── Loaders (each takes the user from auth-ready, no getUser() roundtrip) ───
@@ -755,6 +783,15 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
+      {showOnboarding && authUser?.id && (
+        <OnboardingWizardModal
+          open={showOnboarding}
+          userId={authUser.id}
+          onClose={() => setShowOnboarding(false)}
+          onOpenFullCapture={onOpenCapture}
+        />
+      )}
+
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
