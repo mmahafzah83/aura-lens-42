@@ -137,7 +137,8 @@ html.dark  { background-color: #0c0c0c; }
   }
 
   [data-theme="light"] {
-    --background: 0 0% 97%;
+    /* Warm parchment #F8F5F0 ≈ hsl(36 33% 96%) */
+    --background: 36 33% 96%;
     --foreground: 0 0% 7%;
 
     --card: 0 0% 100%;
@@ -192,7 +193,7 @@ html.dark  { background-color: #0c0c0c; }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 16px;
     line-height: 1.6;
     letter-spacing: 0.01em;
@@ -206,7 +207,7 @@ html.dark  { background-color: #0c0c0c; }
   }
 
   h1, h2, h3 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'DM Serif Display', 'Playfair Display', Georgia, serif;
     letter-spacing: -0.025em;
   }
 
