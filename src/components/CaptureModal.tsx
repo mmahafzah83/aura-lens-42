@@ -68,6 +68,32 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // Load recent processed documents when the doc tab opens.
+  useEffect(() => {
+    if (!open || captureType !== "document") return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("documents")
+        .select("id, filename, file_type, file_size, status, created_at")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (!cancelled && data) setRecentDocs(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [open, captureType]);
+
+  // Reset transient UI on modal close
+  useEffect(() => {
+    if (open) return;
+    setLinkPreview(null);
+    setSignalMatch(null);
+  }, [open]);
+
   const handleImageSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) {
       toast({ title: "Invalid file", description: "Please upload an image.", variant: "destructive" });
