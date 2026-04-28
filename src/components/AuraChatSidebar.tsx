@@ -1,10 +1,96 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Zap, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil } from "lucide-react";
+import { X, Send, Loader2, Zap, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
+
+/* ── Always-on Context Strip (signals + identity pills) ── */
+interface TopSignal { id: string; signal_title: string; }
+interface IdentityCtx { level?: string | null; firm?: string | null; sector_focus?: string | null; }
+
+const AlwaysContextStrip = () => {
+  const [loaded, setLoaded] = useState(false);
+  const [signals, setSignals] = useState<TopSignal[]>([]);
+  const [identity, setIdentity] = useState<IdentityCtx>({});
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setLoaded(true); return; }
+        const uid = session.user.id;
+        const [sigRes, profRes] = await Promise.all([
+          supabase.from("strategic_signals").select("id, signal_title").eq("user_id", uid).eq("status", "active").order("priority_score", { ascending: false }).limit(3),
+          supabase.from("diagnostic_profiles").select("level, firm, sector_focus").eq("user_id", uid).maybeSingle(),
+        ]);
+        setSignals((sigRes.data as TopSignal[]) || []);
+        setIdentity((profRes.data as IdentityCtx) || {});
+      } catch {
+        // fail silently
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
+
+  const truncate = (s: string, n = 30) => (s || "").length > n ? `${s.slice(0, n)}…` : s;
+  const roleParts = [identity.level, identity.firm].filter(Boolean).join(" · ");
+
+  return (
+    <div className="mt-1.5 w-full max-w-[85%]">
+      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "hsl(var(--muted-foreground))" }}>
+        <ChevronDown className="w-3 h-3" />
+        <span>Context used</span>
+      </div>
+      <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+        {/* Signals row */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+          <span style={{ fontSize: 9, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Signals</span>
+          {!loaded ? null : signals.length > 0 ? (
+            signals.map(s => (
+              <span key={s.id} style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>
+                {truncate(s.signal_title || "Untitled signal", 30)}
+              </span>
+            ))
+          ) : (
+            <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>No signals loaded yet</span>
+          )}
+        </div>
+        {/* Identity row */}
+        {(roleParts || identity.sector_focus) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
+            <span style={{ fontSize: 9, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Identity</span>
+            {roleParts && (
+              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>{roleParts}</span>
+            )}
+            {identity.sector_focus && (
+              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>{identity.sector_focus}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Suggested follow-up question (parsed from response) ── */
+const SuggestedFollowUp = ({ content, onAsk }: { content: string; onAsk: (q: string) => void }) => {
+  const matches = Array.from(content.matchAll(/\*\*([^*]+)\*\*/g)).map(m => m[1].trim());
+  const blacklist = /^(NEXT STEP|PURSUIT STRATEGY)$/i;
+  const entity = matches.find(m => m && !blacklist.test(m)) || "your top competitor";
+  const question = `What is ${entity}'s exact position on this right now?`;
+  return (
+    <button
+      onClick={() => onAsk(question)}
+      className="mt-1.5 text-left hover:underline"
+      style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+    >
+      Also ask: {question} ↗
+    </button>
+  );
+};
 
 /* ── Context Panel — shows what data informed the response ── */
 interface MatchedSignal { id: string; signal_title: string; }
@@ -200,6 +286,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -246,6 +333,25 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       .limit(50);
     if (data) setConversations(data as any as Conversation[]);
   }, []);
+
+  // ── Load header intelligence counts on open ──
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+        const [sigRes, entRes] = await Promise.all([
+          supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active"),
+          supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        ]);
+        setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
+      } catch {
+        // fail silently
+      }
+    })();
+  }, [open]);
 
   // ── Load messages for a conversation ──
   const loadMessages = useCallback(async (convId: string) => {
@@ -620,6 +726,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
                     {activeConv ? "Strategic Thread" : "Chief of Staff"}
                   </p>
+                  {!activeConv && headerCounts && (
+                    <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", opacity: 0.7, marginTop: 1 }}>
+                      {headerCounts.signals} signals · {headerCounts.captures} captures loaded
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
@@ -775,7 +886,10 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                       )}
                     </div>
                     {msg.role === "assistant" && msg.content && !isLoading && (
-                      <ContextPanel userQuery={messages[i - 1]?.role === "user" ? messages[i - 1].content : ""} />
+                      <>
+                        <AlwaysContextStrip />
+                        <SuggestedFollowUp content={msg.content} onAsk={(q) => send(q)} />
+                      </>
                     )}
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <button
