@@ -1204,3 +1204,15 @@ html.dark  { background-color: #0c0c0c; }
   animation: capture-pulse-dot 1.5s ease-in-out infinite;
   flex-shrink: 0;
 }
+
+/* ── Mobile-only layout adjustments (≤767px) ── */
+@media (max-width: 767px) {
+  /* Collapse 3+ column grids that don't already have a mobile-first single
+     column declaration. Leaves intentional 2-col mobile layouts alone. */
+  .grid.grid-cols-3:not(.grid-cols-1):not(.sm\:grid-cols-1),
+  .grid.grid-cols-4:not(.grid-cols-1):not(.sm\:grid-cols-1) {
+    grid-template-columns: 1fr !important;
+  }
+  /* Prevent body scroll being hidden behind bottom nav when no extra padding */
+  body { padding-bottom: 0; }
+}
