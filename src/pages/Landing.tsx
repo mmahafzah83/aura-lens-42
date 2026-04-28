@@ -334,7 +334,7 @@ const Landing = () => {
             Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>authority</span>.
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
-          <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "#666", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
+          <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "var(--ink-5)", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
             Aura reads what you capture, finds the patterns, and helps you create content that builds your name in your field.
           </p>
 
@@ -380,7 +380,7 @@ const Landing = () => {
             <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "var(--ink)", fontWeight: 500 }}>
               Get early access
             </button>
-            <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-white/5" style={{ color: "#666666", border: "0.5px solid var(--ink-4)", background: "transparent", fontWeight: 400 }}>
+            <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-white/5" style={{ color: "var(--ink-5)", border: "0.5px solid var(--ink-4)", background: "transparent", fontWeight: 400 }}>
               See how it works
             </button>
           </div>
@@ -430,7 +430,7 @@ const Landing = () => {
             <p className="text-[18px] sm:text-[22px] font-medium leading-snug mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "var(--ink-7)" }}>
               "You know your field. But no one knows you."
             </p>
-            <p className="text-[14px] leading-relaxed" style={{ color: "#666" }}>
+            <p className="text-[14px] leading-relaxed" style={{ color: "var(--ink-5)" }}>
               You read reports. You attend meetings. You have real expertise. But it stays in your head. Aura changes that — it captures what you read, finds what matters, and helps you share it.
             </p>
           </div>
@@ -466,7 +466,7 @@ const Landing = () => {
               <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "var(--ink-7)" }}>
                 "Aura does not just help you create content. It first helps you understand what to stand for."
               </p>
-              <p className="text-[13px] leading-relaxed" style={{ color: "#666" }}>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-5)" }}>
                 Most professionals skip this step. They start posting without a clear positioning. The result is content that gets ignored. Aura starts with the foundation — who you are, what you are best at, and where you should focus.
               </p>
             </div>
@@ -485,7 +485,7 @@ const Landing = () => {
                 </div>
                 <div>
                   <div className="text-[14px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{c.title}</div>
-                  <div className="text-[12px] leading-relaxed" style={{ color: "#666" }}>{c.desc}</div>
+                  <div className="text-[12px] leading-relaxed" style={{ color: "var(--ink-5)" }}>{c.desc}</div>
                 </div>
               </div>
             ))}
@@ -517,7 +517,7 @@ const Landing = () => {
                 </div>
                 <div className="text-left sm:text-center">
                   <div className="text-[13px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{p.title}</div>
-                  <div className="text-[11px] leading-relaxed" style={{ color: "#666" }}>{p.desc}</div>
+                  <div className="text-[11px] leading-relaxed" style={{ color: "var(--ink-5)" }}>{p.desc}</div>
                 </div>
               </div>
             ))}
@@ -549,7 +549,7 @@ const Landing = () => {
                 <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "var(--surface-ink-subtle)", fontFamily: "'Playfair Display', serif" }}>{s.n}</div>
                 <div>
                   <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{s.t}</div>
-                  <div className="text-[13px] leading-[1.6]" style={{ color: "#666" }}>{s.d}</div>
+                  <div className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-5)" }}>{s.d}</div>
                 </div>
               </div>
             ))}

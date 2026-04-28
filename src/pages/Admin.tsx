@@ -357,7 +357,7 @@ const Admin = () => {
                               </span>
                             )}
                             {!r.seniority && !r.sector && (
-                              <span className="text-xs" style={{ color: "#555" }}>
+                              <span className="text-xs" style={{ color: "var(--ink-5)" }}>
                                 —
                               </span>
                             )}

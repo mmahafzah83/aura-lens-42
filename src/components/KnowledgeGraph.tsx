@@ -29,7 +29,7 @@ interface KnowledgeGraphProps {
 
 /* ── Node colors by type ── */
 const NODE_COLORS: Record<string, { bg: string; border: string }> = {
-  signal: { bg: "var(--warning-pale)", border: "#f59e0b" },
+  signal: { bg: "var(--warning-pale)", border: "var(--warning)" },
   framework: { bg: "#dbeafe", border: "#3b82f6" },
   entry: { bg: "#f3e8ff", border: "#8b5cf6" },
   evidence: { bg: "#dcfce7", border: "#22c55e" },
@@ -101,8 +101,8 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           if (pillarSet.has(p)) {
             graphEdges.push({
               id: `e-${nodeId}-pillar-${p}`, source: nodeId, target: `pillar-${p}`,
-              style: { stroke: "#f59e0b", strokeWidth: 1.5, opacity: 0.5 },
-              markerEnd: { type: MarkerType.ArrowClosed, color: "#f59e0b" },
+              style: { stroke: "var(--warning)", strokeWidth: 1.5, opacity: 0.5 },
+              markerEnd: { type: MarkerType.ArrowClosed, color: "var(--warning)" },
             });
           }
         });

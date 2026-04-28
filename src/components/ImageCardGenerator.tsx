@@ -169,8 +169,8 @@ const DEFAULT_CARD_STYLE: CardStyleConfig = {
 };
 
 const PRESETS = (accent: string) => ({
-  default: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
-  bold: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  default: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "var(--ink-5)" },
+  bold: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "var(--ink-5)" },
   warm: { bg: "var(--surface-subtle)", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
   minimal: { bg: "#ffffff", text: "var(--ink)", tagCol: "var(--ink-5)", roleCol: "var(--ink-6)" },
   midnight: { bg: "#080818", text: "#e8e8ff", tagCol: "#a78bfa", roleCol: "#4b4b7a" },
@@ -479,7 +479,7 @@ export default function ImageCardGenerator({
           <div style={{ marginBottom: 16 }}>
             {/* Title size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Title size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -492,7 +492,7 @@ export default function ImageCardGenerator({
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
                       borderColor: activeStyle.titleSize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
-                      color: activeStyle.titleSize === s ? "var(--brand)" : "#555",
+                      color: activeStyle.titleSize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -502,7 +502,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Header size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Header size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -515,7 +515,7 @@ export default function ImageCardGenerator({
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.headerSize === s ? "rgba(249,115,22,.12)" : "transparent",
                       borderColor: activeStyle.headerSize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
-                      color: activeStyle.headerSize === s ? "var(--brand)" : "#555",
+                      color: activeStyle.headerSize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -525,7 +525,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Body size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Body size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -538,7 +538,7 @@ export default function ImageCardGenerator({
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
                       borderColor: activeStyle.bodySize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
-                      color: activeStyle.bodySize === s ? "var(--brand)" : "#555",
+                      color: activeStyle.bodySize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -548,7 +548,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Card preset */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Style
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -561,7 +561,7 @@ export default function ImageCardGenerator({
                       fontSize: 9, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.preset === p ? "rgba(249,115,22,.12)" : "transparent",
                       borderColor: activeStyle.preset === p ? "rgba(249,115,22,.4)" : "var(--ink-3)",
-                      color: activeStyle.preset === p ? "var(--brand)" : "#555",
+                      color: activeStyle.preset === p ? "var(--brand)" : "var(--ink-5)",
                       textTransform: "capitalize",
                     }}
                   >
@@ -572,18 +572,18 @@ export default function ImageCardGenerator({
             </div>
             {/* Accent color */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Accent color
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {["var(--brand)", "var(--danger)", "var(--success)", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
+                {["var(--brand)", "var(--danger)", "var(--success)", "#378ADD", "#7F77DD", "#1D9E75", "var(--warning)", "#ffffff"].map((c) => (
                   <div
                     key={c}
                     onClick={() => updateCardStyle("accentColor", c)}
                     style={{
                       width: 22, height: 22, borderRadius: "50%", background: c,
                       cursor: "pointer", flexShrink: 0,
-                      border: activeStyle.accentColor === c ? "2px solid #fff" : "1.5px solid #333",
+                      border: activeStyle.accentColor === c ? "2px solid #fff" : "1.5px solid var(--ink-3)",
                       transform: activeStyle.accentColor === c ? "scale(1.2)" : "scale(1)",
                       transition: "all .15s",
                     }}
@@ -592,9 +592,9 @@ export default function ImageCardGenerator({
                 <div style={{ position: "relative", width: 22, height: 22 }}>
                   <div style={{
                     width: 22, height: 22, borderRadius: "50%",
-                    border: "1.5px dashed #444", display: "flex",
+                    border: "1.5px dashed var(--ink-4)", display: "flex",
                     alignItems: "center", justifyContent: "center",
-                    fontSize: 14, color: "#555", cursor: "pointer",
+                    fontSize: 14, color: "var(--ink-5)", cursor: "pointer",
                   }}>+</div>
                   <input
                     type="color"
@@ -607,7 +607,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Font */}
             <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Font
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -625,7 +625,7 @@ export default function ImageCardGenerator({
                       fontFamily: f.value,
                       background: activeStyle.cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
                       borderColor: activeStyle.cardFont === f.value ? "rgba(249,115,22,.4)" : "var(--ink-3)",
-                      color: activeStyle.cardFont === f.value ? "var(--brand)" : "#555",
+                      color: activeStyle.cardFont === f.value ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {f.label}
@@ -874,7 +874,7 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
+        <span style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
@@ -943,7 +943,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
         <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
+        <span style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
         <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
       </div>

@@ -110,7 +110,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
         />
       </div>
 
-      <p style={{ fontSize: 11, color: "#666", marginBottom: emptyFields.length > 0 ? 10 : 0 }}>
+      <p style={{ fontSize: 11, color: "var(--ink-5)", marginBottom: emptyFields.length > 0 ? 10 : 0 }}>
         Profile complete · Voice engine active · 3 assessments done
       </p>
 

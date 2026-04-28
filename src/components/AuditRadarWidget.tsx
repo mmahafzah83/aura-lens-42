@@ -230,7 +230,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           </div>
           <div>
             <p className="text-sm font-medium" style={{ color: "var(--ink-7)" }}>Complete your Evidence Audit to reveal your capability radar</p>
-            <p className="text-xs mt-1" style={{ color: "#666" }}>10 dimensions · 30 evidence questions · takes 5 minutes</p>
+            <p className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>10 dimensions · 30 evidence questions · takes 5 minutes</p>
           </div>
           <button
             onClick={onStartAudit}
@@ -290,7 +290,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
             <button
               onClick={() => setEditMode(false)}
               className="text-[11px]"
-              style={{ color: "#666" }}
+              style={{ color: "var(--ink-5)" }}
             >
               Cancel
             </button>
@@ -343,7 +343,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
                 top: tooltip.y,
                 transform: "translateX(-50%)",
                 background: "var(--surface-ink-subtle)",
-                border: "1px solid #333",
+                border: "1px solid var(--ink-3)",
                 borderRadius: 8,
                 padding: "6px 10px",
                 zIndex: 10,
@@ -363,7 +363,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
               <span className="text-[10px]" style={{ color: "var(--ink-5)" }}>High Tier (Strategic / Technical)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: "#666" }} />
+              <span className="w-2 h-2 rounded-full" style={{ background: "var(--ink-5)" }} />
               <span className="text-[10px]" style={{ color: "var(--ink-5)" }}>Mid Tier (Leadership / Commercial)</span>
             </div>
           </div>

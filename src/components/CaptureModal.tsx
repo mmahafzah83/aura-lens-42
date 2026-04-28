@@ -564,7 +564,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   position: "bottom-right",
                   duration: 3000,
                   style: {
-                    background: "#1a1400",
+                    background: "var(--surface-ink-subtle)",
                     color: "var(--brand)",
                     border: "1px solid #F9731633",
                   },

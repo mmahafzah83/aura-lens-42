@@ -237,7 +237,7 @@ const Onboarding = () => {
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 1 — Your foundation</p>
             <h1 className="text-xl font-medium" style={{ color: "var(--ink-7)" }}>Tell Aura who you are</h1>
-            <p className="text-sm" style={{ color: "#666" }}>This takes 60 seconds. It shapes everything Aura generates for you.</p>
+            <p className="text-sm" style={{ color: "var(--ink-5)" }}>This takes 60 seconds. It shapes everything Aura generates for you.</p>
 
             {/* Name */}
             <div className="space-y-1">
@@ -272,7 +272,7 @@ const Onboarding = () => {
                     style={{
                       background: role === chip ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
                       border: `1px solid ${role === chip ? "var(--brand)" : "var(--ink-3)"}`,
-                      color: role === chip ? "var(--brand)" : "#666",
+                      color: role === chip ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {chip}
@@ -293,7 +293,7 @@ const Onboarding = () => {
                     style={{
                       background: industry === ind ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
                       border: `1px solid ${industry === ind ? "var(--brand)" : "var(--ink-3)"}`,
-                      color: industry === ind ? "var(--brand)" : "#666",
+                      color: industry === ind ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {ind}
@@ -321,7 +321,7 @@ const Onboarding = () => {
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: canContinueScreen1 ? "var(--brand)" : "var(--ink-3)",
-                color: canContinueScreen1 ? "var(--ink)" : "#666",
+                color: canContinueScreen1 ? "var(--ink)" : "var(--ink-5)",
               }}
             >
               Continue →
@@ -344,7 +344,7 @@ const Onboarding = () => {
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 2 — Your strengths</p>
             <h1 className="text-xl font-medium" style={{ color: "var(--ink-7)" }}>How do you naturally work?</h1>
-            <p className="text-sm" style={{ color: "#666" }}>Choose what feels most like you. Aura uses this to find your brand positioning.</p>
+            <p className="text-sm" style={{ color: "var(--ink-5)" }}>Choose what feels most like you. Aura uses this to find your brand positioning.</p>
             <p className="text-xs font-medium mt-2" style={{ color: "var(--ink-6)" }}>When you solve a problem, you usually...</p>
             <div className="space-y-2">
               {STRENGTHS.map(s => (
@@ -371,7 +371,7 @@ const Onboarding = () => {
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: strength ? "var(--brand)" : "var(--ink-3)",
-                color: strength ? "var(--ink)" : "#666",
+                color: strength ? "var(--ink)" : "var(--ink-5)",
               }}
             >
               Continue →
@@ -394,7 +394,7 @@ const Onboarding = () => {
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 3 — Feed Aura</p>
             <h1 className="text-xl font-medium" style={{ color: "var(--ink-7)" }}>Add your first source</h1>
-            <p className="text-sm" style={{ color: "#666" }}>Paste a link to any article you read recently. Aura will read it and find your first signal.</p>
+            <p className="text-sm" style={{ color: "var(--ink-5)" }}>Paste a link to any article you read recently. Aura will read it and find your first signal.</p>
 
             <div className="flex gap-2">
               {(["link", "note"] as const).map(t => (
@@ -405,7 +405,7 @@ const Onboarding = () => {
                   style={{
                     background: captureType === t ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
                     border: `1px solid ${captureType === t ? "var(--brand)" : "var(--ink-3)"}`,
-                    color: captureType === t ? "var(--brand)" : "#666",
+                    color: captureType === t ? "var(--brand)" : "var(--ink-5)",
                   }}
                 >
                   {t === "link" ? <Link2 className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
@@ -447,7 +447,7 @@ const Onboarding = () => {
               className="w-full py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
               style={{
                 background: captureValue.trim() ? "var(--brand)" : "var(--ink-3)",
-                color: captureValue.trim() ? "var(--ink)" : "#666",
+                color: captureValue.trim() ? "var(--ink)" : "var(--ink-5)",
               }}
             >
               {loading ? (
@@ -479,7 +479,7 @@ const Onboarding = () => {
               Your Aura score · {scoreTier}
             </p>
             <h1 className="text-lg font-medium" style={{ color: "var(--ink-7)" }}>Your Aura is ready.</h1>
-            <p className="text-sm" style={{ color: "#666" }}>Here is what was built from your inputs.</p>
+            <p className="text-sm" style={{ color: "var(--ink-5)" }}>Here is what was built from your inputs.</p>
 
             <div className="w-full space-y-3 text-left">
               {[
@@ -507,7 +507,7 @@ const Onboarding = () => {
                     className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
                     style={{ background: item.done ? "var(--success)" : "var(--ink-4)" }}
                   />
-                  <span className="text-sm" style={{ color: item.done ? "var(--ink-7)" : "#666" }}>
+                  <span className="text-sm" style={{ color: item.done ? "var(--ink-7)" : "var(--ink-5)" }}>
                     {item.text}
                   </span>
                 </div>

@@ -140,36 +140,36 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
     <div className="mt-1.5 w-full max-w-[85%]">
       <button
         onClick={() => setExpanded(e => !e)}
-        style={{ fontSize: 10, color: "#444", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+        style={{ fontSize: 10, color: "var(--ink-4)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
       >
         Context used {expanded ? "▴" : "↓"}
       </button>
       {expanded && (
         <div style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", color: "#333", letterSpacing: 0.5 }}>SIGNALS</div>
+          <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5 }}>SIGNALS</div>
           {!loaded ? (
-            <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>Loading…</div>
+            <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>Loading…</div>
           ) : signals.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               {signals.map(s => (
-                <span key={s.id} style={{ background: "#1a1400", border: "1px solid #F9731633", color: "var(--brand)", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
+                <span key={s.id} style={{ background: "var(--surface-ink-subtle)", border: "1px solid #F9731633", color: "var(--brand)", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
                   {s.signal_title}
                 </span>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>No stored signals matched this query</div>
+            <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>No stored signals matched this query</div>
           )}
 
-          <div style={{ fontSize: 9, textTransform: "uppercase", color: "#333", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
+          <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
           {profileRows.length > 0 ? (
             <div style={{ marginTop: 4 }}>
               {profileRows.map(r => (
-                <div key={r.label} style={{ fontSize: 10, color: "#555" }}>· {r.label}: {r.value}</div>
+                <div key={r.label} style={{ fontSize: 10, color: "var(--ink-5)" }}>· {r.label}: {r.value}</div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>No profile context available</div>
+            <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>No profile context available</div>
           )}
 
           {loaded && (
@@ -211,7 +211,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
         <button
           onClick={() => setExpanded(true)}
           className="mt-2 text-xs flex items-center gap-1 transition-colors"
-          style={{ color: "#666666", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          style={{ color: "var(--ink-5)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
         >
           Read full analysis ▾
         </button>

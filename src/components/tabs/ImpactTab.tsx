@@ -749,7 +749,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   style={{
                     fontFamily: "'DM Serif Display', Georgia, serif",
                     fontSize: 26,
-                    color: "#BA7517",
+                    color: "var(--warning)",
                     letterSpacing: "-0.02em",
                     lineHeight: 1,
                     marginTop: 4,
@@ -798,7 +798,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           const barColor = (i: number, n: number) => {
             const t = n <= 1 ? 0 : i / (n - 1);
             if (t < 0.5) return "var(--brand)";
-            if (t < 0.85) return "#BA7517";
+            if (t < 0.85) return "var(--warning)";
             return "var(--danger)";
           };
           return (

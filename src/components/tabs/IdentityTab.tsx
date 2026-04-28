@@ -358,7 +358,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <div style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: 12 }}>
             {identityFacts.map(fact => (
               <div key={fact.key} className="mb-2 last:mb-0">
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", letterSpacing: "0.05em" }}>{fact.label}</div>
+                <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-5)", letterSpacing: "0.05em" }}>{fact.label}</div>
                 {editingField === fact.key ? (
                   <div className="flex items-center gap-1 mt-0.5">
                     <input

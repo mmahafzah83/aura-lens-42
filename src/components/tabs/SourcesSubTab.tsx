@@ -388,7 +388,7 @@ const ExpandedSource = ({
               <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(197,165,90,0.1)", color: "var(--brand)" }}>{entry.skill_pillar}</span>
             )}
             {entry.framework_tag && (
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "var(--surface-ink-subtle)", color: "#666", border: "1px solid var(--ink-3)" }}>{entry.framework_tag}</span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "var(--surface-ink-subtle)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>{entry.framework_tag}</span>
             )}
           </div>
 
@@ -638,7 +638,7 @@ const SourcesSubTab = ({
           <FileUp className="w-6 h-6" style={{ color: "var(--brand)" }} />
         </div>
         <p style={{ color: "var(--ink-7)", fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>Your knowledge starts here.</p>
-        <p style={{ color: "#666", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
+        <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
         <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
           Capture your first source
         </button>
@@ -656,7 +656,7 @@ const SourcesSubTab = ({
           <FileUp className="w-4 h-4" style={{ color: "var(--brand)" }} />
         </div>
         <h2 style={{ color: "var(--ink-5)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
-        <span style={{ color: "#666", fontSize: 12, marginLeft: "auto" }}>{totalCount} captured</span>
+        <span style={{ color: "var(--ink-5)", fontSize: 12, marginLeft: "auto" }}>{totalCount} captured</span>
       </div>
 
       {/* Search */}
@@ -691,7 +691,7 @@ const SourcesSubTab = ({
                   flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
                   cursor: "pointer", whiteSpace: "nowrap",
                   background: isActive ? "rgba(197,165,90,0.15)" : "var(--surface-ink-raised)",
-                  color: isActive ? "var(--brand)" : "#555",
+                  color: isActive ? "var(--brand)" : "var(--ink-5)",
                   border: `1px solid ${isActive ? "var(--brand)" : "var(--ink-3)"}`,
                 }}
               >
@@ -720,7 +720,7 @@ const SourcesSubTab = ({
         </div>
       ) : visibleEntries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
-          <p style={{ color: "#666", fontSize: 13 }}>No sources match your search.</p>
+          <p style={{ color: "var(--ink-5)", fontSize: 13 }}>No sources match your search.</p>
         </div>
       ) : (
         <div ref={scrollRef} onScroll={handleScroll} style={{ maxHeight: "calc(100vh - 460px)", overflowY: "auto" }} className="scrollbar-hide">
@@ -785,7 +785,7 @@ const SourcesSubTab = ({
                   className="opacity-0 group-hover:opacity-100 sm:opacity-0 max-sm:!opacity-100"
                   style={{ position: "absolute", top: 12, right: 12, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4, transition: "opacity 0.2s" }}
                 >
-                  <Trash2 size={14} color="#555" />
+                  <Trash2 size={14} color="var(--ink-5)" />
                 </button>
 
                 {/* Card content */}
@@ -809,7 +809,7 @@ const SourcesSubTab = ({
                             <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                               {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
                             </p>
-                            <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                            <span style={{ color: "var(--ink-5)", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
                           </div>
                           {docStatus === "pending" && (
                             <button
@@ -838,7 +838,7 @@ const SourcesSubTab = ({
                           </button>
                         </div>
                       ) : preview ? (
-                        <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
+                        <p style={{ color: "var(--ink-5)", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
                       ) : null}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         {docTypeLabel && (
@@ -850,7 +850,7 @@ const SourcesSubTab = ({
                         {docSizeLabel && (
                           <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>· {docSizeLabel}</span>
                         )}
-                        {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
+                        {domain && <span style={{ fontSize: 11, color: "var(--ink-5)" }}>{domain}</span>}
                         <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
                           <span title="Signal generated from this source" style={{ color: "var(--brand)", display: "flex", alignItems: "center" }}>

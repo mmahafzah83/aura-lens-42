@@ -413,7 +413,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
             <h3 style={{ fontSize: 14, color: "var(--ink-7)", fontWeight: 600, margin: 0 }}>
               No performance data yet
             </h3>
-            <p style={{ fontSize: 12, color: "#666", marginTop: 8, marginBottom: 20, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 8, marginBottom: 20, lineHeight: 1.5 }}>
               Connect your LinkedIn account or sync your posts to start tracking your influence.
             </p>
             <button

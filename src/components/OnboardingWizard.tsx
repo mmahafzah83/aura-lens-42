@@ -206,7 +206,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 onChange={(e) => setCaptureText(e.target.value)}
                 placeholder="Paste a URL, or type a thought, insight, or article title..."
               />
-              <p className="text-xs mt-2" style={{ color: "#666" }}>
+              <p className="text-xs mt-2" style={{ color: "var(--ink-5)" }}>
                 Aura will find the strategic pattern inside.
               </p>
             </div>
@@ -237,7 +237,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 <button
                   onClick={() => setStep(3)}
                   className="w-full text-center text-xs py-1"
-                  style={{ color: "#666" }}
+                  style={{ color: "var(--ink-5)" }}
                 >
                   Skip this step
                 </button>
@@ -260,7 +260,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               <Chrome className="w-8 h-8 text-brand shrink-0" />
               <div className="flex-1">
                 <p className="text-sm text-ink-7 font-medium">Install the Aura Chrome Extension</p>
-                <p className="text-xs mt-0.5" style={{ color: "#666" }}>Already installed? You're good to go.</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--ink-5)" }}>Already installed? You're good to go.</p>
               </div>
               <a
                 href="https://chrome.google.com/webstore"
@@ -304,7 +304,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
           <button
             onClick={skip}
             className="absolute bottom-3 right-5 text-[11px] transition-colors"
-            style={{ color: "#555" }}
+            style={{ color: "var(--ink-5)" }}
           >
             Skip wizard
           </button>

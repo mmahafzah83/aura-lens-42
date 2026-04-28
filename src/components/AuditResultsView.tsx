@@ -123,7 +123,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
 
     // Labels
     ctx.font = "9px system-ui, sans-serif";
-    ctx.fillStyle = "#666666";
+    ctx.fillStyle = "var(--ink-5)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
