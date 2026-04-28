@@ -726,6 +726,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
                     {activeConv ? "Strategic Thread" : "Chief of Staff"}
                   </p>
+                  {!activeConv && headerCounts && (
+                    <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", opacity: 0.7, marginTop: 1 }}>
+                      {headerCounts.signals} signals · {headerCounts.captures} captures loaded
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-0.5 shrink-0">
