@@ -20,11 +20,11 @@ interface AurasReadProps {
 const ACCENT = "var(--brand)";
 const NUMBER_GLYPHS = ["①", "②", "③"];
 
-const urgencyClass = (u: AuraItem["urgency"]): string => {
+const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => {
   switch (u) {
-    case "HIGH":   return "badge-base badge-high";
+    case "HIGH":   return { bg: "var(--danger-pale)", color: "var(--danger)" };
     case "MEDIUM":
-    default:       return "badge-base badge-medium";
+    default:       return { bg: "var(--warning-pale)", color: "var(--warning)" };
   }
 };
 
