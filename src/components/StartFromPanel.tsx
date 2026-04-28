@@ -4,7 +4,6 @@ import {
   TrendingUp, BookOpen, User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 
