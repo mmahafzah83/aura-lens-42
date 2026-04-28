@@ -287,6 +287,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
+  // ── Cross-session memory (aura_conversation_memory) ──
+  type MemoryRow = { id: string; role: string | null; content: string | null; created_at: string };
+  const [memoryRows, setMemoryRows] = useState<MemoryRow[]>([]);
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const sessionIdRef = useRef<string>(Date.now().toString());
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -349,6 +354,29 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
       } catch {
         // fail silently
+      }
+    })();
+  }, [open]);
+
+  // ── Load cross-session memory on open ──
+  useEffect(() => {
+    if (!open) { setShowMemoryPanel(false); return; }
+    sessionIdRef.current = Date.now().toString();
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setMemoryRows([]); return; }
+        const { data } = await supabase
+          .from("aura_conversation_memory" as any)
+          .select("id, role, content, created_at")
+          .eq("user_id", session.user.id)
+          .not("role", "is", null)
+          .not("content", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        setMemoryRows(((data as any[]) || []) as MemoryRow[]);
+      } catch {
+        setMemoryRows([]);
       }
     })();
   }, [open]);
@@ -542,6 +570,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+    setShowMemoryPanel(false);
+
+    // Build silent cross-session memory prefix (last 5 user/assistant rows, chronological)
+    const memoryPrefix: Msg[] = memoryRows
+      .filter(r => (r.role === "user" || r.role === "assistant") && r.content)
+      .slice(0, 5)
+      .reverse()
+      .map(r => ({ role: r.role as "user" | "assistant", content: r.content as string }));
 
     try {
       // Ensure we have a conversation
@@ -554,12 +590,41 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       // Save user message
       await saveMessage(convId, "user", text.trim(), mode);
 
-      // Stream response
-      const assistantContent = await streamChat(newMessages, mode);
+      // Persist user turn to cross-session memory (silent failure)
+      (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+          await supabase.from("aura_conversation_memory" as any).insert({
+            user_id: session.user.id,
+            role: "user",
+            content: text.trim(),
+            session_id: sessionIdRef.current,
+            metadata: {},
+          } as any);
+        } catch (e) { console.error("[memory] user insert failed", e); }
+      })();
+
+      // Stream response (with silent memory prefix prepended)
+      const assistantContent = await streamChat([...memoryPrefix, ...newMessages], mode);
 
       // Save assistant message
       if (assistantContent) {
         await saveMessage(convId, "assistant", assistantContent);
+        // Persist assistant turn to cross-session memory (silent failure)
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            await supabase.from("aura_conversation_memory" as any).insert({
+              user_id: session.user.id,
+              role: "assistant",
+              content: assistantContent,
+              session_id: sessionIdRef.current,
+              metadata: { signal_titles_referenced: [] },
+            } as any);
+          } catch (e) { console.error("[memory] assistant insert failed", e); }
+        })();
       }
     } catch (e: any) {
       setMessages(prev => [
@@ -742,11 +807,18 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   <Plus className="w-4.5 h-4.5" />
                 </button>
                 <button
+                  onClick={() => setShowMemoryPanel(v => !v)}
+                  className={`p-2 transition-colors rounded-lg hover:bg-secondary tactile-press ${showMemoryPanel ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Memory history"
+                >
+                  <Clock className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => { loadConversations(); setViewMode("history"); }}
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press"
                   title="Chat History"
                 >
-                  <Clock className="w-4 h-4" />
+                  <MessageSquare className="w-4 h-4" />
                 </button>
                 <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-xl hover:bg-secondary tactile-press">
                   <X className="w-5 h-5" />
@@ -766,6 +838,51 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
             <span className="text-[10px] opacity-60 uppercase shrink-0">{contextType}</span>
           </div>
         )}
+
+        {/* ═══ Cross-session Memory Bar (AA-2) ═══ */}
+        {viewMode === "chat" && (() => {
+          const lastAssistant = memoryRows.find(r => r.role === "assistant" && r.content);
+          if (!lastAssistant) return null;
+          const topic = (lastAssistant.content || "").replace(/\s+/g, " ").trim().slice(0, 70);
+          const lastAssistants = memoryRows.filter(r => r.role === "assistant" && r.content).slice(0, 5);
+          return (
+            <div style={{ background: "#FEF8F3", borderBottom: "0.5px solid #F9C88B" }}>
+              <div className="flex items-center gap-2 px-4 py-2">
+                <span style={{ background: "#F97316", color: "#fff", fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                  Remembers
+                </span>
+                <span style={{ fontSize: 11, color: "#7A4A12", lineHeight: 1.35 }} className="truncate">
+                  Continuing from last session — {topic}
+                </span>
+              </div>
+              {showMemoryPanel && (
+                <div style={{ borderTop: "0.5px solid #F9C88B", background: "#FFFCF8", padding: "6px 8px" }}>
+                  {lastAssistants.length === 0 ? (
+                    <div style={{ fontSize: 11, color: "#9A6A2A", padding: "6px 8px" }}>No recent memory yet.</div>
+                  ) : (
+                    lastAssistants.map(r => {
+                      const ts = new Date(r.created_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                      const snippet = (r.content || "").replace(/\s+/g, " ").trim().slice(0, 80);
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => { send(r.content || ""); }}
+                          className="w-full text-left tactile-press"
+                          style={{ display: "block", padding: "6px 8px", borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", marginBottom: 2 }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#FEF1E1"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                        >
+                          <div style={{ fontSize: 9, color: "#B07A2A", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{ts}</div>
+                          <div style={{ fontSize: 11, color: "#5A3A0E", lineHeight: 1.35 }}>{snippet}</div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ═══ HISTORY VIEW ═══ */}
         {viewMode === "history" && (
