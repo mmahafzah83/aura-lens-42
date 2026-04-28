@@ -299,7 +299,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           <button
             onClick={fetchData}
             disabled={loading}
-            style={{ color: "#7A7670" }}
+            style={{ color: "var(--ink-5)" }}
             className="hover:opacity-80 transition-opacity"
             title="Refresh suggestions"
           >
@@ -316,7 +316,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
               <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "rgba(249,115,22,0.25)" }} />
-              <p style={{ fontSize: 11, color: "#7A7670" }}>Capture more insights to unlock suggestions</p>
+              <p style={{ fontSize: 11, color: "var(--ink-5)" }}>Capture more insights to unlock suggestions</p>
             </div>
           ) : (
             groups.map((group) => (
@@ -324,7 +324,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 <p
                   style={{
                     fontSize: 9,
-                    color: "#7A7670",
+                    color: "var(--ink-5)",
                     textTransform: "uppercase",
                     letterSpacing: "0.1em",
                     fontWeight: 700,
@@ -343,7 +343,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   const isRecommended = group.label === "Recommended now";
                   const badgeText = isRecommended ? "Recommended" : (isUnused ? "Unused" : null);
                   const badgeStyle = isRecommended
-                    ? { background: "var(--brand-pale)", color: "#C05A10" }
+                    ? { background: "var(--brand-pale)", color: "var(--warning)" }
                     : { background: "var(--surface-subtle)", color: "var(--ink-4)" };
                   return (
                     <button
@@ -363,7 +363,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       className="hover:brightness-[0.98]"
                     >
                       {isConfirm ? (
-                        <p style={{ fontSize: 11, color: "#C05A10", fontWeight: 600 }}>
+                        <p style={{ fontSize: 11, color: "var(--warning)", fontWeight: 600 }}>
                           Replace current draft? Click again to confirm.
                         </p>
                       ) : (
@@ -403,7 +403,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                             style={{
                               fontSize: 11,
                               fontWeight: 500,
-                              color: "#1A1815",
+                              color: "var(--surface-ink-subtle)",
                               lineHeight: 1.4,
                               marginTop: 4,
                             }}
@@ -411,7 +411,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                           >
                             {item.title}
                           </p>
-                          <p style={{ fontSize: 9, color: "#7A7670", marginTop: 3 }}>{item.reason}</p>
+                          <p style={{ fontSize: 9, color: "var(--ink-5)", marginTop: 3 }}>{item.reason}</p>
                         </>
                       )}
                     </button>
@@ -432,7 +432,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             <p
               style={{
                 fontSize: 9,
-                color: "#7A7670",
+                color: "var(--ink-5)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 fontWeight: 700,
@@ -465,10 +465,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 )}
               </span>
               <div className="flex-1 min-w-0">
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#1A1815", lineHeight: 1.2 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--surface-ink-subtle)", lineHeight: 1.2 }}>
                   {voice?.fullName || "Your voice"}
                 </p>
-                <p style={{ fontSize: 10, color: "#7A7670", lineHeight: 1.35, marginTop: 2 }}>
+                <p style={{ fontSize: 10, color: "var(--ink-5)", lineHeight: 1.35, marginTop: 2 }}>
                   {voice?.tone || "Train your voice from past posts"}
                 </p>
               </div>

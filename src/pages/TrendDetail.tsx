@@ -59,12 +59,12 @@ const isTrusted = (s: string | null) => {
 };
 
 const impactColor = (level: string | null) => {
-  if (level === "High") return "#E24B4A";
+  if (level === "High") return "var(--danger)";
   if (level === "Emerging") return "var(--brand)";
   return "hsl(var(--muted-foreground))";
 };
 const decisionStyle = (label: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "#E24B4A", bg: "#E24B4A12" };
+  if (label === "Act Now") return { color: "var(--danger)", bg: "#E24B4A12" };
   if (label === "Early Opportunity") return { color: "var(--brand)", bg: "#F9731612" };
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)" };
 };
@@ -313,7 +313,7 @@ export default function TrendDetail() {
           </span>
         )}
         {isTrusted(signal.source) && (
-          <span style={{ fontSize: 9, color: "#7ab648", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
+          <span style={{ fontSize: 9, color: "var(--success)", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
             ✓ TRUSTED
           </span>
         )}
@@ -367,7 +367,7 @@ export default function TrendDetail() {
           <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
             <span style={sectionLabel as React.CSSProperties}>Content angle</span>
             {signal.opportunity_type && (
-              <span style={{ fontSize: 9, color: "#7ab648", background: "#7ab64812", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+              <span style={{ fontSize: 9, color: "var(--success)", background: "#7ab64812", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
                 {signal.opportunity_type} opportunity
               </span>
             )}

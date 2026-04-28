@@ -58,7 +58,7 @@ const RequestAccess = () => {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: "#0d0d0d", fontFamily: "Inter, sans-serif" }}
+      style={{ backgroundColor: "var(--ink)", fontFamily: "Inter, sans-serif" }}
     >
       <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}

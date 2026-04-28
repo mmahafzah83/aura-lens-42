@@ -171,7 +171,7 @@ const Onboarding = () => {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0d0d0d" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--ink)" }}>
         <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );
@@ -181,7 +181,7 @@ const Onboarding = () => {
   const canContinueScreen1 = firstName.trim().length > 0 || role.trim().length > 0;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#0d0d0d", color: "var(--ink-7)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
       {/* Progress bar */}
       <div className="px-5 pt-5 pb-3">
         <div className="flex items-center justify-between mb-2">
@@ -190,7 +190,7 @@ const Onboarding = () => {
               <button
                 onClick={() => setStep(step - 1)}
                 className="text-base leading-none"
-                style={{ color: "#3a3a3a", background: "transparent", border: "none", padding: "4px 8px", cursor: "pointer" }}
+                style={{ color: "var(--ink-4)", background: "transparent", border: "none", padding: "4px 8px", cursor: "pointer" }}
               >
                 ←
               </button>
@@ -199,7 +199,7 @@ const Onboarding = () => {
               {step < 4 ? `Step ${step + 1} of 4 · ${STEP_NAMES[step]}` : "Complete ✓"}
             </span>
           </div>
-          <span className="text-xs" style={{ color: "#3a3a3a" }}>
+          <span className="text-xs" style={{ color: "var(--ink-4)" }}>
             {step === 0 ? "~3 min left" : step === 1 ? "~2 min left" : step === 2 ? "~1 min left" : "Done"}
           </span>
         </div>
@@ -208,7 +208,7 @@ const Onboarding = () => {
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${currentPct}%`,
-              background: step === 3 ? "#7ab648" : "var(--brand)",
+              background: step === 3 ? "var(--success)" : "var(--brand)",
             }}
           />
         </div>
@@ -218,11 +218,11 @@ const Onboarding = () => {
               <div
                 className="w-3 h-3 rounded-full border-2 transition-all"
                 style={{
-                  borderColor: i <= step ? (step === 3 && i === 3 ? "#7ab648" : "var(--brand)") : "var(--surface-ink-subtle)",
-                  background: i < step ? (step === 3 && i === 3 ? "#7ab648" : "var(--brand)") : "transparent",
+                  borderColor: i <= step ? (step === 3 && i === 3 ? "var(--success)" : "var(--brand)") : "var(--surface-ink-subtle)",
+                  background: i < step ? (step === 3 && i === 3 ? "var(--success)" : "var(--brand)") : "transparent",
                 }}
               />
-              <span className="text-[9px] tracking-wider uppercase" style={{ color: i <= step ? "var(--brand)" : "#3a3a3a" }}>
+              <span className="text-[9px] tracking-wider uppercase" style={{ color: i <= step ? "var(--brand)" : "var(--ink-4)" }}>
                 {s.label}
               </span>
             </div>
@@ -270,7 +270,7 @@ const Onboarding = () => {
                     onClick={() => setRole(chip)}
                     className="px-3 py-1.5 rounded-full text-xs transition-all"
                     style={{
-                      background: role === chip ? "#1e1a10" : "var(--surface-ink-raised)",
+                      background: role === chip ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
                       border: `1px solid ${role === chip ? "var(--brand)" : "var(--ink-3)"}`,
                       color: role === chip ? "var(--brand)" : "#666",
                     }}
@@ -291,7 +291,7 @@ const Onboarding = () => {
                     onClick={() => setIndustry(industry === ind ? null : ind)}
                     className="px-3 py-1.5 rounded-full text-xs transition-all"
                     style={{
-                      background: industry === ind ? "#1e1a10" : "var(--surface-ink-raised)",
+                      background: industry === ind ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
                       border: `1px solid ${industry === ind ? "var(--brand)" : "var(--ink-3)"}`,
                       color: industry === ind ? "var(--brand)" : "#666",
                     }}
@@ -312,7 +312,7 @@ const Onboarding = () => {
               )}
             </div>
 
-            <div className="rounded-lg p-3 text-xs" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", color: "#3a3a3a" }}>
+            <div className="rounded-lg p-3 text-xs" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", color: "var(--ink-4)" }}>
               Why this matters: Aura uses your role to filter signals, set the right tone for your content, and benchmark you against your career target.
             </div>
             <button
@@ -321,7 +321,7 @@ const Onboarding = () => {
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: canContinueScreen1 ? "var(--brand)" : "var(--ink-3)",
-                color: canContinueScreen1 ? "#0d0d0d" : "#666",
+                color: canContinueScreen1 ? "var(--ink)" : "#666",
               }}
             >
               Continue →
@@ -329,7 +329,7 @@ const Onboarding = () => {
             <button
               onClick={() => setStep(1)}
               className="w-full text-center text-xs py-2"
-              style={{ color: "#3a3a3a" }}
+              style={{ color: "var(--ink-4)" }}
             >
               Skip this step (not recommended)
             </button>
@@ -339,7 +339,7 @@ const Onboarding = () => {
         {/* Screen 2 — Strengths */}
         {step === 1 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #F9731633", color: "var(--brand)" }}>
+            <div className="rounded-lg p-4 text-sm" style={{ background: "var(--surface-ink-subtle)", border: "1px solid #F9731633", color: "var(--brand)" }}>
               ✓ Great start. Your profile is taking shape. This next step is the one most people skip — and the one that makes the biggest difference.
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 2 — Your strengths</p>
@@ -371,7 +371,7 @@ const Onboarding = () => {
               className="w-full py-3 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: strength ? "var(--brand)" : "var(--ink-3)",
-                color: strength ? "#0d0d0d" : "#666",
+                color: strength ? "var(--ink)" : "#666",
               }}
             >
               Continue →
@@ -379,7 +379,7 @@ const Onboarding = () => {
             <button
               onClick={() => setStep(2)}
               className="w-full text-center text-xs py-2"
-              style={{ color: "#3a3a3a" }}
+              style={{ color: "var(--ink-4)" }}
             >
               Skip (your content will be less personalised)
             </button>
@@ -389,7 +389,7 @@ const Onboarding = () => {
         {/* Screen 3 — First capture */}
         {step === 2 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <div className="rounded-lg p-4 text-sm" style={{ background: "#1e1a10", border: "1px solid #F9731633", color: "var(--brand)" }}>
+            <div className="rounded-lg p-4 text-sm" style={{ background: "var(--surface-ink-subtle)", border: "1px solid #F9731633", color: "var(--brand)" }}>
               ◈ Almost there — you are doing great. One last step. This is where Aura comes alive. Your first capture generates your first signal in under 60 seconds.
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 3 — Feed Aura</p>
@@ -403,7 +403,7 @@ const Onboarding = () => {
                   onClick={() => setCaptureType(t)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
                   style={{
-                    background: captureType === t ? "#1e1a10" : "var(--surface-ink-raised)",
+                    background: captureType === t ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
                     border: `1px solid ${captureType === t ? "var(--brand)" : "var(--ink-3)"}`,
                     color: captureType === t ? "var(--brand)" : "#666",
                   }}
@@ -424,7 +424,7 @@ const Onboarding = () => {
                   className="w-full px-4 py-3 rounded-lg text-sm outline-none"
                   style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
                 />
-                <p className="text-[10px]" style={{ color: "#3a3a3a" }}>Any article, report, or LinkedIn post that matters to you</p>
+                <p className="text-[10px]" style={{ color: "var(--ink-4)" }}>Any article, report, or LinkedIn post that matters to you</p>
               </div>
             ) : (
               <textarea
@@ -437,7 +437,7 @@ const Onboarding = () => {
               />
             )}
 
-            <div className="rounded-lg p-3 text-xs" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", color: "#3a3a3a" }}>
+            <div className="rounded-lg p-3 text-xs" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", color: "var(--ink-4)" }}>
               Why this matters: Without a capture, your home screen will be empty. One link takes 10 seconds and generates your first signal.
             </div>
 
@@ -447,7 +447,7 @@ const Onboarding = () => {
               className="w-full py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2"
               style={{
                 background: captureValue.trim() ? "var(--brand)" : "var(--ink-3)",
-                color: captureValue.trim() ? "#0d0d0d" : "#666",
+                color: captureValue.trim() ? "var(--ink)" : "#666",
               }}
             >
               {loading ? (
@@ -462,7 +462,7 @@ const Onboarding = () => {
             <button
               onClick={() => { setSkippedCapture(true); setStep(3); }}
               className="w-full text-center text-xs py-2"
-              style={{ color: "#3a3a3a" }}
+              style={{ color: "var(--ink-4)" }}
             >
               Skip (your home screen will start empty)
             </button>
@@ -475,7 +475,7 @@ const Onboarding = () => {
             <div className="text-[56px] font-medium" style={{ color: "var(--brand)" }}>
               {auraScore}
             </div>
-            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "#3a3a3a" }}>
+            <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--ink-4)" }}>
               Your Aura score · {scoreTier}
             </p>
             <h1 className="text-lg font-medium" style={{ color: "var(--ink-7)" }}>Your Aura is ready.</h1>
@@ -505,7 +505,7 @@ const Onboarding = () => {
                 >
                   <div
                     className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"
-                    style={{ background: item.done ? "#7ab648" : "#3a3a3a" }}
+                    style={{ background: item.done ? "var(--success)" : "var(--ink-4)" }}
                   />
                   <span className="text-sm" style={{ color: item.done ? "var(--ink-7)" : "#666" }}>
                     {item.text}
@@ -517,7 +517,7 @@ const Onboarding = () => {
             <button
               onClick={finishOnboarding}
               className="w-full py-3 rounded-xl text-sm font-medium mt-4"
-              style={{ background: "var(--brand)", color: "#0d0d0d" }}
+              style={{ background: "var(--brand)", color: "var(--ink)" }}
             >
               Go to my Aura →
             </button>

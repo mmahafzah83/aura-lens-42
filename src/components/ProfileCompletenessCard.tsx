@@ -125,7 +125,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: "#E24B4A", opacity: 0.6 }}
+                style={{ background: "var(--danger)", opacity: 0.6 }}
               />
               <span style={{ fontSize: 11, color: "var(--ink-5)", flex: 1 }}>{f.label}</span>
               <span

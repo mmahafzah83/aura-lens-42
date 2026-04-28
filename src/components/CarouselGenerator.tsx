@@ -104,13 +104,13 @@ const PALETTES: Record<Style, {
 }> = {
   minimal_creator: {
     bg: "#FDF6EC", fg: "var(--surface-ink-subtle)", accent: "#C8A862", muted: "#6B6560",
-    subtle: "#F5EDE0", gradientFrom: "#FDF6EC", gradientTo: "#F8F0E3",
+    subtle: "var(--surface-subtle)", gradientFrom: "#FDF6EC", gradientTo: "#F8F0E3",
     name: "Minimal Creator",
     emphBg: "var(--surface-ink-subtle)", emphFg: "#FDF6EC",
   },
   dark_creator: {
     bg: "var(--ink)", fg: "#FFFFFF", accent: "#FFD700", muted: "#9CA3AF",
-    subtle: "var(--surface-ink-subtle)", gradientFrom: "var(--ink)", gradientTo: "#111111",
+    subtle: "var(--surface-ink-subtle)", gradientFrom: "var(--ink)", gradientTo: "var(--ink)",
     name: "Dark Creator",
     emphBg: "#FFD700", emphFg: "var(--ink)",
   },

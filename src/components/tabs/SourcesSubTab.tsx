@@ -47,8 +47,8 @@ const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
 
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
   link: { label: "URL", color: "#5b8def" },
-  image: { label: "IMAGE", color: "#7ab648" },
-  text: { label: "NOTE", color: "#EF9F27" },
+  image: { label: "IMAGE", color: "var(--success)" },
+  text: { label: "NOTE", color: "var(--warning)" },
   voice: { label: "VOICE", color: "var(--brand)" },
   document: { label: "DOC", color: "#7F77DD" },
 };
@@ -146,8 +146,8 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
         <p style={{ color: "var(--ink-7)", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this source?</p>
         <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 20px" }}>This cannot be undone.</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "#E24B4A", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
+          <button onClick={onCancel} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--danger)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
         </div>
       </div>
     </div>,
@@ -340,30 +340,30 @@ const ExpandedSource = ({
   const sourceUrl = entry.type === "link" ? (entry.image_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null)) : null;
 
   return (
-    <div style={{ padding: "0 16px 16px", borderTop: "1px solid #1f1f1f" }}>
+    <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--surface-ink-subtle)" }}>
       {editing ? (
         <div style={{ marginTop: 14 }}>
           <input
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             placeholder="Title"
-            style={{ width: "100%", background: "var(--surface-ink-subtle)", border: "1px solid #2a2a2a", borderRadius: 10, padding: "8px 12px", color: "var(--ink-7)", fontSize: 14, marginBottom: 10, outline: "none" }}
+            style={{ width: "100%", background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: "8px 12px", color: "var(--ink-7)", fontSize: 14, marginBottom: 10, outline: "none" }}
             onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
-            onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
           />
           <textarea
             value={editContent}
             onChange={e => setEditContent(e.target.value)}
             rows={6}
-            style={{ width: "100%", background: "var(--surface-ink-subtle)", border: "1px solid #2a2a2a", borderRadius: 10, padding: "8px 12px", color: "var(--ink-7)", fontSize: 13, resize: "vertical", outline: "none" }}
+            style={{ width: "100%", background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: "8px 12px", color: "var(--ink-7)", fontSize: 13, resize: "vertical", outline: "none" }}
             onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
-            onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
           />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={handleSaveEdit} disabled={saving} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--brand)", color: "#0d0d0d", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={handleSaveEdit} disabled={saving} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
               {saving ? "Saving..." : "Save"}
             </button>
-            <button onClick={() => setEditing(false)} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            <button onClick={() => setEditing(false)} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
           </div>
         </div>
       ) : (
@@ -372,7 +372,7 @@ const ExpandedSource = ({
 
           {entry.summary && entry.summary !== entry.content && (
             <div style={{ marginBottom: 12 }}>
-              <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 4 }}>SUMMARY</p>
+              <p style={{ color: "var(--ink-4)", fontSize: 10, letterSpacing: "0.08em", marginBottom: 4 }}>SUMMARY</p>
               <p style={{ color: "var(--ink-5)", fontSize: 13, lineHeight: 1.5, margin: 0 }}>{entry.summary}</p>
             </div>
           )}
@@ -394,9 +394,9 @@ const ExpandedSource = ({
 
           {/* Signals from this source */}
           <div style={{ marginTop: 12 }}>
-            <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8 }}>SIGNALS FROM THIS SOURCE</p>
+            <p style={{ color: "var(--ink-4)", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8 }}>SIGNALS FROM THIS SOURCE</p>
             {loadingSignals ? (
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#3a3a3a" }} />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--ink-4)" }} />
             ) : linkedSignals.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {linkedSignals.map(s => (
@@ -406,7 +406,7 @@ const ExpandedSource = ({
                 ))}
               </div>
             ) : (
-              <p style={{ color: "#3a3a3a", fontSize: 12 }}>No signals detected from this source yet.</p>
+              <p style={{ color: "var(--ink-4)", fontSize: 12 }}>No signals detected from this source yet.</p>
             )}
           </div>
 
@@ -416,18 +416,18 @@ const ExpandedSource = ({
               <ExternalLink size={14} /> Open
             </button>
             {((entry.type === "document" && entry.file_url) || (entry.type === "image" && entry.image_url)) && (
-              <button onClick={() => downloadEntryFile(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "var(--ink-7)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => downloadEntryFile(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-7)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 <Download size={14} /> Download
               </button>
             )}
-            <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "var(--brand)", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
+            <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
               {detecting ? <Loader2 className="w-4 h-4 animate-spin" style={{ display: "inline" }} /> : <Zap size={14} style={{ display: "inline", marginRight: 4 }} />}
               Detect Signal
             </button>
-            <button onClick={() => setEditing(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setEditing(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Pencil size={14} /> Edit
             </button>
-            <button onClick={() => setDeleteTarget(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#E24B4A", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setDeleteTarget(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--danger)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Trash2 size={14} /> Delete
             </button>
           </div>
@@ -639,7 +639,7 @@ const SourcesSubTab = ({
         </div>
         <p style={{ color: "var(--ink-7)", fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>Your knowledge starts here.</p>
         <p style={{ color: "#666", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
-        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "var(--brand)", color: "#0d0d0d", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
           Capture your first source
         </button>
       </div>
@@ -661,7 +661,7 @@ const SourcesSubTab = ({
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: 12 }}>
-        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#3a3a3a" }} />
+        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ink-4)" }} />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -703,9 +703,9 @@ const SourcesSubTab = ({
         <select
           value={sortKey}
           onChange={e => setSortKey(e.target.value as SortKey)}
-          style={{ background: "var(--surface-ink-subtle)", color: "var(--ink-7)", fontSize: 11, fontWeight: 500, border: "1px solid #2a2a2a", borderRadius: 8, padding: "5px 10px", cursor: "pointer", outline: "none", flexShrink: 0 }}
+          style={{ background: "var(--surface-ink-subtle)", color: "var(--ink-7)", fontSize: 11, fontWeight: 500, border: "1px solid var(--ink-3)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", outline: "none", flexShrink: 0 }}
           onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
-          onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+          onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
         >
           <option value="recent">Most recent</option>
           <option value="oldest">Oldest first</option>
@@ -775,7 +775,7 @@ const SourcesSubTab = ({
                   >
                     {entry.pinned
                       ? <Pin size={14} fill="var(--brand)" color="var(--brand)" />
-                      : <PinOff size={14} color="#3a3a3a" />}
+                      : <PinOff size={14} color="var(--ink-4)" />}
                   </button>
                 )}
 
@@ -805,8 +805,8 @@ const SourcesSubTab = ({
                       {isProcessing ? (
                         <div style={{ margin: "0 0 6px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
-                            <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                            <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--warning)" }} />
+                            <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                               {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
                             </p>
                             <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
@@ -822,7 +822,7 @@ const SourcesSubTab = ({
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
-                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                          <p style={{ color: "var(--danger)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                             {humanizeDocError(entry.error_message).headline}
                           </p>
                           {humanizeDocError(entry.error_message).detail && (
@@ -851,7 +851,7 @@ const SourcesSubTab = ({
                           <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>· {docSizeLabel}</span>
                         )}
                         {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
-                        <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
                           <span title="Signal generated from this source" style={{ color: "var(--brand)", display: "flex", alignItems: "center" }}>
                             <Zap size={12} />
@@ -882,7 +882,7 @@ const SourcesSubTab = ({
             </div>
           )}
           {!hasMore && visibleEntries.length > 0 && (
-            <p style={{ color: "#3a3a3a", fontSize: 11, textAlign: "center", padding: 12 }}>All sources loaded</p>
+            <p style={{ color: "var(--ink-4)", fontSize: 11, textAlign: "center", padding: 12 }}>All sources loaded</p>
           )}
         </div>
       )}

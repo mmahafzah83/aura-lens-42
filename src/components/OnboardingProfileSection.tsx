@@ -298,13 +298,13 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       className="flex-1 px-2 py-1 rounded text-sm outline-none"
-                      style={{ background: "#0d0d0d", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+                      style={{ background: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
                     />
                     <button
                       onClick={() => saveField(f.key, editValue)}
                       disabled={saving}
                       className="p-1 rounded"
-                      style={{ color: "#7ab648" }}
+                      style={{ color: "var(--success)" }}
                     >
                       <Check className="w-4 h-4" />
                     </button>
@@ -313,7 +313,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                     </button>
                   </div>
                 ) : (
-                  <span className="text-sm block mt-0.5" style={{ color: f.value ? "var(--ink-7)" : "#3a3a3a" }}>
+                  <span className="text-sm block mt-0.5" style={{ color: f.value ? "var(--ink-7)" : "var(--ink-4)" }}>
                     {f.value || "Not set"}
                   </span>
                 )}
@@ -376,7 +376,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
               <div>
                 <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Evidence Audit</span>
-                <span className="text-[10px] block" style={{ color: dates?.audit_completed_at ? "#666" : "#3a3a3a" }}>
+                <span className="text-[10px] block" style={{ color: dates?.audit_completed_at ? "#666" : "var(--ink-4)" }}>
                   {dates?.audit_completed_at ? `Completed ${formatDate(dates.audit_completed_at)}` : "Not completed yet"}
                 </span>
               </div>
@@ -392,7 +392,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
               <div>
                 <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Brand Assessment</span>
-                <span className="text-[10px] block" style={{ color: dates?.brand_assessment_completed_at ? "#666" : "#3a3a3a" }}>
+                <span className="text-[10px] block" style={{ color: dates?.brand_assessment_completed_at ? "#666" : "var(--ink-4)" }}>
                   {dates?.brand_assessment_completed_at ? `Completed ${formatDate(dates.brand_assessment_completed_at)}` : "Not completed yet"}
                 </span>
               </div>
@@ -431,7 +431,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                 value={(fullEditData as any)?.[f.key] || ""}
                 onChange={e => setFullEditData(prev => prev ? { ...prev, [f.key]: e.target.value } : prev)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{ background: "#0d0d0d", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+                style={{ background: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
               />
             </div>
           ))}
@@ -440,7 +440,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               onClick={saveFullEdit}
               disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: "var(--brand)", color: "#0d0d0d" }}
+              style={{ background: "var(--brand)", color: "var(--ink)" }}
             >
               {saving ? "Saving..." : "Save all changes"}
             </button>

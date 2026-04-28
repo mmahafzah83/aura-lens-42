@@ -33,7 +33,7 @@ const actionLabelColor = (a: AuraItem["action_type"]): string => {
     case "PUBLISH": return "var(--brand)";
     case "CAPTURE": return "#185FA5";
     case "WATCH":
-    default:        return "#5F5E5A";
+    default:        return "var(--ink-5)";
   }
 };
 

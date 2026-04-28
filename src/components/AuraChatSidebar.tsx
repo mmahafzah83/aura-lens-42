@@ -145,7 +145,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
         Context used {expanded ? "▴" : "↓"}
       </button>
       {expanded && (
-        <div style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
+        <div style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
           <div style={{ fontSize: 9, textTransform: "uppercase", color: "#333", letterSpacing: 0.5 }}>SIGNALS</div>
           {!loaded ? (
             <div style={{ fontSize: 10, color: "#333", marginTop: 4 }}>Loading…</div>

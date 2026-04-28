@@ -593,11 +593,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? "#C05A10" : "#1A1815", lineHeight: 1.2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? "var(--warning)" : "var(--surface-ink-subtle)", lineHeight: 1.2 }}>
                     {label}
                   </span>
                   {subtitle && (
-                    <span style={{ fontSize: 9, color: "#7A7670", marginTop: 2, fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
+                    <span style={{ fontSize: 9, color: "var(--ink-5)", marginTop: 2, fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
                   )}
                 </button>
               );
@@ -696,7 +696,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               disabled={isGeneratingAny || !topic.trim()}
               className="aura-generate-btn w-full"
               style={{
-                background: isGeneratingAny || !topic.trim() ? "#E8B891" : "var(--brand)",
+                background: isGeneratingAny || !topic.trim() ? "var(--brand-pale)" : "var(--brand)",
                 color: "#fff",
                 border: "none",
                 borderRadius: 12,

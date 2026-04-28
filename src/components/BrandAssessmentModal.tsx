@@ -301,7 +301,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           height: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "#0d0d0d",
+          background: "var(--ink)",
           borderRadius: 16,
           border: "1px solid var(--ink-3)",
           overflow: "hidden",
@@ -373,7 +373,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                       className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
                       style={{
                         background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
-                        color: "#0d0d0d",
+                        color: "var(--ink)",
                       }}
                     >
                       View my complete Strategic Identity →
@@ -425,7 +425,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           <div
             className="shrink-0"
             style={{
-              background: "#0d0d0d",
+              background: "var(--ink)",
               borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
             }}
@@ -440,7 +440,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               }`}
               style={canProceed() ? {
                 background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
-                color: "#0d0d0d",
+                color: "var(--ink)",
               } : undefined}
             >
               {step < QUESTIONS.length - 1 ? "Next" : "Generate Brand Positioning"}

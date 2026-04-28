@@ -355,8 +355,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   let trendLabel = "→ Stable";
   let trendColor = "var(--color-text-secondary)";
   if (weekDelta !== null) {
-    if (weekDelta > 0) { trendLabel = `↑ +${weekDelta} this week`; trendColor = "#7ab648"; }
-    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "#E24B4A"; }
+    if (weekDelta > 0) { trendLabel = `↑ +${weekDelta} this week`; trendColor = "var(--success)"; }
+    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "var(--danger)"; }
   }
 
   const daysSinceLastAll = lastCaptureAll ? daysBetween(new Date(), lastCaptureAll) : null;
@@ -440,8 +440,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const partColor = (t: string) => {
     switch (t) {
       case "primary": return "var(--color-text-primary)";
-      case "negative": return "#E24B4A";
-      case "positive": return "#7ab648";
+      case "negative": return "var(--danger)";
+      case "positive": return "var(--success)";
       case "action": return "var(--brand)";
       default: return "var(--color-text-secondary)";
     }
@@ -478,28 +478,28 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const daysColor = daysSinceLastAll === null
     ? "var(--color-text-muted)"
-    : daysSinceLastAll === 0 ? "#7ab648"
-      : daysSinceLastAll <= 3 ? "#EF9F27"
-        : "#E24B4A";
+    : daysSinceLastAll === 0 ? "var(--success)"
+      : daysSinceLastAll <= 3 ? "var(--warning)"
+        : "var(--danger)";
 
   /* (score chart removed — only sub-score cards remain) */
 
   /* ── Sub-score card colour rules ── */
   const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
     if (kind === "capture") {
-      if (value >= 90) return { color: "#7ab648", border: "#7ab64844", tag: "Healthy" };
+      if (value >= 90) return { color: "var(--success)", border: "#7ab64844", tag: "Healthy" };
       if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
-      return { color: "#E24B4A", border: "#E24B4A44", tag: "Needs action" };
+      return { color: "var(--danger)", border: "#E24B4A44", tag: "Needs action" };
     }
     if (kind === "content") {
-      if (value === 100) return { color: "#7ab648", border: "#7ab64844", tag: "Perfect" };
+      if (value === 100) return { color: "var(--success)", border: "#7ab64844", tag: "Perfect" };
       if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
-      return { color: "#E24B4A", border: "#E24B4A44", tag: "Needs action" };
+      return { color: "var(--danger)", border: "#E24B4A44", tag: "Needs action" };
     }
     // signal
-    if (value >= 85) return { color: "#7ab648", border: "#7ab64844", tag: "Strong" };
+    if (value >= 85) return { color: "var(--success)", border: "#7ab64844", tag: "Strong" };
     if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
-    return { color: "#E24B4A", border: "#E24B4A44", tag: "Build signals" };
+    return { color: "var(--danger)", border: "#E24B4A44", tag: "Build signals" };
   };
 
   /* ── Follower chart series ── */
@@ -694,7 +694,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#5F5E5A",
+                color: "var(--ink-5)",
               }}
             >
               Authority score
@@ -739,7 +739,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#5F5E5A",
+                    color: "var(--ink-5)",
                   }}
                 >
                   30d
@@ -765,7 +765,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#5F5E5A",
+                    color: "var(--ink-5)",
                   }}
                 >
                   90d
@@ -775,7 +775,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   style={{
                     fontFamily: "'DM Serif Display', Georgia, serif",
                     fontSize: 26,
-                    color: "#E24B4A",
+                    color: "var(--danger)",
                     letterSpacing: "-0.02em",
                     lineHeight: 1,
                     marginTop: 4,
@@ -799,7 +799,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             const t = n <= 1 ? 0 : i / (n - 1);
             if (t < 0.5) return "var(--brand)";
             if (t < 0.85) return "#BA7517";
-            return "#E24B4A";
+            return "var(--danger)";
           };
           return (
             <div className="relative mt-6">
@@ -826,7 +826,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </div>
               <div
                 className="flex justify-between mt-2"
-                style={{ fontSize: 9, color: "#4A4845" }}
+                style={{ fontSize: 9, color: "var(--ink-4)" }}
               >
                 <span>Now</span>
                 <span>30d · {trajectory.forecast30}</span>
@@ -862,7 +862,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       }
                     : {
                         background: "transparent",
-                        color: "#5F5E5A",
+                        color: "var(--ink-5)",
                         border: "0.5px solid var(--ink-3)",
                         borderRadius: 8,
                         padding: "5px 14px",
@@ -1010,7 +1010,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <HeroStat
           value={periodEngagementRate !== null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
           label={periodEngagementRate !== null ? "Avg engagement rate" : "No data yet"}
-          color="#7ab648"
+          color="var(--success)"
         />
       </div>
 
@@ -1085,7 +1085,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 >
                   {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
                 </div>
-                <div className="text-[11px] mt-1" style={{ color: "#5F5E5A" }}>
+                <div className="text-[11px] mt-1" style={{ color: "var(--ink-5)" }}>
                   Only one day of follower data so far. More data will appear after additional snapshots.
                 </div>
               </div>
@@ -1133,7 +1133,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     }}
                     formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
-                  <Bar dataKey="growth" fill="#7ab648" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1142,14 +1142,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <Stat
                 label="New followers this period"
                 value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
-                valueColor="#7ab648"
+                valueColor="var(--success)"
               />
               <Stat
                 label="Best single day"
                 value={bestDay && bestDay.follower_growth > 0
                   ? `+${bestDay.follower_growth} · ${fmtDateShort(bestDay.snapshot_date)}`
                   : "—"}
-                valueColor="#7ab648"
+                valueColor="var(--success)"
               />
             </div>
           </div>
@@ -1287,7 +1287,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               if (i < 3) {
                 badge = { label: "Top post", bg: "#F9731618", color: "var(--brand)", border: "#F9731644" };
               } else if (erPct > 5) {
-                badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648", border: "#7ab64844" };
+                badge = { label: "Exceptional", bg: "#7ab64818", color: "var(--success)", border: "#7ab64844" };
               } else if (erPct >= 3) {
                 badge = { label: "Above avg", bg: "#F9731618", color: "var(--brand)", border: "#F9731644" };
               }
@@ -1460,9 +1460,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               className="mt-3 text-xs"
               style={{
                 color:
-                  daysSinceLastAll >= 4 ? "#E24B4A"
-                    : daysSinceLastAll === 0 ? "#7ab648"
-                      : "#EF9F27",
+                  daysSinceLastAll >= 4 ? "var(--danger)"
+                    : daysSinceLastAll === 0 ? "var(--success)"
+                      : "var(--warning)",
                 fontWeight: 500,
               }}
             >

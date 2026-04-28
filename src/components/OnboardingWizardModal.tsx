@@ -61,7 +61,7 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 600,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "#4A4845",
+  color: "var(--ink-4)",
   display: "block",
   marginBottom: 7,
   fontFamily: fontSans,
@@ -88,7 +88,7 @@ const stepTitleStyle: React.CSSProperties = {
 
 const stepSubStyle: React.CSSProperties = {
   fontSize: 13,
-  color: "#5F5E5A",
+  color: "var(--ink-5)",
   fontWeight: 300,
   lineHeight: 1.6,
   marginBottom: 28,
@@ -159,7 +159,7 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
         borderRadius: 20,
         cursor: "pointer",
         border: selected ? "0.5px solid rgba(249,115,22,0.3)" : "0.5px solid var(--ink-3)",
-        color: selected ? "var(--brand)" : "#5F5E5A",
+        color: selected ? "var(--brand)" : "var(--ink-5)",
         background: selected ? "rgba(249,115,22,0.15)" : "transparent",
         fontFamily: fontSans,
         transition: "all 0.12s",
@@ -414,7 +414,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                 </div>
               </div>
               {roleError && (
-                <div style={{ color: "#E24B4A", fontSize: 11, marginTop: -8, marginBottom: 10 }}>
+                <div style={{ color: "var(--danger)", fontSize: 11, marginTop: -8, marginBottom: 10 }}>
                   {roleError}
                 </div>
               )}
@@ -485,7 +485,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                         borderRadius: 10,
                         cursor: "pointer",
                         border: active ? "0.5px solid #ffffff" : "0.5px solid var(--ink-3)",
-                        color: active ? "var(--ink)" : "#5F5E5A",
+                        color: active ? "var(--ink)" : "var(--ink-5)",
                         background: active ? "#ffffff" : "transparent",
                         fontFamily: fontSans,
                         textTransform: "capitalize",
@@ -552,7 +552,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                     border: "0.5px solid var(--ink-3)",
                     borderRadius: 10,
                     padding: 16,
-                    color: "#5F5E5A",
+                    color: "var(--ink-5)",
                     fontSize: 12,
                     fontFamily: fontSans,
                     marginBottom: 14,
@@ -578,7 +578,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                       animation: "aura-pulse 1.2s ease-in-out infinite",
                     }}
                   />
-                  <span style={{ fontSize: 12, color: "#5F5E5A", fontFamily: fontSans }}>
+                  <span style={{ fontSize: 12, color: "var(--ink-5)", fontFamily: fontSans }}>
                     Aura is detecting signals...
                   </span>
                 </div>
@@ -642,7 +642,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                     <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-7)", fontFamily: fontSans }}>
                       Aura Chrome Extension
                     </div>
-                    <div style={{ fontSize: 11, color: "#5F5E5A", fontFamily: fontSans, marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: "var(--ink-5)", fontFamily: fontSans, marginTop: 2 }}>
                       One-click capture from any webpage
                     </div>
                   </div>
@@ -674,7 +674,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                     >
                       {i + 1}
                     </span>
-                    <span style={{ fontSize: 12, color: "#5F5E5A", fontFamily: fontSans }}>{txt}</span>
+                    <span style={{ fontSize: 12, color: "var(--ink-5)", fontFamily: fontSans }}>{txt}</span>
                   </div>
                 ))}
               </div>

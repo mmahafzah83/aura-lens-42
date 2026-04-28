@@ -51,7 +51,7 @@ function getVisual(count: number, mostUrgent: EventType | null): Visual {
     case "timing_window":
       return { borderColor: "var(--brand)", badgeBg: "var(--brand)", badgeText: "!", textColor: "#fff", pulse: true };
     case "silence_alarm":
-      return { borderColor: "#E24B4A", badgeBg: "#E24B4A", badgeText: "!", textColor: "#fff", pulse: false };
+      return { borderColor: "var(--danger)", badgeBg: "var(--danger)", badgeText: "!", textColor: "#fff", pulse: false };
     case "weekly_brief":
       return { borderColor: "#1D9E75", badgeBg: "#1D9E75", badgeText: "B", textColor: "#fff", pulse: false };
     case "knowledge_debt":
@@ -274,7 +274,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                 width: 8,
                 height: 8,
                 borderRadius: "50%",
-                background: "#E24B4A",
+                background: "var(--danger)",
                 pointerEvents: "none",
               }}
             />

@@ -139,8 +139,8 @@ const AutomationStrip = () => {
 
   const cards = [
     { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
-    { iconBg: "#0a1020", iconBorder: "#1a3060", iconColor: "#111111", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
-    { iconBg: "#1a1200", iconBorder: "#3a2a00", iconColor: "#111111", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
+    { iconBg: "#0a1020", iconBorder: "#1a3060", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
+    { iconBg: "#1a1200", iconBorder: "#3a2a00", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
   ];
 
   return (
@@ -148,7 +148,7 @@ const AutomationStrip = () => {
       <style>{`
         [data-theme="light"] .intel-automation-card { background: #ffffff !important; border-color: #e8e8e8 !important; }
         [data-theme="light"] .intel-automation-icon { background: #F3F3F3 !important; border-color: transparent !important; }
-        [data-theme="light"] .intel-automation-title { color: #111111 !important; }
+        [data-theme="light"] .intel-automation-title { color: var(--ink) !important; }
         [data-theme="light"] .intel-automation-desc { color: #666666 !important; }
       `}</style>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
@@ -159,12 +159,12 @@ const AutomationStrip = () => {
       <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 400, transition: "max-height 200ms ease-in-out" }}>
         <div className="intel-automation-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {cards.map((c, i) => (
-            <div key={i} className="intel-automation-card" style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div key={i} className="intel-automation-card" style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
               <div className="intel-automation-icon" style={{ width: 36, height: 36, borderRadius: 8, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, color: c.iconColor, padding: 8, boxSizing: "border-box" }}>
                 {c.icon}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "#d0d0d0", margin: 0 }}>{c.title}</p>
+                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>{c.title}</p>
                 <p className="intel-automation-desc" style={{ fontSize: 9, color: "#444", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
                 <span style={{ fontSize: 9, fontWeight: 700, color: c.statusColor }}>● {c.status}</span>
               </div>
@@ -289,7 +289,7 @@ const SignalDetailPanel = ({
           </h3>
 
           {/* Divider */}
-          <div style={{ height: "0.5px", background: "#1e1e1e", margin: "0 0 14px" }} />
+          <div style={{ height: "0.5px", background: "var(--surface-ink-subtle)", margin: "0 0 14px" }} />
 
           {/* What this means for you */}
           {signal.what_it_means_for_you && (
@@ -303,8 +303,8 @@ const SignalDetailPanel = ({
           {keyInsight && (
             <div style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#333", marginBottom: 6 }}>Key insight</p>
-              <div style={{ background: "#111", border: "0.5px solid var(--ink-3)", borderLeft: "2px solid var(--brand)", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#d0d0d0", margin: "0 0 3px" }}>{keyInsight.title}</p>
+              <div style={{ background: "var(--ink)", border: "0.5px solid var(--ink-3)", borderLeft: "2px solid var(--brand)", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-7)", margin: "0 0 3px" }}>{keyInsight.title}</p>
                 <p style={{ fontSize: 11, color: "#555", lineHeight: 1.5, margin: 0 }}>{keyInsight.content.slice(0, 200)}</p>
               </div>
             </div>
@@ -396,11 +396,11 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
         {visible.map(insight => {
           const badge = getBadge(insight.intelligence_type);
           return (
-            <div key={insight.id} style={{ background: "#111", border: "0.5px solid #1e1e1e", borderRadius: 8, padding: 12 }}>
+            <div key={insight.id} style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: 12 }}>
               <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: badge.bg, border: `0.5px solid ${badge.border}`, color: badge.color }}>
                 {badge.label}
               </span>
-              <p style={{ fontSize: 11, fontWeight: 600, color: "#d0d0d0", lineHeight: 1.4, margin: "0 0 4px" }}>{insight.title}</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink-7)", lineHeight: 1.4, margin: "0 0 4px" }}>{insight.title}</p>
               <p style={{ fontSize: 10, color: "#444", lineHeight: 1.5, margin: "0 0 8px" }}>
                 {insight.content.slice(0, 120)}{insight.content.length > 120 ? "..." : ""}
               </p>
@@ -491,7 +491,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             const approved = isApproved(fw);
             return (
               <div key={fw.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid #222", borderTop: approved ? "2px solid var(--brand)" : "0.5px solid #222", borderRadius: 10, padding: 16 }}>
-                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "#0a1a0a" : "#1e1e1e", border: `0.5px solid ${approved ? "#2a4a2a" : "#333"}`, color: approved ? "#4a8a4a" : "#555" }}>
+                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "#0a1a0a" : "var(--surface-ink-subtle)", border: `0.5px solid ${approved ? "#2a4a2a" : "#333"}`, color: approved ? "#4a8a4a" : "#555" }}>
                   {approved ? "Approved" : "Draft"}
                 </span>
                 <p style={{ color: "var(--ink-7)", fontSize: 12, fontWeight: 600, lineHeight: 1.4, margin: "0 0 6px" }}>{fw.title}</p>
@@ -499,7 +499,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
                 {steps.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                     {steps.slice(0, 5).map((_: any, i: number) => (
-                      <span key={i} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "#1e1e1e", border: "1px solid #333", color: "#555" }}>Step {i + 1}</span>
+                      <span key={i} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "var(--surface-ink-subtle)", border: "1px solid #333", color: "#555" }}>Step {i + 1}</span>
                     ))}
                   </div>
                 )}
@@ -510,14 +510,14 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
                     { label: "Refine", action: () => onOpenChat?.(`Refine framework: ${fw.title}`) },
                     { label: "Draft content", action: () => onDraftToStudio?.({ topic: fw.title, context: fw.summary || "", sourceType: "framework", sourceTitle: fw.title }) },
                   ].map(btn => (
-                    <button key={btn.label} onClick={btn.action} style={{ background: "transparent", border: "0.5px solid #2a2a2a", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "#555", cursor: "pointer" }}
+                    <button key={btn.label} onClick={btn.action} style={{ background: "transparent", border: "0.5px solid var(--ink-3)", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "#555", cursor: "pointer" }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(197,165,90,0.27)"; e.currentTarget.style.color = "var(--brand)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; e.currentTarget.style.color = "#555"; }}
                     >{btn.label}</button>
                   ))}
-                  <button onClick={() => setDeleteTarget(fw.id)} style={{ background: "transparent", border: "0.5px solid #2a2a2a", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "#555", cursor: "pointer", marginLeft: "auto" }}
+                  <button onClick={() => setDeleteTarget(fw.id)} style={{ background: "transparent", border: "0.5px solid var(--ink-3)", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "#555", cursor: "pointer", marginLeft: "auto" }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,68,68,0.2)"; e.currentTarget.style.color = "#ff6666"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; e.currentTarget.style.color = "#555"; }}
                   >✕</button>
                 </div>
               </div>
@@ -540,8 +540,8 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             <p style={{ color: "var(--ink-7)", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this framework?</p>
             <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 20px" }}>This cannot be undone.</p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setDeleteTarget(null)} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-              <button onClick={() => handleDelete(deleteTarget)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "#E24B4A", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
+              <button onClick={() => setDeleteTarget(null)} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => handleDelete(deleteTarget)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--danger)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
             </div>
           </div>
         </div>
@@ -684,11 +684,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   if (loading) {
     return (
-      <div style={{ background: "#0d0d0d", minHeight: "100vh", padding: "16px" }}>
+      <div style={{ background: "var(--ink)", minHeight: "100vh", padding: "16px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {[...Array(3)].map((_, i) => (
             <div key={i} style={{ background: "var(--surface-ink-raised)", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid var(--ink-3)" }}>
-              <div style={{ height: 14, width: "60%", background: "#1f1f1f", borderRadius: 6, marginBottom: 10 }} className="animate-pulse" />
+              <div style={{ height: 14, width: "60%", background: "var(--surface-ink-subtle)", borderRadius: 6, marginBottom: 10 }} className="animate-pulse" />
               <div style={{ height: 10, width: "100%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
               <div style={{ height: 10, width: "70%", background: "var(--surface-ink-subtle)", borderRadius: 4 }} className="animate-pulse" />
             </div>
@@ -704,7 +704,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   ];
 
   return (
-    <div style={{ background: "#0d0d0d", minHeight: "100vh", paddingBottom: 80 }}>
+    <div style={{ background: "var(--ink)", minHeight: "100vh", paddingBottom: 80 }}>
       {loadError && (
         <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
       )}
@@ -713,7 +713,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           .intel-counter-bar > div:last-child { border-right: none !important; }
           .intel-automation-grid { grid-template-columns: 1fr !important; }
           .intel-command-center { flex-direction: column-reverse !important; min-height: 0 !important; }
-          .intel-command-left { flex: 1 1 auto !important; border-right: none !important; border-top: 0.5px solid #1e1e1e; }
+          .intel-command-left { flex: 1 1 auto !important; border-right: none !important; border-top: 0.5px solid var(--surface-ink-subtle); }
           .intel-command-right { flex: 1 1 auto !important; max-height: none !important; }
           .intel-signal-row { min-height: 48px; }
           .intel-key-insights-grid { grid-template-columns: 1fr !important; }
@@ -749,7 +749,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "var(--brand)" : "#7A7670",
+              color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-5)",
               background: "transparent", border: "none",
               borderBottom: activeSubTab === tab.value ? "2px solid var(--brand)" : "2px solid transparent",
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
@@ -776,9 +776,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             ) : (
               <>
                 {/* Command Center container */}
-                <div className="intel-command-center" style={{ background: "#0f0f0f", border: "0.5px solid #1e1e1e", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
+                <div className="intel-command-center" style={{ background: "#0f0f0f", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
-                  <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid #1e1e1e" }}>
+                  <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid var(--surface-ink-subtle)" }}>
                     {selectedSignal && (
                       <SignalDetailPanel
                         signal={selectedSignal}
@@ -791,9 +791,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   </div>
 
                   {/* RIGHT PANEL — signal list (~42%) */}
-                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "#0d0d0d", overflowY: "auto", maxHeight: 600 }}>
+                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "var(--ink)", overflowY: "auto", maxHeight: 600 }}>
                     {/* Header */}
-                    <div style={{ padding: "14px 16px", borderBottom: "0.5px solid #1e1e1e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{ padding: "14px 16px", borderBottom: "0.5px solid var(--surface-ink-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600 }}>All signals</span>
                       <span style={{ fontSize: 10, color: "#333" }}>{sortedByConfidence.length} total</span>
                     </div>
@@ -815,12 +815,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             background: isSelected ? "var(--surface-ink-raised)" : "transparent",
                             borderLeft: isSelected ? "2px solid var(--brand)" : "2px solid transparent",
                           }}
-                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#111"; }}
+                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--ink)"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                         >
                           <span style={{ fontSize: 10, fontWeight: 700, color: "#222", minWidth: 22, textAlign: "center" }}>{idx + 1}</span>
                           {/* Vertical strength bar */}
-                          <div style={{ width: 3, height: 32, borderRadius: 2, position: "relative", overflow: "hidden", flexShrink: 0, marginRight: 10, background: "#1e1e1e" }}>
+                          <div style={{ width: 3, height: 32, borderRadius: 2, position: "relative", overflow: "hidden", flexShrink: 0, marginRight: 10, background: "var(--surface-ink-subtle)" }}>
                             <div style={{ position: "absolute", top: 0, width: "100%", height: `${confPct}%`, background: "var(--brand)", opacity: confPct / 100, borderRadius: 2 }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>

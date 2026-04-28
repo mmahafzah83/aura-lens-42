@@ -195,7 +195,7 @@ const Admin = () => {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: "#0d0d0d" }}
+        style={{ backgroundColor: "var(--ink)" }}
       >
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
@@ -205,7 +205,7 @@ const Admin = () => {
   return (
     <div
       className="min-h-screen w-full"
-      style={{ backgroundColor: "#0d0d0d", color: "var(--ink-7)", fontFamily: "Inter, system-ui, sans-serif" }}
+      style={{ backgroundColor: "var(--ink)", color: "var(--ink-7)", fontFamily: "Inter, system-ui, sans-serif" }}
     >
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
@@ -378,7 +378,7 @@ const Admin = () => {
                               className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
                               style={{
                                 backgroundColor: "var(--brand)",
-                                color: "#0d0d0d",
+                                color: "var(--ink)",
                               }}
                             >
                               Invite
@@ -407,7 +407,7 @@ const Admin = () => {
                                 rows={3}
                                 className="w-full px-3 py-2 rounded-md text-sm outline-none focus:border-brand transition-colors"
                                 style={{
-                                  backgroundColor: "#0d0d0d",
+                                  backgroundColor: "var(--ink)",
                                   border: "1px solid var(--ink-3)",
                                   color: "var(--ink-7)",
                                 }}
@@ -424,7 +424,7 @@ const Admin = () => {
                                   onClick={() => sendInvite(r)}
                                   disabled={sendingId === r.id}
                                   className="text-xs px-4 py-2 rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
-                                  style={{ backgroundColor: "var(--brand)", color: "#0d0d0d" }}
+                                  style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
                                 >
                                   {sendingId === r.id ? (
                                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -460,12 +460,12 @@ const Admin = () => {
             Send an invite straight to an email — they'll be added to the allowlist automatically.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input type="email" value={directEmail} onChange={(e) => setDirectEmail(e.target.value)} placeholder="email@company.com" className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors bg-primary-foreground" style={{ backgroundColor: "#0d0d0d", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }} />
+            <input type="email" value={directEmail} onChange={(e) => setDirectEmail(e.target.value)} placeholder="email@company.com" className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors bg-primary-foreground" style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }} />
             <button
               onClick={sendDirectInvite}
               disabled={directSending || !directEmail}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
-              style={{ backgroundColor: "var(--brand)", color: "#0d0d0d" }}
+              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
             >
               {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send invite"}
             </button>

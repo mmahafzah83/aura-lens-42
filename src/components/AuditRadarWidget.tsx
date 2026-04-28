@@ -98,7 +98,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -109,7 +109,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -235,7 +235,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           <button
             onClick={onStartAudit}
             className="px-5 py-2.5 rounded-xl text-sm font-medium"
-            style={{ background: "var(--brand)", color: "#0d0d0d" }}
+            style={{ background: "var(--brand)", color: "var(--ink)" }}
           >
             Start Audit →
           </button>
@@ -298,7 +298,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
               onClick={saveScores}
               disabled={savingScores}
               className="text-[11px] font-medium px-3 py-1 rounded-lg"
-              style={{ background: "var(--brand)", color: "#0d0d0d" }}
+              style={{ background: "var(--brand)", color: "var(--ink)" }}
             >
               {savingScores ? "Saving..." : "Save"}
             </button>

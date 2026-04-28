@@ -61,20 +61,20 @@ interface Trend {
 }
 
 const decisionStyle = (label?: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "#E24B4A", bg: "#E24B4A12" };
+  if (label === "Act Now") return { color: "var(--danger)", bg: "#E24B4A12" };
   if (label === "Early Opportunity") return { color: "var(--brand)", bg: "#F9731612" };
   return { color: "hsl(var(--muted-foreground))", bg: "transparent" };
 };
 
 const freshnessOf = (iso: string): { label: string; color: string } => {
   const ageH = (Date.now() - new Date(iso).getTime()) / 3_600_000;
-  if (ageH <= 24) return { label: "Fresh", color: "#7ab648" };
+  if (ageH <= 24) return { label: "Fresh", color: "var(--success)" };
   if (ageH <= 24 * 7) return { label: "This week", color: "var(--brand)" };
   return { label: "Aging", color: "hsl(var(--muted-foreground))" };
 };
 
 const impactStyle = (level?: string | null): { color: string } => {
-  if (level === "High") return { color: "#E24B4A" };
+  if (level === "High") return { color: "var(--danger)" };
   if (level === "Emerging") return { color: "var(--brand)" };
   return { color: "hsl(var(--muted-foreground))" };
 };
@@ -97,7 +97,7 @@ const isTrusted = (source: string) => {
 
 const qualityTier = (v?: number | null): { label: string; color: string } => {
   const n = v ?? 0;
-  if (n >= 75) return { label: "High quality", color: "#7ab648" };
+  if (n >= 75) return { label: "High quality", color: "var(--success)" };
   if (n >= 50) return { label: "Solid", color: "var(--brand)" };
   return { label: "Low signal", color: "hsl(var(--muted-foreground))" };
 };
@@ -146,8 +146,8 @@ const competitorTimeAgo = (iso: string): string => {
 };
 
 const ACCENT = "var(--brand)";
-const GREEN = "#7ab648";
-const RED = "#E24B4A";
+const GREEN = "var(--success)";
+const RED = "var(--danger)";
 
 // ────────────────────────────────────────────────
 // Helpers

@@ -169,16 +169,16 @@ const DEFAULT_CARD_STYLE: CardStyleConfig = {
 };
 
 const PRESETS = (accent: string) => ({
-  default: { bg: "#111111", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
-  bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
-  warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
-  minimal: { bg: "#ffffff", text: "#111111", tagCol: "var(--ink-5)", roleCol: "var(--ink-6)" },
+  default: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  bold: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
+  warm: { bg: "var(--surface-subtle)", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
+  minimal: { bg: "#ffffff", text: "var(--ink)", tagCol: "var(--ink-5)", roleCol: "var(--ink-6)" },
   midnight: { bg: "#080818", text: "#e8e8ff", tagCol: "#a78bfa", roleCol: "#4b4b7a" },
 });
 
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   const len = value.length;
-  const color = len <= ideal ? "#7ab648" : len <= ideal * 1.4 ? "#EF9F27" : "#e24b4a";
+  const color = len <= ideal ? "var(--success)" : len <= ideal * 1.4 ? "var(--warning)" : "var(--danger)";
   return (
     <div
       style={{
@@ -576,7 +576,7 @@ export default function ImageCardGenerator({
                 Accent color
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {["var(--brand)", "#e24b4a", "#7ab648", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
+                {["var(--brand)", "var(--danger)", "var(--success)", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
                   <div
                     key={c}
                     onClick={() => updateCardStyle("accentColor", c)}
@@ -634,7 +634,7 @@ export default function ImageCardGenerator({
               </div>
             </div>
           </div>
-          <div style={{ borderTop: "0.5px solid #1e1e1e", marginBottom: 12 }} />
+          <div style={{ borderTop: "0.5px solid var(--surface-ink-subtle)", marginBottom: 12 }} />
 
           <Field label="Topic Tag">
             <Input
@@ -836,7 +836,7 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
           <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
           <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
         </div>
-        <p style={{ color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+        <p style={{ color: "var(--surface-ink-subtle)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
     </div>
   );
@@ -845,12 +845,12 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 2: Newspaper */
 function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: "#f5ede0", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: "var(--surface-subtle)", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
         <span style={{ color: "#fff", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "#f5ede0" }}>
+      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "var(--surface-subtle)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflow: "hidden" }}>
           <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0, maxWidth: "55%" }}>{trunc(tag, 35)}</span>
           <div style={{ flex: 1, height: 1, background: "#d4b896", flexShrink: 1 }} />
@@ -861,7 +861,7 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontS
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
         <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.6), textAlign: arAlign(isArabic) }}>{trunc(ledeText, 110)}</p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "#f5ede0" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "var(--surface-subtle)" }}>
         <p style={{ color: accentColor, fontSize: 10, fontWeight: 700 }}>{trunc(editName, 30)}</p>
         <p style={{ color: "#9a8060", fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
@@ -941,11 +941,11 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
-        <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
+        <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
         <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
+        <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
       </div>
       <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, marginBottom: 10, textAlign: arAlign(isArabic) }}>01 / Key Insight</p>
@@ -954,7 +954,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
         </p>
         <p style={{ color: "var(--ink-5)", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.65), textAlign: arAlign(isArabic) }}>{trunc(bodyText, 100)}</p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--ink)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
           <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
@@ -969,7 +969,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
 function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ background: "#0d0d0d", padding: 20 }}>
+      <div style={{ background: "var(--ink)", padding: 20 }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, textAlign: arAlign(isArabic) }}>FRAMEWORK</p>
         <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25, textAlign: arAlign(isArabic) }}>{trunc(frameTitle, 65)}</p>
         <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12, marginLeft: isArabic ? "auto" : 0 }} />
@@ -1018,7 +1018,7 @@ function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFo
         <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
         <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
       </div>
-      <p style={{ position: "absolute", bottom: 16, right: 16, color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+      <p style={{ position: "absolute", bottom: 16, right: 16, color: "var(--surface-ink-subtle)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
   );
 }
@@ -1073,7 +1073,7 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 10: Arabic (preserved) */
 function ArabicCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid var(--surface-ink-subtle)", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
         {[0, 1, 2].map((i) => (
           <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: accentColor }} />

@@ -669,7 +669,7 @@ const Dashboard = () => {
                         height: 20,
                         background: isActive ? "var(--brand)" : "var(--ink-3)",
                         borderRadius: 6,
-                        color: isActive ? "#fff" : "#7A7670",
+                        color: isActive ? "#fff" : "var(--ink-5)",
                       }}
                     >
                       <tab.icon className="w-[12px] h-[12px]" />
@@ -677,7 +677,7 @@ const Dashboard = () => {
                     <span
                       style={{
                         fontSize: 8,
-                        color: isActive ? "var(--brand)" : "#4A4845",
+                        color: isActive ? "var(--brand)" : "var(--ink-4)",
                         fontWeight: isActive ? 600 : 400,
                       }}
                     >

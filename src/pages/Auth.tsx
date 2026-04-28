@@ -75,7 +75,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "#0d0d0d", fontFamily: "'DM Sans', sans-serif" }}>
+    <div className="min-h-screen flex" style={{ backgroundColor: "var(--ink)", fontFamily: "'DM Sans', sans-serif" }}>
       {/* Scoped style overrides to defeat global input styles + autofill */}
       <style>{`
         .auth-input {
@@ -92,7 +92,7 @@ const Auth = () => {
           transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .auth-input::placeholder {
-          color: #4A4845 !important;
+          color: var(--ink-4) !important;
           opacity: 1;
         }
         .auth-input:focus {
@@ -129,7 +129,7 @@ const Auth = () => {
         .auth-sublabel {
           font-family: 'DM Sans', sans-serif;
           font-size: 13px;
-          color: #5F5E5A;
+          color: var(--ink-5);
           font-weight: 300;
           line-height: 1.6;
           margin-bottom: 28px;
@@ -154,7 +154,7 @@ const Auth = () => {
           opacity: 1 !important;
         }
         .auth-feature-desc {
-          color: #5F5E5A !important;
+          color: var(--ink-5) !important;
           font-size: 12px !important;
           font-weight: 300 !important;
           line-height: 1.5 !important;
@@ -210,7 +210,7 @@ const Auth = () => {
         }
         .auth-google:hover { opacity: 0.92; }
         .auth-divider-line { height: 0.5px; background: var(--ink-3); flex: 1; }
-        .auth-divider-text { font-size: 11px; color: #4A4845; font-family: 'DM Sans', sans-serif; }
+        .auth-divider-text { font-size: 11px; color: var(--ink-4); font-family: 'DM Sans', sans-serif; }
         .auth-wordmark {
           font-family: 'DM Serif Display', Georgia, serif;
           font-size: 20px;
@@ -223,7 +223,7 @@ const Auth = () => {
           font-weight: 600;
           letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: #4A4845;
+          color: var(--ink-4);
           font-family: 'DM Sans', sans-serif;
           margin-top: 4px;
         }
@@ -242,7 +242,7 @@ const Auth = () => {
           font-family: 'DM Sans', sans-serif;
         }
         .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
-        .auth-link { font-size: 12px; color: #4A4845; font-family: 'DM Sans', sans-serif; }
+        .auth-link { font-size: 12px; color: var(--ink-4); font-family: 'DM Sans', sans-serif; }
         .auth-link-orange { color: var(--brand); font-weight: 500; }
         .auth-brand-large {
           font-family: 'DM Serif Display', Georgia, serif;
@@ -274,7 +274,7 @@ const Auth = () => {
       {/* LEFT — auth form */}
       <div
         className="w-full md:w-[40%] min-h-screen flex items-center justify-center px-6 py-10"
-        style={{ backgroundColor: "#0d0d0d" }}
+        style={{ backgroundColor: "var(--ink)" }}
       >
         <div className="w-full max-w-sm">
           {/* Logo */}

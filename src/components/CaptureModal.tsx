@@ -719,7 +719,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               height: 32,
               borderRadius: "50%",
               background: "var(--surface-subtle)",
-              color: "#5F5E5A",
+              color: "var(--ink-5)",
               border: "none",
             }}
             aria-label="Close capture"
@@ -799,7 +799,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "#E24B4A" : "rgba(0,0,0,0.12)";
+                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "rgba(0,0,0,0.12)";
                     e.currentTarget.style.background = "var(--surface-subtle)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
@@ -824,7 +824,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   style={{
                     width: "100%",
                     background: "var(--surface-subtle)",
-                    border: urlError ? "0.5px solid #E24B4A" : "0.5px solid rgba(0,0,0,0.12)",
+                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid rgba(0,0,0,0.12)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 13,
@@ -864,7 +864,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </button>
               </div>
 
-              {urlError && <p style={{ fontSize: 12, color: "#E24B4A", margin: 0 }}>{urlError}</p>}
+              {urlError && <p style={{ fontSize: 12, color: "var(--danger)", margin: 0 }}>{urlError}</p>}
 
               {linkPreview && (
                 <div
@@ -883,7 +883,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     {linkPreview.title}
                   </div>
                   {linkPreview.snippet && (
-                    <div style={{ fontSize: 11, color: "#5F5E5A", marginTop: 6, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, lineHeight: 1.5 }}>
                       {linkPreview.snippet}…
                     </div>
                   )}
@@ -902,7 +902,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   }}
                 >
                   <span className="capture-pulse-dot" />
-                  <span style={{ fontSize: 12, color: "#C05A10", lineHeight: 1.45 }}>
+                  <span style={{ fontSize: 12, color: "var(--warning)", lineHeight: 1.45 }}>
                     Aura detected this strengthens your signal <strong>{signalMatch.title}</strong> — adding will reinforce it.
                   </span>
                 </div>
@@ -921,10 +921,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 11, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
                       Capture anyway
                     </button>
-                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 11, color: "#5F5E5A", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 11, color: "var(--ink-5)", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
@@ -1019,9 +1019,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       transition: "all 150ms ease",
                     }}
                   >
-                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "#5F5E5A" }} />
+                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-5)" }} />
                     <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 10, color: "#5F5E5A", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                    <p style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
@@ -1073,7 +1073,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center" style={{ gap: 8, fontSize: 13, color: "#5F5E5A" }}>
+                <div className="flex items-center" style={{ gap: 8, fontSize: 13, color: "var(--ink-5)" }}>
                   <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
                   AI is reading your screenshot…
                 </div>
@@ -1093,7 +1093,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "#E24B4A" : "#4F46E5";
+                      const iconBg = isPdf ? "var(--danger)" : "#4F46E5";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1126,7 +1126,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                             <div style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.filename}
                             </div>
-                            <div style={{ fontSize: 10, color: "#5F5E5A", marginTop: 2 }}>
+                            <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 2 }}>
                               {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </div>
                           </div>
@@ -1172,7 +1172,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   >
                     <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--brand)" }} />
                   </div>
-                  <p style={{ fontSize: 13, color: "#5F5E5A", margin: 0 }}>Transcribing…</p>
+                  <p style={{ fontSize: 13, color: "var(--ink-5)", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -1225,7 +1225,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     {fmtMMSS(recordingSeconds)}
                   </div>
                   {!isRecording && (
-                    <p style={{ fontSize: 12, color: "#5F5E5A", margin: 0 }}>Tap to record</p>
+                    <p style={{ fontSize: 12, color: "var(--ink-5)", margin: 0 }}>Tap to record</p>
                   )}
                 </>
               )}

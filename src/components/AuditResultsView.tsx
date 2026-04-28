@@ -77,7 +77,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -88,7 +88,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -282,7 +282,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
           className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide transition-all active:scale-[0.98] hover:brightness-110"
           style={{
             background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
-            color: "#0d0d0d",
+            color: "var(--ink)",
           }}
         >
           Continue to Brand Assessment →

@@ -131,7 +131,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           maxHeight: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "#0d0d0d",
+          background: "var(--ink)",
           borderRadius: 16,
           border: "1px solid var(--ink-3)",
           overflow: "hidden",
@@ -212,7 +212,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           <div
             className="shrink-0"
             style={{
-              background: "#0d0d0d",
+              background: "var(--ink)",
               borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
             }}
