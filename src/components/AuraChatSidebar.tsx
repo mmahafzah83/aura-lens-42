@@ -839,6 +839,51 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
           </div>
         )}
 
+        {/* ═══ Cross-session Memory Bar (AA-2) ═══ */}
+        {viewMode === "chat" && (() => {
+          const lastAssistant = memoryRows.find(r => r.role === "assistant" && r.content);
+          if (!lastAssistant) return null;
+          const topic = (lastAssistant.content || "").replace(/\s+/g, " ").trim().slice(0, 70);
+          const lastAssistants = memoryRows.filter(r => r.role === "assistant" && r.content).slice(0, 5);
+          return (
+            <div style={{ background: "#FEF8F3", borderBottom: "0.5px solid #F9C88B" }}>
+              <div className="flex items-center gap-2 px-4 py-2">
+                <span style={{ background: "#F97316", color: "#fff", fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                  Remembers
+                </span>
+                <span style={{ fontSize: 11, color: "#7A4A12", lineHeight: 1.35 }} className="truncate">
+                  Continuing from last session — {topic}
+                </span>
+              </div>
+              {showMemoryPanel && (
+                <div style={{ borderTop: "0.5px solid #F9C88B", background: "#FFFCF8", padding: "6px 8px" }}>
+                  {lastAssistants.length === 0 ? (
+                    <div style={{ fontSize: 11, color: "#9A6A2A", padding: "6px 8px" }}>No recent memory yet.</div>
+                  ) : (
+                    lastAssistants.map(r => {
+                      const ts = new Date(r.created_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                      const snippet = (r.content || "").replace(/\s+/g, " ").trim().slice(0, 80);
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => { send(r.content || ""); }}
+                          className="w-full text-left tactile-press"
+                          style={{ display: "block", padding: "6px 8px", borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", marginBottom: 2 }}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#FEF1E1"; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                        >
+                          <div style={{ fontSize: 9, color: "#B07A2A", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{ts}</div>
+                          <div style={{ fontSize: 11, color: "#5A3A0E", lineHeight: 1.35 }}>{snippet}</div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* ═══ HISTORY VIEW ═══ */}
         {viewMode === "history" && (
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 min-h-0">
