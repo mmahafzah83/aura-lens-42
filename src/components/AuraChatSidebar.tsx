@@ -292,6 +292,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [memoryRows, setMemoryRows] = useState<MemoryRow[]>([]);
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
   const sessionIdRef = useRef<string>(Date.now().toString());
+  // ── Adaptive first-chip label parsed from latest assistant response ──
+  const [adaptiveChipLabel, setAdaptiveChipLabel] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -611,6 +613,17 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       // Save assistant message
       if (assistantContent) {
         await saveMessage(convId, "assistant", assistantContent);
+        // Parse adaptive chip label from latest response
+        const m = assistantContent.match(/\b(Draft|Write|Develop|Send|Create|Propose|Schedule|Prepare|Build)\s+(?:an?\s+|the\s+)?([A-Za-z][\w-]*(?:\s+[A-Za-z][\w-]*){0,2})/i);
+        if (m) {
+          const noun = m[2].replace(/[.,;:!?]+$/, "").trim();
+          const cap = noun.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+          let label = `Draft ${cap}`;
+          if (label.length > 20) label = label.slice(0, 20).trimEnd();
+          setAdaptiveChipLabel(label);
+        } else {
+          setAdaptiveChipLabel(null);
+        }
         // Persist assistant turn to cross-session memory (silent failure)
         (async () => {
           try {
