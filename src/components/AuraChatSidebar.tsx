@@ -255,7 +255,34 @@ interface Conversation {
   updated_at: string;
 }
 
-type ViewMode = "chat" | "history";
+type ViewMode = "chat" | "history" | "vault";
+
+/* ── Vault item type & helpers ── */
+interface VaultItem {
+  id: string;
+  content: string;
+  created_at: string;
+  type: string;
+}
+
+const VAULT_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
+  pursuit: { bg: "#EEEDFE", color: "#3C3489" },
+  memo: { bg: "#E6F1FB", color: "#0C447C" },
+  post: { bg: "#EAF3DE", color: "#27500A" },
+  plan: { bg: "#FAEEDA", color: "#633806" },
+  deck: { bg: "#F1EFE8", color: "#444441" },
+  analysis: { bg: "#F1EFE8", color: "#444441" },
+};
+
+function detectVaultType(content: string): string {
+  const c = content || "";
+  if (/PURSUIT STRATEGY/i.test(c)) return "pursuit";
+  if (/EXECUTIVE MEMO/i.test(c) || (/\bTo:/.test(c) && /\bFrom:/.test(c))) return "memo";
+  if (/LinkedIn Post/i.test(c) || /Headline:/i.test(c)) return "post";
+  if (/90-Day/i.test(c) || /Days\s*1-?30/i.test(c)) return "plan";
+  if (/\bSlide\b/i.test(c) || /TITLE:/.test(c)) return "deck";
+  return "analysis";
+}
 
 const QUICK_ACTIONS = [
   { label: "LinkedIn Post", icon: Linkedin, mode: "linkedin-summary", prompt: "Summarize my most recent strategic insight into a high-authority LinkedIn post." },
