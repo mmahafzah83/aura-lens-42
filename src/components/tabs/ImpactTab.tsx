@@ -361,6 +361,27 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const daysSinceLastAll = lastCaptureAll ? daysBetween(new Date(), lastCaptureAll) : null;
 
+  /* ── Score count-up animation (runs once when value first becomes available) ── */
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const didAnimateRef = useRef(false);
+  useEffect(() => {
+    if (didAnimateRef.current) return;
+    if (!latestScore || latestScore <= 0) return;
+    didAnimateRef.current = true;
+    const target = latestScore;
+    const duration = 900;
+    const start = performance.now();
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      setAnimatedScore(Math.round(easeOutCubic(t) * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [latestScore]);
+
   const newFollowersPeriod = useMemo(
     () => followerRows.reduce((s, r) => s + (r.follower_growth || 0), 0),
     [followerRows]
@@ -639,6 +660,231 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         })}
       </div>
 
+      {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background: "#0E0D0C",
+          borderRadius: 14,
+          padding: "28px 28px 24px",
+          color: "#E8E4DC",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07)",
+        }}
+      >
+        {/* Decorative radial glow */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: -80,
+            right: -80,
+            width: 300,
+            height: 300,
+            background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 65%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Top row: score (left) · forecasts (right) */}
+        <div className="relative flex items-start justify-between gap-6 flex-wrap">
+          <div>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#5F5E5A",
+              }}
+            >
+              Authority score
+            </div>
+            <div
+              className="tabular-nums"
+              style={{
+                fontFamily: "'DM Serif Display', Georgia, serif",
+                fontSize: 80,
+                color: "#F97316",
+                letterSpacing: "-0.04em",
+                lineHeight: 1,
+                marginTop: 6,
+              }}
+            >
+              {animatedScore}
+            </div>
+            <div className="mt-3 inline-flex">
+              <span
+                style={{
+                  background: "rgba(249,115,22,0.12)",
+                  color: "#F97316",
+                  borderRadius: 20,
+                  padding: "5px 14px",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  display: "inline-block",
+                }}
+              >
+                {trendLabel}
+              </span>
+            </div>
+          </div>
+
+          {/* Forecasts top-right */}
+          {trajectory && (
+            <div className="flex gap-7 sm:text-right">
+              <div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#5F5E5A",
+                  }}
+                >
+                  30d
+                </div>
+                <div
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 26,
+                    color: "#BA7517",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1,
+                    marginTop: 4,
+                  }}
+                >
+                  {trajectory.forecast30}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#5F5E5A",
+                  }}
+                >
+                  90d
+                </div>
+                <div
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 26,
+                    color: "#E24B4A",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1,
+                    marginTop: 4,
+                  }}
+                >
+                  {trajectory.forecast90}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Trajectory bar chart */}
+        {trajectory && (() => {
+          // Build up to 10 bars from existing all-time snapshot scores (latest 10)
+          const recent = allSnapshots.slice(-10).map(s => s.score);
+          const bars = recent.length > 0 ? recent : [trajectory.currentScore];
+          const maxV = Math.max(...bars, 1);
+          // Color ramp: orange near-term → amber at 30d → red at 90d
+          const barColor = (i: number, n: number) => {
+            const t = n <= 1 ? 0 : i / (n - 1);
+            if (t < 0.5) return "#F97316";
+            if (t < 0.85) return "#BA7517";
+            return "#E24B4A";
+          };
+          return (
+            <div className="relative mt-6">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: 4,
+                  height: 64,
+                }}
+              >
+                {bars.map((v, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: 1,
+                      height: `${Math.max(6, (v / maxV) * 100)}%`,
+                      background: barColor(i, bars.length),
+                      borderRadius: 3,
+                      opacity: 0.92,
+                    }}
+                  />
+                ))}
+              </div>
+              <div
+                className="flex justify-between mt-2"
+                style={{ fontSize: 9, color: "#4A4845" }}
+              >
+                <span>Now</span>
+                <span>30d · {trajectory.forecast30}</span>
+                <span>90d · {trajectory.forecast90}</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Scenario toggle */}
+        <div className="relative flex flex-wrap gap-2 mt-5">
+          {([
+            { key: "current", label: "Current pace" },
+            { key: "publish2x", label: "2× publishing" },
+            { key: "stop", label: "Stop capturing" },
+          ] as const).map((b) => {
+            const active = scenario === b.key;
+            return (
+              <button
+                key={b.key}
+                type="button"
+                onClick={() => setScenario(b.key)}
+                style={
+                  active
+                    ? {
+                        background: "#F97316",
+                        color: "#fff",
+                        border: "0.5px solid #F97316",
+                        borderRadius: 8,
+                        padding: "5px 14px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }
+                    : {
+                        background: "transparent",
+                        color: "#5F5E5A",
+                        border: "0.5px solid #2A2825",
+                        borderRadius: 8,
+                        padding: "5px 14px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }
+                }
+              >
+                {b.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {trajectory && (
+          <div className="relative mt-4 text-[12px] space-y-1" style={{ color: "#9A958C" }}>
+            <div>{trajectory.trendText}</div>
+            {trajectory.to95Text && <div>{trajectory.to95Text}</div>}
+          </div>
+        )}
+      </section>
+
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
         className="p-6"
@@ -650,9 +896,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
-          {/* LEFT: narrative */}
-          <div>
+        <div>
             <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
               {narrative.map((p, i) => (
                 <span
@@ -681,26 +925,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </button>
             )}
           </div>
-
-          {/* RIGHT: authority score */}
-          <div className="md:text-right md:min-w-[180px]">
-            <div
-              className="leading-none tabular-nums"
-              style={{ fontSize: 48, fontWeight: 700, color: "#F97316", fontFamily: "Inter, sans-serif" }}
-            >
-              {latestScore}
-            </div>
-            <div
-              className="mt-1.5"
-              style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}
-            >
-              Authority score
-            </div>
-            <div className="mt-2 text-xs font-medium" style={{ color: trendColor }}>
-              {trendLabel}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
@@ -713,39 +937,54 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
-            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
-            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
+            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "#F97316" },
+            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "#2E7D38" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "#F97316" },
           ]).map((c) => {
             const cfg = subScoreCard(c.kind, c.value);
             return (
               <div
                 key={c.label}
                 style={{
-                  background: "var(--color-card)",
-                  borderRadius: 8,
-                  padding: "14px 16px",
-                  border: `0.5px solid ${cfg.border}`,
+                  background: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: "16px 18px",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
                 }}
               >
                 <div className="flex items-baseline justify-between">
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "#3D3A36",
+                    }}
+                  >
                     {c.label}
                   </div>
                   <div
                     className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                    style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
+                    style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
                   >
                     {cfg.tag}
                   </div>
                 </div>
                 <div
                   className="tabular-nums mt-1"
-                  style={{ fontSize: 24, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 36,
+                    color: c.color,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.02em",
+                  }}
                 >
                   {Math.round(c.value)}
                 </div>
-                <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
+                <div className="text-[11px] mt-1.5" style={{ color: "#3D3A36" }}>
                   {c.desc}
                 </div>
               </div>
@@ -754,121 +993,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </section>
 
-      {/* ─────────── 4b. AUTHORITY TRAJECTORY ─────────── */}
-      <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Authority trajectory
-        </h2>
-        {!trajectory ? (
-          <div
-            className="rounded-lg p-4 text-[12px]"
-            style={{
-              border: "1px dashed var(--color-border)",
-              color: "var(--color-text-secondary)",
-            }}
-          >
-            Not enough data yet — check back after a few more days.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Row 1 — metric cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {([
-                { label: "Today", value: trajectory.currentScore, color: "#F97316" },
-                {
-                  label: "30d forecast",
-                  value: trajectory.forecast30,
-                  color:
-                    trajectory.forecast30 > trajectory.currentScore
-                      ? "#7ab648"
-                      : trajectory.forecast30 < trajectory.currentScore
-                      ? "#E24B4A"
-                      : "var(--color-text-secondary)",
-                },
-                {
-                  label: "90d forecast",
-                  value: trajectory.forecast90,
-                  color:
-                    trajectory.forecast90 > trajectory.currentScore
-                      ? "#7ab648"
-                      : trajectory.forecast90 < trajectory.currentScore
-                      ? "#E24B4A"
-                      : "var(--color-text-secondary)",
-                },
-              ]).map((c) => (
-                <div
-                  key={c.label}
-                  style={{
-                    background: "var(--color-card)",
-                    borderRadius: 8,
-                    padding: "14px 16px",
-                    border: "0.5px solid var(--color-border-secondary, var(--color-border))",
-                  }}
-                >
-                  <div
-                    className="text-[10px] uppercase tracking-wider"
-                    style={{ color: "var(--color-text-muted)" }}
-                  >
-                    {c.label}
-                  </div>
-                  <div
-                    className="tabular-nums mt-1"
-                    style={{
-                      fontSize: 24,
-                      fontWeight: 700,
-                      color: c.color,
-                      lineHeight: 1.1,
-                      transition: "color 300ms ease, transform 300ms ease",
-                    }}
-                    key={`${c.label}-${c.value}`}
-                  >
-                    {c.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Row 2 — scenario toggle */}
-            <div className="flex flex-wrap gap-2">
-              {([
-                { key: "current", label: "Current pace" },
-                { key: "publish2x", label: "2× publishing" },
-                { key: "stop", label: "Stop capturing" },
-              ] as const).map((b) => {
-                const active = scenario === b.key;
-                return (
-                  <button
-                    key={b.key}
-                    type="button"
-                    onClick={() => setScenario(b.key)}
-                    className="text-[11px] px-3 py-1.5 rounded-full transition-colors"
-                    style={
-                      active
-                        ? { background: "#F97316", color: "#fff", border: "0.5px solid #F97316" }
-                        : {
-                            background: "transparent",
-                            color: "var(--color-text-secondary)",
-                            border: "0.5px solid var(--color-border-secondary, var(--color-border))",
-                          }
-                    }
-                  >
-                    {b.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Row 3 — trend summary */}
-            <div className="text-[12px] space-y-1" style={{ color: "var(--color-text-secondary)" }}>
-              <div>{trajectory.trendText}</div>
-              {trajectory.to95Text && <div>{trajectory.to95Text}</div>}
-            </div>
-          </div>
-        )}
-      </section>
+      {/* (Authority Trajectory now lives inside the dark score hero above.) */}
 
       {/* ─────────── 5. HEADLINE STATS ─────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -923,6 +1048,49 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </button>
             )}
           </div>
+        ) : followerSeries.length <= 1 ? (
+          (() => {
+            const only = followerSeries[0];
+            const delta = only?.growth ?? 0;
+            return (
+              <div
+                className="rounded-lg p-5"
+                style={{
+                  background: "#FFFFFF",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  borderRadius: 14,
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#3D3A36",
+                  }}
+                >
+                  Best day
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 28,
+                    color: "#2E7D38",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
+                </div>
+                <div className="text-[11px] mt-1" style={{ color: "#5F5E5A" }}>
+                  Only one day of follower data so far. More data will appear after additional snapshots.
+                </div>
+              </div>
+            );
+          })()
         ) : (
           <div
             className="rounded-lg p-4"
