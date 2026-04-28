@@ -443,11 +443,26 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         title: entryTitle,
         content: entryContent,
         summary: entryContent.slice(0, 300),
+        ...(selectedPillar && { skill_pillar: selectedPillar }),
         ...(captureType === "link" && { image_url: data?.original_url || content.trim() }),
       }).select("id").single();
 
       if (entryError) {
         console.error("Failed to insert entry:", entryError.message, entryError);
+      }
+
+      // Capture link preview (UI only) so we can render the preview card
+      if (captureType === "link" && (data?.extracted_title || data?.extracted_content)) {
+        try {
+          const u = new URL(data?.original_url || content.trim());
+          setLinkPreview({
+            title: data?.extracted_title || u.hostname,
+            domain: u.hostname.replace(/^www\./, ""),
+            snippet: (data?.extracted_content || "").slice(0, 160),
+          });
+        } catch {
+          // ignore preview errors
+        }
       }
 
       // Success
@@ -491,6 +506,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               console.error("detect-signals-v2 error:", error);
               return;
             }
+            // Capture signal title for the UI banner
+            const matchedTitle =
+              result?.signal?.title ||
+              result?.signal_title ||
+              result?.matched_signal?.title ||
+              null;
+            if (matchedTitle) setSignalMatch({ title: matchedTitle });
             if (result?.is_new) {
               setTimeout(() => {
                 sonnerToast("New pattern detected ✦", {
