@@ -1207,18 +1207,12 @@ html.dark  { background-color: #0c0c0c; }
 
 /* ── Mobile-only layout adjustments (≤767px) ── */
 @media (max-width: 767px) {
-  /* Collapse multi-column tailwind grids to single column on mobile.
-     Only affects classes already in markup; desktop ≥768px untouched. */
-  .grid.grid-cols-2,
-  .grid.grid-cols-3,
-  .grid.grid-cols-4,
-  .grid.sm\:grid-cols-2,
-  .grid.sm\:grid-cols-3 {
+  /* Collapse 3+ column grids that don't already have a mobile-first single
+     column declaration. Leaves intentional 2-col mobile layouts alone. */
+  .grid.grid-cols-3:not(.grid-cols-1):not(.sm\:grid-cols-1),
+  .grid.grid-cols-4:not(.grid-cols-1):not(.sm\:grid-cols-1) {
     grid-template-columns: 1fr !important;
   }
-  /* Soften card corners on mobile */
-  .aura-page .rounded-2xl,
-  .aura-page .rounded-xl {
-    border-radius: 14px;
-  }
+  /* Prevent body scroll being hidden behind bottom nav when no extra padding */
+  body { padding-bottom: 0; }
 }
