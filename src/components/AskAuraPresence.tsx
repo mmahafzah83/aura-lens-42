@@ -228,7 +228,11 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
   };
 
   return (
-    <div className="relative" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    <div
+      className="relative"
+      onMouseEnter={() => { onEnter(); if (avatarState !== "idle") setShowAvatarTip(true); }}
+      onMouseLeave={() => { onLeave(); setShowAvatarTip(false); }}
+    >
       <button
         onClick={handleClick}
         className={
@@ -241,7 +245,41 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
             : undefined
         }
       >
-        <Sparkles className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
+        <span className="relative inline-flex items-center justify-center shrink-0">
+          <Sparkles className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+          {(avatarState === "signal" || avatarState === "window") && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                border: `2px solid ${avatarState === "signal" ? "#7F77DD" : "#F97316"}`,
+                animation: `askaura-ring-pulse ${avatarState === "signal" ? "2s" : "1s"} ease-in-out infinite`,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+          {avatarState === "alarm" && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: -2,
+                right: -2,
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#E24B4A",
+                pointerEvents: "none",
+              }}
+            />
+          )}
+        </span>
         {showLabel && !collapsed && <span className="text-sm font-medium">Ask Aura</span>}
 
         {visual.badgeBg && (
@@ -258,6 +296,28 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           </span>
         )}
       </button>
+
+      {/* Avatar state tooltip (AA-5) */}
+      {showAvatarTip && avatarState !== "idle" && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 8px)",
+            left: 0,
+            zIndex: 50,
+            fontSize: 12,
+            background: "hsl(var(--background))",
+            border: "0.5px solid hsl(var(--border))",
+            borderRadius: "0.5rem",
+            padding: "6px 10px",
+            color: "hsl(var(--foreground))",
+            whiteSpace: "nowrap",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        >
+          {AVATAR_TOOLTIPS[avatarState]}
+        </div>
+      )}
 
       {/* Tooltip popup */}
       {showTip && top3.length > 0 && (
