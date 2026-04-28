@@ -929,6 +929,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   <Clock className="w-4 h-4" />
                 </button>
                 <button
+                  onClick={() => { if (viewMode === "vault") { setViewMode("chat"); } else { openVault(); } }}
+                  className={`p-2 transition-colors rounded-lg hover:bg-secondary tactile-press ${viewMode === "vault" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Vault"
+                >
+                  <Bookmark className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => { loadConversations(); setViewMode("history"); }}
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press"
                   title="Chat History"
