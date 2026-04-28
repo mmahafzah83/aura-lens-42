@@ -385,6 +385,88 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }
   }, []);
 
+  const loadCompetitorAlert = useCallback(async (uid: string) => {
+    try {
+      const seventyTwoHoursAgo = new Date(Date.now() - 72 * 3_600_000).toISOString();
+      const [trendsRes, signalRes, postRes] = await Promise.all([
+        supabase
+          .from("industry_trends")
+          .select("headline, source, url, fetched_at")
+          .eq("user_id", uid)
+          .gte("fetched_at", seventyTwoHoursAgo)
+          .order("fetched_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("strategic_signals")
+          .select("signal_title, fragment_count")
+          .eq("user_id", uid)
+          .eq("status", "active")
+          .order("priority_score", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("linkedin_posts")
+          .select("published_at")
+          .eq("user_id", uid)
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const topSig = signalRes.data;
+      if (!topSig?.signal_title) return;
+
+      const competitorTrend = (trendsRes.data || []).find((t: any) => {
+        const src = (t.source || "").toLowerCase();
+        return COMPETITOR_KEYWORDS.some(k => src.includes(k));
+      });
+      if (!competitorTrend) return;
+
+      // Keyword overlap (>4 chars) between headline and signal title
+      const headlineWords = new Set(
+        (competitorTrend.headline || "")
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter((w: string) => w.length > 4),
+      );
+      const sigWords = (topSig.signal_title || "")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w: string) => w.length > 4);
+      const hasOverlap = sigWords.some(w => headlineWords.has(w));
+      if (!hasOverlap) return;
+
+      // Days since last post
+      const lastPost = postRes.data?.published_at;
+      const daysSinceLastPost = lastPost
+        ? Math.floor((Date.now() - new Date(lastPost).getTime()) / 86400_000)
+        : 30;
+
+      // Identify competitor display name from source
+      const srcLower = (competitorTrend.source || "").toLowerCase();
+      const matchedKey = COMPETITOR_KEYWORDS.find(k => srcLower.includes(k)) || competitorTrend.source;
+      const competitorName = matchedKey
+        .split(/\s+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      const topicRaw = (competitorTrend.headline || "").trim();
+      const topic = topicRaw.length > 60 ? topicRaw.slice(0, 60).trimEnd() + "…" : topicRaw;
+
+      setCompetitorAlert({
+        competitorName,
+        topic,
+        url: competitorTrend.url,
+        fetchedAt: competitorTrend.fetched_at,
+        signalTitle: topSig.signal_title,
+        fragmentCount: topSig.fragment_count ?? 0,
+        daysSinceLastPost,
+      });
+    } catch (e) {
+      console.warn("[HomeTab] competitor alert load failed", e);
+    }
+  }, []);
+
   // Gate all loaders on auth-ready. If no user after ready → unblock skeletons
   // and fall through to empty/error states (do not stay loading forever).
   useEffect(() => {
