@@ -109,6 +109,68 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
     return () => window.clearInterval(id);
   }, [fetchEvents]);
 
+  // ── AA-5: Avatar state checks (signal/window/alarm) ──
+  const computeAvatarState = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setAvatarState("idle"); return; }
+      const nowMs = Date.now();
+      const dayAgo = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+      const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const threeDaysAgoMs = nowMs - 3 * 24 * 60 * 60 * 1000;
+
+      const [aRes, bRes, cRes, lastPostRes] = await Promise.all([
+        (supabase.from("strategic_signals" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .gt("created_at", dayAgo),
+        (supabase.from("strategic_signals" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .gt("priority_score", 80),
+        (supabase.from("entries" as any) as any)
+          .select("created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        (supabase.from("linkedin_posts" as any) as any)
+          .select("published_at")
+          .eq("user_id", user.id)
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const lastEntry = (cRes as any)?.data?.created_at as string | undefined;
+      const lastPost = (lastPostRes as any)?.data?.published_at as string | undefined;
+      const alarmTriggered = !lastEntry || new Date(lastEntry).toISOString() < sevenDaysAgo;
+      const highPriorityCount = (bRes as any)?.count ?? 0;
+      const lastPostStale = !lastPost || new Date(lastPost).getTime() < threeDaysAgoMs;
+      const windowTriggered = highPriorityCount > 0 && lastPostStale;
+      const newSignalCount = (aRes as any)?.count ?? 0;
+      const signalTriggered = newSignalCount > 0;
+
+      // Priority: C > B > A
+      if (alarmTriggered) setAvatarState("alarm");
+      else if (windowTriggered) setAvatarState("window");
+      else if (signalTriggered) setAvatarState("signal");
+      else setAvatarState("idle");
+    } catch (e) {
+      // fail silently
+      setAvatarState("idle");
+    }
+  }, []);
+
+  useEffect(() => {
+    computeAvatarState();
+    const id = window.setInterval(computeAvatarState, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [computeAvatarState]);
+
   // Determine most urgent + count-based override
   const { mostUrgent, distinctTypes } = useMemo(() => {
     let top: EventType | null = null;
