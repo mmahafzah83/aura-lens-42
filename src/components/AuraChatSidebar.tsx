@@ -334,6 +334,25 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     if (data) setConversations(data as any as Conversation[]);
   }, []);
 
+  // ── Load header intelligence counts on open ──
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const uid = session.user.id;
+        const [sigRes, entRes] = await Promise.all([
+          supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active"),
+          supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        ]);
+        setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
+      } catch {
+        // fail silently
+      }
+    })();
+  }, [open]);
+
   // ── Load messages for a conversation ──
   const loadMessages = useCallback(async (convId: string) => {
     setLoadingHistory(true);
