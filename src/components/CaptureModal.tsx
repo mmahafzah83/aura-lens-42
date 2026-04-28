@@ -251,6 +251,79 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       return;
     }
 
+    // ─── Voice capture: direct entries INSERT (bypass ingest-capture so the
+    // user's literal transcript is never rewritten by AI).
+    if (captureType === "voice") {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          toast({ title: "Error", description: "Session expired. Please log in again.", variant: "destructive" });
+          setSaving(false);
+          return;
+        }
+        const finalText = content.trim();
+        const title = "Voice note — " + new Date().toLocaleDateString();
+        const { data: entryRow, error: entryError } = await supabase
+          .from("entries")
+          .insert({
+            user_id: session.user.id,
+            type: "voice",
+            title,
+            content: finalText,
+            summary: finalText.slice(0, 200),
+            ...(voiceAudioUrl && { image_url: voiceAudioUrl }),
+          })
+          .select("id")
+          .single();
+
+        if (entryError) {
+          console.error("Voice entry insert failed:", entryError);
+          toast({ title: "Save failed", description: entryError.message, variant: "destructive" });
+          setSaving(false);
+          return;
+        }
+
+        sonnerToast.success("Voice capture saved");
+
+        setContent("");
+        setVoiceAudioUrl(null);
+        setTranscriptionFailed(false);
+        onCaptured();
+        onOpenChange(false);
+
+        // Fire-and-forget signal detection
+        if (entryRow?.id) {
+          supabase.functions
+            .invoke("detect-signals-v2", {
+              body: { entry_id: entryRow.id, user_id: session.user.id },
+            })
+            .then(({ data: result, error }) => {
+              if (error) {
+                console.error("detect-signals-v2 (voice) error:", error);
+                return;
+              }
+              if (result?.is_new) {
+                sonnerToast("New signal detected from your voice note", {
+                  position: "bottom-right",
+                  duration: 3000,
+                });
+              }
+              queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
+              queryClient.invalidateQueries({ queryKey: ["signals"] });
+            })
+            .catch((err) => console.error("detect-signals-v2 (voice) exception:", err));
+        }
+      } catch (err: any) {
+        toast({
+          title: "Save failed",
+          description: err?.message || "An unexpected error occurred.",
+          variant: "destructive",
+        });
+      }
+      setSaving(false);
+      return;
+    }
+
     let captureContent = content.trim();
     let captureMetadata: Record<string, any> = {};
     let image_url: string | null = null;
