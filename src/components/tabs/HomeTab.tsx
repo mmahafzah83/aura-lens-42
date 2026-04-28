@@ -120,6 +120,30 @@ interface TopSignal {
   confidence: number;
 }
 
+interface CompetitorAlert {
+  competitorName: string;
+  topic: string;
+  url: string | null;
+  fetchedAt: string;
+  signalTitle: string;
+  fragmentCount: number;
+  daysSinceLastPost: number;
+}
+
+const COMPETITOR_KEYWORDS = [
+  "mckinsey", "pwc", "deloitte", "bcg", "bain",
+  "kpmg", "accenture", "strategy&", "oliver wyman",
+];
+
+const competitorTimeAgo = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diffMs / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+};
+
 const ACCENT = "#F97316";
 const GREEN = "#7ab648";
 const RED = "#E24B4A";
@@ -185,6 +209,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
   const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
   const [refreshingTrends, setRefreshingTrends] = useState(false);
+
+  // Competitor alert (read-only, additive)
+  const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
 
   // Live clock
   useEffect(() => {
@@ -417,6 +444,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       loadMoves(uid),
       loadTrends(uid),
       loadTrendsBadge(uid),
+        loadCompetitorAlert(uid),
     ]);
 
     // Realtime: reload trends list whenever Phase B updates a row to status='new'
