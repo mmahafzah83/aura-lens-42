@@ -465,19 +465,23 @@ const Dashboard = () => {
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-8 pb-24 md:pb-12 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-8 pb-[88px] md:pb-12 overflow-hidden">
           {/* Top Bar */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 pt-2 md:pt-0">
             <div className="flex items-center gap-3">
-              {/* Mobile hamburger */}
-              <button
-                onClick={() => setMobileSidebarOpen(true)}
-                className="md:hidden p-2 rounded-xl bg-secondary/30 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
+              {/* Desktop section label */}
+              <h2 className="hidden md:block text-sm font-medium text-muted-foreground tracking-wide uppercase">
+                {NAV_ITEMS.find(n => n.value === activeTab)?.pageHeader}
+              </h2>
+              {/* Mobile page title */}
               <h2
-                className="text-sm font-medium text-muted-foreground tracking-wide uppercase"
+                className="md:hidden"
+                style={{
+                  fontFamily: "'DM Serif Display', serif",
+                  fontSize: 20,
+                  lineHeight: 1.2,
+                  color: "var(--color-text-primary)",
+                }}
               >
                 {NAV_ITEMS.find(n => n.value === activeTab)?.pageHeader}
               </h2>
