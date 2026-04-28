@@ -103,16 +103,16 @@ const PALETTES: Record<Style, {
   emphBg: string; emphFg: string;
 }> = {
   minimal_creator: {
-    bg: "#FDF6EC", fg: "#1A1A1A", accent: "#C8A862", muted: "#6B6560",
-    subtle: "#F5EDE0", gradientFrom: "#FDF6EC", gradientTo: "#F8F0E3",
+    bg: "var(--surface-subtle)", fg: "var(--surface-ink-subtle)", accent: "#C8A862", muted: "#6B6560",
+    subtle: "var(--surface-subtle)", gradientFrom: "var(--surface-subtle)", gradientTo: "#F8F0E3",
     name: "Minimal Creator",
-    emphBg: "#1A1A1A", emphFg: "#FDF6EC",
+    emphBg: "var(--surface-ink-subtle)", emphFg: "var(--surface-subtle)",
   },
   dark_creator: {
-    bg: "#0A0A0A", fg: "#FFFFFF", accent: "#FFD700", muted: "#9CA3AF",
-    subtle: "#1A1A1A", gradientFrom: "#0A0A0A", gradientTo: "#111111",
+    bg: "var(--ink)", fg: "#FFFFFF", accent: "#FFD700", muted: "#9CA3AF",
+    subtle: "var(--surface-ink-subtle)", gradientFrom: "var(--ink)", gradientTo: "var(--ink)",
     name: "Dark Creator",
-    emphBg: "#FFD700", emphFg: "#0A0A0A",
+    emphBg: "#FFD700", emphFg: "var(--ink)",
   },
   corporate_gradient: {
     bg: "#0C1B2E", fg: "#FFFFFF", accent: "#2ECDA7", muted: "#8BA4CC",

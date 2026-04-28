@@ -98,7 +98,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -109,7 +109,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -126,7 +126,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
     ctx.closePath();
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = "#F97316";
+    ctx.strokeStyle = "var(--brand)";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -138,12 +138,12 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
-      ctx.fillStyle = "#F97316";
+      ctx.fillStyle = "var(--brand)";
       ctx.fill();
     }
 
     // Draw labels — full names, positioned outside
-    ctx.fillStyle = "#888888";
+    ctx.fillStyle = "var(--ink-5)";
     ctx.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
       const angle = startAngle + i * angleStep;
@@ -223,19 +223,19 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
 
   if (!completed) {
     return (
-      <div className="rounded-xl border border-[#252525] bg-[#141414] p-6 mb-4">
+      <div className="rounded-xl border border-ink-3 bg-surface-ink-raised p-6 mb-4">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 rounded-xl mx-auto flex items-center justify-center" style={{ background: "rgba(197,165,90,0.1)", border: "1px solid rgba(197,165,90,0.2)" }}>
-            <ShieldCheck className="w-6 h-6" style={{ color: "#F97316" }} />
+            <ShieldCheck className="w-6 h-6" style={{ color: "var(--brand)" }} />
           </div>
           <div>
-            <p className="text-sm font-medium" style={{ color: "#f0f0f0" }}>Complete your Evidence Audit to reveal your capability radar</p>
-            <p className="text-xs mt-1" style={{ color: "#666" }}>10 dimensions · 30 evidence questions · takes 5 minutes</p>
+            <p className="text-sm font-medium" style={{ color: "var(--ink-7)" }}>Complete your Evidence Audit to reveal your capability radar</p>
+            <p className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>10 dimensions · 30 evidence questions · takes 5 minutes</p>
           </div>
           <button
             onClick={onStartAudit}
             className="px-5 py-2.5 rounded-xl text-sm font-medium"
-            style={{ background: "#F97316", color: "#0d0d0d" }}
+            style={{ background: "var(--brand)", color: "var(--ink)" }}
           >
             Start Audit →
           </button>
@@ -274,14 +274,14 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
   };
 
   return (
-    <div ref={containerRef} className="rounded-xl border border-[#252525] bg-[#141414] p-4 mb-4 relative">
+    <div ref={containerRef} className="rounded-xl border border-ink-3 bg-surface-ink-raised p-4 mb-4 relative">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[13px] font-medium text-[#f0f0f0]">Your Capability Radar</p>
+        <p className="text-[13px] font-medium text-ink-7">Your Capability Radar</p>
         {!editMode ? (
           <button
             onClick={startEdit}
             className="text-[11px] font-medium hover:underline"
-            style={{ color: "#F97316" }}
+            style={{ color: "var(--brand)" }}
           >
             Edit scores
           </button>
@@ -290,7 +290,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
             <button
               onClick={() => setEditMode(false)}
               className="text-[11px]"
-              style={{ color: "#666" }}
+              style={{ color: "var(--ink-5)" }}
             >
               Cancel
             </button>
@@ -298,7 +298,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
               onClick={saveScores}
               disabled={savingScores}
               className="text-[11px] font-medium px-3 py-1 rounded-lg"
-              style={{ background: "#F97316", color: "#0d0d0d" }}
+              style={{ background: "var(--brand)", color: "var(--ink)" }}
             >
               {savingScores ? "Saving..." : "Save"}
             </button>
@@ -311,8 +311,8 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           {DIMENSION_ORDER.map(dim => (
             <div key={dim} className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#ccc]">{dim}</span>
-                <span className="text-xs font-medium" style={{ color: "#F97316" }}>{editScores[dim] || 0}%</span>
+                <span className="text-xs text-ink-7">{dim}</span>
+                <span className="text-xs font-medium" style={{ color: "var(--brand)" }}>{editScores[dim] || 0}%</span>
               </div>
               <Slider
                 value={[editScores[dim] || 0]}
@@ -342,29 +342,29 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
                 left: tooltip.x,
                 top: tooltip.y,
                 transform: "translateX(-50%)",
-                background: "#1a1a1a",
-                border: "1px solid #333",
+                background: "var(--surface-ink-subtle)",
+                border: "1px solid var(--ink-3)",
                 borderRadius: 8,
                 padding: "6px 10px",
                 zIndex: 10,
               }}
             >
-              <p className="text-[11px] font-medium" style={{ color: "#f0f0f0" }}>{tooltip.name}</p>
-              <p className="text-[10px]" style={{ color: "#F97316" }}>
+              <p className="text-[11px] font-medium" style={{ color: "var(--ink-7)" }}>{tooltip.name}</p>
+              <p className="text-[10px]" style={{ color: "var(--brand)" }}>
                 {tooltip.score}% · {tooltip.tier} Tier
               </p>
             </div>
           )}
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "0.5px solid #252525" }}>
+          <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "0.5px solid var(--ink-3)" }}>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: "#F97316" }} />
-              <span className="text-[10px]" style={{ color: "#888" }}>High Tier (Strategic / Technical)</span>
+              <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand)" }} />
+              <span className="text-[10px]" style={{ color: "var(--ink-5)" }}>High Tier (Strategic / Technical)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ background: "#666" }} />
-              <span className="text-[10px]" style={{ color: "#888" }}>Mid Tier (Leadership / Commercial)</span>
+              <span className="w-2 h-2 rounded-full" style={{ background: "var(--ink-5)" }} />
+              <span className="text-[10px]" style={{ color: "var(--ink-5)" }}>Mid Tier (Leadership / Commercial)</span>
             </div>
           </div>
         </>

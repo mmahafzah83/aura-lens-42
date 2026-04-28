@@ -163,13 +163,13 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
               variant="outline"
               onClick={() => auditCompleted && setBrandOpen(true)}
               disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-[#252525] text-[#3a3a3a] cursor-not-allowed"}`}
+              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
             >
               <Compass className="w-4 h-4" />
               Start Brand Assessment
             </Button>
             {!auditCompleted && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-[#252525] rounded-lg text-[10px] text-[#888] w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-surface-ink-subtle border border-ink-3 rounded-lg text-[10px] text-ink-5 w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
               </div>
             )}
@@ -252,13 +252,13 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
               variant="outline"
               onClick={() => auditCompleted && setBrandOpen(true)}
               disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-[#252525] text-[#3a3a3a] cursor-not-allowed"}`}
+              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
             >
               <Compass className="w-4 h-4" />
               Start Brand Assessment
             </Button>
             {!auditCompleted && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-[#1a1a1a] border border-[#252525] rounded-lg text-[10px] text-[#888] w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-surface-ink-subtle border border-ink-3 rounded-lg text-[10px] text-ink-5 w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
               </div>
             )}

@@ -163,22 +163,22 @@ const DEFAULT_CARD_STYLE: CardStyleConfig = {
   bodySize: "m",
   titleSize: "m",
   headerSize: "m",
-  accentColor: "#F97316",
+  accentColor: "var(--brand)",
   cardFont: "Inter, sans-serif",
   preset: "default",
 };
 
 const PRESETS = (accent: string) => ({
-  default: { bg: "#111111", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
-  bold: { bg: "#0d0d0d", text: "#ffffff", tagCol: accent, roleCol: "#555555" },
-  warm: { bg: "#f5ede0", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
-  minimal: { bg: "#ffffff", text: "#111111", tagCol: "#888888", roleCol: "#aaaaaa" },
+  default: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "var(--ink-5)" },
+  bold: { bg: "var(--ink)", text: "#ffffff", tagCol: accent, roleCol: "var(--ink-5)" },
+  warm: { bg: "var(--surface-subtle)", text: "#1a1005", tagCol: accent, roleCol: "#9a8060" },
+  minimal: { bg: "#ffffff", text: "var(--ink)", tagCol: "var(--ink-5)", roleCol: "var(--ink-6)" },
   midnight: { bg: "#080818", text: "#e8e8ff", tagCol: "#a78bfa", roleCol: "#4b4b7a" },
 });
 
 const CharHint = ({ value, ideal }: { value: string; ideal: number }) => {
   const len = value.length;
-  const color = len <= ideal ? "#7ab648" : len <= ideal * 1.4 ? "#EF9F27" : "#e24b4a";
+  const color = len <= ideal ? "var(--success)" : len <= ideal * 1.4 ? "var(--warning)" : "var(--danger)";
   return (
     <div
       style={{
@@ -414,7 +414,7 @@ export default function ImageCardGenerator({
         </span>
         <button
           onClick={shuffle}
-          className="flex items-center gap-1.5 text-[11px] font-semibold text-[#F97316] bg-[rgba(249,115,22,0.1)] border border-[rgba(249,115,22,0.2)] rounded-md px-3 py-1.5 hover:bg-[rgba(249,115,22,0.18)] transition"
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-brand bg-[rgba(249,115,22,0.1)] border border-[rgba(249,115,22,0.2)] rounded-md px-3 py-1.5 hover:bg-[rgba(249,115,22,0.18)] transition"
         >
           <Shuffle className="w-3 h-3" /> {VARIANT_ORDER[variantIndex]} content →
         </button>
@@ -436,7 +436,7 @@ export default function ImageCardGenerator({
               >
                 <div
                   className={`relative rounded-lg overflow-hidden transition-all ${
-                    selected ? "ring-2 ring-[#F97316] ring-offset-2 ring-offset-background" : "opacity-60 group-hover:opacity-100"
+                    selected ? "ring-2 ring-brand ring-offset-2 ring-offset-background" : "opacity-60 group-hover:opacity-100"
                   }`}
                   style={{ width: 64, height: 80 }}
                 >
@@ -479,7 +479,7 @@ export default function ImageCardGenerator({
           <div style={{ marginBottom: 16 }}>
             {/* Title size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Title size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -491,8 +491,8 @@ export default function ImageCardGenerator({
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.titleSize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: activeStyle.titleSize === s ? "#F97316" : "#555",
+                      borderColor: activeStyle.titleSize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      color: activeStyle.titleSize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -502,7 +502,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Header size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Header size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -514,8 +514,8 @@ export default function ImageCardGenerator({
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.headerSize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.headerSize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: activeStyle.headerSize === s ? "#F97316" : "#555",
+                      borderColor: activeStyle.headerSize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      color: activeStyle.headerSize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -525,7 +525,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Body size */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Body size
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -537,8 +537,8 @@ export default function ImageCardGenerator({
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.bodySize === s ? "rgba(249,115,22,.4)" : "#252525",
-                      color: activeStyle.bodySize === s ? "#F97316" : "#555",
+                      borderColor: activeStyle.bodySize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      color: activeStyle.bodySize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {s.toUpperCase()}
@@ -548,7 +548,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Card preset */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Style
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -560,8 +560,8 @@ export default function ImageCardGenerator({
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 9, fontWeight: 600, cursor: "pointer",
                       background: activeStyle.preset === p ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.preset === p ? "rgba(249,115,22,.4)" : "#252525",
-                      color: activeStyle.preset === p ? "#F97316" : "#555",
+                      borderColor: activeStyle.preset === p ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      color: activeStyle.preset === p ? "var(--brand)" : "var(--ink-5)",
                       textTransform: "capitalize",
                     }}
                   >
@@ -572,18 +572,18 @@ export default function ImageCardGenerator({
             </div>
             {/* Accent color */}
             <div style={{ marginBottom: 10 }}>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Accent color
               </p>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                {["#F97316", "#e24b4a", "#7ab648", "#378ADD", "#7F77DD", "#1D9E75", "#BA7517", "#ffffff"].map((c) => (
+                {["var(--brand)", "var(--danger)", "var(--success)", "#378ADD", "#7F77DD", "#1D9E75", "var(--warning)", "#ffffff"].map((c) => (
                   <div
                     key={c}
                     onClick={() => updateCardStyle("accentColor", c)}
                     style={{
                       width: 22, height: 22, borderRadius: "50%", background: c,
                       cursor: "pointer", flexShrink: 0,
-                      border: activeStyle.accentColor === c ? "2px solid #fff" : "1.5px solid #333",
+                      border: activeStyle.accentColor === c ? "2px solid #fff" : "1.5px solid var(--ink-3)",
                       transform: activeStyle.accentColor === c ? "scale(1.2)" : "scale(1)",
                       transition: "all .15s",
                     }}
@@ -592,9 +592,9 @@ export default function ImageCardGenerator({
                 <div style={{ position: "relative", width: 22, height: 22 }}>
                   <div style={{
                     width: 22, height: 22, borderRadius: "50%",
-                    border: "1.5px dashed #444", display: "flex",
+                    border: "1.5px dashed var(--ink-4)", display: "flex",
                     alignItems: "center", justifyContent: "center",
-                    fontSize: 14, color: "#555", cursor: "pointer",
+                    fontSize: 14, color: "var(--ink-5)", cursor: "pointer",
                   }}>+</div>
                   <input
                     type="color"
@@ -607,7 +607,7 @@ export default function ImageCardGenerator({
             </div>
             {/* Font */}
             <div>
-              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "#555", marginBottom: 6 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--ink-5)", marginBottom: 6 }}>
                 Font
               </p>
               <div style={{ display: "flex", gap: 4 }}>
@@ -624,8 +624,8 @@ export default function ImageCardGenerator({
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       fontFamily: f.value,
                       background: activeStyle.cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.cardFont === f.value ? "rgba(249,115,22,.4)" : "#252525",
-                      color: activeStyle.cardFont === f.value ? "#F97316" : "#555",
+                      borderColor: activeStyle.cardFont === f.value ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      color: activeStyle.cardFont === f.value ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
                     {f.label}
@@ -634,7 +634,7 @@ export default function ImageCardGenerator({
               </div>
             </div>
           </div>
-          <div style={{ borderTop: "0.5px solid #1e1e1e", marginBottom: 12 }} />
+          <div style={{ borderTop: "0.5px solid var(--surface-ink-subtle)", marginBottom: 12 }} />
 
           <Field label="Topic Tag">
             <Input
@@ -831,12 +831,12 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
           {trunc(hookText, 85)}
         </p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #141414", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--surface-ink-raised)", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
           <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
         </div>
-        <p style={{ color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+        <p style={{ color: "var(--surface-ink-subtle)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
     </div>
   );
@@ -845,12 +845,12 @@ function ManifestoCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 2: Newspaper */
 function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: "#f5ede0", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir={arDir(isArabic)} style={{ ...baseCard, background: "var(--surface-subtle)", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
         <span style={{ color: "#fff", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
-      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "#f5ede0" }}>
+      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "var(--surface-subtle)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflow: "hidden" }}>
           <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0, maxWidth: "55%" }}>{trunc(tag, 35)}</span>
           <div style={{ flex: 1, height: 1, background: "#d4b896", flexShrink: 1 }} />
@@ -861,7 +861,7 @@ function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontS
         <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
         <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.6), textAlign: arAlign(isArabic) }}>{trunc(ledeText, 110)}</p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "#f5ede0" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "var(--surface-subtle)" }}>
         <p style={{ color: accentColor, fontSize: 10, fontWeight: 700 }}>{trunc(editName, 30)}</p>
         <p style={{ color: "#9a8060", fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
@@ -874,7 +874,7 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
+        <span style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
         <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
       </div>
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
@@ -898,7 +898,7 @@ function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, has
           ))}
         </div>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #141414", padding: "14px 20px" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--surface-ink-raised)", padding: "14px 20px" }}>
         <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
         <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
       </div>
@@ -941,25 +941,25 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
-        <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
+        <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <span style={{ color: "#555", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
+        <span style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
         <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <div style={{ flex: 1, height: 1, background: "#1e1e1e" }} />
+        <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
       </div>
       <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, marginBottom: 10, textAlign: arAlign(isArabic) }}>01 / Key Insight</p>
         <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
           {trunc(hookText, 80)}
         </p>
-        <p style={{ color: "#888", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.65), textAlign: arAlign(isArabic) }}>{trunc(bodyText, 100)}</p>
+        <p style={{ color: "var(--ink-5)", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.65), textAlign: arAlign(isArabic) }}>{trunc(bodyText, 100)}</p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #111", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--ink)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
           <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
         </div>
-        <p style={{ color: "#252525", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+        <p style={{ color: "var(--ink-3)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
       </div>
     </div>
   );
@@ -969,7 +969,7 @@ function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleF
 function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ background: "#0d0d0d", padding: 20 }}>
+      <div style={{ background: "var(--ink)", padding: 20 }}>
         <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, textAlign: arAlign(isArabic) }}>FRAMEWORK</p>
         <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25, textAlign: arAlign(isArabic) }}>{trunc(frameTitle, 65)}</p>
         <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12, marginLeft: isArabic ? "auto" : 0 }} />
@@ -1003,7 +1003,7 @@ function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFo
   const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
   return (
     <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%", padding: "36px 28px", position: "relative" }}>
-      <p style={{ color: "#888", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", textAlign: arAlign(isArabic) }}>{trunc(tag, 35)}</p>
+      <p style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", textAlign: arAlign(isArabic) }}>{trunc(tag, 35)}</p>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
         <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20, marginLeft: isArabic ? "auto" : 0 }} />
         <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: arBodyLh(isArabic, 1.4), wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
@@ -1018,7 +1018,7 @@ function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFo
         <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
         <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
       </div>
-      <p style={{ position: "absolute", bottom: 16, right: 16, color: "#1e1e1e", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+      <p style={{ position: "absolute", bottom: 16, right: 16, color: "var(--surface-ink-subtle)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
     </div>
   );
 }
@@ -1073,7 +1073,7 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
 /* CARD 10: Arabic (preserved) */
 function ArabicCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
   return (
-    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid #1e1e1e", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
+    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid var(--surface-ink-subtle)", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
         {[0, 1, 2].map((i) => (
           <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: accentColor }} />

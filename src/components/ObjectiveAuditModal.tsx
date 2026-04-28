@@ -131,9 +131,9 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           maxHeight: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "#0d0d0d",
+          background: "var(--ink)",
           borderRadius: 16,
-          border: "1px solid #252525",
+          border: "1px solid var(--ink-3)",
           overflow: "hidden",
           willChange: "unset",
         }}
@@ -143,21 +143,21 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
         <div className="shrink-0 px-5 pt-5 pb-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#F97316]" />
-              <span className="text-[15px] font-semibold text-[#f0f0f0]">
+              <ShieldCheck className="w-5 h-5 text-brand" />
+              <span className="text-[15px] font-semibold text-ink-7">
                 {showResults ? "Audit Results" : "Objective Evidence Audit"}
               </span>
             </div>
-            <button onClick={() => onOpenChange(false)} className="text-[#666] hover:text-[#999] text-lg leading-none">&times;</button>
+            <button onClick={() => onOpenChange(false)} className="text-ink-5 hover:text-ink-6 text-lg leading-none">&times;</button>
           </div>
           {!showResults && (
             <>
               <Progress value={progress} className="h-1.5 mb-2" />
               <div className="flex items-center justify-between">
-                <p className="text-[10px] text-[#888]">
-                  Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} · <span className="text-[#F97316] font-semibold">Running score: {calculateTotalScore(checks)}%</span>
+                <p className="text-[10px] text-ink-5">
+                  Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} · <span className="text-brand font-semibold">Running score: {calculateTotalScore(checks)}%</span>
                 </p>
-                <p className="text-[10px] text-[#666]">Answer honestly. Only verified evidence counts.</p>
+                <p className="text-[10px] text-ink-5">Answer honestly. Only verified evidence counts.</p>
               </div>
             </>
           )}
@@ -174,8 +174,8 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-[#f0f0f0]">{skill.name}</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1a1a1a] text-[#888]">
+                <h3 className="text-base font-semibold text-ink-7">{skill.name}</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-ink-subtle text-ink-5">
                   {skill.tier} Tier · {skill.category}
                 </span>
               </div>
@@ -185,7 +185,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                   <div
                     key={qIdx}
                     className={`p-4 rounded-xl border space-y-2 cursor-pointer transition-all duration-300 ${
-                      checks[skill.name][qIdx] ? "bg-[#F97316]/5 border-[#F97316]/20" : "bg-[#141414] border-[#1a1a1a]"
+                      checks[skill.name][qIdx] ? "bg-brand/5 border-brand/20" : "bg-surface-ink-raised border-surface-ink-subtle"
                     }`}
                     onClick={() => toggle(qIdx)}
                   >
@@ -198,7 +198,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                         onCheckedChange={() => toggle(qIdx)}
                         className="mt-0.5 transition-all duration-300"
                       />
-                      <p className="text-sm text-[#ccc] leading-relaxed">{q.question}</p>
+                      <p className="text-sm text-ink-7 leading-relaxed">{q.question}</p>
                     </div>
                   </div>
                 );
@@ -212,21 +212,21 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           <div
             className="shrink-0"
             style={{
-              background: "#0d0d0d",
-              borderTop: "0.5px solid #1a1a1a",
+              background: "var(--ink)",
+              borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
             }}
           >
             <div className="text-center mb-3">
-              <span className="text-2xl font-bold text-[#F97316]">{calculateScore(checks[skill.name])}%</span>
-              <p className="text-[10px] text-[#666]">Calculated Score</p>
+              <span className="text-2xl font-bold text-brand">{calculateScore(checks[skill.name])}%</span>
+              <p className="text-[10px] text-ink-5">Calculated Score</p>
             </div>
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
                 onClick={() => setCurrentSkillIdx((i) => Math.max(0, i - 1))}
                 disabled={currentSkillIdx === 0}
-                className="gap-1 border-[#252525] text-[#888] hover:text-[#f0f0f0]"
+                className="gap-1 border-ink-3 text-ink-5 hover:text-ink-7"
               >
                 <ChevronLeft className="w-4 h-4" /> Back
               </Button>
@@ -234,7 +234,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
               {currentSkillIdx < EVIDENCE_MATRIX.length - 1 ? (
                 <Button
                   onClick={() => setCurrentSkillIdx((i) => i + 1)}
-                  className="gap-1 bg-[#F97316] text-[#0d0d0d] hover:brightness-110"
+                  className="gap-1 bg-brand text-surface-ink hover:brightness-110"
                 >
                   Next <ChevronRight className="w-4 h-4" />
                 </Button>
@@ -242,7 +242,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                 <Button
                   onClick={handleSubmit}
                   disabled={saving}
-                  className="gap-1 bg-[#F97316] text-[#0d0d0d] hover:brightness-110"
+                  className="gap-1 bg-brand text-surface-ink hover:brightness-110"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
                   Submit Audit

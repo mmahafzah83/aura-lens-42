@@ -595,7 +595,7 @@ const Dashboard = () => {
             right: 16,
             width: 52,
             height: 52,
-            background: "#F97316",
+            background: "var(--brand)",
             borderRadius: 16,
             boxShadow: "0 4px 20px rgba(249,115,22,0.45)",
             zIndex: 49,
@@ -616,7 +616,7 @@ const Dashboard = () => {
             className="flex items-center justify-around"
             style={{
               height: 60,
-              background: "#0E0D0C",
+              background: "var(--ink)",
               borderTop: "0.5px solid rgba(255,255,255,0.06)",
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
@@ -642,7 +642,7 @@ const Dashboard = () => {
                         style={{
                           width: 40,
                           height: 40,
-                          background: "#F97316",
+                          background: "var(--brand)",
                           borderRadius: 14,
                           boxShadow: "0 2px 12px rgba(249,115,22,0.4)",
                           color: "#fff",
@@ -650,7 +650,7 @@ const Dashboard = () => {
                       >
                         <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />
                       </span>
-                      <span style={{ fontSize: 8, color: "#F97316", fontWeight: 600 }}>Aura</span>
+                      <span style={{ fontSize: 8, color: "var(--brand)", fontWeight: 600 }}>Aura</span>
                     </button>
                   );
                 }
@@ -667,9 +667,9 @@ const Dashboard = () => {
                       style={{
                         width: 20,
                         height: 20,
-                        background: isActive ? "#F97316" : "#2A2825",
+                        background: isActive ? "var(--brand)" : "var(--ink-3)",
                         borderRadius: 6,
-                        color: isActive ? "#fff" : "#7A7670",
+                        color: isActive ? "#fff" : "var(--ink-5)",
                       }}
                     >
                       <tab.icon className="w-[12px] h-[12px]" />
@@ -677,7 +677,7 @@ const Dashboard = () => {
                     <span
                       style={{
                         fontSize: 8,
-                        color: isActive ? "#F97316" : "#4A4845",
+                        color: isActive ? "var(--brand)" : "var(--ink-4)",
                         fontWeight: isActive ? 600 : 400,
                       }}
                     >

@@ -291,15 +291,15 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "#F97316" }} />
-            <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "#3D3A36" }}>
+            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+            <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "var(--ink-4)" }}>
               Start from
             </h4>
           </div>
           <button
             onClick={fetchData}
             disabled={loading}
-            style={{ color: "#7A7670" }}
+            style={{ color: "var(--ink-5)" }}
             className="hover:opacity-80 transition-opacity"
             title="Refresh suggestions"
           >
@@ -316,7 +316,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
               <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "rgba(249,115,22,0.25)" }} />
-              <p style={{ fontSize: 11, color: "#7A7670" }}>Capture more insights to unlock suggestions</p>
+              <p style={{ fontSize: 11, color: "var(--ink-5)" }}>Capture more insights to unlock suggestions</p>
             </div>
           ) : (
             groups.map((group) => (
@@ -324,7 +324,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 <p
                   style={{
                     fontSize: 9,
-                    color: "#7A7670",
+                    color: "var(--ink-5)",
                     textTransform: "uppercase",
                     letterSpacing: "0.1em",
                     fontWeight: 700,
@@ -343,14 +343,14 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   const isRecommended = group.label === "Recommended now";
                   const badgeText = isRecommended ? "Recommended" : (isUnused ? "Unused" : null);
                   const badgeStyle = isRecommended
-                    ? { background: "#FEF0E6", color: "#C05A10" }
-                    : { background: "#EEF2FF", color: "#3730A3" };
+                    ? { background: "var(--brand-pale)", color: "var(--warning)" }
+                    : { background: "var(--surface-subtle)", color: "var(--ink-4)" };
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleItemClick(item)}
                       style={{
-                        background: isConfirm ? "#FEF0E6" : "#F3F0EB",
+                        background: isConfirm ? "var(--brand-pale)" : "var(--surface-subtle)",
                         borderRadius: 10,
                         padding: "10px 12px",
                         marginBottom: 7,
@@ -363,7 +363,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       className="hover:brightness-[0.98]"
                     >
                       {isConfirm ? (
-                        <p style={{ fontSize: 11, color: "#C05A10", fontWeight: 600 }}>
+                        <p style={{ fontSize: 11, color: "var(--warning)", fontWeight: 600 }}>
                           Replace current draft? Click again to confirm.
                         </p>
                       ) : (
@@ -374,7 +374,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                                 style={{
                                   fontFamily: "'DM Serif Display', serif",
                                   fontSize: 16,
-                                  color: "#F97316",
+                                  color: "var(--brand)",
                                   lineHeight: 1,
                                 }}
                               >
@@ -403,7 +403,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                             style={{
                               fontSize: 11,
                               fontWeight: 500,
-                              color: "#1A1815",
+                              color: "var(--surface-ink-subtle)",
                               lineHeight: 1.4,
                               marginTop: 4,
                             }}
@@ -411,7 +411,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                           >
                             {item.title}
                           </p>
-                          <p style={{ fontSize: 9, color: "#7A7670", marginTop: 3 }}>{item.reason}</p>
+                          <p style={{ fontSize: 9, color: "var(--ink-5)", marginTop: 3 }}>{item.reason}</p>
                         </>
                       )}
                     </button>
@@ -432,7 +432,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             <p
               style={{
                 fontSize: 9,
-                color: "#7A7670",
+                color: "var(--ink-5)",
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 fontWeight: 700,
@@ -448,10 +448,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  border: "2px solid #F97316",
-                  background: "#F3F0EB",
+                  border: "2px solid var(--brand)",
+                  background: "var(--surface-subtle)",
                   overflow: "hidden",
-                  color: "#F97316",
+                  color: "var(--brand)",
                   fontSize: 12,
                   fontWeight: 600,
                 }}
@@ -465,10 +465,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 )}
               </span>
               <div className="flex-1 min-w-0">
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#1A1815", lineHeight: 1.2 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--surface-ink-subtle)", lineHeight: 1.2 }}>
                   {voice?.fullName || "Your voice"}
                 </p>
-                <p style={{ fontSize: 10, color: "#7A7670", lineHeight: 1.35, marginTop: 2 }}>
+                <p style={{ fontSize: 10, color: "var(--ink-5)", lineHeight: 1.35, marginTop: 2 }}>
                   {voice?.tone || "Train your voice from past posts"}
                 </p>
               </div>
@@ -476,13 +476,13 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             {voice?.sample && (
               <div
                 style={{
-                  background: "#F3F0EB",
+                  background: "var(--surface-subtle)",
                   borderRadius: 10,
                   padding: "8px 10px",
                   marginTop: 8,
                 }}
               >
-                <p style={{ fontSize: 11, fontStyle: "italic", color: "#2A2825", lineHeight: 1.4 }}>
+                <p style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
                   “{voice.sample}{voice.sample.length >= 120 ? "…" : ""}”
                 </p>
               </div>
@@ -493,7 +493,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 display: "inline-block",
                 marginTop: 8,
                 fontSize: 10,
-                color: "#F97316",
+                color: "var(--brand)",
                 fontWeight: 600,
               }}
               className="hover:opacity-80"

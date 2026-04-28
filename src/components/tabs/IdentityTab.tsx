@@ -265,19 +265,19 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div className="mx-auto relative" style={{ width: 80, height: 80 }}>
               <div
                 className="w-full h-full rounded-full overflow-hidden flex items-center justify-center cursor-pointer group"
-                style={{ border: "3px solid #F97316", background: "#F3F0EB" }}
+                style={{ border: "3px solid var(--brand)", background: "var(--surface-subtle)" }}
                 onClick={() => fileInputRef.current?.click()}
               >
                 {uploadingAvatar ? (
-                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
+                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
                 ) : profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <span style={{ color: "#F97316", fontSize: 24, fontWeight: 600 }}>{initials}</span>
+                  <span style={{ color: "var(--brand)", fontSize: 24, fontWeight: 600 }}>{initials}</span>
                 )}
                 <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Upload className="w-3.5 h-3.5" style={{ color: "#F97316" }} />
-                  <span style={{ color: "#F97316", fontSize: 10 }}>Upload</span>
+                  <Upload className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                  <span style={{ color: "var(--brand)", fontSize: 10 }}>Upload</span>
                 </div>
               </div>
               {/* Green status dot */}
@@ -290,7 +290,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   width: 14,
                   height: 14,
                   borderRadius: "50%",
-                  background: "#2E7D38",
+                  background: "var(--success)",
                   border: "2px solid #fff",
                 }}
               />
@@ -302,14 +302,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               style={{
                 fontFamily: "'DM Serif Display', serif",
                 fontSize: 16,
-                color: "#1A1815",
+                color: "var(--surface-ink-subtle)",
                 marginTop: 12,
                 lineHeight: 1.2,
               }}
             >
               {userName}
             </p>
-            <p style={{ fontSize: 11, color: "#3D3A36", lineHeight: 1.4, marginTop: 2 }}>
+            <p style={{ fontSize: 11, color: "var(--ink-4)", lineHeight: 1.4, marginTop: 2 }}>
               {profile?.level || "Executive"}
             </p>
 
@@ -322,7 +322,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <div
                   key={tile.label}
                   style={{
-                    background: "#F3F0EB",
+                    background: "var(--surface-subtle)",
                     borderRadius: 10,
                     padding: 10,
                     textAlign: "center",
@@ -332,7 +332,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     style={{
                       fontFamily: "'DM Serif Display', serif",
                       fontSize: 18,
-                      color: "#F97316",
+                      color: "var(--brand)",
                       lineHeight: 1.1,
                     }}
                   >
@@ -342,7 +342,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     style={{
                       fontSize: 9,
                       textTransform: "uppercase",
-                      color: "#7A7670",
+                      color: "var(--ink-5)",
                       letterSpacing: "0.06em",
                       marginTop: 2,
                     }}
@@ -355,10 +355,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </div>
 
           {/* Identity Facts */}
-          <div style={{ background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: 12 }}>
+          <div style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: 12 }}>
             {identityFacts.map(fact => (
               <div key={fact.key} className="mb-2 last:mb-0">
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "#555", letterSpacing: "0.05em" }}>{fact.label}</div>
+                <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-5)", letterSpacing: "0.05em" }}>{fact.label}</div>
                 {editingField === fact.key ? (
                   <div className="flex items-center gap-1 mt-0.5">
                     <input
@@ -367,15 +367,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       onKeyDown={e => e.key === "Enter" && saveEdit(fact.key)}
                       onBlur={() => saveEdit(fact.key)}
                       autoFocus
-                      className="flex-1 bg-transparent border-b border-[#F97316] text-[11px] text-[#d0d0d0] outline-none py-0.5"
+                      className="flex-1 bg-transparent border-b border-brand text-[11px] text-ink-7 outline-none py-0.5"
                     />
-                    {saving ? <Loader2 className="w-3 h-3 animate-spin text-[#F97316]" /> : <Check className="w-3 h-3 text-green-500" />}
+                    {saving ? <Loader2 className="w-3 h-3 animate-spin text-brand" /> : <Check className="w-3 h-3 text-green-500" />}
                   </div>
                 ) : (
                   <div className="flex items-center justify-between group mt-0.5">
-                    <span style={{ fontSize: 11, color: "#d0d0d0", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
+                    <span style={{ fontSize: 11, color: "var(--ink-7)", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
                     <button onClick={() => startEdit(fact.key, fact.value)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                      <Pencil className="w-2.5 h-2.5 text-[#555] hover:text-[#F97316]" />
+                      <Pencil className="w-2.5 h-2.5 text-ink-5 hover:text-brand" />
                     </button>
                   </div>
                 )}
@@ -396,7 +396,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               style={{
                 fontSize: 9,
                 textTransform: "uppercase",
-                color: "#7A7670",
+                color: "var(--ink-5)",
                 marginBottom: 10,
                 letterSpacing: "0.08em",
                 fontWeight: 600,
@@ -409,7 +409,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 {a.done ? (
                   <span
                     className="flex items-center justify-center shrink-0"
-                    style={{ background: "#2E7D38", borderRadius: 4, width: 14, height: 14 }}
+                    style={{ background: "var(--success)", borderRadius: 4, width: 14, height: 14 }}
                   >
                     <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />
                   </span>
@@ -428,21 +428,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <span
                   style={{
                     fontSize: 11,
-                    color: a.done ? "#2A2825" : "#7A7670",
+                    color: a.done ? "var(--ink-3)" : "var(--ink-5)",
                     flex: 1,
                   }}
                 >
                   {a.name}
                 </span>
                 {a.done && a.date ? (
-                  <span style={{ fontSize: 9, color: "#7A7670" }}>{new Date(a.date).toLocaleDateString()}</span>
+                  <span style={{ fontSize: 9, color: "var(--ink-5)" }}>{new Date(a.date).toLocaleDateString()}</span>
                 ) : !a.done ? (
                   <button
                     onClick={() => {
                       if (a.name === "Evidence Audit") setAuditOpen(true);
                       else if (a.name === "Brand Assessment") setBrandOpen(true);
                     }}
-                    style={{ fontSize: 10, color: "#F97316", fontWeight: 600 }}
+                    style={{ fontSize: 10, color: "var(--brand)", fontWeight: 600 }}
                   >
                     Start →
                   </button>
@@ -458,7 +458,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <div
             className="aura-hero-card"
             style={{
-              background: "#0E0D0C",
+              background: "var(--ink)",
               borderRadius: 16,
               padding: 22,
               position: "relative",
@@ -485,7 +485,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   style={{
                     fontSize: 9,
                     textTransform: "uppercase",
-                    color: "#F97316",
+                    color: "var(--brand)",
                     letterSpacing: "0.12em",
                     marginBottom: 8,
                     fontWeight: 600,
@@ -515,7 +515,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                             background: primary
                               ? "rgba(249,115,22,0.2)"
                               : "rgba(255,255,255,0.07)",
-                            color: primary ? "#F97316" : "#C8C4BE",
+                            color: primary ? "var(--brand)" : "var(--ink-7)",
                             border: `0.5px solid ${
                               primary ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)"
                             }`,
@@ -536,7 +536,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     <p
                       style={{
                         fontSize: 13,
-                        color: "#9A9690",
+                        color: "var(--ink-6)",
                         lineHeight: 1.6,
                         fontWeight: 300,
                       }}
@@ -547,7 +547,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     {positioningStatement.length > 200 && (
                       <button
                         onClick={() => setShowFullPositioning(!showFullPositioning)}
-                        style={{ fontSize: 11, color: "#F97316", marginTop: 6, fontWeight: 500 }}
+                        style={{ fontSize: 11, color: "var(--brand)", marginTop: 6, fontWeight: 500 }}
                       >
                         {showFullPositioning ? "Show less" : "Show more"}
                       </button>
@@ -560,7 +560,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 disabled={regenerating}
                 style={{
                   fontSize: 11,
-                  color: "#F97316",
+                  color: "var(--brand)",
                   background: "transparent",
                   cursor: regenerating ? "default" : "pointer",
                 }}
@@ -584,7 +584,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               style={{
                 fontSize: 9,
                 textTransform: "uppercase",
-                color: "#7A7670",
+                color: "var(--ink-5)",
                 marginBottom: 10,
                 letterSpacing: "0.08em",
                 fontWeight: 600,
@@ -598,8 +598,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   <span
                     key={i}
                     style={{
-                      background: "#FEF0E6",
-                      color: "#C05A10",
+                      background: "var(--brand-pale)",
+                      color: "var(--warning)",
                       borderRadius: 20,
                       padding: "5px 13px",
                       fontSize: 12,
@@ -612,8 +612,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <button
                   onClick={() => onSwitchTab && onSwitchTab("intelligence")}
                   style={{
-                    background: "#F3F0EB",
-                    color: "#3D3A36",
+                    background: "var(--surface-subtle)",
+                    color: "var(--ink-4)",
                     borderRadius: 20,
                     padding: "5px 13px",
                     fontSize: 12,
@@ -624,7 +624,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 </button>
               </div>
             ) : (
-              <p style={{ fontSize: 11, color: "#7A7670", fontStyle: "italic" }}>
+              <p style={{ fontSize: 11, color: "var(--ink-5)", fontStyle: "italic" }}>
                 Capture more to build your signal profile
               </p>
             )}
@@ -646,7 +646,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   style={{
                     fontSize: 9,
                     textTransform: "uppercase",
-                    color: "#7A7670",
+                    color: "var(--ink-5)",
                     letterSpacing: "0.08em",
                     fontWeight: 600,
                     marginBottom: 4,
@@ -661,14 +661,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     onKeyDown={e => e.key === "Enter" && saveEdit("north_star_goal")}
                     onBlur={() => saveEdit("north_star_goal")}
                     autoFocus
-                    className="bg-transparent border-b border-[#F97316] text-[13px] text-[#1A1815] outline-none"
+                    className="bg-transparent border-b border-brand text-[13px] text-surface-ink-subtle outline-none"
                     style={{ minWidth: 240 }}
                   />
                 ) : (
                   <p
                     style={{
                       fontSize: 13,
-                      color: "#1A1815",
+                      color: "var(--surface-ink-subtle)",
                       lineHeight: 1.5,
                       fontWeight: 500,
                     }}
@@ -682,7 +682,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")}
                   className="opacity-50 hover:opacity-100 transition-opacity ml-2 shrink-0"
                 >
-                  <Pencil className="w-3 h-3" style={{ color: "#7A7670" }} />
+                  <Pencil className="w-3 h-3" style={{ color: "var(--ink-5)" }} />
                 </button>
               )}
             </div>
@@ -726,10 +726,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                               height: 20,
                               borderRadius: "50%",
                               background: isDone
-                                ? "#2E7D38"
+                                ? "var(--success)"
                                 : isCurrent
-                                  ? "#F97316"
-                                  : "#F3F0EB",
+                                  ? "var(--brand)"
+                                  : "var(--surface-subtle)",
                               border: !isDone && !isCurrent ? "2px solid rgba(0,0,0,0.12)" : "none",
                               boxShadow: isCurrent ? "0 0 0 4px rgba(249,115,22,0.15)" : "none",
                               zIndex: 1,
@@ -740,7 +740,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           <span
                             style={{
                               fontSize: 10,
-                              color: isCurrent ? "#F97316" : isDone ? "#2A2825" : "#7A7670",
+                              color: isCurrent ? "var(--brand)" : isDone ? "var(--ink-3)" : "var(--ink-5)",
                               marginTop: 8,
                               fontWeight: isCurrent ? 600 : 400,
                               textAlign: "center",
@@ -761,7 +761,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <button
             onClick={() => setFullProfileOpen(true)}
             className="flex items-center gap-1.5 transition-colors"
-            style={{ fontSize: 11, color: "#F97316" }}
+            style={{ fontSize: 11, color: "var(--brand)" }}
           >
             Full profile <ChevronRight className="w-3 h-3" />
           </button>
@@ -773,13 +773,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }} onClick={() => setFullProfileOpen(false)}>
           <div
             className="relative overflow-y-auto"
-            style={{ width: 680, maxWidth: "90vw", maxHeight: "88vh", background: "#0d0d0d", border: "1px solid #252525", borderRadius: 12, padding: 24 }}
+            style={{ width: 680, maxWidth: "90vw", maxHeight: "88vh", background: "var(--ink)", border: "1px solid var(--ink-3)", borderRadius: 12, padding: 24 }}
             onClick={e => e.stopPropagation()}
           >
-            <button onClick={() => setFullProfileOpen(false)} className="absolute top-4 right-4 text-[#555] hover:text-[#f0f0f0] transition-colors">
+            <button onClick={() => setFullProfileOpen(false)} className="absolute top-4 right-4 text-ink-5 hover:text-ink-7 transition-colors">
               <X className="w-5 h-5" />
             </button>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: "#f0f0f0", marginBottom: 20 }}>Strategic Identity</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-7)", marginBottom: 20 }}>Strategic Identity</h2>
 
             <div className="space-y-6">
               <ProfileIntelligence onGenerateContent={handleGenerateContent} />
@@ -787,8 +787,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <BrandArchetypeWidget onStartAssessment={() => { setFullProfileOpen(false); setBrandOpen(true); }} />
               <AuditRadarWidget onStartAudit={() => { setFullProfileOpen(false); setAuditOpen(true); }} />
 
-              <div className="pt-4 border-t border-[#252525]">
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#f0f0f0", marginBottom: 12 }}>Profile Settings</h3>
+              <div className="pt-4 border-t border-ink-3">
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-7)", marginBottom: 12 }}>Profile Settings</h3>
                 <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
               </div>
             </div>

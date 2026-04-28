@@ -355,8 +355,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   let trendLabel = "→ Stable";
   let trendColor = "var(--color-text-secondary)";
   if (weekDelta !== null) {
-    if (weekDelta > 0) { trendLabel = `↑ +${weekDelta} this week`; trendColor = "#7ab648"; }
-    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "#E24B4A"; }
+    if (weekDelta > 0) { trendLabel = `↑ +${weekDelta} this week`; trendColor = "var(--success)"; }
+    else if (weekDelta < 0) { trendLabel = `↓ −${Math.abs(weekDelta)} this week`; trendColor = "var(--danger)"; }
   }
 
   const daysSinceLastAll = lastCaptureAll ? daysBetween(new Date(), lastCaptureAll) : null;
@@ -440,9 +440,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const partColor = (t: string) => {
     switch (t) {
       case "primary": return "var(--color-text-primary)";
-      case "negative": return "#E24B4A";
-      case "positive": return "#7ab648";
-      case "action": return "#F97316";
+      case "negative": return "var(--danger)";
+      case "positive": return "var(--success)";
+      case "action": return "var(--brand)";
       default: return "var(--color-text-secondary)";
     }
   };
@@ -478,28 +478,28 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const daysColor = daysSinceLastAll === null
     ? "var(--color-text-muted)"
-    : daysSinceLastAll === 0 ? "#7ab648"
-      : daysSinceLastAll <= 3 ? "#EF9F27"
-        : "#E24B4A";
+    : daysSinceLastAll === 0 ? "var(--success)"
+      : daysSinceLastAll <= 3 ? "var(--warning)"
+        : "var(--danger)";
 
   /* (score chart removed — only sub-score cards remain) */
 
   /* ── Sub-score card colour rules ── */
   const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
     if (kind === "capture") {
-      if (value >= 90) return { color: "#7ab648", border: "#7ab64844", tag: "Healthy" };
-      if (value >= 70) return { color: "#F97316", border: "#F9731644", tag: "Good" };
-      return { color: "#E24B4A", border: "#E24B4A44", tag: "Needs action" };
+      if (value >= 90) return { color: "var(--success)", border: "#7ab64844", tag: "Healthy" };
+      if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
+      return { color: "var(--danger)", border: "#E24B4A44", tag: "Needs action" };
     }
     if (kind === "content") {
-      if (value === 100) return { color: "#7ab648", border: "#7ab64844", tag: "Perfect" };
-      if (value >= 70) return { color: "#F97316", border: "#F9731644", tag: "Good" };
-      return { color: "#E24B4A", border: "#E24B4A44", tag: "Needs action" };
+      if (value === 100) return { color: "var(--success)", border: "#7ab64844", tag: "Perfect" };
+      if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
+      return { color: "var(--danger)", border: "#E24B4A44", tag: "Needs action" };
     }
     // signal
-    if (value >= 85) return { color: "#7ab648", border: "#7ab64844", tag: "Strong" };
-    if (value >= 70) return { color: "#F97316", border: "#F9731644", tag: "Good" };
-    return { color: "#E24B4A", border: "#E24B4A44", tag: "Build signals" };
+    if (value >= 85) return { color: "var(--success)", border: "#7ab64844", tag: "Strong" };
+    if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
+    return { color: "var(--danger)", border: "#E24B4A44", tag: "Build signals" };
   };
 
   /* ── Follower chart series ── */
@@ -648,9 +648,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               onClick={() => setSelectedDays(r)}
               className="px-3.5 py-1.5 text-xs rounded-full transition-colors"
               style={{
-                background: active ? "#F97316" : "transparent",
+                background: active ? "var(--brand)" : "transparent",
                 color: active ? "#ffffff" : "var(--color-text-secondary)",
-                border: active ? "0.5px solid #F97316" : "0.5px solid var(--color-border)",
+                border: active ? "0.5px solid var(--brand)" : "0.5px solid var(--color-border)",
                 fontWeight: active ? 600 : 500,
               }}
             >
@@ -664,10 +664,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <section
         className="relative overflow-hidden"
         style={{
-          background: "#0E0D0C",
+          background: "var(--ink)",
           borderRadius: 14,
           padding: "28px 28px 24px",
-          color: "#E8E4DC",
+          color: "var(--ink-7)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07)",
         }}
       >
@@ -694,7 +694,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#5F5E5A",
+                color: "var(--ink-5)",
               }}
             >
               Authority score
@@ -704,7 +704,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               style={{
                 fontFamily: "'DM Serif Display', Georgia, serif",
                 fontSize: 80,
-                color: "#F97316",
+                color: "var(--brand)",
                 letterSpacing: "-0.04em",
                 lineHeight: 1,
                 marginTop: 6,
@@ -715,8 +715,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div className="mt-3 inline-flex">
               <span
                 style={{
-                  background: "rgba(249,115,22,0.12)",
-                  color: "#F97316",
+                  background: "var(--brand-muted)",
+                  color: "var(--brand)",
                   borderRadius: 20,
                   padding: "5px 14px",
                   fontSize: 11,
@@ -739,7 +739,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#5F5E5A",
+                    color: "var(--ink-5)",
                   }}
                 >
                   30d
@@ -749,7 +749,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   style={{
                     fontFamily: "'DM Serif Display', Georgia, serif",
                     fontSize: 26,
-                    color: "#BA7517",
+                    color: "var(--warning)",
                     letterSpacing: "-0.02em",
                     lineHeight: 1,
                     marginTop: 4,
@@ -765,7 +765,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#5F5E5A",
+                    color: "var(--ink-5)",
                   }}
                 >
                   90d
@@ -775,7 +775,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   style={{
                     fontFamily: "'DM Serif Display', Georgia, serif",
                     fontSize: 26,
-                    color: "#E24B4A",
+                    color: "var(--danger)",
                     letterSpacing: "-0.02em",
                     lineHeight: 1,
                     marginTop: 4,
@@ -797,9 +797,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           // Color ramp: orange near-term → amber at 30d → red at 90d
           const barColor = (i: number, n: number) => {
             const t = n <= 1 ? 0 : i / (n - 1);
-            if (t < 0.5) return "#F97316";
-            if (t < 0.85) return "#BA7517";
-            return "#E24B4A";
+            if (t < 0.5) return "var(--brand)";
+            if (t < 0.85) return "var(--warning)";
+            return "var(--danger)";
           };
           return (
             <div className="relative mt-6">
@@ -826,7 +826,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </div>
               <div
                 className="flex justify-between mt-2"
-                style={{ fontSize: 9, color: "#4A4845" }}
+                style={{ fontSize: 9, color: "var(--ink-4)" }}
               >
                 <span>Now</span>
                 <span>30d · {trajectory.forecast30}</span>
@@ -852,9 +852,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 style={
                   active
                     ? {
-                        background: "#F97316",
+                        background: "var(--brand)",
                         color: "#fff",
-                        border: "0.5px solid #F97316",
+                        border: "0.5px solid var(--brand)",
                         borderRadius: 8,
                         padding: "5px 14px",
                         fontSize: 11,
@@ -862,8 +862,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       }
                     : {
                         background: "transparent",
-                        color: "#5F5E5A",
-                        border: "0.5px solid #2A2825",
+                        color: "var(--ink-5)",
+                        border: "0.5px solid var(--ink-3)",
                         borderRadius: 8,
                         padding: "5px 14px",
                         fontSize: 11,
@@ -891,7 +891,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         style={{
           background: "var(--color-card)",
           border: "0.5px solid var(--color-border)",
-          borderLeft: "4px solid #F97316",
+          borderLeft: "4px solid var(--brand)",
           borderRadius: "0 8px 8px 0",
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}
@@ -913,7 +913,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 onClick={() => onOpenCapture?.()}
                 className="mt-4 inline-flex items-center gap-1.5"
                 style={{
-                  background: "#F97316",
+                  background: "var(--brand)",
                   color: "#ffffff",
                   fontSize: 12,
                   fontWeight: 600,
@@ -937,9 +937,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
-            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "#F97316" },
-            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "#2E7D38" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "#F97316" },
+            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "var(--brand)" },
+            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "var(--brand)" },
           ]).map((c) => {
             const cfg = subScoreCard(c.kind, c.value);
             return (
@@ -960,7 +960,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       fontWeight: 600,
                       letterSpacing: "0.1em",
                       textTransform: "uppercase",
-                      color: "#3D3A36",
+                      color: "var(--ink-4)",
                     }}
                   >
                     {c.label}
@@ -984,7 +984,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 >
                   {Math.round(c.value)}
                 </div>
-                <div className="text-[11px] mt-1.5" style={{ color: "#3D3A36" }}>
+                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
                   {c.desc}
                 </div>
               </div>
@@ -1000,7 +1000,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <HeroStat
           value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
           label={latestFollowers !== null ? "LinkedIn followers" : "No data yet"}
-          color="#F97316"
+          color="var(--brand)"
         />
         <HeroStat
           value={periodImpressions !== null ? formatCompact(periodImpressions) : "—"}
@@ -1010,7 +1010,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <HeroStat
           value={periodEngagementRate !== null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
           label={periodEngagementRate !== null ? "Avg engagement rate" : "No data yet"}
-          color="#7ab648"
+          color="var(--success)"
         />
       </div>
 
@@ -1041,7 +1041,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <button
                 onClick={handleUploadClick}
                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
-                style={{ background: "#F97316", color: "#ffffff" }}
+                style={{ background: "var(--brand)", color: "#ffffff" }}
               >
                 <Upload className="w-3.5 h-3.5" />
                 Upload LinkedIn .xlsx
@@ -1068,7 +1068,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "#3D3A36",
+                    color: "var(--ink-4)",
                   }}
                 >
                   Best day
@@ -1078,14 +1078,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   style={{
                     fontFamily: "'DM Serif Display', Georgia, serif",
                     fontSize: 28,
-                    color: "#2E7D38",
+                    color: "var(--success)",
                     letterSpacing: "-0.02em",
                     lineHeight: 1.1,
                   }}
                 >
                   {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
                 </div>
-                <div className="text-[11px] mt-1" style={{ color: "#5F5E5A" }}>
+                <div className="text-[11px] mt-1" style={{ color: "var(--ink-5)" }}>
                   Only one day of follower data so far. More data will appear after additional snapshots.
                 </div>
               </div>
@@ -1133,7 +1133,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     }}
                     formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
-                  <Bar dataKey="growth" fill="#7ab648" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1142,14 +1142,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <Stat
                 label="New followers this period"
                 value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
-                valueColor="#7ab648"
+                valueColor="var(--success)"
               />
               <Stat
                 label="Best single day"
                 value={bestDay && bestDay.follower_growth > 0
                   ? `+${bestDay.follower_growth} · ${fmtDateShort(bestDay.snapshot_date)}`
                   : "—"}
-                valueColor="#7ab648"
+                valueColor="var(--success)"
               />
             </div>
           </div>
@@ -1180,7 +1180,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                 style={{ background: "rgba(249,115,22,0.1)", border: "0.5px solid var(--color-border)" }}
               >
-                <Upload className="w-5 h-5" style={{ color: "#F97316" }} />
+                <Upload className="w-5 h-5" style={{ color: "var(--brand)" }} />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
@@ -1212,7 +1212,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       onClick={handleUploadClick}
                       disabled={uploading}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                      style={{ background: "#F97316", color: "#ffffff" }}
+                      style={{ background: "var(--brand)", color: "#ffffff" }}
                     >
                       <Upload className="w-3.5 h-3.5" />
                       Upload LinkedIn .xlsx file
@@ -1226,7 +1226,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                         onClick={handleUpload}
                         disabled={uploading}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                        style={{ background: "#F97316", color: "#ffffff" }}
+                        style={{ background: "var(--brand)", color: "#ffffff" }}
                       >
                         {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                         {uploading ? "Importing..." : "Import"}
@@ -1281,15 +1281,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               const erPct = rawEr > 1 ? rawEr : rawEr * 100;
               const isTop = i === 0;
               const fillPct = maxErPct > 0 ? (erPct / maxErPct) * 100 : 0;
-              const rankColor = isTop ? "#F97316" : "var(--color-text-muted)";
+              const rankColor = isTop ? "var(--brand)" : "var(--color-text-muted)";
 
               let badge: { label: string; bg: string; color: string; border: string } | null = null;
               if (i < 3) {
-                badge = { label: "Top post", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+                badge = { label: "Top post", bg: "#F9731618", color: "var(--brand)", border: "#F9731644" };
               } else if (erPct > 5) {
-                badge = { label: "Exceptional", bg: "#7ab64818", color: "#7ab648", border: "#7ab64844" };
+                badge = { label: "Exceptional", bg: "#7ab64818", color: "var(--success)", border: "#7ab64844" };
               } else if (erPct >= 3) {
-                badge = { label: "Above avg", bg: "#F9731618", color: "#F97316", border: "#F9731644" };
+                badge = { label: "Above avg", bg: "#F9731618", color: "var(--brand)", border: "#F9731644" };
               }
 
               // Bar opacity decreases by rank for non-top
@@ -1303,7 +1303,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     paddingTop: 12,
                     paddingBottom: 12,
                     borderBottom: i === topPosts.length - 1 ? "none" : "0.5px solid var(--color-border)",
-                    borderLeft: isTop ? "3px solid #F97316" : undefined,
+                    borderLeft: isTop ? "3px solid var(--brand)" : undefined,
                     paddingLeft: isTop ? 12 : undefined,
                     background: isTop ? "rgba(249,115,22,0.04)" : undefined,
                     borderRadius: isTop ? "0 4px 4px 0" : undefined,
@@ -1348,7 +1348,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
                     {/* Right */}
                     <div className="text-right shrink-0">
-                      <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 700, color: "#F97316" }}>
+                      <div className="tabular-nums" style={{ fontSize: 16, fontWeight: 700, color: "var(--brand)" }}>
                         {erPct.toFixed(1)}%
                       </div>
                       {badge && (
@@ -1376,7 +1376,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       style={{
                         width: `${fillPct}%`,
                         height: "100%",
-                        background: "#F97316",
+                        background: "var(--brand)",
                         opacity: barOpacity,
                         borderRadius: 2,
                         transition: "width 600ms ease",
@@ -1449,7 +1449,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   }}
                   formatter={(value: any) => [`${value} captures`, ""]}
                 />
-                <Bar dataKey="captures" fill="#F97316" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="captures" fill="var(--brand)" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1460,9 +1460,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               className="mt-3 text-xs"
               style={{
                 color:
-                  daysSinceLastAll >= 4 ? "#E24B4A"
-                    : daysSinceLastAll === 0 ? "#7ab648"
-                      : "#EF9F27",
+                  daysSinceLastAll >= 4 ? "var(--danger)"
+                    : daysSinceLastAll === 0 ? "var(--success)"
+                      : "var(--warning)",
                 fontWeight: 500,
               }}
             >

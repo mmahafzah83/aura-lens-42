@@ -11,9 +11,9 @@ const SECTOR = ["Consulting", "Energy", "Finance", "Government", "Technology", "
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const inputStyle: React.CSSProperties = {
-  backgroundColor: "#141414",
-  border: "1px solid #252525",
-  color: "#f0f0f0",
+  backgroundColor: "var(--surface-ink-raised)",
+  border: "1px solid var(--ink-3)",
+  color: "var(--ink-7)",
 };
 
 const RequestAccess = () => {
@@ -58,31 +58,31 @@ const RequestAccess = () => {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: "#0d0d0d", fontFamily: "Inter, sans-serif" }}
+      style={{ backgroundColor: "var(--ink)", fontFamily: "Inter, sans-serif" }}
     >
       <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "#F97316" }}
+            style={{ backgroundColor: "var(--brand)" }}
           >
             <Zap className="w-5 h-5 text-white" />
           </div>
           <div className="leading-tight">
             <div className="text-primary font-extrabold text-2xl">Aura</div>
-            <div className="text-xs" style={{ color: "#888" }}>Strategic Intelligence</div>
+            <div className="text-xs" style={{ color: "var(--ink-5)" }}>Strategic Intelligence</div>
           </div>
         </div>
 
         {!isDone && (
           <>
-            <h1 className="text-[28px] font-bold mb-2" style={{ color: "#f0f0f0" }}>
+            <h1 className="text-[28px] font-bold mb-2" style={{ color: "var(--ink-7)" }}>
               Request early access
             </h1>
             <p
               className="text-sm leading-relaxed mb-8"
-              style={{ color: "#888", maxWidth: "360px" }}
+              style={{ color: "var(--ink-5)", maxWidth: "360px" }}
             >
               Aura is in closed beta. Join the waitlist and we'll reach out when your spot is ready.
             </p>
@@ -90,7 +90,7 @@ const RequestAccess = () => {
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
               {/* Full name */}
               <div>
-                <label htmlFor="name" className="block text-xs font-medium mb-2" style={{ color: "#f0f0f0" }}>
+                <label htmlFor="name" className="block text-xs font-medium mb-2" style={{ color: "var(--ink-7)" }}>
                   Full name
                 </label>
                 <input
@@ -100,15 +100,15 @@ const RequestAccess = () => {
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                   maxLength={200}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors placeholder:text-[#555]"
+                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-ink-5"
                   style={inputStyle}
                 />
-                {errors.name && <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>{errors.name}</p>}
+                {errors.name && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.name}</p>}
               </div>
 
               {/* Work email */}
               <div>
-                <label htmlFor="email" className="block text-xs font-medium mb-2" style={{ color: "#f0f0f0" }}>
+                <label htmlFor="email" className="block text-xs font-medium mb-2" style={{ color: "var(--ink-7)" }}>
                   Work email
                 </label>
                 <input
@@ -118,22 +118,22 @@ const RequestAccess = () => {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                   maxLength={255}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors placeholder:text-[#555]"
+                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-ink-5"
                   style={inputStyle}
                 />
-                {errors.email && <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>{errors.email}</p>}
+                {errors.email && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.email}</p>}
               </div>
 
               {/* Seniority */}
               <div>
-                <label htmlFor="seniority" className="block text-xs font-medium mb-2" style={{ color: "#f0f0f0" }}>
+                <label htmlFor="seniority" className="block text-xs font-medium mb-2" style={{ color: "var(--ink-7)" }}>
                   Seniority
                 </label>
                 <select
                   id="seniority"
                   value={seniority}
                   onChange={(e) => { setSeniority(e.target.value); if (errors.seniority) setErrors((p) => ({ ...p, seniority: undefined })); }}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors appearance-none"
+                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors appearance-none"
                   style={{
                     ...inputStyle,
                     backgroundImage:
@@ -143,24 +143,24 @@ const RequestAccess = () => {
                     paddingRight: "32px",
                   }}
                 >
-                  <option value="" style={{ backgroundColor: "#141414" }}>Select your level</option>
+                  <option value="" style={{ backgroundColor: "var(--surface-ink-raised)" }}>Select your level</option>
                   {SENIORITY.map((s) => (
-                    <option key={s} value={s} style={{ backgroundColor: "#141414" }}>{s}</option>
+                    <option key={s} value={s} style={{ backgroundColor: "var(--surface-ink-raised)" }}>{s}</option>
                   ))}
                 </select>
-                {errors.seniority && <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>{errors.seniority}</p>}
+                {errors.seniority && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.seniority}</p>}
               </div>
 
               {/* Sector */}
               <div>
-                <label htmlFor="sector" className="block text-xs font-medium mb-2" style={{ color: "#f0f0f0" }}>
+                <label htmlFor="sector" className="block text-xs font-medium mb-2" style={{ color: "var(--ink-7)" }}>
                   Sector (optional)
                 </label>
                 <select
                   id="sector"
                   value={sector}
                   onChange={(e) => setSector(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-[#F97316] transition-colors appearance-none"
+                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors appearance-none"
                   style={{
                     ...inputStyle,
                     backgroundImage:
@@ -170,9 +170,9 @@ const RequestAccess = () => {
                     paddingRight: "32px",
                   }}
                 >
-                  <option value="" style={{ backgroundColor: "#141414" }}>Select your sector</option>
+                  <option value="" style={{ backgroundColor: "var(--surface-ink-raised)" }}>Select your sector</option>
                   {SECTOR.map((s) => (
-                    <option key={s} value={s} style={{ backgroundColor: "#141414" }}>{s}</option>
+                    <option key={s} value={s} style={{ backgroundColor: "var(--surface-ink-raised)" }}>{s}</option>
                   ))}
                 </select>
               </div>
@@ -194,7 +194,7 @@ const RequestAccess = () => {
                 type="submit"
                 disabled={status === "loading"}
                 className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: "#F97316", borderRadius: "8px" }}
+                style={{ backgroundColor: "var(--brand)", borderRadius: "8px" }}
               >
                 {status === "loading" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -234,9 +234,9 @@ const RequestAccess = () => {
         )}
 
         <div className="text-center mt-6">
-          <span className="text-sm" style={{ color: "#888" }}>
+          <span className="text-sm" style={{ color: "var(--ink-5)" }}>
             Already have access?{" "}
-            <Link to="/auth" className="font-medium hover:underline" style={{ color: "#F97316" }}>
+            <Link to="/auth" className="font-medium hover:underline" style={{ color: "var(--brand)" }}>
               Sign in →
             </Link>
           </span>

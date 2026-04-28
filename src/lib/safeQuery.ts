@@ -26,7 +26,7 @@ const ERROR_TOAST_STYLE = {
 const SESSION_TOAST_STYLE = {
   background: "#2a1a0a",
   border: "0.5px solid #F9731633",
-  color: "#F97316",
+  color: "var(--brand)",
 };
 
 const DEFAULT_TIMEOUT_MS = 15_000;

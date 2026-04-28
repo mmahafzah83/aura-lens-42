@@ -52,13 +52,13 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
 
       const mkStyle = (type: string, extra?: Partial<React.CSSProperties>) => ({
         background: NODE_STYLES[type]?.bg || "#eee",
-        border: `2px solid ${NODE_STYLES[type]?.border || "#999"}`,
+        border: `2px solid ${NODE_STYLES[type]?.border || "var(--ink-6)"}`,
         borderRadius: 14,
         padding: "8px 14px",
         fontSize: 10,
         fontWeight: 600,
         maxWidth: 170,
-        color: "#1a1a1a",
+        color: "var(--surface-ink-subtle)",
         ...extra,
       });
 
@@ -67,7 +67,7 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
         source: src,
         target: tgt,
         label,
-        labelStyle: { fontSize: 8, fontWeight: 600, fill: "#888" },
+        labelStyle: { fontSize: 8, fontWeight: 600, fill: "var(--ink-5)" },
         style: { stroke: color, strokeWidth: 1.5, opacity: 0.6 },
         markerEnd: { type: MarkerType.ArrowClosed, color, width: 12, height: 12 },
         animated: true,
@@ -321,7 +321,7 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
               <Background gap={24} size={1} color="hsl(var(--muted-foreground) / 0.05)" />
               <Controls className="!bg-card/80 !border-border/20 !rounded-xl !shadow-lg" />
               <MiniMap
-                nodeColor={(n) => NODE_STYLES[n.data?.type]?.border || "#888"}
+                nodeColor={(n) => NODE_STYLES[n.data?.type]?.border || "var(--ink-5)"}
                 className="!bg-card/60 !border-border/10 !rounded-xl"
                 maskColor="hsl(var(--background) / 0.7)"
               />

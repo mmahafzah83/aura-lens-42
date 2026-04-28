@@ -40,7 +40,7 @@ const SectionError = ({
           background: "none",
           border: "none",
           padding: 0,
-          color: "#F97316",
+          color: "var(--brand)",
           cursor: "pointer",
           fontSize: 12,
           textDecoration: "underline",

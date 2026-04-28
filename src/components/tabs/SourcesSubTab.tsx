@@ -47,9 +47,9 @@ const FILTER_LABELS: { key: FilterKey; label: string; typeMatch?: string }[] = [
 
 const TYPE_BADGES: Record<string, { label: string; color: string }> = {
   link: { label: "URL", color: "#5b8def" },
-  image: { label: "IMAGE", color: "#7ab648" },
-  text: { label: "NOTE", color: "#EF9F27" },
-  voice: { label: "VOICE", color: "#F97316" },
+  image: { label: "IMAGE", color: "var(--success)" },
+  text: { label: "NOTE", color: "var(--warning)" },
+  voice: { label: "VOICE", color: "var(--brand)" },
   document: { label: "DOC", color: "#7F77DD" },
 };
 
@@ -142,12 +142,12 @@ const DeleteDialog = ({ onConfirm, onCancel }: { onConfirm: () => void; onCancel
   createPortal(
     <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)" }} onClick={onCancel} />
-      <div style={{ position: "relative", background: "#1a1a1a", borderRadius: 16, padding: 24, width: 360, maxWidth: "90vw", border: "1px solid #252525" }}>
-        <p style={{ color: "#f0f0f0", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this source?</p>
-        <p style={{ color: "#888", fontSize: 13, margin: "0 0 20px" }}>This cannot be undone.</p>
+      <div style={{ position: "relative", background: "var(--surface-ink-subtle)", borderRadius: 16, padding: 24, width: 360, maxWidth: "90vw", border: "1px solid var(--ink-3)" }}>
+        <p style={{ color: "var(--ink-7)", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this source?</p>
+        <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 20px" }}>This cannot be undone.</p>
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#888", fontSize: 13, cursor: "pointer" }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "#E24B4A", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
+          <button onClick={onCancel} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+          <button onClick={onConfirm} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "var(--danger)", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
         </div>
       </div>
     </div>,
@@ -340,94 +340,94 @@ const ExpandedSource = ({
   const sourceUrl = entry.type === "link" ? (entry.image_url || (entry.content.match(/^https?:\/\//) ? entry.content.split(/\s/)[0] : null)) : null;
 
   return (
-    <div style={{ padding: "0 16px 16px", borderTop: "1px solid #1f1f1f" }}>
+    <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--surface-ink-subtle)" }}>
       {editing ? (
         <div style={{ marginTop: 14 }}>
           <input
             value={editTitle}
             onChange={e => setEditTitle(e.target.value)}
             placeholder="Title"
-            style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "8px 12px", color: "#f0f0f0", fontSize: 14, marginBottom: 10, outline: "none" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
-            onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+            style={{ width: "100%", background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: "8px 12px", color: "var(--ink-7)", fontSize: 14, marginBottom: 10, outline: "none" }}
+            onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
           />
           <textarea
             value={editContent}
             onChange={e => setEditContent(e.target.value)}
             rows={6}
-            style={{ width: "100%", background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10, padding: "8px 12px", color: "#f0f0f0", fontSize: 13, resize: "vertical", outline: "none" }}
-            onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
-            onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+            style={{ width: "100%", background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: "8px 12px", color: "var(--ink-7)", fontSize: 13, resize: "vertical", outline: "none" }}
+            onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
+            onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
           />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={handleSaveEdit} disabled={saving} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={handleSaveEdit} disabled={saving} style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
               {saving ? "Saving..." : "Save"}
             </button>
-            <button onClick={() => setEditing(false)} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#888", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+            <button onClick={() => setEditing(false)} style={{ padding: "8px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
           </div>
         </div>
       ) : (
         <>
-          <p style={{ color: "#ccc", fontSize: 13, lineHeight: 1.6, margin: "14px 0", whiteSpace: "pre-wrap" }}>{entry.content}</p>
+          <p style={{ color: "var(--ink-7)", fontSize: 13, lineHeight: 1.6, margin: "14px 0", whiteSpace: "pre-wrap" }}>{entry.content}</p>
 
           {entry.summary && entry.summary !== entry.content && (
             <div style={{ marginBottom: 12 }}>
-              <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 4 }}>SUMMARY</p>
-              <p style={{ color: "#888", fontSize: 13, lineHeight: 1.5, margin: 0 }}>{entry.summary}</p>
+              <p style={{ color: "var(--ink-4)", fontSize: 10, letterSpacing: "0.08em", marginBottom: 4 }}>SUMMARY</p>
+              <p style={{ color: "var(--ink-5)", fontSize: 13, lineHeight: 1.5, margin: 0 }}>{entry.summary}</p>
             </div>
           )}
 
           {sourceUrl && (
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "#F97316", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12, textDecoration: "none" }}>
+            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 12, textDecoration: "none" }}>
               <ExternalLink size={12} /> {extractDomain(sourceUrl) || sourceUrl}
             </a>
           )}
 
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
             {entry.skill_pillar && (
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(197,165,90,0.1)", color: "#F97316" }}>{entry.skill_pillar}</span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(197,165,90,0.1)", color: "var(--brand)" }}>{entry.skill_pillar}</span>
             )}
             {entry.framework_tag && (
-              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "#1a1a1a", color: "#666", border: "1px solid #252525" }}>{entry.framework_tag}</span>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "var(--surface-ink-subtle)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>{entry.framework_tag}</span>
             )}
           </div>
 
           {/* Signals from this source */}
           <div style={{ marginTop: 12 }}>
-            <p style={{ color: "#3a3a3a", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8 }}>SIGNALS FROM THIS SOURCE</p>
+            <p style={{ color: "var(--ink-4)", fontSize: 10, letterSpacing: "0.08em", marginBottom: 8 }}>SIGNALS FROM THIS SOURCE</p>
             {loadingSignals ? (
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#3a3a3a" }} />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--ink-4)" }} />
             ) : linkedSignals.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {linkedSignals.map(s => (
-                  <button key={s.id} onClick={() => onSwitchToSignal(s.id)} style={{ background: "none", border: "none", color: "#F97316", fontSize: 12, cursor: "pointer", textAlign: "left", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                  <button key={s.id} onClick={() => onSwitchToSignal(s.id)} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 12, cursor: "pointer", textAlign: "left", padding: 0, display: "flex", alignItems: "center", gap: 6 }}>
                     <Zap size={12} /> {s.signal_title}
                   </button>
                 ))}
               </div>
             ) : (
-              <p style={{ color: "#3a3a3a", fontSize: 12 }}>No signals detected from this source yet.</p>
+              <p style={{ color: "var(--ink-4)", fontSize: 12 }}>No signals detected from this source yet.</p>
             )}
           </div>
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-            <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #F97316", background: "transparent", color: "#F97316", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => openEntryInNewTab(entry)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--brand)", background: "transparent", color: "var(--brand)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <ExternalLink size={14} /> Open
             </button>
             {((entry.type === "document" && entry.file_url) || (entry.type === "image" && entry.image_url)) && (
-              <button onClick={() => downloadEntryFile(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#ccc", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <button onClick={() => downloadEntryFile(entry)} title="Download file" style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-7)", fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                 <Download size={14} /> Download
               </button>
             )}
-            <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
+            <button onClick={handleDetect} disabled={detecting} style={{ padding: "10px 16px", borderRadius: 10, background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 13, border: "none", cursor: "pointer" }}>
               {detecting ? <Loader2 className="w-4 h-4 animate-spin" style={{ display: "inline" }} /> : <Zap size={14} style={{ display: "inline", marginRight: 4 }} />}
               Detect Signal
             </button>
-            <button onClick={() => setEditing(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#888", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setEditing(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Pencil size={14} /> Edit
             </button>
-            <button onClick={() => setDeleteTarget(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#E24B4A", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={() => setDeleteTarget(true)} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--ink-3)", background: "transparent", color: "var(--danger)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Trash2 size={14} /> Delete
             </button>
           </div>
@@ -635,11 +635,11 @@ const SourcesSubTab = ({
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
         <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(197,165,90,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", border: "1px solid rgba(197,165,90,0.15)" }}>
-          <FileUp className="w-6 h-6" style={{ color: "#F97316" }} />
+          <FileUp className="w-6 h-6" style={{ color: "var(--brand)" }} />
         </div>
-        <p style={{ color: "#f0f0f0", fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>Your knowledge starts here.</p>
-        <p style={{ color: "#666", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
-        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "#F97316", color: "#0d0d0d", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+        <p style={{ color: "var(--ink-7)", fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>Your knowledge starts here.</p>
+        <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
+        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
           Capture your first source
         </button>
       </div>
@@ -653,22 +653,22 @@ const SourcesSubTab = ({
       {/* Header count */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
         <div className="w-8 h-8 rounded-lg" style={{ background: "rgba(197,165,90,0.1)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(197,165,90,0.15)" }}>
-          <FileUp className="w-4 h-4" style={{ color: "#F97316" }} />
+          <FileUp className="w-4 h-4" style={{ color: "var(--brand)" }} />
         </div>
-        <h2 style={{ color: "#888", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
-        <span style={{ color: "#666", fontSize: 12, marginLeft: "auto" }}>{totalCount} captured</span>
+        <h2 style={{ color: "var(--ink-5)", fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", margin: 0 }}>Sources</h2>
+        <span style={{ color: "var(--ink-5)", fontSize: 12, marginLeft: "auto" }}>{totalCount} captured</span>
       </div>
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: 12 }}>
-        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#3a3a3a" }} />
+        <Search size={16} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--ink-4)" }} />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search your sources..."
-          style={{ width: "100%", paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10, background: "#1a1a1a", border: "1px solid #252525", borderRadius: 12, color: "#f0f0f0", fontSize: 13, outline: "none" }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
-          onBlur={e => { e.currentTarget.style.borderColor = "#252525"; }}
+          style={{ width: "100%", paddingLeft: 36, paddingRight: 14, paddingTop: 10, paddingBottom: 10, background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)", borderRadius: 12, color: "var(--ink-7)", fontSize: 13, outline: "none" }}
+          onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
+          onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
         />
       </div>
 
@@ -690,9 +690,9 @@ const SourcesSubTab = ({
                 style={{
                   flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
                   cursor: "pointer", whiteSpace: "nowrap",
-                  background: isActive ? "rgba(197,165,90,0.15)" : "#141414",
-                  color: isActive ? "#F97316" : "#555",
-                  border: `1px solid ${isActive ? "#F97316" : "#252525"}`,
+                  background: isActive ? "rgba(197,165,90,0.15)" : "var(--surface-ink-raised)",
+                  color: isActive ? "var(--brand)" : "var(--ink-5)",
+                  border: `1px solid ${isActive ? "var(--brand)" : "var(--ink-3)"}`,
                 }}
               >
                 {f.label} ({count})
@@ -703,9 +703,9 @@ const SourcesSubTab = ({
         <select
           value={sortKey}
           onChange={e => setSortKey(e.target.value as SortKey)}
-          style={{ background: "#1a1a1a", color: "#ccc", fontSize: 11, fontWeight: 500, border: "1px solid #2a2a2a", borderRadius: 8, padding: "5px 10px", cursor: "pointer", outline: "none", flexShrink: 0 }}
-          onFocus={e => { e.currentTarget.style.borderColor = "#F97316"; }}
-          onBlur={e => { e.currentTarget.style.borderColor = "#2a2a2a"; }}
+          style={{ background: "var(--surface-ink-subtle)", color: "var(--ink-7)", fontSize: 11, fontWeight: 500, border: "1px solid var(--ink-3)", borderRadius: 8, padding: "5px 10px", cursor: "pointer", outline: "none", flexShrink: 0 }}
+          onFocus={e => { e.currentTarget.style.borderColor = "var(--brand)"; }}
+          onBlur={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; }}
         >
           <option value="recent">Most recent</option>
           <option value="oldest">Oldest first</option>
@@ -716,11 +716,11 @@ const SourcesSubTab = ({
       {/* Cards */}
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
+          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
         </div>
       ) : visibleEntries.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
-          <p style={{ color: "#666", fontSize: 13 }}>No sources match your search.</p>
+          <p style={{ color: "var(--ink-5)", fontSize: 13 }}>No sources match your search.</p>
         </div>
       ) : (
         <div ref={scrollRef} onScroll={handleScroll} style={{ maxHeight: "calc(100vh - 460px)", overflowY: "auto" }} className="scrollbar-hide">
@@ -744,13 +744,13 @@ const SourcesSubTab = ({
             const domain = entry.type === "link" ? extractDomain(entry.image_url) || extractDomain(entry.content) : null;
 
             return (
-              <div key={`${entry.type}-${entry.id}`} style={{ background: "#141414", borderRadius: 14, border: "1px solid #252525", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
+              <div key={`${entry.type}-${entry.id}`} style={{ background: "var(--surface-ink-raised)", borderRadius: 14, border: "1px solid var(--ink-3)", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
                 {/* Open button */}
                 <button
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
                   title="Open in new tab"
                   style={{ position: "absolute", top: 12, right: canDownload ? 96 : 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                  className="text-[#555] hover:text-[#F97316] transition-colors"
+                  className="text-ink-5 hover:text-brand transition-colors"
                 >
                   <ExternalLink size={14} />
                 </button>
@@ -761,7 +761,7 @@ const SourcesSubTab = ({
                     onClick={e => { e.stopPropagation(); downloadEntryFile(entry); }}
                     title="Download file"
                     style={{ position: "absolute", top: 12, right: 68, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
-                    className="text-[#555] hover:text-[#F97316] transition-colors"
+                    className="text-ink-5 hover:text-brand transition-colors"
                   >
                     <Download size={14} />
                   </button>
@@ -774,8 +774,8 @@ const SourcesSubTab = ({
                     style={{ position: "absolute", top: 12, right: 40, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4 }}
                   >
                     {entry.pinned
-                      ? <Pin size={14} fill="#F97316" color="#F97316" />
-                      : <PinOff size={14} color="#3a3a3a" />}
+                      ? <Pin size={14} fill="var(--brand)" color="var(--brand)" />
+                      : <PinOff size={14} color="var(--ink-4)" />}
                   </button>
                 )}
 
@@ -785,7 +785,7 @@ const SourcesSubTab = ({
                   className="opacity-0 group-hover:opacity-100 sm:opacity-0 max-sm:!opacity-100"
                   style={{ position: "absolute", top: 12, right: 12, zIndex: 2, background: "none", border: "none", cursor: "pointer", padding: 4, transition: "opacity 0.2s" }}
                 >
-                  <Trash2 size={14} color="#555" />
+                  <Trash2 size={14} color="var(--ink-5)" />
                 </button>
 
                 {/* Card content */}
@@ -795,26 +795,26 @@ const SourcesSubTab = ({
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(197,165,90,0.06)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <EntryIcon size={16} style={{ color: "#F97316" }} />
+                      <EntryIcon size={16} style={{ color: "var(--brand)" }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingRight: 60 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                         <TypeBadge type={entry.type} />
-                        <p style={{ color: "#f0f0f0", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
+                        <p style={{ color: "var(--ink-7)", fontSize: 14, fontWeight: 600, margin: 0, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{displayTitle}</p>
                       </div>
                       {isProcessing ? (
                         <div style={{ margin: "0 0 6px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#EF9F27" }} />
-                            <p style={{ color: "#EF9F27", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                            <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--warning)" }} />
+                            <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                               {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
                             </p>
-                            <span style={{ color: "#666", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
+                            <span style={{ color: "var(--ink-5)", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
                           </div>
                           {docStatus === "pending" && (
                             <button
                               onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
-                              style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
+                              style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
                             >
                               Tap to retry
                             </button>
@@ -822,23 +822,23 @@ const SourcesSubTab = ({
                         </div>
                       ) : isErrored ? (
                         <div style={{ margin: "0 0 6px" }}>
-                          <p style={{ color: "#E24B4A", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
+                          <p style={{ color: "var(--danger)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
                             {humanizeDocError(entry.error_message).headline}
                           </p>
                           {humanizeDocError(entry.error_message).detail && (
-                            <p style={{ color: "#888", fontSize: 11, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            <p style={{ color: "var(--ink-5)", fontSize: 11, lineHeight: 1.45, margin: "2px 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                               {humanizeDocError(entry.error_message).detail}
                             </p>
                           )}
                           <button
                             onClick={(ev) => { ev.stopPropagation(); retryDocument(entry.id); }}
-                            style={{ background: "transparent", border: "none", color: "#F97316", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
+                            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 11, padding: 0, marginTop: 4, cursor: "pointer", textDecoration: "underline" }}
                           >
                             Tap to retry
                           </button>
                         </div>
                       ) : preview ? (
-                        <p style={{ color: "#666", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
+                        <p style={{ color: "var(--ink-5)", fontSize: 12, lineHeight: 1.5, margin: "0 0 6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{preview}{preview.length >= 120 ? "…" : ""}</p>
                       ) : null}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         {docTypeLabel && (
@@ -850,10 +850,10 @@ const SourcesSubTab = ({
                         {docSizeLabel && (
                           <span style={{ fontSize: 11, color: "#9b94e8", fontWeight: 500 }}>· {docSizeLabel}</span>
                         )}
-                        {domain && <span style={{ fontSize: 11, color: "#555" }}>{domain}</span>}
-                        <span style={{ fontSize: 11, color: "#3a3a3a" }}>{relativeTime(entry.created_at)}</span>
+                        {domain && <span style={{ fontSize: 11, color: "var(--ink-5)" }}>{domain}</span>}
+                        <span style={{ fontSize: 11, color: "var(--ink-4)" }}>{relativeTime(entry.created_at)}</span>
                         {entry.has_signal && (
-                          <span title="Signal generated from this source" style={{ color: "#F97316", display: "flex", alignItems: "center" }}>
+                          <span title="Signal generated from this source" style={{ color: "var(--brand)", display: "flex", alignItems: "center" }}>
                             <Zap size={12} />
                           </span>
                         )}
@@ -878,11 +878,11 @@ const SourcesSubTab = ({
           {/* Load more spinner */}
           {loadingMore && (
             <div style={{ display: "flex", justifyContent: "center", padding: 20 }}>
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#F97316" }} />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
             </div>
           )}
           {!hasMore && visibleEntries.length > 0 && (
-            <p style={{ color: "#3a3a3a", fontSize: 11, textAlign: "center", padding: 12 }}>All sources loaded</p>
+            <p style={{ color: "var(--ink-4)", fontSize: 11, textAlign: "center", padding: 12 }}>All sources loaded</p>
           )}
         </div>
       )}

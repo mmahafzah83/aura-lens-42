@@ -301,9 +301,9 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           height: "88vh",
           display: "flex",
           flexDirection: "column",
-          background: "#0d0d0d",
+          background: "var(--ink)",
           borderRadius: 16,
-          border: "1px solid #252525",
+          border: "1px solid var(--ink-3)",
           overflow: "hidden",
           willChange: "unset",
         }}
@@ -314,29 +314,29 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {!showResults && step > 0 && (
-                <button onClick={() => setStep((s) => s - 1)} className="text-[#3a3a3a] hover:text-[#666] p-1">
+                <button onClick={() => setStep((s) => s - 1)} className="text-ink-4 hover:text-ink-5 p-1">
                   <ArrowLeft className="w-4 h-4" />
                 </button>
               )}
               <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-[#F97316]" />
-                <span className="text-[13px] text-[#f0f0f0] font-medium">Brand Assessment</span>
+                <Compass className="w-4 h-4 text-brand" />
+                <span className="text-[13px] text-ink-7 font-medium">Brand Assessment</span>
               </div>
             </div>
-            <button onClick={() => onOpenChange(false)} className="text-[#3a3a3a] hover:text-[#666] p-1">
+            <button onClick={() => onOpenChange(false)} className="text-ink-4 hover:text-ink-5 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {!showResults && step === 0 && (
-            <p className="text-[11px] text-[#666] mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
+            <p className="text-[11px] text-ink-5 mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
           )}
 
           {/* Progress bar */}
           <div className="mt-2 pb-1">
-            <div className="h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+            <div className="h-1 bg-surface-ink-subtle rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#F97316] rounded-full transition-all duration-500"
+                className="h-full bg-brand rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -349,31 +349,31 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             <div className="max-w-2xl mx-auto">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="w-3 h-3 rounded-full bg-[#F97316] animate-pulse" />
-                  <p className="text-[13px] text-[#888]">Building your brand positioning across 6 frameworks...</p>
+                  <div className="w-3 h-3 rounded-full bg-brand animate-pulse" />
+                  <p className="text-[13px] text-ink-5">Building your brand positioning across 6 frameworks...</p>
                 </div>
               ) : (
                 <div className="space-y-0">
                   <div className="prose prose-sm max-w-none
-                    [&_h1]:text-[#F97316] [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-[#F97316]/20 [&_h1]:pb-2 [&_h1]:mb-3
-                    [&_h2]:text-[#F97316] [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-[#F97316]/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
-                    [&_h3]:text-[#F97316] [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
-                    [&_p]:text-[#888] [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
-                    [&_strong]:text-[#F97316] [&_strong]:font-semibold
-                    [&_li]:text-[#888] [&_li]:text-[12px]
+                    [&_h1]:text-brand [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-brand/20 [&_h1]:pb-2 [&_h1]:mb-3
+                    [&_h2]:text-brand [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-brand/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
+                    [&_h3]:text-brand [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
+                    [&_p]:text-ink-5 [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
+                    [&_strong]:text-brand [&_strong]:font-semibold
+                    [&_li]:text-ink-5 [&_li]:text-[12px]
                     [&_ul]:mb-3 [&_ol]:mb-3
                   ">
                     <ReactMarkdown>{interpretation}</ReactMarkdown>
                   </div>
 
                   {/* Fix 6: Guided primary action */}
-                  <div className="flex flex-col gap-2 pt-6 border-t border-[#F97316]/20 mt-6">
+                  <div className="flex flex-col gap-2 pt-6 border-t border-brand/20 mt-6">
                     <button
                       onClick={handleSaveToIdentity}
                       className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
                       style={{
-                        background: "linear-gradient(to bottom, hsl(43 80% 55%), #F97316)",
-                        color: "#0d0d0d",
+                        background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
+                        color: "var(--ink)",
                       }}
                     >
                       View my complete Strategic Identity →
@@ -384,20 +384,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             </div>
           ) : (
             <div className="max-w-lg mx-auto pt-4">
-              <p className="text-[11px] text-[#666] mb-1 tracking-wider uppercase">
+              <p className="text-[11px] text-ink-5 mb-1 tracking-wider uppercase">
                 Question {step + 1} of {QUESTIONS.length}
               </p>
-              <h2 className="text-[18px] text-[#f0f0f0] font-medium leading-snug mb-1">
+              <h2 className="text-[18px] text-ink-7 font-medium leading-snug mb-1">
                 {q.title}
               </h2>
-              {q.sub && <p className="text-[12px] text-[#666] mb-5">{q.sub}</p>}
+              {q.sub && <p className="text-[12px] text-ink-5 mb-5">{q.sub}</p>}
 
               {q.type === "text" ? (
                 <textarea
                   value={(currentAnswer as string) || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
                   placeholder={q.placeholder}
-                  className="w-full h-28 bg-[#141414] border border-[#252525] rounded-xl p-3 text-[13px] text-[#f0f0f0] placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-[#F97316]/40 transition-colors"
+                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-[13px] text-ink-7 placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-brand/40 transition-colors"
                 />
               ) : (
                 <div className="space-y-2">
@@ -407,8 +407,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                       onClick={() => toggleOption(opt)}
                       className={`w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all duration-200 ${
                         isSelected(opt)
-                          ? "border-[#F97316]/50 bg-[#F97316]/10 text-[#f0f0f0]"
-                          : "border-[#252525] bg-[#141414] text-[#888] hover:border-[#3a3a3a]"
+                          ? "border-brand/50 bg-brand/10 text-ink-7"
+                          : "border-ink-3 bg-surface-ink-raised text-ink-5 hover:border-ink-4"
                       }`}
                     >
                       {opt}
@@ -425,8 +425,8 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           <div
             className="shrink-0"
             style={{
-              background: "#0d0d0d",
-              borderTop: "0.5px solid #1a1a1a",
+              background: "var(--ink)",
+              borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
             }}
           >
@@ -436,11 +436,11 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               className={`w-full py-3.5 rounded-xl text-[13px] font-medium tracking-wide transition-all duration-200 ${
                 canProceed()
                   ? "hover:brightness-110 active:scale-[0.98]"
-                  : "bg-[#1a1a1a] text-[#3a3a3a] cursor-not-allowed"
+                  : "bg-surface-ink-subtle text-ink-4 cursor-not-allowed"
               }`}
               style={canProceed() ? {
-                background: "linear-gradient(to bottom, hsl(43 80% 55%), #F97316)",
-                color: "#0d0d0d",
+                background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
+                color: "var(--ink)",
               } : undefined}
             >
               {step < QUESTIONS.length - 1 ? "Next" : "Generate Brand Positioning"}

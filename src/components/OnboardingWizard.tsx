@@ -104,7 +104,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
   const progressPct = (step / 3) * 100;
 
   const inputClass =
-    "w-full rounded-lg border border-[#333] bg-[#1a1a1a] px-4 py-3 text-sm text-[#e0e0e0] placeholder:text-[#555] focus:outline-none focus:border-[#F97316] transition-colors";
+    "w-full rounded-lg border border-ink-3 bg-surface-ink-subtle px-4 py-3 text-sm text-ink-7 placeholder:text-ink-5 focus:outline-none focus:border-brand transition-colors";
 
   const content = (
     <div
@@ -115,22 +115,22 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         className="relative w-full mx-4"
         style={{
           maxWidth: 560,
-          background: "#141414",
+          background: "var(--surface-ink-raised)",
           borderRadius: 12,
-          border: "1px solid #252525",
+          border: "1px solid var(--ink-3)",
           padding: 40,
         }}
       >
         {/* Progress bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl overflow-hidden" style={{ background: "#252525" }}>
+        <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl overflow-hidden" style={{ background: "var(--ink-3)" }}>
           <div
             className="h-full transition-all duration-500"
-            style={{ width: `${progressPct}%`, background: "#F97316" }}
+            style={{ width: `${progressPct}%`, background: "var(--brand)" }}
           />
         </div>
 
         {/* Step indicator */}
-        <p className="text-xs tracking-[0.15em] uppercase mb-6" style={{ color: "#F97316" }}>
+        <p className="text-xs tracking-[0.15em] uppercase mb-6" style={{ color: "var(--brand)" }}>
           Step {step} of 3
         </p>
 
@@ -138,20 +138,20 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         {step === 1 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-[#f0f0f0]">Tell Aura who you are</h2>
-              <p className="text-sm mt-1" style={{ color: "#888" }}>
+              <h2 className="text-xl font-semibold text-ink-7">Tell Aura who you are</h2>
+              <p className="text-sm mt-1" style={{ color: "var(--ink-5)" }}>
                 This shapes every signal and piece of content Aura creates for you.
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs uppercase tracking-wider text-[#888] mb-1.5">Name</label>
+                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Name</label>
                 <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-wider text-[#888] mb-1.5">
-                  Role <span style={{ color: "#F97316" }}>*</span>
+                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">
+                  Role <span style={{ color: "var(--brand)" }}>*</span>
                 </label>
                 <input
                   className={`${inputClass} ${roleError ? "border-red-500" : ""}`}
@@ -162,15 +162,15 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 {roleError && <p className="text-xs text-red-400 mt-1">{roleError}</p>}
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-wider text-[#888] mb-1.5">Industry</label>
+                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Industry</label>
                 <input className={inputClass} value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. Utilities, Consulting, Technology" />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-wider text-[#888] mb-1.5">Career target</label>
+                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Career target</label>
                 <input className={inputClass} value={careerTarget} onChange={(e) => setCareerTarget(e.target.value)} placeholder="e.g. Partner at Big 4, Build a $10M practice" />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-wider text-[#888] mb-1.5">Firm</label>
+                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Firm</label>
                 <input className={inputClass} value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Your company or firm" />
               </div>
             </div>
@@ -181,7 +181,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               className="w-full mt-2 py-3 rounded-xl text-sm font-medium transition-all"
               style={{
                 background: "linear-gradient(180deg, hsl(43 80% 55%), hsl(43 80% 45%))",
-                color: "#1a1a1a",
+                color: "var(--surface-ink-subtle)",
               }}
             >
               {saving ? "Saving..." : "Continue"}
@@ -193,8 +193,8 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         {step === 2 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-[#f0f0f0]">Capture your first insight</h2>
-              <p className="text-sm mt-1" style={{ color: "#888" }}>
+              <h2 className="text-xl font-semibold text-ink-7">Capture your first insight</h2>
+              <p className="text-sm mt-1" style={{ color: "var(--ink-5)" }}>
                 Paste any article, report, or idea you've been reading lately.
               </p>
             </div>
@@ -206,13 +206,13 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 onChange={(e) => setCaptureText(e.target.value)}
                 placeholder="Paste a URL, or type a thought, insight, or article title..."
               />
-              <p className="text-xs mt-2" style={{ color: "#666" }}>
+              <p className="text-xs mt-2" style={{ color: "var(--ink-5)" }}>
                 Aura will find the strategic pattern inside.
               </p>
             </div>
 
             {capturing && (
-              <div className="flex items-center gap-2 text-sm" style={{ color: "#F97316" }}>
+              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--brand)" }}>
                 <Loader2 className="w-4 h-4 animate-spin" /> Processing your capture...
               </div>
             )}
@@ -229,7 +229,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                   className="w-full py-3 rounded-xl text-sm font-medium transition-all"
                   style={{
                     background: "linear-gradient(180deg, hsl(43 80% 55%), hsl(43 80% 45%))",
-                    color: "#1a1a1a",
+                    color: "var(--surface-ink-subtle)",
                   }}
                 >
                   {captureText.trim().length > 10 ? "Save & Continue" : "Continue"}
@@ -237,7 +237,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 <button
                   onClick={() => setStep(3)}
                   className="w-full text-center text-xs py-1"
-                  style={{ color: "#666" }}
+                  style={{ color: "var(--ink-5)" }}
                 >
                   Skip this step
                 </button>
@@ -250,24 +250,24 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         {step === 3 && (
           <div className="space-y-5">
             <div>
-              <h2 className="text-xl font-semibold text-[#f0f0f0]">Supercharge Aura with LinkedIn</h2>
-              <p className="text-sm mt-1" style={{ color: "#888" }}>
+              <h2 className="text-xl font-semibold text-ink-7">Supercharge Aura with LinkedIn</h2>
+              <p className="text-sm mt-1" style={{ color: "var(--ink-5)" }}>
                 The Chrome extension captures posts, articles, and metrics directly from your LinkedIn feed.
               </p>
             </div>
 
-            <div className="flex items-center gap-3 p-4 rounded-lg" style={{ background: "#1a1a1a", border: "1px solid #252525" }}>
-              <Chrome className="w-8 h-8 text-[#F97316] shrink-0" />
+            <div className="flex items-center gap-3 p-4 rounded-lg" style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)" }}>
+              <Chrome className="w-8 h-8 text-brand shrink-0" />
               <div className="flex-1">
-                <p className="text-sm text-[#e0e0e0] font-medium">Install the Aura Chrome Extension</p>
-                <p className="text-xs mt-0.5" style={{ color: "#666" }}>Already installed? You're good to go.</p>
+                <p className="text-sm text-ink-7 font-medium">Install the Aura Chrome Extension</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--ink-5)" }}>Already installed? You're good to go.</p>
               </div>
               <a
                 href="https://chrome.google.com/webstore"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors"
-                style={{ border: "1px solid #F97316", color: "#F97316" }}
+                style={{ border: "1px solid var(--brand)", color: "var(--brand)" }}
               >
                 Install <ExternalLink className="w-3 h-3" />
               </a>
@@ -279,8 +279,8 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                 { icon: BarChart3, text: "Track your post performance automatically" },
                 { icon: Radio, text: "Feed your signal engine with industry content" },
               ].map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-2.5 text-sm" style={{ color: "#aaa" }}>
-                  <Icon className="w-4 h-4 text-[#F97316] shrink-0" />
+                <li key={text} className="flex items-center gap-2.5 text-sm" style={{ color: "var(--ink-6)" }}>
+                  <Icon className="w-4 h-4 text-brand shrink-0" />
                   {text}
                 </li>
               ))}
@@ -291,7 +291,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               className="w-full py-3.5 rounded-xl text-sm font-medium transition-all mt-2"
               style={{
                 background: "linear-gradient(180deg, hsl(43 80% 55%), hsl(43 80% 45%))",
-                color: "#1a1a1a",
+                color: "var(--surface-ink-subtle)",
               }}
             >
               Enter Aura →
@@ -304,7 +304,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
           <button
             onClick={skip}
             className="absolute bottom-3 right-5 text-[11px] transition-colors"
-            style={{ color: "#555" }}
+            style={{ color: "var(--ink-5)" }}
           >
             Skip wizard
           </button>

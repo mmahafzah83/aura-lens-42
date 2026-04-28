@@ -280,7 +280,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     idle: <FileUp className="w-8 h-8 text-muted-foreground" />,
     uploading: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
     processing: <Loader2 className="w-8 h-8 text-primary animate-spin" />,
-    done: <CheckCircle className="w-8 h-8" style={{ color: "#7ab648" }} />,
+    done: <CheckCircle className="w-8 h-8" style={{ color: "var(--success)" }} />,
     error: <AlertCircle className="w-8 h-8 text-destructive" />,
   };
 
@@ -337,7 +337,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
             <button
               type="button"
               onClick={() => processUpload(pendingFile, ACCEPTED_TYPES[pendingFile.type])}
-              style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+              style={{ fontSize: 11, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
             >
               Upload again
             </button>

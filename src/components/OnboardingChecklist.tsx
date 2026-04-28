@@ -170,7 +170,7 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
             className="rounded-xl border border-primary/20 bg-primary/5 relative"
             style={{
               padding: "16px 20px",
-              borderLeft: "3px solid #F97316",
+              borderLeft: "3px solid var(--brand)",
             }}
           >
             {celebrate ? (
@@ -185,7 +185,7 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
                 {/* Header */}
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" style={{ color: "#F97316" }} fill="#F97316" />
+                    <Zap className="w-4 h-4" style={{ color: "var(--brand)" }} fill="var(--brand)" />
                     <span className="text-sm font-semibold text-foreground">
                       Get started with Aura
                     </span>
@@ -204,7 +204,7 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
                     className="h-full rounded-full transition-all duration-500 ease-out"
                     style={{
                       width: `${(completedCount / 5) * 100}%`,
-                      background: "#F97316",
+                      background: "var(--brand)",
                     }}
                   />
                 </div>

@@ -77,7 +77,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
       ctx.closePath();
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -88,7 +88,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(cx + radius * Math.cos(angle), cy + radius * Math.sin(angle));
-      ctx.strokeStyle = "#1f1f1f";
+      ctx.strokeStyle = "var(--surface-ink-subtle)";
       ctx.lineWidth = 1;
       ctx.stroke();
     }
@@ -105,7 +105,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     ctx.closePath();
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = "#F97316";
+    ctx.strokeStyle = "var(--brand)";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -117,13 +117,13 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, 2 * Math.PI);
-      ctx.fillStyle = "#F97316";
+      ctx.fillStyle = "var(--brand)";
       ctx.fill();
     }
 
     // Labels
     ctx.font = "9px system-ui, sans-serif";
-    ctx.fillStyle = "#666666";
+    ctx.fillStyle = "var(--ink-5)";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
@@ -218,10 +218,10 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
             h1: ({ children }) => <SectionHeader first>{children}</SectionHeader>,
             h2: ({ children }) => <SectionHeader>{children}</SectionHeader>,
             h3: ({ children }) => <SectionHeader>{children}</SectionHeader>,
-            p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
-            strong: ({ children }) => <strong className="text-[#F97316] font-semibold">{children}</strong>,
-            ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
-            ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
+            p: ({ children }) => <p className="text-xs text-ink-5 mb-3 leading-relaxed">{children}</p>,
+            strong: ({ children }) => <strong className="text-brand font-semibold">{children}</strong>,
+            ul: ({ children }) => <ul className="text-xs text-ink-5 space-y-1 mb-3 list-disc pl-4">{children}</ul>,
+            ol: ({ children }) => <ol className="text-xs text-ink-5 space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           }}
         >
@@ -235,10 +235,10 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
         {s.header && <SectionHeader first={i === 0}>{renameHeader(s.header)}</SectionHeader>}
         <ReactMarkdown
           components={{
-            p: ({ children }) => <p className="text-xs text-[#888] mb-3 leading-relaxed">{children}</p>,
-            strong: ({ children }) => <strong className="text-[#F97316] font-semibold">{children}</strong>,
-            ul: ({ children }) => <ul className="text-xs text-[#888] space-y-1 mb-3 list-disc pl-4">{children}</ul>,
-            ol: ({ children }) => <ol className="text-xs text-[#888] space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
+            p: ({ children }) => <p className="text-xs text-ink-5 mb-3 leading-relaxed">{children}</p>,
+            strong: ({ children }) => <strong className="text-brand font-semibold">{children}</strong>,
+            ul: ({ children }) => <ul className="text-xs text-ink-5 space-y-1 mb-3 list-disc pl-4">{children}</ul>,
+            ol: ({ children }) => <ol className="text-xs text-ink-5 space-y-1 mb-3 list-decimal pl-4">{children}</ol>,
             li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           }}
         >
@@ -252,7 +252,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     <div className="space-y-6">
       {/* Section 1 — Radar Chart */}
       <div>
-        <p className="text-[13px] font-medium text-[#f0f0f0] mb-3">Your Capability Radar</p>
+        <p className="text-[13px] font-medium text-ink-7 mb-3">Your Capability Radar</p>
         <canvas
           ref={canvasRef}
           className="w-full"
@@ -261,11 +261,11 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       </div>
 
       {/* Section 2 — AI Interpretation */}
-      <div className="border-t border-[#252525] pt-4">
+      <div className="border-t border-ink-3 pt-4">
         {loading ? (
           <div className="flex items-center gap-3 py-8 justify-center">
-            <div className="w-2 h-2 rounded-full bg-[#F97316] animate-pulse" />
-            <p className="text-xs text-[#888]">Analysing your profile across 4 frameworks...</p>
+            <div className="w-2 h-2 rounded-full bg-brand animate-pulse" />
+            <p className="text-xs text-ink-5">Analysing your profile across 4 frameworks...</p>
           </div>
         ) : (
           <div className="prose prose-sm max-w-none">
@@ -275,14 +275,14 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       </div>
 
       {/* Section 3 — Guided Actions */}
-      <div className="border-t border-[#252525] pt-4 space-y-2">
+      <div className="border-t border-ink-3 pt-4 space-y-2">
         {/* Primary CTA */}
         <button
           onClick={() => { onClose?.(); onNavigate?.("settings"); }}
           className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide transition-all active:scale-[0.98] hover:brightness-110"
           style={{
-            background: "linear-gradient(to bottom, hsl(43 80% 55%), #F97316)",
-            color: "#0d0d0d",
+            background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
+            color: "var(--ink)",
           }}
         >
           Continue to Brand Assessment →
@@ -295,8 +295,8 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
             className="flex-1 py-2.5 rounded-xl text-[12px] transition-colors text-center"
             style={{
               background: "transparent",
-              border: "1px solid #252525",
-              color: "#888",
+              border: "1px solid var(--ink-3)",
+              color: "var(--ink-5)",
             }}
           >
             View Strategic Identity
@@ -306,8 +306,8 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
             className="flex-1 py-2.5 rounded-xl text-[12px] transition-colors text-center"
             style={{
               background: "transparent",
-              border: "1px solid #252525",
-              color: "#888",
+              border: "1px solid var(--ink-3)",
+              color: "var(--ink-5)",
             }}
           >
             Start capturing
@@ -322,12 +322,12 @@ function SectionHeader({ children, first }: { children: React.ReactNode; first?:
   return (
     <div>
       {!first && (
-        <div className="mt-[14px] mb-[4px]" style={{ borderTop: "0.5px solid #F97316", opacity: 0.4 }} />
+        <div className="mt-[14px] mb-[4px]" style={{ borderTop: "0.5px solid var(--brand)", opacity: 0.4 }} />
       )}
       <h3
         className="uppercase tracking-wider"
         style={{
-          color: "#F97316",
+          color: "var(--brand)",
           fontWeight: 500,
           fontSize: 12,
           marginTop: first ? 0 : 14,

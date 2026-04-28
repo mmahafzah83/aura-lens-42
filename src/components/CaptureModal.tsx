@@ -564,8 +564,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   position: "bottom-right",
                   duration: 3000,
                   style: {
-                    background: "#1a1400",
-                    color: "#F97316",
+                    background: "var(--surface-ink-subtle)",
+                    color: "var(--brand)",
                     border: "1px solid #F9731633",
                   },
                 });
@@ -661,7 +661,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           background: "#FFFFFF",
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          color: "#0E0D0C",
+          color: "var(--ink)",
           transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
@@ -681,7 +681,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           <div className="flex items-center" style={{ gap: 12 }}>
             <div
               className="flex items-center justify-center shrink-0"
-              style={{ width: 36, height: 36, background: "#F97316", borderRadius: 11 }}
+              style={{ width: 36, height: 36, background: "var(--brand)", borderRadius: 11 }}
             >
               <Plus className="w-5 h-5" style={{ color: "#FFFFFF" }} strokeWidth={2.5} />
             </div>
@@ -690,7 +690,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 style={{
                   fontFamily: "'DM Serif Display', Georgia, serif",
                   fontSize: 18,
-                  color: "#0E0D0C",
+                  color: "var(--ink)",
                   margin: 0,
                   lineHeight: 1.1,
                 }}
@@ -700,7 +700,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               <p
                 style={{
                   fontSize: 9,
-                  color: "#3D3A36",
+                  color: "var(--ink-4)",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
                   fontWeight: 600,
@@ -718,8 +718,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               width: 32,
               height: 32,
               borderRadius: "50%",
-              background: "#F3F0EB",
-              color: "#5F5E5A",
+              background: "var(--surface-subtle)",
+              color: "var(--ink-5)",
               border: "none",
             }}
             aria-label="Close capture"
@@ -757,9 +757,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     borderRadius: 10,
                     fontSize: 12,
                     fontWeight: 500,
-                    border: active ? "0.5px solid #0E0D0C" : "0.5px solid rgba(0,0,0,0.07)",
-                    background: active ? "#0E0D0C" : "transparent",
-                    color: active ? "#FFFFFF" : "#3D3A36",
+                    border: active ? "0.5px solid var(--ink)" : "0.5px solid rgba(0,0,0,0.07)",
+                    background: active ? "var(--ink)" : "transparent",
+                    color: active ? "#FFFFFF" : "var(--ink-4)",
                     opacity: disabled ? 0.5 : 1,
                     cursor: disabled ? "not-allowed" : "pointer",
                     transition: "all 150ms ease",
@@ -773,7 +773,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       width: 22,
                       height: 22,
                       borderRadius: 6,
-                      background: active ? "rgba(255,255,255,0.15)" : "#F3F0EB",
+                      background: active ? "rgba(255,255,255,0.15)" : "var(--surface-subtle)",
                     }}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -794,13 +794,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   value={content}
                   onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
                   onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "#F97316";
+                    e.currentTarget.style.borderColor = "var(--brand)";
                     e.currentTarget.style.background = "#FFFFFF";
                     e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
                   }}
                   onBlur={async (e) => {
-                    e.currentTarget.style.borderColor = urlError ? "#E24B4A" : "rgba(0,0,0,0.12)";
-                    e.currentTarget.style.background = "#F3F0EB";
+                    e.currentTarget.style.borderColor = urlError ? "var(--danger)" : "rgba(0,0,0,0.12)";
+                    e.currentTarget.style.background = "var(--surface-subtle)";
                     e.currentTarget.style.boxShadow = "none";
                     const url = e.target.value.trim();
                     if (!url || !isValidUrl(url)) return;
@@ -823,12 +823,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   }}
                   style={{
                     width: "100%",
-                    background: "#F3F0EB",
-                    border: urlError ? "0.5px solid #E24B4A" : "0.5px solid rgba(0,0,0,0.12)",
+                    background: "var(--surface-subtle)",
+                    border: urlError ? "0.5px solid var(--danger)" : "0.5px solid rgba(0,0,0,0.12)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
                     fontSize: 13,
-                    color: "#0E0D0C",
+                    color: "var(--ink)",
                     outline: "none",
                     transition: "all 150ms ease",
                   }}
@@ -848,8 +848,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     right: 8,
                     top: "50%",
                     transform: "translateY(-50%)",
-                    background: "#FEF0E6",
-                    color: "#F97316",
+                    background: "var(--brand-pale)",
+                    color: "var(--brand)",
                     borderRadius: 7,
                     fontSize: 10,
                     fontWeight: 600,
@@ -864,7 +864,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </button>
               </div>
 
-              {urlError && <p style={{ fontSize: 12, color: "#E24B4A", margin: 0 }}>{urlError}</p>}
+              {urlError && <p style={{ fontSize: 12, color: "var(--danger)", margin: 0 }}>{urlError}</p>}
 
               {linkPreview && (
                 <div
@@ -876,14 +876,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3D3A36" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
                     {linkPreview.domain}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "#0E0D0C", marginTop: 4, lineHeight: 1.35 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 4, lineHeight: 1.35 }}>
                     {linkPreview.title}
                   </div>
                   {linkPreview.snippet && (
-                    <div style={{ fontSize: 11, color: "#5F5E5A", marginTop: 6, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, lineHeight: 1.5 }}>
                       {linkPreview.snippet}…
                     </div>
                   )}
@@ -893,7 +893,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               {signalMatch && (
                 <div
                   style={{
-                    background: "#FEF0E6",
+                    background: "var(--brand-pale)",
                     borderRadius: 10,
                     padding: "11px 14px",
                     display: "flex",
@@ -902,7 +902,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   }}
                 >
                   <span className="capture-pulse-dot" />
-                  <span style={{ fontSize: 12, color: "#C05A10", lineHeight: 1.45 }}>
+                  <span style={{ fontSize: 12, color: "var(--warning)", lineHeight: 1.45 }}>
                     Aura detected this strengthens your signal <strong>{signalMatch.title}</strong> — adding will reinforce it.
                   </span>
                 </div>
@@ -917,14 +917,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     padding: "10px 14px",
                   }}
                 >
-                  <p style={{ fontSize: 12, color: "#0E0D0C", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "var(--ink)", margin: 0 }}>
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 11, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
                       Capture anyway
                     </button>
-                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 11, color: "#5F5E5A", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 11, color: "var(--ink-5)", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
@@ -948,9 +948,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         fontSize: 11,
                         padding: "5px 12px",
                         borderRadius: 20,
-                        background: active ? "#0E0D0C" : "#F3F0EB",
-                        border: active ? "0.5px solid #0E0D0C" : "0.5px solid rgba(0,0,0,0.07)",
-                        color: active ? "#FFFFFF" : "#2A2825",
+                        background: active ? "var(--ink)" : "var(--surface-subtle)",
+                        border: active ? "0.5px solid var(--ink)" : "0.5px solid rgba(0,0,0,0.07)",
+                        color: active ? "#FFFFFF" : "var(--ink-3)",
                         cursor: "pointer",
                         transition: "all 150ms ease",
                       }}
@@ -966,23 +966,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 onChange={(e) => setContent(e.target.value)}
                 dir="auto"
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = "#F97316";
+                  e.currentTarget.style.borderColor = "var(--brand)";
                   e.currentTarget.style.background = "#FFFFFF";
                   e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = "rgba(0,0,0,0.12)";
-                  e.currentTarget.style.background = "#F3F0EB";
+                  e.currentTarget.style.background = "var(--surface-subtle)";
                   e.currentTarget.style.boxShadow = "none";
                 }}
                 style={{
                   width: "100%",
-                  background: "#F3F0EB",
+                  background: "var(--surface-subtle)",
                   border: "0.5px solid rgba(0,0,0,0.12)",
                   borderRadius: 12,
                   padding: "14px 16px",
                   fontSize: 13,
-                  color: "#0E0D0C",
+                  color: "var(--ink)",
                   height: 100,
                   resize: "none",
                   outline: "none",
@@ -1002,15 +1002,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = "#F97316";
-                      e.currentTarget.style.background = "#FEF0E6";
+                      e.currentTarget.style.borderColor = "var(--brand)";
+                      e.currentTarget.style.background = "var(--brand-pale)";
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
-                      e.currentTarget.style.background = "#F3F0EB";
+                      e.currentTarget.style.background = "var(--surface-subtle)";
                     }}
                     style={{
-                      background: "#F3F0EB",
+                      background: "var(--surface-subtle)",
                       border: "1.5px dashed rgba(0,0,0,0.15)",
                       borderRadius: 14,
                       padding: 32,
@@ -1019,9 +1019,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       transition: "all 150ms ease",
                     }}
                   >
-                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "#5F5E5A" }} />
-                    <p style={{ fontSize: 13, color: "#2A2825", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 10, color: "#5F5E5A", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-5)" }} />
+                    <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0 }}>Drop an image or click to upload</p>
+                    <p style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
@@ -1037,7 +1037,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         padding: "8px 16px",
                         fontSize: 12,
                         background: "#FFFFFF",
-                        color: "#0E0D0C",
+                        color: "var(--ink)",
                         cursor: "pointer",
                       }}
                     >
@@ -1056,7 +1056,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         padding: "8px 16px",
                         fontSize: 12,
                         background: "#FFFFFF",
-                        color: "#0E0D0C",
+                        color: "var(--ink)",
                         cursor: "pointer",
                       }}
                     >
@@ -1066,15 +1066,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </>
               ) : (
                 <div className="relative">
-                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "#F3F0EB" }} />
+                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "var(--surface-subtle)" }} />
                   <button onClick={clearImage} className="absolute" style={{ top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                    <X className="w-3.5 h-3.5" style={{ color: "#0E0D0C" }} />
+                    <X className="w-3.5 h-3.5" style={{ color: "var(--ink)" }} />
                   </button>
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center" style={{ gap: 8, fontSize: 13, color: "#5F5E5A" }}>
-                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#F97316" }} />
+                <div className="flex items-center" style={{ gap: 8, fontSize: 13, color: "var(--ink-5)" }}>
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
                   AI is reading your screenshot…
                 </div>
               )}
@@ -1086,14 +1086,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             <div className="space-y-3">
               {recentDocs.length > 0 && (
                 <div className="space-y-2">
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3D3A36" }}>
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
                     Recent documents
                   </div>
                   <div className="space-y-1.5">
                     {recentDocs.map((d) => {
                       const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
                       const isPdf = ext === "pdf";
-                      const iconBg = isPdf ? "#E24B4A" : "#4F46E5";
+                      const iconBg = isPdf ? "var(--danger)" : "#4F46E5";
                       const isProcessed = d.status === "processed";
                       return (
                         <div
@@ -1123,10 +1123,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                             <FileText className="w-4 h-4" style={{ color: "#FFFFFF" }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: "#0E0D0C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.filename}
                             </div>
-                            <div style={{ fontSize: 10, color: "#5F5E5A", marginTop: 2 }}>
+                            <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 2 }}>
                               {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </div>
                           </div>
@@ -1138,8 +1138,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                               textTransform: "uppercase",
                               padding: "3px 8px",
                               borderRadius: 6,
-                              background: isProcessed ? "#EAF4EB" : "#FEF3C7",
-                              color: isProcessed ? "#2E7D38" : "#92400E",
+                              background: isProcessed ? "#EAF4EB" : "var(--warning-pale)",
+                              color: isProcessed ? "var(--success)" : "var(--warning)",
                             }}
                           >
                             {isProcessed ? "Processed" : "Processing"}
@@ -1164,15 +1164,15 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       width: 64,
                       height: 64,
                       borderRadius: "50%",
-                      background: "#F3F0EB",
+                      background: "var(--surface-subtle)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#F97316" }} />
+                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--brand)" }} />
                   </div>
-                  <p style={{ fontSize: 13, color: "#5F5E5A", margin: 0 }}>Transcribing…</p>
+                  <p style={{ fontSize: 13, color: "var(--ink-5)", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -1199,7 +1199,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      background: isRecording ? "#B83025" : "#F97316",
+                      background: isRecording ? "var(--danger)" : "var(--brand)",
                       boxShadow: isRecording
                         ? "0 4px 20px rgba(184,48,37,0.4)"
                         : "0 4px 20px rgba(249,115,22,0.4)",
@@ -1217,7 +1217,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     style={{
                       fontFamily: "'DM Serif Display', Georgia, serif",
                       fontSize: 22,
-                      color: "#F97316",
+                      color: "var(--brand)",
                       letterSpacing: "-0.02em",
                       lineHeight: 1,
                     }}
@@ -1225,18 +1225,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     {fmtMMSS(recordingSeconds)}
                   </div>
                   {!isRecording && (
-                    <p style={{ fontSize: 12, color: "#5F5E5A", margin: 0 }}>Tap to record</p>
+                    <p style={{ fontSize: 12, color: "var(--ink-5)", margin: 0 }}>Tap to record</p>
                   )}
                 </>
               )}
               {!isRecording && !isTranscribing && (
                 <div className="w-full" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {transcriptionFailed && (
-                    <p style={{ fontSize: 12, color: "#0E0D0C", margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "var(--ink)", margin: 0 }}>
                       Auto-transcription unavailable. Type your notes manually.
                     </p>
                   )}
-                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3D3A36", margin: 0 }}>
+                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)", margin: 0 }}>
                     Transcript
                   </p>
                   <textarea
@@ -1247,12 +1247,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     placeholder="Transcript will appear here…"
                     style={{
                       width: "100%",
-                      background: "#F3F0EB",
+                      background: "var(--surface-subtle)",
                       border: "0.5px solid rgba(0,0,0,0.12)",
                       borderRadius: 12,
                       padding: "12px 14px",
                       fontSize: 13,
-                      color: "#0E0D0C",
+                      color: "var(--ink)",
                       resize: "none",
                       outline: "none",
                       fontFamily: "'DM Sans', system-ui, sans-serif",
@@ -1270,14 +1270,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               onClick={handleSave}
               disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
               onMouseEnter={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "#EA6C0A";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--brand-hover)";
               }}
               onMouseLeave={(e) => {
-                if (!e.currentTarget.disabled) e.currentTarget.style.background = "#F97316";
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "var(--brand)";
               }}
               style={{
                 width: "100%",
-                background: "#F97316",
+                background: "var(--brand)",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: 12,

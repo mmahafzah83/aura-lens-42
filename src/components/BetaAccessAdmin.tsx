@@ -327,7 +327,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           </div>
           <h3
             className="text-xs font-semibold uppercase tracking-[0.15em]"
-            style={{ color: "#F97316" }}
+            style={{ color: "var(--brand)" }}
           >
             Beta Access
           </h3>
@@ -672,7 +672,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           <div>
             <h3
               className="text-xs font-semibold uppercase tracking-[0.15em]"
-              style={{ color: "#F97316" }}
+              style={{ color: "var(--brand)" }}
             >
               Invite Audit Log
             </h3>
