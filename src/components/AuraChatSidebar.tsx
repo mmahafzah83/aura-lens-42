@@ -691,6 +691,82 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setViewMode("chat");
   };
 
+  // ── Weekly proactive brief on open (AA-5) ──
+  const briefTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!open) { briefTriggeredRef.current = false; return; }
+    if (briefTriggeredRef.current) return;
+    if (initialMessage) return; // don't override an explicit message
+    if (context?.linkedId) return; // don't override a contextual open
+    try {
+      const last = localStorage.getItem("aura_last_brief_shown");
+      const sixDaysMs = 6 * 24 * 60 * 60 * 1000;
+      if (last && Date.now() - parseInt(last, 10) < sixDaysMs) return;
+    } catch { /* localStorage unavailable */ }
+    briefTriggeredRef.current = true;
+
+    const briefPrompt = "Generate my proactive weekly intelligence brief. Include: (1) my top 2 signals by priority_score and exactly why they matter THIS week — name a recent development, (2) one specific publishing window open right now based on my last post date and signal momentum, (3) one uncomfortable truth about a gap in my authority positioning, (4) one concrete next step with a specific deadline. Cite signal_titles by exact name in bold. Be direct and contrarian. End with NEXT STEP:.";
+
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+        // Push placeholder assistant message marked as brief
+        setMessages(prev => prev.length === 0 ? [{ role: "assistant", content: "", isBrief: true }] : prev);
+        setIsLoading(true);
+        const resp = await fetch(CHAT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ messages: [{ role: "user", content: briefPrompt }] }),
+        });
+        if (!resp.ok || !resp.body) throw new Error("brief request failed");
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = ""; let acc = "";
+        const flush = (chunk: string) => {
+          acc += chunk;
+          setMessages(prev => {
+            // update the brief placeholder (last assistant message with isBrief)
+            const idx = [...prev].map(m => m.isBrief && m.role === "assistant").lastIndexOf(true);
+            if (idx === -1) return [...prev, { role: "assistant", content: acc, isBrief: true }];
+            return prev.map((m, i) => i === idx ? { ...m, content: acc } : m);
+          });
+        };
+        let done = false;
+        while (!done) {
+          const { done: d, value } = await reader.read();
+          if (d) break;
+          buffer += decoder.decode(value, { stream: true });
+          let nl: number;
+          while ((nl = buffer.indexOf("\n")) !== -1) {
+            let line = buffer.slice(0, nl); buffer = buffer.slice(nl + 1);
+            if (line.endsWith("\r")) line = line.slice(0, -1);
+            if (!line.startsWith("data: ")) continue;
+            const j = line.slice(6).trim();
+            if (j === "[DONE]") { done = true; break; }
+            try {
+              const p = JSON.parse(j);
+              const c = p.choices?.[0]?.delta?.content;
+              if (c) flush(c);
+            } catch { /* ignore */ }
+          }
+        }
+        try { localStorage.setItem("aura_last_brief_shown", Date.now().toString()); } catch { /* ignore */ }
+      } catch (e) {
+        console.error("[weekly brief]", e);
+        // Remove empty brief placeholder on failure
+        setMessages(prev => prev.filter(m => !(m.isBrief && !m.content)));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // ── Vault: load saved items from aura_conversation_memory ──
   const loadVault = useCallback(async () => {
     setVaultLoading(true);
