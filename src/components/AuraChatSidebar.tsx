@@ -1126,33 +1126,37 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <button
                         onClick={async () => {
-                          if (savedIndices.has(i)) return;
                           try {
                             const { data: { session } } = await supabase.auth.getSession();
                             if (!session?.user) { toast.error("Sign in to save"); return; }
-                            const title = msg.content.split("\n").find(l => l.trim().length > 5)?.replace(/[#*◈]/g, "").trim().slice(0, 80) || "Aura Insight";
-                            const { error } = await supabase.from("entries").insert({
+                            const detectedType = detectVaultType(msg.content);
+                            const { error } = await supabase.from("aura_conversation_memory").insert({
                               user_id: session.user.id,
-                              type: "text",
+                              role: "assistant",
                               content: msg.content,
-                              title: `📌 ${title}`,
-                              summary: "Saved from Aura chat",
-                              pinned: true,
-                              skill_pillar: "Strategic Architecture",
+                              session_id: "vault_" + Date.now().toString(),
+                              metadata: { saved: true, saved_at: new Date().toISOString(), type: detectedType },
                             });
                             if (error) throw error;
-                            setSavedIndices(prev => new Set(prev).add(i));
-                            toast.success("Saved to Vault", { description: "Pinned as a strategic capture" });
+                            setSavedFlash(prev => new Set(prev).add(i));
+                            setTimeout(() => {
+                              setSavedFlash(prev => {
+                                const next = new Set(prev);
+                                next.delete(i);
+                                return next;
+                              });
+                            }, 2000);
+                            toast.success("Saved to Vault");
                           } catch (e: any) {
                             toast.error("Failed to save", { description: e.message });
                           }
                         }}
                         className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${
-                          savedIndices.has(i) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-secondary/60"
+                          savedFlash.has(i) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-secondary/60"
                         }`}
                       >
-                        {savedIndices.has(i) ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-                        {savedIndices.has(i) ? "Saved to Vault" : "Save to Vault"}
+                        {savedFlash.has(i) ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                        {savedFlash.has(i) ? "Saved ✓" : "Save to Vault"}
                       </button>
                     )}
                   </div>
