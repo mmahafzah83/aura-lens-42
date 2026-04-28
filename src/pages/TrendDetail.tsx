@@ -60,12 +60,12 @@ const isTrusted = (s: string | null) => {
 
 const impactColor = (level: string | null) => {
   if (level === "High") return "#E24B4A";
-  if (level === "Emerging") return "#F97316";
+  if (level === "Emerging") return "var(--brand)";
   return "hsl(var(--muted-foreground))";
 };
 const decisionStyle = (label: string | null): { color: string; bg: string } => {
   if (label === "Act Now") return { color: "#E24B4A", bg: "#E24B4A12" };
-  if (label === "Early Opportunity") return { color: "#F97316", bg: "#F9731612" };
+  if (label === "Early Opportunity") return { color: "var(--brand)", bg: "#F9731612" };
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)" };
 };
 
@@ -253,7 +253,7 @@ export default function TrendDetail() {
         </div>
         <button
           onClick={() => navigate("/home")}
-          style={{ fontSize: 12, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
+          style={{ fontSize: 12, color: "var(--brand)", background: "transparent", border: "0.5px solid #F9731644", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
         >
           Back to Home
         </button>
@@ -267,7 +267,7 @@ export default function TrendDetail() {
 
   const sectionLabel: React.CSSProperties = {
     fontSize: 10, fontWeight: 500, letterSpacing: "0.1em",
-    textTransform: "uppercase", color: "#F97316", marginBottom: 6,
+    textTransform: "uppercase", color: "var(--brand)", marginBottom: 6,
   };
   const bodyText: React.CSSProperties = {
     fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))",
@@ -399,7 +399,7 @@ export default function TrendDetail() {
                 This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
               </div>
               <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-                Click <span style={{ color: "#F97316" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
+                Click <span style={{ color: "var(--brand)" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
               </div>
             </div>
           );
@@ -412,7 +412,7 @@ export default function TrendDetail() {
               onClick={() => setSnapshotMode(mode)}
               style={{
                 fontSize: 10,
-                color: active ? "#F97316" : "hsl(var(--muted-foreground))",
+                color: active ? "var(--brand)" : "hsl(var(--muted-foreground))",
                 background: active ? "#F9731612" : "transparent",
                 border: `0.5px solid ${active ? "#F9731644" : "hsl(var(--border))"}`,
                 padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em",
@@ -439,7 +439,7 @@ export default function TrendDetail() {
                 )}
                 <button
                   onClick={() => setShowFullSnapshot(s => !s)}
-                  style={{ fontSize: 10, color: "#F97316", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                  style={{ fontSize: 10, color: "var(--brand)", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
                 >
                   {showFullSnapshot ? "Show less" : "Show more"}
                 </button>
@@ -474,7 +474,7 @@ export default function TrendDetail() {
           style={{
             fontSize: 13, padding: "8px 16px", borderRadius: 8,
             border: "0.5px solid #F9731566",
-            background: "#F97316", color: "#fff",
+            background: "var(--brand)", color: "#fff",
             fontWeight: 500, cursor: drafting ? "not-allowed" : "pointer",
             opacity: drafting ? 0.7 : 1,
           }}

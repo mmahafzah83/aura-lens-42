@@ -44,13 +44,13 @@ const fontSans = "'DM Sans', sans-serif";
 const fontSerif = "'DM Serif Display', Georgia, serif";
 
 const inputStyle: React.CSSProperties = {
-  background: "#0E0D0C",
-  border: "0.5px solid #2A2825",
+  background: "var(--ink)",
+  border: "0.5px solid var(--ink-3)",
   borderRadius: 10,
   padding: "12px 14px",
   fontFamily: fontSans,
   fontSize: 13,
-  color: "#E8E4DC",
+  color: "var(--ink-7)",
   width: "100%",
   outline: "none",
   marginBottom: 14,
@@ -72,7 +72,7 @@ const stepLabelStyle: React.CSSProperties = {
   fontWeight: 600,
   letterSpacing: "0.14em",
   textTransform: "uppercase",
-  color: "#F97316",
+  color: "var(--brand)",
   marginBottom: 12,
   fontFamily: fontSans,
 };
@@ -96,7 +96,7 @@ const stepSubStyle: React.CSSProperties = {
 };
 
 const primaryBtn: React.CSSProperties = {
-  background: "#F97316",
+  background: "var(--brand)",
   color: "#ffffff",
   border: "none",
   borderRadius: 10,
@@ -126,7 +126,7 @@ function StepDots({ current }: { current: 1 | 2 | 3 }) {
       return (
         <span
           key={idx}
-          style={{ width: 20, height: 6, borderRadius: 3, background: "#F97316", display: "inline-block" }}
+          style={{ width: 20, height: 6, borderRadius: 3, background: "var(--brand)", display: "inline-block" }}
         />
       );
     }
@@ -137,7 +137,7 @@ function StepDots({ current }: { current: 1 | 2 | 3 }) {
           width: 6,
           height: 6,
           borderRadius: "50%",
-          background: isDone ? "#2E7D38" : "#2A2825",
+          background: isDone ? "var(--success)" : "var(--ink-3)",
           display: "inline-block",
         }}
       />
@@ -158,8 +158,8 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
         padding: "5px 13px",
         borderRadius: 20,
         cursor: "pointer",
-        border: selected ? "0.5px solid rgba(249,115,22,0.3)" : "0.5px solid #2A2825",
-        color: selected ? "#F97316" : "#5F5E5A",
+        border: selected ? "0.5px solid rgba(249,115,22,0.3)" : "0.5px solid var(--ink-3)",
+        color: selected ? "var(--brand)" : "#5F5E5A",
         background: selected ? "rgba(249,115,22,0.15)" : "transparent",
         fontFamily: fontSans,
         transition: "all 0.12s",
@@ -360,8 +360,8 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
     >
       <div
         style={{
-          background: "#141210",
-          border: "0.5px solid #2A2825",
+          background: "var(--surface-ink-raised)",
+          border: "0.5px solid var(--ink-3)",
           borderRadius: 20,
           width: "100%",
           maxWidth: 560,
@@ -372,12 +372,12 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
         }}
       >
         {/* Progress bar */}
-        <div style={{ height: 3, background: "#2A2825", flexShrink: 0 }}>
+        <div style={{ height: 3, background: "var(--ink-3)", flexShrink: 0 }}>
           <div
             style={{
               height: "100%",
               width: `${progressPct}%`,
-              background: "#F97316",
+              background: "var(--brand)",
               transition: "width 0.4s ease",
             }}
           />
@@ -484,8 +484,8 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                         padding: "7px 16px",
                         borderRadius: 10,
                         cursor: "pointer",
-                        border: active ? "0.5px solid #ffffff" : "0.5px solid #2A2825",
-                        color: active ? "#0E0D0C" : "#5F5E5A",
+                        border: active ? "0.5px solid #ffffff" : "0.5px solid var(--ink-3)",
+                        color: active ? "var(--ink)" : "#5F5E5A",
                         background: active ? "#ffffff" : "transparent",
                         fontFamily: fontSans,
                         textTransform: "capitalize",
@@ -523,7 +523,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                         fontSize: 11,
                         fontWeight: 600,
                         background: "transparent",
-                        color: "#F97316",
+                        color: "var(--brand)",
                         border: "0.5px solid rgba(249,115,22,0.3)",
                         borderRadius: 7,
                         cursor: "pointer",
@@ -548,8 +548,8 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
               {captureTab === "voice" && (
                 <div
                   style={{
-                    background: "#0E0D0C",
-                    border: "0.5px solid #2A2825",
+                    background: "var(--ink)",
+                    border: "0.5px solid var(--ink-3)",
                     borderRadius: 10,
                     padding: 16,
                     color: "#5F5E5A",
@@ -562,7 +562,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                   <button
                     type="button"
                     onClick={() => onOpenFullCapture?.()}
-                    style={{ color: "#F97316", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: fontSans, fontSize: 12 }}
+                    style={{ color: "var(--brand)", background: "transparent", border: "none", cursor: "pointer", padding: 0, fontFamily: fontSans, fontSize: 12 }}
                   >
                     Open voice recorder →
                   </button>
@@ -574,7 +574,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                   <span
                     style={{
-                      width: 8, height: 8, borderRadius: "50%", background: "#F97316",
+                      width: 8, height: 8, borderRadius: "50%", background: "var(--brand)",
                       animation: "aura-pulse 1.2s ease-in-out infinite",
                     }}
                   />
@@ -584,7 +584,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                 </div>
               )}
               {captureSaved && (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: "#2E7D38", fontSize: 12, fontFamily: fontSans }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: "var(--success)", fontSize: 12, fontFamily: fontSans }}>
                   <span>✓</span>
                   Capture saved. Signal detection running in the background.
                 </div>
@@ -620,8 +620,8 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
 
               <div
                 style={{
-                  background: "#0E0D0C",
-                  border: "0.5px solid #2A2825",
+                  background: "var(--ink)",
+                  border: "0.5px solid var(--ink-3)",
                   borderRadius: 14,
                   padding: 20,
                   marginBottom: 16,
@@ -639,7 +639,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                     <circle cx="24" cy="24" r="5" fill="#4285F4" />
                   </svg>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#E8E4DC", fontFamily: fontSans }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-7)", fontFamily: fontSans }}>
                       Aura Chrome Extension
                     </div>
                     <div style={{ fontSize: 11, color: "#5F5E5A", fontFamily: fontSans, marginTop: 2 }}>
@@ -666,7 +666,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                     <span
                       style={{
                         width: 22, height: 22, borderRadius: "50%",
-                        background: "rgba(249,115,22,0.12)", color: "#F97316",
+                        background: "var(--brand-muted)", color: "var(--brand)",
                         fontSize: 11, fontWeight: 700, display: "inline-flex",
                         alignItems: "center", justifyContent: "center",
                         fontFamily: fontSans,

@@ -291,8 +291,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "#F97316" }} />
-            <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "#3D3A36" }}>
+            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+            <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "var(--ink-4)" }}>
               Start from
             </h4>
           </div>
@@ -343,14 +343,14 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   const isRecommended = group.label === "Recommended now";
                   const badgeText = isRecommended ? "Recommended" : (isUnused ? "Unused" : null);
                   const badgeStyle = isRecommended
-                    ? { background: "#FEF0E6", color: "#C05A10" }
-                    : { background: "#EEF2FF", color: "#3730A3" };
+                    ? { background: "var(--brand-pale)", color: "#C05A10" }
+                    : { background: "var(--surface-subtle)", color: "var(--ink-4)" };
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleItemClick(item)}
                       style={{
-                        background: isConfirm ? "#FEF0E6" : "#F3F0EB",
+                        background: isConfirm ? "var(--brand-pale)" : "var(--surface-subtle)",
                         borderRadius: 10,
                         padding: "10px 12px",
                         marginBottom: 7,
@@ -374,7 +374,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                                 style={{
                                   fontFamily: "'DM Serif Display', serif",
                                   fontSize: 16,
-                                  color: "#F97316",
+                                  color: "var(--brand)",
                                   lineHeight: 1,
                                 }}
                               >
@@ -448,10 +448,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   width: 36,
                   height: 36,
                   borderRadius: "50%",
-                  border: "2px solid #F97316",
-                  background: "#F3F0EB",
+                  border: "2px solid var(--brand)",
+                  background: "var(--surface-subtle)",
                   overflow: "hidden",
-                  color: "#F97316",
+                  color: "var(--brand)",
                   fontSize: 12,
                   fontWeight: 600,
                 }}
@@ -476,13 +476,13 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
             {voice?.sample && (
               <div
                 style={{
-                  background: "#F3F0EB",
+                  background: "var(--surface-subtle)",
                   borderRadius: 10,
                   padding: "8px 10px",
                   marginTop: 8,
                 }}
               >
-                <p style={{ fontSize: 11, fontStyle: "italic", color: "#2A2825", lineHeight: 1.4 }}>
+                <p style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
                   “{voice.sample}{voice.sample.length >= 120 ? "…" : ""}”
                 </p>
               </div>
@@ -493,7 +493,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 display: "inline-block",
                 marginTop: 8,
                 fontSize: 10,
-                color: "#F97316",
+                color: "var(--brand)",
                 fontWeight: 600,
               }}
               className="hover:opacity-80"

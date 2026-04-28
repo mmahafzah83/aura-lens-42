@@ -17,7 +17,7 @@ interface AurasReadProps {
   onSwitchTab?: (tab: "home" | "identity" | "intelligence" | "authority" | "influence") => void;
 }
 
-const ACCENT = "#F97316";
+const ACCENT = "var(--brand)";
 const NUMBER_GLYPHS = ["①", "②", "③"];
 
 const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => {
@@ -30,7 +30,7 @@ const urgencyStyle = (u: AuraItem["urgency"]): { bg: string; color: string } => 
 
 const actionLabelColor = (a: AuraItem["action_type"]): string => {
   switch (a) {
-    case "PUBLISH": return "#F97316";
+    case "PUBLISH": return "var(--brand)";
     case "CAPTURE": return "#185FA5";
     case "WATCH":
     default:        return "#5F5E5A";

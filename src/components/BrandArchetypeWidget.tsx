@@ -31,12 +31,12 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
 
   if (!completed) {
     return (
-      <div className="rounded-xl border border-[#252525] bg-[#141414] p-4 mb-4">
+      <div className="rounded-xl border border-ink-3 bg-surface-ink-raised p-4 mb-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-[#888]">Complete Brand Assessment to reveal your positioning</p>
+          <p className="text-xs text-ink-5">Complete Brand Assessment to reveal your positioning</p>
           <button
             onClick={onStartAssessment}
-            className="text-xs text-[#F97316] font-medium hover:underline flex items-center gap-1"
+            className="text-xs text-brand font-medium hover:underline flex items-center gap-1"
           >
             <Crown className="w-3.5 h-3.5" /> Start Assessment →
           </button>
@@ -57,23 +57,23 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
   })();
 
   return (
-    <div className="rounded-xl border border-[#F97316]/20 bg-[#141414] p-5 mb-4">
+    <div className="rounded-xl border border-brand/20 bg-surface-ink-raised p-5 mb-4">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Crown className="w-4 h-4 text-[#F97316]" />
+          <Crown className="w-4 h-4 text-brand" />
           <span className="text-[11px] text-[#666] tracking-wider uppercase">How I am positioned</span>
         </div>
         <button
           onClick={onStartAssessment}
-          className="text-[10px] text-[#666] hover:text-[#F97316] transition-colors"
+          className="text-[10px] text-[#666] hover:text-brand transition-colors"
         >
           Regenerate
         </button>
       </div>
       {positioningStatement ? (
-        <p className="text-base text-[#F97316] font-semibold leading-relaxed mb-2">{positioningStatement}</p>
+        <p className="text-base text-brand font-semibold leading-relaxed mb-2">{positioningStatement}</p>
       ) : (
-        <p className="text-base text-[#F97316] font-semibold mb-2">Complete your assessment to reveal your positioning</p>
+        <p className="text-base text-brand font-semibold mb-2">Complete your assessment to reveal your positioning</p>
       )}
       {(primary || secondary) && (
         <p className="text-[11px] text-[#666]">

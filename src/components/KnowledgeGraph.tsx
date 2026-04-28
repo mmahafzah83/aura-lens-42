@@ -29,7 +29,7 @@ interface KnowledgeGraphProps {
 
 /* ── Node colors by type ── */
 const NODE_COLORS: Record<string, { bg: string; border: string }> = {
-  signal: { bg: "#fef3c7", border: "#f59e0b" },
+  signal: { bg: "var(--warning-pale)", border: "#f59e0b" },
   framework: { bg: "#dbeafe", border: "#3b82f6" },
   entry: { bg: "#f3e8ff", border: "#8b5cf6" },
   evidence: { bg: "#dcfce7", border: "#22c55e" },
@@ -77,7 +77,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           style: {
             background: NODE_COLORS.pillar.bg, border: `2px solid ${NODE_COLORS.pillar.border}`,
             borderRadius: 20, padding: "8px 16px", fontSize: 11, fontWeight: 700,
-            color: "#1a1a1a",
+            color: "var(--surface-ink-subtle)",
           },
         });
       });
@@ -94,7 +94,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           style: {
             background: NODE_COLORS.signal.bg, border: `2px solid ${NODE_COLORS.signal.border}`,
             borderRadius: 12, padding: "6px 12px", fontSize: 10, fontWeight: 600,
-            maxWidth: 160, color: "#1a1a1a",
+            maxWidth: 160, color: "var(--surface-ink-subtle)",
           },
         });
         s.skill_pillars?.forEach((p: string) => {
@@ -120,7 +120,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           style: {
             background: NODE_COLORS.framework.bg, border: `2px solid ${NODE_COLORS.framework.border}`,
             borderRadius: 12, padding: "6px 12px", fontSize: 10, fontWeight: 600,
-            maxWidth: 160, color: "#1a1a1a",
+            maxWidth: 160, color: "var(--surface-ink-subtle)",
           },
         });
         f.tags?.forEach((t: string) => {
@@ -145,7 +145,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           style: {
             background: NODE_COLORS.entry.bg, border: `1.5px solid ${NODE_COLORS.entry.border}`,
             borderRadius: 10, padding: "4px 10px", fontSize: 9, fontWeight: 500,
-            maxWidth: 140, opacity: 0.8, color: "#1a1a1a",
+            maxWidth: 140, opacity: 0.8, color: "var(--surface-ink-subtle)",
           },
         });
         if (e.skill_pillar && pillarSet.has(e.skill_pillar)) {
@@ -230,7 +230,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
               <MiniMap
                 nodeColor={(n) => {
                   const t = n.data?.type || "entry";
-                  return NODE_COLORS[t]?.border || "#888";
+                  return NODE_COLORS[t]?.border || "var(--ink-5)";
                 }}
                 className="!bg-card/60 !border-border/10 !rounded-xl"
                 maskColor="hsl(var(--background) / 0.7)"

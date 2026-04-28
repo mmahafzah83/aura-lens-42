@@ -152,7 +152,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
           ) : signals.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               {signals.map(s => (
-                <span key={s.id} style={{ background: "#1a1400", border: "1px solid #F9731633", color: "#F97316", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
+                <span key={s.id} style={{ background: "#1a1400", border: "1px solid #F9731633", color: "var(--brand)", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
                   {s.signal_title}
                 </span>
               ))}
@@ -198,7 +198,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
 
   return (
     <div>
-      <div className="text-sm font-semibold leading-relaxed" style={{ color: "#F97316" }}>
+      <div className="text-sm font-semibold leading-relaxed" style={{ color: "var(--brand)" }}>
         <ReactMarkdown
           components={{
             p: ({ children }) => <span>{children}</span>,
@@ -1126,7 +1126,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
           return (
             <div style={{ background: "#FEF8F3", borderBottom: "0.5px solid #F9C88B" }}>
               <div className="flex items-center gap-2 px-4 py-2">
-                <span style={{ background: "#F97316", color: "#fff", fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                <span style={{ background: "var(--brand)", color: "#fff", fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
                   Remembers
                 </span>
                 <span style={{ fontSize: 11, color: "#7A4A12", lineHeight: 1.35 }} className="truncate">
@@ -1323,7 +1323,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     {msg.role === "assistant" && msg.isBrief && (
                       <div
                         className="max-w-[85%]"
-                        style={{ fontSize: 10, color: "#F97316", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginBottom: 4 }}
+                        style={{ fontSize: 10, color: "var(--brand)", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginBottom: 4 }}
                       >
                         WEEKLY BRIEF · {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                       </div>
@@ -1345,7 +1345,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                       style={{
                         wordBreak: "break-word",
                         overflowWrap: "anywhere",
-                        ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid #F97316" } : {}),
+                        ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid var(--brand)" } : {}),
                         ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
                       }}
                     >

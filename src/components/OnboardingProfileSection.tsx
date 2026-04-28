@@ -246,7 +246,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} />
+        <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );
   }
@@ -281,13 +281,13 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
 
       {/* Section 1: Your Profile */}
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#F97316" }}>Your profile</h2>
-        <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
+        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "var(--brand)" }}>Your profile</h2>
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
           {profileFields.map((f, i) => (
             <div
               key={f.key}
               className="flex items-center justify-between px-4 py-3"
-              style={{ borderBottom: i < profileFields.length - 1 ? "1px solid #252525" : "none" }}
+              style={{ borderBottom: i < profileFields.length - 1 ? "1px solid var(--ink-3)" : "none" }}
             >
               <div className="flex-1 min-w-0">
                 <span className="text-[10px] uppercase tracking-wider block" style={{ color: "#666" }}>{f.label}</span>
@@ -298,7 +298,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                       value={editValue}
                       onChange={e => setEditValue(e.target.value)}
                       className="flex-1 px-2 py-1 rounded text-sm outline-none"
-                      style={{ background: "#0d0d0d", border: "1px solid #252525", color: "#f0f0f0" }}
+                      style={{ background: "#0d0d0d", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
                     />
                     <button
                       onClick={() => saveField(f.key, editValue)}
@@ -313,7 +313,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                     </button>
                   </div>
                 ) : (
-                  <span className="text-sm block mt-0.5" style={{ color: f.value ? "#f0f0f0" : "#3a3a3a" }}>
+                  <span className="text-sm block mt-0.5" style={{ color: f.value ? "var(--ink-7)" : "#3a3a3a" }}>
                     {f.value || "Not set"}
                   </span>
                 )}
@@ -322,7 +322,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                 <button
                   onClick={() => { setEditingField(f.key); setEditValue(f.value || ""); }}
                   className="text-xs flex items-center gap-1 ml-3 shrink-0"
-                  style={{ color: "#F97316" }}
+                  style={{ color: "var(--brand)" }}
                 >
                   <Pencil className="w-3 h-3" /> Edit
                 </button>
@@ -335,7 +335,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
       {/* Section 2: Brand Positioning */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#F97316" }}>How Aura positions me</h2>
+          <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "var(--brand)" }}>How Aura positions me</h2>
           <button
             onClick={handleRegenerate}
             disabled={regenerating}
@@ -345,9 +345,9 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
             <RefreshCw className={`w-3 h-3 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
           </button>
         </div>
-        <div className="rounded-xl p-4 space-y-2" style={{ background: "#141414", border: "1px solid #252525" }}>
+        <div className="rounded-xl p-4 space-y-2" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
           <p className="text-[10px] uppercase tracking-wider" style={{ color: "#666" }}>Your positioning statement</p>
-          <p className="text-sm leading-relaxed" style={{ color: regenerating ? "#666" : "#f0f0f0", fontStyle: regenerating ? "italic" : "normal" }}>
+          <p className="text-sm leading-relaxed" style={{ color: regenerating ? "#666" : "var(--ink-7)", fontStyle: regenerating ? "italic" : "normal" }}>
             {brandSummary}
           </p>
         </div>
@@ -355,14 +355,14 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
 
       {/* Section 3: Assessment History */}
       <div className="space-y-3">
-        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "#F97316" }}>My foundation assessments</h2>
-        <div className="rounded-xl overflow-hidden" style={{ background: "#141414", border: "1px solid #252525" }}>
+        <h2 className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: "var(--brand)" }}>My foundation assessments</h2>
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
           {/* Onboarding */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #252525" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-3)" }}>
             <div className="flex items-center gap-3">
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
               <div>
-                <span className="text-sm block" style={{ color: "#f0f0f0" }}>Onboarding</span>
+                <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Onboarding</span>
                 <span className="text-[10px] block" style={{ color: "#666" }}>
                   {dates?.onboarding_completed ? `Completed ${formatDate(dates.created_at)}` : "Not completed"}
                 </span>
@@ -371,17 +371,17 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
           </div>
 
           {/* Evidence Audit */}
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #252525" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--ink-3)" }}>
             <div className="flex items-center gap-3">
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
               <div>
-                <span className="text-sm block" style={{ color: "#f0f0f0" }}>Evidence Audit</span>
+                <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Evidence Audit</span>
                 <span className="text-[10px] block" style={{ color: dates?.audit_completed_at ? "#666" : "#3a3a3a" }}>
                   {dates?.audit_completed_at ? `Completed ${formatDate(dates.audit_completed_at)}` : "Not completed yet"}
                 </span>
               </div>
             </div>
-            <button onClick={onRetakeAudit} className="text-[11px] flex items-center gap-1" style={{ color: "#F97316" }}>
+            <button onClick={onRetakeAudit} className="text-[11px] flex items-center gap-1" style={{ color: "var(--brand)" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -391,13 +391,13 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
             <div className="flex items-center gap-3">
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "#666" }} />
               <div>
-                <span className="text-sm block" style={{ color: "#f0f0f0" }}>Brand Assessment</span>
+                <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Brand Assessment</span>
                 <span className="text-[10px] block" style={{ color: dates?.brand_assessment_completed_at ? "#666" : "#3a3a3a" }}>
                   {dates?.brand_assessment_completed_at ? `Completed ${formatDate(dates.brand_assessment_completed_at)}` : "Not completed yet"}
                 </span>
               </div>
             </div>
-            <button onClick={onRetakeBrand} className="text-[11px] flex items-center gap-1" style={{ color: "#F97316" }}>
+            <button onClick={onRetakeBrand} className="text-[11px] flex items-center gap-1" style={{ color: "var(--brand)" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -409,13 +409,13 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
         <button
           onClick={() => { setFullEditData({ ...profile }); setShowFullEdit(true); }}
           className="w-full py-3 rounded-xl text-sm font-medium"
-          style={{ background: "#141414", border: "1px solid #252525", color: "#F97316" }}
+          style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", color: "var(--brand)" }}
         >
           Edit full profile
         </button>
       ) : (
-        <div className="rounded-xl p-4 space-y-4" style={{ background: "#141414", border: "1px solid #F9731633" }}>
-          <h3 className="text-xs uppercase tracking-wider" style={{ color: "#F97316" }}>Edit all fields</h3>
+        <div className="rounded-xl p-4 space-y-4" style={{ background: "var(--surface-ink-raised)", border: "1px solid #F9731633" }}>
+          <h3 className="text-xs uppercase tracking-wider" style={{ color: "var(--brand)" }}>Edit all fields</h3>
           {[
             { key: "first_name", label: "Name" },
             { key: "level", label: "Role" },
@@ -431,7 +431,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
                 value={(fullEditData as any)?.[f.key] || ""}
                 onChange={e => setFullEditData(prev => prev ? { ...prev, [f.key]: e.target.value } : prev)}
                 className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                style={{ background: "#0d0d0d", border: "1px solid #252525", color: "#f0f0f0" }}
+                style={{ background: "#0d0d0d", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
               />
             </div>
           ))}
@@ -440,14 +440,14 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               onClick={saveFullEdit}
               disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-              style={{ background: "#F97316", color: "#0d0d0d" }}
+              style={{ background: "var(--brand)", color: "#0d0d0d" }}
             >
               {saving ? "Saving..." : "Save all changes"}
             </button>
             <button
               onClick={() => setShowFullEdit(false)}
               className="px-4 py-2.5 rounded-xl text-sm"
-              style={{ background: "#252525", color: "#666" }}
+              style={{ background: "var(--ink-3)", color: "#666" }}
             >
               Cancel
             </button>

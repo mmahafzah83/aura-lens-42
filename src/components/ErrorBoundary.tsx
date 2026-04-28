@@ -23,14 +23,14 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
           style={{
             padding: "40px",
             textAlign: "center",
-            background: "#141414",
+            background: "var(--surface-ink-raised)",
             borderRadius: "12px",
-            border: "1px solid #252525",
+            border: "1px solid var(--ink-3)",
             margin: "24px",
           }}
         >
           <div style={{ fontSize: "32px", marginBottom: "16px" }}>⚠️</div>
-          <h3 style={{ color: "#f0f0f0", marginBottom: "8px" }}>
+          <h3 style={{ color: "var(--ink-7)", marginBottom: "8px" }}>
             Something went wrong
           </h3>
           <p style={{ color: "#666", fontSize: "14px", marginBottom: "24px" }}>
@@ -39,7 +39,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
-              background: "#F97316",
+              background: "var(--brand)",
               color: "#000",
               border: "none",
               borderRadius: "8px",

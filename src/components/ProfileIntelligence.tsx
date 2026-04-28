@@ -287,7 +287,7 @@ const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) =>
                         <button
                           onClick={() => onGenerateContent(at.theme, at.rationale)}
                           className="text-[11px] font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
-                          style={{ color: "#F97316" }}
+                          style={{ color: "var(--brand)" }}
                         >
                           Create post on this <ArrowRight className="w-3 h-3" />
                         </button>

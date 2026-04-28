@@ -138,7 +138,7 @@ const AutomationStrip = () => {
   };
 
   const cards = [
-    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", iconColor: "#F97316", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
+    { iconBg: "#0a1a0a", iconBorder: "#2a4a2a", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "#4a8a4a" },
     { iconBg: "#0a1020", iconBorder: "#1a3060", iconColor: "#111111", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
     { iconBg: "#1a1200", iconBorder: "#3a2a00", iconColor: "#111111", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
   ];
@@ -265,11 +265,11 @@ const SignalDetailPanel = ({
     <div ref={panelRef} style={{ padding: 24, overflowY: "auto", height: "100%" }}>
       {loading ? (
         <div>
-          <div style={{ height: 12, width: 120, background: "#1a1a1a", borderRadius: 4, marginBottom: 12 }} className="animate-pulse" />
-          <div style={{ height: 48, width: 100, background: "#1a1a1a", borderRadius: 6, marginBottom: 16 }} className="animate-pulse" />
-          <div style={{ height: 16, width: "80%", background: "#1a1a1a", borderRadius: 4, marginBottom: 8 }} className="animate-pulse" />
-          <div style={{ height: 10, width: "100%", background: "#1a1a1a", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
-          <div style={{ height: 10, width: "70%", background: "#1a1a1a", borderRadius: 4 }} className="animate-pulse" />
+          <div style={{ height: 12, width: 120, background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 12 }} className="animate-pulse" />
+          <div style={{ height: 48, width: 100, background: "var(--surface-ink-subtle)", borderRadius: 6, marginBottom: 16 }} className="animate-pulse" />
+          <div style={{ height: 16, width: "80%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 8 }} className="animate-pulse" />
+          <div style={{ height: 10, width: "100%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
+          <div style={{ height: 10, width: "70%", background: "var(--surface-ink-subtle)", borderRadius: 4 }} className="animate-pulse" />
         </div>
       ) : (
         <>
@@ -279,12 +279,12 @@ const SignalDetailPanel = ({
           </p>
 
           {/* Confidence number */}
-          <p style={{ fontSize: 64, fontWeight: 800, color: "#F97316", letterSpacing: -3, lineHeight: 1, margin: "0 0 4px" }}>
+          <p style={{ fontSize: 64, fontWeight: 800, color: "var(--brand)", letterSpacing: -3, lineHeight: 1, margin: "0 0 4px" }}>
             {confPct}%
           </p>
 
           {/* Title */}
-          <h3 style={{ fontSize: 18, fontWeight: 700, color: "#f0f0f0", lineHeight: 1.3, margin: "0 0 16px" }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink-7)", lineHeight: 1.3, margin: "0 0 16px" }}>
             {signal.signal_title}
           </h3>
 
@@ -303,7 +303,7 @@ const SignalDetailPanel = ({
           {keyInsight && (
             <div style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "#333", marginBottom: 6 }}>Key insight</p>
-              <div style={{ background: "#111", border: "0.5px solid #252525", borderLeft: "2px solid #F97316", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
+              <div style={{ background: "#111", border: "0.5px solid var(--ink-3)", borderLeft: "2px solid var(--brand)", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "#d0d0d0", margin: "0 0 3px" }}>{keyInsight.title}</p>
                 <p style={{ fontSize: 11, color: "#555", lineHeight: 1.5, margin: 0 }}>{keyInsight.content.slice(0, 200)}</p>
               </div>
@@ -317,13 +317,13 @@ const SignalDetailPanel = ({
               <div>
                 {visibleEvidence.map(frag => (
                   <div key={frag.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
-                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#F97316", flexShrink: 0 }} />
+                    <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--brand)", flexShrink: 0 }} />
                     <span style={{ fontSize: 11, color: "#555", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{frag.title}</span>
                     <span style={{ fontSize: 10, color: "#333", marginLeft: "auto", flexShrink: 0 }}>{relativeTime(frag.created_at)}</span>
                   </div>
                 ))}
                 {!showAllEvidence && hiddenCount > 0 && (
-                  <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "#F97316", fontSize: 11, cursor: "pointer", padding: 0, marginTop: 4 }}>+ {hiddenCount} more</button>
+                  <button onClick={() => setShowAllEvidence(true)} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 11, cursor: "pointer", padding: 0, marginTop: 4 }}>+ {hiddenCount} more</button>
                 )}
               </div>
             ) : (
@@ -339,7 +339,7 @@ const SignalDetailPanel = ({
           {/* Action button */}
           <button
             onClick={() => onDraft(signal)}
-            style={{ width: "100%", background: "#F97316", color: "#000", border: "none", borderRadius: 6, padding: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            style={{ width: "100%", background: "var(--brand)", color: "#000", border: "none", borderRadius: 6, padding: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
           >
             Write on this
           </button>
@@ -373,10 +373,10 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
   const getBadge = (type: string) => {
     switch (type) {
       case "signal": case "pattern": return { label: "Signal", bg: "#0a1628", border: "#1d4ed844", color: "#60a5fa" };
-      case "insight": case "principle": return { label: "Insight", bg: "#1a1400", border: "#F9731644", color: "#F97316" };
+      case "insight": case "principle": return { label: "Insight", bg: "#1a1400", border: "#F9731644", color: "var(--brand)" };
       case "recommendation": case "framework_step": return { label: "Recommendation", bg: "#0a1a0a", border: "#2a4a2a", color: "#4a8a4a" };
       case "blind_spot": case "claim": return { label: "Blind spot", bg: "#1a0a0a", border: "#4a2a2a", color: "#aa6060" };
-      default: return { label: "Insight", bg: "#1a1400", border: "#F9731644", color: "#F97316" };
+      default: return { label: "Insight", bg: "#1a1400", border: "#F9731644", color: "var(--brand)" };
     }
   };
 
@@ -387,7 +387,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "#333", fontWeight: 600, margin: 0 }}>Key insights from your captures</p>
         {insights.length > 3 && (
-          <button onClick={() => setShowAll(!showAll)} style={{ background: "none", border: "none", color: "#F97316", fontSize: 10, cursor: "pointer" }}>
+          <button onClick={() => setShowAll(!showAll)} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 10, cursor: "pointer" }}>
             {showAll ? "Show less" : `View all ${insights.length} →`}
           </button>
         )}
@@ -406,7 +406,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
               </p>
               <button
                 onClick={() => onDraftToStudio?.({ topic: insight.title, context: insight.content, sourceType: "insight", sourceTitle: insight.title })}
-                style={{ background: "none", border: "none", color: "#F97316", fontSize: 10, fontWeight: 500, cursor: "pointer", padding: 0 }}
+                style={{ background: "none", border: "none", color: "var(--brand)", fontSize: 10, fontWeight: 500, cursor: "pointer", padding: 0 }}
               >
                 Write on this →
               </button>
@@ -445,7 +445,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
     toast("Framework deleted");
   };
 
-  if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="w-5 h-5 animate-spin" style={{ color: "#F97316" }} /></div>;
+  if (loading) return <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} /></div>;
 
   const isApproved = (fw: Framework) => fw.source_type === "approved" || fw.source_type === "signal";
   const filtered = filter === "all" ? frameworks : filter === "approved" ? frameworks.filter(isApproved) : frameworks.filter(f => !isApproved(f));
@@ -457,10 +457,10 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div>
-          <h2 style={{ color: "#f0f0f0", fontSize: 17, fontWeight: 700, margin: 0 }}>Frameworks</h2>
+          <h2 style={{ color: "var(--ink-7)", fontSize: 17, fontWeight: 700, margin: 0 }}>Frameworks</h2>
           <p style={{ color: "#444", fontSize: 11, margin: "2px 0 0" }}>{frameworks.length} created · Your structured thinking library</p>
         </div>
-        <button onClick={() => setBuilderData({ title: "", steps: [], summary: "" })} style={{ background: "#F97316", color: "#000", borderRadius: 6, padding: "7px 14px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New framework</button>
+        <button onClick={() => setBuilderData({ title: "", steps: [], summary: "" })} style={{ background: "var(--brand)", color: "#000", borderRadius: 6, padding: "7px 14px", fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer" }}>+ New framework</button>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 14 }}>
@@ -471,9 +471,9 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
         ].map(chip => (
           <button key={chip.key} onClick={() => setFilter(chip.key)} style={{
             padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: "pointer",
-            background: filter === chip.key ? "#1a1400" : "#141414",
-            color: filter === chip.key ? "#F97316" : "#555",
-            border: `1px solid ${filter === chip.key ? "rgba(197,165,90,0.27)" : "#252525"}`,
+            background: filter === chip.key ? "#1a1400" : "var(--surface-ink-raised)",
+            color: filter === chip.key ? "var(--brand)" : "#555",
+            border: `1px solid ${filter === chip.key ? "rgba(197,165,90,0.27)" : "var(--ink-3)"}`,
           }}>{chip.label}</button>
         ))}
         <span style={{ marginLeft: "auto", fontSize: 11, color: "#444" }}>Most recent ↓</span>
@@ -490,11 +490,11 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             const steps = Array.isArray(fw.framework_steps) ? fw.framework_steps : [];
             const approved = isApproved(fw);
             return (
-              <div key={fw.id} style={{ background: "#141414", border: "0.5px solid #222", borderTop: approved ? "2px solid #F97316" : "0.5px solid #222", borderRadius: 10, padding: 16 }}>
+              <div key={fw.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid #222", borderTop: approved ? "2px solid var(--brand)" : "0.5px solid #222", borderRadius: 10, padding: 16 }}>
                 <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "#0a1a0a" : "#1e1e1e", border: `0.5px solid ${approved ? "#2a4a2a" : "#333"}`, color: approved ? "#4a8a4a" : "#555" }}>
                   {approved ? "Approved" : "Draft"}
                 </span>
-                <p style={{ color: "#e0e0e0", fontSize: 12, fontWeight: 600, lineHeight: 1.4, margin: "0 0 6px" }}>{fw.title}</p>
+                <p style={{ color: "var(--ink-7)", fontSize: 12, fontWeight: 600, lineHeight: 1.4, margin: "0 0 6px" }}>{fw.title}</p>
                 {fw.summary && <p style={{ color: "#555", fontSize: 10, lineHeight: 1.5, margin: "0 0 8px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{fw.summary}</p>}
                 {steps.length > 0 && (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
@@ -511,7 +511,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
                     { label: "Draft content", action: () => onDraftToStudio?.({ topic: fw.title, context: fw.summary || "", sourceType: "framework", sourceTitle: fw.title }) },
                   ].map(btn => (
                     <button key={btn.label} onClick={btn.action} style={{ background: "transparent", border: "0.5px solid #2a2a2a", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "#555", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(197,165,90,0.27)"; e.currentTarget.style.color = "#F97316"; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(197,165,90,0.27)"; e.currentTarget.style.color = "var(--brand)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}
                     >{btn.label}</button>
                   ))}
@@ -536,11 +536,11 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)" }} onClick={() => setDeleteTarget(null)} />
-          <div style={{ position: "relative", background: "#1a1a1a", borderRadius: 16, padding: 24, width: 360, maxWidth: "90vw", border: "1px solid #252525" }}>
-            <p style={{ color: "#f0f0f0", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this framework?</p>
-            <p style={{ color: "#888", fontSize: 13, margin: "0 0 20px" }}>This cannot be undone.</p>
+          <div style={{ position: "relative", background: "var(--surface-ink-subtle)", borderRadius: 16, padding: 24, width: 360, maxWidth: "90vw", border: "1px solid var(--ink-3)" }}>
+            <p style={{ color: "var(--ink-7)", fontSize: 15, fontWeight: 600, margin: "0 0 8px" }}>Delete this framework?</p>
+            <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 20px" }}>This cannot be undone.</p>
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-              <button onClick={() => setDeleteTarget(null)} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "#888", fontSize: 13, cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => setDeleteTarget(null)} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid #2a2a2a", background: "transparent", color: "var(--ink-5)", fontSize: 13, cursor: "pointer" }}>Cancel</button>
               <button onClick={() => handleDelete(deleteTarget)} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: "#E24B4A", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Delete</button>
             </div>
           </div>
@@ -687,10 +687,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
       <div style={{ background: "#0d0d0d", minHeight: "100vh", padding: "16px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} style={{ background: "#141414", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid #252525" }}>
+            <div key={i} style={{ background: "var(--surface-ink-raised)", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid var(--ink-3)" }}>
               <div style={{ height: 14, width: "60%", background: "#1f1f1f", borderRadius: 6, marginBottom: 10 }} className="animate-pulse" />
-              <div style={{ height: 10, width: "100%", background: "#1a1a1a", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
-              <div style={{ height: 10, width: "70%", background: "#1a1a1a", borderRadius: 4 }} className="animate-pulse" />
+              <div style={{ height: 10, width: "100%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
+              <div style={{ height: 10, width: "70%", background: "var(--surface-ink-subtle)", borderRadius: 4 }} className="animate-pulse" />
             </div>
           ))}
         </div>
@@ -723,14 +723,14 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
 
         {/* ── Counter Bar ── */}
-        <div className="intel-counter-bar" style={{ background: "#141414", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
+        <div className="intel-counter-bar" style={{ background: "var(--surface-ink-raised)", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid #222", overflow: "hidden" }}>
           {[
             { label: "Sources", count: entryCount, gold: false },
             { label: "Signals", count: signals.length, gold: true },
             { label: "Moves", count: movesCount, gold: false },
           ].map((step, i, arr) => (
             <div key={step.label} style={{ flex: 1, textAlign: "center", padding: "12px 8px", borderRight: i < arr.length - 1 ? "0.5px solid #222" : "none" }}>
-              <p style={{ color: step.gold ? "#F97316" : "#f0f0f0", fontSize: 20, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{step.count}</p>
+              <p style={{ color: step.gold ? "var(--brand)" : "var(--ink-7)", fontSize: 20, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{step.count}</p>
               <p style={{ color: "#444", fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase", margin: "4px 0 0" }}>{step.label}</p>
             </div>
           ))}
@@ -745,13 +745,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         </div>
 
         {/* ── Tab Bar ── */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid #252525", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }} className="scrollbar-hide">
+        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }} className="scrollbar-hide">
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "#F97316" : "#7A7670",
+              color: activeSubTab === tab.value ? "var(--brand)" : "#7A7670",
               background: "transparent", border: "none",
-              borderBottom: activeSubTab === tab.value ? "2px solid #F97316" : "2px solid transparent",
+              borderBottom: activeSubTab === tab.value ? "2px solid var(--brand)" : "2px solid transparent",
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
             }}>{tab.label}</button>
           ))}
@@ -766,7 +766,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
             {signals.length === 0 ? (
               <div style={{ textAlign: "center", padding: 40 }}>
-                <p style={{ color: "#f0f0f0", fontSize: 16, fontWeight: 500, marginBottom: 8 }}>No signals yet</p>
+                <p style={{ color: "var(--ink-7)", fontSize: 16, fontWeight: 500, marginBottom: 8 }}>No signals yet</p>
                 <p style={{ color: "#666", fontSize: 13, marginBottom: 20 }}>Capture knowledge to start building signals.</p>
                 <Button variant="outline" size="sm" onClick={runPatternDetection} disabled={detecting} className="gap-2 text-xs">
                   {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
@@ -810,10 +810,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
                             display: "flex", alignItems: "center", gap: 0, padding: "12px 16px",
-                            borderBottom: idx < visibleSignals.length - 1 ? "0.5px solid #1a1a1a" : "none",
+                            borderBottom: idx < visibleSignals.length - 1 ? "0.5px solid var(--surface-ink-subtle)" : "none",
                             cursor: "pointer", transition: "background 0.1s",
-                            background: isSelected ? "#141414" : "transparent",
-                            borderLeft: isSelected ? "2px solid #F97316" : "2px solid transparent",
+                            background: isSelected ? "var(--surface-ink-raised)" : "transparent",
+                            borderLeft: isSelected ? "2px solid var(--brand)" : "2px solid transparent",
                           }}
                           onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "#111"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
@@ -821,17 +821,17 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           <span style={{ fontSize: 10, fontWeight: 700, color: "#222", minWidth: 22, textAlign: "center" }}>{idx + 1}</span>
                           {/* Vertical strength bar */}
                           <div style={{ width: 3, height: 32, borderRadius: 2, position: "relative", overflow: "hidden", flexShrink: 0, marginRight: 10, background: "#1e1e1e" }}>
-                            <div style={{ position: "absolute", top: 0, width: "100%", height: `${confPct}%`, background: "#F97316", opacity: confPct / 100, borderRadius: 2 }} />
+                            <div style={{ position: "absolute", top: 0, width: "100%", height: `${confPct}%`, background: "var(--brand)", opacity: confPct / 100, borderRadius: 2 }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-                            <p style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "#f0f0f0" : "#999", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <p style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "var(--ink-7)" : "var(--ink-6)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {s.signal_title}
                             </p>
                             <p style={{ fontSize: 9, color: "#333", margin: "2px 0 0" }}>
                               {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
                             </p>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "#F97316" : "#555", flexShrink: 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "var(--brand)" : "#555", flexShrink: 0 }}>
                             {confPct}%
                           </span>
                         </div>
@@ -842,7 +842,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                     {sortedByConfidence.length > 8 && (
                       <button
                         onClick={() => setShowAllSignals(!showAllSignals)}
-                        style={{ display: "block", width: "100%", textAlign: "center", padding: "10px 16px", fontSize: 10, color: "#333", background: "none", border: "none", borderTop: "0.5px solid #1a1a1a", cursor: "pointer" }}
+                        style={{ display: "block", width: "100%", textAlign: "center", padding: "10px 16px", fontSize: 10, color: "#333", background: "none", border: "none", borderTop: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}
                       >
                         {showAllSignals ? "Show less ↑" : `Show all ${sortedByConfidence.length} signals ↓`}
                       </button>

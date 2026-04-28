@@ -98,10 +98,10 @@ const ScrollIndicator = () => {
   return (
     <div style={{
       position: "fixed", right: 14, top: "50%", transform: "translateY(-50%)", zIndex: 100,
-      width: 3, height: 120, background: "#1a1a1a", borderRadius: 2, overflow: "hidden",
+      width: 3, height: 120, background: "var(--surface-ink-subtle)", borderRadius: 2, overflow: "hidden",
     }}>
       <div style={{
-        background: "#F97316", borderRadius: 2, width: "100%",
+        background: "var(--brand)", borderRadius: 2, width: "100%",
         height: `${progress}%`, transition: "height 0.3s ease",
       }} />
     </div>
@@ -149,8 +149,8 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
         <div style={{ display: "flex", transition: "transform 0.4s ease", transform: `translateX(-${active * 100}%)` }}>
           {testimonials.map((t, i) => (
             <div key={i} className="w-full flex-shrink-0 px-1">
-              <div className="p-5 rounded-xl" style={{ background: "#141414", border: "1px solid #252525" }}>
-                <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#999" }}>"{t.q}"</p>
+              <div className="p-5 rounded-xl" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
+                <p className="text-[13px] leading-relaxed mb-3" style={{ color: "var(--ink-6)" }}>"{t.q}"</p>
                 <p className="text-[11px]" style={{ color: "#3a3a3a" }}>{t.a}</p>
               </div>
             </div>
@@ -164,7 +164,7 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
             onClick={() => { setActive(i); interacted.current = true; setTimeout(() => { interacted.current = false; startAuto(); }, 3000); }}
             style={{
               width: i === active ? 16 : 6, height: 6, borderRadius: 3,
-              background: i === active ? "#F97316" : "#1a1a1a",
+              background: i === active ? "var(--brand)" : "var(--surface-ink-subtle)",
               transition: "all 0.3s ease", border: "none", cursor: "pointer", padding: 0,
             }}
           />
@@ -217,7 +217,7 @@ const Landing = () => {
 
   return (
     <div
-      className="landing-root min-h-screen text-[#f0f0f0]"
+      className="landing-root min-h-screen text-ink-7"
       style={{ background: "#0d0d0d", fontFamily: "'Inter', system-ui, sans-serif" }}
     >
       <style>{`
@@ -307,11 +307,11 @@ const Landing = () => {
         background: "rgba(13,13,13,0.95)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
-        borderBottom: "1px solid #1a1a1a",
+        borderBottom: "1px solid var(--surface-ink-subtle)",
         paddingTop: "max(env(safe-area-inset-top), 16px)",
       }}>
-        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "#F97316", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
-        <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-[#F97316]/10" style={{ color: "#F97316", borderColor: "#F9731633" }}>
+        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
+        <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", borderColor: "#F9731633" }}>
           Sign in
         </button>
       </nav>
@@ -331,7 +331,7 @@ const Landing = () => {
         <div className="relative z-10 max-w-2xl mx-auto">
           <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "#3a3a3a" }}>For senior professionals worldwide</p>
           <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 font-sans">
-            Everything you read.<br />Turned into <span style={{ color: "#F97316" }}>authority</span>.
+            Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>authority</span>.
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
           <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "#666", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
@@ -341,7 +341,7 @@ const Landing = () => {
           {/* Capture orb */}
           <div className="relative w-[220px] h-[220px] mx-auto mb-10">
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #F97316, #a88c3a)", animation: "aura-breathe 3s ease-in-out infinite" }}>
+              <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--brand), #a88c3a)", animation: "aura-breathe 3s ease-in-out infinite" }}>
                 <span className="text-[10px] font-bold text-[#0d0d0d] tracking-wider">AURA</span>
               </div>
             </div>
@@ -367,8 +367,8 @@ const Landing = () => {
               const y = 110 + Math.sin(rad) * 95;
               return (
                 <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 18, top: y - 18, animation: "orb-float 3s ease-in-out infinite", animationDelay: `${delay}s`, willChange: "transform" }}>
-                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid #F97316", borderRadius: "50%" }}>
-                    <Icon size={16} style={{ color: "#F97316" }} />
+                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid var(--brand)", borderRadius: "50%" }}>
+                    <Icon size={16} style={{ color: "var(--brand)" }} />
                   </div>
                   <span className="mt-1 whitespace-nowrap" style={{ fontSize: "9px", color: "#3a3a3a" }}>{label}</span>
                 </div>
@@ -377,7 +377,7 @@ const Landing = () => {
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "#F97316", color: "#0d0d0d", fontWeight: 500 }}>
+            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "#0d0d0d", fontWeight: 500 }}>
               Get early access
             </button>
             <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-white/5" style={{ color: "#666666", border: "0.5px solid #3a3a3a", background: "transparent", fontWeight: 400 }}>
@@ -395,11 +395,11 @@ const Landing = () => {
           { num: 90, label: "Authority score", sub: "out of 100 — tracks your growth" },
         ].map((s, i) => (
           <div key={i} className="flex items-center">
-            {i > 0 && <div className="w-px h-14 mx-6 sm:mx-10" style={{ background: "#252525" }} />}
+            {i > 0 && <div className="w-px h-14 mx-6 sm:mx-10" style={{ background: "var(--ink-3)" }} />}
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
-                <span style={{ fontSize: 14, color: "#F97316" }}>↑</span>
-                <span className="font-semibold" style={{ fontSize: 40, color: "#F97316", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
+                <span style={{ fontSize: 14, color: "var(--brand)" }}>↑</span>
+                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
                   <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>
@@ -417,7 +417,7 @@ const Landing = () => {
           {/* Animated gold line */}
           <div style={{
             position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
-            background: "#F97316",
+            background: "var(--brand)",
             transformOrigin: "top",
             transform: pullQuote.visible ? "scaleY(1)" : "scaleY(0)",
             transition: "transform 0.8s cubic-bezier(0.22,1,0.36,1)",
@@ -427,7 +427,7 @@ const Landing = () => {
             transform: pullQuote.visible ? "translateY(0)" : "translateY(50px)",
             transition: "opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s",
           }}>
-            <p className="text-[18px] sm:text-[22px] font-medium leading-snug mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "#f0f0f0" }}>
+            <p className="text-[18px] sm:text-[22px] font-medium leading-snug mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "var(--ink-7)" }}>
               "You know your field. But no one knows you."
             </p>
             <p className="text-[14px] leading-relaxed" style={{ color: "#666" }}>
@@ -438,7 +438,7 @@ const Landing = () => {
       </section>
 
       {/* Section 5 — What makes Aura different (carbon fiber bg + glassmorphism) */}
-      <section ref={diffQuote.ref} className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section ref={diffQuote.ref} className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           backgroundImage: `url(${carbonBg})`,
           backgroundSize: "cover",
@@ -453,7 +453,7 @@ const Landing = () => {
           <div className="relative pl-5 mb-10">
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
-              background: "#F97316",
+              background: "var(--brand)",
               transformOrigin: "top",
               transform: diffQuote.visible ? "scaleY(1)" : "scaleY(0)",
               transition: "transform 0.8s cubic-bezier(0.22,1,0.36,1)",
@@ -463,7 +463,7 @@ const Landing = () => {
               transform: diffQuote.visible ? "translateY(0)" : "translateY(50px)",
               transition: "opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s",
             }}>
-              <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "#f0f0f0" }}>
+              <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "var(--ink-7)" }}>
                 "Aura does not just help you create content. It first helps you understand what to stand for."
               </p>
               <p className="text-[13px] leading-relaxed" style={{ color: "#666" }}>
@@ -480,11 +480,11 @@ const Landing = () => {
               { icon: "↗", title: "Map your path to your career target", desc: "What stands between you and the role you want. Aura shows you the specific gaps and how to close them." },
             ].map((c, i) => (
               <div key={i} className="glass-card flex gap-4 p-5 rounded-[10px]">
-                <div className="glass-icon w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm transition-shadow duration-300" style={{ background: "rgba(197,165,90,0.12)", color: "#F97316", border: "1px solid rgba(197,165,90,0.2)" }}>
+                <div className="glass-icon w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm transition-shadow duration-300" style={{ background: "rgba(197,165,90,0.12)", color: "var(--brand)", border: "1px solid rgba(197,165,90,0.2)" }}>
                   {c.icon}
                 </div>
                 <div>
-                  <div className="text-[14px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{c.title}</div>
+                  <div className="text-[14px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{c.title}</div>
                   <div className="text-[12px] leading-relaxed" style={{ color: "#666" }}>{c.desc}</div>
                 </div>
               </div>
@@ -495,7 +495,7 @@ const Landing = () => {
           <p className="text-[9px] uppercase tracking-[0.15em] mb-3 text-center" style={{ color: "#3a3a3a" }}>Inspired by proven frameworks</p>
           <div className="flex flex-wrap justify-center gap-2">
             {["Gallup CliftonStrengths", "Personal brand positioning", "Career gap analysis", "Voice profiling"].map(f => (
-              <span key={f} className="px-3 py-1.5 rounded-full text-[11px]" style={{ color: "#F97316", border: "1px solid rgba(197,165,90,0.25)", background: "#1e1a10" }}>{f}</span>
+              <span key={f} className="px-3 py-1.5 rounded-full text-[11px]" style={{ color: "var(--brand)", border: "1px solid rgba(197,165,90,0.25)", background: "#1e1a10" }}>{f}</span>
             ))}
           </div>
         </div>
@@ -507,16 +507,16 @@ const Landing = () => {
           <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "#3a3a3a" }}>Built for</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, title: "Executives and leaders", desc: "Who need a consistent personal brand to attract opportunities and board visibility" },
-              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>, title: "Independent experts", desc: "Coaches, advisors, and founders who want to build influence without a marketing team" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>, title: "Executives and leaders", desc: "Who need a consistent personal brand to attract opportunities and board visibility" },
+              { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>, title: "Independent experts", desc: "Coaches, advisors, and founders who want to build influence without a marketing team" },
             ].map((p, i) => (
-              <div key={i} className="sm:text-center p-5 sm:p-5 rounded-[10px] flex sm:flex-col items-center sm:items-center gap-[14px] sm:gap-0" style={{ background: "#141414", border: "1px solid rgba(197,165,90,0.3)", padding: undefined }}>
+              <div key={i} className="sm:text-center p-5 sm:p-5 rounded-[10px] flex sm:flex-col items-center sm:items-center gap-[14px] sm:gap-0" style={{ background: "var(--surface-ink-raised)", border: "1px solid rgba(197,165,90,0.3)", padding: undefined }}>
                 <div className="w-10 h-10 sm:w-[44px] sm:h-[44px] rounded-full sm:mx-auto sm:mb-4 flex items-center justify-center shrink-0" style={{ border: "1px solid rgba(197,165,90,0.3)" }}>
                   {p.icon}
                 </div>
                 <div className="text-left sm:text-center">
-                  <div className="text-[13px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{p.title}</div>
+                  <div className="text-[13px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{p.title}</div>
                   <div className="text-[11px] leading-relaxed" style={{ color: "#666" }}>{p.desc}</div>
                 </div>
               </div>
@@ -526,7 +526,7 @@ const Landing = () => {
       </section>
 
       {/* Section 7 — How it works (Improvement 7: tighter mobile spacing) */}
-      <section id="how-it-works" className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section id="how-it-works" className="landing-compact relative py-16 px-5 sm:px-10" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(180deg, #0d0d0d 0%, #0a0e18 40%, #0a0e18 60%, #0d0d0d 100%)",
         }} />
@@ -548,7 +548,7 @@ const Landing = () => {
               >
                 <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "#1f1f1f", fontFamily: "'Playfair Display', serif" }}>{s.n}</div>
                 <div>
-                  <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "#f0f0f0" }}>{s.t}</div>
+                  <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{s.t}</div>
                   <div className="text-[13px] leading-[1.6]" style={{ color: "#666" }}>{s.d}</div>
                 </div>
               </div>
@@ -558,14 +558,14 @@ const Landing = () => {
       </section>
 
       {/* Section 8 — Social proof (Improvement 8: desktop auto-scroll, mobile swipe) */}
-      <section className="landing-compact py-16 px-5 sm:px-10" style={{ borderTop: "1px solid #1a1a1a" }}>
+      <section className="landing-compact py-16 px-5 sm:px-10" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <div className="max-w-4xl mx-auto overflow-hidden">
           {/* Desktop: CSS auto-scroll carousel */}
           <div className="hidden md:block">
             <div className="testimonial-track">
               {desktopTestimonials.map((t, i) => (
-                <div key={i} className="flex-shrink-0 w-[340px] p-5 rounded-xl" style={{ background: "#141414", border: "1px solid #252525" }}>
-                  <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#999" }}>"{t.q}"</p>
+                <div key={i} className="flex-shrink-0 w-[340px] p-5 rounded-xl" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
+                  <p className="text-[13px] leading-relaxed mb-3" style={{ color: "var(--ink-6)" }}>"{t.q}"</p>
                   <p className="text-[11px]" style={{ color: "#3a3a3a" }}>{t.a}</p>
                 </div>
               ))}
@@ -579,7 +579,7 @@ const Landing = () => {
       </section>
 
       {/* Section 9 — CTA band (gold shimmer) */}
-      <section className="landing-compact-cta relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "#F97316" }}>
+      <section className="landing-compact-cta relative py-14 px-5 sm:px-10 text-center overflow-hidden" style={{ background: "var(--brand)" }}>
         <div className="absolute inset-0 pointer-events-none" style={{
           background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%)",
           animation: "gold-shimmer 5s ease-in-out infinite",
@@ -588,15 +588,15 @@ const Landing = () => {
         <div className="relative">
           <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "#0d0d0d", fontFamily: "'Playfair Display', serif" }}>Your authority starts here.</h2>
           <p className="text-[13px] mb-6" style={{ color: "#0d0d0d99" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
-          <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "#0d0d0d", color: "#f0f0f0" }}>
+          <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "#0d0d0d", color: "var(--ink-7)" }}>
             Get early access
           </button>
         </div>
       </section>
 
       {/* Section 10 — Footer */}
-      <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid #1a1a1a" }}>
-        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "#F97316", fontFamily: "'Playfair Display', serif" }}>AURA</span>
+      <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
+        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "'Playfair Display', serif" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "#3a3a3a" }}>Strategic intelligence for senior professionals.</p>
       </footer>
     </div>

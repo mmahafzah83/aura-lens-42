@@ -49,7 +49,7 @@ function getVisual(count: number, mostUrgent: EventType | null): Visual {
     case "signal_shift":
       return { borderColor: "#7F77DD", badgeBg: "#7F77DD", badgeText: String(count), textColor: "#fff", pulse: false };
     case "timing_window":
-      return { borderColor: "#F97316", badgeBg: "#F97316", badgeText: "!", textColor: "#fff", pulse: true };
+      return { borderColor: "var(--brand)", badgeBg: "var(--brand)", badgeText: "!", textColor: "#fff", pulse: true };
     case "silence_alarm":
       return { borderColor: "#E24B4A", badgeBg: "#E24B4A", badgeText: "!", textColor: "#fff", pulse: false };
     case "weekly_brief":
@@ -258,7 +258,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                 width: 26,
                 height: 26,
                 borderRadius: "50%",
-                border: `2px solid ${avatarState === "signal" ? "#7F77DD" : "#F97316"}`,
+                border: `2px solid ${avatarState === "signal" ? "#7F77DD" : "var(--brand)"}`,
                 animation: `askaura-ring-pulse ${avatarState === "signal" ? "2s" : "1s"} ease-in-out infinite`,
                 pointerEvents: "none",
               }}
@@ -349,7 +349,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                     <p className="text-[11px] text-muted-foreground leading-snug truncate">{e.body}</p>
                   )}
                 </div>
-                <ArrowUpRight className="w-3 h-3 mt-0.5 shrink-0 text-[#F97316] opacity-0 group-hover/item:opacity-100 transition-opacity" />
+                <ArrowUpRight className="w-3 h-3 mt-0.5 shrink-0 text-brand opacity-0 group-hover/item:opacity-100 transition-opacity" />
               </button>
             );
           })}

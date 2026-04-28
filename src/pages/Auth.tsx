@@ -79,9 +79,9 @@ const Auth = () => {
       {/* Scoped style overrides to defeat global input styles + autofill */}
       <style>{`
         .auth-input {
-          background-color: #1A1916 !important;
-          border: 0.5px solid #2A2825 !important;
-          color: #E8E4DC !important;
+          background-color: var(--surface-ink-subtle) !important;
+          border: 0.5px solid var(--ink-3) !important;
+          color: var(--ink-7) !important;
           border-radius: 10px !important;
           padding: 12px 14px !important;
           width: 100%;
@@ -96,17 +96,17 @@ const Auth = () => {
           opacity: 1;
         }
         .auth-input:focus {
-          border-color: #F97316 !important;
-          box-shadow: 0 0 0 3px rgba(249,115,22,0.12) !important;
+          border-color: var(--brand) !important;
+          box-shadow: 0 0 0 3px var(--brand-muted) !important;
         }
         /* Defeat browser autofill white background */
         .auth-input:-webkit-autofill,
         .auth-input:-webkit-autofill:hover,
         .auth-input:-webkit-autofill:focus,
         .auth-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 1000px #1A1916 inset !important;
-          -webkit-text-fill-color: #E8E4DC !important;
-          caret-color: #E8E4DC !important;
+          -webkit-box-shadow: 0 0 0 1000px var(--surface-ink-subtle) inset !important;
+          -webkit-text-fill-color: var(--ink-7) !important;
+          caret-color: var(--ink-7) !important;
           transition: background-color 9999s ease-in-out 0s;
         }
         .auth-headline {
@@ -123,8 +123,8 @@ const Auth = () => {
         }
         .auth-headline em {
           font-style: italic;
-          color: #F97316;
-          -webkit-text-fill-color: #F97316;
+          color: var(--brand);
+          -webkit-text-fill-color: var(--brand);
         }
         .auth-sublabel {
           font-family: 'DM Sans', sans-serif;
@@ -135,7 +135,7 @@ const Auth = () => {
           margin-bottom: 28px;
         }
         .auth-tagline {
-          color: #C8C4BE !important;
+          color: var(--ink-7) !important;
           opacity: 1 !important;
           font-size: 16px !important;
           font-weight: 300 !important;
@@ -143,10 +143,10 @@ const Auth = () => {
           font-family: 'DM Sans', sans-serif !important;
           line-height: 1.5 !important;
           background: none !important;
-          -webkit-text-fill-color: #C8C4BE !important;
+          -webkit-text-fill-color: var(--ink-7) !important;
         }
         .auth-feature-title {
-          color: #E8E4DC !important;
+          color: var(--ink-7) !important;
           font-weight: 600 !important;
           font-size: 13px !important;
           font-family: 'DM Sans', sans-serif !important;
@@ -172,7 +172,7 @@ const Auth = () => {
           opacity: 1 !important;
         }
         .auth-submit {
-          background: #F97316;
+          background: var(--brand);
           color: #ffffff;
           border: none;
           border-radius: 10px;
@@ -189,11 +189,11 @@ const Auth = () => {
           justify-content: center;
           gap: 8px;
         }
-        .auth-submit:hover:not(:disabled) { background: #EA6C0A; }
+        .auth-submit:hover:not(:disabled) { background: var(--brand-hover); }
         .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
         .auth-google {
           background: #ffffff;
-          color: #0E0D0C;
+          color: var(--ink);
           border: none;
           border-radius: 10px;
           padding: 12px;
@@ -209,7 +209,7 @@ const Auth = () => {
           transition: opacity 0.15s ease;
         }
         .auth-google:hover { opacity: 0.92; }
-        .auth-divider-line { height: 0.5px; background: #2A2825; flex: 1; }
+        .auth-divider-line { height: 0.5px; background: var(--ink-3); flex: 1; }
         .auth-divider-text { font-size: 11px; color: #4A4845; font-family: 'DM Sans', sans-serif; }
         .auth-wordmark {
           font-family: 'DM Serif Display', Georgia, serif;
@@ -237,17 +237,17 @@ const Auth = () => {
           padding: 4px 12px;
           font-size: 10px;
           font-weight: 600;
-          color: #F97316;
+          color: var(--brand);
           letter-spacing: 0.06em;
           font-family: 'DM Sans', sans-serif;
         }
-        .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: #F97316; }
+        .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
         .auth-link { font-size: 12px; color: #4A4845; font-family: 'DM Sans', sans-serif; }
-        .auth-link-orange { color: #F97316; font-weight: 500; }
+        .auth-link-orange { color: var(--brand); font-weight: 500; }
         .auth-brand-large {
           font-family: 'DM Serif Display', Georgia, serif;
           font-size: 56px;
-          color: #F97316;
+          color: var(--brand);
           letter-spacing: -0.03em;
           text-align: center;
           line-height: 1;
@@ -256,8 +256,8 @@ const Auth = () => {
           width: 36px;
           height: 36px;
           border-radius: 10px;
-          background: #1A1916;
-          border: 0.5px solid #2A2825;
+          background: var(--surface-ink-subtle);
+          border: 0.5px solid var(--ink-3);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -281,7 +281,7 @@ const Auth = () => {
           <div className="flex items-center gap-3 mb-2">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "#F97316" }}
+              style={{ backgroundColor: "var(--brand)" }}
             >
               <Zap className="w-5 h-5 text-white" />
             </div>
@@ -321,7 +321,7 @@ const Auth = () => {
                 className="auth-input"
               />
               {emailError && (
-                <p className="mt-1.5 text-xs" style={{ color: "#ef4444" }}>{emailError}</p>
+                <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{emailError}</p>
               )}
             </div>
 
@@ -396,7 +396,7 @@ const Auth = () => {
       {/* RIGHT — brand panel (hidden on mobile) */}
       <div
         className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
-        style={{ backgroundColor: "#0a0a0a" }}
+        style={{ backgroundColor: "var(--ink)" }}
       >
         {/* Centered radial glow */}
         <div
@@ -420,21 +420,21 @@ const Auth = () => {
             Your expertise is invisible. Aura fixes that.
           </p>
 
-          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "#F97316", opacity: 0.5 }} />
+          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "var(--brand)", opacity: 0.5 }} />
 
           <div className="space-y-6 text-left">
             <FeatureRow
-              icon={<Radio className="w-4 h-4" style={{ color: "#F97316" }} />}
+              icon={<Radio className="w-4 h-4" style={{ color: "var(--brand)" }} />}
               title="Signal intelligence"
               desc="Converts what you read into ranked market signals"
             />
             <FeatureRow
-              icon={<PenLine className="w-4 h-4" style={{ color: "#F97316" }} />}
+              icon={<PenLine className="w-4 h-4" style={{ color: "var(--brand)" }} />}
               title="Flash content"
               desc="LinkedIn posts in your voice, English or Arabic, in minutes"
             />
             <FeatureRow
-              icon={<TrendingUp className="w-4 h-4" style={{ color: "#F97316" }} />}
+              icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--brand)" }} />}
               title="Authority score"
               desc="Tracks how your visibility compounds over time"
             />

@@ -75,7 +75,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
   const total = fields.length;
   const pct = Math.round((filledCount / total) * 100);
 
-  const fillColor = "#F97316";
+  const fillColor = "var(--brand)";
 
   const emptyFields = fields
     .filter((f) => !f.filled)
@@ -86,18 +86,18 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
     <div
       className="mb-6"
       style={{
-        background: "#141414",
-        border: "1px solid #252525",
+        background: "var(--surface-ink-raised)",
+        border: "1px solid var(--ink-3)",
         borderRadius: 10,
         padding: 14,
       }}
     >
-      <p style={{ fontSize: 12, color: "#f0f0f0", fontWeight: 500, marginBottom: 8 }}>
+      <p style={{ fontSize: 12, color: "var(--ink-7)", fontWeight: 500, marginBottom: 8 }}>
         Foundation strength
       </p>
 
       {/* Progress bar */}
-      <div style={{ height: 8, background: "#1a1a1a", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+      <div style={{ height: 8, background: "var(--surface-ink-subtle)", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
         <div
           style={{
             height: "100%",
@@ -127,10 +127,10 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
                 className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{ background: "#E24B4A", opacity: 0.6 }}
               />
-              <span style={{ fontSize: 11, color: "#888", flex: 1 }}>{f.label}</span>
+              <span style={{ fontSize: 11, color: "var(--ink-5)", flex: 1 }}>{f.label}</span>
               <span
                 className="group-hover:underline"
-                style={{ fontSize: 11, color: "#F97316", fontWeight: 500 }}
+                style={{ fontSize: 11, color: "var(--brand)", fontWeight: 500 }}
               >
                 Add →
               </span>

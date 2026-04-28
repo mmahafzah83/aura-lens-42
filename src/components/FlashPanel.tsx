@@ -369,14 +369,14 @@ export default function FlashPanel() {
                     key={pt.key}
                     onClick={() => setPostType(pt.key)}
                     dir={dirAttr}
-                    style={selected ? { borderColor: "#F97316", backgroundColor: "rgba(249,115,22,0.08)" } : undefined}
+                    style={selected ? { borderColor: "var(--brand)", backgroundColor: "rgba(249,115,22,0.08)" } : undefined}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       selected
                         ? "text-foreground"
                         : "bg-secondary/20 border-border/10 text-muted-foreground hover:border-border/30"
                     }`}
                   >
-                    <Icon className="w-4 h-4 mb-1.5" style={selected ? { color: "#F97316" } : undefined} />
+                    <Icon className="w-4 h-4 mb-1.5" style={selected ? { color: "var(--brand)" } : undefined} />
                     <div className="text-xs font-semibold" style={lang === "ar" ? arabicFontStyle : undefined}>
                       {lang === "ar" ? pt.labelAr : pt.labelEn}
                     </div>
@@ -429,7 +429,7 @@ export default function FlashPanel() {
         onClick={runGeneration}
         disabled={!canGenerate}
         style={{
-          backgroundColor: canGenerate ? "#F97316" : undefined,
+          backgroundColor: canGenerate ? "var(--brand)" : undefined,
           color: canGenerate ? "#fff" : undefined,
         }}
         className={`w-full py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
@@ -472,7 +472,7 @@ export default function FlashPanel() {
               <span
                 className="absolute top-3 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
                 style={{
-                  backgroundColor: "#F97316",
+                  backgroundColor: "var(--brand)",
                   ...(lang === "ar" ? { left: "0.75rem" } : { right: "0.75rem" }),
                   ...(lang === "ar" ? arabicFontStyle : undefined),
                 }}
