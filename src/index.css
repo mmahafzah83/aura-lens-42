@@ -1204,3 +1204,21 @@ html.dark  { background-color: #0c0c0c; }
   animation: capture-pulse-dot 1.5s ease-in-out infinite;
   flex-shrink: 0;
 }
+
+/* ── Mobile-only layout adjustments (≤767px) ── */
+@media (max-width: 767px) {
+  /* Collapse multi-column tailwind grids to single column on mobile.
+     Only affects classes already in markup; desktop ≥768px untouched. */
+  .grid.grid-cols-2,
+  .grid.grid-cols-3,
+  .grid.grid-cols-4,
+  .grid.sm\:grid-cols-2,
+  .grid.sm\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Soften card corners on mobile */
+  .aura-page .rounded-2xl,
+  .aura-page .rounded-xl {
+    border-radius: 14px;
+  }
+}
