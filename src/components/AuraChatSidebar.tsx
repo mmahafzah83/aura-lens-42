@@ -225,7 +225,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
   );
 };
 
-type Msg = { role: "user" | "assistant"; content: string; isBrief?: boolean };
+type Msg = { role: "user" | "assistant"; content: string; isBrief?: boolean; isShadowTwin?: boolean };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
 
@@ -517,9 +517,18 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   }, [open, initialMessage, context]);
 
   // ── Streaming chat ──
-  const streamChat = async (allMessages: Msg[], mode?: string) => {
+  const streamChat = async (
+    allMessages: Msg[],
+    mode?: string,
+    opts?: { extraSystem?: string; tagShadowTwin?: boolean }
+  ) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error("Not authenticated");
+
+    // Prepend an additional system message to the EF input so it survives unchanged.
+    const outboundMessages: Array<{ role: string; content: string }> = opts?.extraSystem
+      ? [{ role: "system", content: opts.extraSystem }, ...allMessages.map(m => ({ role: m.role, content: m.content }))]
+      : allMessages.map(m => ({ role: m.role, content: m.content }));
 
     const resp = await fetch(CHAT_URL, {
       method: "POST",
@@ -528,7 +537,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ messages: allMessages, mode }),
+      body: JSON.stringify({ messages: outboundMessages, mode }),
     });
 
     if (!resp.ok) {
@@ -547,9 +556,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
+          return prev.map((m, i) =>
+            i === prev.length - 1
+              ? { ...m, content: assistantSoFar, ...(opts?.tagShadowTwin ? { isShadowTwin: true } : {}) }
+              : m
+          );
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: assistantSoFar, ...(opts?.tagShadowTwin ? { isShadowTwin: true } : {}) }];
       });
     };
 
@@ -641,8 +654,72 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         } catch (e) { console.error("[memory] user insert failed", e); }
       })();
 
+      // ── Shadow Twin detection ──
+      const SHADOW_TRIGGER = "Generate my Shadow Twin portrait.";
+      let extraSystem: string | undefined;
+      let tagShadowTwin = false;
+      if (text.trim() === SHADOW_TRIGGER) {
+        tagShadowTwin = true;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const uid = session?.user?.id;
+          if (uid) {
+            const [sigRes, profRes, postRes] = await Promise.all([
+              supabase.from("strategic_signals" as any)
+                .select("signal_title, fragment_count, explanation")
+                .eq("user_id", uid)
+                .order("priority_score", { ascending: false })
+                .limit(3),
+              supabase.from("diagnostic_profiles" as any)
+                .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars")
+                .eq("user_id", uid)
+                .maybeSingle(),
+              supabase.from("linkedin_posts" as any)
+                .select("post_text, engagement_score")
+                .eq("user_id", uid)
+                .order("published_at", { ascending: false })
+                .limit(5),
+            ]);
+            const sigs = ((sigRes.data as any[]) || []).map((s, i) =>
+              `${i + 1}. ${s.signal_title} (fragments: ${s.fragment_count ?? 0}) — ${s.explanation || ""}`
+            ).join("\n");
+            const p: any = profRes.data || {};
+            const profile = `Sector: ${p.sector_focus || "—"} | Practice: ${p.core_practice || "—"} | Level: ${p.level || "—"} | Firm: ${p.firm || "—"} | North Star: ${p.north_star_goal || "—"} | Pillars: ${(p.brand_pillars || []).join(", ") || "—"}`;
+            const posts = ((postRes.data as any[]) || []).map((pp, i) =>
+              `${i + 1}. (engagement ${pp.engagement_score ?? 0}) ${(pp.post_text || "").slice(0, 240)}`
+            ).join("\n");
+            extraSystem = `---SHADOW TWIN SYSTEM PROMPT OVERRIDE---
+
+The user has requested their "Shadow Twin" — a portrait of the expert they are capable of being but have not yet fully claimed in public. This is a deeply personal and strategic output. Override your usual format for this response only.
+
+SHADOW TWIN CONTEXT:
+PROFILE — ${profile}
+TOP 3 SIGNALS:
+${sigs || "—"}
+RECENT 5 POSTS:
+${posts || "—"}
+
+Generate a 220-word portrait structured exactly as follows:
+
+PARAGRAPH 1 — The claimed identity (60 words): Write who this professional is known as in 18 months. Give them a specific title that does not exist yet but is earned. Name the exact topic they own. Name one specific framework or model they are associated with by name (invent a plausible name based on their signals). Write in third person, present tense, as if it is already true.
+
+PARAGRAPH 2 — The evidence trail (80 words): Name exactly 3 posts or pieces of content they published that shifted how the market sees them. These must be grounded in their top signals — cite signal_titles by exact name in bold. Each piece of content should have a specific title and the sentence it changed.
+
+PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand between their current state and this portrait. Be direct and uncomfortable. Name the content they have NOT published. Name the competitor who currently holds the position they are reaching for. End with one action — the single post or framework that would start closing the gap. End with NEXT STEP: [specific action].
+
+---END SHADOW TWIN SYSTEM PROMPT OVERRIDE---`;
+          }
+        } catch (e) {
+          console.error("[shadow-twin] context fetch failed", e);
+        }
+      }
+
       // Stream response (with silent memory prefix prepended)
-      const assistantContent = await streamChat([...memoryPrefix, ...newMessages], mode);
+      const assistantContent = await streamChat(
+        [...memoryPrefix, ...newMessages],
+        mode,
+        { extraSystem, tagShadowTwin }
+      );
 
       // Save assistant message
       if (assistantContent) {
@@ -1251,6 +1328,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                         WEEKLY BRIEF · {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                       </div>
                     )}
+                    {msg.role === "assistant" && msg.isShadowTwin && (
+                      <div
+                        className="max-w-[85%]"
+                        style={{ fontSize: 10, color: "#534AB7", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 500, marginBottom: 4 }}
+                      >
+                        YOUR SHADOW TWIN — 18 MONTHS AHEAD
+                      </div>
+                    )}
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                         msg.role === "user"
@@ -1261,6 +1346,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                         wordBreak: "break-word",
                         overflowWrap: "anywhere",
                         ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid #F97316" } : {}),
+                        ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
                       }}
                     >
                       {msg.role === "assistant" ? (
@@ -1327,6 +1413,26 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                         {savedFlash.has(i) ? "Saved ✓" : "Save to Vault"}
                       </button>
                     )}
+                    {msg.role === "assistant" && msg.content && !isLoading && msg.isShadowTwin && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(msg.content);
+                            toast.success("Portrait copied");
+                          } catch {
+                            toast.error("Copy failed");
+                          }
+                        }}
+                        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press"
+                        style={{
+                          background: "#EEEDFE",
+                          color: "#3C3489",
+                          border: "0.5px solid #AFA9EC",
+                        }}
+                      >
+                        Copy portrait
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -1362,6 +1468,21 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                     </button>
                   );
                 })}
+                {/* Shadow Twin chip (BB-4) */}
+                <button
+                  key="shadow-twin"
+                  onClick={() => send("Generate my Shadow Twin portrait.")}
+                  disabled={isLoading}
+                  className="flex items-center gap-1.5 text-[11px] transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap shrink-0 tactile-press"
+                  style={{
+                    background: "#EEEDFE",
+                    border: "0.5px solid #AFA9EC",
+                    color: "#3C3489",
+                    fontWeight: 500,
+                  }}
+                >
+                  Shadow Twin ↗
+                </button>
               </div>
 
               <div className="flex gap-2">
