@@ -573,6 +573,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setInput("");
     setIsLoading(true);
     setShowMemoryPanel(false);
+    // Reset adaptive chip when a new message is sent
+    setAdaptiveChipLabel(null);
 
     // Build silent cross-session memory prefix (last 5 user/assistant rows, chronological)
     const memoryPrefix: Msg[] = memoryRows
