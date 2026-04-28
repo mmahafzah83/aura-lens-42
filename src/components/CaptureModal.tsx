@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink, Paperclip } from "lucide-react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink, Plus, Camera, FolderOpen, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
@@ -48,6 +48,20 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const [analyzing, setAnalyzing] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; date: string } | null>(null);
+
+  // ── New UI-only state for v4 design ──
+  const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
+  const [linkPreview, setLinkPreview] = useState<{ title: string; domain: string; snippet: string } | null>(null);
+  const [signalMatch, setSignalMatch] = useState<{ title: string } | null>(null);
+  const [recentDocs, setRecentDocs] = useState<Array<{
+    id: string;
+    filename: string;
+    file_type: string;
+    file_size: number | null;
+    status: string;
+    created_at: string;
+  }>>([]);
+
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
