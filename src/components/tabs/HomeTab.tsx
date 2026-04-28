@@ -655,7 +655,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             {fmtTime(now)}
           </div>
           <div className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
-            {getGreeting(now.getHours())}{userName ? `, ${userName}` : ""}
+            {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
           </div>
         </div>
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
