@@ -517,9 +517,18 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   }, [open, initialMessage, context]);
 
   // ── Streaming chat ──
-  const streamChat = async (allMessages: Msg[], mode?: string) => {
+  const streamChat = async (
+    allMessages: Msg[],
+    mode?: string,
+    opts?: { extraSystem?: string; tagShadowTwin?: boolean }
+  ) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error("Not authenticated");
+
+    // Prepend an additional system message to the EF input so it survives unchanged.
+    const outboundMessages: Array<{ role: string; content: string }> = opts?.extraSystem
+      ? [{ role: "system", content: opts.extraSystem }, ...allMessages.map(m => ({ role: m.role, content: m.content }))]
+      : allMessages.map(m => ({ role: m.role, content: m.content }));
 
     const resp = await fetch(CHAT_URL, {
       method: "POST",
@@ -528,7 +537,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         Authorization: `Bearer ${session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ messages: allMessages, mode }),
+      body: JSON.stringify({ messages: outboundMessages, mode }),
     });
 
     if (!resp.ok) {
@@ -547,9 +556,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       setMessages(prev => {
         const last = prev[prev.length - 1];
         if (last?.role === "assistant") {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
+          return prev.map((m, i) =>
+            i === prev.length - 1
+              ? { ...m, content: assistantSoFar, ...(opts?.tagShadowTwin ? { isShadowTwin: true } : {}) }
+              : m
+          );
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: assistantSoFar, ...(opts?.tagShadowTwin ? { isShadowTwin: true } : {}) }];
       });
     };
 
