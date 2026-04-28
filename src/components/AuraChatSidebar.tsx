@@ -1243,13 +1243,25 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
               ) : (
                 messages.map((msg, i) => (
                   <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                    {msg.role === "assistant" && msg.isBrief && (
+                      <div
+                        className="max-w-[85%]"
+                        style={{ fontSize: 10, color: "#F97316", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginBottom: 4 }}
+                      >
+                        WEEKLY BRIEF · {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                      </div>
+                    )}
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground rounded-br-md"
                           : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
                       }`}
-                      style={{ wordBreak: "break-word", overflowWrap: "anywhere" }}
+                      style={{
+                        wordBreak: "break-word",
+                        overflowWrap: "anywhere",
+                        ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid #F97316" } : {}),
+                      }}
                     >
                       {msg.role === "assistant" ? (
                         <ReactMarkdown
