@@ -754,6 +754,122 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </section>
 
+      {/* ─────────── 4b. AUTHORITY TRAJECTORY ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Authority trajectory
+        </h2>
+        {!trajectory ? (
+          <div
+            className="rounded-lg p-4 text-[12px]"
+            style={{
+              border: "1px dashed var(--color-border)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            Not enough data yet — check back after a few more days.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Row 1 — metric cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {([
+                { label: "Today", value: trajectory.currentScore, color: "#F97316" },
+                {
+                  label: "30d forecast",
+                  value: trajectory.forecast30,
+                  color:
+                    trajectory.forecast30 > trajectory.currentScore
+                      ? "#7ab648"
+                      : trajectory.forecast30 < trajectory.currentScore
+                      ? "#E24B4A"
+                      : "var(--color-text-secondary)",
+                },
+                {
+                  label: "90d forecast",
+                  value: trajectory.forecast90,
+                  color:
+                    trajectory.forecast90 > trajectory.currentScore
+                      ? "#7ab648"
+                      : trajectory.forecast90 < trajectory.currentScore
+                      ? "#E24B4A"
+                      : "var(--color-text-secondary)",
+                },
+              ]).map((c) => (
+                <div
+                  key={c.label}
+                  style={{
+                    background: "var(--color-card)",
+                    borderRadius: 8,
+                    padding: "14px 16px",
+                    border: "0.5px solid var(--color-border-secondary, var(--color-border))",
+                  }}
+                >
+                  <div
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {c.label}
+                  </div>
+                  <div
+                    className="tabular-nums mt-1"
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 700,
+                      color: c.color,
+                      lineHeight: 1.1,
+                      transition: "color 300ms ease, transform 300ms ease",
+                    }}
+                    key={`${c.label}-${c.value}`}
+                  >
+                    {c.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row 2 — scenario toggle */}
+            <div className="flex flex-wrap gap-2">
+              {([
+                { key: "current", label: "Current pace" },
+                { key: "publish2x", label: "2× publishing" },
+                { key: "stop", label: "Stop capturing" },
+              ] as const).map((b) => {
+                const active = scenario === b.key;
+                return (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => setScenario(b.key)}
+                    className="text-[11px] px-3 py-1.5 rounded-full transition-colors"
+                    style={
+                      active
+                        ? { background: "#F97316", color: "#fff", border: "0.5px solid #F97316" }
+                        : {
+                            background: "transparent",
+                            color: "var(--color-text-secondary)",
+                            border: "0.5px solid var(--color-border-secondary, var(--color-border))",
+                          }
+                    }
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Row 3 — trend summary */}
+            <div className="text-[12px] space-y-1" style={{ color: "var(--color-text-secondary)" }}>
+              <div>{trajectory.trendText}</div>
+              {trajectory.to95Text && <div>{trajectory.to95Text}</div>}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* ─────────── 5. HEADLINE STATS ─────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <HeroStat
