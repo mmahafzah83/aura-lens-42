@@ -120,6 +120,30 @@ interface TopSignal {
   confidence: number;
 }
 
+interface CompetitorAlert {
+  competitorName: string;
+  topic: string;
+  url: string | null;
+  fetchedAt: string;
+  signalTitle: string;
+  fragmentCount: number;
+  daysSinceLastPost: number;
+}
+
+const COMPETITOR_KEYWORDS = [
+  "mckinsey", "pwc", "deloitte", "bcg", "bain",
+  "kpmg", "accenture", "strategy&", "oliver wyman",
+];
+
+const competitorTimeAgo = (iso: string): string => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diffMs / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+};
+
 const ACCENT = "#F97316";
 const GREEN = "#7ab648";
 const RED = "#E24B4A";
@@ -185,6 +209,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [dismissedTrendIds, setDismissedTrendIds] = useState<Set<string>>(new Set());
   const [trendFilter, setTrendFilter] = useState<TrendFilter>("all");
   const [refreshingTrends, setRefreshingTrends] = useState(false);
+
+  // Competitor alert (read-only, additive)
+  const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
 
   // Live clock
   useEffect(() => {
@@ -358,6 +385,88 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }
   }, []);
 
+  const loadCompetitorAlert = useCallback(async (uid: string) => {
+    try {
+      const seventyTwoHoursAgo = new Date(Date.now() - 72 * 3_600_000).toISOString();
+      const [trendsRes, signalRes, postRes] = await Promise.all([
+        supabase
+          .from("industry_trends")
+          .select("headline, source, url, fetched_at")
+          .eq("user_id", uid)
+          .gte("fetched_at", seventyTwoHoursAgo)
+          .order("fetched_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("strategic_signals")
+          .select("signal_title, fragment_count")
+          .eq("user_id", uid)
+          .eq("status", "active")
+          .order("priority_score", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("linkedin_posts")
+          .select("published_at")
+          .eq("user_id", uid)
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const topSig = signalRes.data;
+      if (!topSig?.signal_title) return;
+
+      const competitorTrend = (trendsRes.data || []).find((t: any) => {
+        const src = (t.source || "").toLowerCase();
+        return COMPETITOR_KEYWORDS.some(k => src.includes(k));
+      });
+      if (!competitorTrend) return;
+
+      // Keyword overlap (>4 chars) between headline and signal title
+      const headlineWords = new Set(
+        (competitorTrend.headline || "")
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter((w: string) => w.length > 4),
+      );
+      const sigWords = (topSig.signal_title || "")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w: string) => w.length > 4);
+      const hasOverlap = sigWords.some(w => headlineWords.has(w));
+      if (!hasOverlap) return;
+
+      // Days since last post
+      const lastPost = postRes.data?.published_at;
+      const daysSinceLastPost = lastPost
+        ? Math.floor((Date.now() - new Date(lastPost).getTime()) / 86400_000)
+        : 30;
+
+      // Identify competitor display name from source
+      const srcLower = (competitorTrend.source || "").toLowerCase();
+      const matchedKey = COMPETITOR_KEYWORDS.find(k => srcLower.includes(k)) || competitorTrend.source;
+      const competitorName = matchedKey
+        .split(/\s+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
+      const topicRaw = (competitorTrend.headline || "").trim();
+      const topic = topicRaw.length > 60 ? topicRaw.slice(0, 60).trimEnd() + "…" : topicRaw;
+
+      setCompetitorAlert({
+        competitorName,
+        topic,
+        url: competitorTrend.url,
+        fetchedAt: competitorTrend.fetched_at,
+        signalTitle: topSig.signal_title,
+        fragmentCount: topSig.fragment_count ?? 0,
+        daysSinceLastPost,
+      });
+    } catch (e) {
+      console.warn("[HomeTab] competitor alert load failed", e);
+    }
+  }, []);
+
   // Gate all loaders on auth-ready. If no user after ready → unblock skeletons
   // and fall through to empty/error states (do not stay loading forever).
   useEffect(() => {
@@ -417,6 +526,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       loadMoves(uid),
       loadTrends(uid),
       loadTrendsBadge(uid),
+        loadCompetitorAlert(uid),
     ]);
 
     // Realtime: reload trends list whenever Phase B updates a row to status='new'
@@ -725,6 +835,65 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             >
               See your signals →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 3 — Aura's Read */}
+      {competitorAlert && (
+        <div
+          style={{
+            background: "hsl(var(--card))",
+            border: "0.5px solid hsl(var(--border))",
+            borderLeft: `3px solid ${RED}`,
+            borderRadius: 8,
+            padding: "14px 16px",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: RED, display: "inline-block" }} />
+              <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: RED, fontWeight: 500 }}>
+                Competitor alert
+              </span>
+            </div>
+            <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>
+              {competitorTimeAgo(competitorAlert.fetchedAt)}
+            </span>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--foreground))", margin: 0 }}>
+            {competitorAlert.competitorName} published on {competitorAlert.topic}. Your{" "}
+            <span style={{ fontWeight: 600 }}>{competitorAlert.signalTitle}</span> signal is at{" "}
+            <span style={{ fontWeight: 600 }}>{competitorAlert.fragmentCount} fragments</span> — your strongest position on this topic.
+            {competitorAlert.daysSinceLastPost >= 3 && (
+              <> You haven't published in <span style={{ fontWeight: 600 }}>{competitorAlert.daysSinceLastPost} days</span>. This is the window.</>
+            )}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => navigate("/publish")}
+              style={{
+                background: ACCENT, color: "#fff",
+                fontSize: 12, fontWeight: 600,
+                padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
+              }}
+            >
+              Publish now →
+            </button>
+            {competitorAlert.url && (
+              <button
+                onClick={() => window.open(competitorAlert.url!, "_blank", "noopener,noreferrer")}
+                style={{
+                  border: "0.5px solid hsl(var(--border))",
+                  color: "hsl(var(--muted-foreground))",
+                  background: "transparent",
+                  fontSize: 12, padding: "7px 18px", borderRadius: 4,
+                  cursor: "pointer",
+                }}
+              >
+                Read their piece →
+              </button>
+            )}
           </div>
         </div>
       )}
