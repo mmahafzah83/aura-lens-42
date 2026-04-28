@@ -937,39 +937,54 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
-            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score" },
-            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals" },
+            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "#F97316" },
+            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "#2E7D38" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "#F97316" },
           ]).map((c) => {
             const cfg = subScoreCard(c.kind, c.value);
             return (
               <div
                 key={c.label}
                 style={{
-                  background: "var(--color-card)",
-                  borderRadius: 8,
-                  padding: "14px 16px",
-                  border: `0.5px solid ${cfg.border}`,
+                  background: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: "16px 18px",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
                 }}
               >
                 <div className="flex items-baseline justify-between">
-                  <div className="text-[10px] uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "#3D3A36",
+                    }}
+                  >
                     {c.label}
                   </div>
                   <div
                     className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                    style={{ background: `${cfg.color}18`, color: cfg.color, fontWeight: 600 }}
+                    style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
                   >
                     {cfg.tag}
                   </div>
                 </div>
                 <div
                   className="tabular-nums mt-1"
-                  style={{ fontSize: 24, fontWeight: 700, color: cfg.color, lineHeight: 1.1 }}
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 36,
+                    color: c.color,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.02em",
+                  }}
                 >
                   {Math.round(c.value)}
                 </div>
-                <div className="text-[10px] mt-1.5" style={{ color: "var(--color-text-muted)" }}>
+                <div className="text-[11px] mt-1.5" style={{ color: "#3D3A36" }}>
                   {c.desc}
                 </div>
               </div>
