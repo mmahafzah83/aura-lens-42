@@ -749,7 +749,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "#F97316" : "#444",
+              color: activeSubTab === tab.value ? "#F97316" : "#7A7670",
               background: "transparent", border: "none",
               borderBottom: activeSubTab === tab.value ? "2px solid #F97316" : "2px solid transparent",
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
