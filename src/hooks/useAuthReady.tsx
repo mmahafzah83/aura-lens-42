@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 /**
  * useAuthReady — deterministic auth bootstrap.
@@ -17,6 +17,7 @@ import type { User } from "@supabase/supabase-js";
  */
 export function useAuthReady() {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -28,6 +29,7 @@ export function useAuthReady() {
       (_event, session) => {
         if (cancelled) return;
         setUser(session?.user ?? null);
+        setSession(session ?? null);
       }
     );
 
@@ -38,6 +40,7 @@ export function useAuthReady() {
       .then(({ data: { session } }) => {
         if (cancelled) return;
         setUser(session?.user ?? null);
+        setSession(session ?? null);
         setIsReady(true);
         console.log(
           "[auth] restore finished",
@@ -70,5 +73,5 @@ export function useAuthReady() {
     };
   }, []);
 
-  return { user, isReady };
+  return { user, session, isReady };
 }

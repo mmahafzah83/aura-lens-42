@@ -144,10 +144,15 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // ────────────────────────────────────────────────
 
 const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
-  const { user: authUser, isReady: authReady } = useAuthReady();
+  const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
+  // Session is "confirmed" only when auth restore is done AND we have an access
+  // token. This is the gate for ALL data fetches — without it, RLS-protected
+  // queries fire without an Authorization header and fail (the original bug).
+  const sessionConfirmed = authReady && !!authSession?.access_token && !!authUser?.id;
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
   const [userName, setUserName] = useState<string>("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // section-level loading + error
   const [briefLoading, setBriefLoading] = useState(true);
@@ -187,44 +192,6 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return () => clearInterval(t);
   }, []);
 
-  // Load name (gated on auth ready, uses cached user)
-  useEffect(() => {
-    if (!authReady) return;
-    if (!authUser) {
-      setUserName("");
-      return;
-    }
-    (async () => {
-      const meta: any = authUser.user_metadata || {};
-      const fallback = (authUser.email || "").split("@")[0];
-      let name = meta.first_name || meta.full_name || meta.name || "";
-      try {
-        const { data } = await withTimeout(
-          supabase
-            .from("diagnostic_profiles")
-            .select("first_name")
-            .eq("user_id", authUser.id)
-            .maybeSingle(),
-          8000,
-        );
-        if (data?.first_name) name = data.first_name;
-      } catch (e) {
-        console.warn("[HomeTab] profile name fetch failed", e);
-      }
-      const raw = (name || "").toString().trim();
-      const first = raw ? raw.split(/\s+/)[0] : "";
-      // Never fall back to "there"/"THERE". Prefer first-name from profile/metadata,
-      // then email-local-part, otherwise leave empty so the greeting omits the name.
-      let chosen = first;
-      if (!chosen && authUser.email) {
-        chosen = authUser.email.split("@")[0];
-      }
-      const pretty = chosen
-        ? chosen.charAt(0).toUpperCase() + chosen.slice(1).toLowerCase()
-        : "";
-      setUserName(pretty);
-    })();
-  }, [authReady, authUser]);
 
   // ─── Loaders (each takes the user from auth-ready, no getUser() roundtrip) ───
   const loadBriefing = useCallback(async (uid: string) => {
@@ -401,13 +368,56 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       setMovesLoading(false);
       setTrendsLoading(false);
       setTrendsCountLoading(false);
+      setProfileLoaded(true);
+      return;
+    }
+    // SESSION GUARD: do not fetch until we have a confirmed access token.
+    // Without this, the supabase client may fire requests before the
+    // session is restored, causing RLS queries to fail on first login.
+    if (!authSession?.access_token) {
+      console.log("[HomeTab] waiting for access_token before fetching");
       return;
     }
     const uid = authUser.id;
-    loadBriefing(uid);
-    loadMoves(uid);
-    loadTrends(uid);
-    loadTrendsBadge(uid);
+
+    // Resolve display name (profile fetch sits inside the session guard so
+    // the RLS query has a valid Authorization header on first login).
+    (async () => {
+      const meta: any = authUser.user_metadata || {};
+      let name = meta.first_name || meta.full_name || meta.name || "";
+      try {
+        const { data } = await withTimeout(
+          supabase
+            .from("diagnostic_profiles")
+            .select("first_name")
+            .eq("user_id", uid)
+            .maybeSingle(),
+          8000,
+        );
+        if (data?.first_name) name = data.first_name;
+      } catch (e) {
+        console.warn("[HomeTab] profile name fetch failed", e);
+      }
+      const raw = (name || "").toString().trim();
+      let chosen = raw ? raw.split(/\s+/)[0] : "";
+      if (!chosen && authUser.email) {
+        chosen = authUser.email.split("@")[0];
+      }
+      const pretty = chosen
+        ? chosen.charAt(0).toUpperCase() + chosen.slice(1).toLowerCase()
+        : "";
+      setUserName(pretty);
+      setProfileLoaded(true);
+    })();
+
+    // Fire all section loaders in parallel via allSettled so a single
+    // failure doesn't block the others.
+    Promise.allSettled([
+      loadBriefing(uid),
+      loadMoves(uid),
+      loadTrends(uid),
+      loadTrendsBadge(uid),
+    ]);
 
     // Realtime: reload trends list whenever Phase B updates a row to status='new'
     const channel = supabase
@@ -425,7 +435,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [authReady, authUser, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
+  }, [authReady, authUser, authSession?.access_token, loadBriefing, loadMoves, loadTrends, loadTrendsBadge]);
 
   // ─── Derived ───
   const scoreDiff = useMemo(() => {
@@ -645,18 +655,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             {fmtTime(now)}
           </div>
           <div className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
-            {getGreeting(now.getHours())}{userName ? `, ${userName}` : ""}
+            {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
           </div>
         </div>
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
       {/* SECTION 2 — AI daily briefing */}
-      {briefError && authReady && !!authUser ? (
+      {briefError && sessionConfirmed ? (
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
-      ) : showBriefSkeleton || !authReady || !authUser ? (
+      ) : showBriefSkeleton || !sessionConfirmed ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
@@ -721,7 +731,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 3 — Aura's Read */}
       <AurasRead
-        userId={authUser?.id ?? null}
+        userId={sessionConfirmed ? authUser?.id ?? null : null}
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
       />
@@ -783,9 +793,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             </div>
           )}
         </div>
-        {trendsError && authReady && !!authUser ? (
+        {trendsError && sessionConfirmed ? (
           <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
-        ) : showTrendsSkeleton || !authReady || !authUser ? (
+        ) : showTrendsSkeleton || !sessionConfirmed ? (
           <div className="space-y-3">
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
