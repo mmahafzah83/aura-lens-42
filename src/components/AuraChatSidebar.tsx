@@ -225,7 +225,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
   );
 };
 
-type Msg = { role: "user" | "assistant"; content: string; isBrief?: boolean };
+type Msg = { role: "user" | "assistant"; content: string; isBrief?: boolean; isShadowTwin?: boolean };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
 
