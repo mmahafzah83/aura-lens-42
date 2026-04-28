@@ -1328,6 +1328,14 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         WEEKLY BRIEF · {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                       </div>
                     )}
+                    {msg.role === "assistant" && msg.isShadowTwin && (
+                      <div
+                        className="max-w-[85%]"
+                        style={{ fontSize: 10, color: "#534AB7", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 500, marginBottom: 4 }}
+                      >
+                        YOUR SHADOW TWIN — 18 MONTHS AHEAD
+                      </div>
+                    )}
                     <div
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                         msg.role === "user"
@@ -1338,6 +1346,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         wordBreak: "break-word",
                         overflowWrap: "anywhere",
                         ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid #F97316" } : {}),
+                        ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
                       }}
                     >
                       {msg.role === "assistant" ? (
