@@ -911,8 +911,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               {duplicateInfo && (
                 <div
                   style={{
-                    background: "rgba(239, 159, 39, 0.1)",
-                    border: "0.5px solid rgba(239, 159, 39, 0.4)",
+                    background: "rgba(239, 159, 39, 0.1)" /* warning-pale tint */,
+                    border: "0.5px solid rgba(239, 159, 39, 0.4)" /* warning border */,
                     borderRadius: 10,
                     padding: "10px 14px",
                   }}
@@ -1201,8 +1201,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       justifyContent: "center",
                       background: isRecording ? "var(--danger)" : "var(--brand)",
                       boxShadow: isRecording
-                        ? "0 4px 20px rgba(184,48,37,0.4)"
-                        : "0 4px 20px rgba(249,115,22,0.4)",
+                        ? "0 4px 20px rgba(184,48,37,0.4)" /* danger glow */
+                        : "var(--shadow-brand)",
                       transition: "background 200ms ease",
                     }}
                     aria-label={isRecording ? "Stop recording" : "Start recording"}
