@@ -1048,6 +1048,49 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </button>
             )}
           </div>
+        ) : followerSeries.length <= 1 ? (
+          (() => {
+            const only = followerSeries[0];
+            const delta = only?.growth ?? 0;
+            return (
+              <div
+                className="rounded-lg p-5"
+                style={{
+                  background: "#FFFFFF",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  borderRadius: 14,
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#3D3A36",
+                  }}
+                >
+                  Best day
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 28,
+                    color: "#2E7D38",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
+                </div>
+                <div className="text-[11px] mt-1" style={{ color: "#5F5E5A" }}>
+                  Only one day of follower data so far. More data will appear after additional snapshots.
+                </div>
+              </div>
+            );
+          })()
         ) : (
           <div
             className="rounded-lg p-4"
