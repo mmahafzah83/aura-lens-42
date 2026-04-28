@@ -691,6 +691,74 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setViewMode("chat");
   };
 
+  // ── Vault: load saved items from aura_conversation_memory ──
+  const loadVault = useCallback(async () => {
+    setVaultLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setVaultItems([]); return; }
+      const { data, error } = await supabase
+        .from("aura_conversation_memory")
+        .select("id, content, created_at, metadata")
+        .eq("user_id", session.user.id)
+        .eq("role", "assistant")
+        .filter("metadata->>saved", "eq", "true")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const items: VaultItem[] = (data || []).map((r: any) => ({
+        id: r.id,
+        content: r.content || "",
+        created_at: r.created_at,
+        type: (r.metadata && r.metadata.type) || detectVaultType(r.content || ""),
+      }));
+      setVaultItems(items);
+    } catch (e) {
+      // fail silently
+      setVaultItems([]);
+    } finally {
+      setVaultLoading(false);
+    }
+  }, []);
+
+  const openVault = useCallback(() => {
+    loadVault();
+    setViewMode("vault");
+  }, [loadVault]);
+
+  // ── Vault: ask follow-up — load content as first assistant message in new chat ──
+  const vaultAskFollowUp = (content: string) => {
+    sessionIdRef.current = "session_" + Date.now().toString();
+    setActiveConvId(null);
+    setActiveConv(null);
+    setSavedIndices(new Set());
+    setMessages([{ role: "assistant", content }]);
+    setViewMode("chat");
+  };
+
+  // ── Vault: soft-delete by setting metadata.saved = false ──
+  const vaultDelete = async (item: VaultItem) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const newMeta = {
+        saved: false,
+        unsaved_at: new Date().toISOString(),
+        type: item.type,
+      };
+      const { error } = await supabase
+        .from("aura_conversation_memory")
+        .update({ metadata: newMeta })
+        .eq("id", item.id)
+        .eq("user_id", session.user.id);
+      if (error) throw error;
+      setVaultItems(prev => prev.filter(v => v.id !== item.id));
+      toast.success("Removed from Vault");
+    } catch (e: any) {
+      toast.error("Failed to remove", { description: e?.message });
+    }
+  };
+
   // ── Open existing conversation ──
   const openConversation = async (conv: Conversation) => {
     setActiveConvId(conv.id);
