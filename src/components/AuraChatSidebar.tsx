@@ -287,6 +287,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
+  // ── Cross-session memory (aura_conversation_memory) ──
+  type MemoryRow = { id: string; role: string | null; content: string | null; created_at: string };
+  const [memoryRows, setMemoryRows] = useState<MemoryRow[]>([]);
+  const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const sessionIdRef = useRef<string>(Date.now().toString());
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -349,6 +354,29 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
       } catch {
         // fail silently
+      }
+    })();
+  }, [open]);
+
+  // ── Load cross-session memory on open ──
+  useEffect(() => {
+    if (!open) { setShowMemoryPanel(false); return; }
+    sessionIdRef.current = Date.now().toString();
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) { setMemoryRows([]); return; }
+        const { data } = await supabase
+          .from("aura_conversation_memory" as any)
+          .select("id, role, content, created_at")
+          .eq("user_id", session.user.id)
+          .not("role", "is", null)
+          .not("content", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        setMemoryRows(((data as any[]) || []) as MemoryRow[]);
+      } catch {
+        setMemoryRows([]);
       }
     })();
   }, [open]);
@@ -542,6 +570,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
+    setShowMemoryPanel(false);
+
+    // Build silent cross-session memory prefix (last 5 user/assistant rows, chronological)
+    const memoryPrefix: Msg[] = memoryRows
+      .filter(r => (r.role === "user" || r.role === "assistant") && r.content)
+      .slice(0, 5)
+      .reverse()
+      .map(r => ({ role: r.role as "user" | "assistant", content: r.content as string }));
 
     try {
       // Ensure we have a conversation
@@ -554,12 +590,41 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       // Save user message
       await saveMessage(convId, "user", text.trim(), mode);
 
-      // Stream response
-      const assistantContent = await streamChat(newMessages, mode);
+      // Persist user turn to cross-session memory (silent failure)
+      (async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+          await supabase.from("aura_conversation_memory" as any).insert({
+            user_id: session.user.id,
+            role: "user",
+            content: text.trim(),
+            session_id: sessionIdRef.current,
+            metadata: {},
+          } as any);
+        } catch (e) { console.error("[memory] user insert failed", e); }
+      })();
+
+      // Stream response (with silent memory prefix prepended)
+      const assistantContent = await streamChat([...memoryPrefix, ...newMessages], mode);
 
       // Save assistant message
       if (assistantContent) {
         await saveMessage(convId, "assistant", assistantContent);
+        // Persist assistant turn to cross-session memory (silent failure)
+        (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            await supabase.from("aura_conversation_memory" as any).insert({
+              user_id: session.user.id,
+              role: "assistant",
+              content: assistantContent,
+              session_id: sessionIdRef.current,
+              metadata: { signal_titles_referenced: [] },
+            } as any);
+          } catch (e) { console.error("[memory] assistant insert failed", e); }
+        })();
       }
     } catch (e: any) {
       setMessages(prev => [
