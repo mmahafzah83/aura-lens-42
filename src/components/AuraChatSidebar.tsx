@@ -818,7 +818,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press"
                   title="Chat History"
                 >
-                  <Clock className="w-4 h-4" />
+                  <MessageSquare className="w-4 h-4" />
                 </button>
                 <button onClick={onClose} className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-xl hover:bg-secondary tactile-press">
                   <X className="w-5 h-5" />
