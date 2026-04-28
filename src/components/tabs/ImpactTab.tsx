@@ -487,19 +487,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   /* ── Sub-score card colour rules ── */
   const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
     if (kind === "capture") {
-      if (value >= 90) return { color: "var(--success)", border: "#7ab64844", tag: "Healthy" };
-      if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
-      return { color: "var(--danger)", border: "#E24B4A44", tag: "Needs action" };
+      if (value >= 90) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Healthy" };
+      if (value >= 70) return { color: "var(--brand)", border: "rgba(249,115,22,0.27)", tag: "Good" };
+      return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
     }
     if (kind === "content") {
-      if (value === 100) return { color: "var(--success)", border: "#7ab64844", tag: "Perfect" };
-      if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
-      return { color: "var(--danger)", border: "#E24B4A44", tag: "Needs action" };
+      if (value === 100) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Perfect" };
+      if (value >= 70) return { color: "var(--brand)", border: "rgba(249,115,22,0.27)", tag: "Good" };
+      return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
     }
     // signal
-    if (value >= 85) return { color: "var(--success)", border: "#7ab64844", tag: "Strong" };
-    if (value >= 70) return { color: "var(--brand)", border: "#F9731644", tag: "Good" };
-    return { color: "var(--danger)", border: "#E24B4A44", tag: "Build signals" };
+    if (value >= 85) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Strong" };
+    if (value >= 70) return { color: "var(--brand)", border: "rgba(249,115,22,0.27)", tag: "Good" };
+    return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Build signals" };
   };
 
   /* ── Follower chart series ── */
@@ -1285,11 +1285,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
               let badge: { label: string; bg: string; color: string; border: string } | null = null;
               if (i < 3) {
-                badge = { label: "Top post", bg: "#F9731618", color: "var(--brand)", border: "#F9731644" };
+                badge = { label: "Top post", bg: "rgba(249,115,22,0.09)", color: "var(--brand)", border: "rgba(249,115,22,0.27)" };
               } else if (erPct > 5) {
-                badge = { label: "Exceptional", bg: "#7ab64818", color: "var(--success)", border: "#7ab64844" };
+                badge = { label: "Exceptional", bg: "rgba(46,125,56,0.09)", color: "var(--success)", border: "rgba(46,125,56,0.27)" };
               } else if (erPct >= 3) {
-                badge = { label: "Above avg", bg: "#F9731618", color: "var(--brand)", border: "#F9731644" };
+                badge = { label: "Above avg", bg: "rgba(249,115,22,0.09)", color: "var(--brand)", border: "rgba(249,115,22,0.27)" };
               }
 
               // Bar opacity decreases by rank for non-top
