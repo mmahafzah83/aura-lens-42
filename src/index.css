@@ -1111,3 +1111,53 @@ html.dark  { background-color: #0c0c0c; }
 .aura-sidebar-dark .nav-primary { color: #E8E4DC; }
 [data-aura-sidebar="dark"] .nav-secondary,
 .aura-sidebar-dark .nav-secondary { color: #5F5E5A; }
+
+/* ── Design v3: page entry + alert pulse + initials avatar ── */
+@keyframes aura-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.aura-page {
+  animation: aura-fade-up 0.4s ease both;
+  will-change: transform, opacity;
+}
+
+/* Stagger direct children of .aura-stagger up to 8 deep. */
+.aura-stagger > * {
+  animation: aura-fade-up 0.4s ease both;
+  will-change: transform, opacity;
+}
+.aura-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.aura-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.aura-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.aura-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.aura-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.aura-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.aura-stagger > *:nth-child(7) { animation-delay: 360ms; }
+.aura-stagger > *:nth-child(8) { animation-delay: 420ms; }
+
+@keyframes border-pulse {
+  0%, 100% { border-left-color: #B83025; }
+  50%      { border-left-color: #E05747; }
+}
+.aura-alert-pulse {
+  animation: border-pulse 2.5s ease-in-out 3;
+}
+
+/* Initials avatar (used in dashboard top-right header) */
+.aura-initials-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2A2825;
+  border: 2px solid #F97316;
+  color: #E8E4DC;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
