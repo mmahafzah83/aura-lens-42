@@ -68,11 +68,22 @@ interface Props {
 
 const POLL_MS = 5 * 60 * 1000;
 
+type AvatarState = "idle" | "signal" | "window" | "alarm";
+
+const AVATAR_TOOLTIPS: Record<AvatarState, string> = {
+  idle: "",
+  signal: "New signal detected in the last 24 hours",
+  window: "Publishing window open — your top signal has high momentum",
+  alarm: "No captures in 7+ days — your intelligence is going stale",
+};
+
 export default function AskAuraPresence({ collapsed = false, onOpen, className, showLabel = true }: Props) {
   const [events, setEvents] = useState<NotificationEvent[]>([]);
   const [count, setCount] = useState(0);
   const [showTip, setShowTip] = useState(false);
   const tipTimer = useRef<number | null>(null);
+  const [avatarState, setAvatarState] = useState<AvatarState>("idle");
+  const [showAvatarTip, setShowAvatarTip] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -97,6 +108,68 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
     const id = window.setInterval(fetchEvents, POLL_MS);
     return () => window.clearInterval(id);
   }, [fetchEvents]);
+
+  // ── AA-5: Avatar state checks (signal/window/alarm) ──
+  const computeAvatarState = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setAvatarState("idle"); return; }
+      const nowMs = Date.now();
+      const dayAgo = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
+      const sevenDaysAgo = new Date(nowMs - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const threeDaysAgoMs = nowMs - 3 * 24 * 60 * 60 * 1000;
+
+      const [aRes, bRes, cRes, lastPostRes] = await Promise.all([
+        (supabase.from("strategic_signals" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .gt("created_at", dayAgo),
+        (supabase.from("strategic_signals" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .gt("priority_score", 80),
+        (supabase.from("entries" as any) as any)
+          .select("created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        (supabase.from("linkedin_posts" as any) as any)
+          .select("published_at")
+          .eq("user_id", user.id)
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const lastEntry = (cRes as any)?.data?.created_at as string | undefined;
+      const lastPost = (lastPostRes as any)?.data?.published_at as string | undefined;
+      const alarmTriggered = !lastEntry || new Date(lastEntry).toISOString() < sevenDaysAgo;
+      const highPriorityCount = (bRes as any)?.count ?? 0;
+      const lastPostStale = !lastPost || new Date(lastPost).getTime() < threeDaysAgoMs;
+      const windowTriggered = highPriorityCount > 0 && lastPostStale;
+      const newSignalCount = (aRes as any)?.count ?? 0;
+      const signalTriggered = newSignalCount > 0;
+
+      // Priority: C > B > A
+      if (alarmTriggered) setAvatarState("alarm");
+      else if (windowTriggered) setAvatarState("window");
+      else if (signalTriggered) setAvatarState("signal");
+      else setAvatarState("idle");
+    } catch (e) {
+      // fail silently
+      setAvatarState("idle");
+    }
+  }, []);
+
+  useEffect(() => {
+    computeAvatarState();
+    const id = window.setInterval(computeAvatarState, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [computeAvatarState]);
 
   // Determine most urgent + count-based override
   const { mostUrgent, distinctTypes } = useMemo(() => {
@@ -155,7 +228,11 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
   };
 
   return (
-    <div className="relative" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    <div
+      className="relative"
+      onMouseEnter={() => { onEnter(); if (avatarState !== "idle") setShowAvatarTip(true); }}
+      onMouseLeave={() => { onLeave(); setShowAvatarTip(false); }}
+    >
       <button
         onClick={handleClick}
         className={
@@ -168,7 +245,41 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
             : undefined
         }
       >
-        <Sparkles className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
+        <span className="relative inline-flex items-center justify-center shrink-0">
+          <Sparkles className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+          {(avatarState === "signal" || avatarState === "window") && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                border: `2px solid ${avatarState === "signal" ? "#7F77DD" : "#F97316"}`,
+                animation: `askaura-ring-pulse ${avatarState === "signal" ? "2s" : "1s"} ease-in-out infinite`,
+                pointerEvents: "none",
+              }}
+            />
+          )}
+          {avatarState === "alarm" && (
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                top: -2,
+                right: -2,
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#E24B4A",
+                pointerEvents: "none",
+              }}
+            />
+          )}
+        </span>
         {showLabel && !collapsed && <span className="text-sm font-medium">Ask Aura</span>}
 
         {visual.badgeBg && (
@@ -185,6 +296,28 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           </span>
         )}
       </button>
+
+      {/* Avatar state tooltip (AA-5) */}
+      {showAvatarTip && avatarState !== "idle" && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "calc(100% + 8px)",
+            left: 0,
+            zIndex: 50,
+            fontSize: 12,
+            background: "hsl(var(--background))",
+            border: "0.5px solid hsl(var(--border))",
+            borderRadius: "0.5rem",
+            padding: "6px 10px",
+            color: "hsl(var(--foreground))",
+            whiteSpace: "nowrap",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+        >
+          {AVATAR_TOOLTIPS[avatarState]}
+        </div>
+      )}
 
       {/* Tooltip popup */}
       {showTip && top3.length > 0 && (
@@ -233,6 +366,11 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         @keyframes askaura-pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
+        }
+        @keyframes askaura-ring-pulse {
+          0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+          100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
         }
       `}</style>
     </div>
