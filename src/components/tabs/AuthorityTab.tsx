@@ -2345,7 +2345,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                     borderLeftColor: "var(--brand)",
                     transition: "all 0.2s",
                   }}
-                  className="hover:bg-muted/20 hover:border-l-[#D4B57A]"
+                  className="hover:bg-muted/20 hover:border-l-brand"
                 >
                   {/* Body text */}
                   <p style={{ fontSize: 14, color: "var(--color-foreground, var(--ink-7))", lineHeight: 1.6 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
