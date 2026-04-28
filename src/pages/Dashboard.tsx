@@ -365,6 +365,7 @@ const Dashboard = () => {
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
+              className="aura-theme-toggle"
               style={{
                 background: "var(--color-border-subtle)",
                 border: "0.5px solid var(--color-border)",

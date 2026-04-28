@@ -1227,6 +1227,141 @@ html.dark  { background-color: #0c0c0c; }
 }
 .aura-generate-btn:not(:disabled):hover { background: #EA6C0A !important; }
 
+/* ══════════════════════════════════════════════════════════════
+   DESIGN-8: Global polish pass
+   Cosmetic-only overrides (no component logic touched).
+   Applied via opt-in utility classes plus a few safe global rules
+   that target inline-styled dark surfaces (#0E0D0C, #111110, #141414).
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─ Section title utility (10px / 600 / 0.1em / uppercase / ink) ─ */
+.aura-section-title {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: #3D3A36 !important;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ─ Intelligence briefing card ─ */
+.aura-briefing-card {
+  position: relative;
+  background: #0E0D0C;
+  border-radius: 16px;
+  padding: 20px 22px;
+  overflow: hidden;
+  color: #E8E4DC;
+}
+.aura-briefing-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.aura-briefing-card > * { position: relative; z-index: 1; }
+.aura-briefing-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #F97316;
+  margin-bottom: 8px;
+  display: block;
+}
+.aura-briefing-text {
+  font-size: 14px;
+  font-weight: 300;
+  color: #E8E4DC;
+  line-height: 1.55;
+}
+.aura-briefing-text strong,
+.aura-briefing-text .signal-name { color: #ffffff; font-weight: 600; }
+.aura-briefing-text .accent,
+.aura-briefing-text mark.accent { color: #F97316; background: transparent; font-weight: 500; }
+.aura-briefing-text .positive,
+.aura-briefing-text mark.positive { color: #5BBF6A; background: transparent; font-weight: 500; }
+
+/* ─ Sidebar theme toggle wrapper polish ─
+   Targets the existing toggle pill in the desktop sidebar without
+   needing component changes. The element already exists; we just
+   recolor it for readability on dark sidebar surfaces. */
+[style*="var(--color-sidebar)"] .aura-theme-toggle,
+aside .aura-theme-toggle {
+  background: rgba(255,255,255,0.04) !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  border: 0.5px solid rgba(255,255,255,0.06) !important;
+  color: #5F5E5A !important;
+  font-size: 11px !important;
+}
+
+/* ─ Dark-surface text legibility floor (#5F5E5A minimum) ─
+   Only applies inside elements explicitly wearing the
+   .aura-on-dark class to avoid clobbering Tailwind dark mode. */
+.aura-on-dark .text-muted-foreground,
+.aura-on-dark .text-muted-foreground\/40,
+.aura-on-dark .text-muted-foreground\/50,
+.aura-on-dark .text-muted-foreground\/60,
+.aura-on-dark .text-muted-foreground\/70 {
+  color: #8A8680 !important;
+}
+.aura-on-dark .text-\[\#555\],
+.aura-on-dark .text-\[\#666\],
+.aura-on-dark .text-\[\#888\] {
+  color: #8A8680 !important;
+}
+
+/* ─ Status badges — canonical palette ─
+   Reusable utility classes; legacy badges keep their existing styles
+   unless they opt in by adding the matching class. */
+.aura-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.aura-badge-high       { background: #FDECEA; color: #B83025; }
+.aura-badge-medium     { background: #FEF3C7; color: #92400E; }
+.aura-badge-good       { background: #FEF0E6; color: #C05A10; }
+.aura-badge-perfect    { background: #EAF4EB; color: #2E7D38; }
+.aura-badge-trusted    { background: #EAF4EB; color: #2E7D38; }
+.aura-badge-act-now    { background: #0E0D0C; color: #ffffff; }
+.aura-badge-emerging   { background: #EEF2FF; color: #3730A3; }
+.aura-badge-recommended{ background: #FEF0E6; color: #C05A10; }
+
+/* ─ Card border-radius normalization ─
+   Bumps any tiny radii (≤4px) on .glass-card / inline #fff cards up
+   to 14px so nothing looks unfinished. Scoped to avoid affecting
+   chips/inputs that legitimately want small radii. */
+.glass-card,
+.aura-card {
+  border-radius: 14px;
+}
+/* Left-bordered alert cards: square the left corners */
+.aura-left-accent-card {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: 14px !important;
+  border-bottom-right-radius: 14px !important;
+}
+
+/* ─ Standard control radii ─ */
+.aura-input { border-radius: 10px; }
+.aura-btn { border-radius: 10px; }
+.aura-btn-primary { border-radius: 12px; }
+
 /* ── Mobile-only layout adjustments (≤767px) ── */
 @media (max-width: 767px) {
   /* Collapse 3+ column grids that don't already have a mobile-first single
