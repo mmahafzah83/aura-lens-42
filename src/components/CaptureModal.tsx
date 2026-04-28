@@ -1,8 +1,5 @@
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, ExternalLink, Paperclip } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, Plus, Camera, FolderOpen, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
@@ -48,11 +45,73 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   const [analyzing, setAnalyzing] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [duplicateInfo, setDuplicateInfo] = useState<{ id: string; date: string } | null>(null);
+
+  // ── New UI-only state for v4 design ──
+  const [selectedPillar, setSelectedPillar] = useState<string | null>(null);
+  const [linkPreview, setLinkPreview] = useState<{ title: string; domain: string; snippet: string } | null>(null);
+  const [signalMatch, setSignalMatch] = useState<{ title: string } | null>(null);
+  const [recentDocs, setRecentDocs] = useState<Array<{
+    id: string;
+    filename: string;
+    file_type: string;
+    file_size: number | null;
+    status: string;
+    created_at: string;
+  }>>([]);
+
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Recording elapsed seconds (UI only)
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recordingTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (isRecording) {
+      setRecordingSeconds(0);
+      const startedAt = Date.now();
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingSeconds(Math.floor((Date.now() - startedAt) / 1000));
+      }, 250);
+    } else if (recordingTimerRef.current) {
+      window.clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    return () => {
+      if (recordingTimerRef.current) {
+        window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, [isRecording]);
+
+  // Load recent processed documents when the doc tab opens.
+  useEffect(() => {
+    if (!open || captureType !== "document") return;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("documents")
+        .select("id, filename, file_type, file_size, status, created_at")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      if (!cancelled && data) setRecentDocs(data as any);
+    })();
+    return () => { cancelled = true; };
+  }, [open, captureType]);
+
+  // Reset transient UI on modal close
+  useEffect(() => {
+    if (open) return;
+    setLinkPreview(null);
+    setSignalMatch(null);
+  }, [open]);
 
   const handleImageSelect = async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -429,11 +488,26 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         title: entryTitle,
         content: entryContent,
         summary: entryContent.slice(0, 300),
+        ...(selectedPillar && { skill_pillar: selectedPillar }),
         ...(captureType === "link" && { image_url: data?.original_url || content.trim() }),
       }).select("id").single();
 
       if (entryError) {
         console.error("Failed to insert entry:", entryError.message, entryError);
+      }
+
+      // Capture link preview (UI only) so we can render the preview card
+      if (captureType === "link" && (data?.extracted_title || data?.extracted_content)) {
+        try {
+          const u = new URL(data?.original_url || content.trim());
+          setLinkPreview({
+            title: data?.extracted_title || u.hostname,
+            domain: u.hostname.replace(/^www\./, ""),
+            snippet: (data?.extracted_content || "").slice(0, 160),
+          });
+        } catch {
+          // ignore preview errors
+        }
       }
 
       // Success
@@ -477,6 +551,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               console.error("detect-signals-v2 error:", error);
               return;
             }
+            // Capture signal title for the UI banner
+            const matchedTitle =
+              result?.signal?.title ||
+              result?.signal_title ||
+              result?.matched_signal?.title ||
+              null;
+            if (matchedTitle) setSignalMatch({ title: matchedTitle });
             if (result?.is_new) {
               setTimeout(() => {
                 sonnerToast("New pattern detected ✦", {
@@ -537,10 +618,35 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
 
   if (!open) return null;
 
+  // Skill pillar chip fallbacks (per spec)
+  const PILLAR_CHIPS = [
+    "Digital Transformation",
+    "IT/OT",
+    "Water Utilities",
+    "AI/ML",
+    "Vision 2030",
+  ];
+
+  const fmtBytes = (b: number | null) => {
+    if (!b || b <= 0) return "—";
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+    return `${(b / 1024 / 1024).toFixed(1)} MB`;
+  };
+  const fmtMMSS = (s: number) => {
+    const m = Math.floor(s / 60).toString().padStart(2, "0");
+    const r = (s % 60).toString().padStart(2, "0");
+    return `${m}:${r}`;
+  };
+
   return (
     <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" style={{ zIndex: 999, pointerEvents: "all" }} onClick={handleClose} />
+      {/* Blurred backdrop */}
+      <div
+        className="fixed inset-0 capture-backdrop"
+        style={{ zIndex: 999, pointerEvents: "all" }}
+        onClick={handleClose}
+      />
 
       {/* Bottom Sheet */}
       <div
@@ -548,113 +654,277 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
         onPaste={handlePaste}
-        className="relative flex flex-col w-full bg-background rounded-t-2xl overflow-hidden"
+        className="relative flex flex-col w-full overflow-hidden capture-sheet-anim"
         style={{
-          maxHeight: "85vh",
+          maxHeight: "88vh",
           zIndex: 1000,
-          transform: swipeY > 0 ? `translateY(${swipeY}px)` : "translateY(0)",
+          background: "#FFFFFF",
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          color: "#0E0D0C",
+          transform: swipeY > 0 ? `translateY(${swipeY}px)` : undefined,
           transition: swipeY > 0 ? "none" : "transform 0.3s ease-out",
           opacity: swipeY > 0 ? Math.max(0.3, 1 - swipeY / 400) : 1,
-          willChange: "unset",
+          boxShadow: "0 -8px 40px rgba(0,0,0,0.18)",
         }}
       >
-        {/* Swipe handle */}
-        <div className="flex justify-center pt-2.5 pb-1 cursor-grab">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+        {/* Sheet handle */}
+        <div className="flex justify-center cursor-grab">
+          <div style={{ width: 40, height: 4, background: "rgba(0,0,0,0.12)", borderRadius: 2, margin: "10px auto 0" }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 shrink-0 min-h-[52px]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <Paperclip className="w-4 h-4 text-primary-foreground" />
+        <div
+          className="flex items-center justify-between"
+          style={{ padding: "14px 20px 10px" }}
+        >
+          <div className="flex items-center" style={{ gap: 12 }}>
+            <div
+              className="flex items-center justify-center shrink-0"
+              style={{ width: 36, height: 36, background: "#F97316", borderRadius: 11 }}
+            >
+              <Plus className="w-5 h-5" style={{ color: "#FFFFFF" }} strokeWidth={2.5} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Capture</h2>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Intelligence Capture</p>
+              <h2
+                style={{
+                  fontFamily: "'DM Serif Display', Georgia, serif",
+                  fontSize: 18,
+                  color: "#0E0D0C",
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                Capture
+              </h2>
+              <p
+                style={{
+                  fontSize: 9,
+                  color: "#3D3A36",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  fontWeight: 600,
+                  margin: "2px 0 0",
+                }}
+              >
+                Intelligence capture
+              </p>
             </div>
           </div>
-          <button onClick={handleClose} className="p-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press">
-            <X className="w-5 h-5" />
+          <button
+            onClick={handleClose}
+            className="flex items-center justify-center tactile-press"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "#F3F0EB",
+              color: "#5F5E5A",
+              border: "none",
+            }}
+            aria-label="Close capture"
+          >
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0">
-          {/* Type tabs */}
-          <div className="flex gap-2">
-            {types.map(({ key, icon: Icon, label }) => (
-              <button
-                key={key}
-                onClick={() => { if (!isRecording && !isTranscribing && !analyzing) { setCaptureType(key); if (key !== "image") clearImage(); setUrlError(null); setDuplicateInfo(null); } }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                  captureType === key
-                    ? "bg-primary/15 text-primary border border-primary/25"
-                    : "bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/20"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
+        <div className="flex-1 overflow-y-auto" style={{ padding: "12px 20px 20px", display: "flex", flexDirection: "column", gap: 16, minHeight: 0 }}>
+          {/* Pill tabs */}
+          <div className="flex flex-wrap" style={{ gap: 8 }}>
+            {types.map(({ key, icon: Icon, label }) => {
+              const active = captureType === key;
+              const disabled = isRecording || isTranscribing || analyzing;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    if (disabled) return;
+                    setCaptureType(key);
+                    if (key !== "image") clearImage();
+                    setUrlError(null);
+                    setDuplicateInfo(null);
+                    setLinkPreview(null);
+                    setSignalMatch(null);
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    padding: "8px 14px",
+                    borderRadius: 10,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    border: active ? "0.5px solid #0E0D0C" : "0.5px solid rgba(0,0,0,0.07)",
+                    background: active ? "#0E0D0C" : "transparent",
+                    color: active ? "#FFFFFF" : "#3D3A36",
+                    opacity: disabled ? 0.5 : 1,
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    transition: "all 150ms ease",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 22,
+                      height: 22,
+                      borderRadius: 6,
+                      background: active ? "rgba(255,255,255,0.15)" : "#F3F0EB",
+                    }}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
+          {/* ── LINK ── */}
           {captureType === "link" && (
-            <div className="space-y-2">
-              <Input
-                placeholder="Paste a URL..."
-                value={content}
-                onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
-                onBlur={async (e) => {
-                  const url = e.target.value.trim();
-                  if (!url || !isValidUrl(url)) return;
-                  const { data: { user } } = await supabase.auth.getUser();
-                  if (!user) return;
-                  const { data: dup } = await supabase
-                    .from("entries")
-                    .select("id, created_at")
-                    .eq("user_id", user.id)
-                    .eq("type", "link")
-                    .eq("image_url", url)
-                    .limit(1)
-                    .maybeSingle();
-                  if (dup) {
-                    setDuplicateInfo({
-                      id: dup.id,
-                      date: new Date(dup.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-                    });
-                  }
-                }}
-                className={`bg-secondary border-border/30 ${urlError ? "border-destructive" : ""}`}
-              />
-              {urlError && <p className="text-xs text-destructive">{urlError}</p>}
+            <div className="space-y-3">
+              <div style={{ position: "relative" }}>
+                <input
+                  type="text"
+                  placeholder="Paste a URL..."
+                  value={content}
+                  onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#F97316";
+                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
+                  }}
+                  onBlur={async (e) => {
+                    e.currentTarget.style.borderColor = urlError ? "#E24B4A" : "rgba(0,0,0,0.12)";
+                    e.currentTarget.style.background = "#F3F0EB";
+                    e.currentTarget.style.boxShadow = "none";
+                    const url = e.target.value.trim();
+                    if (!url || !isValidUrl(url)) return;
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+                    const { data: dup } = await supabase
+                      .from("entries")
+                      .select("id, created_at")
+                      .eq("user_id", user.id)
+                      .eq("type", "link")
+                      .eq("image_url", url)
+                      .limit(1)
+                      .maybeSingle();
+                    if (dup) {
+                      setDuplicateInfo({
+                        id: dup.id,
+                        date: new Date(dup.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+                      });
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    background: "#F3F0EB",
+                    border: urlError ? "0.5px solid #E24B4A" : "0.5px solid rgba(0,0,0,0.12)",
+                    borderRadius: 12,
+                    padding: "13px 76px 13px 16px",
+                    fontSize: 13,
+                    color: "#0E0D0C",
+                    outline: "none",
+                    transition: "all 150ms ease",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text) { setContent(text.trim()); setUrlError(null); setDuplicateInfo(null); }
+                    } catch {
+                      sonnerToast.error("Clipboard not available");
+                    }
+                  }}
+                  style={{
+                    position: "absolute",
+                    right: 8,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "#FEF0E6",
+                    color: "#F97316",
+                    borderRadius: 7,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: "5px 10px",
+                    border: "none",
+                    cursor: "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Paste
+                </button>
+              </div>
+
+              {urlError && <p style={{ fontSize: 12, color: "#E24B4A", margin: 0 }}>{urlError}</p>}
+
+              {linkPreview && (
+                <div
+                  style={{
+                    background: "#FFFFFF",
+                    border: "0.5px solid rgba(0,0,0,0.07)",
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                  }}
+                >
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3D3A36" }}>
+                    {linkPreview.domain}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#0E0D0C", marginTop: 4, lineHeight: 1.35 }}>
+                    {linkPreview.title}
+                  </div>
+                  {linkPreview.snippet && (
+                    <div style={{ fontSize: 11, color: "#5F5E5A", marginTop: 6, lineHeight: 1.5 }}>
+                      {linkPreview.snippet}…
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {signalMatch && (
+                <div
+                  style={{
+                    background: "#FEF0E6",
+                    borderRadius: 10,
+                    padding: "11px 14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <span className="capture-pulse-dot" />
+                  <span style={{ fontSize: 12, color: "#C05A10", lineHeight: 1.45 }}>
+                    Aura detected this strengthens your signal <strong>{signalMatch.title}</strong> — adding will reinforce it.
+                  </span>
+                </div>
+              )}
+
               {duplicateInfo && (
                 <div
                   style={{
                     background: "rgba(239, 159, 39, 0.1)",
                     border: "0.5px solid rgba(239, 159, 39, 0.4)",
-                    borderRadius: 6,
-                    padding: "8px 12px",
-                    marginTop: 6,
+                    borderRadius: 10,
+                    padding: "10px 14px",
                   }}
                 >
-                  <p className="text-foreground" style={{ fontSize: 12, fontWeight: 400, margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "#0E0D0C", margin: 0 }}>
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button
-                      type="button"
-                      onClick={() => { setDuplicateInfo(null); handleSave(); }}
-                      style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
-                    >
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 11, color: "#EF9F27", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
                       Capture anyway
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => { setContent(""); setDuplicateInfo(null); }}
-                      className="text-muted-foreground"
-                      style={{ fontSize: 11, background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}
-                    >
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 11, color: "#5F5E5A", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
@@ -663,96 +933,376 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             </div>
           )}
 
+          {/* ── TEXT ── */}
           {captureType === "text" && (
-            <Textarea
-              placeholder="Write your thoughts..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={4}
-              dir="auto"
-              className="bg-secondary border-border/30 resize-none"
-            />
+            <div className="space-y-3">
+              <div className="flex flex-wrap" style={{ gap: 6 }}>
+                {PILLAR_CHIPS.map((p) => {
+                  const active = selectedPillar === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setSelectedPillar(active ? null : p)}
+                      style={{
+                        fontSize: 11,
+                        padding: "5px 12px",
+                        borderRadius: 20,
+                        background: active ? "#0E0D0C" : "#F3F0EB",
+                        border: active ? "0.5px solid #0E0D0C" : "0.5px solid rgba(0,0,0,0.07)",
+                        color: active ? "#FFFFFF" : "#2A2825",
+                        cursor: "pointer",
+                        transition: "all 150ms ease",
+                      }}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
+              <textarea
+                placeholder="Write your thoughts..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                dir="auto"
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = "#F97316";
+                  e.currentTarget.style.background = "#FFFFFF";
+                  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(249,115,22,0.10)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(0,0,0,0.12)";
+                  e.currentTarget.style.background = "#F3F0EB";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+                style={{
+                  width: "100%",
+                  background: "#F3F0EB",
+                  border: "0.5px solid rgba(0,0,0,0.12)",
+                  borderRadius: 12,
+                  padding: "14px 16px",
+                  fontSize: 13,
+                  color: "#0E0D0C",
+                  height: 100,
+                  resize: "none",
+                  outline: "none",
+                  transition: "all 150ms ease",
+                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                }}
+              />
+            </div>
           )}
 
+          {/* ── IMAGE ── */}
           {captureType === "image" && (
             <div className="space-y-3">
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleImageSelect(file); }} />
               {!imagePreview ? (
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-border/40 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors">
-                  <ImageIcon className="w-10 h-10 text-muted-foreground mb-3" />
-                  <p className="text-sm text-muted-foreground">Click to upload or paste a screenshot</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
-                </div>
+                <>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = "#F97316";
+                      e.currentTarget.style.background = "#FEF0E6";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = "rgba(0,0,0,0.15)";
+                      e.currentTarget.style.background = "#F3F0EB";
+                    }}
+                    style={{
+                      background: "#F3F0EB",
+                      border: "1.5px dashed rgba(0,0,0,0.15)",
+                      borderRadius: 14,
+                      padding: 32,
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all 150ms ease",
+                    }}
+                  >
+                    <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "#5F5E5A" }} />
+                    <p style={{ fontSize: 13, color: "#2A2825", margin: 0 }}>Drop an image or click to upload</p>
+                    <p style={{ fontSize: 10, color: "#5F5E5A", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                  </div>
+                  <div className="grid grid-cols-2" style={{ gap: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        border: "0.5px solid rgba(0,0,0,0.12)",
+                        borderRadius: 10,
+                        padding: "8px 16px",
+                        fontSize: 12,
+                        background: "#FFFFFF",
+                        color: "#0E0D0C",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <Camera className="w-3.5 h-3.5" /> From camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 6,
+                        border: "0.5px solid rgba(0,0,0,0.12)",
+                        borderRadius: 10,
+                        padding: "8px 16px",
+                        fontSize: 12,
+                        background: "#FFFFFF",
+                        color: "#0E0D0C",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <FolderOpen className="w-3.5 h-3.5" /> From files
+                    </button>
+                  </div>
+                </>
               ) : (
                 <div className="relative">
-                  <img src={imagePreview} alt="Preview" className="w-full max-h-48 object-contain rounded-xl bg-secondary" />
-                  <button onClick={clearImage} className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/80 flex items-center justify-center hover:bg-background transition-colors">
-                    <X className="w-3.5 h-3.5 text-foreground" />
+                  <img src={imagePreview} alt="Preview" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, background: "#F3F0EB" }} />
+                  <button onClick={clearImage} className="absolute" style={{ top: 8, right: 8, width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.9)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                    <X className="w-3.5 h-3.5" style={{ color: "#0E0D0C" }} />
                   </button>
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <div className="flex items-center" style={{ gap: 8, fontSize: 13, color: "#5F5E5A" }}>
+                  <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#F97316" }} />
                   AI is reading your screenshot…
                 </div>
               )}
             </div>
           )}
 
+          {/* ── DOCUMENT ── */}
           {captureType === "document" && (
-            <DocumentUpload onUploaded={() => { onCaptured(); onOpenChange(false); }} />
+            <div className="space-y-3">
+              {recentDocs.length > 0 && (
+                <div className="space-y-2">
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3D3A36" }}>
+                    Recent documents
+                  </div>
+                  <div className="space-y-1.5">
+                    {recentDocs.map((d) => {
+                      const ext = (d.filename || "").split(".").pop()?.toLowerCase() || "";
+                      const isPdf = ext === "pdf";
+                      const iconBg = isPdf ? "#E24B4A" : "#4F46E5";
+                      const isProcessed = d.status === "processed";
+                      return (
+                        <div
+                          key={d.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "10px 12px",
+                            background: "#FFFFFF",
+                            border: "0.5px solid rgba(0,0,0,0.07)",
+                            borderRadius: 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 9,
+                              background: iconBg,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <FileText className="w-4 h-4" style={{ color: "#FFFFFF" }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: "#0E0D0C", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {d.filename}
+                            </div>
+                            <div style={{ fontSize: 10, color: "#5F5E5A", marginTop: 2 }}>
+                              {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </div>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: 9,
+                              fontWeight: 600,
+                              letterSpacing: "0.06em",
+                              textTransform: "uppercase",
+                              padding: "3px 8px",
+                              borderRadius: 6,
+                              background: isProcessed ? "#EAF4EB" : "#FEF3C7",
+                              color: isProcessed ? "#2E7D38" : "#92400E",
+                            }}
+                          >
+                            {isProcessed ? "Processed" : "Processing"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <DocumentUpload onUploaded={() => { onCaptured(); onOpenChange(false); }} />
+            </div>
           )}
 
+          {/* ── VOICE ── */}
           {captureType === "voice" && (
-            <div className="flex flex-col items-center gap-4 py-6">
+            <div className="flex flex-col items-center" style={{ gap: 14, padding: "8px 0 4px" }}>
               {isTranscribing ? (
                 <>
-                  <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "50%",
+                      background: "#F3F0EB",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#F97316" }} />
                   </div>
-                  <p className="text-sm text-muted-foreground">Transcribing…</p>
+                  <p style={{ fontSize: 13, color: "#5F5E5A", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
+                  {isRecording && (
+                    <div className="flex items-end justify-center" style={{ gap: 4, height: 36 }}>
+                      {Array.from({ length: 12 }).map((_, i) => (
+                        <span
+                          key={i}
+                          className="capture-wave-bar"
+                          style={{ animationDelay: `${(i % 6) * 80}ms` }}
+                        />
+                      ))}
+                    </div>
+                  )}
                   <button
+                    type="button"
                     onClick={isRecording ? stopRecording : startRecording}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
-                      isRecording ? "bg-destructive animate-pulse" : "bg-primary gold-glow hover:scale-105"
-                    }`}
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: "50%",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: isRecording ? "#B83025" : "#F97316",
+                      boxShadow: isRecording
+                        ? "0 4px 20px rgba(184,48,37,0.4)"
+                        : "0 4px 20px rgba(249,115,22,0.4)",
+                      transition: "background 200ms ease",
+                    }}
+                    aria-label={isRecording ? "Stop recording" : "Start recording"}
                   >
-                    {isRecording ? <Square className="w-7 h-7 text-destructive-foreground" /> : <Mic className="w-8 h-8 text-primary-foreground" />}
+                    {isRecording ? (
+                      <Square className="w-6 h-6" style={{ color: "#FFFFFF" }} fill="#FFFFFF" />
+                    ) : (
+                      <Mic className="w-7 h-7" style={{ color: "#FFFFFF" }} />
+                    )}
                   </button>
-                  <p className="text-sm text-muted-foreground">{isRecording ? "Recording… tap to stop" : "Tap to record"}</p>
+                  <div
+                    style={{
+                      fontFamily: "'DM Serif Display', Georgia, serif",
+                      fontSize: 22,
+                      color: "#F97316",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {fmtMMSS(recordingSeconds)}
+                  </div>
+                  {!isRecording && (
+                    <p style={{ fontSize: 12, color: "#5F5E5A", margin: 0 }}>Tap to record</p>
+                  )}
                 </>
               )}
               {!isRecording && !isTranscribing && (
-                <div className="w-full mt-2 space-y-2">
+                <div className="w-full" style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
                   {transcriptionFailed && (
-                    <p className="text-xs text-foreground">Auto-transcription unavailable. Type your notes manually.</p>
+                    <p style={{ fontSize: 12, color: "#0E0D0C", margin: 0 }}>
+                      Auto-transcription unavailable. Type your notes manually.
+                    </p>
                   )}
-                  <p className="text-xs text-muted-foreground">Transcript</p>
-                  <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={3} dir="auto" className="bg-secondary border-border/30 resize-none text-sm" placeholder="Transcript will appear here…" />
+                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#3D3A36", margin: 0 }}>
+                    Transcript
+                  </p>
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    dir="auto"
+                    rows={3}
+                    placeholder="Transcript will appear here…"
+                    style={{
+                      width: "100%",
+                      background: "#F3F0EB",
+                      border: "0.5px solid rgba(0,0,0,0.12)",
+                      borderRadius: 12,
+                      padding: "12px 14px",
+                      fontSize: 13,
+                      color: "#0E0D0C",
+                      resize: "none",
+                      outline: "none",
+                      fontFamily: "'DM Sans', system-ui, sans-serif",
+                    }}
+                  />
                 </div>
               )}
             </div>
           )}
 
-          {saving && (
-            <div className="flex items-center justify-center gap-2 py-2">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-sm text-foreground">Processing your capture…</span>
-            </div>
-          )}
-
+          {/* Save button (not for document tab — it has its own upload handler) */}
           {captureType !== "document" && (
-            <Button
+            <button
+              type="button"
               onClick={handleSave}
               disabled={saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
+              onMouseEnter={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "#EA6C0A";
+              }}
+              onMouseLeave={(e) => {
+                if (!e.currentTarget.disabled) e.currentTarget.style.background = "#F97316";
+              }}
+              style={{
+                width: "100%",
+                background: "#F97316",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: 12,
+                padding: 14,
+                fontFamily: "'DM Sans', system-ui, sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                cursor: "pointer",
+                opacity: (saving || isRecording || isTranscribing || analyzing || (captureType === "image" ? !imageFile : !content.trim())) ? 0.55 : 1,
+                transition: "background 150ms ease, opacity 150ms ease",
+              }}
             >
-              {saving ? null : "Save Capture"}
-            </Button>
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save capture"
+              )}
+            </button>
           )}
         </div>
       </div>
