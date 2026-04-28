@@ -255,7 +255,34 @@ interface Conversation {
   updated_at: string;
 }
 
-type ViewMode = "chat" | "history";
+type ViewMode = "chat" | "history" | "vault";
+
+/* ── Vault item type & helpers ── */
+interface VaultItem {
+  id: string;
+  content: string;
+  created_at: string;
+  type: string;
+}
+
+const VAULT_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
+  pursuit: { bg: "#EEEDFE", color: "#3C3489" },
+  memo: { bg: "#E6F1FB", color: "#0C447C" },
+  post: { bg: "#EAF3DE", color: "#27500A" },
+  plan: { bg: "#FAEEDA", color: "#633806" },
+  deck: { bg: "#F1EFE8", color: "#444441" },
+  analysis: { bg: "#F1EFE8", color: "#444441" },
+};
+
+function detectVaultType(content: string): string {
+  const c = content || "";
+  if (/PURSUIT STRATEGY/i.test(c)) return "pursuit";
+  if (/EXECUTIVE MEMO/i.test(c) || (/\bTo:/.test(c) && /\bFrom:/.test(c))) return "memo";
+  if (/LinkedIn Post/i.test(c) || /Headline:/i.test(c)) return "post";
+  if (/90-Day/i.test(c) || /Days\s*1-?30/i.test(c)) return "plan";
+  if (/\bSlide\b/i.test(c) || /TITLE:/.test(c)) return "deck";
+  return "analysis";
+}
 
 const QUICK_ACTIONS = [
   { label: "LinkedIn Post", icon: Linkedin, mode: "linkedin-summary", prompt: "Summarize my most recent strategic insight into a high-authority LinkedIn post." },
@@ -294,6 +321,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const sessionIdRef = useRef<string>(Date.now().toString());
   // ── Adaptive first-chip label parsed from latest assistant response ──
   const [adaptiveChipLabel, setAdaptiveChipLabel] = useState<string | null>(null);
+  // ── Vault (AA-4) ──
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [expandedVaultId, setExpandedVaultId] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -659,6 +691,74 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     setViewMode("chat");
   };
 
+  // ── Vault: load saved items from aura_conversation_memory ──
+  const loadVault = useCallback(async () => {
+    setVaultLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setVaultItems([]); return; }
+      const { data, error } = await supabase
+        .from("aura_conversation_memory")
+        .select("id, content, created_at, metadata")
+        .eq("user_id", session.user.id)
+        .eq("role", "assistant")
+        .filter("metadata->>saved", "eq", "true")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const items: VaultItem[] = (data || []).map((r: any) => ({
+        id: r.id,
+        content: r.content || "",
+        created_at: r.created_at,
+        type: (r.metadata && r.metadata.type) || detectVaultType(r.content || ""),
+      }));
+      setVaultItems(items);
+    } catch (e) {
+      // fail silently
+      setVaultItems([]);
+    } finally {
+      setVaultLoading(false);
+    }
+  }, []);
+
+  const openVault = useCallback(() => {
+    loadVault();
+    setViewMode("vault");
+  }, [loadVault]);
+
+  // ── Vault: ask follow-up — load content as first assistant message in new chat ──
+  const vaultAskFollowUp = (content: string) => {
+    sessionIdRef.current = "session_" + Date.now().toString();
+    setActiveConvId(null);
+    setActiveConv(null);
+    setSavedIndices(new Set());
+    setMessages([{ role: "assistant", content }]);
+    setViewMode("chat");
+  };
+
+  // ── Vault: soft-delete by setting metadata.saved = false ──
+  const vaultDelete = async (item: VaultItem) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const newMeta = {
+        saved: false,
+        unsaved_at: new Date().toISOString(),
+        type: item.type,
+      };
+      const { error } = await supabase
+        .from("aura_conversation_memory")
+        .update({ metadata: newMeta })
+        .eq("id", item.id)
+        .eq("user_id", session.user.id);
+      if (error) throw error;
+      setVaultItems(prev => prev.filter(v => v.id !== item.id));
+      toast.success("Removed from Vault");
+    } catch (e: any) {
+      toast.error("Failed to remove", { description: e?.message });
+    }
+  };
+
   // ── Open existing conversation ──
   const openConversation = async (conv: Conversation) => {
     setActiveConvId(conv.id);
@@ -829,6 +929,13 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                   <Clock className="w-4 h-4" />
                 </button>
                 <button
+                  onClick={() => { if (viewMode === "vault") { setViewMode("chat"); } else { openVault(); } }}
+                  className={`p-2 transition-colors rounded-lg hover:bg-secondary tactile-press ${viewMode === "vault" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  title="Vault"
+                >
+                  <Bookmark className="w-4 h-4" />
+                </button>
+                <button
                   onClick={() => { loadConversations(); setViewMode("history"); }}
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-secondary tactile-press"
                   title="Chat History"
@@ -950,6 +1057,76 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
           </div>
         )}
 
+        {/* ═══ VAULT VIEW ═══ */}
+        {viewMode === "vault" && (
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2 min-h-0">
+            {vaultLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : vaultItems.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <Bookmark className="w-10 h-10 text-muted-foreground/30 mb-3" />
+                <p className="text-xs text-muted-foreground/60 max-w-[260px] leading-relaxed">
+                  Your saved Aura responses appear here. Click Save to Vault after any response.
+                </p>
+              </div>
+            ) : (
+              vaultItems.map(item => {
+                const style = VAULT_TYPE_STYLES[item.type] || VAULT_TYPE_STYLES.analysis;
+                const date = new Date(item.created_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+                const isExpanded = expandedVaultId === item.id;
+                const preview = (item.content || "").replace(/\s+/g, " ").trim().slice(0, 100);
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => setExpandedVaultId(isExpanded ? null : item.id)}
+                    className="group rounded-lg border border-border/30 bg-secondary/30 hover:bg-secondary/50 transition-colors p-3 cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span style={{ background: style.bg, color: style.color, fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                        {item.type}
+                      </span>
+                      <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", opacity: 0.7 }}>
+                        {date}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", lineHeight: 1.45, whiteSpace: isExpanded ? "pre-wrap" : "normal" }}>
+                      {isExpanded ? item.content : (preview + (item.content.length > 100 ? "…" : ""))}
+                    </div>
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 md:opacity-0 max-md:opacity-100 transition-opacity"
+                    >
+                      <button
+                        onClick={() => vaultAskFollowUp(item.content)}
+                        className="text-[11px] font-medium px-2 py-1 rounded-md text-primary hover:bg-primary/10 tactile-press"
+                      >
+                        Ask follow-up →
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try { await navigator.clipboard.writeText(item.content); toast.success("Copied"); }
+                          catch { toast.error("Copy failed"); }
+                        }}
+                        className="text-[11px] font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 tactile-press"
+                      >
+                        Copy
+                      </button>
+                      <button
+                        onClick={() => vaultDelete(item)}
+                        className="text-[11px] font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 tactile-press"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
         {/* ═══ CHAT VIEW ═══ */}
         {viewMode === "chat" && (
           <>
@@ -1026,33 +1203,37 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <button
                         onClick={async () => {
-                          if (savedIndices.has(i)) return;
                           try {
                             const { data: { session } } = await supabase.auth.getSession();
                             if (!session?.user) { toast.error("Sign in to save"); return; }
-                            const title = msg.content.split("\n").find(l => l.trim().length > 5)?.replace(/[#*◈]/g, "").trim().slice(0, 80) || "Aura Insight";
-                            const { error } = await supabase.from("entries").insert({
+                            const detectedType = detectVaultType(msg.content);
+                            const { error } = await supabase.from("aura_conversation_memory").insert({
                               user_id: session.user.id,
-                              type: "text",
+                              role: "assistant",
                               content: msg.content,
-                              title: `📌 ${title}`,
-                              summary: "Saved from Aura chat",
-                              pinned: true,
-                              skill_pillar: "Strategic Architecture",
+                              session_id: "vault_" + Date.now().toString(),
+                              metadata: { saved: true, saved_at: new Date().toISOString(), type: detectedType },
                             });
                             if (error) throw error;
-                            setSavedIndices(prev => new Set(prev).add(i));
-                            toast.success("Saved to Vault", { description: "Pinned as a strategic capture" });
+                            setSavedFlash(prev => new Set(prev).add(i));
+                            setTimeout(() => {
+                              setSavedFlash(prev => {
+                                const next = new Set(prev);
+                                next.delete(i);
+                                return next;
+                              });
+                            }, 2000);
+                            toast.success("Saved to Vault");
                           } catch (e: any) {
                             toast.error("Failed to save", { description: e.message });
                           }
                         }}
                         className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${
-                          savedIndices.has(i) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-secondary/60"
+                          savedFlash.has(i) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-secondary/60"
                         }`}
                       >
-                        {savedIndices.has(i) ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-                        {savedIndices.has(i) ? "Saved to Vault" : "Save to Vault"}
+                        {savedFlash.has(i) ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
+                        {savedFlash.has(i) ? "Saved ✓" : "Save to Vault"}
                       </button>
                     )}
                   </div>
