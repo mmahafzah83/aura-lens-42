@@ -490,7 +490,7 @@ const Dashboard = () => {
           {/* Tab Content */}
           <div className="tab-content-spring">
             {activeTab === "home" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <HomeTab entries={entries} onOpenChat={openChat} onRefresh={fetchEntries} onNavigateToSignal={navigateToSignal} onOpenCapture={() => setCaptureOpen(true)} onSwitchTab={switchTab} onDraftToStudio={(prefill) => { setSignalDraftPrefill(prefill); setActiveTab("authority"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
                 </ErrorBoundary>
@@ -498,7 +498,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "identity" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <IdentityTab
                     onResetDiagnostic={() => setShowDiagnostic(true)}
@@ -514,7 +514,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "intelligence" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <IntelligenceTab
                     entries={entries}
@@ -532,7 +532,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "authority" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <AuthorityTab entries={entries} onRefresh={fetchEntries} signalPrefill={signalDraftPrefill} onSignalPrefillConsumed={() => setSignalDraftPrefill(null)} />
                 </ErrorBoundary>
@@ -540,7 +540,7 @@ const Dashboard = () => {
             )}
 
             {activeTab === "influence" && (
-              <div className="animate-tab-spring">
+              <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
                   <ImpactTab onOpenCapture={() => setCaptureOpen(true)} />
                 </ErrorBoundary>
