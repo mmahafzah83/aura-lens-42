@@ -662,11 +662,11 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* SECTION 2 — AI daily briefing */}
-      {briefError && authReady && !!authUser ? (
+      {briefError && sessionConfirmed ? (
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
-      ) : showBriefSkeleton || !authReady || !authUser ? (
+      ) : showBriefSkeleton || !sessionConfirmed ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
@@ -731,7 +731,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 3 — Aura's Read */}
       <AurasRead
-        userId={authUser?.id ?? null}
+        userId={sessionConfirmed ? authUser?.id ?? null : null}
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
       />
@@ -793,9 +793,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             </div>
           )}
         </div>
-        {trendsError && authReady && !!authUser ? (
+        {trendsError && sessionConfirmed ? (
           <SectionError onRetry={() => authUser && loadTrends(authUser.id)} message="Couldn't load intelligence. " />
-        ) : showTrendsSkeleton || !authReady || !authUser ? (
+        ) : showTrendsSkeleton || !sessionConfirmed ? (
           <div className="space-y-3">
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
