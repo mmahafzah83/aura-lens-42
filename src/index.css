@@ -1205,6 +1205,28 @@ html.dark  { background-color: #0c0c0c; }
   flex-shrink: 0;
 }
 
+/* ── Publish (Create tab) inputs + generate button ── */
+.aura-create-input {
+  background: #F3F0EB !important;
+  border: 0.5px solid rgba(0,0,0,0.12) !important;
+  border-radius: 10px !important;
+  padding: 11px 14px !important;
+  font-family: 'DM Sans', sans-serif !important;
+  font-size: 13px !important;
+  color: #0E0D0C !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s !important;
+}
+.aura-create-input::placeholder { color: #B4B0AA !important; }
+.aura-create-input:focus,
+.aura-create-input:focus-visible {
+  border-color: #F97316 !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 3px rgba(249,115,22,0.1) !important;
+  outline: none !important;
+}
+.aura-generate-btn:not(:disabled):hover { background: #EA6C0A !important; }
+
 /* ── Mobile-only layout adjustments (≤767px) ── */
 @media (max-width: 767px) {
   /* Collapse 3+ column grids that don't already have a mobile-first single

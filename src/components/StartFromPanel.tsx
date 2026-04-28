@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Sparkles, Zap, Lightbulb, RefreshCw, Loader2,
-  TrendingUp, BookOpen
+  TrendingUp, BookOpen, User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 
@@ -70,6 +69,12 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   const [usedIds, setUsedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [voice, setVoice] = useState<{
+    fullName: string | null;
+    avatarUrl: string | null;
+    tone: string | null;
+    sample: string | null;
+  } | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -110,6 +115,40 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Read-only voice profile fetch (does not change voice training logic)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const [profileRes, voiceRes] = await Promise.all([
+          (supabase.from("diagnostic_profiles" as any) as any)
+            .select("first_name, avatar_url")
+            .eq("user_id", user.id).maybeSingle(),
+          (supabase.from("authority_voice_profiles" as any) as any)
+            .select("tone_summary, example_posts")
+            .eq("user_id", user.id).maybeSingle(),
+        ]);
+        const examplePosts = (voiceRes?.data as any)?.example_posts;
+        let sample: string | null = null;
+        if (Array.isArray(examplePosts) && examplePosts.length > 0) {
+          const first = typeof examplePosts[0] === "string" ? examplePosts[0] : (examplePosts[0]?.text || examplePosts[0]?.content || "");
+          if (first) sample = String(first).slice(0, 120);
+        } else if (typeof examplePosts === "string") {
+          sample = examplePosts.slice(0, 120);
+        }
+        setVoice({
+          fullName: (profileRes?.data as any)?.first_name || null,
+          avatarUrl: (profileRes?.data as any)?.avatar_url || null,
+          tone: (voiceRes?.data as any)?.tone_summary || null,
+          sample,
+        });
+      } catch (e) {
+        // silent — voice card is optional
+      }
+    })();
+  }, []);
 
   // Build curated list
   const curated = useMemo(() => {
@@ -225,80 +264,245 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
     }
   };
 
+  const initials = (() => {
+    const n = (voice?.fullName || "").trim();
+    if (!n) return "";
+    const parts = n.split(/\s+/).filter(Boolean);
+    return parts.length >= 2
+      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+      : parts[0][0]?.toUpperCase() || "";
+  })();
+
   return (
-    <div className="hidden lg:block w-72 shrink-0">
-      <div className="sticky top-0 glass-card rounded-2xl border border-border/8 max-h-[calc(100vh-240px)] overflow-y-auto">
+    <aside
+      className="hidden lg:block w-72 shrink-0"
+      style={{ position: "sticky", top: 24, alignSelf: "flex-start" }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 16,
+          border: "0.5px solid rgba(0,0,0,0.07)",
+          boxShadow: "var(--shadow-sm)",
+          maxHeight: "calc(100vh - 80px)",
+          overflowY: "auto",
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
           <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            <h4 className="text-label uppercase tracking-wider text-xs font-semibold">Start From</h4>
+            <Sparkles className="w-3.5 h-3.5" style={{ color: "#F97316" }} />
+            <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "#3D3A36" }}>
+              Start from
+            </h4>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
+          <button
             onClick={fetchData}
             disabled={loading}
-            className="h-6 w-6 p-0 text-muted-foreground/40 hover:text-primary"
+            style={{ color: "#7A7670" }}
+            className="hover:opacity-80 transition-opacity"
             title="Refresh suggestions"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
-          </Button>
+          </button>
         </div>
 
         {/* Content */}
-        <div className="px-5 pb-5 space-y-4">
+        <div style={{ padding: "0 14px 16px" }}>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-4 h-4 animate-spin text-primary/40" />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "rgba(249,115,22,0.5)" }} />
             </div>
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
-              <Lightbulb className="w-6 h-6 text-primary/20 mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground/40">Capture more insights to unlock suggestions</p>
+              <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "rgba(249,115,22,0.25)" }} />
+              <p style={{ fontSize: 11, color: "#7A7670" }}>Capture more insights to unlock suggestions</p>
             </div>
           ) : (
             groups.map((group) => (
-              <div key={group.label} className="space-y-1.5">
-                <p className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-semibold flex items-center gap-1">
+              <div key={group.label} style={{ marginBottom: 10 }}>
+                <p
+                  style={{
+                    fontSize: 9,
+                    color: "#7A7670",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    fontWeight: 700,
+                    marginBottom: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
                   <group.icon className="w-3 h-3" />
                   {group.label}
                 </p>
-                {group.items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleItemClick(item)}
-                    className={`w-full text-left p-3 rounded-xl border transition-all ${
-                      confirmId === item.id
-                        ? "bg-primary/10 border-primary/30"
-                        : "bg-card/60 border-border/8 hover:border-primary/15"
-                    }`}
-                  >
-                    {confirmId === item.id ? (
-                      <p className="text-[11px] text-primary font-medium">
-                        Replace current draft? Click again to confirm.
-                      </p>
-                    ) : (
-                      <>
-                        <div className="flex items-start gap-2">
-                          <div className="mt-0.5 shrink-0">{sourceIcon(item.sourceType)}</div>
-                          <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2">{item.title}</p>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1.5 ml-5">
-                          <span className="text-[10px] text-muted-foreground/40 leading-none">{item.reason}</span>
-                          {item.confidence && item.confidence >= 0.7 && (
-                            <span className="text-[10px] text-primary/50 tabular-nums">{Math.round(item.confidence * 100)}%</span>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </button>
-                ))}
+                {group.items.map((item) => {
+                  const isConfirm = confirmId === item.id;
+                  const isUnused = !usedIds.has(item.id);
+                  const isRecommended = group.label === "Recommended now";
+                  const badgeText = isRecommended ? "Recommended" : (isUnused ? "Unused" : null);
+                  const badgeStyle = isRecommended
+                    ? { background: "#FEF0E6", color: "#C05A10" }
+                    : { background: "#EEF2FF", color: "#3730A3" };
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleItemClick(item)}
+                      style={{
+                        background: isConfirm ? "#FEF0E6" : "#F3F0EB",
+                        borderRadius: 10,
+                        padding: "10px 12px",
+                        marginBottom: 7,
+                        cursor: "pointer",
+                        border: isConfirm ? "1px solid rgba(249,115,22,0.4)" : "0.5px solid transparent",
+                        width: "100%",
+                        textAlign: "left",
+                        transition: "background 0.15s",
+                      }}
+                      className="hover:brightness-[0.98]"
+                    >
+                      {isConfirm ? (
+                        <p style={{ fontSize: 11, color: "#C05A10", fontWeight: 600 }}>
+                          Replace current draft? Click again to confirm.
+                        </p>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between gap-2">
+                            {item.confidence && item.confidence >= 0.7 ? (
+                              <span
+                                style={{
+                                  fontFamily: "'DM Serif Display', serif",
+                                  fontSize: 16,
+                                  color: "#F97316",
+                                  lineHeight: 1,
+                                }}
+                              >
+                                {Math.round(item.confidence * 100)}
+                              </span>
+                            ) : (
+                              <span className="shrink-0 mt-0.5">{sourceIcon(item.sourceType)}</span>
+                            )}
+                            {badgeText && (
+                              <span
+                                style={{
+                                  ...badgeStyle,
+                                  fontSize: 9,
+                                  fontWeight: 600,
+                                  padding: "2px 7px",
+                                  borderRadius: 6,
+                                  letterSpacing: "0.02em",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {badgeText}
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 500,
+                              color: "#1A1815",
+                              lineHeight: 1.4,
+                              marginTop: 4,
+                            }}
+                            className="line-clamp-2"
+                          >
+                            {item.title}
+                          </p>
+                          <p style={{ fontSize: 9, color: "#7A7670", marginTop: 3 }}>{item.reason}</p>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             ))
           )}
+
+          {/* Voice match card */}
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 14,
+              borderTop: "0.5px solid rgba(0,0,0,0.07)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 9,
+                color: "#7A7670",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontWeight: 700,
+                marginBottom: 8,
+              }}
+            >
+              Voice match
+            </p>
+            <div className="flex items-start gap-2.5">
+              <span
+                className="flex items-center justify-center shrink-0"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "50%",
+                  border: "2px solid #F97316",
+                  background: "#F3F0EB",
+                  overflow: "hidden",
+                  color: "#F97316",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {voice?.avatarUrl ? (
+                  <img src={voice.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : initials ? (
+                  initials
+                ) : (
+                  <User className="w-4 h-4" />
+                )}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p style={{ fontSize: 11, fontWeight: 600, color: "#1A1815", lineHeight: 1.2 }}>
+                  {voice?.fullName || "Your voice"}
+                </p>
+                <p style={{ fontSize: 10, color: "#7A7670", lineHeight: 1.35, marginTop: 2 }}>
+                  {voice?.tone || "Train your voice from past posts"}
+                </p>
+              </div>
+            </div>
+            {voice?.sample && (
+              <div
+                style={{
+                  background: "#F3F0EB",
+                  borderRadius: 10,
+                  padding: "8px 10px",
+                  marginTop: 8,
+                }}
+              >
+                <p style={{ fontSize: 11, fontStyle: "italic", color: "#2A2825", lineHeight: 1.4 }}>
+                  “{voice.sample}{voice.sample.length >= 120 ? "…" : ""}”
+                </p>
+              </div>
+            )}
+            <a
+              href="/dashboard?tab=identity"
+              style={{
+                display: "inline-block",
+                marginTop: 8,
+                fontSize: 10,
+                color: "#F97316",
+                fontWeight: 600,
+              }}
+              className="hover:opacity-80"
+            >
+              Train voice from posts →
+            </a>
+          </div>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }
