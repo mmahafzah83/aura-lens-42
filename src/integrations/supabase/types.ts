@@ -17,10 +17,14 @@ export type Database = {
       aura_conversation_memory: {
         Row: {
           actions_committed: string[] | null
+          content: string | null
           created_at: string | null
           id: string
           key_decisions: string[] | null
+          metadata: Json | null
+          role: string | null
           session_date: string
+          session_id: string | null
           summary: string | null
           topics_discussed: string[] | null
           updated_at: string | null
@@ -28,10 +32,14 @@ export type Database = {
         }
         Insert: {
           actions_committed?: string[] | null
+          content?: string | null
           created_at?: string | null
           id?: string
           key_decisions?: string[] | null
+          metadata?: Json | null
+          role?: string | null
           session_date?: string
+          session_id?: string | null
           summary?: string | null
           topics_discussed?: string[] | null
           updated_at?: string | null
@@ -39,10 +47,14 @@ export type Database = {
         }
         Update: {
           actions_committed?: string[] | null
+          content?: string | null
           created_at?: string | null
           id?: string
           key_decisions?: string[] | null
+          metadata?: Json | null
+          role?: string | null
           session_date?: string
+          session_id?: string | null
           summary?: string | null
           topics_discussed?: string[] | null
           updated_at?: string | null
