@@ -87,6 +87,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [capturesThisMonth, setCapturesThisMonth] = useState(0);
   const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
 
+  // All snapshots (no range filter) for Authority Trajectory forecasting
+  const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
+  const [scenario, setScenario] = useState<"current" | "publish2x" | "stop">("current");
+
   const [postMetricsCount, setPostMetricsCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
 
@@ -133,6 +137,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       { context: "Impact: snapshots", silent: true }
     );
     setSnapshots((snapRes.data as Snapshot[]) || []);
+
+    // All-time snapshots for trajectory forecasting (no range filter)
+    const allSnapRes = await safeQuery(
+      () => supabase
+        .from("score_snapshots")
+        .select("score, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
+      { context: "Impact: all snapshots", silent: true }
+    );
+    setAllSnapshots((allSnapRes.data as { score: number; created_at: string }[]) || []);
 
     // Peak score in last 30 days for narrative
     const thirty = new Date();
