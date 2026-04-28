@@ -87,6 +87,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [capturesThisMonth, setCapturesThisMonth] = useState(0);
   const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
 
+  // All snapshots (no range filter) for Authority Trajectory forecasting
+  const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
+  const [scenario, setScenario] = useState<"current" | "publish2x" | "stop">("current");
+
   const [postMetricsCount, setPostMetricsCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
 
@@ -133,6 +137,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       { context: "Impact: snapshots", silent: true }
     );
     setSnapshots((snapRes.data as Snapshot[]) || []);
+
+    // All-time snapshots for trajectory forecasting (no range filter)
+    const allSnapRes = await safeQuery(
+      () => supabase
+        .from("score_snapshots")
+        .select("score, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true }),
+      { context: "Impact: all snapshots", silent: true }
+    );
+    setAllSnapshots((allSnapRes.data as { score: number; created_at: string }[]) || []);
 
     // Peak score in last 30 days for narrative
     const thirty = new Date();
@@ -484,6 +499,42 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
   }, [followerRows]);
 
+  /* ── Authority Trajectory forecast ── */
+  const trajectory = useMemo(() => {
+    if (allSnapshots.length < 2) return null;
+    const first = allSnapshots[0];
+    const last = allSnapshots[allSnapshots.length - 1];
+    const firstDate = new Date(first.created_at).getTime();
+    const lastDate = new Date(last.created_at).getTime();
+    const daysBetween = Math.max(1, (lastDate - firstDate) / 86400000);
+    const avgDailyChange = (last.score - first.score) / daysBetween;
+    const currentScore = last.score;
+    const mult = scenario === "current" ? 1 : scenario === "publish2x" ? 1.4 : -0.3;
+    const dailyChange = avgDailyChange * mult;
+    const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
+    const forecast30 = clamp(currentScore + dailyChange * 30);
+    const forecast60 = clamp(currentScore + dailyChange * 60);
+    const forecast90 = clamp(currentScore + dailyChange * 90);
+    const delta90 = forecast90 - currentScore;
+    let trendText: string;
+    if (delta90 > 0) trendText = `At current pace, your authority score will increase by ${delta90} pts in 90 days.`;
+    else if (delta90 < 0) trendText = `At current pace, your authority score will decrease by ${Math.abs(delta90)} pts in 90 days.`;
+    else trendText = `At current pace, your authority score will hold steady in 90 days.`;
+    if (scenario === "publish2x") trendText = trendText.replace("At current pace", "With 2× publishing");
+    if (scenario === "stop") trendText = trendText.replace("At current pace", "If you stop capturing");
+    let to95Text: string | null = null;
+    if (currentScore < 92) {
+      const needed = 95 - currentScore;
+      if (dailyChange > 0) {
+        const days = Math.ceil(needed / dailyChange);
+        to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "current" ? "current pace" : scenario === "publish2x" ? "2× pace" : "this rate"}: ${days} days.`;
+      } else {
+        to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "stop" ? "this declining rate" : "current pace"}: not reachable.`;
+      }
+    }
+    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text };
+  }, [allSnapshots, scenario]);
+
   /* ── XLSX Upload ── */
   const handleUploadClick = () => fileInputRef.current?.click();
 
@@ -701,6 +752,122 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             );
           })}
         </div>
+      </section>
+
+      {/* ─────────── 4b. AUTHORITY TRAJECTORY ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Authority trajectory
+        </h2>
+        {!trajectory ? (
+          <div
+            className="rounded-lg p-4 text-[12px]"
+            style={{
+              border: "1px dashed var(--color-border)",
+              color: "var(--color-text-secondary)",
+            }}
+          >
+            Not enough data yet — check back after a few more days.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Row 1 — metric cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {([
+                { label: "Today", value: trajectory.currentScore, color: "#F97316" },
+                {
+                  label: "30d forecast",
+                  value: trajectory.forecast30,
+                  color:
+                    trajectory.forecast30 > trajectory.currentScore
+                      ? "#7ab648"
+                      : trajectory.forecast30 < trajectory.currentScore
+                      ? "#E24B4A"
+                      : "var(--color-text-secondary)",
+                },
+                {
+                  label: "90d forecast",
+                  value: trajectory.forecast90,
+                  color:
+                    trajectory.forecast90 > trajectory.currentScore
+                      ? "#7ab648"
+                      : trajectory.forecast90 < trajectory.currentScore
+                      ? "#E24B4A"
+                      : "var(--color-text-secondary)",
+                },
+              ]).map((c) => (
+                <div
+                  key={c.label}
+                  style={{
+                    background: "var(--color-card)",
+                    borderRadius: 8,
+                    padding: "14px 16px",
+                    border: "0.5px solid var(--color-border-secondary, var(--color-border))",
+                  }}
+                >
+                  <div
+                    className="text-[10px] uppercase tracking-wider"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {c.label}
+                  </div>
+                  <div
+                    className="tabular-nums mt-1"
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 700,
+                      color: c.color,
+                      lineHeight: 1.1,
+                      transition: "color 300ms ease, transform 300ms ease",
+                    }}
+                    key={`${c.label}-${c.value}`}
+                  >
+                    {c.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row 2 — scenario toggle */}
+            <div className="flex flex-wrap gap-2">
+              {([
+                { key: "current", label: "Current pace" },
+                { key: "publish2x", label: "2× publishing" },
+                { key: "stop", label: "Stop capturing" },
+              ] as const).map((b) => {
+                const active = scenario === b.key;
+                return (
+                  <button
+                    key={b.key}
+                    type="button"
+                    onClick={() => setScenario(b.key)}
+                    className="text-[11px] px-3 py-1.5 rounded-full transition-colors"
+                    style={
+                      active
+                        ? { background: "#F97316", color: "#fff", border: "0.5px solid #F97316" }
+                        : {
+                            background: "transparent",
+                            color: "var(--color-text-secondary)",
+                            border: "0.5px solid var(--color-border-secondary, var(--color-border))",
+                          }
+                    }
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Row 3 — trend summary */}
+            <div className="text-[12px] space-y-1" style={{ color: "var(--color-text-secondary)" }}>
+              <div>{trajectory.trendText}</div>
+              {trajectory.to95Text && <div>{trajectory.to95Text}</div>}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ─────────── 5. HEADLINE STATS ─────────── */}
