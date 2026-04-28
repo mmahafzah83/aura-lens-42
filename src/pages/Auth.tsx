@@ -75,74 +75,199 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: "#0d0d0d", fontFamily: "Inter, sans-serif" }}>
+    <div className="min-h-screen flex" style={{ backgroundColor: "#0d0d0d", fontFamily: "'DM Sans', sans-serif" }}>
       {/* Scoped style overrides to defeat global input styles + autofill */}
       <style>{`
         .auth-input {
-          background-color: #1a1a1a !important;
-          border: 1px solid #2e2e2e !important;
-          color: #f0f0f0 !important;
-          border-radius: 8px !important;
-          padding: 10px 14px !important;
+          background-color: #1A1916 !important;
+          border: 0.5px solid #2A2825 !important;
+          color: #E8E4DC !important;
+          border-radius: 10px !important;
+          padding: 12px 14px !important;
           width: 100%;
-          font-size: 14px;
+          font-size: 13px;
           line-height: 1.4;
           outline: none;
-          transition: border-color 0.15s ease;
+          font-family: 'DM Sans', sans-serif;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .auth-input::placeholder {
-          color: #555 !important;
+          color: #4A4845 !important;
           opacity: 1;
         }
         .auth-input:focus {
           border-color: #F97316 !important;
+          box-shadow: 0 0 0 3px rgba(249,115,22,0.12) !important;
         }
         /* Defeat browser autofill white background */
         .auth-input:-webkit-autofill,
         .auth-input:-webkit-autofill:hover,
         .auth-input:-webkit-autofill:focus,
         .auth-input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
-          -webkit-text-fill-color: #f0f0f0 !important;
-          caret-color: #f0f0f0 !important;
+          -webkit-box-shadow: 0 0 0 1000px #1A1916 inset !important;
+          -webkit-text-fill-color: #E8E4DC !important;
+          caret-color: #E8E4DC !important;
           transition: background-color 9999s ease-in-out 0s;
         }
         .auth-headline {
-          color: #f0f0f0 !important;
-          font-weight: 700 !important;
-          font-size: 28px !important;
+          color: #ffffff !important;
+          font-family: 'DM Serif Display', Georgia, serif !important;
+          font-weight: 400 !important;
+          font-size: 30px !important;
+          letter-spacing: -0.02em !important;
+          line-height: 1.15 !important;
           opacity: 1 !important;
           text-shadow: none !important;
           background: none !important;
-          -webkit-text-fill-color: #f0f0f0 !important;
+          -webkit-text-fill-color: #ffffff !important;
+        }
+        .auth-headline em {
+          font-style: italic;
+          color: #F97316;
+          -webkit-text-fill-color: #F97316;
+        }
+        .auth-sublabel {
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          color: #5F5E5A;
+          font-weight: 300;
+          line-height: 1.6;
+          margin-bottom: 28px;
         }
         .auth-tagline {
-          color: #f0f0f0 !important;
+          color: #C8C4BE !important;
           opacity: 1 !important;
-          font-size: 20px !important;
-          font-weight: 500 !important;
+          font-size: 16px !important;
+          font-weight: 300 !important;
           text-align: center !important;
+          font-family: 'DM Sans', sans-serif !important;
+          line-height: 1.5 !important;
           background: none !important;
-          -webkit-text-fill-color: #f0f0f0 !important;
+          -webkit-text-fill-color: #C8C4BE !important;
         }
         .auth-feature-title {
-          color: #f0f0f0 !important;
+          color: #E8E4DC !important;
           font-weight: 600 !important;
-          font-size: 14px !important;
+          font-size: 13px !important;
+          font-family: 'DM Sans', sans-serif !important;
+          margin-bottom: 2px !important;
           opacity: 1 !important;
         }
         .auth-feature-desc {
-          color: #888888 !important;
-          font-size: 13px !important;
+          color: #5F5E5A !important;
+          font-size: 12px !important;
+          font-weight: 300 !important;
+          line-height: 1.5 !important;
+          font-family: 'DM Sans', sans-serif !important;
           opacity: 1 !important;
         }
         .auth-label {
-          color: #888888 !important;
-          font-size: 12px !important;
-          font-weight: 500 !important;
+          color: #6B6866 !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
+          letter-spacing: 0.06em !important;
+          font-family: 'DM Sans', sans-serif !important;
           display: block;
           margin-bottom: 6px;
           opacity: 1 !important;
+        }
+        .auth-submit {
+          background: #F97316;
+          color: #ffffff;
+          border: none;
+          border-radius: 10px;
+          padding: 13px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          width: 100%;
+          cursor: pointer;
+          letter-spacing: -0.01em;
+          transition: background-color 0.15s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .auth-submit:hover:not(:disabled) { background: #EA6C0A; }
+        .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .auth-google {
+          background: #ffffff;
+          color: #0E0D0C;
+          border: none;
+          border-radius: 10px;
+          padding: 12px;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 13px;
+          font-weight: 500;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: opacity 0.15s ease;
+        }
+        .auth-google:hover { opacity: 0.92; }
+        .auth-divider-line { height: 0.5px; background: #2A2825; flex: 1; }
+        .auth-divider-text { font-size: 11px; color: #4A4845; font-family: 'DM Sans', sans-serif; }
+        .auth-wordmark {
+          font-family: 'DM Serif Display', Georgia, serif;
+          font-size: 20px;
+          color: #ffffff;
+          letter-spacing: -0.01em;
+          line-height: 1;
+        }
+        .auth-wordmark-sub {
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #4A4845;
+          font-family: 'DM Sans', sans-serif;
+          margin-top: 4px;
+        }
+        .auth-beta-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          background: rgba(249,115,22,0.1);
+          border: 0.5px solid rgba(249,115,22,0.25);
+          border-radius: 20px;
+          padding: 4px 12px;
+          font-size: 10px;
+          font-weight: 600;
+          color: #F97316;
+          letter-spacing: 0.06em;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .auth-beta-dot { width: 6px; height: 6px; border-radius: 50%; background: #F97316; }
+        .auth-link { font-size: 12px; color: #4A4845; font-family: 'DM Sans', sans-serif; }
+        .auth-link-orange { color: #F97316; font-weight: 500; }
+        .auth-brand-large {
+          font-family: 'DM Serif Display', Georgia, serif;
+          font-size: 56px;
+          color: #F97316;
+          letter-spacing: -0.03em;
+          text-align: center;
+          line-height: 1;
+        }
+        .auth-feature-icon {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: #1A1916;
+          border: 0.5px solid #2A2825;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .auth-footer-note {
+          font-size: 10px;
+          color: #3A3836;
+          text-align: center;
+          font-family: 'DM Sans', sans-serif;
         }
       `}</style>
 
@@ -160,30 +285,23 @@ const Auth = () => {
             >
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <div className="leading-tight">
-              <div className="text-primary font-extrabold text-2xl">Aura</div>
-              <div className="text-xs" style={{ color: "#888" }}>Strategic Intelligence</div>
+            <div>
+              <div className="auth-wordmark">Aura</div>
+              <div className="auth-wordmark-sub">Strategic Intelligence</div>
             </div>
           </div>
 
           {/* Beta pill */}
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mt-5 mb-6"
-            style={{
-              backgroundColor: "#141414",
-              border: "1px solid #F97316",
-              color: "#F97316",
-            }}
-          >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#F97316" }} />
-            Closed Beta
+          <div className="auth-beta-pill mt-5 mb-6">
+            <span className="auth-beta-dot" />
+            CLOSED BETA
           </div>
 
           {/* Headline */}
           <h1 className="auth-headline mb-2">
-            Welcome back
+            Welcome <em>back</em>
           </h1>
-          <p className="text-sm leading-relaxed mb-8" style={{ color: "#888" }}>
+          <p className="auth-sublabel">
             Sign in to your intelligence OS. Every session builds your authority.
           </p>
 
@@ -191,7 +309,7 @@ const Auth = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="auth-label">
-                Email
+                EMAIL
               </label>
               <input
                 id="email"
@@ -209,7 +327,7 @@ const Auth = () => {
 
             <div>
               <label htmlFor="password" className="auth-label">
-                Password
+                PASSWORD
               </label>
               <input
                 id="password"
@@ -226,8 +344,7 @@ const Auth = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-              style={{ backgroundColor: "#F97316" }}
+              className="auth-submit"
             >
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               Sign in →
@@ -235,20 +352,15 @@ const Auth = () => {
 
             {/* Divider */}
             <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px" style={{ backgroundColor: "#252525" }} />
-              <span className="text-xs" style={{ color: "#888" }}>or</span>
-              <div className="flex-1 h-px" style={{ backgroundColor: "#252525" }} />
+              <div className="auth-divider-line" />
+              <span className="auth-divider-text">or</span>
+              <div className="auth-divider-line" />
             </div>
 
             <button
               type="button"
               onClick={handleGoogle}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-colors hover:bg-[#1a1a1a]"
-              style={{
-                backgroundColor: "#141414",
-                border: "1px solid #252525",
-                color: "#f0f0f0",
-              }}
+              className="auth-google"
             >
               <svg width="16" height="16" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -264,8 +376,7 @@ const Auth = () => {
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={resetting}
-                className="text-xs hover:underline disabled:opacity-50"
-                style={{ color: "#888" }}
+                className="auth-link hover:underline disabled:opacity-50"
               >
                 {resetting ? "Sending…" : "Forgot password?"}
               </button>
@@ -273,9 +384,9 @@ const Auth = () => {
           </form>
 
           {/* Bottom link */}
-          <p className="mt-8 text-sm" style={{ color: "#888" }}>
+          <p className="mt-8 auth-link">
             Don't have access?{" "}
-            <Link to="/request-access" className="font-medium hover:underline" style={{ color: "#F97316" }}>
+            <Link to="/request-access" className="auth-link auth-link-orange hover:underline">
               Request early access →
             </Link>
           </p>
@@ -287,27 +398,29 @@ const Auth = () => {
         className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
         style={{ backgroundColor: "#0a0a0a" }}
       >
-        {/* Radial glow top-right */}
+        {/* Centered radial glow */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="pointer-events-none"
           style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 400,
+            height: 400,
             background:
-              "radial-gradient(circle at 85% 15%, rgba(249,115,22,0.08) 0%, transparent 50%)",
+              "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 65%)",
+            zIndex: 0,
           }}
         />
 
-        <div className="relative z-10 max-w-md text-center">
-          <h2
-            className="text-5xl font-bold tracking-tight"
-            style={{ color: "#F97316", fontFamily: "Inter, sans-serif" }}
-          >
-            Aura
-          </h2>
+        <div className="max-w-md text-center" style={{ position: "relative", zIndex: 1 }}>
+          <h2 className="auth-brand-large">Aura</h2>
           <p className="auth-tagline mt-4">
             Your expertise is invisible. Aura fixes that.
           </p>
 
-          <div className="mx-auto my-8 h-px w-10" style={{ backgroundColor: "#F97316" }} />
+          <div className="mx-auto my-8" style={{ width: 40, height: 2, backgroundColor: "#F97316", opacity: 0.5 }} />
 
           <div className="space-y-6 text-left">
             <FeatureRow
@@ -328,10 +441,7 @@ const Auth = () => {
           </div>
         </div>
 
-        <div
-          className="absolute bottom-6 left-0 right-0 text-center text-xs"
-          style={{ color: "#888" }}
-        >
+        <div className="absolute bottom-6 left-0 right-0 auth-footer-note" style={{ zIndex: 1 }}>
           Closed beta · GCC senior professionals · 2026
         </div>
       </div>
@@ -349,15 +459,12 @@ const FeatureRow = ({
   desc: string;
 }) => (
   <div className="flex items-start gap-3">
-    <div
-      className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
-      style={{ backgroundColor: "#141414", border: "1px solid #252525" }}
-    >
+    <div className="auth-feature-icon">
       {icon}
     </div>
     <div>
       <div className="auth-feature-title">{title}</div>
-      <div className="auth-feature-desc mt-0.5">{desc}</div>
+      <div className="auth-feature-desc">{desc}</div>
     </div>
   </div>
 );
