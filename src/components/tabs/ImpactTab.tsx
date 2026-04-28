@@ -660,6 +660,231 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         })}
       </div>
 
+      {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
+      <section
+        className="relative overflow-hidden"
+        style={{
+          background: "#0E0D0C",
+          borderRadius: 14,
+          padding: "28px 28px 24px",
+          color: "#E8E4DC",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07)",
+        }}
+      >
+        {/* Decorative radial glow */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: -80,
+            right: -80,
+            width: 300,
+            height: 300,
+            background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 65%)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Top row: score (left) · forecasts (right) */}
+        <div className="relative flex items-start justify-between gap-6 flex-wrap">
+          <div>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#5F5E5A",
+              }}
+            >
+              Authority score
+            </div>
+            <div
+              className="tabular-nums"
+              style={{
+                fontFamily: "'DM Serif Display', Georgia, serif",
+                fontSize: 80,
+                color: "#F97316",
+                letterSpacing: "-0.04em",
+                lineHeight: 1,
+                marginTop: 6,
+              }}
+            >
+              {animatedScore}
+            </div>
+            <div className="mt-3 inline-flex">
+              <span
+                style={{
+                  background: "rgba(249,115,22,0.12)",
+                  color: "#F97316",
+                  borderRadius: 20,
+                  padding: "5px 14px",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  display: "inline-block",
+                }}
+              >
+                {trendLabel}
+              </span>
+            </div>
+          </div>
+
+          {/* Forecasts top-right */}
+          {trajectory && (
+            <div className="flex gap-7 sm:text-right">
+              <div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#5F5E5A",
+                  }}
+                >
+                  30d
+                </div>
+                <div
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 26,
+                    color: "#BA7517",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1,
+                    marginTop: 4,
+                  }}
+                >
+                  {trajectory.forecast30}
+                </div>
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#5F5E5A",
+                  }}
+                >
+                  90d
+                </div>
+                <div
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 26,
+                    color: "#E24B4A",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1,
+                    marginTop: 4,
+                  }}
+                >
+                  {trajectory.forecast90}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Trajectory bar chart */}
+        {trajectory && (() => {
+          // Build up to 10 bars from existing all-time snapshot scores (latest 10)
+          const recent = allSnapshots.slice(-10).map(s => s.score);
+          const bars = recent.length > 0 ? recent : [trajectory.currentScore];
+          const maxV = Math.max(...bars, 1);
+          // Color ramp: orange near-term → amber at 30d → red at 90d
+          const barColor = (i: number, n: number) => {
+            const t = n <= 1 ? 0 : i / (n - 1);
+            if (t < 0.5) return "#F97316";
+            if (t < 0.85) return "#BA7517";
+            return "#E24B4A";
+          };
+          return (
+            <div className="relative mt-6">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-end",
+                  gap: 4,
+                  height: 64,
+                }}
+              >
+                {bars.map((v, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: 1,
+                      height: `${Math.max(6, (v / maxV) * 100)}%`,
+                      background: barColor(i, bars.length),
+                      borderRadius: 3,
+                      opacity: 0.92,
+                    }}
+                  />
+                ))}
+              </div>
+              <div
+                className="flex justify-between mt-2"
+                style={{ fontSize: 9, color: "#4A4845" }}
+              >
+                <span>Now</span>
+                <span>30d · {trajectory.forecast30}</span>
+                <span>90d · {trajectory.forecast90}</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Scenario toggle */}
+        <div className="relative flex flex-wrap gap-2 mt-5">
+          {([
+            { key: "current", label: "Current pace" },
+            { key: "publish2x", label: "2× publishing" },
+            { key: "stop", label: "Stop capturing" },
+          ] as const).map((b) => {
+            const active = scenario === b.key;
+            return (
+              <button
+                key={b.key}
+                type="button"
+                onClick={() => setScenario(b.key)}
+                style={
+                  active
+                    ? {
+                        background: "#F97316",
+                        color: "#fff",
+                        border: "0.5px solid #F97316",
+                        borderRadius: 8,
+                        padding: "5px 14px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }
+                    : {
+                        background: "transparent",
+                        color: "#5F5E5A",
+                        border: "0.5px solid #2A2825",
+                        borderRadius: 8,
+                        padding: "5px 14px",
+                        fontSize: 11,
+                        fontWeight: 500,
+                      }
+                }
+              >
+                {b.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {trajectory && (
+          <div className="relative mt-4 text-[12px] space-y-1" style={{ color: "#9A958C" }}>
+            <div>{trajectory.trendText}</div>
+            {trajectory.to95Text && <div>{trajectory.to95Text}</div>}
+          </div>
+        )}
+      </section>
+
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
         className="p-6"
@@ -671,9 +896,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-start">
-          {/* LEFT: narrative */}
-          <div>
+        <div>
             <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
               {narrative.map((p, i) => (
                 <span
@@ -702,26 +925,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </button>
             )}
           </div>
-
-          {/* RIGHT: authority score */}
-          <div className="md:text-right md:min-w-[180px]">
-            <div
-              className="leading-none tabular-nums"
-              style={{ fontSize: 48, fontWeight: 700, color: "#F97316", fontFamily: "Inter, sans-serif" }}
-            >
-              {latestScore}
-            </div>
-            <div
-              className="mt-1.5"
-              style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}
-            >
-              Authority score
-            </div>
-            <div className="mt-2 text-xs font-medium" style={{ color: trendColor }}>
-              {trendLabel}
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
