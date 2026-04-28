@@ -579,27 +579,109 @@ const Dashboard = () => {
         </div>
       </main>
 
-      {/* ── Mobile Bottom Nav (navigation only, no AI bar) ── */}
+      {/* ── Mobile Floating Capture FAB ── */}
+      {!chatOpen && !showOnboarding && !showDiagnostic && !captureOpen && (
+        <button
+          onClick={() => setCaptureOpen(true)}
+          aria-label="Capture"
+          className="md:hidden fixed flex items-center justify-center"
+          style={{
+            bottom: `calc(76px + env(safe-area-inset-bottom))`,
+            right: 16,
+            width: 52,
+            height: 52,
+            background: "#F97316",
+            borderRadius: 16,
+            boxShadow: "0 4px 20px rgba(249,115,22,0.45)",
+            zIndex: 49,
+            color: "#ffffff",
+          }}
+        >
+          <Plus className="w-[22px] h-[22px]" strokeWidth={2.5} />
+        </button>
+      )}
+
+      {/* ── Mobile Bottom Nav ── */}
       {!chatOpen && !showOnboarding && !showDiagnostic && (
         <div
-          className={`fixed z-40 left-0 right-0 md:hidden`}
-          style={{ bottom: 'env(safe-area-inset-bottom)' }}
+          className="fixed left-0 right-0 md:hidden"
+          style={{ bottom: 0, zIndex: 50 }}
         >
-          <nav className="border-t border-border/10 bg-background/95 backdrop-blur-xl">
-            <div className="flex w-full px-1 py-1.5">
-              {NAV_ITEMS.map((tab) => (
-                <button
-                  key={`mobile-${tab.value}`}
-                  onClick={() => switchTab(tab.value)}
-                  className={`flex-1 flex flex-col items-center gap-0.5 py-2 rounded-lg transition-all duration-200 tactile-press ${
-                    activeTab === tab.value ? "text-primary bg-primary/8" : "text-muted-foreground/50"
-                  }`}
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span className="text-[8px] font-medium tracking-wide">{tab.label}</span>
-                </button>
-              ))}
-            </div>
+          <nav
+            className="flex items-center justify-around"
+            style={{
+              height: 60,
+              background: "#0E0D0C",
+              borderTop: "0.5px solid rgba(255,255,255,0.06)",
+              paddingBottom: "env(safe-area-inset-bottom)",
+            }}
+          >
+            {(() => {
+              const home = NAV_ITEMS.find(n => n.value === "home")!;
+              const intel = NAV_ITEMS.find(n => n.value === "intelligence")!;
+              const pub = NAV_ITEMS.find(n => n.value === "authority")!;
+              const imp = NAV_ITEMS.find(n => n.value === "influence")!;
+              const ordered = [home, intel, null, pub, imp] as const;
+              return ordered.map((tab, idx) => {
+                if (tab === null) {
+                  return (
+                    <button
+                      key="mobile-aura-center"
+                      onClick={() => openChat()}
+                      aria-label="Ask Aura"
+                      className="flex flex-col items-center justify-center"
+                      style={{ gap: 4 }}
+                    >
+                      <span
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 40,
+                          height: 40,
+                          background: "#F97316",
+                          borderRadius: 14,
+                          boxShadow: "0 2px 12px rgba(249,115,22,0.4)",
+                          color: "#fff",
+                        }}
+                      >
+                        <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                      </span>
+                      <span style={{ fontSize: 8, color: "#F97316", fontWeight: 600 }}>Aura</span>
+                    </button>
+                  );
+                }
+                const isActive = activeTab === tab.value;
+                return (
+                  <button
+                    key={`mobile-${tab.value}`}
+                    onClick={() => switchTab(tab.value)}
+                    className="flex flex-col items-center justify-center"
+                    style={{ gap: 4 }}
+                  >
+                    <span
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 20,
+                        height: 20,
+                        background: isActive ? "#F97316" : "#2A2825",
+                        borderRadius: 6,
+                        color: isActive ? "#fff" : "#7A7670",
+                      }}
+                    >
+                      <tab.icon className="w-[12px] h-[12px]" />
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 8,
+                        color: isActive ? "#F97316" : "#4A4845",
+                        fontWeight: isActive ? 600 : 400,
+                      }}
+                    >
+                      {tab.label}
+                    </span>
+                  </button>
+                );
+              });
+            })()}
           </nav>
         </div>
       )}
