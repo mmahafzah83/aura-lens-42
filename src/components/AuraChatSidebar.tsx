@@ -286,6 +286,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
