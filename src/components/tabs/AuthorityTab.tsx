@@ -2490,7 +2490,17 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
       
 
-      <div className="flex gap-1 p-1 rounded-xl bg-secondary/15 border border-border/8 w-full sm:w-fit">
+      <div
+        className="inline-flex"
+        style={{
+          background: "#fff",
+          borderRadius: 12,
+          padding: 4,
+          boxShadow: "var(--shadow-sm)",
+          border: "0.5px solid rgba(0,0,0,0.07)",
+          gap: 2,
+        }}
+      >
         {TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.key;
@@ -2498,13 +2508,23 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                active
-                  ? "bg-primary/10 text-primary border border-primary/20 shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/20"
-              }`}
+              style={{
+                fontSize: 12,
+                padding: "6px 16px",
+                borderRadius: 9,
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                background: active ? "#F97316" : "transparent",
+                color: active ? "#fff" : "#3D3A36",
+                fontWeight: active ? 600 : 500,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                transition: "background 0.15s, color 0.15s",
+              }}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
               {tab.label}
             </button>
           );
