@@ -499,6 +499,42 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
   }, [followerRows]);
 
+  /* ── Authority Trajectory forecast ── */
+  const trajectory = useMemo(() => {
+    if (allSnapshots.length < 2) return null;
+    const first = allSnapshots[0];
+    const last = allSnapshots[allSnapshots.length - 1];
+    const firstDate = new Date(first.created_at).getTime();
+    const lastDate = new Date(last.created_at).getTime();
+    const daysBetween = Math.max(1, (lastDate - firstDate) / 86400000);
+    const avgDailyChange = (last.score - first.score) / daysBetween;
+    const currentScore = last.score;
+    const mult = scenario === "current" ? 1 : scenario === "publish2x" ? 1.4 : -0.3;
+    const dailyChange = avgDailyChange * mult;
+    const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
+    const forecast30 = clamp(currentScore + dailyChange * 30);
+    const forecast60 = clamp(currentScore + dailyChange * 60);
+    const forecast90 = clamp(currentScore + dailyChange * 90);
+    const delta90 = forecast90 - currentScore;
+    let trendText: string;
+    if (delta90 > 0) trendText = `At current pace, your authority score will increase by ${delta90} pts in 90 days.`;
+    else if (delta90 < 0) trendText = `At current pace, your authority score will decrease by ${Math.abs(delta90)} pts in 90 days.`;
+    else trendText = `At current pace, your authority score will hold steady in 90 days.`;
+    if (scenario === "publish2x") trendText = trendText.replace("At current pace", "With 2× publishing");
+    if (scenario === "stop") trendText = trendText.replace("At current pace", "If you stop capturing");
+    let to95Text: string | null = null;
+    if (currentScore < 92) {
+      const needed = 95 - currentScore;
+      if (dailyChange > 0) {
+        const days = Math.ceil(needed / dailyChange);
+        to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "current" ? "current pace" : scenario === "publish2x" ? "2× pace" : "this rate"}: ${days} days.`;
+      } else {
+        to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "stop" ? "this declining rate" : "current pace"}: not reachable.`;
+      }
+    }
+    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text };
+  }, [allSnapshots, scenario]);
+
   /* ── XLSX Upload ── */
   const handleUploadClick = () => fileInputRef.current?.click();
 
