@@ -367,6 +367,11 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           0%, 100% { opacity: 1; }
           50% { opacity: 0.7; }
         }
+        @keyframes askaura-ring-pulse {
+          0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+          100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+        }
       `}</style>
     </div>
   );
