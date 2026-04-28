@@ -654,8 +654,72 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         } catch (e) { console.error("[memory] user insert failed", e); }
       })();
 
+      // ── Shadow Twin detection ──
+      const SHADOW_TRIGGER = "Generate my Shadow Twin portrait.";
+      let extraSystem: string | undefined;
+      let tagShadowTwin = false;
+      if (text.trim() === SHADOW_TRIGGER) {
+        tagShadowTwin = true;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const uid = session?.user?.id;
+          if (uid) {
+            const [sigRes, profRes, postRes] = await Promise.all([
+              supabase.from("strategic_signals" as any)
+                .select("signal_title, fragment_count, explanation")
+                .eq("user_id", uid)
+                .order("priority_score", { ascending: false })
+                .limit(3),
+              supabase.from("diagnostic_profiles" as any)
+                .select("sector_focus, core_practice, north_star_goal, level, firm, brand_pillars")
+                .eq("user_id", uid)
+                .maybeSingle(),
+              supabase.from("linkedin_posts" as any)
+                .select("post_text, engagement_score")
+                .eq("user_id", uid)
+                .order("published_at", { ascending: false })
+                .limit(5),
+            ]);
+            const sigs = ((sigRes.data as any[]) || []).map((s, i) =>
+              `${i + 1}. ${s.signal_title} (fragments: ${s.fragment_count ?? 0}) — ${s.explanation || ""}`
+            ).join("\n");
+            const p: any = profRes.data || {};
+            const profile = `Sector: ${p.sector_focus || "—"} | Practice: ${p.core_practice || "—"} | Level: ${p.level || "—"} | Firm: ${p.firm || "—"} | North Star: ${p.north_star_goal || "—"} | Pillars: ${(p.brand_pillars || []).join(", ") || "—"}`;
+            const posts = ((postRes.data as any[]) || []).map((pp, i) =>
+              `${i + 1}. (engagement ${pp.engagement_score ?? 0}) ${(pp.post_text || "").slice(0, 240)}`
+            ).join("\n");
+            extraSystem = `---SHADOW TWIN SYSTEM PROMPT OVERRIDE---
+
+The user has requested their "Shadow Twin" — a portrait of the expert they are capable of being but have not yet fully claimed in public. This is a deeply personal and strategic output. Override your usual format for this response only.
+
+SHADOW TWIN CONTEXT:
+PROFILE — ${profile}
+TOP 3 SIGNALS:
+${sigs || "—"}
+RECENT 5 POSTS:
+${posts || "—"}
+
+Generate a 220-word portrait structured exactly as follows:
+
+PARAGRAPH 1 — The claimed identity (60 words): Write who this professional is known as in 18 months. Give them a specific title that does not exist yet but is earned. Name the exact topic they own. Name one specific framework or model they are associated with by name (invent a plausible name based on their signals). Write in third person, present tense, as if it is already true.
+
+PARAGRAPH 2 — The evidence trail (80 words): Name exactly 3 posts or pieces of content they published that shifted how the market sees them. These must be grounded in their top signals — cite signal_titles by exact name in bold. Each piece of content should have a specific title and the sentence it changed.
+
+PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand between their current state and this portrait. Be direct and uncomfortable. Name the content they have NOT published. Name the competitor who currently holds the position they are reaching for. End with one action — the single post or framework that would start closing the gap. End with NEXT STEP: [specific action].
+
+---END SHADOW TWIN SYSTEM PROMPT OVERRIDE---`;
+          }
+        } catch (e) {
+          console.error("[shadow-twin] context fetch failed", e);
+        }
+      }
+
       // Stream response (with silent memory prefix prepended)
-      const assistantContent = await streamChat([...memoryPrefix, ...newMessages], mode);
+      const assistantContent = await streamChat(
+        [...memoryPrefix, ...newMessages],
+        mode,
+        { extraSystem, tagShadowTwin }
+      );
 
       // Save assistant message
       if (assistantContent) {
