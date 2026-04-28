@@ -886,7 +886,10 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
                       )}
                     </div>
                     {msg.role === "assistant" && msg.content && !isLoading && (
-                      <ContextPanel userQuery={messages[i - 1]?.role === "user" ? messages[i - 1].content : ""} />
+                      <>
+                        <AlwaysContextStrip />
+                        <SuggestedFollowUp content={msg.content} onAsk={(q) => send(q)} />
+                      </>
                     )}
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <button
