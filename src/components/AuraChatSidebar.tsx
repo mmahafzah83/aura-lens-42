@@ -321,6 +321,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const sessionIdRef = useRef<string>(Date.now().toString());
   // ── Adaptive first-chip label parsed from latest assistant response ──
   const [adaptiveChipLabel, setAdaptiveChipLabel] = useState<string | null>(null);
+  // ── Vault (AA-4) ──
+  const [vaultItems, setVaultItems] = useState<VaultItem[]>([]);
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [expandedVaultId, setExpandedVaultId] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
