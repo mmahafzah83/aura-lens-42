@@ -361,6 +361,27 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const daysSinceLastAll = lastCaptureAll ? daysBetween(new Date(), lastCaptureAll) : null;
 
+  /* ── Score count-up animation (runs once when value first becomes available) ── */
+  const [animatedScore, setAnimatedScore] = useState(0);
+  const didAnimateRef = useRef(false);
+  useEffect(() => {
+    if (didAnimateRef.current) return;
+    if (!latestScore || latestScore <= 0) return;
+    didAnimateRef.current = true;
+    const target = latestScore;
+    const duration = 900;
+    const start = performance.now();
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      setAnimatedScore(Math.round(easeOutCubic(t) * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [latestScore]);
+
   const newFollowersPeriod = useMemo(
     () => followerRows.reduce((s, r) => s + (r.follower_growth || 0), 0),
     [followerRows]
