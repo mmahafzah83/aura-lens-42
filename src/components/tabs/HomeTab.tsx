@@ -840,6 +840,65 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       )}
 
       {/* SECTION 3 — Aura's Read */}
+      {competitorAlert && (
+        <div
+          style={{
+            background: "hsl(var(--card))",
+            border: "0.5px solid hsl(var(--border))",
+            borderLeft: `3px solid ${RED}`,
+            borderRadius: 8,
+            padding: "14px 16px",
+          }}
+        >
+          <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+            <div className="flex items-center" style={{ gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: RED, display: "inline-block" }} />
+              <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: RED, fontWeight: 500 }}>
+                Competitor alert
+              </span>
+            </div>
+            <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>
+              {competitorTimeAgo(competitorAlert.fetchedAt)}
+            </span>
+          </div>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--foreground))", margin: 0 }}>
+            {competitorAlert.competitorName} published on {competitorAlert.topic}. Your{" "}
+            <span style={{ fontWeight: 600 }}>{competitorAlert.signalTitle}</span> signal is at{" "}
+            <span style={{ fontWeight: 600 }}>{competitorAlert.fragmentCount} fragments</span> — your strongest position on this topic.
+            {competitorAlert.daysSinceLastPost >= 3 && (
+              <> You haven't published in <span style={{ fontWeight: 600 }}>{competitorAlert.daysSinceLastPost} days</span>. This is the window.</>
+            )}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => navigate("/publish")}
+              style={{
+                background: ACCENT, color: "#fff",
+                fontSize: 12, fontWeight: 600,
+                padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
+              }}
+            >
+              Publish now →
+            </button>
+            {competitorAlert.url && (
+              <button
+                onClick={() => window.open(competitorAlert.url!, "_blank", "noopener,noreferrer")}
+                style={{
+                  border: "0.5px solid hsl(var(--border))",
+                  color: "hsl(var(--muted-foreground))",
+                  background: "transparent",
+                  fontSize: 12, padding: "7px 18px", borderRadius: 4,
+                  cursor: "pointer",
+                }}
+              >
+                Read their piece →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 3 — Aura's Read */}
       <AurasRead
         userId={sessionConfirmed ? authUser?.id ?? null : null}
         onOpenCapture={onOpenCapture}
