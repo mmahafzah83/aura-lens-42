@@ -68,11 +68,22 @@ interface Props {
 
 const POLL_MS = 5 * 60 * 1000;
 
+type AvatarState = "idle" | "signal" | "window" | "alarm";
+
+const AVATAR_TOOLTIPS: Record<AvatarState, string> = {
+  idle: "",
+  signal: "New signal detected in the last 24 hours",
+  window: "Publishing window open — your top signal has high momentum",
+  alarm: "No captures in 7+ days — your intelligence is going stale",
+};
+
 export default function AskAuraPresence({ collapsed = false, onOpen, className, showLabel = true }: Props) {
   const [events, setEvents] = useState<NotificationEvent[]>([]);
   const [count, setCount] = useState(0);
   const [showTip, setShowTip] = useState(false);
   const tipTimer = useRef<number | null>(null);
+  const [avatarState, setAvatarState] = useState<AvatarState>("idle");
+  const [showAvatarTip, setShowAvatarTip] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
