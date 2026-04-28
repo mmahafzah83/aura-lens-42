@@ -152,7 +152,7 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
           ) : signals.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               {signals.map(s => (
-                <span key={s.id} style={{ background: "var(--surface-ink-subtle)", border: "1px solid #F9731633", color: "var(--brand)", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
+                <span key={s.id} style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--brand-muted)", color: "var(--brand)", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
                   {s.signal_title}
                 </span>
               ))}
