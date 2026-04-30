@@ -288,7 +288,7 @@ html.dark  { background-color: #0c0c0c; }
   }
 
   h1, h2, h3 {
-    font-family: 'DM Serif Display', 'Playfair Display', Georgia, serif;
+    font-family: var(--font-display);
     letter-spacing: -0.025em;
   }
 
@@ -1177,7 +1177,7 @@ html.dark  { background-color: #0c0c0c; }
 /* Large stat numbers */
 .aura-metric-number,
 .text-metric-v2 {
-  font-family: 'DM Serif Display', Georgia, serif;
+  font-family: var(--font-display);
   letter-spacing: -0.02em;
   font-weight: 400;
 }
@@ -1490,7 +1490,6 @@ aside .aura-theme-toggle {
   --radius-lg:  14px;
   --radius-xl:  20px;
   --radius-2xl: 24px;
-  --font-display: 'DM Serif Display', Georgia, serif;
   --font-body:    'DM Sans', system-ui, sans-serif;
 
   /* DS-2 additions */
