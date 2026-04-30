@@ -11,8 +11,8 @@ html.dark  { background-color: #0c0c0c; }
 :root {
   --aura-bg: #F8F5F0;
   --aura-card: #FFFFFF;
-  --aura-card-foreground: #0E0D0C;
-  --aura-ink: #0E0D0C;
+  --aura-card-foreground: var(--ink);
+  --aura-ink: var(--ink);
   --aura-ink-2: #2A2825;
   --aura-ink-3: #3D3A36;
   --aura-orange: #F97316;
