@@ -7,7 +7,7 @@ html.dark  { background-color: #0c0c0c; }
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-/* ── Design v2 tokens (warm parchment + DM Serif/Sans) ── */
+/* ── Design v2 tokens (warm parchment) ── */
 :root {
   --aura-bg: #F8F5F0;
   --aura-card: #FFFFFF;
@@ -146,6 +146,7 @@ html.dark  { background-color: #0c0c0c; }
   --info-pale: #DCE5EE;
   --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.06);
   --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.15), 0 0 0 0.5px rgba(20,17,12,0.06);
+  --font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
 }
 
 @keyframes skeleton-pulse {
