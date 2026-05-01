@@ -280,7 +280,7 @@ const Dashboard = () => {
         }`}
         style={{
           background: "var(--paper-2)",
-          borderRight: "0.5px solid var(--paper-3)",
+          borderRight: "0.5px solid var(--brand-line)",
         }}
       >
         {/* Logo */}
@@ -354,8 +354,8 @@ const Dashboard = () => {
                 className="w-full flex items-center gap-3 tactile-press group relative aura-nav-item"
                 style={{
                   padding: "10px 24px",
-                  background: isActive ? "var(--vellum)" : "transparent",
-                  color: isActive ? "var(--ink)" : "var(--ink-2)",
+                  background: isActive ? "var(--brand-ghost)" : "transparent",
+                  color: isActive ? "var(--ink)" : "var(--ink-3)",
                   fontWeight: isActive ? 500 : 400,
                   border: "none",
                   transition: "all var(--t-fast) var(--ease)",
@@ -369,7 +369,7 @@ const Dashboard = () => {
                 onMouseLeave={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "var(--ink-2)";
+                    e.currentTarget.style.color = "var(--ink-3)";
                   }
                 }}
               >
@@ -382,14 +382,14 @@ const Dashboard = () => {
                       top: 6,
                       bottom: 6,
                       width: 2,
-                      background: "var(--bronze)",
+                      background: "var(--brand)",
                     }}
                   />
                 )}
                 <item.icon
                   className="w-5 h-5 shrink-0"
                   style={{
-                    color: isActive ? "var(--bronze)" : "var(--ink-3)",
+                    color: isActive ? "var(--brand)" : "var(--ink-3)",
                     transition: "color var(--t-fast) var(--ease)",
                   }}
                 />
@@ -411,14 +411,14 @@ const Dashboard = () => {
             onClick={() => setCaptureOpen(true)}
             className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
             style={{
-              background: "var(--bronze-mist)",
-              color: "var(--bronze-deep)",
-              border: "0.5px solid var(--bronze-line)",
+              background: "transparent",
+              color: "var(--brand)",
+              border: "1px solid var(--brand-line)",
               borderRadius: "var(--r-md)",
               transition: "all var(--t-fast) var(--ease)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bronze-pale)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bronze-mist)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--brand-ghost)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
             {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
@@ -485,7 +485,7 @@ const Dashboard = () => {
             style={{
               animationName: 'slideInLeft',
               background: "var(--paper-2)",
-              borderRight: "0.5px solid var(--paper-3)",
+              borderRight: "0.5px solid var(--brand-line)",
             }}
           >
             <div
@@ -541,8 +541,8 @@ const Dashboard = () => {
                     className="w-full flex items-center gap-3 relative"
                     style={{
                       padding: "10px 24px",
-                      background: isActive ? "var(--vellum)" : "transparent",
-                      color: isActive ? "var(--ink)" : "var(--ink-2)",
+                      background: isActive ? "var(--brand-ghost)" : "transparent",
+                      color: isActive ? "var(--ink)" : "var(--ink-3)",
                       fontWeight: isActive ? 500 : 400,
                       transition: "all var(--t-fast) var(--ease)",
                     }}
@@ -556,13 +556,13 @@ const Dashboard = () => {
                           top: 6,
                           bottom: 6,
                           width: 2,
-                          background: "var(--bronze)",
+                          background: "var(--brand)",
                         }}
                       />
                     )}
                     <item.icon
                       className="w-5 h-5"
-                      style={{ color: isActive ? "var(--bronze)" : "var(--ink-3)" }}
+                      style={{ color: isActive ? "var(--brand)" : "var(--ink-3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
@@ -599,7 +599,7 @@ const Dashboard = () => {
         className={`flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
           sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
         }`}
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        style={{ paddingTop: 'env(safe-area-inset-top)', background: 'var(--paper)' }}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-8 py-4 sm:py-8 pb-[88px] md:pb-12 overflow-hidden">
           {/* Top Bar */}
