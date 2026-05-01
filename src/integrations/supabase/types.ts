@@ -395,6 +395,39 @@ export type Database = {
           },
         ]
       }
+      design_system: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean
+          scope: string
+          tokens: Json
+          updated_at: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          scope?: string
+          tokens?: Json
+          updated_at?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          scope?: string
+          tokens?: Json
+          updated_at?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       diagnostic_profiles: {
         Row: {
           audit_completed_at: string | null
