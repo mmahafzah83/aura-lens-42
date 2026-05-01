@@ -1,5 +1,5 @@
-html.light { background-color: #F5F0E6; }
-html.dark  { background-color: #14110C; }
+html.light { background-color: var(--paper, #F5F0E6); }
+html.dark  { background-color: var(--paper, #14110C); }
 
 @tailwind base;
 @tailwind components;
