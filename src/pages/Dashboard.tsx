@@ -408,11 +408,13 @@ const Dashboard = () => {
             className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
             style={{
               background: "var(--bronze-mist)",
-              color: "var(--bronze)",
+              color: "var(--bronze-deep)",
               border: "0.5px solid var(--bronze-line)",
               borderRadius: "var(--r-md)",
               transition: "all var(--t-fast) var(--ease)",
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bronze-pale)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bronze-mist)"; }}
           >
             <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
             {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
