@@ -263,7 +263,7 @@ const StrategicAttribution = () => {
         <div>
           <h2
             className="text-xl sm:text-2xl font-semibold text-foreground tracking-tight"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             Strategic Attribution
           </h2>

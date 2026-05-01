@@ -161,7 +161,7 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
             <GitBranch className="w-4.5 h-4.5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
               Knowledge Constellation
             </h2>
             <p className="text-[10px] text-muted-foreground/40">Explore how your ideas connect</p>
@@ -276,7 +276,7 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: TYPE_COLORS[selectedNode.type] }} />
               <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">{TYPE_LABELS[selectedNode.type]}</span>
             </div>
-            <h4 className="text-sm font-semibold text-foreground mb-1" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <h4 className="text-sm font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-display)" }}>
               {selectedNode.label}
             </h4>
             {selectedNode.detail && (

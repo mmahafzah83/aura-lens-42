@@ -75,7 +75,7 @@ const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
         {/* Headline */}
         <h1
           className="text-3xl sm:text-4xl md:text-[42px] text-foreground/90 tracking-tight leading-[1.15]"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           {current.headline}
         </h1>

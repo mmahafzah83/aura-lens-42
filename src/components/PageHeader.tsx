@@ -25,7 +25,7 @@ const PageHeader = ({ icon: Icon, title, question, processLogic, children }: Pag
     </div>
     <h1
       className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight break-words"
-      style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+      style={{ fontFamily: "var(--font-display)" }}
     >
       {question}
     </h1>

@@ -237,7 +237,7 @@ const MyFrameworks = () => {
     <div className="glass-card rounded-2xl p-6 sm:p-10">
       <div className="flex items-center gap-3 mb-2">
         <BookOpen className="w-5 h-5 text-primary/70" />
-        <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+        <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
           My Frameworks
         </h2>
       </div>
@@ -475,7 +475,7 @@ const MyFrameworks = () => {
       <Dialog open={!!refineOpen} onOpenChange={(v) => !v && setRefineOpen(null)}>
         <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <DialogTitle className="text-foreground" style={{ fontFamily: "var(--font-display)" }}>
               Refine Framework
             </DialogTitle>
           </DialogHeader>
@@ -572,7 +572,7 @@ const MyFrameworks = () => {
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-secondary/30 border border-border/10`}>
                       <Icon className={`w-4 h-4 ${config.color}`} />
                     </div>
-                    <DialogTitle className="text-foreground text-base" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                    <DialogTitle className="text-foreground text-base" style={{ fontFamily: "var(--font-display)" }}>
                       {config.label}
                     </DialogTitle>
                   </div>

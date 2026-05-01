@@ -338,7 +338,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
           <div className="flex-1 px-5 pb-8 animate-onboard-slide-up" key={questionIndex}>
             <h2
               className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-2 leading-tight"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {currentQ.question}
             </h2>
@@ -488,7 +488,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/15 mb-8 onboarding-logo-pulse">
             <Zap className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-3 text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h2 className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-3 text-center" style={{ fontFamily: "var(--font-display)" }}>
             Architecting Your Profile
           </h2>
           <p className="text-base text-muted-foreground/50 text-center max-w-xs mb-8">
@@ -529,7 +529,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
 
             <h2
               className="text-2xl sm:text-3xl text-foreground/90 tracking-tight mb-2 leading-tight"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               {currentSkill.name}
             </h2>
@@ -613,7 +613,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/15 mb-8">
             <Check className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl text-foreground/90 tracking-tight text-center" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h2 className="text-2xl text-foreground/90 tracking-tight text-center" style={{ fontFamily: "var(--font-display)" }}>
             Your Aura is Set
           </h2>
           <p className="text-base text-muted-foreground/50 text-center mt-2">Entering your command center...</p>

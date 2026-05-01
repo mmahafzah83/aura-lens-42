@@ -487,7 +487,7 @@ const IntelligenceCards = () => {
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card-elevated border-border/10 sm:max-w-lg max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-xl" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <DialogTitle className="text-gradient-gold text-xl" style={{ fontFamily: "var(--font-display)" }}>
               LinkedIn Draft
             </DialogTitle>
           </DialogHeader>

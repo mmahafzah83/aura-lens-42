@@ -66,7 +66,7 @@ const RecommendationCard = ({
         {/* Title */}
         <h4
           className="text-base font-semibold text-foreground leading-snug"
-          style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+          style={{ fontFamily: "var(--font-display)" }}
         >
           {rec.title}
         </h4>
@@ -126,7 +126,7 @@ const DailyBriefCard = ({ brief }: { brief: DailyBrief }) => (
           </div>
           <p
             className="text-sm font-medium text-foreground leading-snug"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {value}
           </p>
@@ -360,7 +360,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
           <div>
             <h3
               className="text-lg font-bold text-foreground tracking-tight"
-              style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+              style={{ fontFamily: "var(--font-display)" }}
             >
               Strategic Advisor
             </h3>

@@ -75,7 +75,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
       <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-3 mb-2">
           <Megaphone className="w-5 h-5 text-primary/70" />
-          <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t("influence.title")}</h2>
+          <h2 className="text-xl font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>{t("influence.title")}</h2>
         </div>
         <p className="text-xs text-muted-foreground/50 mb-8 tracking-wide">{t("influence.subtitle")}</p>
 
@@ -130,7 +130,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
       <Dialog open={draftOpen} onOpenChange={setDraftOpen}>
         <DialogContent className="glass-card-elevated border-border/10 sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gradient-gold text-xl" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>{t("draft.title")}</DialogTitle>
+            <DialogTitle className="text-gradient-gold text-xl" style={{ fontFamily: "var(--font-display)" }}>{t("draft.title")}</DialogTitle>
           </DialogHeader>
           <div className="bg-secondary/20 rounded-xl p-6 mt-3 text-sm text-foreground/90 leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto break-words border border-border/8">
             {draftPost}
