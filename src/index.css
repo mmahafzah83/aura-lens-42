@@ -851,13 +851,6 @@ html.dark  { background-color: #14110C; }
   border-radius: 0 8px 8px 0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
-/* Eyebrow label inside hero card → darker orange for white-bg contrast */
-[data-theme="light"] .aura-hero-card [style*="color: #F97316"][style*="text-transform"],
-[data-theme="light"] .aura-hero-card [style*="color:#F97316"][style*="text-transform"],
-[data-theme="light"] .aura-hero-card [style*="color: #F97316"][style*="textTransform"],
-[data-theme="light"] .aura-hero-card [style*="color:#F97316"][style*="textTransform"] {
-  color: #C45E0A !important;
-}
 /* Title text inside hero → strong dark */
 [data-theme="light"] .aura-hero-card h1,
 [data-theme="light"] .aura-hero-card h2,
@@ -882,13 +875,6 @@ html.dark  { background-color: #14110C; }
   border: 0.5px solid #e0e0e0 !important;
   color: #aaaaaa !important;
 }
-/* Primary orange button inside hero card stays orange w/ white text */
-[data-theme="light"] .aura-hero-card button[style*="background: #F97316"],
-[data-theme="light"] .aura-hero-card button[style*="background:#F97316"] {
-  background: var(--brand) !important;
-  color: #ffffff !important;
-}
-
 /* ── Today's Focus inner cards (Home page) ──
    The 3 recommended-move cards live INSIDE .aura-hero-card. Force their
    inline-styled dark backgrounds → white surfaces in light mode. */
