@@ -237,13 +237,25 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         onClick={handleClick}
         className={
           className ??
-          "w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all tactile-press group"
+          "w-full flex items-center gap-3 tactile-press group aura-ask-btn"
         }
-        style={
-          visual.borderColor
+        style={{
+          background: "var(--ink)",
+          color: "var(--bronze-glow)",
+          borderRadius: "var(--r-md)",
+          padding: "10px 14px",
+          border: "none",
+          transition: "background var(--t-fast) var(--ease)",
+          ...(visual.borderColor
             ? { borderLeft: `2px solid ${visual.borderColor}` }
-            : undefined
-        }
+            : {}),
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--ink-2)";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLButtonElement).style.background = "var(--ink)";
+        }}
       >
         <span className="relative inline-flex items-center justify-center shrink-0">
           <Sparkles className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />

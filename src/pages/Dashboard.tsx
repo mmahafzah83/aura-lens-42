@@ -37,7 +37,6 @@ const applyThemeToRoot = (theme: "dark" | "light") => {
   document.documentElement.setAttribute("data-theme", theme);
   document.documentElement.classList.remove("light", "dark");
   document.documentElement.classList.add(theme);
-  document.documentElement.style.backgroundColor = theme === "dark" ? "#0c0c0c" : "#f7f7f7";
 };
 
 const Dashboard = () => {
@@ -272,37 +271,48 @@ const Dashboard = () => {
 
       {/* ── Desktop Sidebar ── */}
       <aside
-        className={`hidden md:flex flex-col fixed top-0 left-0 h-full z-30 border-r border-border/10 backdrop-blur-xl transition-all duration-300 ${
+        className={`hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-[68px]" : "w-[220px]"
         }`}
-        style={{ background: "var(--color-sidebar)" }}
+        style={{
+          background: "var(--paper-2)",
+          borderRight: "0.5px solid var(--paper-3)",
+        }}
       >
-        {/* Orange left rail */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: 3,
-            background: "var(--color-accent)",
-            borderRadius: "0 2px 2px 0",
-          }}
-        />
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-border/8">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-            <Zap className="w-4.5 h-4.5 text-primary" />
+        <div
+          className="flex items-center gap-3 px-4 py-5"
+          style={{ borderBottom: "0.5px solid var(--paper-3)" }}
+        >
+          <div
+            className="flex items-center justify-center shrink-0"
+            style={{
+              width: 32,
+              height: 32,
+              background: "var(--ink)",
+              borderRadius: "var(--r-md)",
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 20,
+              fontWeight: 600,
+              color: "var(--bronze)",
+              lineHeight: 1,
+            }}
+          >
+            A
           </div>
           {!sidebarCollapsed && (
             <div className="overflow-hidden min-w-0">
-              <h1 className="text-lg tracking-tight text-gradient-gold font-semibold">Aura</h1>
+              <h1
+                className="text-lg tracking-tight font-semibold"
+                style={{ color: "var(--ink)" }}
+              >
+                Aura
+              </h1>
               <p
                 style={{
                   fontSize: 9,
                   letterSpacing: "0.08em",
-                  color: "var(--color-text-muted)",
+                  color: "var(--ink-4)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textTransform: "uppercase",
@@ -316,31 +326,69 @@ const Dashboard = () => {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 py-4 px-2 space-y-2">
+        <nav className="flex-1 py-2 px-0 space-y-1">
+          {!sidebarCollapsed && (
+            <div
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                color: "var(--ink-4)",
+                padding: "12px 24px 8px",
+                textTransform: "uppercase",
+              }}
+            >
+              Workspace
+            </div>
+          )}
           {NAV_ITEMS.map((item) => {
             const isActive = activeTab === item.value;
             return (
               <button
                 key={item.value}
                 onClick={() => switchTab(item.value)}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-[250ms] ease-[ease-in-out] tactile-press group ${
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-transparent"
-                }`}
-                style={
-                  isActive
-                    ? {
-                        borderLeft: "2px solid var(--color-accent)",
-                        paddingLeft: 6,
-                        marginLeft: 2,
-                        background: "rgba(249, 115, 22, 0.08)",
-                        color: "var(--color-text-primary)",
-                      }
-                    : undefined
-                }
+                className="w-full flex items-center gap-3 tactile-press group relative aura-nav-item"
+                style={{
+                  padding: "10px 24px",
+                  background: isActive ? "var(--vellum)" : "transparent",
+                  color: isActive ? "var(--ink)" : "var(--ink-2)",
+                  fontWeight: isActive ? 500 : 400,
+                  border: "none",
+                  transition: "all var(--t-fast) var(--ease)",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "var(--paper-3)";
+                    e.currentTarget.style.color = "var(--ink)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "var(--ink-2)";
+                  }
+                }}
               >
-                <item.icon className={`w-5 h-5 shrink-0 transition-colors duration-[250ms] ${isActive ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"}`} />
+                {isActive && (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 6,
+                      bottom: 6,
+                      width: 2,
+                      background: "var(--bronze)",
+                    }}
+                  />
+                )}
+                <item.icon
+                  className="w-5 h-5 shrink-0"
+                  style={{
+                    color: isActive ? "var(--bronze)" : "var(--ink-3)",
+                    transition: "color var(--t-fast) var(--ease)",
+                  }}
+                />
                 {!sidebarCollapsed && (
                   <span className="text-sm font-medium tracking-wide">{item.label}</span>
                 )}
@@ -350,11 +398,21 @@ const Dashboard = () => {
         </nav>
 
         {/* Bottom actions */}
-        <div className="px-2 py-4 border-t border-border/8 flex flex-col gap-2">
+        <div
+          className="px-3 py-4 flex flex-col gap-2"
+          style={{ borderTop: "0.5px solid var(--paper-3)" }}
+        >
           <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
           <button
             onClick={() => setCaptureOpen(true)}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all tactile-press group"
+            className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
+            style={{
+              background: "var(--bronze-mist)",
+              color: "var(--bronze)",
+              border: "0.5px solid var(--bronze-line)",
+              borderRadius: "var(--r-md)",
+              transition: "all var(--t-fast) var(--ease)",
+            }}
           >
             <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
             {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
@@ -367,15 +425,15 @@ const Dashboard = () => {
               aria-label="Toggle theme"
               className="aura-theme-toggle"
               style={{
-                background: "var(--color-border-subtle)",
-                border: "0.5px solid var(--color-border)",
+                background: "var(--vellum)",
+                border: "0.5px solid var(--paper-3)",
                 borderRadius: 20,
                 padding: "0 12px",
                 minHeight: 32,
                 width: "100%",
                 fontSize: 11,
                 fontWeight: 500,
-                color: "var(--color-text-secondary)",
+                color: "var(--ink-2)",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -388,7 +446,7 @@ const Dashboard = () => {
                   width: 10,
                   height: 10,
                   borderRadius: "50%",
-                  background: "var(--color-accent)",
+                  background: "var(--bronze)",
                   display: "inline-block",
                   flexShrink: 0,
                 }}
@@ -399,7 +457,8 @@ const Dashboard = () => {
 
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-muted-foreground/40 hover:text-muted-foreground transition-all"
+            className="w-full flex items-center gap-3 px-3 py-2 transition-all"
+            style={{ color: "var(--ink-4)", borderRadius: "var(--r-md)" }}
           >
             <Menu className="w-4 h-4 shrink-0" />
             {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
@@ -410,46 +469,116 @@ const Dashboard = () => {
       {/* ── Mobile Sidebar Overlay ── */}
       {mobileSidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-[260px] bg-background border-r border-border/10 flex flex-col animate-slide-in-right" style={{ animationName: 'slideInLeft' }}>
-            <div className="flex items-center justify-between px-4 py-4 border-b border-border/8">
+          <div
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ background: "rgba(20,17,12,0.55)" }}
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <aside
+            className="absolute left-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
+            style={{
+              animationName: 'slideInLeft',
+              background: "var(--paper-2)",
+              borderRight: "0.5px solid var(--paper-3)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-4"
+              style={{ borderBottom: "0.5px solid var(--paper-3)" }}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-                  <Zap className="w-4 h-4 text-primary" />
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    background: "var(--ink)",
+                    borderRadius: "var(--r-md)",
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 20,
+                    fontWeight: 600,
+                    color: "var(--bronze)",
+                    lineHeight: 1,
+                  }}
+                >
+                  A
                 </div>
-                <span className="text-lg font-semibold text-gradient-gold">Aura</span>
+                <span className="text-lg font-semibold" style={{ color: "var(--ink)" }}>Aura</span>
               </div>
-              <button onClick={() => setMobileSidebarOpen(false)} className="text-muted-foreground p-1">
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-1"
+                style={{ color: "var(--ink-3)" }}
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <nav className="flex-1 py-4 px-3 space-y-2">
+            <nav className="flex-1 py-2 px-0 space-y-1">
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 10,
+                  letterSpacing: "0.18em",
+                  color: "var(--ink-4)",
+                  padding: "12px 24px 8px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Workspace
+              </div>
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.value;
                 return (
                   <button
                     key={item.value}
                     onClick={() => switchTab(item.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-[250ms] ease-[ease-in-out] ${
-                      isActive
-                        ? "bg-primary/12 text-primary border border-primary/20 shadow-[0_0_12px_hsl(43_80%_45%/0.1)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-primary/5 border border-transparent"
-                    }`}
+                    className="w-full flex items-center gap-3 relative"
+                    style={{
+                      padding: "10px 24px",
+                      background: isActive ? "var(--vellum)" : "transparent",
+                      color: isActive ? "var(--ink)" : "var(--ink-2)",
+                      fontWeight: isActive ? 500 : 400,
+                      transition: "all var(--t-fast) var(--ease)",
+                    }}
                   >
-                    <item.icon className="w-5 h-5" />
+                    {isActive && (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: 6,
+                          bottom: 6,
+                          width: 2,
+                          background: "var(--bronze)",
+                        }}
+                      />
+                    )}
+                    <item.icon
+                      className="w-5 h-5"
+                      style={{ color: isActive ? "var(--bronze)" : "var(--ink-3)" }}
+                    />
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
                 );
               })}
             </nav>
-            <div className="px-3 py-4 border-t border-border/8 space-y-2">
+            <div
+              className="px-3 py-4 space-y-2"
+              style={{ borderTop: "0.5px solid var(--paper-3)" }}
+            >
               <AskAuraPresence
                 onOpen={() => { setMobileSidebarOpen(false); openChat(); }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/15 hover:border-primary/25 transition-all"
               />
               <button
                 onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30 transition-all text-xs border border-border/10"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 transition-all text-xs"
+                style={{
+                  color: "var(--ink-3)",
+                  background: "transparent",
+                  border: "0.5px solid var(--paper-3)",
+                  borderRadius: "var(--r-md)",
+                }}
               >
                 <Paperclip className="w-3.5 h-3.5 shrink-0" />
                 <span>Capture</span>
@@ -595,11 +724,11 @@ const Dashboard = () => {
             right: 16,
             width: 52,
             height: 52,
-            background: "var(--brand)",
-            borderRadius: 16,
-            boxShadow: "0 4px 20px rgba(249,115,22,0.45)",
+            background: "var(--bronze)",
+            borderRadius: "var(--r-xl)",
+            boxShadow: "var(--shadow-lift)",
             zIndex: 49,
-            color: "#ffffff",
+            color: "var(--ink)",
           }}
         >
           <Plus className="w-[22px] h-[22px]" strokeWidth={2.5} />
@@ -616,8 +745,8 @@ const Dashboard = () => {
             className="flex items-center justify-around"
             style={{
               height: 60,
-              background: "var(--ink)",
-              borderTop: "0.5px solid rgba(255,255,255,0.06)",
+              background: "var(--paper-2)",
+              borderTop: "0.5px solid var(--paper-3)",
               paddingBottom: "env(safe-area-inset-bottom)",
             }}
           >
@@ -642,15 +771,15 @@ const Dashboard = () => {
                         style={{
                           width: 40,
                           height: 40,
-                          background: "var(--brand)",
-                          borderRadius: 14,
-                          boxShadow: "0 2px 12px rgba(249,115,22,0.4)",
-                          color: "#fff",
+                          background: "var(--bronze)",
+                          borderRadius: "var(--r-lg)",
+                          boxShadow: "var(--shadow-rest)",
+                          color: "var(--ink)",
                         }}
                       >
                         <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />
                       </span>
-                      <span style={{ fontSize: 8, color: "var(--brand)", fontWeight: 600 }}>Aura</span>
+                      <span style={{ fontSize: 8, color: "var(--bronze)", fontWeight: 600 }}>Aura</span>
                     </button>
                   );
                 }
@@ -667,9 +796,9 @@ const Dashboard = () => {
                       style={{
                         width: 20,
                         height: 20,
-                        background: isActive ? "var(--brand)" : "var(--ink-3)",
-                        borderRadius: 6,
-                        color: isActive ? "#fff" : "var(--ink-5)",
+                        background: isActive ? "var(--bronze)" : "transparent",
+                        borderRadius: "var(--r-sm)",
+                        color: isActive ? "var(--ink)" : "var(--ink-3)",
                       }}
                     >
                       <tab.icon className="w-[12px] h-[12px]" />
@@ -677,7 +806,7 @@ const Dashboard = () => {
                     <span
                       style={{
                         fontSize: 8,
-                        color: isActive ? "var(--brand)" : "var(--ink-4)",
+                        color: isActive ? "var(--bronze)" : "var(--ink-4)",
                         fontWeight: isActive ? 600 : 400,
                       }}
                     >
