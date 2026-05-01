@@ -373,10 +373,10 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
   const getBadge = (type: string) => {
     switch (type) {
       case "signal": case "pattern": return { label: "Signal", bg: "#0a1628", border: "#1d4ed844", color: "#60a5fa" };
-      case "insight": case "principle": return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "#F9731644", color: "var(--brand)" };
+      case "insight": case "principle": return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--bronze-line)", color: "var(--brand)" };
       case "recommendation": case "framework_step": return { label: "Recommendation", bg: "var(--success-darkest)", border: "var(--success-dark)", color: "var(--success-mid)" };
       case "blind_spot": case "claim": return { label: "Blind spot", bg: "#1a0a0a", border: "#4a2a2a", color: "#aa6060" };
-      default: return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "#F9731644", color: "var(--brand)" };
+      default: return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--bronze-line)", color: "var(--brand)" };
     }
   };
 

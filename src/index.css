@@ -15,8 +15,8 @@ html.dark  { background-color: #0c0c0c; }
   --aura-ink: var(--ink);
   --aura-ink-2: #2A2825;
   --aura-ink-3: #3D3A36;
-  --aura-orange: #F97316;
-  --aura-orange-hover: #EA6C0A;
+  --aura-orange: var(--bronze);
+  --aura-orange-hover: var(--bronze-deep);
   --aura-orange-pale: #FEF0E6;
   --aura-border: rgba(0,0,0,0.07);
   --aura-border-2: rgba(0,0,0,0.12);
@@ -27,10 +27,10 @@ html.dark  { background-color: #0c0c0c; }
 /* ── Aura Design System Tokens ── */
 :root {
   /* Accent — Orange */
-  --color-accent: #F97316;
-  --color-accent-hover: #EA6C0A;
-  --color-accent-muted: rgba(249, 115, 22, 0.12);
-  --color-accent-border: rgba(249, 115, 22, 0.35);
+  --color-accent: var(--bronze);
+  --color-accent-hover: var(--bronze-deep);
+  --color-accent-muted: var(--bronze-line);
+  --color-accent-border: var(--bronze-line);
 
   /* Dark mode surfaces (default) */
   --color-bg: #0c0c0c;
@@ -113,10 +113,10 @@ html.dark  { background-color: #0c0c0c; }
   --color-text-secondary: #666666;
   --color-text-muted: #aaaaaa;
 
-  --color-accent: #F97316;
-  --color-accent-hover: #EA6C0A;
-  --color-accent-muted: rgba(249, 115, 22, 0.08);
-  --color-accent-border: rgba(249, 115, 22, 0.30);
+  --color-accent: var(--bronze);
+  --color-accent-hover: var(--bronze-deep);
+  --color-accent-muted: var(--bronze-line);
+  --color-accent-border: var(--bronze-line);
 
   /* ── Sovereign world tokens — light mode override ── */
   --paper: #F5F0E6;
@@ -818,12 +818,12 @@ html.dark  { background-color: #0c0c0c; }
    that uses the warm gold-ish background "#1a1400" with rgba border */
 [data-theme="light"] [style*="background: #1a1400"],
 [data-theme="light"] [style*="background:#1a1400"] {
-  background: rgba(249, 115, 22, 0.07) !important;
-  border-color: rgba(249, 115, 22, 0.28) !important;
+  background: hsl(43 50% 55% / 0.07) !important;
+  border-color: var(--bronze-line) !important;
 }
 [data-theme="light"] [style*="border: 1px solid rgba(197,165,90"],
 [data-theme="light"] [style*="border:1px solid rgba(197,165,90"] {
-  border-color: rgba(249, 115, 22, 0.28) !important;
+  border-color: var(--bronze-line) !important;
 }
 /* Orange chip text contrast on white */
 [data-theme="light"] [style*="color: #F97316"][style*="background: #1a1400"],
@@ -836,7 +836,7 @@ html.dark  { background-color: #0c0c0c; }
 /* Heavy 1px solid orange borders → softer 0.5px subtle orange */
 [data-theme="light"] [style*="border: 1px solid #F97316"],
 [data-theme="light"] [style*="border:1px solid #F97316"] {
-  border: 0.5px solid rgba(249, 115, 22, 0.35) !important;
+  border: 0.5px solid var(--bronze-line) !important;
 }
 
 /* Inputs / textareas with dark background + light text */
@@ -869,7 +869,7 @@ html.dark  { background-color: #0c0c0c; }
 [data-theme="light"] .aura-hero-card {
   background: #ffffff !important;
   border: 0.5px solid #e0e0e0 !important;
-  border-left: 4px solid #F97316 !important;
+  border-left: 4px solid var(--brand) !important;
   border-radius: 0 8px 8px 0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
@@ -907,7 +907,7 @@ html.dark  { background-color: #0c0c0c; }
 /* Primary orange button inside hero card stays orange w/ white text */
 [data-theme="light"] .aura-hero-card button[style*="background: #F97316"],
 [data-theme="light"] .aura-hero-card button[style*="background:#F97316"] {
-  background: #F97316 !important;
+  background: var(--brand) !important;
   color: #ffffff !important;
 }
 
@@ -1034,8 +1034,8 @@ html.dark  { background-color: #0c0c0c; }
 
 /* Orange chip background (gold-ish dark warm) → soft orange tint */
 [data-theme="light"] [style*="background: rgb(26, 20, 0)"] {
-  background: rgba(249, 115, 22, 0.07) !important;
-  border-color: rgba(249, 115, 22, 0.28) !important;
+  background: hsl(43 50% 55% / 0.07) !important;
+  border-color: var(--bronze-line) !important;
 }
 
 /* Page-level dark wrappers */
@@ -1046,7 +1046,7 @@ html.dark  { background-color: #0c0c0c; }
 
 /* Heavy 1px solid orange borders → softer */
 [data-theme="light"] [style*="border: 1px solid rgb(249, 115, 22)"] {
-  border: 0.5px solid rgba(249, 115, 22, 0.35) !important;
+  border: 0.5px solid var(--bronze-line) !important;
 }
 
 /* Orange CTA buttons with dark text → keep orange, white text */
@@ -1102,7 +1102,7 @@ html.dark  { background-color: #0c0c0c; }
 [data-theme="light"] .intel-command-center [style*="border-left: 2px solid rgb(249, 115, 22)"] {
   background: #f7f7f7 !important;
   border-color: #e8e8e8 !important;
-  border-left: 2px solid #F97316 !important;
+  border-left: 2px solid var(--brand) !important;
 }
 [data-theme="light"] .intel-command-center [style*="border-left: 2px solid rgb(249, 115, 22)"] p {
   color: #111111 !important;
@@ -1234,7 +1234,7 @@ html.dark  { background-color: #0c0c0c; }
   height: 34px;
   border-radius: 50%;
   background: #2A2825;
-  border: 2px solid #F97316;
+  border: 2px solid var(--brand);
   color: #E8E4DC;
   font-size: 13px;
   font-weight: 600;
@@ -1268,7 +1268,7 @@ html.dark  { background-color: #0c0c0c; }
 .capture-wave-bar {
   width: 4px;
   height: 28px;
-  background: #F97316;
+  background: var(--brand);
   border-radius: 2px;
   transform-origin: center;
   animation: capture-wave 1s ease-in-out infinite;
@@ -1283,7 +1283,7 @@ html.dark  { background-color: #0c0c0c; }
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #F97316;
+  background: var(--brand);
   animation: capture-pulse-dot 1.5s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -1303,12 +1303,12 @@ html.dark  { background-color: #0c0c0c; }
 .aura-create-input::placeholder { color: #B4B0AA !important; }
 .aura-create-input:focus,
 .aura-create-input:focus-visible {
-  border-color: #F97316 !important;
+  border-color: var(--brand) !important;
   background: #fff !important;
-  box-shadow: 0 0 0 3px rgba(249,115,22,0.1) !important;
+  box-shadow: 0 0 0 3px var(--brand-muted) !important;
   outline: none !important;
 }
-.aura-generate-btn:not(:disabled):hover { background: #EA6C0A !important; }
+.aura-generate-btn:not(:disabled):hover { background: var(--brand-hover) !important; }
 
 /* ══════════════════════════════════════════════════════════════
    DESIGN-8: Global polish pass
@@ -1343,7 +1343,7 @@ html.dark  { background-color: #0c0c0c; }
   right: -40px;
   width: 180px;
   height: 180px;
-  background: radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, hsl(43 50% 55% / 0.18) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -1353,7 +1353,7 @@ html.dark  { background-color: #0c0c0c; }
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #F97316;
+  color: var(--brand);
   margin-bottom: 8px;
   display: block;
 }
@@ -1366,7 +1366,7 @@ html.dark  { background-color: #0c0c0c; }
 .aura-briefing-text strong,
 .aura-briefing-text .signal-name { color: #ffffff; font-weight: 600; }
 .aura-briefing-text .accent,
-.aura-briefing-text mark.accent { color: #F97316; background: transparent; font-weight: 500; }
+.aura-briefing-text mark.accent { color: var(--brand); background: transparent; font-weight: 500; }
 .aura-briefing-text .positive,
 .aura-briefing-text mark.positive { color: #5BBF6A; background: transparent; font-weight: 500; }
 

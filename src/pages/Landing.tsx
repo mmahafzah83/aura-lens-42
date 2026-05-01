@@ -311,7 +311,7 @@ const Landing = () => {
         paddingTop: "max(env(safe-area-inset-top), 16px)",
       }}>
         <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
-        <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", borderColor: "#F9731633" }}>
+        <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", borderColor: "var(--bronze-line)" }}>
           Sign in
         </button>
       </nav>

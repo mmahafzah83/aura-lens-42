@@ -488,17 +488,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const subScoreCard = (kind: "capture" | "content" | "signal", value: number) => {
     if (kind === "capture") {
       if (value >= 90) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Healthy" };
-      if (value >= 70) return { color: "var(--brand)", border: "rgba(249,115,22,0.27)", tag: "Good" };
+      if (value >= 70) return { color: "var(--brand)", border: "var(--bronze-line)", tag: "Good" };
       return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
     }
     if (kind === "content") {
       if (value === 100) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Perfect" };
-      if (value >= 70) return { color: "var(--brand)", border: "rgba(249,115,22,0.27)", tag: "Good" };
+      if (value >= 70) return { color: "var(--brand)", border: "var(--bronze-line)", tag: "Good" };
       return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Needs action" };
     }
     // signal
     if (value >= 85) return { color: "var(--success)", border: "rgba(46,125,56,0.27)", tag: "Strong" };
-    if (value >= 70) return { color: "var(--brand)", border: "rgba(249,115,22,0.27)", tag: "Good" };
+    if (value >= 70) return { color: "var(--brand)", border: "var(--bronze-line)", tag: "Good" };
     return { color: "var(--danger)", border: "rgba(184,48,37,0.27)", tag: "Build signals" };
   };
 
@@ -680,7 +680,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             right: -80,
             width: 300,
             height: 300,
-            background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 65%)",
+            background: "radial-gradient(circle, hsl(43 50% 55% / 0.10) 0%, transparent 65%)",
             pointerEvents: "none",
           }}
         />
@@ -1178,7 +1178,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div className="flex items-start gap-4">
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: "rgba(249,115,22,0.1)", border: "0.5px solid var(--color-border)" }}
+                style={{ background: "var(--brand-muted)", border: "0.5px solid var(--color-border)" }}
               >
                 <Upload className="w-5 h-5" style={{ color: "var(--brand)" }} />
               </div>
@@ -1285,11 +1285,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
               let badge: { label: string; bg: string; color: string; border: string } | null = null;
               if (i < 3) {
-                badge = { label: "Top post", bg: "rgba(249,115,22,0.09)", color: "var(--brand)", border: "rgba(249,115,22,0.27)" };
+                badge = { label: "Top post", bg: "var(--brand-muted)", color: "var(--brand)", border: "var(--bronze-line)" };
               } else if (erPct > 5) {
                 badge = { label: "Exceptional", bg: "rgba(46,125,56,0.09)", color: "var(--success)", border: "rgba(46,125,56,0.27)" };
               } else if (erPct >= 3) {
-                badge = { label: "Above avg", bg: "rgba(249,115,22,0.09)", color: "var(--brand)", border: "rgba(249,115,22,0.27)" };
+                badge = { label: "Above avg", bg: "var(--brand-muted)", color: "var(--brand)", border: "var(--bronze-line)" };
               }
 
               // Bar opacity decreases by rank for non-top
@@ -1305,7 +1305,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     borderBottom: i === topPosts.length - 1 ? "none" : "0.5px solid var(--color-border)",
                     borderLeft: isTop ? "3px solid var(--brand)" : undefined,
                     paddingLeft: isTop ? 12 : undefined,
-                    background: isTop ? "rgba(249,115,22,0.04)" : undefined,
+                    background: isTop ? "hsl(43 50% 55% / 0.04)" : undefined,
                     borderRadius: isTop ? "0 4px 4px 0" : undefined,
                   }}
                 >

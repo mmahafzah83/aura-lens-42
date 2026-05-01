@@ -65,7 +65,7 @@ const impactColor = (level: string | null) => {
 };
 const decisionStyle = (label: string | null): { color: string; bg: string } => {
   if (label === "Act Now") return { color: "var(--danger)", bg: "#E24B4A12" };
-  if (label === "Early Opportunity") return { color: "var(--brand)", bg: "#F9731612" };
+  if (label === "Early Opportunity") return { color: "var(--brand)", bg: "var(--brand-muted)" };
   return { color: "hsl(var(--muted-foreground))", bg: "hsl(var(--muted) / 0.3)" };
 };
 
@@ -253,7 +253,7 @@ export default function TrendDetail() {
         </div>
         <button
           onClick={() => navigate("/home")}
-          style={{ fontSize: 12, color: "var(--brand)", background: "transparent", border: "0.5px solid #F9731644", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
+          style={{ fontSize: 12, color: "var(--brand)", background: "transparent", border: "0.5px solid var(--bronze-line)", padding: "6px 14px", borderRadius: 4, cursor: "pointer" }}
         >
           Back to Home
         </button>
@@ -413,8 +413,8 @@ export default function TrendDetail() {
               style={{
                 fontSize: 10,
                 color: active ? "var(--brand)" : "hsl(var(--muted-foreground))",
-                background: active ? "#F9731612" : "transparent",
-                border: `0.5px solid ${active ? "#F9731644" : "hsl(var(--border))"}`,
+                background: active ? "var(--brand-muted)" : "transparent",
+                border: `0.5px solid ${active ? "var(--bronze-line)" : "hsl(var(--border))"}`,
                 padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em",
                 fontWeight: active ? 600 : 400,
               }}
@@ -439,7 +439,7 @@ export default function TrendDetail() {
                 )}
                 <button
                   onClick={() => setShowFullSnapshot(s => !s)}
-                  style={{ fontSize: 10, color: "var(--brand)", background: "transparent", border: "0.5px solid #F9731644", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                  style={{ fontSize: 10, color: "var(--brand)", background: "transparent", border: "0.5px solid var(--bronze-line)", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
                 >
                   {showFullSnapshot ? "Show less" : "Show more"}
                 </button>

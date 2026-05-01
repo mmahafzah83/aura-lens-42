@@ -311,11 +311,11 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         <div style={{ padding: "0 14px 16px" }}>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "rgba(249,115,22,0.5)" }} />
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--bronze-deep)" }} />
             </div>
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
-              <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "rgba(249,115,22,0.25)" }} />
+              <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-3)" }} />
               <p style={{ fontSize: 11, color: "var(--ink-5)" }}>Capture more insights to unlock suggestions</p>
             </div>
           ) : (
@@ -355,7 +355,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                         padding: "10px 12px",
                         marginBottom: 7,
                         cursor: "pointer",
-                        border: isConfirm ? "1px solid rgba(249,115,22,0.4)" : "0.5px solid transparent",
+                        border: isConfirm ? "1px solid var(--bronze-line)" : "0.5px solid transparent",
                         width: "100%",
                         textAlign: "left",
                         transition: "background 0.15s",

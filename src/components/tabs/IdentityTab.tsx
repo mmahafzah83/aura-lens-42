@@ -475,7 +475,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 width: 200,
                 height: 200,
                 background:
-                  "radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%)",
+                  "radial-gradient(circle, hsl(43 50% 55% / 0.10) 0%, transparent 70%)",
                 pointerEvents: "none",
               }}
             />
@@ -513,11 +513,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           key={i}
                           style={{
                             background: primary
-                              ? "rgba(249,115,22,0.2)"
+                              ? "var(--brand-muted)"
                               : "rgba(255,255,255,0.07)",
                             color: primary ? "var(--brand)" : "var(--ink-7)",
                             border: `0.5px solid ${
-                              primary ? "rgba(249,115,22,0.3)" : "rgba(255,255,255,0.1)"
+                              primary ? "var(--bronze-line)" : "rgba(255,255,255,0.1)"
                             }`,
                             borderRadius: 20,
                             fontSize: 10,
@@ -731,7 +731,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                                   ? "var(--brand)"
                                   : "var(--surface-subtle)",
                               border: !isDone && !isCurrent ? "2px solid rgba(0,0,0,0.12)" : "none",
-                              boxShadow: isCurrent ? "0 0 0 4px rgba(249,115,22,0.15)" : "none",
+                              boxShadow: isCurrent ? "0 0 0 4px var(--brand-muted)" : "none",
                               zIndex: 1,
                             }}
                           >
