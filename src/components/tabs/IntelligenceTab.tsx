@@ -138,16 +138,14 @@ const AutomationStrip = () => {
   };
 
   const cards = [
-    { iconBg: "var(--success-darkest)", iconBorder: "var(--success-dark)", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success-mid)" },
-    { iconBg: "#0a1020", iconBorder: "#1a3060", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "#4a7aaa" },
-    { iconBg: "#1a1200", iconBorder: "#3a2a00", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "#8a6a20" },
+    { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success)" },
+    { iconBg: "var(--paper-2)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "var(--info)" },
+    { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "var(--brand)" },
   ];
 
   return (
     <div style={{ marginBottom: 14 }}>
       <style>{`
-        [data-theme="light"] .intel-automation-card { background: #ffffff !important; border-color: #e8e8e8 !important; }
-        [data-theme="light"] .intel-automation-icon { background: #F3F3F3 !important; border-color: transparent !important; }
         [data-theme="light"] .intel-automation-title { color: var(--ink) !important; }
         [data-theme="light"] .intel-automation-desc { color: var(--ink-5) !important; }
       `}</style>
@@ -295,7 +293,7 @@ const SignalDetailPanel = ({
           {signal.what_it_means_for_you && (
             <div style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 6 }}>What this means for you</p>
-              <p style={{ fontSize: 13, color: "#777", lineHeight: 1.7, margin: 0 }}>{signal.what_it_means_for_you}</p>
+              <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.7, margin: 0 }}>{signal.what_it_means_for_you}</p>
             </div>
           )}
 
@@ -372,11 +370,11 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
 
   const getBadge = (type: string) => {
     switch (type) {
-      case "signal": case "pattern": return { label: "Signal", bg: "#0a1628", border: "#1d4ed844", color: "#60a5fa" };
-      case "insight": case "principle": return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--bronze-line)", color: "var(--brand)" };
-      case "recommendation": case "framework_step": return { label: "Recommendation", bg: "var(--success-darkest)", border: "var(--success-dark)", color: "var(--success-mid)" };
-      case "blind_spot": case "claim": return { label: "Blind spot", bg: "#1a0a0a", border: "#4a2a2a", color: "#aa6060" };
-      default: return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--bronze-line)", color: "var(--brand)" };
+      case "signal": case "pattern": return { label: "Signal", bg: "var(--paper-2)", border: "var(--brand-line)", color: "var(--info)" };
+      case "insight": case "principle": return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--brand-line)", color: "var(--brand)" };
+      case "recommendation": case "framework_step": return { label: "Recommendation", bg: "var(--brand-ghost)", border: "var(--brand-line)", color: "var(--success)" };
+      case "blind_spot": case "claim": return { label: "Blind spot", bg: "var(--paper-2)", border: "var(--brand-line)", color: "var(--danger)" };
+      default: return { label: "Insight", bg: "var(--surface-ink-subtle)", border: "var(--brand-line)", color: "var(--brand)" };
     }
   };
 
@@ -473,7 +471,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: "pointer",
             background: filter === chip.key ? "var(--surface-ink-subtle)" : "var(--surface-ink-raised)",
             color: filter === chip.key ? "var(--brand)" : "var(--ink-5)",
-            border: `1px solid ${filter === chip.key ? "rgba(197,165,90,0.27)" : "var(--ink-3)"}`,
+            border: `1px solid ${filter === chip.key ? "var(--brand-line)" : "var(--ink-3)"}`,
           }}>{chip.label}</button>
         ))}
         <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--ink-4)" }}>Most recent ↓</span>
@@ -481,7 +479,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
 
       {frameworks.length === 0 ? (
         <div style={{ textAlign: "center", padding: 40 }}>
-          <Layers className="w-7 h-7 mx-auto mb-3" style={{ color: "rgba(197,165,90,0.3)" }} />
+          <Layers className="w-7 h-7 mx-auto mb-3" style={{ color: "var(--brand)", opacity: 0.3 }} />
           <p style={{ color: "var(--ink-5)", fontSize: 13 }}>No frameworks created yet.</p>
         </div>
       ) : (
@@ -491,7 +489,7 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
             const approved = isApproved(fw);
             return (
               <div key={fw.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--ink-3)", borderTop: approved ? "2px solid var(--brand)" : "0.5px solid var(--ink-3)", borderRadius: 10, padding: 16 }}>
-                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "var(--success-darkest)" : "var(--surface-ink-subtle)", border: `0.5px solid ${approved ? "var(--success-dark)" : "var(--ink-3)"}`, color: approved ? "var(--success-mid)" : "var(--ink-5)" }}>
+                <span style={{ fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: approved ? "var(--brand-ghost)" : "var(--paper-2)", border: `0.5px solid ${approved ? "var(--brand-line)" : "var(--ink-3)"}`, color: approved ? "var(--success)" : "var(--ink-5)" }}>
                   {approved ? "Approved" : "Draft"}
                 </span>
                 <p style={{ color: "var(--ink-7)", fontSize: 12, fontWeight: 600, lineHeight: 1.4, margin: "0 0 6px" }}>{fw.title}</p>
@@ -511,12 +509,12 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
                     { label: "Draft content", action: () => onDraftToStudio?.({ topic: fw.title, context: fw.summary || "", sourceType: "framework", sourceTitle: fw.title }) },
                   ].map(btn => (
                     <button key={btn.label} onClick={btn.action} style={{ background: "transparent", border: "0.5px solid var(--ink-3)", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "var(--ink-5)", cursor: "pointer" }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(197,165,90,0.27)"; e.currentTarget.style.color = "var(--brand)"; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand-line)"; e.currentTarget.style.color = "var(--brand)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; e.currentTarget.style.color = "var(--ink-5)"; }}
                     >{btn.label}</button>
                   ))}
                   <button onClick={() => setDeleteTarget(fw.id)} style={{ background: "transparent", border: "0.5px solid var(--ink-3)", borderRadius: 5, padding: "4px 9px", fontSize: 10, color: "var(--ink-5)", cursor: "pointer", marginLeft: "auto" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,68,68,0.2)"; e.currentTarget.style.color = "#ff6666"; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,68,68,0.2)"; e.currentTarget.style.color = "var(--danger)"; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--ink-3)"; e.currentTarget.style.color = "var(--ink-5)"; }}
                   >✕</button>
                 </div>
