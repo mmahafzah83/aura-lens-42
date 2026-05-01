@@ -138,6 +138,7 @@ html.dark  { background-color: #0c0c0c; }
   --signal: #F97316;
   --signal-pale: #FEF0E6;
   --signal-line: rgba(249,115,22,0.22);
+  --shadow-brand: 0 4px 20px rgba(176,141,58,0.35);
   --success: #5C7A3A;
   --success-pale: #E8EFD6;
   --danger: #A8392E;
