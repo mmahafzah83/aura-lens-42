@@ -986,7 +986,7 @@ aside .aura-theme-toggle {
   --brand-hover:      var(--bronze-deep);
   --brand-pale:       var(--bronze-pale);
   --brand-muted:      var(--bronze-line);
-  --surface-page:     #F8F5F0;
+  --surface-page:     var(--paper);
   --surface:          #FFFFFF;
   --surface-subtle:   #F3F0EB;
   --surface-ink:      #0E0D0C;
