@@ -1458,10 +1458,10 @@ aside .aura-theme-toggle {
 
 /* ── Aura Design System: Foundation Tokens (ds-0) ── */
 :root {
-  --brand:            #F97316;
-  --brand-hover:      #EA6C0A;
-  --brand-pale:       #FEF0E6;
-  --brand-muted:      rgba(249,115,22,0.12);
+  --brand:            var(--bronze);
+  --brand-hover:      var(--bronze-deep);
+  --brand-pale:       var(--bronze-pale);
+  --brand-muted:      var(--bronze-line);
   --surface-page:     #F8F5F0;
   --surface:          #FFFFFF;
   --surface-subtle:   #F3F0EB;
@@ -1484,7 +1484,7 @@ aside .aura-theme-toggle {
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
-  --shadow-brand:     0 4px 20px rgba(249,115,22,0.4);
+  --shadow-brand:     0 4px 20px rgba(176,141,58,0.35);
   --radius-sm:  8px;
   --radius-md:  10px;
   --radius-lg:  14px;
