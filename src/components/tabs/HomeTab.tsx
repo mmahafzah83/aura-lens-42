@@ -61,8 +61,8 @@ interface Trend {
 }
 
 const decisionStyle = (label?: string | null): { color: string; bg: string } => {
-  if (label === "Act Now") return { color: "var(--danger)", bg: "#E24B4A12" };
-  if (label === "Early Opportunity") return { color: "var(--brand)", bg: "#F9731612" };
+  if (label === "Act Now") return { color: "var(--danger)", bg: "hsl(var(--danger) / 0.07)" };
+  if (label === "Early Opportunity") return { color: "var(--brand)", bg: "hsl(var(--bronze) / 0.07)" };
   return { color: "hsl(var(--muted-foreground))", bg: "transparent" };
 };
 
@@ -853,7 +853,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <button
               onClick={handlePrimaryCTA}
               style={{
-                background: ACCENT, color: "#fff",
+                background: ACCENT, color: "var(--paper)",
                 fontSize: 12, fontWeight: 600,
                 padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
               }}
@@ -910,7 +910,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <button
               onClick={() => navigate("/publish")}
               style={{
-                background: ACCENT, color: "#fff",
+                background: ACCENT, color: "var(--paper)",
                 fontSize: 12, fontWeight: 600,
                 padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
               }}
@@ -982,8 +982,8 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     key={f.key}
                     onClick={() => setTrendFilter(f.key)}
                     style={{
-                      background: active ? "#F9731618" : "transparent",
-                      border: `0.5px solid ${active ? "#F9731644" : "hsl(var(--border))"}`,
+                      background: active ? "hsl(var(--bronze) / 0.09)" : "transparent",
+                      border: `0.5px solid ${active ? "var(--bronze-line)" : "hsl(var(--border))"}`,
                       color: active ? ACCENT : "hsl(var(--muted-foreground))",
                       fontSize: 10,
                       padding: "3px 8px",
@@ -1101,7 +1101,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                       ) : (
                         <button
                           onClick={() => addTrendToSignals(t)}
-                          style={{ border: "0.5px solid #F9731644", color: ACCENT, background: "transparent", fontSize: 10, padding: "3px 10px", borderRadius: 3, cursor: "pointer" }}
+                          style={{ border: "0.5px solid var(--bronze-line)", color: ACCENT, background: "transparent", fontSize: 10, padding: "3px 10px", borderRadius: 3, cursor: "pointer" }}
                         >
                           Add to signals
                         </button>
