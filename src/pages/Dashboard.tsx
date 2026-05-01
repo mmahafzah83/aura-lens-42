@@ -485,7 +485,7 @@ const Dashboard = () => {
             style={{
               animationName: 'slideInLeft',
               background: "var(--paper-2)",
-              borderRight: "0.5px solid var(--paper-3)",
+              borderRight: "0.5px solid var(--brand-line)",
             }}
           >
             <div
@@ -541,8 +541,8 @@ const Dashboard = () => {
                     className="w-full flex items-center gap-3 relative"
                     style={{
                       padding: "10px 24px",
-                      background: isActive ? "var(--vellum)" : "transparent",
-                      color: isActive ? "var(--ink)" : "var(--ink-2)",
+                      background: isActive ? "var(--brand-ghost)" : "transparent",
+                      color: isActive ? "var(--ink)" : "var(--ink-3)",
                       fontWeight: isActive ? 500 : 400,
                       transition: "all var(--t-fast) var(--ease)",
                     }}
@@ -556,13 +556,13 @@ const Dashboard = () => {
                           top: 6,
                           bottom: 6,
                           width: 2,
-                          background: "var(--bronze)",
+                          background: "var(--brand)",
                         }}
                       />
                     )}
                     <item.icon
                       className="w-5 h-5"
-                      style={{ color: isActive ? "var(--bronze)" : "var(--ink-3)" }}
+                      style={{ color: isActive ? "var(--brand)" : "var(--ink-3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
