@@ -169,12 +169,12 @@ const Dashboard = () => {
         const uid = session.user.id;
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, full_name")
+          .select("completed, onboarding_completed, first_name")
           .eq("user_id", uid)
           .maybeSingle();
 
         if (profile) {
-          setUser((u) => ({ ...(u || {}), email: session.user.email, fullName: (profile as any).full_name ?? null }));
+          setUser((u) => ({ ...(u || {}), email: session.user.email, fullName: (profile as any).first_name ?? null }));
         }
 
         // New wizard trigger: no profile row AND localStorage not set
