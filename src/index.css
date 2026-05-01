@@ -15,8 +15,8 @@ html.dark  { background-color: #0c0c0c; }
   --aura-ink: var(--ink);
   --aura-ink-2: #2A2825;
   --aura-ink-3: #3D3A36;
-  --aura-orange: #F97316;
-  --aura-orange-hover: #EA6C0A;
+  --aura-orange: var(--bronze);
+  --aura-orange-hover: var(--bronze-deep);
   --aura-orange-pale: #FEF0E6;
   --aura-border: rgba(0,0,0,0.07);
   --aura-border-2: rgba(0,0,0,0.12);
@@ -27,10 +27,10 @@ html.dark  { background-color: #0c0c0c; }
 /* ── Aura Design System Tokens ── */
 :root {
   /* Accent — Orange */
-  --color-accent: #F97316;
-  --color-accent-hover: #EA6C0A;
-  --color-accent-muted: rgba(249, 115, 22, 0.12);
-  --color-accent-border: rgba(249, 115, 22, 0.35);
+  --color-accent: var(--bronze);
+  --color-accent-hover: var(--bronze-deep);
+  --color-accent-muted: var(--bronze-line);
+  --color-accent-border: var(--bronze-line);
 
   /* Dark mode surfaces (default) */
   --color-bg: #0c0c0c;
