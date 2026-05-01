@@ -113,10 +113,10 @@ html.dark  { background-color: #0c0c0c; }
   --color-text-secondary: #666666;
   --color-text-muted: #aaaaaa;
 
-  --color-accent: #F97316;
-  --color-accent-hover: #EA6C0A;
-  --color-accent-muted: rgba(249, 115, 22, 0.08);
-  --color-accent-border: rgba(249, 115, 22, 0.30);
+  --color-accent: var(--bronze);
+  --color-accent-hover: var(--bronze-deep);
+  --color-accent-muted: var(--bronze-line);
+  --color-accent-border: var(--bronze-line);
 
   /* ── Sovereign world tokens — light mode override ── */
   --paper: #F5F0E6;
