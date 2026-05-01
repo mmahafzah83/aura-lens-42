@@ -1992,6 +1992,14 @@ export type Database = {
       }
     }
     Functions: {
+      activate_design_version: {
+        Args: { p_created_by?: string; p_new_tokens: Json }
+        Returns: string
+      }
+      rollback_design_version: {
+        Args: { p_target_version: number }
+        Returns: undefined
+      }
       search_vault: {
         Args: { p_limit?: number; p_query: string; p_query_embedding?: string }
         Returns: {
