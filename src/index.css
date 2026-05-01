@@ -1038,6 +1038,82 @@ html.dark,
   --surface-ink-subtle: #1C1812;
 }
 
+/* ── Dark mode text contrast safety net ──────────────────────────────
+   Re-anchors shadcn HSL foreground tokens and core text colors to the
+   warm cream ink ramp so any element that resolves to --foreground,
+   --muted-foreground, --card-foreground or --sidebar-foreground stays
+   readable on the dark paper background. Also catches any hardcoded
+   Tailwind dark-text utilities (text-black, text-neutral-900, etc.)
+   that lack a dark: variant. */
+[data-theme="dark"],
+html.dark,
+.dark {
+  --foreground:                 var(--ink);
+  --muted-foreground:           var(--ink-3);
+  --card-foreground:            var(--ink);
+  --popover-foreground:         var(--ink);
+  --secondary-foreground:       var(--ink-2);
+  --sidebar-foreground:         var(--ink);
+  --sidebar-accent-foreground:  var(--ink);
+  color: var(--ink);
+}
+
+html.dark body,
+.dark body,
+[data-theme="dark"] body {
+  color: var(--ink);
+}
+
+html.dark h1, html.dark h2, html.dark h3,
+.dark h1, .dark h2, .dark h3,
+[data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3 {
+  color: var(--ink);
+}
+
+html.dark p, html.dark span, html.dark label,
+.dark p, .dark span, .dark label,
+[data-theme="dark"] p, [data-theme="dark"] span, [data-theme="dark"] label {
+  color: inherit;
+}
+
+/* Catch hardcoded Tailwind dark-text utilities that have no dark: variant.
+   These would otherwise render near-black text on the dark paper. */
+html.dark .text-black,
+html.dark .text-neutral-900,
+html.dark .text-gray-900,
+html.dark .text-zinc-900,
+html.dark .text-slate-900,
+html.dark .text-stone-900,
+.dark .text-black,
+.dark .text-neutral-900,
+.dark .text-gray-900,
+.dark .text-zinc-900,
+.dark .text-slate-900,
+.dark .text-stone-900,
+[data-theme="dark"] .text-black,
+[data-theme="dark"] .text-neutral-900,
+[data-theme="dark"] .text-gray-900,
+[data-theme="dark"] .text-zinc-900,
+[data-theme="dark"] .text-slate-900,
+[data-theme="dark"] .text-stone-900 {
+  color: var(--ink);
+}
+
+html.dark .text-neutral-600,
+html.dark .text-neutral-500,
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+.dark .text-neutral-600,
+.dark .text-neutral-500,
+.dark .text-gray-600,
+.dark .text-gray-500,
+[data-theme="dark"] .text-neutral-600,
+[data-theme="dark"] .text-neutral-500,
+[data-theme="dark"] .text-gray-600,
+[data-theme="dark"] .text-gray-500 {
+  color: var(--ink-3);
+}
+
 /* Badge variants — opt-in classes for the new design system.
    Existing components are unaffected until they use these classes. */
 .badge-base {
