@@ -414,7 +414,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
           Edit full profile
         </button>
       ) : (
-        <div className="rounded-xl p-4 space-y-4" style={{ background: "var(--surface-ink-raised)", border: "1px solid #F9731633" }}>
+        <div className="rounded-xl p-4 space-y-4" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--bronze-line)" }}>
           <h3 className="text-xs uppercase tracking-wider" style={{ color: "var(--brand)" }}>Edit all fields</h3>
           {[
             { key: "first_name", label: "Name" },

@@ -231,8 +231,8 @@ const Auth = () => {
           display: inline-flex;
           align-items: center;
           gap: 5px;
-          background: rgba(249,115,22,0.1);
-          border: 0.5px solid rgba(249,115,22,0.25);
+          background: var(--brand-muted);
+          border: 0.5px solid var(--bronze-line);
           border-radius: 20px;
           padding: 4px 12px;
           font-size: 10px;
@@ -409,7 +409,7 @@ const Auth = () => {
             width: 400,
             height: 400,
             background:
-              "radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 65%)",
+              "radial-gradient(circle, hsl(43 50% 55% / 0.08) 0%, transparent 65%)",
             zIndex: 0,
           }}
         />

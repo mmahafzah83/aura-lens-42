@@ -242,7 +242,7 @@ const Admin = () => {
                   ? {
                       backgroundColor: "var(--brand-muted)",
                       color: "var(--brand)",
-                      borderColor: "rgba(249, 115, 22, 0.4)",
+                      borderColor: "var(--bronze-line)",
                     }
                   : {
                       backgroundColor: "var(--surface-ink-raised)",
@@ -329,7 +329,7 @@ const Admin = () => {
                               style={{
                                 backgroundColor: "var(--brand-muted)",
                                 color: "var(--brand)",
-                                border: "1px solid rgba(249,115,22,0.3)",
+                                border: "1px solid var(--bronze-line)",
                               }}
                             >
                               {initials(r.name, r.email)}

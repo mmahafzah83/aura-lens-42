@@ -369,7 +369,7 @@ export default function FlashPanel() {
                     key={pt.key}
                     onClick={() => setPostType(pt.key)}
                     dir={dirAttr}
-                    style={selected ? { borderColor: "var(--brand)", backgroundColor: "rgba(249,115,22,0.08)" } : undefined}
+                    style={selected ? { borderColor: "var(--brand)", backgroundColor: "var(--brand-muted)" } : undefined}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       selected
                         ? "text-foreground"

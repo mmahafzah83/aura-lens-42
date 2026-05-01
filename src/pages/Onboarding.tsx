@@ -339,7 +339,7 @@ const Onboarding = () => {
         {/* Screen 2 — Strengths */}
         {step === 1 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <div className="rounded-lg p-4 text-sm" style={{ background: "var(--surface-ink-subtle)", border: "1px solid #F9731633", color: "var(--brand)" }}>
+            <div className="rounded-lg p-4 text-sm" style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--bronze-line)", color: "var(--brand)" }}>
               ✓ Great start. Your profile is taking shape. This next step is the one most people skip — and the one that makes the biggest difference.
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 2 — Your strengths</p>
@@ -389,7 +389,7 @@ const Onboarding = () => {
         {/* Screen 3 — First capture */}
         {step === 2 && (
           <div className="mt-6 space-y-5 max-w-lg mx-auto">
-            <div className="rounded-lg p-4 text-sm" style={{ background: "var(--surface-ink-subtle)", border: "1px solid #F9731633", color: "var(--brand)" }}>
+            <div className="rounded-lg p-4 text-sm" style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--bronze-line)", color: "var(--brand)" }}>
               ◈ Almost there — you are doing great. One last step. This is where Aura comes alive. Your first capture generates your first signal in under 60 seconds.
             </div>
             <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: "var(--brand)" }}>Step 3 — Feed Aura</p>

@@ -414,7 +414,7 @@ export default function ImageCardGenerator({
         </span>
         <button
           onClick={shuffle}
-          className="flex items-center gap-1.5 text-[11px] font-semibold text-brand bg-[rgba(249,115,22,0.1)] border border-[rgba(249,115,22,0.2)] rounded-md px-3 py-1.5 hover:bg-[rgba(249,115,22,0.18)] transition"
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-brand bg-[var(--brand-muted)] border border-[var(--bronze-line)] rounded-md px-3 py-1.5 hover:bg-[var(--brand-muted)] transition"
         >
           <Shuffle className="w-3 h-3" /> {VARIANT_ORDER[variantIndex]} content →
         </button>
@@ -490,8 +490,8 @@ export default function ImageCardGenerator({
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: activeStyle.titleSize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.titleSize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      background: activeStyle.titleSize === s ? "var(--brand-muted)" : "transparent",
+                      borderColor: activeStyle.titleSize === s ? "var(--bronze-line)" : "var(--ink-3)",
                       color: activeStyle.titleSize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
@@ -513,8 +513,8 @@ export default function ImageCardGenerator({
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: activeStyle.headerSize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.headerSize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      background: activeStyle.headerSize === s ? "var(--brand-muted)" : "transparent",
+                      borderColor: activeStyle.headerSize === s ? "var(--bronze-line)" : "var(--ink-3)",
                       color: activeStyle.headerSize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
@@ -536,8 +536,8 @@ export default function ImageCardGenerator({
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      background: activeStyle.bodySize === s ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.bodySize === s ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      background: activeStyle.bodySize === s ? "var(--brand-muted)" : "transparent",
+                      borderColor: activeStyle.bodySize === s ? "var(--bronze-line)" : "var(--ink-3)",
                       color: activeStyle.bodySize === s ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
@@ -559,8 +559,8 @@ export default function ImageCardGenerator({
                     style={{
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 9, fontWeight: 600, cursor: "pointer",
-                      background: activeStyle.preset === p ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.preset === p ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      background: activeStyle.preset === p ? "var(--brand-muted)" : "transparent",
+                      borderColor: activeStyle.preset === p ? "var(--bronze-line)" : "var(--ink-3)",
                       color: activeStyle.preset === p ? "var(--brand)" : "var(--ink-5)",
                       textTransform: "capitalize",
                     }}
@@ -623,8 +623,8 @@ export default function ImageCardGenerator({
                       flex: 1, padding: "5px 0", borderRadius: 5, border: "0.5px solid",
                       fontSize: 10, fontWeight: 600, cursor: "pointer",
                       fontFamily: f.value,
-                      background: activeStyle.cardFont === f.value ? "rgba(249,115,22,.12)" : "transparent",
-                      borderColor: activeStyle.cardFont === f.value ? "rgba(249,115,22,.4)" : "var(--ink-3)",
+                      background: activeStyle.cardFont === f.value ? "var(--brand-muted)" : "transparent",
+                      borderColor: activeStyle.cardFont === f.value ? "var(--bronze-line)" : "var(--ink-3)",
                       color: activeStyle.cardFont === f.value ? "var(--brand)" : "var(--ink-5)",
                     }}
                   >
