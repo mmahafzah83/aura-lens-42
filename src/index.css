@@ -138,6 +138,7 @@ html.dark  { background-color: #0c0c0c; }
   --signal: #F97316;
   --signal-pale: #FEF0E6;
   --signal-line: rgba(249,115,22,0.22);
+  --shadow-brand: 0 4px 20px rgba(176,141,58,0.35);
   --success: #5C7A3A;
   --success-pale: #E8EFD6;
   --danger: #A8392E;
@@ -1484,7 +1485,7 @@ aside .aura-theme-toggle {
   --warning-pale:     #FEF3C7;
   --shadow-card:      0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --shadow-card-hover:0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
-  --shadow-brand:     0 4px 20px rgba(176,141,58,0.35);
+  --shadow-brand:     0 4px 24px rgba(212,176,86,0.30);
   --radius-sm:  8px;
   --radius-md:  10px;
   --radius-lg:  14px;
