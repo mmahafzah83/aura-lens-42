@@ -84,10 +84,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         brand: {
-          DEFAULT: '#F97316',
-          hover:   '#EA6C0A',
-          pale:    '#FEF0E6',
-          muted:   'rgba(249,115,22,0.12)',
+          DEFAULT: '#B08D3A',
+          hover:   '#8C6E26',
+          pale:    '#F0E6C9',
+          muted:   'rgba(176,141,58,0.22)',
         },
         ink: {
           DEFAULT: '#0E0D0C',
@@ -142,8 +142,8 @@ export default {
       boxShadow: {
         card:        '0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05)',
         'card-hover':'0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07)',
-        brand:       '0 4px 20px rgba(249,115,22,0.4)',
-        'brand-sm':  '0 2px 12px rgba(249,115,22,0.35)',
+        brand:       '0 4px 20px rgba(176,141,58,0.35)',
+        'brand-sm':  '0 2px 12px rgba(176,141,58,0.30)',
       },
       keyframes: {
         "accordion-down": {
