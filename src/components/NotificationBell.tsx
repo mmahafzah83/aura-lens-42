@@ -95,10 +95,22 @@ const NotificationBell = () => {
   return (
     <Popover open={open} onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
-        <button className="relative text-muted-foreground hover:text-primary transition-colors tactile-press p-2 rounded-xl glass-card">
+        <button
+          className="relative tactile-press p-2"
+          style={{
+            background: "var(--paper-2)",
+            border: "0.5px solid var(--paper-3)",
+            borderRadius: "var(--r-md)",
+            color: unreadCount > 0 ? "var(--bronze)" : "var(--ink-3)",
+            transition: "color var(--t-fast) var(--ease)",
+          }}
+        >
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center animate-ring-pulse">
+            <span
+              className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center animate-ring-pulse"
+              style={{ background: "var(--signal)", color: "#fff" }}
+            >
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
