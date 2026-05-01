@@ -87,8 +87,8 @@ html.dark  { background-color: #14110C; }
   --r-xs: 2px; --r-sm: 4px; --r-md: 6px; --r-lg: 10px; --r-xl: 14px;
   --line-thin: 0.5px; --line: 1px;
   --shadow-flat: 0 1px 0 rgba(0,0,0,0.4);
-  --shadow-rest: 0 1px 2px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(212,176,86,0.06);
-  --shadow-lift: 0 8px 24px -8px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(212,176,86,0.10);
+  --shadow-rest: 0 1px 2px rgba(20,17,12,0.4), 0 0 0 0.5px rgba(212,176,86,0.06);
+  --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.6), 0 0 0 0.5px rgba(212,176,86,0.08);
   --shadow-bronze: 0 8px 24px -8px rgba(212,176,86,0.35);
 
   /* Type — fonts */
@@ -1544,3 +1544,24 @@ aside .aura-theme-toggle {
 .animate-fade-up-1 { animation: aura-fade-up 0.35s 0.06s ease both; }
 .animate-fade-up-2 { animation: aura-fade-up 0.35s 0.12s ease both; }
 .animate-fade-up-3 { animation: aura-fade-up 0.35s 0.18s ease both; }
+
+/* ── Dark mode polish: warm card hierarchy ── */
+[data-theme="dark"] .card,
+[data-theme="dark"] [data-aura-card="true"] {
+  background: var(--vellum);
+  border-color: var(--brand-line);
+}
+
+/* Sidebar warmth in dark mode */
+[data-theme="dark"] [data-aura-sidebar="dark"],
+[data-theme="dark"] .aura-sidebar-dark {
+  background: var(--paper-2);
+  border-right: 0.5px solid var(--brand-line);
+}
+
+/* Active nav row in dark sidebar */
+[data-theme="dark"] [data-aura-sidebar="dark"] .nav-active,
+[data-theme="dark"] .aura-sidebar-dark .nav-active {
+  background: var(--brand-ghost, var(--bronze-mist));
+  border-left: 2px solid var(--brand);
+}
