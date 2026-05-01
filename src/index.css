@@ -220,7 +220,7 @@ html.dark  { background-color: var(--paper, #14110C); }
   }
 
   [data-theme="light"] {
-    /* Warm parchment #F8F5F0 ≈ hsl(36 33% 96%) */
+    /* Warm parchment ≈ hsl(36 33% 96%) */
     --background: 36 33% 96%;
     --foreground: 0 0% 7%;
 
