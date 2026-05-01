@@ -12,6 +12,7 @@ import LinkedInCallback from "./pages/LinkedInCallback";
 import TrendDetail from "./pages/TrendDetail";
 import RequestAccess from "./pages/RequestAccess";
 import Admin from "./pages/Admin";
+import AdminDesignSystem from "./pages/AdminDesignSystem";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/design-system" element={<AdminDesignSystem />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<TrendDetail />} />
