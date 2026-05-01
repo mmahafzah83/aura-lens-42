@@ -825,20 +825,6 @@ html.dark  { background-color: #14110C; }
 [data-theme="light"] [style*="border:1px solid rgba(197,165,90"] {
   border-color: var(--bronze-line) !important;
 }
-/* Orange chip text contrast on white */
-[data-theme="light"] [style*="color: #F97316"][style*="background: #1a1400"],
-[data-theme="light"] [style*="color: #F97316"][style*="background:#1a1400"],
-[data-theme="light"] [style*="color: #F97316"][style*="background: rgba(249"],
-[data-theme="light"] [style*="color:#F97316"][style*="background:rgba(249"] {
-  color: #C45E0A !important;
-}
-
-/* Heavy 1px solid orange borders → softer 0.5px subtle orange */
-[data-theme="light"] [style*="border: 1px solid #F97316"],
-[data-theme="light"] [style*="border:1px solid #F97316"] {
-  border: 0.5px solid var(--bronze-line) !important;
-}
-
 /* Inputs / textareas with dark background + light text */
 [data-theme="light"] input[style*="background: #1a1a1a"],
 [data-theme="light"] textarea[style*="background: #1a1a1a"],
@@ -853,14 +839,6 @@ html.dark  { background-color: #14110C; }
 [data-theme="light"] [style*="background:#0d0d0d"][style*="minHeight"],
 [data-theme="light"] [style*="background: #0d0d0d"][style*="min-height"] {
   background: #f7f7f7 !important;
-}
-
-/* CTA buttons that use orange bg + dark text — keep orange, switch text to white */
-[data-theme="light"] button[style*="background: #F97316"][style*="color: #0d0d0d"],
-[data-theme="light"] button[style*="background:#F97316"][style*="color:#0d0d0d"],
-[data-theme="light"] button[style*="background: #F97316"][style*="color: #000"],
-[data-theme="light"] button[style*="background:#F97316"][style*="color:#000"] {
-  color: #ffffff !important;
 }
 
 /* ── Hero card (light mode only) ──
