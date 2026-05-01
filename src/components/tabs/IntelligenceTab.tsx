@@ -813,7 +813,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             background: isSelected ? "var(--surface-ink-raised)" : "transparent",
                             borderLeft: isSelected ? "2px solid var(--brand)" : "2px solid transparent",
                           }}
-                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--ink)"; }}
+                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--surface-ink-subtle)"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                         >
                           <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-3)", minWidth: 22, textAlign: "center" }}>{idx + 1}</span>
