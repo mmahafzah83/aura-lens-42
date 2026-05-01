@@ -1544,3 +1544,24 @@ aside .aura-theme-toggle {
 .animate-fade-up-1 { animation: aura-fade-up 0.35s 0.06s ease both; }
 .animate-fade-up-2 { animation: aura-fade-up 0.35s 0.12s ease both; }
 .animate-fade-up-3 { animation: aura-fade-up 0.35s 0.18s ease both; }
+
+/* ── Dark mode polish: warm card hierarchy ── */
+[data-theme="dark"] .card,
+[data-theme="dark"] [data-aura-card="true"] {
+  background: var(--vellum);
+  border-color: var(--brand-line);
+}
+
+/* Sidebar warmth in dark mode */
+[data-theme="dark"] [data-aura-sidebar="dark"],
+[data-theme="dark"] .aura-sidebar-dark {
+  background: var(--paper-2);
+  border-right: 0.5px solid var(--brand-line);
+}
+
+/* Active nav row in dark sidebar */
+[data-theme="dark"] [data-aura-sidebar="dark"] .nav-active,
+[data-theme="dark"] .aura-sidebar-dark .nav-active {
+  background: var(--brand-ghost, var(--bronze-mist));
+  border-left: 2px solid var(--brand);
+}
