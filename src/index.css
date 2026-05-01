@@ -87,8 +87,8 @@ html.dark  { background-color: var(--paper, #14110C); }
   --r-xs: 2px; --r-sm: 4px; --r-md: 6px; --r-lg: 10px; --r-xl: 14px;
   --line-thin: 0.5px; --line: 1px;
   --shadow-flat: 0 1px 0 rgba(0,0,0,0.4);
-  --shadow-rest: 0 1px 2px rgba(20,17,12,0.4), 0 0 0 0.5px rgba(212,176,86,0.06);
-  --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.6), 0 0 0 0.5px rgba(212,176,86,0.08);
+  --shadow-rest: 0 1px 2px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(212,176,86,0.06);
+  --shadow-lift: 0 8px 24px -8px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(212,176,86,0.08);
   --shadow-bronze: 0 8px 24px -8px rgba(212,176,86,0.35);
 
   /* Type — fonts */
@@ -145,8 +145,8 @@ html.dark  { background-color: var(--paper, #14110C); }
   --danger-pale: #F4DDD8;
   --info: #3A5A7A;
   --info-pale: #DCE5EE;
-  --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.06);
-  --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.15), 0 0 0 0.5px rgba(20,17,12,0.06);
+  --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.04);
+  --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.12), 0 0 0 0.5px rgba(20,17,12,0.04);
   --font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
 }
 
@@ -335,36 +335,28 @@ html.dark  { background-color: var(--paper, #14110C); }
     );
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid hsl(0 0% 100% / 0.04);
+    border: 0.5px solid var(--brand-line);
     border-radius: 16px;
-    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.3),
-                0 8px 32px hsl(0 0% 0% / 0.2),
-                inset 0 1px 0 hsl(0 0% 100% / 0.03);
-    transition: box-shadow 250ms ease-in-out, border-color 250ms ease-in-out;
+    box-shadow: var(--shadow-rest);
+    transition: box-shadow 240ms var(--ease, ease), border-color 240ms var(--ease, ease);
   }
 
 .glass-card:hover {
-    box-shadow: 0 0 20px hsl(43 80% 45% / 0.15),
-                0 8px 32px hsl(0 0% 0% / 0.25),
-                inset 0 1px 0 hsl(0 0% 100% / 0.04);
-    border-color: hsl(0 0% 100% / 0.06);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--brand-line);
   }
 
   .light .glass-card {
     background: hsl(0 0% 100% / 0.85);
     backdrop-filter: blur(16px) saturate(1.2);
     -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    border: 1px solid hsl(0 0% 0% / 0.06);
-    box-shadow: 0 1px 2px hsl(0 0% 0% / 0.05),
-                0 8px 32px hsl(0 0% 0% / 0.07),
-                inset 0 1px 0 hsl(0 0% 100% / 0.8);
+    border: 0.5px solid var(--brand-line);
+    box-shadow: var(--shadow-rest);
   }
 
   .light .glass-card:hover {
-    box-shadow: 0 0 20px hsl(43 80% 45% / 0.12),
-                0 8px 32px hsl(0 0% 0% / 0.09),
-                inset 0 1px 0 hsl(0 0% 100% / 0.9);
-    border-color: hsl(0 0% 0% / 0.10);
+    box-shadow: var(--shadow-lift);
+    border-color: var(--brand-line);
   }
 
   .light .glass-card-elevated {
