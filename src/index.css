@@ -1,5 +1,5 @@
-html.light { background-color: #F8F5F0; }
-html.dark  { background-color: #0c0c0c; }
+html.light { background-color: #F5F0E6; }
+html.dark  { background-color: #14110C; }
 
 @tailwind base;
 @tailwind components;
@@ -9,15 +9,15 @@ html.dark  { background-color: #0c0c0c; }
 
 /* ── Design v2 tokens (warm parchment) ── */
 :root {
-  --aura-bg: #F8F5F0;
+  --aura-bg: var(--paper);
   --aura-card: #FFFFFF;
   --aura-card-foreground: var(--ink);
   --aura-ink: var(--ink);
-  --aura-ink-2: #2A2825;
-  --aura-ink-3: #3D3A36;
-  --aura-orange: var(--bronze);
-  --aura-orange-hover: var(--bronze-deep);
-  --aura-orange-pale: #FEF0E6;
+  --aura-ink-2: var(--ink-2);
+  --aura-ink-3: var(--ink-3);
+  --aura-orange: var(--signal);
+  --aura-orange-hover: var(--signal);
+  --aura-orange-pale: var(--brand-surface);
   --aura-border: rgba(0,0,0,0.07);
   --aura-border-2: rgba(0,0,0,0.12);
   --aura-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
@@ -33,16 +33,16 @@ html.dark  { background-color: #0c0c0c; }
   --color-accent-border: var(--bronze-line);
 
   /* Dark mode surfaces (default) */
-  --color-bg: #0c0c0c;
-  --color-sidebar: #0c0c0c;
-  --color-card: #131313;
-  --color-border: #1e1e1e;
-  --color-border-subtle: #161616;
+  --color-bg: var(--paper);
+  --color-sidebar: var(--paper-2);
+  --color-card: var(--vellum);
+  --color-border: var(--brand-line);
+  --color-border-subtle: var(--brand-line);
 
   /* Dark mode text */
-  --color-text-primary: #f0f0f0;
-  --color-text-secondary: #3d3d3d;
-  --color-text-muted: #2a2a2a;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-3);
+  --color-text-muted: var(--ink-3);
 
   /* Semantic — unchanged */
   --color-green: #7ab648;
@@ -103,15 +103,15 @@ html.dark  { background-color: #0c0c0c; }
 }
 
 [data-theme="light"] {
-  --color-bg: #f7f7f7;
+  --color-bg: var(--paper);
   --color-sidebar: #ffffff;
   --color-card: #ffffff;
-  --color-border: #e8e8e8;
-  --color-border-subtle: #f0f0f0;
+  --color-border: var(--brand-line);
+  --color-border-subtle: var(--brand-line);
 
-  --color-text-primary: #111111;
-  --color-text-secondary: #666666;
-  --color-text-muted: #aaaaaa;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-3);
+  --color-text-muted: var(--ink-3);
 
   --color-accent: var(--bronze);
   --color-accent-hover: var(--bronze-deep);
@@ -156,14 +156,14 @@ html.dark  { background-color: #0c0c0c; }
 }
 
 .aura-skeleton {
-  background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+  background: linear-gradient(90deg, var(--paper-2) 25%, var(--vellum) 50%, var(--paper-2) 75%);
   background-size: 200% 100%;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: 4px;
 }
 
 [data-theme="light"] .aura-skeleton {
-  background: linear-gradient(90deg, #ececec 25%, #f4f4f4 50%, #ececec 75%);
+  background: linear-gradient(90deg, var(--paper-2) 25%, var(--vellum) 50%, var(--paper-2) 75%);
   background-size: 200% 100%;
 }
 
@@ -825,20 +825,6 @@ html.dark  { background-color: #0c0c0c; }
 [data-theme="light"] [style*="border:1px solid rgba(197,165,90"] {
   border-color: var(--bronze-line) !important;
 }
-/* Orange chip text contrast on white */
-[data-theme="light"] [style*="color: #F97316"][style*="background: #1a1400"],
-[data-theme="light"] [style*="color: #F97316"][style*="background:#1a1400"],
-[data-theme="light"] [style*="color: #F97316"][style*="background: rgba(249"],
-[data-theme="light"] [style*="color:#F97316"][style*="background:rgba(249"] {
-  color: #C45E0A !important;
-}
-
-/* Heavy 1px solid orange borders → softer 0.5px subtle orange */
-[data-theme="light"] [style*="border: 1px solid #F97316"],
-[data-theme="light"] [style*="border:1px solid #F97316"] {
-  border: 0.5px solid var(--bronze-line) !important;
-}
-
 /* Inputs / textareas with dark background + light text */
 [data-theme="light"] input[style*="background: #1a1a1a"],
 [data-theme="light"] textarea[style*="background: #1a1a1a"],
@@ -855,14 +841,6 @@ html.dark  { background-color: #0c0c0c; }
   background: #f7f7f7 !important;
 }
 
-/* CTA buttons that use orange bg + dark text — keep orange, switch text to white */
-[data-theme="light"] button[style*="background: #F97316"][style*="color: #0d0d0d"],
-[data-theme="light"] button[style*="background:#F97316"][style*="color:#0d0d0d"],
-[data-theme="light"] button[style*="background: #F97316"][style*="color: #000"],
-[data-theme="light"] button[style*="background:#F97316"][style*="color:#000"] {
-  color: #ffffff !important;
-}
-
 /* ── Hero card (light mode only) ──
    Top-priority card per page: Today's Focus (Home), Your Market Position (My Story),
    Your Next Move (Intelligence). Dark mode is untouched. */
@@ -872,13 +850,6 @@ html.dark  { background-color: #0c0c0c; }
   border-left: 4px solid var(--brand) !important;
   border-radius: 0 8px 8px 0 !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-}
-/* Eyebrow label inside hero card → darker orange for white-bg contrast */
-[data-theme="light"] .aura-hero-card [style*="color: #F97316"][style*="text-transform"],
-[data-theme="light"] .aura-hero-card [style*="color:#F97316"][style*="text-transform"],
-[data-theme="light"] .aura-hero-card [style*="color: #F97316"][style*="textTransform"],
-[data-theme="light"] .aura-hero-card [style*="color:#F97316"][style*="textTransform"] {
-  color: #C45E0A !important;
 }
 /* Title text inside hero → strong dark */
 [data-theme="light"] .aura-hero-card h1,
@@ -904,13 +875,6 @@ html.dark  { background-color: #0c0c0c; }
   border: 0.5px solid #e0e0e0 !important;
   color: #aaaaaa !important;
 }
-/* Primary orange button inside hero card stays orange w/ white text */
-[data-theme="light"] .aura-hero-card button[style*="background: #F97316"],
-[data-theme="light"] .aura-hero-card button[style*="background:#F97316"] {
-  background: var(--brand) !important;
-  color: #ffffff !important;
-}
-
 /* ── Today's Focus inner cards (Home page) ──
    The 3 recommended-move cards live INSIDE .aura-hero-card. Force their
    inline-styled dark backgrounds → white surfaces in light mode. */
@@ -1044,17 +1008,6 @@ html.dark  { background-color: #0c0c0c; }
   background: #f7f7f7 !important;
 }
 
-/* Heavy 1px solid orange borders → softer */
-[data-theme="light"] [style*="border: 1px solid rgb(249, 115, 22)"] {
-  border: 0.5px solid var(--bronze-line) !important;
-}
-
-/* Orange CTA buttons with dark text → keep orange, white text */
-[data-theme="light"] button[style*="background: rgb(249, 115, 22)"][style*="color: rgb(13, 13, 13)"],
-[data-theme="light"] button[style*="background: rgb(249, 115, 22)"][style*="color: rgb(0, 0, 0)"] {
-  color: #ffffff !important;
-}
-
 /* 3-Year Target green-tinted card → soft green tint on white in light mode */
 [data-theme="light"] [style*="background: rgb(10, 18, 10)"],
 [data-theme="light"] [style*="background:#0a120a"],
@@ -1098,15 +1051,6 @@ html.dark  { background-color: #0c0c0c; }
 [data-theme="light"] .intel-command-center [style*="color: rgb(85, 85, 85)"] {
   color: #666666 !important;
 }
-/* Key insight inner card (#111 bg w/ orange left border) → light surface */
-[data-theme="light"] .intel-command-center [style*="border-left: 2px solid rgb(249, 115, 22)"] {
-  background: #f7f7f7 !important;
-  border-color: #e8e8e8 !important;
-  border-left: 2px solid var(--brand) !important;
-}
-[data-theme="light"] .intel-command-center [style*="border-left: 2px solid rgb(249, 115, 22)"] p {
-  color: #111111 !important;
-}
 /* All Signals list header + count */
 [data-theme="light"] .intel-command-center .intel-command-right [style*="border-bottom"] span {
   color: #C45E0A !important;
@@ -1139,11 +1083,6 @@ html.dark  { background-color: #0c0c0c; }
 [data-theme="light"] .intel-command-center [style*="color: rgb(34, 34, 34)"] {
   color: #aaaaaa !important;
 }
-/* "Write on this" CTA — orange bg, dark text → orange bg, white text */
-[data-theme="light"] .intel-command-center button[style*="background: rgb(249, 115, 22)"] {
-  color: #ffffff !important;
-}
-
 /* ── Design v2: global cosmetic overlays (light theme) ── */
 [data-theme="light"] {
   /* Card token swap to pure white #FFFFFF (was already 100%) — keep */
