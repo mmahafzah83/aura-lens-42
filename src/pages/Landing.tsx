@@ -218,7 +218,7 @@ const Landing = () => {
   return (
     <div
       className="landing-root min-h-screen text-ink-7"
-      style={{ background: "var(--ink)", fontFamily: "'Inter', system-ui, sans-serif" }}
+      style={{ background: "var(--ink)", fontFamily: "var(--font-body)" }}
     >
       <style>{`
         @keyframes aura-breathe {
@@ -310,7 +310,7 @@ const Landing = () => {
         borderBottom: "1px solid var(--surface-ink-subtle)",
         paddingTop: "max(env(safe-area-inset-top), 16px)",
       }}>
-        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "'Playfair Display', Georgia, serif" }}>AURA</span>
+        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
         <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", borderColor: "var(--bronze-line)" }}>
           Sign in
         </button>
@@ -399,7 +399,7 @@ const Landing = () => {
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <span style={{ fontSize: 14, color: "var(--brand)" }}>↑</span>
-                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "'Playfair Display', serif", lineHeight: 1 }}>
+                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
                   <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>
@@ -427,7 +427,7 @@ const Landing = () => {
             transform: pullQuote.visible ? "translateY(0)" : "translateY(50px)",
             transition: "opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s",
           }}>
-            <p className="text-[18px] sm:text-[22px] font-medium leading-snug mb-4" style={{ fontFamily: "'Playfair Display', serif", color: "var(--ink-7)" }}>
+            <p className="text-[18px] sm:text-[22px] font-medium leading-snug mb-4" style={{ fontFamily: "var(--font-display)", color: "var(--ink-7)" }}>
               "You know your field. But no one knows you."
             </p>
             <p className="text-[14px] leading-relaxed" style={{ color: "var(--ink-5)" }}>
@@ -463,7 +463,7 @@ const Landing = () => {
               transform: diffQuote.visible ? "translateY(0)" : "translateY(50px)",
               transition: "opacity 0.6s ease 0.4s, transform 0.6s ease 0.4s",
             }}>
-              <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "'Playfair Display', serif", color: "var(--ink-7)" }}>
+              <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "var(--font-display)", color: "var(--ink-7)" }}>
                 "Aura does not just help you create content. It first helps you understand what to stand for."
               </p>
               <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-5)" }}>
@@ -546,7 +546,7 @@ const Landing = () => {
                   marginBottom: window.innerWidth <= 768 ? 24 : undefined,
                 }}
               >
-                <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "var(--surface-ink-subtle)", fontFamily: "'Playfair Display', serif" }}>{s.n}</div>
+                <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "var(--surface-ink-subtle)", fontFamily: "var(--font-display)" }}>{s.n}</div>
                 <div>
                   <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{s.t}</div>
                   <div className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-5)" }}>{s.d}</div>
@@ -586,7 +586,7 @@ const Landing = () => {
           willChange: "transform",
         }} />
         <div className="relative">
-          <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "var(--ink)", fontFamily: "'Playfair Display', serif" }}>Your authority starts here.</h2>
+          <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "var(--ink)", fontFamily: "var(--font-display)" }}>Your authority starts here.</h2>
           <p className="text-[13px] mb-6" style={{ color: "#0d0d0d99" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
           <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
             Get early access
@@ -596,7 +596,7 @@ const Landing = () => {
 
       {/* Section 10 — Footer */}
       <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
-        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "'Playfair Display', serif" }}>AURA</span>
+        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "var(--ink-4)" }}>Strategic intelligence for senior professionals.</p>
       </footer>
     </div>

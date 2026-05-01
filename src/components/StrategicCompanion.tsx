@@ -195,7 +195,7 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
         <div className="px-6 pb-4">
           <p
             className="text-base font-semibold text-foreground leading-snug"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             "{critique.synthesis.emerging_thesis}"
           </p>

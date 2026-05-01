@@ -200,7 +200,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
             <>
                <h2
                  className="text-xl sm:text-2xl font-bold text-foreground leading-snug tracking-tight break-words"
-                 style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+                 style={{ fontFamily: "var(--font-display)" }}
                >
                  {data.opportunityTitle}
                </h2>

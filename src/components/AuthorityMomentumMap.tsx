@@ -117,7 +117,7 @@ const AuthorityMomentumMap = () => {
                     className={`text-body font-medium transition-colors duration-200 ${
                       isHovered ? "text-foreground" : "text-foreground/70"
                     }`}
-                    style={i === 0 ? { fontFamily: "'Playfair Display', Georgia, serif" } : undefined}
+                    style={i === 0 ? { fontFamily: "var(--font-display)" } : undefined}
                   >
                     {t.theme}
                   </span>

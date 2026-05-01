@@ -271,7 +271,7 @@ const FrameworkBuilderInline = ({
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
           <Target className="w-4 h-4 text-blue-400" />
         </div>
-        <h3 className="text-base font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+        <h3 className="text-base font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
           {createdId ? "Refine Framework" : "Build Framework"}
         </h3>
         {initialTitle.trim() && !createdId && (

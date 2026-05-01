@@ -179,7 +179,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
           <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h2 className="text-lg font-bold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h2 className="text-lg font-bold text-foreground tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
             Strategic Evolution Map
           </h2>
           <p className="text-[10px] text-muted-foreground/50 tracking-wide">

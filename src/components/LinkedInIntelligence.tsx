@@ -96,7 +96,7 @@ const LinkedInIntelligence = () => {
           <div className="w-8 h-8 rounded-xl bg-[#0A66C2]/15 flex items-center justify-center border border-[#0A66C2]/20">
             <Linkedin className="w-4 h-4 text-[#0A66C2]" />
           </div>
-          <h2 className="text-lg font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+          <h2 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
             LinkedIn Intelligence
           </h2>
         </div>

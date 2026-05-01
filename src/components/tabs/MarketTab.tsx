@@ -196,7 +196,7 @@ const MarketTab = () => {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-foreground" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <h3 className="text-lg font-semibold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
                 Market Intelligence
               </h3>
               <p className="text-[10px] text-muted-foreground/50 tracking-wide uppercase mt-0.5">Filtered by your sector & skills</p>

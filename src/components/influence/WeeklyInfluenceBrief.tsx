@@ -131,7 +131,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
 
           <p
             className="text-base text-foreground/70 leading-relaxed"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {brief.summary}
           </p>

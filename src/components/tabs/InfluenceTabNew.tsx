@@ -293,7 +293,7 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       <Fade>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
               Measure your influence
             </h1>
             <p className="text-sm text-muted-foreground/40 mt-1">Is your authority compounding?</p>

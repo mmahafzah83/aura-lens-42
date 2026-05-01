@@ -182,7 +182,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                 <Target className="w-4 h-4 text-primary" />
                 <p className="text-label text-[11px]">Priority Strategic Move</p>
               </div>
-              <p className="text-lg font-semibold text-foreground leading-snug mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+              <p className="text-lg font-semibold text-foreground leading-snug mb-3" style={{ fontFamily: "var(--font-display)" }}>
                 {advisory.priorityMove.topic}
               </p>
               <p className="text-sm text-muted-foreground/70 leading-relaxed mb-4" dir="auto">{advisory.priorityMove.reason}</p>

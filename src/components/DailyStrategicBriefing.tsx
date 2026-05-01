@@ -167,7 +167,7 @@ const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicB
           </div>
           <h2
             className="text-lg sm:text-xl font-bold text-foreground leading-snug tracking-tight"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
+            style={{ fontFamily: "var(--font-display)" }}
           >
             {briefing.headline}
           </h2>
