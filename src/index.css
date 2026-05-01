@@ -986,16 +986,20 @@ aside .aura-theme-toggle {
   --brand-hover:      var(--bronze-deep);
   --brand-pale:       var(--bronze-pale);
   --brand-muted:      var(--bronze-line);
+  --brand-glow:       var(--bronze-glow);
+  --brand-line:       var(--bronze-line);
+  --brand-ghost:      var(--bronze-mist);
   --surface-page:     var(--paper);
   --surface:          #FFFFFF;
   --surface-subtle:   #F3F0EB;
   --surface-ink:      #0E0D0C;
   --surface-ink-raised: #FFFFFF;
   --surface-ink-subtle: #F0EAD6;
-  --ink-2:            #1A1916;
-  --ink-3:            #2A2825;
-  --ink-4:            #3D3A36;
-  --ink-5:            #6B6866;
+  /* Extended ink scale (ink-6/ink-7) — neutral, theme-agnostic shades.
+     NOTE: --ink-2..--ink-5 are intentionally NOT redefined here because
+     they are theme-aware tokens defined in :root (dark) and
+     [data-theme="light"] above. Overriding them here breaks dark mode
+     contrast (caused invisible nav labels — rgb(28,28,28) on dark bg). */
   --ink-6:            #9A9690;
   --ink-7:            #B4B0AA;
   --border-subtle:    rgba(0,0,0,0.07);
