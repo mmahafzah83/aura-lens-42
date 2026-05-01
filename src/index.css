@@ -1034,6 +1034,12 @@ aside .aura-theme-toggle {
   --gold-mid-3:       #B07A2A;
 }
 
+/* Theme-aware surface tokens — dark mode overrides */
+[data-theme="dark"] {
+  --surface-ink-raised: #2A2419;
+  --surface-ink-subtle: #1C1812;
+}
+
 /* Badge variants — opt-in classes for the new design system.
    Existing components are unaffected until they use these classes. */
 .badge-base {
