@@ -569,7 +569,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   key={key}
                   onClick={() => setContentType(key)}
                   style={{
-                    background: active ? "var(--brand-pale)" : "#fff",
+                    background: active ? "var(--vellum)" : "#fff",
                     borderRadius: 12,
                     padding: "12px 14px",
                     border: active ? "1.5px solid var(--brand)" : "0.5px solid rgba(0,0,0,0.07)",
@@ -586,7 +586,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       width: 28,
                       height: 28,
                       borderRadius: 8,
-                      background: active ? "rgba(249,115,22,0.15)" : "var(--surface-subtle)",
+                      background: active ? "var(--bronze-mist)" : "var(--surface-subtle)",
                       color: active ? "var(--brand)" : "var(--ink-4)",
                       marginBottom: 6,
                     }}
