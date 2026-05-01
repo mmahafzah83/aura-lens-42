@@ -104,8 +104,8 @@ export default {
           raised:      '#FFFFFF',
           subtle:      '#F3F0EB',
           ink:         '#0E0D0C',
-          'ink-raised':'#141210',
-          'ink-subtle':'#1A1916',
+          'ink-raised':'var(--surface-ink-raised)',
+          'ink-subtle':'var(--surface-ink-subtle)',
         },
         status: {
           'high-bg':      '#FDECEA',
