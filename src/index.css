@@ -1035,7 +1035,9 @@ aside .aura-theme-toggle {
 }
 
 /* Theme-aware surface tokens — dark mode overrides */
-[data-theme="dark"] {
+[data-theme="dark"],
+html.dark,
+.dark {
   --surface-ink-raised: #2A2419;
   --surface-ink-subtle: #1C1812;
 }
