@@ -680,7 +680,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             right: -80,
             width: 300,
             height: 300,
-            background: "radial-gradient(circle, rgba(249,115,22,0.10) 0%, transparent 65%)",
+            background: "radial-gradient(circle, hsl(43 50% 55% / 0.10) 0%, transparent 65%)",
             pointerEvents: "none",
           }}
         />
