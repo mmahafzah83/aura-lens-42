@@ -341,7 +341,7 @@ const SlidePreview = ({
         color: p.fg,
         display: "flex", flexDirection: "column",
         position: "relative",
-        fontFamily: isAr ? "'Noto Sans Arabic', sans-serif" : "'Inter', system-ui, sans-serif",
+        fontFamily: isAr ? "var(--font-arabic)" : "var(--font-body)",
         direction: isAr ? "rtl" : "ltr",
       }}>
         {hasImage && (

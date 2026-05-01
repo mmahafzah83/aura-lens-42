@@ -218,7 +218,7 @@ const Landing = () => {
   return (
     <div
       className="landing-root min-h-screen text-ink-7"
-      style={{ background: "var(--ink)", fontFamily: "'Inter', system-ui, sans-serif" }}
+      style={{ background: "var(--ink)", fontFamily: "var(--font-body)" }}
     >
       <style>{`
         @keyframes aura-breathe {
