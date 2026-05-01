@@ -1,5 +1,5 @@
-html.light { background-color: #F8F5F0; }
-html.dark  { background-color: #0c0c0c; }
+html.light { background-color: #F5F0E6; }
+html.dark  { background-color: #14110C; }
 
 @tailwind base;
 @tailwind components;
@@ -9,15 +9,15 @@ html.dark  { background-color: #0c0c0c; }
 
 /* ── Design v2 tokens (warm parchment) ── */
 :root {
-  --aura-bg: #F8F5F0;
+  --aura-bg: var(--paper);
   --aura-card: #FFFFFF;
   --aura-card-foreground: var(--ink);
   --aura-ink: var(--ink);
-  --aura-ink-2: #2A2825;
-  --aura-ink-3: #3D3A36;
-  --aura-orange: var(--bronze);
-  --aura-orange-hover: var(--bronze-deep);
-  --aura-orange-pale: #FEF0E6;
+  --aura-ink-2: var(--ink-2);
+  --aura-ink-3: var(--ink-3);
+  --aura-orange: var(--signal);
+  --aura-orange-hover: var(--signal);
+  --aura-orange-pale: var(--brand-surface);
   --aura-border: rgba(0,0,0,0.07);
   --aura-border-2: rgba(0,0,0,0.12);
   --aura-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
@@ -33,16 +33,16 @@ html.dark  { background-color: #0c0c0c; }
   --color-accent-border: var(--bronze-line);
 
   /* Dark mode surfaces (default) */
-  --color-bg: #0c0c0c;
-  --color-sidebar: #0c0c0c;
-  --color-card: #131313;
-  --color-border: #1e1e1e;
-  --color-border-subtle: #161616;
+  --color-bg: var(--paper);
+  --color-sidebar: var(--paper-2);
+  --color-card: var(--vellum);
+  --color-border: var(--brand-line);
+  --color-border-subtle: var(--brand-line);
 
   /* Dark mode text */
-  --color-text-primary: #f0f0f0;
-  --color-text-secondary: #3d3d3d;
-  --color-text-muted: #2a2a2a;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-3);
+  --color-text-muted: var(--ink-3);
 
   /* Semantic — unchanged */
   --color-green: #7ab648;
@@ -103,15 +103,15 @@ html.dark  { background-color: #0c0c0c; }
 }
 
 [data-theme="light"] {
-  --color-bg: #f7f7f7;
+  --color-bg: var(--paper);
   --color-sidebar: #ffffff;
   --color-card: #ffffff;
-  --color-border: #e8e8e8;
-  --color-border-subtle: #f0f0f0;
+  --color-border: var(--brand-line);
+  --color-border-subtle: var(--brand-line);
 
-  --color-text-primary: #111111;
-  --color-text-secondary: #666666;
-  --color-text-muted: #aaaaaa;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-3);
+  --color-text-muted: var(--ink-3);
 
   --color-accent: var(--bronze);
   --color-accent-hover: var(--bronze-deep);
@@ -156,14 +156,14 @@ html.dark  { background-color: #0c0c0c; }
 }
 
 .aura-skeleton {
-  background: linear-gradient(90deg, #1a1a1a 25%, #222 50%, #1a1a1a 75%);
+  background: linear-gradient(90deg, var(--paper-2) 25%, var(--vellum) 50%, var(--paper-2) 75%);
   background-size: 200% 100%;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: 4px;
 }
 
 [data-theme="light"] .aura-skeleton {
-  background: linear-gradient(90deg, #ececec 25%, #f4f4f4 50%, #ececec 75%);
+  background: linear-gradient(90deg, var(--paper-2) 25%, var(--vellum) 50%, var(--paper-2) 75%);
   background-size: 200% 100%;
 }
 
