@@ -13,6 +13,7 @@ import OnboardingChecklist from "@/components/OnboardingChecklist";
 import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
+import { AuraButton } from "@/components/ui/AuraButton";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -851,28 +852,22 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             ))}
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <button
+            <AuraButton
+              variant="primary"
+              size="sm"
               onClick={handlePrimaryCTA}
-              style={{
-                background: ACCENT, color: "var(--paper)",
-                fontSize: 12, fontWeight: 600,
-                padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
-              }}
+              style={{ borderRadius: 4, padding: "7px 18px" }}
             >
               {primaryLabel}
-            </button>
-            <button
+            </AuraButton>
+            <AuraButton
+              variant="ghost"
+              size="sm"
               onClick={() => onSwitchTab?.("intelligence")}
-              style={{
-                border: "0.5px solid hsl(var(--border))",
-                color: "hsl(var(--muted-foreground))",
-                background: "transparent",
-                fontSize: 12, padding: "7px 18px", borderRadius: 4,
-                marginLeft: 4, cursor: "pointer",
-              }}
+              style={{ borderRadius: 4, padding: "7px 18px", marginLeft: 4 }}
             >
               See your signals →
-            </button>
+            </AuraButton>
           </div>
         </div>
       )}
@@ -908,16 +903,14 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             )}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
+            <AuraButton
+              variant="signal"
+              size="sm"
               onClick={() => navigate("/publish")}
-              style={{
-              background: SIGNAL, color: "var(--paper)",
-                fontSize: 12, fontWeight: 600,
-                padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
-              }}
+              style={{ borderRadius: 4, padding: "7px 18px" }}
             >
               Publish now →
-            </button>
+            </AuraButton>
             {competitorAlert.url && (
               <button
                 onClick={() => window.open(competitorAlert.url!, "_blank", "noopener,noreferrer")}
