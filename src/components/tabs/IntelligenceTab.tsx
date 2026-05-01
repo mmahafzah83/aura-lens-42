@@ -157,7 +157,7 @@ const AutomationStrip = () => {
       <div style={{ overflow: "hidden", maxHeight: collapsed ? 0 : 400, transition: "max-height 200ms ease-in-out" }}>
         <div className="intel-automation-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
           {cards.map((c, i) => (
-            <div key={i} className="intel-automation-card" style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div key={i} className="intel-automation-card" style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 8, alignItems: "flex-start" }}>
               <div className="intel-automation-icon" style={{ width: 36, height: 36, borderRadius: 8, background: c.iconBg, border: `1px solid ${c.iconBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0, color: c.iconColor, padding: 8, boxSizing: "border-box" }}>
                 {c.icon}
               </div>
@@ -301,7 +301,7 @@ const SignalDetailPanel = ({
           {keyInsight && (
             <div style={{ marginBottom: 14 }}>
               <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 6 }}>Key insight</p>
-              <div style={{ background: "var(--ink)", border: "0.5px solid var(--ink-3)", borderLeft: "2px solid var(--brand)", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
+              <div style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--ink-3)", borderLeft: "2px solid var(--brand)", borderRadius: "0 6px 6px 0", padding: "10px 12px" }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-7)", margin: "0 0 3px" }}>{keyInsight.title}</p>
                 <p style={{ fontSize: 11, color: "var(--ink-5)", lineHeight: 1.5, margin: 0 }}>{keyInsight.content.slice(0, 200)}</p>
               </div>
@@ -394,7 +394,7 @@ const KeyInsightsStrip = ({ onDraftToStudio }: { onDraftToStudio?: (prefill: Sig
         {visible.map(insight => {
           const badge = getBadge(insight.intelligence_type);
           return (
-            <div key={insight.id} style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: 12 }}>
+            <div key={insight.id} style={{ background: "var(--surface-ink-raised)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 8, padding: 12 }}>
               <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "2px 7px", borderRadius: 4, display: "inline-block", marginBottom: 6, background: badge.bg, border: `0.5px solid ${badge.border}`, color: badge.color }}>
                 {badge.label}
               </span>
@@ -682,7 +682,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   if (loading) {
     return (
-      <div style={{ background: "var(--ink)", minHeight: "100vh", padding: "16px" }}>
+      <div style={{ background: "var(--surface-ink-raised)", minHeight: "100vh", padding: "16px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {[...Array(3)].map((_, i) => (
             <div key={i} style={{ background: "var(--surface-ink-raised)", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid var(--ink-3)" }}>
@@ -702,7 +702,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   ];
 
   return (
-    <div style={{ background: "var(--ink)", minHeight: "100vh", paddingBottom: 80 }}>
+    <div style={{ background: "var(--surface-ink-raised)", minHeight: "100vh", paddingBottom: 80 }}>
       {loadError && (
         <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
       )}
@@ -774,7 +774,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             ) : (
               <>
                 {/* Command Center container */}
-                <div className="intel-command-center" style={{ background: "#0f0f0f", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
+                <div className="intel-command-center" style={{ background: "var(--surface-ink-subtle)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
                   <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid var(--surface-ink-subtle)" }}>
                     {selectedSignal && (
@@ -789,7 +789,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   </div>
 
                   {/* RIGHT PANEL — signal list (~42%) */}
-                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "var(--ink)", overflowY: "auto", maxHeight: 600 }}>
+                  <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "var(--surface-ink-raised)", overflowY: "auto", maxHeight: 600 }}>
                     {/* Header */}
                     <div style={{ padding: "14px 16px", borderBottom: "0.5px solid var(--surface-ink-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ink-3)", fontWeight: 600 }}>All signals</span>
