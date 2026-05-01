@@ -615,7 +615,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       parts.push({ text: " at " });
       parts.push({ text: `${Math.round((topSignal.confidence || 0) * 100)}%`, bold: true });
       parts.push({ text: ") has a " });
-      parts.push({ text: "publishing window open right now", color: ACCENT });
+      parts.push({ text: "publishing window open right now", color: SIGNAL });
       parts.push({ text: ". " });
     } else {
       parts.push({ text: "Capture more sources to build your signal intelligence. " });
@@ -911,7 +911,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <button
               onClick={() => navigate("/publish")}
               style={{
-                background: ACCENT, color: "var(--paper)",
+              background: SIGNAL, color: "var(--paper)",
                 fontSize: 12, fontWeight: 600,
                 padding: "7px 18px", borderRadius: 4, border: "none", cursor: "pointer",
               }}
