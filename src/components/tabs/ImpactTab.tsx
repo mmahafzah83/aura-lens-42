@@ -664,11 +664,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <section
         className="relative overflow-hidden"
         style={{
-          background: "var(--ink)",
+          background: "var(--surface-ink-raised)",
           borderRadius: 14,
           padding: "28px 28px 24px",
-          color: "var(--ink-7)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07)",
+          color: "var(--ink)",
+          border: "0.5px solid var(--brand-line)",
+          boxShadow: "var(--shadow-rest)",
         }}
       >
         {/* Decorative radial glow */}
@@ -694,7 +695,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "var(--ink-5)",
+                color: "var(--ink-3)",
               }}
             >
               Authority score
@@ -715,7 +716,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div className="mt-3 inline-flex">
               <span
                 style={{
-                  background: "var(--brand-muted)",
+                  background: "var(--brand-ghost)",
                   color: "var(--brand)",
                   borderRadius: 20,
                   padding: "5px 14px",
@@ -739,7 +740,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "var(--ink-5)",
+                    color: "var(--ink-3)",
                   }}
                 >
                   30d
@@ -765,7 +766,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
-                    color: "var(--ink-5)",
+                    color: "var(--ink-3)",
                   }}
                 >
                   90d
@@ -826,7 +827,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </div>
               <div
                 className="flex justify-between mt-2"
-                style={{ fontSize: 9, color: "var(--ink-4)" }}
+                style={{ fontSize: 9, color: "var(--ink-3)" }}
               >
                 <span>Now</span>
                 <span>30d · {trajectory.forecast30}</span>
@@ -862,8 +863,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       }
                     : {
                         background: "transparent",
-                        color: "var(--ink-5)",
-                        border: "0.5px solid var(--ink-3)",
+                        color: "var(--ink-3)",
+                        border: "0.5px solid var(--brand-line)",
                         borderRadius: 8,
                         padding: "5px 14px",
                         fontSize: 11,
