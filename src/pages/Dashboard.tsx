@@ -4,6 +4,7 @@ import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Crown, Trendin
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
@@ -85,6 +86,9 @@ const Dashboard = () => {
   useEffect(() => {
     applyThemeToRoot(theme);
   }, [theme]);
+
+  // Database-driven design tokens (overrides CSS fallbacks via inline style)
+  useDesignTokens(theme);
 
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
