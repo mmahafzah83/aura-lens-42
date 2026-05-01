@@ -285,15 +285,30 @@ const StrategicAdvisorPanel = ({
       </div>
 
       {/* Recommended Move */}
-      <div className="p-5 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.05] to-transparent space-y-2">
+      <div
+        className="p-5 rounded-xl border space-y-2"
+        style={{
+          borderLeft: "3px solid var(--signal)",
+          borderTop: "1px solid var(--signal-line)",
+          borderRight: "1px solid var(--signal-line)",
+          borderBottom: "1px solid var(--signal-line)",
+          background: "linear-gradient(to bottom right, rgba(249,115,22,0.05), transparent)",
+        }}
+      >
         <div className="flex items-center gap-2">
-          <MoveIcon className="w-4 h-4 text-primary" />
-          <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">Your Next Move</span>
+          <MoveIcon className="w-4 h-4" style={{ color: "var(--signal)" }} />
+          <span className="text-label uppercase tracking-wider text-xs font-semibold" style={{ color: "var(--signal)", opacity: 0.85 }}>Your Next Move</span>
         </div>
         <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" className="text-xs gap-1.5 bg-brand text-black hover:bg-[#b89548]" onClick={() => {
+          <Button
+            size="sm"
+            className="text-xs gap-1.5 text-white"
+            style={{ background: "var(--signal)" }}
+            onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.05)")}
+            onMouseLeave={(e) => (e.currentTarget.style.filter = "none")}
+            onClick={() => {
             if (onDraftToStudio) {
               onDraftToStudio({ topic: data.recommended_move.action, context: data.recommended_move.reason, sourceType: "recommended_move", sourceTitle: data.recommended_move.action });
             } else {
