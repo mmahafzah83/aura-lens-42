@@ -720,18 +720,32 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
       `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
 
-        {/* ── Counter Bar ── */}
-        <div className="intel-counter-bar" style={{ background: "var(--surface-ink-raised)", borderRadius: 10, display: "flex", alignItems: "center", marginBottom: 14, border: "0.5px solid var(--ink-3)", overflow: "hidden" }}>
-          {[
-            { label: "Sources", count: entryCount, gold: false },
-            { label: "Signals", count: signals.length, gold: true },
-            { label: "Moves", count: movesCount, gold: false },
-          ].map((step, i, arr) => (
-            <div key={step.label} style={{ flex: 1, textAlign: "center", padding: "12px 8px", borderRight: i < arr.length - 1 ? "0.5px solid var(--ink-3)" : "none" }}>
-              <p style={{ color: step.gold ? "var(--brand)" : "var(--ink-7)", fontSize: 20, fontWeight: 700, margin: 0, lineHeight: 1.2 }}>{step.count}</p>
-              <p style={{ color: "var(--ink-4)", fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase", margin: "4px 0 0" }}>{step.label}</p>
+        {/* ── Header: title + inline counters ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase", fontFamily: "var(--font-body)" }}>
+              Strategic Intelligence
             </div>
-          ))}
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+              Intelligence
+            </h1>
+          </div>
+          <div style={{ display: "flex", gap: 24, alignItems: "baseline" }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{entryCount}</div>
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>sources</div>
+            </div>
+            <div style={{ width: 0.5, height: 32, background: "var(--brand-line)" }} />
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{signals.length}</div>
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>signals</div>
+            </div>
+            <div style={{ width: 0.5, height: 32, background: "var(--brand-line)" }} />
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{movesCount}</div>
+              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>moves</div>
+            </div>
+          </div>
         </div>
 
         {/* ── Automation Strip ── */}
