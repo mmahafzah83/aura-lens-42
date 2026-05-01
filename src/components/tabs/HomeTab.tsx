@@ -148,6 +148,7 @@ const competitorTimeAgo = (iso: string): string => {
 const ACCENT = "var(--brand)";
 const GREEN = "var(--success)";
 const RED = "var(--danger)";
+const SIGNAL = "var(--signal)";
 
 // ────────────────────────────────────────────────
 // Helpers
