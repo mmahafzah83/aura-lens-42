@@ -751,7 +751,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
                           // Fetch diagnostic profile for identity_snapshot
                           const { data: profile } = await supabase.from("diagnostic_profiles")
-                            .select("level, sector_focus, core_practice, firm")
+                            .select("level, sector_focus, firm")
                             .eq("user_id", session.user.id)
                             .maybeSingle();
 
@@ -762,9 +762,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
                             identity_snapshot: {
                               role: profile?.level ?? null,
-                              industry: profile?.firm ?? null,
-                              sector_focus: profile?.sector_focus ?? null,
-                              core_practice: profile?.core_practice ?? null,
+                              sector: profile?.sector_focus ?? null,
+                              firm: profile?.firm ?? null,
                             },
                             topic: topic || null,
                             language: lang,
@@ -1091,6 +1090,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             try {
                               const { data: { session } } = await supabase.auth.getSession();
                               if (!session?.user?.id) throw new Error("Not authenticated");
+                              const { data: profile } = await supabase.from("diagnostic_profiles")
+                                .select("level, sector_focus, firm")
+                                .eq("user_id", session.user.id)
+                                .maybeSingle();
                               const { error } = await supabase.from("content_items").insert({
                                 user_id: session.user.id,
                                 type: "linkedin_post",
@@ -1102,6 +1105,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                                   visual_url: visualUrl,
                                   framework,
                                   content_type: contentType,
+                                  signal_ids: selectedSignalId ? [selectedSignalId] : [],
+                                  signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+                                  language: lang ?? null,
+                                  identity_snapshot: {
+                                    role: profile?.level ?? null,
+                                    sector: profile?.sector_focus ?? null,
+                                    firm: profile?.firm ?? null,
+                                  },
+                                  timestamp: new Date().toISOString(),
                                 },
                               });
                               if (error) throw error;
