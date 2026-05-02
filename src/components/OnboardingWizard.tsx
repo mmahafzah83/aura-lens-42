@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
+import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import {
   Check,
   Loader2,
@@ -29,7 +30,7 @@ const INDUSTRIES = [
   "Other",
 ];
 
-type PipeStatus = "pending" | "running" | "done" | "error";
+type PipeStatus = PipelineState["voice"];
 
 const OnboardingWizard = ({ userId, onComplete }: Props) => {
   const [step, setStep] = useState(1);
@@ -111,33 +112,6 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
     }
   };
 
-  // ── Pipeline runner (shared utility for G3) ──
-  const runPostImportPipeline = async () => {
-    const callFn = async (name: string) => {
-      const { error } = await supabase.functions.invoke(name, { body: {} });
-      if (error) throw error;
-    };
-    setPipeline({ voice: "running", positioning: "pending", score: "pending" });
-    try {
-      await callFn("voice-distill");
-      setPipeline((p) => ({ ...p, voice: "done", positioning: "running" }));
-    } catch {
-      setPipeline((p) => ({ ...p, voice: "error", positioning: "running" }));
-    }
-    try {
-      await callFn("generate-brand-positioning");
-      setPipeline((p) => ({ ...p, positioning: "done", score: "running" }));
-    } catch {
-      setPipeline((p) => ({ ...p, positioning: "error", score: "running" }));
-    }
-    try {
-      await callFn("calculate-aura-score");
-      setPipeline((p) => ({ ...p, score: "done" }));
-    } catch {
-      setPipeline((p) => ({ ...p, score: "error" }));
-    }
-  };
-
   const handleFile = async (file: File) => {
     if (!file.name.toLowerCase().endsWith(".xlsx")) {
       toast.error("Please upload a .xlsx file");
@@ -155,7 +129,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
       const imp = (data as any)?.imported || {};
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
       setImportedSummary(`${days} days of data imported`);
-      await runPostImportPipeline();
+      await runPostImportPipeline(setPipeline);
     } catch (err: any) {
       console.error("XLSX upload failed:", err);
       toast.error(err?.message || "Upload failed. Please try again.");
