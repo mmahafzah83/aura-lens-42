@@ -682,10 +682,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   if (loading) {
     return (
-      <div style={{ background: "var(--surface-ink-raised)", minHeight: "100vh", padding: "16px" }}>
+      <div style={{ background: "transparent", padding: "16px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto" }}>
           {[...Array(3)].map((_, i) => (
-            <div key={i} style={{ background: "var(--surface-ink-raised)", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid var(--ink-3)" }}>
+            <div key={i} style={{ background: "var(--surface-ink-subtle)", borderRadius: 12, padding: 20, marginBottom: 12, border: "1px solid var(--ink-3)" }}>
               <div style={{ height: 14, width: "60%", background: "var(--surface-ink-subtle)", borderRadius: 6, marginBottom: 10 }} className="animate-pulse" />
               <div style={{ height: 10, width: "100%", background: "var(--surface-ink-subtle)", borderRadius: 4, marginBottom: 6 }} className="animate-pulse" />
               <div style={{ height: 10, width: "70%", background: "var(--surface-ink-subtle)", borderRadius: 4 }} className="animate-pulse" />
@@ -702,7 +702,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   ];
 
   return (
-    <div style={{ background: "var(--surface-ink-raised)", minHeight: "100vh", paddingBottom: 80 }}>
+    <div style={{ background: "transparent", minHeight: "100vh", paddingBottom: 80 }}>
       {loadError && (
         <SectionError onRetry={loadSignals} message="Couldn't load intelligence. " />
       )}
