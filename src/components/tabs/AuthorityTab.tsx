@@ -2168,6 +2168,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       supabase
         .from("linkedin_posts")
         .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at")
+        .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
       supabase
@@ -2458,6 +2459,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               </div>
             ) : publishedPosts.map(p => {
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+              const isExternal = (p as any).source_type === "external_reference"
+                || (p.source_metadata as any)?.source_type === "external_reference";
               return (
                 <motion.div
                   key={p.id}
@@ -2488,9 +2491,15 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
                         {badge.label}
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
-                        Published
-                      </span>
+                      {isExternal ? (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "rgba(59,130,246,0.15)", color: "rgb(96,165,250)" }}>
+                          LinkedIn
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
+                          Published
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
