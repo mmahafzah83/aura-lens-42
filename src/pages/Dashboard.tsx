@@ -15,6 +15,7 @@ import OnboardingWizard from "@/components/OnboardingWizard";
 import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
+import ProfileMenu from "@/components/ProfileMenu";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
