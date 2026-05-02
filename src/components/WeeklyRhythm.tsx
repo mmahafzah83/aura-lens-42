@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface WeeklyRhythmData {
   active_weeks: number;
@@ -85,9 +86,15 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           textTransform: "uppercase",
           color: "hsl(var(--muted-foreground))",
           fontFamily: "var(--font-sans, 'DM Sans', sans-serif)",
+          display: "inline-flex",
+          alignItems: "center",
         }}
       >
         Capture rhythm
+        <InfoTooltip
+          label="Capture Rhythm"
+          text="Weeks with at least one meaningful capture in the last 12 weeks."
+        />
       </div>
 
       <div
