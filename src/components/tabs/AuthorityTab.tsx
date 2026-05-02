@@ -751,7 +751,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
                           // Fetch diagnostic profile for identity_snapshot
                           const { data: profile } = await supabase.from("diagnostic_profiles")
-                            .select("level, sector_focus, core_practice, firm")
+                            .select("level, sector_focus, firm")
                             .eq("user_id", session.user.id)
                             .maybeSingle();
 
@@ -762,9 +762,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
                             identity_snapshot: {
                               role: profile?.level ?? null,
-                              industry: profile?.firm ?? null,
-                              sector_focus: profile?.sector_focus ?? null,
-                              core_practice: profile?.core_practice ?? null,
+                              sector: profile?.sector_focus ?? null,
+                              firm: profile?.firm ?? null,
                             },
                             topic: topic || null,
                             language: lang,
