@@ -695,18 +695,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             >
               Authority score
             </div>
-            <div
-              className="tabular-nums"
-              style={{
-                fontFamily: "'DM Serif Display', Georgia, serif",
-                fontSize: 80,
-                color: "var(--brand)",
-                letterSpacing: "-0.04em",
-                lineHeight: 1,
-                marginTop: 6,
-              }}
-            >
-              {animatedScore}
+            <div style={{ marginTop: 6 }}>
+              <ScoreRing
+                value={latestScore}
+                size={160}
+                stroke={5}
+                numberStyle={{
+                  fontFamily: "'DM Serif Display', Georgia, serif",
+                  fontSize: 64,
+                  color: "var(--brand)",
+                  letterSpacing: "-0.04em",
+                  lineHeight: 1,
+                }}
+              />
             </div>
             <div className="mt-3 inline-flex">
               <span
