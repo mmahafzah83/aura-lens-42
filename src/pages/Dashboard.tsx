@@ -596,7 +596,7 @@ const Dashboard = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="tab-content-spring">
+          <div className="tab-content-spring aura-page-fade" key={activeTab}>
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>

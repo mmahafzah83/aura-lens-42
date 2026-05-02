@@ -1418,3 +1418,30 @@ html.dark .text-gray-500,
 [data-fx-tab-slider="true"] .aura-tab-bar [data-aura-tab="true"] {
   border-bottom-color: transparent !important;
 }
+
+/* ─────────────────────────────────────────────────────────
+   Sprint F3 — Page transitions + warm skeletons
+   ───────────────────────────────────────────────────────── */
+
+@keyframes aura-page-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes aura-page-header-slide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-fx-page-transitions="true"] .aura-page-fade {
+    animation: aura-page-fade 0.2s ease both;
+  }
+  [data-fx-page-transitions="true"] .aura-page-header-slide {
+    animation: aura-page-header-slide 0.35s ease 0.15s both;
+  }
+}
+
+/* Warm skeleton override (used everywhere via .aura-skeleton) */
+[data-theme="dark"] .aura-skeleton {
+  background: linear-gradient(90deg, var(--paper-3) 25%, var(--vellum) 50%, var(--paper-3) 75%);
+  background-size: 200% 100%;
+}

@@ -10,6 +10,8 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+import { useCountUp } from "@/hooks/useCountUp";
 
 /* ── Types ── */
 interface Snapshot {
@@ -693,18 +695,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             >
               Authority score
             </div>
-            <div
-              className="tabular-nums"
-              style={{
-                fontFamily: "'DM Serif Display', Georgia, serif",
-                fontSize: 80,
-                color: "var(--brand)",
-                letterSpacing: "-0.04em",
-                lineHeight: 1,
-                marginTop: 6,
-              }}
-            >
-              {animatedScore}
+            <div style={{ marginTop: 6 }}>
+              <ScoreRing
+                value={latestScore}
+                size={160}
+                stroke={5}
+                numberStyle={{
+                  fontFamily: "'DM Serif Display', Georgia, serif",
+                  fontSize: 64,
+                  color: "var(--brand)",
+                  letterSpacing: "-0.04em",
+                  lineHeight: 1,
+                }}
+              />
             </div>
             <div className="mt-3 inline-flex">
               <span
@@ -934,7 +937,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "var(--brand)" },
             { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
             { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "var(--brand)" },
-          ]).map((c) => {
+          ]).map((c, idx) => {
             const cfg = subScoreCard(c.kind, c.value);
             return (
               <div
@@ -976,7 +979,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  {Math.round(c.value)}
+                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
                 </div>
                 <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
                   {c.desc}
@@ -1632,5 +1635,14 @@ const Stat = ({ label, value, valueColor }: { label: string; value: string; valu
     </div>
   </div>
 );
+
+/* Sprint F3 — animated number for score breakdown cards (200ms stagger) */
+const BreakdownNumber = ({ value, index }: { value: number; index: number }) => {
+  const enabled =
+    typeof document !== "undefined" &&
+    document.documentElement.getAttribute("data-fx-score-ring") === "true";
+  const display = useCountUp(value, { duration: 1200, delay: index * 200, gate: enabled });
+  return <>{display}</>;
+};
 
 export default ImpactTab;

@@ -142,6 +142,8 @@ function applyTokens(tokens: DesignTokens, theme: "dark" | "light") {
   setFlag("data-fx-card-entry", flagOn("card_entry_animation"));
   setFlag("data-fx-pulse", flagOn("pulse_indicators"));
   setFlag("data-fx-tab-slider", flagOn("tab_slider"));
+  setFlag("data-fx-score-ring", flagOn("score_ring_animation"));
+  setFlag("data-fx-page-transitions", flagOn("page_transitions"));
 }
 
 let cachedTokens: DesignTokens | null = null;
