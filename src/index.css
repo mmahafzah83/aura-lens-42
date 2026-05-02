@@ -1331,3 +1331,90 @@ html.dark .text-gray-500,
 @media (prefers-reduced-motion: no-preference) {
   /* Reserved for any future subtle grain animation */
 }
+
+/* ─────────────────────────────────────────────────────────
+   Sprint F2 — Card hover lift, entry animation, pulses
+   Tab slider indicator
+   ───────────────────────────────────────────────────────── */
+
+/* PART A — Card hover lift (gated by [data-fx-card-hover="true"]) */
+[data-fx-card-hover="true"] .card,
+[data-fx-card-hover="true"] .glass-card,
+[data-fx-card-hover="true"] [data-aura-card="true"],
+[data-fx-card-hover="true"] .aura-card,
+[data-fx-card-hover="true"] .rounded-2xl {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+@media (hover: hover) {
+  [data-fx-card-hover="true"] .card:hover,
+  [data-fx-card-hover="true"] .glass-card:hover,
+  [data-fx-card-hover="true"] [data-aura-card="true"]:hover,
+  [data-fx-card-hover="true"] .aura-card:hover,
+  [data-fx-card-hover="true"] .rounded-2xl:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lift);
+    border-color: rgba(var(--brand-rgb, 197, 165, 90), 0.2);
+  }
+}
+
+/* PART B — Card entry animation
+   Hook elements get data-aura-anim="enter"; visible when [data-aura-visible="true"] */
+@media (prefers-reduced-motion: no-preference) {
+  [data-fx-card-entry="true"] [data-aura-anim="enter"] {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    transition-delay: var(--aura-anim-delay, 0ms);
+  }
+  [data-fx-card-entry="true"] [data-aura-anim="enter"][data-aura-visible="true"] {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* Reduced motion: instant render (no transform, full opacity) */
+@media (prefers-reduced-motion: reduce) {
+  [data-aura-anim="enter"] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* PART C — Pulse indicators */
+@keyframes aura-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(1.4); }
+}
+@keyframes aura-pulse-glow {
+  0%, 100% { text-shadow: 0 0 0 rgba(var(--brand-rgb, 197, 165, 90), 0); }
+  50%      { text-shadow: 0 0 8px rgba(var(--brand-rgb, 197, 165, 90), 0.55); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-fx-pulse="true"] .aura-pulse-dot {
+    animation: aura-pulse-dot 2.5s ease-in-out infinite;
+    transform-origin: center;
+  }
+  [data-fx-pulse="true"] .aura-pulse-glow {
+    animation: aura-pulse-glow 2.5s ease-in-out infinite;
+  }
+}
+
+/* PART D — Tab slider indicator
+   Apply .aura-tab-bar to a container; place a child <span class="aura-tab-indicator" /> */
+[data-fx-tab-slider="true"] .aura-tab-bar {
+  position: relative;
+}
+[data-fx-tab-slider="true"] .aura-tab-indicator {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  background: var(--brand);
+  border-radius: 1px;
+  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+/* When slider is active, suppress the per-tab bottom-border to avoid double bar */
+[data-fx-tab-slider="true"] .aura-tab-bar [data-aura-tab="true"] {
+  border-bottom-color: transparent !important;
+}
