@@ -51,7 +51,7 @@ const Dashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
-  const [user, setUser] = useState<{ email?: string; fullName?: string | null } | null>(null);
+  const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -180,12 +180,17 @@ const Dashboard = () => {
         const uid = session.user.id;
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, first_name")
+          .select("completed, onboarding_completed, first_name, avatar_url")
           .eq("user_id", uid)
           .maybeSingle();
 
         if (profile) {
-          setUser((u) => ({ ...(u || {}), email: session.user.email, fullName: (profile as any).first_name ?? null }));
+          setUser((u) => ({
+            ...(u || {}),
+            email: session.user.email,
+            fullName: (profile as any).first_name ?? null,
+            avatarUrl: (profile as any).avatar_url ?? null,
+          }));
         }
 
         // New wizard trigger: no profile row AND localStorage not set
@@ -399,43 +404,6 @@ const Dashboard = () => {
             {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
           </button>
 
-          {/* Theme toggle pill — above Collapse */}
-          {!sidebarCollapsed && (
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="aura-theme-toggle"
-              style={{
-                background: "var(--vellum)",
-                border: "0.5px solid var(--paper-3)",
-                borderRadius: 20,
-                padding: "0 12px",
-                minHeight: 32,
-                width: "100%",
-                fontSize: 11,
-                fontWeight: 500,
-                color: "var(--ink-2)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
-            >
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: "var(--bronze)",
-                  display: "inline-block",
-                  flexShrink: 0,
-                }}
-              />
-              <span>{theme === "light" ? "Light" : "Dark"}</span>
-            </button>
-          )}
-
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="w-full flex items-center gap-3 px-3 py-2 transition-all"
@@ -569,6 +537,7 @@ const Dashboard = () => {
               <ProfileMenu
                 fullName={user?.fullName ?? null}
                 email={user?.email}
+                avatarUrl={user?.avatarUrl ?? null}
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onSignOut={handleLogout}

@@ -1,14 +1,14 @@
-import { User, LogOut, Sun, Moon } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 interface ProfileMenuProps {
   fullName?: string | null;
   email?: string;
+  avatarUrl?: string | null;
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onSignOut: () => void;
@@ -17,6 +17,7 @@ interface ProfileMenuProps {
 export default function ProfileMenu({
   fullName,
   email,
+  avatarUrl,
   theme,
   onToggleTheme,
   onSignOut,
@@ -29,6 +30,10 @@ export default function ProfileMenu({
       : parts.length === 1
         ? parts[0][0]?.toUpperCase()
         : "";
+
+  const setTheme = (target: "light" | "dark") => {
+    if (target !== theme) onToggleTheme();
+  };
 
   return (
     <DropdownMenu>
@@ -45,104 +50,162 @@ export default function ProfileMenu({
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="p-0 border-0"
+        className="p-0 border-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95"
         style={{
-          minWidth: 220,
+          minWidth: 240,
+          maxWidth: "calc(100vw - 24px)",
           background: "var(--surface-ink-raised, var(--paper, #fff))",
           border: "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
-          borderRadius: 10,
+          borderRadius: 12,
           boxShadow: "var(--shadow-lift, 0 10px 30px -10px rgba(0,0,0,0.25))",
-          padding: "12px 0",
+          padding: 8,
         }}
       >
-        {/* User info */}
-        <div style={{ padding: "4px 16px 8px" }}>
-          {fn && (
-            <div
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: "var(--foreground)",
-                lineHeight: 1.3,
-              }}
-            >
-              {fn}
-            </div>
-          )}
-          {email && (
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--muted-foreground)",
-                marginTop: 2,
-                wordBreak: "break-all",
-              }}
-            >
-              {email}
-            </div>
-          )}
-        </div>
-
-        <DropdownMenuSeparator
-          style={{ background: "var(--brand-line, rgba(0,0,0,0.08))", margin: "4px 0" }}
-        />
-
-        {/* Theme toggle row */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            onToggleTheme();
-          }}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "10px 16px",
-            background: "transparent",
-            border: "none",
-            cursor: "pointer",
-            color: "var(--foreground)",
-            fontSize: 13,
-          }}
-          className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
-        >
-          <span>Appearance</span>
-          <span
+        {/* HEADER */}
+        <div style={{ padding: 12, display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            aria-hidden
             style={{
-              display: "inline-flex",
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: "var(--brand-surface, var(--brand-pale, #f3ecd9))",
+              color: "var(--brand)",
+              display: "flex",
               alignItems: "center",
-              gap: 6,
-              fontSize: 12,
-              color: "var(--muted-foreground)",
+              justifyContent: "center",
+              fontWeight: 600,
+              fontSize: 14,
+              flexShrink: 0,
+              overflow: "hidden",
+              border: "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
             }}
           >
-            {theme === "light" ? (
-              <Sun className="w-3.5 h-3.5" />
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={fn || "Avatar"}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : initials ? (
+              initials
             ) : (
-              <Moon className="w-3.5 h-3.5" />
+              <User className="w-4 h-4" />
             )}
-            {theme === "light" ? "Light" : "Dark"}
-          </span>
-        </button>
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            {fn && (
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: "var(--foreground)",
+                  lineHeight: 1.3,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {fn}
+              </div>
+            )}
+            {email && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--muted-foreground)",
+                  marginTop: 2,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {email}
+              </div>
+            )}
+          </div>
+        </div>
 
-        <DropdownMenuSeparator
-          style={{ background: "var(--brand-line, rgba(0,0,0,0.08))", margin: "4px 0" }}
+        {/* THEME / APPEARANCE */}
+        <div style={{ padding: "0 12px 12px" }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--muted-foreground)",
+              marginBottom: 6,
+            }}
+          >
+            Appearance
+          </div>
+          <div
+            role="group"
+            aria-label="Theme"
+            style={{
+              display: "flex",
+              width: "100%",
+              padding: 3,
+              borderRadius: 999,
+              background: "var(--brand-ghost, rgba(0,0,0,0.04))",
+              border: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
+            }}
+          >
+            {(["light", "dark"] as const).map((mode) => {
+              const active = theme === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setTheme(mode);
+                  }}
+                  aria-pressed={active}
+                  style={{
+                    flex: 1,
+                    minHeight: 32,
+                    padding: "6px 10px",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    border: "none",
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    background: active ? "var(--brand-surface, var(--brand-pale, #f3ecd9))" : "transparent",
+                    color: active ? "var(--brand)" : "var(--muted-foreground)",
+                    transition: "background 150ms ease, color 150ms ease",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {mode}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* DIVIDER */}
+        <div
+          style={{
+            height: 0,
+            borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
+            margin: "0 4px",
+          }}
         />
 
-        {/* Sign out */}
+        {/* SIGN OUT */}
         <button
           type="button"
           onClick={onSignOut}
           style={{
             width: "100%",
+            minHeight: 44,
             display: "flex",
             alignItems: "center",
-            gap: 8,
-            padding: "10px 16px",
+            gap: 10,
+            padding: "10px 12px",
+            marginTop: 4,
             background: "transparent",
             border: "none",
+            borderRadius: 8,
             cursor: "pointer",
             color: "var(--danger, #c0392b)",
             fontSize: 13,
