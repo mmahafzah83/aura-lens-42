@@ -19,7 +19,12 @@ const Auth = () => {
       .select("onboarding_completed")
       .eq("user_id", session.user.id)
       .maybeSingle();
-    if (!profile || !(profile as any).onboarding_completed) {
+    // No profile row → go to /home where the onboarding wizard (G1) will trigger.
+    if (!profile) {
+      navigate("/home");
+      return;
+    }
+    if (!(profile as any).onboarding_completed) {
       navigate("/onboarding");
     } else {
       navigate("/home");
@@ -41,7 +46,12 @@ const Auth = () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      toast({
+        title: "Sign in failed",
+        description:
+          "Email or password incorrect. If this is your first time, try Forgot Password to set up your account.",
+        variant: "destructive",
+      });
     }
     setLoading(false);
   };
@@ -307,6 +317,21 @@ const Auth = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12.5,
+                lineHeight: 1.55,
+                color: "var(--ink-5)",
+                background: "var(--brand-muted)",
+                border: "0.5px solid var(--bronze-line)",
+                borderRadius: 10,
+                padding: "10px 12px",
+              }}
+            >
+              Use the email and password from your invitation. First time?
+              Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Forgot Password</span> below to set your password.
+            </div>
             <div>
               <label htmlFor="email" className="auth-label">
                 EMAIL
@@ -371,12 +396,22 @@ const Auth = () => {
               Continue with Google
             </button>
 
-            <div className="pt-1">
+            <div className="pt-1 text-center">
               <button
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={resetting}
-                className="auth-link hover:underline disabled:opacity-50"
+                className="hover:underline disabled:opacity-50"
+                style={{
+                  color: "var(--brand)",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                }}
               >
                 {resetting ? "Sending…" : "Forgot password?"}
               </button>
