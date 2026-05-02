@@ -200,6 +200,14 @@ const AdminExperience = () => {
     light: v?.light ?? "",
   });
 
+  // Sidebar slider parse — must be before any early return to keep hook order stable
+  const sidebarBarPx = useMemo(() => {
+    const w = sidebar.active_bar_width;
+    if (typeof w === "string") return parseInt(w.replace("px", ""), 10) || 3;
+    if (typeof w === "number") return w;
+    return 3;
+  }, [sidebar.active_bar_width]);
+
   if (!authChecked || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink)" }}>
@@ -209,14 +217,6 @@ const AdminExperience = () => {
   }
 
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-  // Sidebar slider parse
-  const sidebarBarPx = useMemo(() => {
-    const w = sidebar.active_bar_width;
-    if (typeof w === "string") return parseInt(w.replace("px", ""), 10) || 3;
-    if (typeof w === "number") return w;
-    return 3;
-  }, [sidebar.active_bar_width]);
 
   return (
     <div
