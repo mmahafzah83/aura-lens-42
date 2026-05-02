@@ -13,6 +13,7 @@ import TrendDetail from "./pages/TrendDetail";
 import RequestAccess from "./pages/RequestAccess";
 import Admin from "./pages/Admin";
 import AdminDesignSystem from "./pages/AdminDesignSystem";
+import AdminExperience from "./pages/AdminExperience";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/request-access" element={<RequestAccess />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/design-system" element={<AdminDesignSystem />} />
+            <Route path="/admin/experience" element={<AdminExperience />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<TrendDetail />} />
