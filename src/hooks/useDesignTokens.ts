@@ -120,6 +120,28 @@ function applyTokens(tokens: DesignTokens, theme: "dark" | "light") {
     ? "0.06"
     : "0.04";
   root.style.setProperty("--grain-opacity", grainEnabled ? grainOpacity : "0");
+
+  // ── Effect flags as data-attributes on <html> ──
+  // Defaults to ON when token missing, so polish ships even if DB row not extended.
+  const flagOn = (key: string, fallback = true): boolean => {
+    const raw = effects[key];
+    if (raw == null) return fallback;
+    if (typeof raw === "boolean") return raw;
+    if (typeof raw === "string") return raw === "true";
+    if (typeof raw === "object" && (theme in (raw as object))) {
+      const v = (raw as Record<string, unknown>)[theme];
+      return v === true || v === "true";
+    }
+    return fallback;
+  };
+  const setFlag = (attr: string, on: boolean) => {
+    if (on) root.setAttribute(attr, "true");
+    else root.removeAttribute(attr);
+  };
+  setFlag("data-fx-card-hover", flagOn("card_hover_lift"));
+  setFlag("data-fx-card-entry", flagOn("card_entry_animation"));
+  setFlag("data-fx-pulse", flagOn("pulse_indicators"));
+  setFlag("data-fx-tab-slider", flagOn("tab_slider"));
 }
 
 let cachedTokens: DesignTokens | null = null;
