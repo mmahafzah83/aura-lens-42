@@ -189,6 +189,11 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
       )}
       <span style={{ color: status === "done" ? "var(--foreground)" : "hsl(var(--muted-foreground))" }}>
         {label}
+        {status === "error" && (
+          <span className="ml-2 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>
+            — Will retry automatically
+          </span>
+        )}
       </span>
     </li>
   );
