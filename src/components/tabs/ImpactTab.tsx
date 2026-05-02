@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { useCountUp } from "@/hooks/useCountUp";
+import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 
 /* ── Types ── */
 interface Snapshot {
@@ -108,6 +109,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pipeline, setPipeline] = useState<PipelineState | null>(null);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
@@ -586,6 +588,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
       toast.success(`LinkedIn data imported — ${days} days of data loaded`);
       setSelectedFile(null);
+      setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
+      await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
     } catch (err: any) {
       console.error("XLSX upload failed:", err);
@@ -1240,6 +1244,37 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     </>
                   )}
                 </div>
+                {pipeline && (
+                  <ul className="mt-4 space-y-2">
+                    {(["voice", "positioning", "score"] as const).map((k) => {
+                      const status = pipeline[k];
+                      return (
+                        <li key={k} className="flex items-center gap-3 text-[12px]">
+                          {status === "done" ? (
+                            <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                          ) : status === "running" ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
+                          ) : status === "error" ? (
+                            <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
+                          ) : (
+                            <span
+                              className="w-3.5 h-3.5 inline-block rounded-full border"
+                              style={{ borderColor: "var(--color-border)" }}
+                            />
+                          )}
+                          <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
+                            {PIPELINE_LABELS[k]}
+                            {status === "error" && (
+                              <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
+                                — Will retry automatically
+                              </span>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
