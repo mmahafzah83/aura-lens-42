@@ -1636,4 +1636,13 @@ const Stat = ({ label, value, valueColor }: { label: string; value: string; valu
   </div>
 );
 
+/* Sprint F3 — animated number for score breakdown cards (200ms stagger) */
+const BreakdownNumber = ({ value, index }: { value: number; index: number }) => {
+  const enabled =
+    typeof document !== "undefined" &&
+    document.documentElement.getAttribute("data-fx-score-ring") === "true";
+  const display = useCountUp(value, { duration: 1200, delay: index * 200, gate: enabled });
+  return <>{display}</>;
+};
+
 export default ImpactTab;
