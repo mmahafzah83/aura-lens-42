@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.3";
+import { createClient } from "npm:@supabase/supabase-js@2.99.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +53,28 @@ destination must be:
 - CAPTURE → "capture_modal"
 - WATCH → "/intelligence"`;
 
+async function getAuthenticatedUserId(supabase: any, authHeader: string) {
+  const token = authHeader.replace("Bearer ", "").trim();
+
+  if (!token) return null;
+
+  const authApi = supabase.auth as { getClaims?: (jwt: string) => Promise<any> };
+
+  if (typeof authApi.getClaims === "function") {
+    const { data, error } = await authApi.getClaims(token);
+    if (!error && data?.claims?.sub) {
+      return data.claims.sub as string;
+    }
+  }
+
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user?.id) {
+    return null;
+  }
+
+  return data.user.id as string;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -70,14 +92,13 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
+    const userId = await getAuthenticatedUserId(supabase, authHeader);
+    if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const user = { id: claimsData.claims.sub as string };
+    const user = { id: userId };
 
     const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
 
