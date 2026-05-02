@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
-  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers,
+  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +16,7 @@ import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
 import { TabSlider } from "@/components/ui/TabSlider";
+import EmptyState from "@/components/ui/EmptyState";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -784,14 +785,14 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             <p style={{ color: "var(--ink-4)", fontSize: 12, margin: "-4px 0 14px" }}>Signals Aura detected across everything you've captured — ranked by strength.</p>
 
             {signals.length === 0 ? (
-              <div style={{ textAlign: "center", padding: 40 }}>
-                <p style={{ color: "var(--ink-7)", fontSize: 16, fontWeight: 500, marginBottom: 8 }}>No signals yet</p>
-                <p style={{ color: "var(--ink-5)", fontSize: 13, marginBottom: 20 }}>Capture knowledge to start building signals.</p>
-                <Button variant="outline" size="sm" onClick={runPatternDetection} disabled={detecting} className="gap-2 text-xs">
-                  {detecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  Detect signals
-                </Button>
-              </div>
+              <EmptyState
+                icon={Brain}
+                title="Aura detects signals from what you capture."
+                description="Start by capturing something about {sector} you read today."
+                personalize
+                ctaLabel={detecting ? "Detecting..." : "Detect signals"}
+                ctaAction={detecting ? undefined : runPatternDetection}
+              />
             ) : (
               <>
                 {/* Command Center container */}
