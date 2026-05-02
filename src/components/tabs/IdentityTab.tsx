@@ -318,9 +318,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             >
               {userName}
             </p>
-            <p style={{ fontSize: 11, color: "var(--ink-4)", lineHeight: 1.4, marginTop: 2 }}>
-              {profile?.level || "Executive"}
-            </p>
 
             {/* Professional identity: role · industry · region */}
             <div style={{ fontSize: 13, color: "var(--ink-3)", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
