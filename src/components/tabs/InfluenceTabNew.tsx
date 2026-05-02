@@ -7,6 +7,7 @@ import {
   Activity, Settings2, Monitor, Wifi, WifiOff,
   CheckCircle2, AlertTriangle, Bug
 } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, Cell } from "recharts";
 import { formatSmartDate } from "@/lib/formatDate";
@@ -400,38 +401,13 @@ const InfluenceTabNew = ({ entries, onOpenChat }: InfluenceTabNewProps) => {
       {/* ── EMPTY STATE — no synced posts at all ── */}
       {!hasPosts && (
         <Fade delay={0.04}>
-          <div
-            style={{
-              background: "var(--surface-ink-raised)",
-              border: "1px solid var(--ink-3)",
-              borderRadius: 10,
-              padding: 32,
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: 32, lineHeight: 1, marginBottom: 12 }}>📊</div>
-            <h3 style={{ fontSize: 14, color: "var(--ink-7)", fontWeight: 600, margin: 0 }}>
-              No performance data yet
-            </h3>
-            <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 8, marginBottom: 20, lineHeight: 1.5 }}>
-              Connect your LinkedIn account or sync your posts to start tracking your influence.
-            </p>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("aura:open-linkedin-sync"))}
-              style={{
-                background: "var(--brand)",
-                color: "var(--ink)",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 20px",
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Sync LinkedIn posts
-            </button>
-          </div>
+          <EmptyState
+            icon={TrendingUp}
+            title="Your authority trajectory starts here."
+            description="Connect your LinkedIn account or sync your posts to start tracking your influence."
+            ctaLabel="Sync LinkedIn posts"
+            ctaAction={() => window.dispatchEvent(new CustomEvent("aura:open-linkedin-sync"))}
+          />
         </Fade>
       )}
 
