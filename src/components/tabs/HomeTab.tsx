@@ -9,6 +9,7 @@ import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
+import AuthorityJourney from "@/components/AuthorityJourney";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
@@ -873,6 +874,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
           </div>
         </div>
       )}
+
+      {/* Authority Journey (G5) — reads from calculate-aura-score */}
+      <AuthorityJourney userId={sessionConfirmed ? authUser?.id ?? null : null} />
 
       {/* SECTION 3 — Aura's Read */}
       {competitorAlert && (
