@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 
 interface EmptyStateProps {
-  icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number }>;
+  icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number; color?: string; style?: React.CSSProperties }>;
   title: string;
   description: string;
   /** If true and `{sector}` placeholder is in description, replaces with profile sector_focus. */
@@ -85,10 +85,8 @@ const EmptyState = ({
         className="mb-4"
         size={48}
         strokeWidth={1.5}
-        // Brand-muted via inline style so consumers don't need theme classes
-        // eslint-disable-next-line react/forbid-dom-props
+        style={{ color: "var(--brand)", opacity: 0.55 }}
       />
-      <style>{`.empty-state-icon-wrap svg { color: var(--brand); opacity: 0.55; }`}</style>
       <h3
         style={{
           fontFamily: "var(--font-display)",
@@ -134,12 +132,4 @@ const EmptyState = ({
   );
 };
 
-// Wrapper that styles the lucide icon via CSS color. We render via a portal-less
-// inline approach: icon receives currentColor; we set color on the parent.
-const EmptyStateWithStyledIcon = (props: EmptyStateProps) => (
-  <div className="empty-state-icon-wrap" style={{ display: "contents" }}>
-    <EmptyState {...props} />
-  </div>
-);
-
-export default EmptyStateWithStyledIcon;
+export default EmptyState;
