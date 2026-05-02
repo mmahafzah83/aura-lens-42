@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-const REDIRECT_URL = "https://www.aura-intel.org/auth";
+const REDIRECT_URL = "https://aura-intel.org/auth";
 
 const buildEmailHtml = (BRAND: string, BRAND_FONT: string) => `<!DOCTYPE html>
 <html lang="en">
