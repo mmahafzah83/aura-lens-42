@@ -275,13 +275,9 @@ const Dashboard = () => {
 
       {/* ── Desktop Sidebar ── */}
       <aside
-        className={`hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
+        className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-[68px]" : "w-[220px]"
         }`}
-        style={{
-          background: "var(--paper-2)",
-          borderRight: "0.5px solid var(--brand-line)",
-        }}
       >
         {/* Logo */}
         <div
@@ -351,41 +347,12 @@ const Dashboard = () => {
               <button
                 key={item.value}
                 onClick={() => switchTab(item.value)}
-                className="w-full flex items-center gap-3 tactile-press group relative aura-nav-item"
+                className={`w-full flex items-center gap-3 tactile-press group aura-nav-item ${isActive ? "is-active" : ""}`}
                 style={{
                   padding: "10px 24px",
-                  background: isActive ? "var(--brand-ghost)" : "transparent",
-                  color: isActive ? "var(--ink)" : "var(--ink-3)",
                   fontWeight: isActive ? 500 : 400,
-                  border: "none",
-                  transition: "all var(--t-fast) var(--ease)",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = "var(--paper-3)";
-                    e.currentTarget.style.color = "var(--ink)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "var(--ink-3)";
-                  }
                 }}
               >
-                {isActive && (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 6,
-                      bottom: 6,
-                      width: 2,
-                      background: "var(--brand)",
-                    }}
-                  />
-                )}
                 <item.icon
                   className="w-5 h-5 shrink-0"
                   style={{
@@ -481,11 +448,9 @@ const Dashboard = () => {
             onClick={() => setMobileSidebarOpen(false)}
           />
           <aside
-            className="absolute left-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
+            className="aura-sidebar-shell absolute left-0 top-0 h-full w-[260px] flex flex-col animate-slide-in-right"
             style={{
               animationName: 'slideInLeft',
-              background: "var(--paper-2)",
-              borderRight: "0.5px solid var(--brand-line)",
             }}
           >
             <div
@@ -538,28 +503,12 @@ const Dashboard = () => {
                   <button
                     key={item.value}
                     onClick={() => switchTab(item.value)}
-                    className="w-full flex items-center gap-3 relative"
+                    className={`w-full flex items-center gap-3 aura-nav-item ${isActive ? "is-active" : ""}`}
                     style={{
                       padding: "10px 24px",
-                      background: isActive ? "var(--brand-ghost)" : "transparent",
-                      color: isActive ? "var(--ink)" : "var(--ink-3)",
                       fontWeight: isActive ? 500 : 400,
-                      transition: "all var(--t-fast) var(--ease)",
                     }}
                   >
-                    {isActive && (
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: 6,
-                          bottom: 6,
-                          width: 2,
-                          background: "var(--brand)",
-                        }}
-                      />
-                    )}
                     <item.icon
                       className="w-5 h-5"
                       style={{ color: isActive ? "var(--brand)" : "var(--ink-3)" }}
@@ -596,7 +545,7 @@ const Dashboard = () => {
 
       {/* ── Main Content ── */}
       <main
-        className={`flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
+        className={`grain-overlay flex-1 min-w-0 relative z-10 transition-all duration-300 overflow-x-hidden ${
           sidebarCollapsed ? "md:ml-[68px]" : "md:ml-[220px]"
         }`}
         style={{ paddingTop: 'env(safe-area-inset-top)', background: 'var(--paper)' }}
