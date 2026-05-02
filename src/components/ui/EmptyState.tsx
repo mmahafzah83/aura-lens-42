@@ -1,9 +1,10 @@
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 
 interface EmptyStateProps {
-  icon: ComponentType<{ className?: string; size?: number; strokeWidth?: number; color?: string; style?: React.CSSProperties }>;
+  icon: LucideIcon;
   title: string;
   description: string;
   /** If true and `{sector}` placeholder is in description, replaces with profile sector_focus. */
