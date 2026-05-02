@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { useCountUp } from "@/hooks/useCountUp";
+import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 
 /* ── Types ── */
 interface Snapshot {
@@ -108,6 +109,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pipeline, setPipeline] = useState<PipelineState | null>(null);
 
   // Content performance
   const [contentPerf, setContentPerf] = useState<{
@@ -586,6 +588,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
       toast.success(`LinkedIn data imported — ${days} days of data loaded`);
       setSelectedFile(null);
+      setPipeline({ voice: "pending", positioning: "pending", score: "pending" });
+      await runPostImportPipeline(setPipeline);
       await loadAll(selectedDays);
     } catch (err: any) {
       console.error("XLSX upload failed:", err);
