@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface AuraScoreResponse {
   aura_score: number;
@@ -85,6 +86,24 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         padding: "20px 24px",
       }}
     >
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "hsl(var(--muted-foreground))",
+          fontFamily: "'DM Sans', sans-serif",
+          display: "inline-flex",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        Authority journey
+        <InfoTooltip
+          label="Authority Journey"
+          text="Your path from Observer to Authority. Each tier unlocks with specific actions."
+        />
+      </div>
       {/* Waypoint bar */}
       <div className="relative" style={{ paddingTop: 6, paddingBottom: 28 }}>
         <div className="flex items-center justify-between relative">
