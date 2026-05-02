@@ -242,6 +242,16 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     );
   }
 
+  if (!loading && !profile) {
+    return (
+      <EmptyState
+        icon={UserIcon}
+        title="Tell your full story."
+        description="Set up your profile so Aura can shape signals and content around who you are."
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {loadError && (
