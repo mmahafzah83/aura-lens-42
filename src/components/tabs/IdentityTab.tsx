@@ -752,6 +752,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </div>
       </div>
 
+      {/* Milestones (G7) — reads milestones array from calculate-aura-score */}
+      <MilestonesSection userId={authUser?.id ?? null} />
+
       {/* Full Profile Modal */}
       {fullProfileOpen && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }} onClick={() => setFullProfileOpen(false)}>
