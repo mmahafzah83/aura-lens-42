@@ -11,6 +11,7 @@ import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
 import AuthorityJourney from "@/components/AuthorityJourney";
 import WeeklyRhythm from "@/components/WeeklyRhythm";
+import MilestoneNotification from "@/components/MilestoneNotification";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
@@ -800,6 +801,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
+
+      {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
+      <MilestoneNotification userId={authUser?.id ?? null} />
 
       {/* SECTION 1 — Header bar */}
       <header className="flex items-end justify-between gap-3 pt-1">
