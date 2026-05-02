@@ -875,6 +875,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
       )}
 
+      {/* Authority Journey (G5) — reads from calculate-aura-score */}
+      <AuthorityJourney userId={sessionConfirmed ? authUser?.id ?? null : null} />
+
       {/* SECTION 3 — Aura's Read */}
       {competitorAlert && (
         <div
