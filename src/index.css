@@ -947,6 +947,21 @@ aside .aura-theme-toggle {
 .aura-card {
   border-radius: 14px;
 }
+
+/* ─ Global warm card elevation ─
+   Apply rest/lift shadow tokens to all card-shaped surfaces so cards
+   lift consistently off the page surface. Tokens are theme-aware and
+   injected by useDesignTokens (warm brown light / warm + bronze glow dark). */
+.glass-card,
+[class*="rounded-2xl"],
+.card {
+  box-shadow: var(--shadow-rest);
+  transition: box-shadow 240ms ease;
+}
+.glass-card:hover,
+[class*="rounded-2xl"]:hover {
+  box-shadow: var(--shadow-lift);
+}
 /* Left-bordered alert cards: square the left corners */
 .aura-left-accent-card {
   border-top-left-radius: 0 !important;
