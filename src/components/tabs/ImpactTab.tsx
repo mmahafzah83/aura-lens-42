@@ -1244,6 +1244,37 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     </>
                   )}
                 </div>
+                {pipeline && (
+                  <ul className="mt-4 space-y-2">
+                    {(["voice", "positioning", "score"] as const).map((k) => {
+                      const status = pipeline[k];
+                      return (
+                        <li key={k} className="flex items-center gap-3 text-[12px]">
+                          {status === "done" ? (
+                            <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                          ) : status === "running" ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
+                          ) : status === "error" ? (
+                            <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
+                          ) : (
+                            <span
+                              className="w-3.5 h-3.5 inline-block rounded-full border"
+                              style={{ borderColor: "var(--color-border)" }}
+                            />
+                          )}
+                          <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
+                            {PIPELINE_LABELS[k]}
+                            {status === "error" && (
+                              <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
+                                — Will retry automatically
+                              </span>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           </div>
