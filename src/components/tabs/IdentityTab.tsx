@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
+import MilestonesSection from "@/components/MilestonesSection";
 import BrandArchetypeWidget from "@/components/BrandArchetypeWidget";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
@@ -751,6 +752,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </button>
         </div>
       </div>
+
+      {/* Milestones (G7) — reads milestones array from calculate-aura-score */}
+      <MilestonesSection userId={authUser?.id ?? null} />
 
       {/* Full Profile Modal */}
       {fullProfileOpen && createPortal(
