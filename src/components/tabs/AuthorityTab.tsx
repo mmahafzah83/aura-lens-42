@@ -2459,6 +2459,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               </div>
             ) : publishedPosts.map(p => {
               const badge = FORMAT_BADGE[p.format_type || "post"] || FORMAT_BADGE.post;
+              const isExternal = (p as any).source_type === "external_reference"
+                || (p.source_metadata as any)?.source_type === "external_reference";
               return (
                 <motion.div
                   key={p.id}
