@@ -86,7 +86,8 @@ export function AmbientOrbs({ theme, pageKey }: AmbientOrbsProps) {
         overflow: "hidden",
         pointerEvents: "none",
         zIndex: 0,
-        opacity: Number(opacityStr) || 0.15,
+        ["--orb-base-op" as string]: String(Number(opacityStr) || 0.15),
+        opacity: "var(--orb-base-op)",
       }}
     >
       <span
