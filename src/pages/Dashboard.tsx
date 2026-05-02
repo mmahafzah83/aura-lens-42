@@ -15,6 +15,7 @@ import OnboardingWizard from "@/components/OnboardingWizard";
 import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import NotificationBell from "@/components/NotificationBell";
+import ProfileMenu from "@/components/ProfileMenu";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
@@ -565,35 +566,13 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell />
-              {(() => {
-                const fn = (user?.fullName || "").trim();
-                const parts = fn.split(/\s+/).filter(Boolean);
-                const initials = parts.length >= 2
-                  ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-                  : parts.length === 1
-                    ? parts[0][0]?.toUpperCase()
-                    : "";
-                return initials ? (
-                  <span
-                    className="aura-initials-avatar"
-                    title={fn || user?.email || ""}
-                    aria-label={fn || "Account"}
-                  >
-                    {initials}
-                  </span>
-                ) : (
-                  <span
-                    className="aura-initials-avatar"
-                    title={user?.email || "Account"}
-                    aria-label="Account"
-                  >
-                    <User className="w-4 h-4" />
-                  </span>
-                );
-              })()}
-              <button onClick={handleLogout} className="text-muted-foreground/40 hover:text-foreground transition-colors tactile-press" title="Log out">
-                <LogOut className="w-4 h-4" />
-              </button>
+              <ProfileMenu
+                fullName={user?.fullName ?? null}
+                email={user?.email}
+                theme={theme}
+                onToggleTheme={toggleTheme}
+                onSignOut={handleLogout}
+              />
             </div>
           </div>
 
