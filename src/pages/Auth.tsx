@@ -317,6 +317,21 @@ const Auth = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12.5,
+                lineHeight: 1.55,
+                color: "var(--ink-5)",
+                background: "var(--brand-muted)",
+                border: "0.5px solid var(--bronze-line)",
+                borderRadius: 10,
+                padding: "10px 12px",
+              }}
+            >
+              Use the email and password from your invitation. First time?
+              Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Forgot Password</span> below to set your password.
+            </div>
             <div>
               <label htmlFor="email" className="auth-label">
                 EMAIL
@@ -381,12 +396,22 @@ const Auth = () => {
               Continue with Google
             </button>
 
-            <div className="pt-1">
+            <div className="pt-1 text-center">
               <button
                 type="button"
                 onClick={handleForgotPassword}
                 disabled={resetting}
-                className="auth-link hover:underline disabled:opacity-50"
+                className="hover:underline disabled:opacity-50"
+                style={{
+                  color: "var(--brand)",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px 8px",
+                }}
               >
                 {resetting ? "Sending…" : "Forgot password?"}
               </button>
