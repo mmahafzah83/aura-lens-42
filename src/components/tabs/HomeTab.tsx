@@ -14,6 +14,8 @@ import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
+import EmptyState from "@/components/ui/EmptyState";
+import { Zap } from "lucide-react";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1004,16 +1006,21 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         ) : trendsLoading && trends.length === 0 ? (
           <div className="min-h-[80px]" aria-busy="true" />
         ) : visibleTrends.length === 0 ? (
-          <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px" }}>
-            <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>
-              {trends.length === 0 ? "No live intelligence yet" : "No trends match this filter"}
+          trends.length === 0 ? (
+            <EmptyState
+              icon={Zap}
+              title="Your intelligence dashboard comes alive as you feed it."
+              description="Start by capturing something about {sector} you read today."
+              personalize
+              ctaLabel="Capture your first source"
+              ctaAction={() => onOpenCapture?.()}
+            />
+          ) : (
+            <div className="rounded-lg border border-dashed text-center" style={{ borderColor: "hsl(var(--border))", padding: "24px 16px" }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--foreground))" }}>No trends match this filter</div>
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>Try a different filter or reset to top picks</div>
             </div>
-            <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 4 }}>
-              {trends.length === 0
-                ? "Aura curates industry trends from trusted sources, validated for quality"
-                : "Try a different filter or reset to top picks"}
-            </div>
-          </div>
+          )
         ) : (
           <div>
             {visibleTrends.map((t, idx) => {
