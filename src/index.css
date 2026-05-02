@@ -1445,3 +1445,59 @@ html.dark .text-gray-500,
   background: linear-gradient(90deg, var(--paper-3) 25%, var(--vellum) 50%, var(--paper-3) 75%);
   background-size: 200% 100%;
 }
+
+/* ─────────────────────────────────────────────────────────
+   Sprint F4 — Ambient orbs + page hero background sizing
+   ───────────────────────────────────────────────────────── */
+:root {
+  --page-hero-h: 360px;
+}
+@media (max-width: 767px) {
+  :root { --page-hero-h: 240px; }
+}
+
+.aura-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  will-change: transform;
+  display: block;
+}
+.aura-orb-1 {
+  width: 520px; height: 520px;
+  top: -120px; left: -140px;
+}
+.aura-orb-2 {
+  width: 460px; height: 460px;
+  top: 40%; right: -160px;
+}
+.aura-orb-3 {
+  width: 600px; height: 600px;
+  bottom: -200px; left: 20%;
+}
+
+@keyframes aura-orb-drift-a {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(40px, -30px); }
+}
+@keyframes aura-orb-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(-50px, 30px); }
+}
+@keyframes aura-orb-drift-c {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(30px, 40px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aura-orb-1 { animation: aura-orb-drift-a 42s ease-in-out infinite; }
+  .aura-orb-2 { animation: aura-orb-drift-b 55s ease-in-out infinite; }
+  .aura-orb-3 { animation: aura-orb-drift-c 48s ease-in-out infinite; }
+}
+
+/* Mobile: shrink orbs to ~50% size, reduce opacity by 40% */
+@media (max-width: 767px) {
+  .aura-ambient-orbs { opacity: calc(var(--orb-base-op, 0.15) * 0.6) !important; }
+  .aura-orb-1 { width: 260px; height: 260px; filter: blur(70px); }
+  .aura-orb-2 { width: 230px; height: 230px; filter: blur(70px); }
+  .aura-orb-3 { width: 300px; height: 300px; filter: blur(80px); }
+}

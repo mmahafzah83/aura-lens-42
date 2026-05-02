@@ -21,6 +21,8 @@ import IntelligenceTab from "@/components/tabs/IntelligenceTab";
 
 import AuthorityTab from "@/components/tabs/AuthorityTab";
 import ImpactTab from "@/components/tabs/ImpactTab";
+import AmbientOrbs from "@/components/AmbientOrbs";
+import PageHeroBackground from "@/components/PageHeroBackground";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -596,7 +598,23 @@ const Dashboard = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="tab-content-spring aura-page-fade" key={activeTab}>
+          <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
+            {/* Sprint F4 — atmosphere & cinematic background */}
+            <PageHeroBackground
+              pageKey={
+                activeTab === "home"
+                  ? "home"
+                  : activeTab === "identity"
+                  ? "my_story"
+                  : activeTab === "intelligence"
+                  ? "intelligence"
+                  : activeTab === "authority"
+                  ? "publish"
+                  : "impact"
+              }
+              theme={theme}
+            />
+            <AmbientOrbs theme={theme} pageKey={activeTab} />
             {activeTab === "home" && (
               <div className="animate-tab-spring aura-page">
                 <ErrorBoundary>
