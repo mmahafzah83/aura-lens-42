@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 type FlashLang = "ar" | "en";
 type FlashMode = "theme" | "spark";
@@ -287,6 +288,24 @@ export default function FlashPanel() {
 
   return (
     <div className="space-y-5">
+      {/* Section label with tooltip (G9) */}
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "hsl(var(--muted-foreground))",
+          fontFamily: "'DM Sans', sans-serif",
+          display: "inline-flex",
+          alignItems: "center",
+        }}
+      >
+        Flash mode
+        <InfoTooltip
+          label="Flash Mode"
+          text="Generate a LinkedIn post in under 60 seconds."
+        />
+      </div>
       {/* Language toggle */}
       <div className="flex items-center gap-3">
         <p className="text-label uppercase tracking-wider text-xs font-semibold">Language</p>
