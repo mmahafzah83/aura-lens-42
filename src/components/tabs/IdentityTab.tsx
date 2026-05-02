@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Loader2, Upload, ChevronRight, X } from "lucide-react";
+import { Pencil, Check, Loader2, Upload, ChevronRight, X, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
@@ -11,6 +11,7 @@ import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 import VoiceEngineSection from "@/components/VoiceEngineSection";
 import SectionError from "@/components/ui/section-error";
+import EmptyState from "@/components/ui/EmptyState";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
@@ -239,6 +240,16 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           <Skeleton className="h-[300px] rounded-[10px]" />
         </div>
       </div>
+    );
+  }
+
+  if (!loading && !profile) {
+    return (
+      <EmptyState
+        icon={UserIcon}
+        title="Tell your full story."
+        description="Set up your profile so Aura can shape signals and content around who you are."
+      />
     );
   }
 

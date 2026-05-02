@@ -18,6 +18,7 @@ import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import ImageCardGenerator from "@/components/ImageCardGenerator";
 import StartFromPanel from "@/components/StartFromPanel";
 import FlashPanel from "@/components/FlashPanel";
+import EmptyState from "@/components/ui/EmptyState";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary" | "flash";
@@ -2289,14 +2290,13 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     return (
       <div className="space-y-6">
         <VoiceTrainer />
-        <div className="text-center py-16 space-y-3">
-          <FileText className="w-8 h-8 text-primary/30 mx-auto" />
-          <p className="text-foreground font-medium">Your generated content will appear here</p>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto">Start by creating a post, carousel, or essay on the Create tab.</p>
-          <Button onClick={onSwitchToCreate} className="gap-2">
-            <PenTool className="w-4 h-4" /> Go to Create
-          </Button>
-        </div>
+        <EmptyState
+          icon={PenTool}
+          title="No content yet."
+          description="Start by creating a post, carousel, or essay on the Create tab."
+          ctaLabel="Go to Create"
+          ctaAction={onSwitchToCreate}
+        />
       </div>
     );
   }
