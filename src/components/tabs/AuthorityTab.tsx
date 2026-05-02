@@ -2491,9 +2491,15 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
                         {badge.label}
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
-                        Published
-                      </span>
+                      {isExternal ? (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "rgba(59,130,246,0.15)", color: "rgb(96,165,250)" }}>
+                          LinkedIn
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--success-pale)", color: "var(--success)" }}>
+                          Published
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center" style={{ marginTop: 12, gap: 16 }}>
