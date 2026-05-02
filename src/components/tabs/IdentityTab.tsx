@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
 import ProfileManagement from "@/components/ProfileManagement";
+import MilestonesSection from "@/components/MilestonesSection";
 import BrandArchetypeWidget from "@/components/BrandArchetypeWidget";
 import AuditRadarWidget from "@/components/AuditRadarWidget";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
