@@ -788,7 +788,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             ) : (
               <>
                 {/* Command Center container */}
-                <div className="intel-command-center" style={{ background: "var(--surface-ink-subtle)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
+                <div className="intel-command-center" style={{ background: "transparent", border: "none", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
                   <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid var(--surface-ink-subtle)" }}>
                     {selectedSignal && (
