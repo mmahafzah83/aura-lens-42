@@ -110,7 +110,7 @@ const buildEmailHtml = (BRAND: string, BRAND_FONT: string) => `<!DOCTYPE html>
       </div>
 
       <p style="font-size:14px;line-height:1.7;color:#555;margin-bottom:18px;">Questions, feedback, or anything at all — just reply to this email. It comes directly to me. I read every message.</p>
-      <p style="font-size:15px;line-height:1.7;color:#333;">Welcome to the beta.<br><br><strong style="color:#0d0d0d;">Mohammad Mahafzah</strong><br><span style="color:#888;font-size:13px;">Director, Digital Transformation · EY GCC</span></p>
+      <p style="font-size:15px;line-height:1.7;color:#333;">Welcome to the beta.<br><br><strong style="color:#0d0d0d;">Mohammad Mahafzah</strong><br><span style="color:#888;font-size:13px;">Founder, Aura</span></p>
     </div>
 
     <div class="footer-pad" style="padding:32px 40px;background:#0d0d0d;color:#888;">
@@ -248,7 +248,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Mohammad at Aura <invites@aura-intel.org>",
+        from: "Mohammad Mahafzah <invites@aura-intel.org>",
         to: [email],
         subject: "You're in — your Aura access is ready",
         html,
