@@ -247,6 +247,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {loadError && (
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
+      {/* Branded header */}
+      <div style={{ marginBottom: 0 }}>
+        <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
+          Your professional identity
+        </div>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+          My Story
+        </h1>
+      </div>
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT COLUMN */}
@@ -313,44 +322,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               {profile?.level || "Executive"}
             </p>
 
-            {/* Stat tiles: Score + Followers (followers placeholder if not loaded) */}
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              {[
-                { label: "Score", value: authorityScore != null ? String(authorityScore) : "—" },
-                { label: "Signals", value: signalStats.count ? String(signalStats.count) : "0" },
-              ].map((tile) => (
-                <div
-                  key={tile.label}
-                  style={{
-                    background: "var(--surface-subtle)",
-                    borderRadius: 10,
-                    padding: 10,
-                    textAlign: "center",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: "'DM Serif Display', serif",
-                      fontSize: 18,
-                      color: "var(--brand)",
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {tile.value}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 9,
-                      textTransform: "uppercase",
-                      color: "var(--ink-5)",
-                      letterSpacing: "0.06em",
-                      marginTop: 2,
-                    }}
-                  >
-                    {tile.label}
-                  </div>
-                </div>
-              ))}
+            {/* Professional identity: role · industry · region */}
+            <div style={{ fontSize: 13, color: "var(--ink-3)", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
+              {profile?.level || "Executive"}
+              <br />
+              {(profile?.sector_focus || "Industry")} · GCC
             </div>
           </div>
 
