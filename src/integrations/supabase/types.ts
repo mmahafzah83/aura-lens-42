@@ -1926,6 +1926,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_milestones: {
+        Row: {
+          context: Json
+          earned_at: string
+          id: string
+          milestone_id: string
+          milestone_name: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json
+          earned_at?: string
+          id?: string
+          milestone_id: string
+          milestone_name: string
+          user_id: string
+        }
+        Update: {
+          context?: Json
+          earned_at?: string
+          id?: string
+          milestone_id?: string
+          milestone_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       influence_dashboard_view: {
