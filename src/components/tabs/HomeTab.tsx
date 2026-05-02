@@ -10,6 +10,7 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
 import AuthorityJourney from "@/components/AuthorityJourney";
+import WeeklyRhythm from "@/components/WeeklyRhythm";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
@@ -877,6 +878,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* Authority Journey (G5) — reads from calculate-aura-score */}
       <AuthorityJourney userId={sessionConfirmed ? authUser?.id ?? null : null} />
+
+      {/* Weekly Rhythm (G6) — reads weekly_rhythm from calculate-aura-score */}
+      <WeeklyRhythm userId={sessionConfirmed ? authUser?.id ?? null : null} />
 
       {/* SECTION 3 — Aura's Read */}
       {competitorAlert && (
