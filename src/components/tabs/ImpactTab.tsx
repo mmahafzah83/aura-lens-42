@@ -813,6 +813,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div className="relative mt-6">
               <div
                 style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-3)",
+                  marginBottom: 6,
+                  display: "inline-flex",
+                  alignItems: "center",
+                }}
+              >
+                Trajectory
+                <InfoTooltip label="Trajectory" text="Your authority score over time." />
+              </div>
+              <div
+                style={{
                   display: "flex",
                   alignItems: "flex-end",
                   gap: 4,
