@@ -210,7 +210,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
             : (noteByRow[row.id] || "").trim() || null;
         try {
           const { error } = await supabase.functions.invoke("send-invite", {
-            body: { email: row.email, personal_note: note },
+            body: { email: row.email, name: row.name, personal_note: note },
           });
           if (error) throw error;
           success++;
@@ -268,7 +268,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     setSendingId(row.id);
     try {
       const { error } = await supabase.functions.invoke("send-invite", {
-        body: { email: row.email, personal_note: noteByRow[row.id] || null },
+        body: { email: row.email, name: row.name, personal_note: noteByRow[row.id] || null },
       });
       if (error) throw error;
       // optimistic update
