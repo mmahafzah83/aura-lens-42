@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
   Link, Type, FileUp, Mic, ImageIcon, Search, Pin, PinOff, Trash2,
-  Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download,
+  Loader2, Zap, ChevronDown, ChevronUp, ExternalLink, Pencil, Download, BookOpen,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import EmptyState from "@/components/ui/EmptyState";
 
 const DOCUMENT_STATUS_EVENT = "aura:document-status-changed";
 
@@ -633,16 +634,14 @@ const SourcesSubTab = ({
   /* ── Empty state ── */
   if (!loading && entries.length === 0 && !search && filter === "all") {
     return (
-      <div style={{ textAlign: "center", padding: "60px 20px" }}>
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(197,165,90,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", border: "1px solid rgba(197,165,90,0.15)" }}>
-          <FileUp className="w-6 h-6" style={{ color: "var(--brand)" }} />
-        </div>
-        <p style={{ color: "var(--ink-7)", fontSize: 18, fontWeight: 600, margin: "0 0 8px" }}>Your knowledge starts here.</p>
-        <p style={{ color: "var(--ink-5)", fontSize: 13, margin: "0 0 24px", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>Capture a URL, note, or document to build your intelligence base.</p>
-        <button onClick={onOpenCapture} style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: "var(--brand)", color: "var(--ink)", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
-          Capture your first source
-        </button>
-      </div>
+      <EmptyState
+        icon={BookOpen}
+        title="Your capture library is empty."
+        description="Start by capturing something about {sector} you read today."
+        personalize
+        ctaLabel="Capture your first source"
+        ctaAction={onOpenCapture}
+      />
     );
   }
 
