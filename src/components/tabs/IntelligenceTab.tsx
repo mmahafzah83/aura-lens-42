@@ -15,6 +15,7 @@ import SectionError from "@/components/ui/section-error";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
+import { TabSlider } from "@/components/ui/TabSlider";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -164,7 +165,9 @@ const AutomationStrip = () => {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>{c.title}</p>
                 <p className="intel-automation-desc" style={{ fontSize: 9, color: "var(--ink-4)", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
-                <span style={{ fontSize: 9, fontWeight: 700, color: c.statusColor }}>● {c.status}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: c.statusColor }}>
+                  <span className={c.status === "Active" ? "aura-pulse-dot" : undefined} style={{ display: "inline-block" }}>●</span> {c.status}
+                </span>
               </div>
             </div>
           ))}
@@ -757,9 +760,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         </div>
 
         {/* ── Tab Bar ── */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }} className="scrollbar-hide">
+        <div className="aura-tab-bar scrollbar-hide" style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }}>
           {SUB_TABS.map(tab => (
-            <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
+            <button key={tab.value} onClick={() => setActiveSubTab(tab.value)}
+              data-aura-tab="true"
+              data-aura-tab-active={activeSubTab === tab.value ? "true" : undefined}
+              style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
               color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-5)",
               background: "transparent", border: "none",
@@ -767,6 +773,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
             }}>{tab.label}</button>
           ))}
+          <TabSlider deps={[activeSubTab]} />
         </div>
 
         {/* ═══════════════════════════════════════════

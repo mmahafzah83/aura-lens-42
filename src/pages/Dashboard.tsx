@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
@@ -89,6 +90,10 @@ const Dashboard = () => {
 
   // Database-driven design tokens (overrides CSS fallbacks via inline style)
   useDesignTokens(theme);
+
+  // Sprint F2 — observe cards for entry fade/slide animation.
+  // Re-runs when the active tab changes so newly mounted cards get observed.
+  useCardEntryAnimation(null, [activeTab]);
 
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
