@@ -757,9 +757,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         </div>
 
         {/* ── Tab Bar ── */}
-        <div style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }} className="scrollbar-hide">
+        <div className="aura-tab-bar scrollbar-hide" style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }}>
           {SUB_TABS.map(tab => (
-            <button key={tab.value} onClick={() => setActiveSubTab(tab.value)} style={{
+            <button key={tab.value} onClick={() => setActiveSubTab(tab.value)}
+              data-aura-tab="true"
+              data-aura-tab-active={activeSubTab === tab.value ? "true" : undefined}
+              style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
               color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-5)",
               background: "transparent", border: "none",
@@ -767,6 +770,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
             }}>{tab.label}</button>
           ))}
+          <TabSlider deps={[activeSubTab]} />
         </div>
 
         {/* ═══════════════════════════════════════════
