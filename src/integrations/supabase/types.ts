@@ -1528,6 +1528,48 @@ export type Database = {
         }
         Relationships: []
       }
+      page_backgrounds: {
+        Row: {
+          created_at: string | null
+          enabled: boolean | null
+          gradient_overlay: string | null
+          id: string
+          image_url: string | null
+          opacity: number | null
+          page_key: string
+          position: string | null
+          theme: string
+          tint_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled?: boolean | null
+          gradient_overlay?: string | null
+          id?: string
+          image_url?: string | null
+          opacity?: number | null
+          page_key: string
+          position?: string | null
+          theme?: string
+          tint_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled?: boolean | null
+          gradient_overlay?: string | null
+          id?: string
+          image_url?: string | null
+          opacity?: number | null
+          page_key?: string
+          position?: string | null
+          theme?: string
+          tint_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       recommended_moves: {
         Row: {
           created_at: string
