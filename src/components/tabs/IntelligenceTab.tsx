@@ -15,6 +15,7 @@ import SectionError from "@/components/ui/section-error";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
+import { TabSlider } from "@/components/ui/TabSlider";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
