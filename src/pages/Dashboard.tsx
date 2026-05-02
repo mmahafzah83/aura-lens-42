@@ -404,43 +404,6 @@ const Dashboard = () => {
             {!sidebarCollapsed && <span className="text-sm font-medium">Capture</span>}
           </button>
 
-          {/* Theme toggle pill — above Collapse */}
-          {!sidebarCollapsed && (
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="aura-theme-toggle"
-              style={{
-                background: "var(--vellum)",
-                border: "0.5px solid var(--paper-3)",
-                borderRadius: 20,
-                padding: "0 12px",
-                minHeight: 32,
-                width: "100%",
-                fontSize: 11,
-                fontWeight: 500,
-                color: "var(--ink-2)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              }}
-            >
-              <span
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: "var(--bronze)",
-                  display: "inline-block",
-                  flexShrink: 0,
-                }}
-              />
-              <span>{theme === "light" ? "Light" : "Dark"}</span>
-            </button>
-          )}
-
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="w-full flex items-center gap-3 px-3 py-2 transition-all"
