@@ -537,6 +537,7 @@ const Dashboard = () => {
               <ProfileMenu
                 fullName={user?.fullName ?? null}
                 email={user?.email}
+                avatarUrl={user?.avatarUrl ?? null}
                 theme={theme}
                 onToggleTheme={toggleTheme}
                 onSignOut={handleLogout}
