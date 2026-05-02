@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 
 interface Milestone {
   id: string;
@@ -106,8 +107,14 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
           color: "var(--ink)",
           letterSpacing: "-0.01em",
           margin: 0,
+          display: "inline-flex",
+          alignItems: "center",
         }}>
           Your milestones
+          <InfoTooltip
+            label="Milestones"
+            text="Professional credentials earned as your authority grows."
+          />
         </h2>
         <p style={{
           fontFamily: "'DM Sans', sans-serif",
