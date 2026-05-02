@@ -12,6 +12,7 @@ import AurasRead from "@/components/AurasRead";
 import AuthorityJourney from "@/components/AuthorityJourney";
 import WeeklyRhythm from "@/components/WeeklyRhythm";
 import MilestoneNotification from "@/components/MilestoneNotification";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
@@ -954,8 +955,12 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       <section>
         <div className="flex items-center justify-between flex-wrap gap-2" style={{ marginBottom: 10 }}>
           <div className="flex items-center gap-2">
-            <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+            <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)", display: "inline-flex", alignItems: "center" }}>
               Live Intelligence
+              <InfoTooltip
+                label="Live Intelligence"
+                text="Industry trends from trusted sources. Add relevant ones to your signals."
+              />
             </div>
             <button
               onClick={handleRefreshTrends}
