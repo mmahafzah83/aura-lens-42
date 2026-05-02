@@ -10,6 +10,8 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
+import { ScoreRing } from "@/components/ui/ScoreRing";
+import { useCountUp } from "@/hooks/useCountUp";
 
 /* ── Types ── */
 interface Snapshot {
