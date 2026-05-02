@@ -598,7 +598,7 @@ const Dashboard = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="tab-content-spring aura-page-fade" key={activeTab}>
+          <div className="tab-content-spring aura-page-fade relative" key={activeTab} style={{ minHeight: "60vh" }}>
             {/* Sprint F4 — atmosphere & cinematic background */}
             <PageHeroBackground
               pageKey={
