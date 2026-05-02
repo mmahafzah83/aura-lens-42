@@ -1,30 +1,64 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Chrome, Check, Loader2, ExternalLink, Zap, BarChart3, Radio } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Check,
+  Loader2,
+  Upload,
+  FileSpreadsheet,
+  Shield,
+  Crown,
+  TrendingUp,
+} from "lucide-react";
 
 interface Props {
   userId: string;
   onComplete: () => void;
 }
 
+const INDUSTRIES = [
+  "Energy & Utilities",
+  "Financial Services",
+  "Government & Public Sector",
+  "Healthcare",
+  "Real Estate & Construction",
+  "Technology",
+  "Telecom",
+  "Other",
+];
+
+type PipeStatus = "pending" | "running" | "done" | "error";
+
 const OnboardingWizard = ({ userId, onComplete }: Props) => {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
-  // Step 1 fields
+  // Step 1
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
-  const [industry, setIndustry] = useState("");
-  const [careerTarget, setCareerTarget] = useState("");
   const [firm, setFirm] = useState("");
-  const [roleError, setRoleError] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [northStar, setNorthStar] = useState("");
+  const [nameError, setNameError] = useState("");
 
-  // Step 2
+  // Step 2 — LinkedIn import
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [importedSummary, setImportedSummary] = useState<string | null>(null);
+  const [pipeline, setPipeline] = useState<{
+    voice: PipeStatus;
+    positioning: PipeStatus;
+    score: PipeStatus;
+  }>({ voice: "pending", positioning: "pending", score: "pending" });
+
+  // Step 3 — capture
+  const [captureUrl, setCaptureUrl] = useState("");
   const [captureText, setCaptureText] = useState("");
   const [capturing, setCapturing] = useState(false);
-  const [captured, setCaptured] = useState(false);
+  const [captureDone, setCaptureDone] = useState(false);
 
   const finish = () => {
     localStorage.setItem("aura_onboarding_complete", "true");
@@ -32,32 +66,43 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
     onComplete();
   };
 
-  const skip = () => {
-    localStorage.setItem("aura_onboarding_complete", "true");
-    onComplete();
+  const skipStep = () => {
+    if (step < 4) setStep((s) => (s + 1) as any);
+    else finish();
   };
 
   const handleStep1Continue = async () => {
-    if (!role.trim()) {
-      setRoleError("Role is required");
+    if (!name.trim()) {
+      setNameError("Your name is required");
       return;
     }
-    setRoleError("");
+    setNameError("");
     setSaving(true);
     try {
       const { error } = await supabase.from("diagnostic_profiles").upsert(
         {
           user_id: userId,
-          first_name: name.trim() || null,
-          level: role.trim(),
-          sector_focus: industry.trim() || null,
-          north_star_goal: careerTarget.trim() || null,
+          first_name: name.trim(),
+          level: role.trim() || null,
           firm: firm.trim() || null,
+          sector_focus: industry || null,
+          north_star_goal: northStar.trim() || null,
           onboarding_completed: true,
         },
         { onConflict: "user_id" }
       );
       if (error) throw error;
+
+      // Best-effort milestones (table may not exist — swallow errors).
+      try {
+        await (supabase as any)
+          .from("user_milestones")
+          .insert([
+            { user_id: userId, milestone_id: "first_login" },
+            { user_id: userId, milestone_id: "profile_complete" },
+          ]);
+      } catch {}
+
       setStep(2);
     } catch (e: any) {
       toast.error("Failed to save profile: " + (e.message || "Unknown error"));
@@ -66,247 +111,421 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
     }
   };
 
-  const handleStep2Continue = async () => {
-    if (captureText.trim().length > 10) {
-      setCapturing(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const resp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session?.access_token}`,
-              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            },
-            body: JSON.stringify({
-              user_id: userId,
-              type: "text",
-              content: captureText.trim(),
-            }),
-          }
-        );
-        if (!resp.ok) throw new Error("Capture failed");
-        setCaptured(true);
-        setTimeout(() => setStep(3), 2000);
-      } catch {
-        toast.error("Capture failed. You can try again later from the dashboard.");
-        setStep(3);
-      } finally {
-        setCapturing(false);
-      }
-    } else {
-      setStep(3);
+  // ── Pipeline runner (shared utility for G3) ──
+  const runPostImportPipeline = async () => {
+    const callFn = async (name: string) => {
+      const { error } = await supabase.functions.invoke(name, { body: {} });
+      if (error) throw error;
+    };
+    setPipeline({ voice: "running", positioning: "pending", score: "pending" });
+    try {
+      await callFn("voice-distill");
+      setPipeline((p) => ({ ...p, voice: "done", positioning: "running" }));
+    } catch {
+      setPipeline((p) => ({ ...p, voice: "error", positioning: "running" }));
+    }
+    try {
+      await callFn("generate-brand-positioning");
+      setPipeline((p) => ({ ...p, positioning: "done", score: "running" }));
+    } catch {
+      setPipeline((p) => ({ ...p, positioning: "error", score: "running" }));
+    }
+    try {
+      await callFn("calculate-aura-score");
+      setPipeline((p) => ({ ...p, score: "done" }));
+    } catch {
+      setPipeline((p) => ({ ...p, score: "error" }));
     }
   };
 
-  const progressPct = (step / 3) * 100;
+  const handleFile = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".xlsx")) {
+      toast.error("Please upload a .xlsx file");
+      return;
+    }
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const { data, error } = await supabase.functions.invoke("import-linkedin-analytics", {
+        body: form,
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const imp = (data as any)?.imported || {};
+      const days = (imp.engagement_rows || 0) + (imp.follower_rows || 0);
+      setImportedSummary(`${days} days of data imported`);
+      await runPostImportPipeline();
+    } catch (err: any) {
+      console.error("XLSX upload failed:", err);
+      toast.error(err?.message || "Upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCapture = async () => {
+    const url = captureUrl.trim();
+    const text = captureText.trim();
+    if (!url && text.length < 5) {
+      setStep(4);
+      return;
+    }
+    setCapturing(true);
+    try {
+      const { error } = await supabase.functions.invoke("ingest-capture", {
+        body: {
+          user_id: userId,
+          type: url ? "url" : "text",
+          content: url || text,
+        },
+      });
+      if (error) throw error;
+      setCaptureDone(true);
+      setTimeout(() => setStep(4), 1200);
+    } catch {
+      toast.error("Capture failed. You can try again later.");
+      setStep(4);
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  const progressPct = (step / 4) * 100;
 
   const inputClass =
-    "w-full rounded-lg border border-ink-3 bg-surface-ink-subtle px-4 py-3 text-sm text-ink-7 placeholder:text-ink-5 focus:outline-none focus:border-brand transition-colors";
+    "w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors font-sans";
+  const inputStyle: React.CSSProperties = {
+    borderColor: "var(--paper-3, hsl(var(--border)))",
+  };
+
+  const StepRow = ({ label, status }: { label: string; status: PipeStatus }) => (
+    <li className="flex items-center gap-3 text-sm font-sans">
+      {status === "done" ? (
+        <Check className="w-4 h-4" style={{ color: "var(--brand)" }} />
+      ) : status === "running" ? (
+        <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+      ) : status === "error" ? (
+        <span className="w-4 h-4 inline-block text-center text-destructive">!</span>
+      ) : (
+        <span
+          className="w-4 h-4 inline-block rounded-full border"
+          style={{ borderColor: "var(--paper-3, hsl(var(--border)))" }}
+        />
+      )}
+      <span style={{ color: status === "done" ? "var(--foreground)" : "hsl(var(--muted-foreground))" }}>
+        {label}
+      </span>
+    </li>
+  );
+
+  const stepLabels: Record<number, string> = {
+    1: "Your Identity",
+    2: "Import LinkedIn",
+    3: "First Capture",
+    4: "Ready",
+  };
+  const stepTitles: Record<number, string> = {
+    1: "Tell Aura who you are",
+    2: "Import your LinkedIn history",
+    3: "Feed Aura your first insight",
+    4: "Your Aura is active",
+  };
+  const stepSubs: Record<number, string> = {
+    1: "This shapes every signal and piece of content Aura creates for you.",
+    2: "Aura analyzes your posts to learn your voice and detect initial signals.",
+    3: "Paste a URL or type a note. Your first signal appears within 60 seconds.",
+    4: `You're now an Observer in ${industry || "your sector"}. Explore your intelligence.`,
+  };
 
   const content = (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
+      className="fixed inset-0 z-[200] flex items-center justify-center px-4"
+      style={{
+        background: "hsl(var(--background) / 0.7)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
     >
       <div
-        className="relative w-full mx-4"
+        className="relative w-full overflow-hidden"
         style={{
-          maxWidth: 560,
-          background: "var(--surface-ink-raised)",
-          borderRadius: 12,
-          border: "1px solid var(--ink-3)",
-          padding: 40,
+          maxWidth: 580,
+          background: "hsl(var(--card))",
+          color: "hsl(var(--card-foreground))",
+          borderRadius: 16,
+          border: "1px solid hsl(var(--border))",
+          padding: 48,
+          boxShadow: "0 20px 60px -10px rgba(0,0,0,0.4)",
         }}
       >
         {/* Progress bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-xl overflow-hidden" style={{ background: "var(--ink-3)" }}>
+        <div
+          className="absolute top-0 left-0 right-0 overflow-hidden"
+          style={{ height: 3, background: "hsl(var(--muted))" }}
+        >
           <div
             className="h-full transition-all duration-500"
             style={{ width: `${progressPct}%`, background: "var(--brand)" }}
           />
         </div>
 
-        {/* Step indicator */}
-        <p className="text-xs tracking-[0.15em] uppercase mb-6" style={{ color: "var(--brand)" }}>
-          Step {step} of 3
+        {/* Step label */}
+        <p
+          className="text-[11px] tracking-[0.18em] uppercase mb-3 font-sans font-medium"
+          style={{ color: "var(--brand)" }}
+        >
+          Step {step} of 4 — {stepLabels[step]}
         </p>
 
-        {/* === STEP 1 === */}
-        {step === 1 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-xl font-semibold text-ink-7">Tell Aura who you are</h2>
-              <p className="text-sm mt-1" style={{ color: "var(--ink-5)" }}>
-                This shapes every signal and piece of content Aura creates for you.
+        {/* Sliding content */}
+        <div className="relative" style={{ minHeight: 360 }}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+            >
+              <h2
+                className="font-serif"
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 24,
+                  lineHeight: 1.2,
+                  color: "hsl(var(--foreground))",
+                }}
+              >
+                {stepTitles[step]}
+              </h2>
+              <p
+                className="mt-2 font-sans text-sm"
+                style={{ color: "hsl(var(--muted-foreground))" }}
+              >
+                {stepSubs[step]}
               </p>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Name</label>
-                <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">
-                  Role <span style={{ color: "var(--brand)" }}>*</span>
-                </label>
-                <input
-                  className={`${inputClass} ${roleError ? "border-red-500" : ""}`}
-                  value={role}
-                  onChange={(e) => { setRole(e.target.value); setRoleError(""); }}
-                  placeholder="e.g. Senior Manager, Digital Transformation"
-                />
-                {roleError && <p className="text-xs text-red-400 mt-1">{roleError}</p>}
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Industry</label>
-                <input className={inputClass} value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. Utilities, Consulting, Technology" />
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Career target</label>
-                <input className={inputClass} value={careerTarget} onChange={(e) => setCareerTarget(e.target.value)} placeholder="e.g. Partner at Big 4, Build a $10M practice" />
-              </div>
-              <div>
-                <label className="block text-xs uppercase tracking-wider text-ink-5 mb-1.5">Firm</label>
-                <input className={inputClass} value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="Your company or firm" />
-              </div>
-            </div>
+              {/* === STEP 1 === */}
+              {step === 1 && (
+                <div className="mt-6 space-y-3">
+                  <div>
+                    <input
+                      className={inputClass}
+                      style={inputStyle}
+                      value={name}
+                      onChange={(e) => { setName(e.target.value); setNameError(""); }}
+                      placeholder="Your name *"
+                    />
+                    {nameError && (
+                      <p className="text-xs text-destructive mt-1 font-sans">{nameError}</p>
+                    )}
+                  </div>
+                  <input
+                    className={inputClass}
+                    style={inputStyle}
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    placeholder="Director of Digital Transformation"
+                  />
+                  <input
+                    className={inputClass}
+                    style={inputStyle}
+                    value={firm}
+                    onChange={(e) => setFirm(e.target.value)}
+                    placeholder="EY, McKinsey, ACWA Power"
+                  />
+                  <select
+                    className={inputClass}
+                    style={inputStyle}
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                  >
+                    <option value="">Industry focus</option>
+                    {INDUSTRIES.map((i) => (
+                      <option key={i} value={i}>{i}</option>
+                    ))}
+                  </select>
+                  <input
+                    className={inputClass}
+                    style={inputStyle}
+                    value={northStar}
+                    onChange={(e) => setNorthStar(e.target.value)}
+                    placeholder="Build a $10M+ advisory practice"
+                  />
+                </div>
+              )}
 
+              {/* === STEP 2 === */}
+              {step === 2 && (
+                <div className="mt-6 space-y-4">
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                    onDragLeave={() => setDragActive(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragActive(false);
+                      const f = e.dataTransfer.files?.[0];
+                      if (f) handleFile(f);
+                    }}
+                    onClick={() => fileRef.current?.click()}
+                    className="flex flex-col items-center justify-center text-center cursor-pointer rounded-xl border-2 border-dashed transition-colors py-8 px-4 font-sans"
+                    style={{
+                      borderColor: dragActive ? "var(--brand)" : "hsl(var(--border))",
+                      background: dragActive ? "hsl(var(--muted) / 0.5)" : "hsl(var(--muted) / 0.2)",
+                    }}
+                  >
+                    <FileSpreadsheet className="w-8 h-8 mb-2" style={{ color: "var(--brand)" }} />
+                    <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground))" }}>
+                      Drop your .xlsx file here or click to browse
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: "hsl(var(--muted-foreground))" }}>
+                      LinkedIn → Settings → Get a copy of your data → Posts
+                    </p>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept=".xlsx"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleFile(f);
+                        if (fileRef.current) fileRef.current.value = "";
+                      }}
+                    />
+                  </div>
+
+                  {uploading && (
+                    <div className="flex items-center gap-2 text-sm font-sans" style={{ color: "var(--brand)" }}>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                    </div>
+                  )}
+
+                  {importedSummary && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-sans" style={{ color: "var(--brand)" }}>
+                        <Check className="w-4 h-4" /> {importedSummary}
+                      </div>
+                      <ul className="space-y-2 pl-1">
+                        <StepRow label="Analyzing your voice..." status={pipeline.voice} />
+                        <StepRow label="Building your positioning..." status={pipeline.positioning} />
+                        <StepRow label="Calculating your score..." status={pipeline.score} />
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* === STEP 3 === */}
+              {step === 3 && (
+                <div className="mt-6 space-y-3">
+                  <input
+                    className={inputClass}
+                    style={inputStyle}
+                    value={captureUrl}
+                    onChange={(e) => setCaptureUrl(e.target.value)}
+                    placeholder="Paste a URL"
+                    disabled={capturing || captureDone}
+                  />
+                  <textarea
+                    className={`${inputClass} min-h-[100px] resize-none`}
+                    style={inputStyle}
+                    value={captureText}
+                    onChange={(e) => setCaptureText(e.target.value)}
+                    placeholder="…or type a note"
+                    disabled={capturing || captureDone}
+                  />
+                  {capturing && (
+                    <div className="flex items-center gap-2 text-sm font-sans" style={{ color: "var(--brand)" }}>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Processing — your first signal is forming.
+                    </div>
+                  )}
+                  {captureDone && (
+                    <div className="flex items-center gap-2 text-sm font-sans" style={{ color: "var(--brand)" }}>
+                      <Check className="w-4 h-4" /> Captured.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* === STEP 4 === */}
+              {step === 4 && (
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { icon: Shield, title: "Intelligence", sub: "See your signals" },
+                    { icon: Crown, title: "Publish", sub: "Create your first post" },
+                    { icon: TrendingUp, title: "Impact", sub: "Track authority growth" },
+                  ].map(({ icon: Icon, title, sub }) => (
+                    <div
+                      key={title}
+                      className="rounded-xl p-4 font-sans"
+                      style={{
+                        background: "hsl(var(--muted) / 0.3)",
+                        border: "1px solid hsl(var(--border))",
+                      }}
+                    >
+                      <Icon className="w-5 h-5 mb-2" style={{ color: "var(--brand)" }} />
+                      <p className="text-sm font-medium" style={{ color: "hsl(var(--foreground))" }}>{title}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>{sub}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-8">
+          {step === 1 && (
             <button
               onClick={handleStep1Continue}
               disabled={saving}
-              className="w-full mt-2 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{
-                background: "linear-gradient(180deg, hsl(43 80% 55%), hsl(43 80% 45%))",
-                color: "var(--surface-ink-subtle)",
-              }}
+              className="w-full py-3.5 rounded-full text-sm font-medium font-sans transition-all disabled:opacity-60"
+              style={{ background: "var(--brand)", color: "var(--brand-foreground, #fff)" }}
             >
               {saving ? "Saving..." : "Continue"}
             </button>
-          </div>
-        )}
-
-        {/* === STEP 2 === */}
-        {step === 2 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-xl font-semibold text-ink-7">Capture your first insight</h2>
-              <p className="text-sm mt-1" style={{ color: "var(--ink-5)" }}>
-                Paste any article, report, or idea you've been reading lately.
-              </p>
-            </div>
-
-            <div>
-              <textarea
-                className={`${inputClass} min-h-[120px] resize-none`}
-                value={captureText}
-                onChange={(e) => setCaptureText(e.target.value)}
-                placeholder="Paste a URL, or type a thought, insight, or article title..."
-              />
-              <p className="text-xs mt-2" style={{ color: "var(--ink-5)" }}>
-                Aura will find the strategic pattern inside.
-              </p>
-            </div>
-
-            {capturing && (
-              <div className="flex items-center gap-2 text-sm" style={{ color: "var(--brand)" }}>
-                <Loader2 className="w-4 h-4 animate-spin" /> Processing your capture...
-              </div>
-            )}
-            {captured && (
-              <div className="flex items-center gap-2 text-sm text-green-400">
-                <Check className="w-4 h-4" /> Source saved. Your first signal will appear shortly.
-              </div>
-            )}
-
-            {!capturing && !captured && (
-              <>
-                <button
-                  onClick={handleStep2Continue}
-                  className="w-full py-3 rounded-xl text-sm font-medium transition-all"
-                  style={{
-                    background: "linear-gradient(180deg, hsl(43 80% 55%), hsl(43 80% 45%))",
-                    color: "var(--surface-ink-subtle)",
-                  }}
-                >
-                  {captureText.trim().length > 10 ? "Save & Continue" : "Continue"}
-                </button>
-                <button
-                  onClick={() => setStep(3)}
-                  className="w-full text-center text-xs py-1"
-                  style={{ color: "var(--ink-5)" }}
-                >
-                  Skip this step
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* === STEP 3 === */}
-        {step === 3 && (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-xl font-semibold text-ink-7">Supercharge Aura with LinkedIn</h2>
-              <p className="text-sm mt-1" style={{ color: "var(--ink-5)" }}>
-                The Chrome extension captures posts, articles, and metrics directly from your LinkedIn feed.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 rounded-lg" style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--ink-3)" }}>
-              <Chrome className="w-8 h-8 text-brand shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm text-ink-7 font-medium">Install the Aura Chrome Extension</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--ink-5)" }}>Already installed? You're good to go.</p>
-              </div>
-              <a
-                href="https://chrome.google.com/webstore"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition-colors"
-                style={{ border: "1px solid var(--brand)", color: "var(--brand)" }}
-              >
-                Install <ExternalLink className="w-3 h-3" />
-              </a>
-            </div>
-
-            <ul className="space-y-2.5 pl-1">
-              {[
-                { icon: Zap, text: "Capture LinkedIn posts in one click" },
-                { icon: BarChart3, text: "Track your post performance automatically" },
-                { icon: Radio, text: "Feed your signal engine with industry content" },
-              ].map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-2.5 text-sm" style={{ color: "var(--ink-6)" }}>
-                  <Icon className="w-4 h-4 text-brand shrink-0" />
-                  {text}
-                </li>
-              ))}
-            </ul>
-
+          )}
+          {step === 2 && (
+            <button
+              onClick={() => setStep(3)}
+              disabled={uploading}
+              className="w-full py-3.5 rounded-full text-sm font-medium font-sans transition-all disabled:opacity-60"
+              style={{ background: "var(--brand)", color: "var(--brand-foreground, #fff)" }}
+            >
+              Continue
+            </button>
+          )}
+          {step === 3 && (
+            <button
+              onClick={handleCapture}
+              disabled={capturing}
+              className="w-full py-3.5 rounded-full text-sm font-medium font-sans transition-all disabled:opacity-60"
+              style={{ background: "var(--brand)", color: "var(--brand-foreground, #fff)" }}
+            >
+              {capturing ? "Capturing..." : "Capture"}
+            </button>
+          )}
+          {step === 4 && (
             <button
               onClick={finish}
-              className="w-full py-3.5 rounded-xl text-sm font-medium transition-all mt-2"
-              style={{
-                background: "linear-gradient(180deg, hsl(43 80% 55%), hsl(43 80% 45%))",
-                color: "var(--surface-ink-subtle)",
-              }}
+              className="w-full py-3.5 rounded-full text-sm font-medium font-sans transition-all"
+              style={{ background: "var(--brand)", color: "var(--brand-foreground, #fff)" }}
             >
-              Enter Aura →
+              Go to Dashboard
             </button>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Skip link — not shown on step 1 */}
-        {step > 1 && (
+        {/* Skip link — bottom right, not on step 1 or 4 */}
+        {step > 1 && step < 4 && (
           <button
-            onClick={skip}
-            className="absolute bottom-3 right-5 text-[11px] transition-colors"
-            style={{ color: "var(--ink-5)" }}
+            onClick={skipStep}
+            className="absolute bottom-4 right-6 text-xs font-sans transition-colors hover:opacity-100"
+            style={{ color: "hsl(var(--muted-foreground))" }}
           >
-            Skip wizard
+            Skip
           </button>
         )}
       </div>
