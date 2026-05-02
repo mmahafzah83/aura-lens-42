@@ -782,7 +782,15 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
            ═══════════════════════════════════════════ */}
         {activeSubTab === "signals" && (
           <>
-            <p style={{ color: "var(--ink-4)", fontSize: 12, margin: "-4px 0 14px" }}>Signals Aura detected across everything you've captured — ranked by strength.</p>
+            <p
+              style={{ color: "var(--ink-4)", fontSize: 12, margin: "-4px 0 14px", display: "inline-flex", alignItems: "center" }}
+            >
+              Signals Aura detected across everything you've captured — ranked by strength.
+              <InfoTooltip
+                label="Signals"
+                text="Patterns from your captures. Higher confidence = more evidence from diverse sources."
+              />
+            </p>
 
             {signals.length === 0 ? (
               <EmptyState
