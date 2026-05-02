@@ -51,7 +51,7 @@ const Dashboard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
-  const [user, setUser] = useState<{ email?: string; fullName?: string | null } | null>(null);
+  const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -180,12 +180,17 @@ const Dashboard = () => {
         const uid = session.user.id;
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
-          .select("completed, onboarding_completed, first_name")
+          .select("completed, onboarding_completed, first_name, avatar_url")
           .eq("user_id", uid)
           .maybeSingle();
 
         if (profile) {
-          setUser((u) => ({ ...(u || {}), email: session.user.email, fullName: (profile as any).first_name ?? null }));
+          setUser((u) => ({
+            ...(u || {}),
+            email: session.user.email,
+            fullName: (profile as any).first_name ?? null,
+            avatarUrl: (profile as any).avatar_url ?? null,
+          }));
         }
 
         // New wizard trigger: no profile row AND localStorage not set
