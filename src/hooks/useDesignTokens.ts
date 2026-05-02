@@ -8,6 +8,8 @@ interface DesignTokens {
   typography?: Record<string, string>;
   shadows?: Record<string, ThemeValue>;
   radii?: Record<string, string>;
+  sidebar?: Record<string, ThemeValue>;
+  effects?: Record<string, ThemeValue | boolean | { dark: boolean | string; light: boolean | string }>;
 }
 
 function resolve(val: ThemeValue, theme: "dark" | "light"): string {
@@ -17,7 +19,7 @@ function resolve(val: ThemeValue, theme: "dark" | "light"): string {
 
 function applyTokens(tokens: DesignTokens, theme: "dark" | "light") {
   const root = document.documentElement;
-  const { colors = {}, typography = {}, shadows = {}, radii = {} } = tokens;
+  const { colors = {}, typography = {}, shadows = {}, radii = {}, sidebar = {}, effects = {} } = tokens;
 
   // Colors → --<key with - instead of _>
   Object.entries(colors).forEach(([key, val]) => {
@@ -68,6 +70,56 @@ function applyTokens(tokens: DesignTokens, theme: "dark" | "light") {
   Object.entries(radii).forEach(([key, val]) => {
     root.style.setProperty(`--radius-${key}`, val);
   });
+
+  // ── Sidebar tokens ── (active bar, active bg, hover bg)
+  // Fallbacks keep bronze defaults so UI never breaks if tokens missing.
+  const sidebarFallbacks: Record<string, string> = {
+    "active-bar":
+      (colors.brand && resolve(colors.brand, theme)) || "var(--brand)",
+    "active-bg":
+      (colors.brand_surface && resolve(colors.brand_surface, theme)) ||
+      "var(--brand-surface)",
+    "hover-bg":
+      (colors.brand_ghost && resolve(colors.brand_ghost as ThemeValue, theme)) ||
+      "var(--brand-ghost)",
+  };
+  Object.entries(sidebarFallbacks).forEach(([key, fallback]) => {
+    const tokenVal = sidebar[key] as ThemeValue | undefined;
+    const value = tokenVal != null ? resolve(tokenVal, theme) : fallback;
+    root.style.setProperty(`--sidebar-${key}`, value);
+  });
+
+  // Derive --brand-rgb from --brand hex (used for inset glow alpha)
+  const brandHex = colors.brand ? resolve(colors.brand, theme) : null;
+  if (brandHex && /^#?[0-9a-fA-F]{6}$/.test(brandHex.replace("#", ""))) {
+    const h = brandHex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    root.style.setProperty("--brand-rgb", `${r}, ${g}, ${b}`);
+  } else if (!getComputedStyle(root).getPropertyValue("--brand-rgb").trim()) {
+    // Bronze fallback (#C5A55A)
+    root.style.setProperty("--brand-rgb", "197, 165, 90");
+  }
+
+  // ── Grain effect ──
+  const grainEnabledRaw = effects.grain_enabled as
+    | { dark: boolean | string; light: boolean | string }
+    | boolean
+    | undefined;
+  let grainEnabled = true;
+  if (typeof grainEnabledRaw === "boolean") grainEnabled = grainEnabledRaw;
+  else if (grainEnabledRaw && typeof grainEnabledRaw === "object") {
+    const v = grainEnabledRaw[theme];
+    grainEnabled = v === true || v === "true";
+  }
+  const grainOpacityRaw = effects.grain_opacity as ThemeValue | undefined;
+  const grainOpacity = grainOpacityRaw
+    ? resolve(grainOpacityRaw, theme)
+    : theme === "dark"
+    ? "0.06"
+    : "0.04";
+  root.style.setProperty("--grain-opacity", grainEnabled ? grainOpacity : "0");
 }
 
 let cachedTokens: DesignTokens | null = null;
