@@ -1168,6 +1168,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           selectSuggestion(t, ctx, fmt, sigTitle, sigInsight);
         }}
       />
+      </div>
     </div>
   );
 };
