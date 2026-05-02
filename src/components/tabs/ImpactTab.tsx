@@ -937,7 +937,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "var(--brand)" },
             { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
             { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "var(--brand)" },
-          ]).map((c) => {
+          ]).map((c, idx) => {
             const cfg = subScoreCard(c.kind, c.value);
             return (
               <div
@@ -979,7 +979,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  {Math.round(c.value)}
+                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
                 </div>
                 <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
                   {c.desc}
