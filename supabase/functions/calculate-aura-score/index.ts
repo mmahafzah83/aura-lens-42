@@ -201,8 +201,11 @@ serve(async (req) => {
       admin.from("linkedin_posts").select("id", { count: "exact", head: true }).eq("user_id", userId),
     ]);
 
-    const profileComplete = !!(profile && (profile as any).sector_focus) && !!((await admin.from("diagnostic_profiles").select("first_name,brand_assessment_results").eq("user_id", userId).maybeSingle()).data);
-    const profileFull = (await admin.from("diagnostic_profiles").select("first_name,sector_focus,brand_assessment_results").eq("user_id", userId).maybeSingle()).data as any;
+    const profileFull = (await admin
+      .from("diagnostic_profiles")
+      .select("first_name,sector_focus,brand_assessment_results")
+      .eq("user_id", userId)
+      .maybeSingle()).data as any;
 
     const checks: { id: string; name: string; earned: boolean; context: any }[] = [
       {
