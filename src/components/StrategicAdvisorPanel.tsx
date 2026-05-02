@@ -106,7 +106,10 @@ const StrategicAdvisorPanel = ({
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl card-pad flex items-center justify-center min-h-[120px] border border-border/8">
+      <div
+        className="card-pad flex items-center justify-center min-h-[120px]"
+        style={{ background: "transparent", border: "none", boxShadow: "none" }}
+      >
         <div className="flex items-center gap-3">
           <Loader2 className="w-4 h-4 animate-spin text-primary/40" />
           <span className="text-meta">Analyzing intelligence…</span>
