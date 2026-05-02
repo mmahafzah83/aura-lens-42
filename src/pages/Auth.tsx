@@ -19,7 +19,12 @@ const Auth = () => {
       .select("onboarding_completed")
       .eq("user_id", session.user.id)
       .maybeSingle();
-    if (!profile || !(profile as any).onboarding_completed) {
+    // No profile row → go to /home where the onboarding wizard (G1) will trigger.
+    if (!profile) {
+      navigate("/home");
+      return;
+    }
+    if (!(profile as any).onboarding_completed) {
       navigate("/onboarding");
     } else {
       navigate("/home");
@@ -41,7 +46,12 @@ const Auth = () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      toast({
+        title: "Sign in failed",
+        description:
+          "Email or password incorrect. If this is your first time, try Forgot Password to set up your account.",
+        variant: "destructive",
+      });
     }
     setLoading(false);
   };
