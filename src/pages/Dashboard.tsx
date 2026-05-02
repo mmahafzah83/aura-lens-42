@@ -605,26 +605,7 @@ const Dashboard = () => {
           {/* Top Bar */}
           <div className="flex items-center justify-between mb-6 pt-2 md:pt-0">
             <div className="flex items-center gap-3">
-              {activeTab !== "intelligence" && (
-                <>
-                  {/* Desktop section label */}
-                  <h2 className="hidden md:block text-sm font-medium text-muted-foreground tracking-wide uppercase">
-                    {NAV_ITEMS.find(n => n.value === activeTab)?.pageHeader}
-                  </h2>
-                  {/* Mobile page title */}
-                  <h2
-                    className="md:hidden"
-                    style={{
-                      fontFamily: "'DM Serif Display', serif",
-                      fontSize: 20,
-                      lineHeight: 1.2,
-                      color: "var(--color-text-primary)",
-                    }}
-                  >
-                    {NAV_ITEMS.find(n => n.value === activeTab)?.pageHeader}
-                  </h2>
-                </>
-              )}
+              {/* Global section label removed — each tab owns its own branded header */}
             </div>
             <div className="flex items-center gap-3">
               <NotificationBell />

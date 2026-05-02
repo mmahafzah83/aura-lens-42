@@ -620,22 +620,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       className="space-y-7 max-w-5xl"
     >
       {/* ─────────── 1. PAGE HEADER ─────────── */}
-      <div className="space-y-1.5">
-        <div
-          className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-          style={{ color: "var(--color-text-muted)" }}
-        >
-          Measure your influence
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
+        <div>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
+            Your authority trajectory
+          </div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+            Impact
+          </h1>
         </div>
-        <h1
-          className="text-2xl sm:text-3xl font-bold tracking-tight"
-          style={{ color: "var(--color-text-primary)", fontFamily: "Inter, sans-serif" }}
-        >
-          Impact
-        </h1>
-        <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-          How your authority is compounding
-        </p>
       </div>
 
       {/* ─────────── 2. TIME FILTER ─────────── */}
