@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 
@@ -695,9 +696,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
                 color: "var(--ink-3)",
+                display: "inline-flex",
+                alignItems: "center",
               }}
             >
               Authority score
+              <InfoTooltip
+                label="Aura Score"
+                text="Combines captures (35%), signals (35%), and content (30%)."
+              />
             </div>
             <div style={{ marginTop: 6 }}>
               <ScoreRing
