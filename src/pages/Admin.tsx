@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
@@ -216,6 +217,24 @@ const Admin = () => {
         <p className="text-sm mb-8" style={{ color: "var(--ink-5)" }}>
           Manage waitlist and send invites
         </p>
+
+        {/* Admin nav */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Link
+            to="/admin/experience"
+            className="text-xs px-3 py-1.5 rounded-md font-medium inline-flex items-center gap-1.5"
+            style={{ backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }}
+          >
+            Experience Manager →
+          </Link>
+          <Link
+            to="/admin/design-system"
+            className="text-xs px-3 py-1.5 rounded-md font-medium"
+            style={{ backgroundColor: "var(--surface-ink-raised)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}
+          >
+            Design System →
+          </Link>
+        </div>
 
         {/* Stats row */}
         <div className="flex flex-wrap gap-2 mb-6">
