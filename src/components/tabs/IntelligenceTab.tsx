@@ -17,6 +17,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
 import { TabSlider } from "@/components/ui/TabSlider";
 import EmptyState from "@/components/ui/EmptyState";
+import InfoTooltip from "@/components/ui/InfoTooltip";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
