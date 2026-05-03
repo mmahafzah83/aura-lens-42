@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap } from "lucide-react";
+import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap, ChevronDown } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 
