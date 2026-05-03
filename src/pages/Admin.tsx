@@ -596,6 +596,69 @@ const Admin = () => {
             </div>
           )}
         </div>
+
+        {/* System Health */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+                System Health
+              </h2>
+              <p className="text-xs" style={{ color: "var(--ink-5)" }}>
+                {qaReports[0]
+                  ? `Last check: ${new Date(qaReports[0].run_at).toLocaleString()} — ${qaReports[0].passed}/${qaReports[0].total_checks} ${qaReports[0].failed === 0 ? "✅" : "⚠️"}`
+                  : "No checks run yet."}
+              </p>
+            </div>
+            <button
+              onClick={runQaCheck}
+              disabled={qaRunning}
+              className="px-4 py-2 rounded-md text-xs font-medium inline-flex items-center gap-2 disabled:opacity-60 whitespace-nowrap"
+              style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
+            >
+              {qaRunning ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+              Run QA Check
+            </button>
+          </div>
+          {qaReports.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No runs yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
+                    <th className="text-left px-3 py-2 font-medium">Date</th>
+                    <th className="text-left px-3 py-2 font-medium">Result</th>
+                    <th className="text-left px-3 py-2 font-medium">Failed steps</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {qaReports.map((r) => {
+                    const failed = (r.results || []).filter((x) => !x.passed);
+                    return (
+                      <tr key={r.id} style={{ borderTop: "1px solid var(--ink-3)" }}>
+                        <td className="px-3 py-2 text-xs" style={{ color: "var(--ink-5)" }}>
+                          {new Date(r.run_at).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 text-xs" style={{ color: r.failed === 0 ? "#10b981" : "#f59e0b" }}>
+                          {r.passed}/{r.total_checks} {r.failed === 0 ? "✅" : "⚠️"}
+                        </td>
+                        <td className="px-3 py-2 text-xs" style={{ color: "var(--ink-7)" }}>
+                          {failed.length === 0
+                            ? "—"
+                            : failed.map((f) => `${f.step}. ${f.action}`).join(", ")}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
