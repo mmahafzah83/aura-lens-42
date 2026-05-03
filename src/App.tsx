@@ -15,6 +15,8 @@ import Admin from "./pages/Admin";
 import AdminDesignSystem from "./pages/AdminDesignSystem";
 import AdminExperience from "./pages/AdminExperience";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
