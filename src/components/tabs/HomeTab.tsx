@@ -1369,6 +1369,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       />
       </>)}
 
+      <AuthorityProgressModal
+        tierName={auraData?.tier_name}
+        score={auraData?.aura_score ?? null}
+        sectorFocus={sectorFocus}
+        userId={sessionConfirmed ? authUser?.id ?? null : null}
+      />
+
     </motion.div>
   );
 };
