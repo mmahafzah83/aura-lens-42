@@ -15,6 +15,7 @@ interface RawSignal {
   confidence: number;
   created_at: string;
   status: string;
+  strategic_implications?: string | null;
 }
 
 interface RawFramework {
@@ -36,6 +37,7 @@ interface CuratedItem {
   signalTitle?: string;
   signalInsight?: string;
   freshness: number; // days ago
+  angle?: string; // post angle (≤15 words)
 }
 
 interface StartFromPanelProps {
@@ -82,7 +84,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
       const [sRes, fRes, usedRes] = await Promise.all([
         supabase
           .from("strategic_signals")
-          .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status")
+          .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status, strategic_implications")
           .eq("status", "active")
           .gte("confidence", 0.5)
           .order("confidence", { ascending: false })
