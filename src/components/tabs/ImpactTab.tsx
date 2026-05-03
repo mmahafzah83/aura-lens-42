@@ -14,6 +14,8 @@ import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
+import AuthorityJourney from "@/components/AuthorityJourney";
+import WeeklyRhythm from "@/components/WeeklyRhythm";
 
 /* ── Types ── */
 interface Snapshot {
@@ -85,6 +87,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [selectedDays, setSelectedDays] = useState<RangeDays>(30);
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [auraData, setAuraData] = useState<any>(null);
 
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [captureRows, setCaptureRows] = useState<{ created_at: string }[]>([]);
@@ -281,6 +286,24 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   };
 
   useEffect(() => { loadAll(selectedDays); /* eslint-disable-next-line */ }, [selectedDays]);
+
+  // Load aura score data once for AuthorityJourney + WeeklyRhythm
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        if (!cancelled) setUserId(user.id);
+        await supabase.auth.getSession();
+        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        if (!cancelled && !error && res) setAuraData(res);
+      } catch (e) {
+        console.error("ImpactTab: aura score load failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   // Load content performance (independent of time range)
   useEffect(() => {
@@ -796,6 +819,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           )}
         </div>
 
+        {/* Authority Journey (Observer → Strategist → Authority) */}
+        {auraData && (
+          <div className="relative mt-6">
+            <AuthorityJourney userId={userId} data={auraData} />
+          </div>
+        )}
+
         {/* Trajectory bar chart */}
         {trajectory && (() => {
           // Build up to 10 bars from existing all-time snapshot scores (latest 10)
@@ -907,6 +937,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </div>
         )}
       </section>
+
+      {/* ─────────── 3b. CAPTURE RHYTHM (12-week grid) ─────────── */}
+      {auraData && <WeeklyRhythm userId={userId} data={auraData} />}
 
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
