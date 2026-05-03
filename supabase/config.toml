@@ -3,6 +3,12 @@ project_id = "zddlsztxfzvevzjbuocc"
 [functions.summarize-link]
 verify_jwt = false
 
+[functions.send-lifecycle-email]
+verify_jwt = false
+
+[functions.check-lifecycle-triggers]
+verify_jwt = false
+
 [functions.draft-post]
 verify_jwt = false
 
