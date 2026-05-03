@@ -86,7 +86,7 @@ interface ImpactTabProps {
 const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [selectedDays, setSelectedDays] = useState<RangeDays>(30);
+  const [selectedDays, setSelectedDays] = useState<RangeDays>(90);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [auraData, setAuraData] = useState<any>(null);
