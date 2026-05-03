@@ -796,14 +796,32 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             </p>
 
             {signals.length === 0 ? (
-              <EmptyState
-                icon={Brain}
-                title="Aura detects signals from what you capture."
-                description="Start by capturing something about {sector} you read today."
-                personalize
-                ctaLabel={detecting ? "Detecting..." : "Detect signals"}
-                ctaAction={detecting ? undefined : runPatternDetection}
-              />
+              entryCount === 0 ? (
+                <EmptyState
+                  icon={Brain}
+                  title="No signals yet"
+                  description={`Aura needs at least 3 captures to detect strategic patterns. You have ${entryCount}/3.`}
+                  ctaLabel="Capture your first"
+                  ctaAction={() => onOpenCapture?.()}
+                />
+              ) : entryCount < 3 ? (
+                <EmptyState
+                  icon={Brain}
+                  title="Almost there"
+                  description={`Aura needs at least 3 captures to detect strategic patterns. You have ${entryCount}/3.`}
+                  ctaLabel="Capture more"
+                  ctaAction={() => onOpenCapture?.()}
+                />
+              ) : (
+                <EmptyState
+                  icon={Brain}
+                  title="Aura detects signals from what you capture."
+                  description="Start by capturing something about {sector} you read today."
+                  personalize
+                  ctaLabel={detecting ? "Detecting..." : "Detect signals"}
+                  ctaAction={detecting ? undefined : runPatternDetection}
+                />
+              )
             ) : (
               <>
                 {/* Command Center container */}
