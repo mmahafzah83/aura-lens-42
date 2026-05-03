@@ -15,6 +15,7 @@ import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
+import { AuraCard } from "@/components/ui/AuraCard";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
@@ -185,7 +186,7 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // Component
 // ────────────────────────────────────────────────
 
-const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
+const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
   // Session is "confirmed" only when auth restore is done AND we have an access
   // token. This is the gate for ALL data fetches — without it, RLS-protected
@@ -237,6 +238,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [alarmDismissed, setAlarmDismissed] = useState(false);
   const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
   const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
+
+  // J12 — empty state for new users with zero captures
+  const isEmpty = Array.isArray(entries) && entries.length === 0;
   const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
   const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
@@ -853,7 +857,41 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* H2b — STATUS STRIP */}
-      {auraData && (() => {
+      {isEmpty && (
+        <div
+          className="flex items-start justify-between gap-4 flex-wrap"
+          style={{
+            borderBottom: "1px solid hsl(var(--border) / 0.5)",
+            paddingBottom: 16,
+            marginBottom: 8,
+          }}
+        >
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            <div className="flex items-center" style={{ gap: 6 }}>
+              <span
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 36,
+                  fontWeight: 700,
+                  color: "var(--ink-3)",
+                  lineHeight: 1,
+                }}
+              >
+                —
+              </span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+              Starting
+            </div>
+            {sectorFocus && (
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                {sectorFocus}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {!isEmpty && auraData && (() => {
         const trend = auraData.score_trend;
         const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
         while (cells.length < 12) cells.unshift(false);
@@ -962,7 +1000,46 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         );
       })()}
 
+      {/* J12 — Welcome card for new users with zero captures */}
+      {isEmpty && (
+        <AuraCard className="text-center" hover="none">
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "16px 8px" }}>
+            <span style={{ fontSize: 28, color: "var(--brand)", opacity: 0.4, lineHeight: 1 }}>✦</span>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 22,
+                color: "var(--ink)",
+                lineHeight: 1.2,
+              }}
+            >
+              Welcome to Aura{userName ? `, ${userName}` : ""}
+            </div>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--ink-3)",
+                maxWidth: 400,
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Capture your first article to see your intelligence at work. Aura needs 3 captures to detect your first signal.
+            </p>
+            <AuraButton
+              variant="primary"
+              size="sm"
+              onClick={() => onOpenCapture?.()}
+              style={{ borderRadius: 4, padding: "7px 18px", marginTop: 4 }}
+            >
+              Capture your first
+            </AuraButton>
+          </div>
+        </AuraCard>
+      )}
+
       {/* H2b — DYNAMIC PRIMARY CARD */}
+      {!isEmpty && (<>
       <SectionHeader
         label="RECOMMENDED MOVES"
         subtitle="Actions Aura suggests based on your latest signals"
@@ -1188,6 +1265,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
       />
+      </>)}
 
     </motion.div>
   );

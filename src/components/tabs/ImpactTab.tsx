@@ -95,6 +95,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [captureRows, setCaptureRows] = useState<{ created_at: string }[]>([]);
   const [capturesThisMonth, setCapturesThisMonth] = useState(0);
   const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
+  const [totalCaptureCount, setTotalCaptureCount] = useState<number | null>(null);
 
   // All snapshots (no range filter) for Authority Trajectory forecasting
   const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
@@ -218,6 +219,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       (lastDocRes.data as any)?.[0]?.created_at,
     ].filter(Boolean).map((t: string) => new Date(t).getTime());
     setLastCaptureAll(lastTimes.length ? new Date(Math.max(...lastTimes)) : null);
+
+    // J12 — total all-time capture count for empty state detection
+    const [{ count: totalEntries }, { count: totalDocs }] = await Promise.all([
+      supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    ]);
+    setTotalCaptureCount((totalEntries ?? 0) + (totalDocs ?? 0));
 
     // LinkedIn metrics count (overall, for empty state decisions)
     const { count: trueCount } = await supabase
@@ -636,6 +644,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   }
 
   const ranges: RangeDays[] = [7, 30, 90, 365];
+  const isEmpty = totalCaptureCount === 0;
 
   // Max engagement rate in topPosts (for inline bars)
   const maxErPct = topPosts.reduce((m, p) => {
@@ -713,19 +722,40 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               Your composite authority metric — always reflects your current standing
             </div>
             <div style={{ marginTop: 6 }}>
-              <ScoreRing
-                value={latestScore}
-                size={160}
-                stroke={5}
-                numberStyle={{
-                  fontFamily: "'DM Serif Display', Georgia, serif",
-                  fontSize: 64,
-                  color: "var(--brand)",
-                  letterSpacing: "-0.04em",
-                  lineHeight: 1,
-                }}
-              />
+              {isEmpty ? (
+                <div
+                  style={{
+                    width: 160,
+                    height: 160,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid var(--brand-line)",
+                    borderRadius: "50%",
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 64,
+                    color: "var(--ink-3)",
+                    letterSpacing: "-0.04em",
+                  }}
+                >
+                  —
+                </div>
+              ) : (
+                <ScoreRing
+                  value={latestScore}
+                  size={160}
+                  stroke={5}
+                  numberStyle={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 64,
+                    color: "var(--brand)",
+                    letterSpacing: "-0.04em",
+                    lineHeight: 1,
+                  }}
+                />
+              )}
             </div>
+            {!isEmpty && (
             <div className="mt-3 inline-flex">
               <span
                 style={{
@@ -741,10 +771,33 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 {trendLabel}
               </span>
             </div>
+            )}
+            {isEmpty && (
+              <div style={{ marginTop: 14, fontSize: 13, color: "var(--ink-3)", maxWidth: 360 }}>
+                Start capturing to build your authority trajectory.
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    onClick={() => onOpenCapture?.()}
+                    style={{
+                      background: "var(--brand)",
+                      color: "#1A1916",
+                      border: 0,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: "8px 16px",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Capture your first
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Forecasts top-right */}
-          {trajectory && (
+          {!isEmpty && trajectory && (
             <div className="flex gap-7 sm:text-right">
               <div>
                 <div
@@ -804,13 +857,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
         {/* Authority Journey (Observer → Strategist → Authority) */}
         {auraData && (
-          <div className="relative mt-6">
+          <div className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
             <AuthorityJourney userId={userId} data={auraData} />
           </div>
         )}
 
         {/* Trajectory bar chart */}
-        {trajectory && (() => {
+        {!isEmpty && trajectory && (() => {
           // Build up to 10 bars from existing all-time snapshot scores (latest 10)
           const recent = allSnapshots.slice(-10).map(s => s.score);
           const bars = recent.length > 0 ? recent : [trajectory.currentScore];
