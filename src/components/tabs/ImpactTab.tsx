@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { AuraButton } from "@/components/ui/AuraButton";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import AuthorityJourney from "@/components/AuthorityJourney";
