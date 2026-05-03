@@ -14,6 +14,8 @@ import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
+import AuthorityJourney from "@/components/AuthorityJourney";
+import WeeklyRhythm from "@/components/WeeklyRhythm";
 
 /* ── Types ── */
 interface Snapshot {
@@ -85,6 +87,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [selectedDays, setSelectedDays] = useState<RangeDays>(30);
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [auraData, setAuraData] = useState<any>(null);
 
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [captureRows, setCaptureRows] = useState<{ created_at: string }[]>([]);
