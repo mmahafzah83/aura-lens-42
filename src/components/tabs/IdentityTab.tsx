@@ -634,6 +634,19 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div className="space-y-3">
                 {signalStats.themeGroups.map((g) => {
                   const pct = Math.round(g.avgConfidence * 100);
+                  const isHigh = pct >= 80;
+                  const isMid = pct >= 50 && pct < 80;
+                  const fillBg = isHigh
+                    ? "var(--brand)"
+                    : isMid
+                      ? "rgba(176, 141, 58, 0.4)"
+                      : "var(--coverage-low, #D1CDBD)";
+                  const pctColor = isHigh
+                    ? "var(--brand)"
+                    : isMid
+                      ? "var(--ink-3)"
+                      : "var(--ink-3)";
+                  const pctOpacity = !isHigh && !isMid ? 0.6 : 1;
                   return (
                     <div key={g.theme}>
                       <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
@@ -658,12 +671,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                             style={{
                               width: `${Math.max(4, pct)}%`,
                               height: "100%",
-                              background: "var(--brand)",
+                              background: fillBg,
                               borderRadius: 999,
                             }}
                           />
                         </div>
-                        <span style={{ fontSize: 11, color: "var(--ink-4)", fontWeight: 500, minWidth: 32, textAlign: "right" }}>
+                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: pctColor, opacity: pctOpacity, fontWeight: 500, minWidth: 32, textAlign: "right" }}>
                           {pct}%
                         </span>
                       </div>
