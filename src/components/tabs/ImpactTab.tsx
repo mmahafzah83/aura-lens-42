@@ -1048,20 +1048,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </p>
 
             {captureScore < 80 && (
-              <button
-                onClick={() => onOpenCapture?.()}
-                className="mt-4 inline-flex items-center gap-1.5"
-                style={{
-                  background: "var(--brand)",
-                  color: "#ffffff",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "6px 16px",
-                  borderRadius: 4,
-                }}
-              >
-                Capture now →
-              </button>
+              <div className="mt-4">
+                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
+                  Capture now →
+                </AuraButton>
+              </div>
             )}
           </div>
       </section>
