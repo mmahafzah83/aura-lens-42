@@ -722,19 +722,40 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               Your composite authority metric — always reflects your current standing
             </div>
             <div style={{ marginTop: 6 }}>
-              <ScoreRing
-                value={latestScore}
-                size={160}
-                stroke={5}
-                numberStyle={{
-                  fontFamily: "'DM Serif Display', Georgia, serif",
-                  fontSize: 64,
-                  color: "var(--brand)",
-                  letterSpacing: "-0.04em",
-                  lineHeight: 1,
-                }}
-              />
+              {isEmpty ? (
+                <div
+                  style={{
+                    width: 160,
+                    height: 160,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid var(--brand-line)",
+                    borderRadius: "50%",
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 64,
+                    color: "var(--ink-3)",
+                    letterSpacing: "-0.04em",
+                  }}
+                >
+                  —
+                </div>
+              ) : (
+                <ScoreRing
+                  value={latestScore}
+                  size={160}
+                  stroke={5}
+                  numberStyle={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 64,
+                    color: "var(--brand)",
+                    letterSpacing: "-0.04em",
+                    lineHeight: 1,
+                  }}
+                />
+              )}
             </div>
+            {!isEmpty && (
             <div className="mt-3 inline-flex">
               <span
                 style={{
@@ -750,10 +771,33 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 {trendLabel}
               </span>
             </div>
+            )}
+            {isEmpty && (
+              <div style={{ marginTop: 14, fontSize: 13, color: "var(--ink-3)", maxWidth: 360 }}>
+                Start capturing to build your authority trajectory.
+                <div style={{ marginTop: 10 }}>
+                  <button
+                    onClick={() => onOpenCapture?.()}
+                    style={{
+                      background: "var(--brand)",
+                      color: "#1A1916",
+                      border: 0,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: "8px 16px",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Capture your first
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Forecasts top-right */}
-          {trajectory && (
+          {!isEmpty && trajectory && (
             <div className="flex gap-7 sm:text-right">
               <div>
                 <div
