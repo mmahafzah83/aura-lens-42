@@ -187,8 +187,8 @@ const FeedbackButton = () => {
                 Your feedback helps us improve Aura
               </p>
               <p style={{ fontSize: 11, marginTop: 4, textAlign: "center" }}>
-                <a href="mailto:mohammad@aura-intel.org" style={{ color: "var(--brand)" }}>
-                  Talk to the founder: mohammad@aura-intel.org
+                <a href="mailto:mohammad.mahafdhah@aura-intel.org" style={{ color: "var(--brand)" }}>
+                  Talk to the founder: mohammad.mahafdhah@aura-intel.org
                 </a>
               </p>
             </>

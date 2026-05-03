@@ -198,10 +198,10 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
           </a>
           <div style={{ marginTop: 6 }}>
             <a
-              href="mailto:mohammad@aura-intel.org"
+              href="mailto:mohammad.mahafdhah@aura-intel.org"
               style={{ fontSize: 11, color: "var(--ink-3)", textDecoration: "none" }}
             >
-              Feedback? mohammad@aura-intel.org
+              Feedback? mohammad.mahafdhah@aura-intel.org
             </a>
           </div>
         </footer>
