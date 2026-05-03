@@ -19,6 +19,7 @@ import { TabSlider } from "@/components/ui/TabSlider";
 import EmptyState from "@/components/ui/EmptyState";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -832,18 +833,22 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                     </div>
 
                     {/* Signal rows */}
-                    {visibleSignals.map((s, idx) => {
-                      const confPct = Math.round(s.confidence * 100);
-                      const isSelected = selectedSignal?.id === s.id;
-                      const themeGroup = getThemeGroup(s);
-                      return (
+                    <CollapsibleList
+                      items={sortedByConfidence}
+                      visibleCount={3}
+                      label="signals"
+                      renderItem={(s, idx) => {
+                        const confPct = Math.round(s.confidence * 100);
+                        const isSelected = selectedSignal?.id === s.id;
+                        const themeGroup = getThemeGroup(s);
+                        return (
                         <div
                           key={s.id}
                           className="intel-signal-row"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
                             display: "flex", alignItems: "center", gap: 0, padding: "12px 16px",
-                            borderBottom: idx < visibleSignals.length - 1 ? "0.5px solid var(--surface-ink-subtle)" : "none",
+                            borderBottom: "0.5px solid var(--surface-ink-subtle)",
                             cursor: "pointer", transition: "background 0.1s",
                             background: isSelected ? "var(--surface-ink-raised)" : "transparent",
                             borderLeft: isSelected ? "2px solid var(--brand)" : "2px solid transparent",
@@ -868,18 +873,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             {confPct}%
                           </span>
                         </div>
-                      );
-                    })}
-
-                    {/* Show all */}
-                    {sortedByConfidence.length > 8 && (
-                      <button
-                        onClick={() => setShowAllSignals(!showAllSignals)}
-                        style={{ display: "block", width: "100%", textAlign: "center", padding: "10px 16px", fontSize: 10, color: "var(--ink-3)", background: "none", border: "none", borderTop: "0.5px solid var(--surface-ink-subtle)", cursor: "pointer" }}
-                      >
-                        {showAllSignals ? "Show less ↑" : `Show all ${sortedByConfidence.length} signals ↓`}
-                      </button>
-                    )}
+                        );
+                      }}
+                    />
                   </div>
                 </div>
               </>
