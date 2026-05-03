@@ -272,6 +272,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [visualUrl, setVisualUrl] = useState<string | null>(null);
   const [visualLoading, setVisualLoading] = useState(false);
 
+  // Quick actions / variations state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [translatedPost, setTranslatedPost] = useState<string | null>(null);
+  const [translatedLang, setTranslatedLang] = useState<"en" | "ar" | null>(null);
+
   // Free-tier generation limit
   const [monthlyGenerationCount, setMonthlyGenerationCount] = useState(0);
   const FREE_LIMIT = 3;
@@ -606,6 +611,117 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
   const displayedOutput = output;
   const isGeneratingAny = generating || generatingShort;
+
+  // Quick action: rewrites the existing post with an extra instruction and replaces the output
+  const runQuickAction = async (key: string, instruction: string) => {
+    if (!displayedOutput || isGeneratingAny || actionLoading) return;
+    setActionLoading(key);
+    const previous = displayedOutput;
+    setOutput("");
+    try {
+      const fullInstruction = `${instruction}\n\nHere is the existing post to rewrite:\n\n${previous}`;
+      const accumulated = await streamGeneration(fullInstruction);
+      if (accumulated.trim()) {
+        setFullVersion(accumulated);
+        setShowingShort(false);
+      } else {
+        setOutput(previous);
+        toast.error("No content returned. Keeping original.");
+      }
+    } catch (e: any) {
+      setOutput(previous);
+      toast.error(e?.message || "Action failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Translate side-by-side
+  const runTranslate = async () => {
+    if (!displayedOutput || isGeneratingAny || actionLoading) return;
+    const targetLang: "en" | "ar" = lang === "en" ? "ar" : "en";
+    setActionLoading("translate");
+    setTranslatedPost("");
+    setTranslatedLang(targetLang);
+    try {
+      const instruction = targetLang === "ar"
+        ? `Translate this LinkedIn post to natural professional Arabic for a GCC executive audience. Keep the same structure and tone. Return only the translated post, no commentary.\n\n${displayedOutput}`
+        : `Translate this LinkedIn post to natural professional English for an executive audience. Keep the same structure and tone. Return only the translated post, no commentary.\n\n${displayedOutput}`;
+      // Stream into translatedPost without touching main output
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          action: "generate_content",
+          content_type: contentType,
+          topic,
+          context,
+          language: targetLang,
+          extra_instruction: instruction,
+        }),
+      });
+      if (!resp.ok || !resp.body) throw new Error(`Translate failed (${resp.status})`);
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+      let accumulated = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, nl);
+          textBuffer = textBuffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") break;
+          try {
+            const c = JSON.parse(json).choices?.[0]?.delta?.content;
+            if (c) { accumulated += c; setTranslatedPost(accumulated); }
+          } catch {}
+        }
+      }
+    } catch (e: any) {
+      setTranslatedPost(null);
+      setTranslatedLang(null);
+      toast.error(e?.message || "Translation failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Variations: regenerate with a new opening style
+  const runVariation = async (key: string, instruction: string) => {
+    if (!displayedOutput || isGeneratingAny || actionLoading) return;
+    setActionLoading(key);
+    const previous = displayedOutput;
+    setOutput("");
+    try {
+      const accumulated = await streamGeneration(instruction);
+      if (accumulated.trim()) {
+        setFullVersion(accumulated);
+        setShowingShort(false);
+        setTranslatedPost(null);
+        setTranslatedLang(null);
+      } else {
+        setOutput(previous);
+        toast.error("No content returned.");
+      }
+    } catch (e: any) {
+      setOutput(previous);
+      toast.error(e?.message || "Variation failed");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -1163,6 +1279,126 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 userName={profileName}
                 userRole={profileRole}
               />
+            )}
+
+            {/* Quick Actions + Variations (visible after a post is generated) */}
+            {displayedOutput && !isGeneratingAny && contentType === "post" && (
+              <div className="space-y-4">
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { key: "shorter", label: "Shorter", icon: "✂", instruction: "Rewrite this post to be 40% shorter. Keep the hook and the key insight. Remove filler. Return only the rewritten post." },
+                    { key: "bolder", label: "Bolder", icon: "⚡", instruction: "Make this post more provocative and contrarian. Add a specific challenge to conventional wisdom. Name a competitor or rival approach. Return only the rewritten post." },
+                    { key: "data", label: "Add data", icon: "📊", instruction: "Add a specific statistic, number, or data point from the signal evidence. Place it where it creates the most impact. Return only the rewritten post." },
+                    { key: "translate", label: "Translate", icon: "🌐", instruction: "" },
+                  ].map((a) => {
+                    const loading = actionLoading === a.key;
+                    const disabled = !!actionLoading || isGeneratingAny;
+                    return (
+                      <button
+                        key={a.key}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => a.key === "translate" ? runTranslate() : runQuickAction(a.key, a.instruction)}
+                        className="flex items-center gap-1.5 px-3.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                          height: 48,
+                          background: "var(--vellum)",
+                          border: "1px solid var(--brand-line)",
+                          borderRadius: 8,
+                          color: "var(--ink)",
+                          fontSize: 13,
+                          fontWeight: 500,
+                        }}
+                        onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.borderColor = "var(--brand)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--brand-line)"; }}
+                      >
+                        {loading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <span style={{ fontSize: 14 }}>{a.icon}</span>
+                        )}
+                        <span>{loading ? "Working…" : a.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Translation result alongside original */}
+                {translatedPost !== null && translatedLang && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div
+                      className="rounded-lg p-4"
+                      style={{ background: "var(--vellum)", border: "1px solid var(--brand-line)" }}
+                    >
+                      <p className="text-[10px] uppercase tracking-[0.12em] mb-2" style={{ color: "var(--ink-3)" }}>
+                        Original ({lang.toUpperCase()})
+                      </p>
+                      <div className="text-sm leading-relaxed" style={{ color: "var(--ink)" }}>
+                        {renderMarkdown(displayedOutput)}
+                      </div>
+                    </div>
+                    <div
+                      className="rounded-lg p-4"
+                      style={{ background: "var(--vellum)", border: "1px solid var(--brand-line)" }}
+                      dir={translatedLang === "ar" ? "rtl" : "ltr"}
+                    >
+                      <p className="text-[10px] uppercase tracking-[0.12em] mb-2" style={{ color: "var(--ink-3)" }}>
+                        {translatedLang.toUpperCase()}
+                        {actionLoading === "translate" && <span className="ml-2 normal-case tracking-normal">translating…</span>}
+                      </p>
+                      <div className="text-sm leading-relaxed" style={{ color: "var(--ink)" }}>
+                        {translatedPost ? renderMarkdown(translatedPost) : <span style={{ color: "var(--ink-3)" }}>…</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Variations */}
+                <div>
+                  <div className="mb-2">
+                    <p className="text-[10px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--ink-2)" }}>
+                      Variations
+                    </p>
+                    <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+                      Different angles on the same signal
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    {[
+                      { key: "var-question", label: "Lead with a question", desc: "Open with a provocative question", instruction: "Rewrite this post so it opens with a single provocative question that challenges the reader. Keep the same insight and signal evidence. Return only the rewritten post." },
+                      { key: "var-number", label: "Lead with a number", desc: "Open with a striking statistic", instruction: "Rewrite this post so it opens with a striking, specific statistic or number drawn from the signal evidence. Keep the same core insight. Return only the rewritten post." },
+                      { key: "var-tension", label: "Lead with tension", desc: "Open with a contradiction", instruction: "Rewrite this post so it opens with a sharp contradiction or conflict between two competing ideas. Keep the same insight and signal evidence. Return only the rewritten post." },
+                    ].map((v) => {
+                      const loading = actionLoading === v.key;
+                      const disabled = !!actionLoading || isGeneratingAny;
+                      return (
+                        <button
+                          key={v.key}
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => runVariation(v.key, v.instruction)}
+                          className="text-left p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{
+                            background: "var(--vellum)",
+                            border: "1px solid var(--brand-line)",
+                          }}
+                          onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.borderColor = "var(--brand)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--brand-line)"; }}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            {loading && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--brand)" }} />}
+                            <span className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>
+                              {v.label}
+                            </span>
+                          </div>
+                          <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>{v.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Visual Companion — LinkedIn Post Visual */}
