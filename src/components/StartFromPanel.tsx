@@ -358,8 +358,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       {isRecommended && (
                         <span
                           style={{
-                            background: "var(--brand-pale)",
-                            color: "var(--warning)",
+                            background: "var(--brand-ghost, var(--brand-pale))",
+                            color: "var(--brand)",
                             fontSize: 9,
                             fontWeight: 600,
                             padding: "2px 7px",
@@ -376,13 +376,13 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: "var(--surface-ink-subtle)",
+                          color: "var(--ink)",
                           lineHeight: 1.35,
                         }}
                       >
                         {item.angle || item.title}
                       </p>
-                      <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
+                      <p style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
                         {item.signalTitle || item.title}
                       </p>
                       <button
@@ -452,10 +452,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 )}
               </span>
               <div className="flex-1 min-w-0">
-                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--surface-ink-subtle)", lineHeight: 1.2 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--ink)", lineHeight: 1.2 }}>
                   {voice?.fullName || "Your voice"}
                 </p>
-                <p style={{ fontSize: 10, color: "var(--ink-5)", lineHeight: 1.35, marginTop: 2 }}>
+                <p style={{ fontSize: 10, color: "var(--ink-3)", lineHeight: 1.35, marginTop: 2 }}>
                   {voice?.tone || "Train your voice from past posts"}
                 </p>
               </div>
@@ -485,7 +485,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               }}
               className="hover:opacity-80"
             >
-              Train voice from posts →
+              Train voice on My Story →
             </a>
           </div>
         </div>
