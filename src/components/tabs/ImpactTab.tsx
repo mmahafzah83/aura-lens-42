@@ -644,6 +644,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   }
 
   const ranges: RangeDays[] = [7, 30, 90, 365];
+  const isEmpty = totalCaptureCount === 0;
 
   // Max engagement rate in topPosts (for inline bars)
   const maxErPct = topPosts.reduce((m, p) => {
