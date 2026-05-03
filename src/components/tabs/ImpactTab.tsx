@@ -661,28 +661,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </div>
 
-      {/* ─────────── 2. TIME FILTER ─────────── */}
-      <div className="flex items-center gap-2">
-        {ranges.map((r) => {
-          const active = selectedDays === r;
-          return (
-            <button
-              key={r}
-              onClick={() => setSelectedDays(r)}
-              className="px-3.5 py-1.5 text-xs rounded-full transition-colors"
-              style={{
-                background: active ? "var(--brand)" : "transparent",
-                color: active ? "#ffffff" : "var(--color-text-secondary)",
-                border: active ? "0.5px solid var(--brand)" : "0.5px solid var(--color-border)",
-                fontWeight: active ? 600 : 500,
-              }}
-            >
-              {r}D
-            </button>
-          );
-        })}
-      </div>
-
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
         className="relative overflow-hidden"
