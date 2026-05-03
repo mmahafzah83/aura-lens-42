@@ -10,14 +10,11 @@ import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
 import MilestoneNotification from "@/components/MilestoneNotification";
-import InfoTooltip from "@/components/ui/InfoTooltip";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
 import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
-import EmptyState from "@/components/ui/EmptyState";
-import { Zap } from "lucide-react";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
