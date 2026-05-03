@@ -2446,9 +2446,14 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           className="flex items-center gap-2.5 w-full text-left group"
           style={{ borderLeft: "1px solid var(--brand)", paddingLeft: 12, marginBottom: showDrafts ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--brand)" }}
         >
-          <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--brand)", margin: 0 }}>
-            Your Drafts
-          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--brand)", margin: 0 }}>
+              Your Drafts
+            </h3>
+            <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+              Posts you've started but not yet published
+            </span>
+          </div>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--brand)" }}>
             {drafts.length}
           </span>
@@ -2552,9 +2557,14 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           className="flex items-center gap-2.5 w-full text-left group"
           style={{ borderLeft: "1px solid var(--ink-7)", paddingLeft: 12, marginBottom: showPublished ? 12 : 0, background: "none", border: "none", cursor: "pointer", borderLeftWidth: 1, borderLeftStyle: "solid", borderLeftColor: "var(--ink-7)" }}
         >
-          <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-7)", margin: 0 }}>
-            Published Posts
-          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-7)", margin: 0 }}>
+              Published Posts
+            </h3>
+            <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
+              Content that's live on LinkedIn
+            </span>
+          </div>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
             {publishedPosts.length}
           </span>
