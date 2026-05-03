@@ -1190,14 +1190,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         // Priority 1.5 — J4 "You're caught up" signal
         if (caughtUpReady) {
           return (
-            <AuraCard
-              hover="none"
-              className="text-center"
-              style={{
-                padding: "28px 24px",
-                animation: "fade-in 400ms ease",
-              }}
-            >
+            <div style={{ animation: "fade-in 400ms ease" }}>
+            <AuraCard hover="none" className="text-center">
+            <div style={{ padding: "12px 6px" }}>
               <div
                 style={{
                   fontSize: 24,
@@ -1244,7 +1239,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               >
                 Explore your signals →
               </button>
+            </div>
             </AuraCard>
+            </div>
           );
         }
 
