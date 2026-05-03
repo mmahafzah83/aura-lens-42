@@ -857,7 +857,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* H2b — STATUS STRIP */}
-      {auraData && (() => {
+      {(auraData || isEmpty) && (() => {
         const trend = auraData.score_trend;
         const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
         while (cells.length < 12) cells.unshift(false);
