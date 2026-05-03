@@ -1113,6 +1113,57 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* H2b — DYNAMIC PRIMARY CARD */}
       {!isEmpty && (<>
+      {newSignal && (
+        <div
+          style={{
+            background: "var(--brand-ghost)",
+            border: "1px solid var(--brand-line)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 12,
+            opacity: bannerVisible ? 1 : 0,
+            transform: bannerVisible ? "translateY(0)" : "translateY(-8px)",
+            transition: "all 400ms ease",
+          }}
+        >
+          <span aria-hidden style={{ color: "var(--brand)", fontSize: 16, lineHeight: 1 }}>✦</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            New signal detected: {newSignal.signal_title}
+          </span>
+          <button
+            onClick={() => {
+              try {
+                const seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]");
+                if (!seen.includes(newSignal.id)) seen.push(newSignal.id);
+                localStorage.setItem("aura_seen_signals", JSON.stringify(seen));
+              } catch {}
+              onSwitchTab?.("intelligence");
+              setNewSignal(null);
+            }}
+            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0 }}
+          >
+            View →
+          </button>
+          <button
+            aria-label="Dismiss"
+            onClick={() => {
+              try {
+                const seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]");
+                if (!seen.includes(newSignal.id)) seen.push(newSignal.id);
+                localStorage.setItem("aura_seen_signals", JSON.stringify(seen));
+              } catch {}
+              setBannerVisible(false);
+              setTimeout(() => setNewSignal(null), 250);
+            }}
+            style={{ background: "transparent", border: "none", color: "var(--ink-3)", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <SectionHeader
         label="RECOMMENDED MOVES"
         subtitle="Actions Aura suggests based on your latest signals"
