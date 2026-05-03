@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { CollapsibleList } from "@/components/ui/CollapsibleList";
 
 interface Milestone {
   id: string;
@@ -130,12 +131,14 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
       </div>
 
       {earned.length > 0 && (
-        <ul className="space-y-2" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-          {earned.map(m => {
+        <CollapsibleList
+          items={earned}
+          visibleCount={3}
+          label="milestones"
+          renderItem={(m) => {
             const summary = summarizeContext(m.id, m.context);
             return (
-              <li
-                key={m.id}
+              <div
                 style={{
                   background: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border) / 0.5)",
@@ -145,6 +148,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                   display: "flex",
                   alignItems: "flex-start",
                   gap: 12,
+                  marginBottom: 8,
                 }}
               >
                 <Check size={16} strokeWidth={2.25} style={{ color: "hsl(var(--primary))", marginTop: 2, flexShrink: 0 }} />
@@ -163,10 +167,10 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     </div>
                   )}
                 </div>
-              </li>
+              </div>
             );
-          })}
-        </ul>
+          }}
+        />
       )}
 
       {unearned.length > 0 && (
