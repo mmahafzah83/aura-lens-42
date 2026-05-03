@@ -850,12 +850,82 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
+      {/* H2b — STATUS STRIP */}
+      {auraData && (
+        <StatusStrip
+          data={auraData}
+          sectorFocus={sectorFocus}
+          scoreTooltipOpen={scoreTooltipOpen}
+          setScoreTooltipOpen={setScoreTooltipOpen}
+          rhythmTooltipOpen={rhythmTooltipOpen}
+          setRhythmTooltipOpen={setRhythmTooltipOpen}
+        />
+      )}
+
+      {/* H2b — DYNAMIC PRIMARY CARD (replaces nudge + alarm) */}
+      <PrimaryCard
+        auraData={auraData}
+        competitorAlert={competitorAlert}
+        alarmDismissed={alarmDismissed}
+        onDismissAlarm={() => setAlarmDismissed(true)}
+        topMove={topMove}
+        onCapture={() => onOpenCapture?.()}
+        onPublish={() => navigate("/publish")}
+        onSeeSignals={() => onSwitchTab?.("intelligence")}
+        onAuthorityTab={() => onSwitchTab?.("authority")}
+        alarmEducationSeen={alarmEducationSeen}
+        onAlarmSeen={() => {
+          if (!alarmEducationSeen) {
+            try { localStorage.setItem("aura_alarm_seen", "true"); } catch {}
+            setAlarmEducationSeen(true);
+          }
+        }}
+      />
+
+      {/* Secondary moves (collapsed) */}
+      {moves.length > 1 && (
+        <div>
+          <button
+            onClick={() => setShowSecondaryMoves(s => !s)}
+            style={{
+              fontSize: 12,
+              color: "hsl(var(--muted-foreground))",
+              background: "transparent",
+              border: 0,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 0",
+            }}
+          >
+            {moves.length - 1} more move{moves.length - 1 === 1 ? "" : "s"}
+            <ChevronDown size={14} style={{ transform: showSecondaryMoves ? "rotate(180deg)" : "none", transition: "transform 200ms" }} />
+          </button>
+          {showSecondaryMoves && (
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+              {moves.slice(1).map(m => (
+                <div key={m.id} style={{
+                  border: "1px solid hsl(var(--border) / 0.5)",
+                  borderRadius: 6,
+                  padding: "10px 12px",
+                  background: "hsl(var(--card))",
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>{m.title}</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{m.rationale}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* SECTION 2 — AI daily briefing */}
-      {briefError && sessionConfirmed ? (
+      {false && briefError && sessionConfirmed ? (
         <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
         </div>
-      ) : showBriefSkeleton || !sessionConfirmed ? (
+      ) : false && (showBriefSkeleton || !sessionConfirmed) ? (
         <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-11/12" />
@@ -865,9 +935,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <Skeleton className="h-8 w-32" />
           </div>
         </div>
-      ) : briefLoading ? (
+      ) : false && briefLoading ? (
         <div className="min-h-[120px]" aria-busy="true" />
-      ) : (
+      ) : false ? (
         <div
           className="rounded-r-lg border"
           style={{
@@ -910,10 +980,10 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
             </AuraButton>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* SECTION 3 — Aura's Read */}
-      {competitorAlert && (
+      {false && competitorAlert && (
         <div
           className="aura-alert-pulse aura-left-accent-card"
           style={{
