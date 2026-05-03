@@ -598,6 +598,9 @@ const Landing = () => {
       <LandingFAQ />
 
       {/* Section 10 — Footer */}
+      <p className="text-center px-5 mt-8" style={{ fontSize: "14px", color: "var(--ink-4)" }}>
+        Built by Mohammad Mahafzah. Designed for senior professionals who read everything but publish nothing.
+      </p>
       <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "var(--ink-4)" }}>Strategic intelligence for senior professionals.</p>
