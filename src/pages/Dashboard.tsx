@@ -19,6 +19,7 @@ import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import FeedbackButton from "@/components/FeedbackButton";
 import InviteColleagueModal from "@/components/InviteColleagueModal";
+import NpsSurveyModal from "@/components/NpsSurveyModal";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
@@ -764,6 +765,7 @@ const Dashboard = () => {
       <FeedbackButton />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
+      <NpsSurveyModal />
     </div>
   );
 };
