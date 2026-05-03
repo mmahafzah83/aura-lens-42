@@ -658,11 +658,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 size="lg"
                 loading={isGeneratingAny}
                 onClick={() => {
+                  const heroTopic = isCustomAngle ? topic : activeSignal.signal_title;
+                  const heroContext = isCustomAngle ? context : (activeSignal.explanation || "");
                   if (!isCustomAngle) {
                     selectSuggestion(activeSignal.signal_title, activeSignal.explanation || "", "post", activeSignal.signal_title, activeSignal.explanation || "");
                     setSelectedSignalId(activeSignal.id);
                   }
-                  setTimeout(() => generate(), 50);
+                  generate({ topic: heroTopic, context: heroContext, contentType: "post", language: lang, framework });
                 }}
                 style={{ flex: 1, gap: 6, color: "#fff" }}
               >
