@@ -237,6 +237,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [caughtUpReady, setCaughtUpReady] = useState(false);
   const [watchingSignalsCount, setWatchingSignalsCount] = useState<number>(0);
 
+  // J13 — New signal notification banner
+  const [newSignal, setNewSignal] = useState<{ id: string; signal_title: string } | null>(null);
+  const [bannerVisible, setBannerVisible] = useState(false);
+
   // H2b — Status strip + dynamic primary card
   const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
   const [sectorFocus, setSectorFocus] = useState<string>("");
@@ -633,6 +637,30 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         setCaughtUpReady(allActed && hasRecentCapture);
       } catch (e) {
         console.warn("[HomeTab] caught-up check failed", e);
+      }
+    })();
+
+    // J13 — New signal banner: most recent active signal in last 24h, not seen.
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
+        const { data } = await supabase
+          .from("strategic_signals")
+          .select("id, signal_title")
+          .eq("user_id", uid)
+          .eq("status", "active")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        let seen: string[] = [];
+        try { seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]"); } catch {}
+        const fresh = (data || []).find((s: any) => !seen.includes(s.id));
+        if (fresh) {
+          setNewSignal({ id: fresh.id, signal_title: fresh.signal_title });
+          setTimeout(() => setBannerVisible(true), 50);
+        }
+      } catch (e) {
+        console.warn("[HomeTab] new signal banner check failed", e);
       }
     })();
 
@@ -1085,6 +1113,57 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* H2b — DYNAMIC PRIMARY CARD */}
       {!isEmpty && (<>
+      {newSignal && (
+        <div
+          style={{
+            background: "var(--brand-ghost)",
+            border: "1px solid var(--brand-line)",
+            borderRadius: 10,
+            padding: "14px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 12,
+            opacity: bannerVisible ? 1 : 0,
+            transform: bannerVisible ? "translateY(0)" : "translateY(-8px)",
+            transition: "all 400ms ease",
+          }}
+        >
+          <span aria-hidden style={{ color: "var(--brand)", fontSize: 16, lineHeight: 1 }}>✦</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            New signal detected: {newSignal.signal_title}
+          </span>
+          <button
+            onClick={() => {
+              try {
+                const seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]");
+                if (!seen.includes(newSignal.id)) seen.push(newSignal.id);
+                localStorage.setItem("aura_seen_signals", JSON.stringify(seen));
+              } catch {}
+              onSwitchTab?.("intelligence");
+              setNewSignal(null);
+            }}
+            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0 }}
+          >
+            View →
+          </button>
+          <button
+            aria-label="Dismiss"
+            onClick={() => {
+              try {
+                const seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]");
+                if (!seen.includes(newSignal.id)) seen.push(newSignal.id);
+                localStorage.setItem("aura_seen_signals", JSON.stringify(seen));
+              } catch {}
+              setBannerVisible(false);
+              setTimeout(() => setNewSignal(null), 250);
+            }}
+            style={{ background: "transparent", border: "none", color: "var(--ink-3)", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <SectionHeader
         label="RECOMMENDED MOVES"
         subtitle="Actions Aura suggests based on your latest signals"
