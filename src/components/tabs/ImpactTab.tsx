@@ -661,28 +661,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </div>
 
-      {/* ─────────── 2. TIME FILTER ─────────── */}
-      <div className="flex items-center gap-2">
-        {ranges.map((r) => {
-          const active = selectedDays === r;
-          return (
-            <button
-              key={r}
-              onClick={() => setSelectedDays(r)}
-              className="px-3.5 py-1.5 text-xs rounded-full transition-colors"
-              style={{
-                background: active ? "var(--brand)" : "transparent",
-                color: active ? "#ffffff" : "var(--color-text-secondary)",
-                border: active ? "0.5px solid var(--brand)" : "0.5px solid var(--color-border)",
-                fontWeight: active ? 600 : 500,
-              }}
-            >
-              {r}D
-            </button>
-          );
-        })}
-      </div>
-
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
         className="relative overflow-hidden"
@@ -846,18 +824,62 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div className="relative mt-6">
               <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--ink-3)",
-                  marginBottom: 6,
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  marginBottom: 6,
                 }}
               >
-                Trajectory
-                <InfoTooltip label="Trajectory" text="Your authority score over time." />
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "var(--ink-3)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Trajectory
+                  <InfoTooltip label="Trajectory" text="Your authority score over time." />
+                </div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 2,
+                    padding: 3,
+                    borderRadius: 8,
+                    background: "var(--paper-2, rgba(255,255,255,0.04))",
+                    border: "0.5px solid var(--brand-line)",
+                  }}
+                >
+                  {ranges.map((r) => {
+                    const active = selectedDays === r;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => setSelectedDays(r)}
+                        style={{
+                          padding: "4px 10px",
+                          fontSize: 11,
+                          fontWeight: active ? 600 : 500,
+                          borderRadius: 6,
+                          background: active ? "var(--vellum)" : "transparent",
+                          color: active ? "var(--ink)" : "var(--ink-3)",
+                          boxShadow: active ? "var(--shadow-rest)" : "none",
+                          border: "none",
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        {r}D
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
               <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 0, marginBottom: 6, lineHeight: 1.5 }}>
                 Projected score growth based on your current activity
