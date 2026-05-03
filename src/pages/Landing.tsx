@@ -598,6 +598,10 @@ const Landing = () => {
       <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
         <p className="mt-2 text-[11px]" style={{ color: "var(--ink-4)" }}>Strategic intelligence for senior professionals.</p>
+        <div className="mt-3 flex justify-center gap-4 text-[11px]" style={{ color: "var(--ink-4)" }}>
+          <a href="/terms">Terms</a>
+          <a href="/privacy">Privacy</a>
+        </div>
       </footer>
     </div>
   );
