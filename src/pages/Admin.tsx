@@ -70,6 +70,35 @@ const Admin = () => {
   const [directSending, setDirectSending] = useState(false);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
 
+  // QA health check
+  type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
+  type QAReport = { id: string; run_at: string; total_checks: number; passed: number; failed: number; results: QAResult[] };
+  const [qaReports, setQaReports] = useState<QAReport[]>([]);
+  const [qaRunning, setQaRunning] = useState(false);
+
+  const fetchQaReports = async () => {
+    const { data } = await supabase
+      .from("qa_reports")
+      .select("id, run_at, total_checks, passed, failed, results")
+      .order("run_at", { ascending: false })
+      .limit(10);
+    setQaReports((data || []) as QAReport[]);
+  };
+
+  const runQaCheck = async () => {
+    setQaRunning(true);
+    try {
+      const { error } = await supabase.functions.invoke("run-qa-walkthrough", { body: {} });
+      if (error) throw error;
+      toast.success("QA check complete");
+      await fetchQaReports();
+    } catch (e: any) {
+      toast.error(e?.message || "QA check failed");
+    } finally {
+      setQaRunning(false);
+    }
+  };
+
   // Auth gate — first thing
   useEffect(() => {
     let cancelled = false;
@@ -110,6 +139,7 @@ const Admin = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchRows();
+    fetchQaReports();
     (async () => {
       const { data } = await supabase
         .from("beta_feedback")
