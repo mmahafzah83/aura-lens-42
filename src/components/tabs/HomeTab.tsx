@@ -595,6 +595,46 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         loadCompetitorAlert(uid),
     ]);
 
+    // J4 — Compute "You're caught up" eligibility (resets per calendar day).
+    (async () => {
+      try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+
+        const [movesTodayRes, sigCountRes, recentEntryRes] = await Promise.all([
+          supabase
+            .from("recommended_moves")
+            .select("id, status")
+            .eq("user_id", uid)
+            .gte("created_at", startOfDay.toISOString()),
+          supabase
+            .from("strategic_signals")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .eq("status", "active"),
+          supabase
+            .from("entries")
+            .select("id")
+            .eq("user_id", uid)
+            .gte("created_at", sevenDaysAgo)
+            .limit(1),
+        ]);
+
+        const movesToday = movesTodayRes.data || [];
+        const allActed =
+          movesToday.length > 0 &&
+          movesToday.every(
+            (m: any) => m.status === "completed" || m.status === "dismissed",
+          );
+        const hasRecentCapture = (recentEntryRes.data || []).length > 0;
+        setWatchingSignalsCount(sigCountRes.count || 0);
+        setCaughtUpReady(allActed && hasRecentCapture);
+      } catch (e) {
+        console.warn("[HomeTab] caught-up check failed", e);
+      }
+    })();
+
     // Load aura score for the status strip + primary card
     (async () => {
       try {
