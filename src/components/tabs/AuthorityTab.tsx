@@ -20,6 +20,7 @@ import StartFromPanel from "@/components/StartFromPanel";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import { ChevronRight } from "lucide-react";
 
 /* ── Shared Types ── */
