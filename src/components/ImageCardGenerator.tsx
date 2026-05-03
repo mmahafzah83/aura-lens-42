@@ -18,6 +18,36 @@ function ensureCairoFont() {
   document.head.appendChild(link);
 }
 
+/* Brand fonts: Cormorant Garamond (display) + DM Sans (body) */
+const BRAND_FONT_ID = "aura-brand-fonts";
+function ensureBrandFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(BRAND_FONT_ID)) return;
+  const link = document.createElement("link");
+  link.id = BRAND_FONT_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@400;500;600;700&display=swap";
+  document.head.appendChild(link);
+}
+
+/* Aura Premium design tokens (applied to all infographic cards) */
+const AURA = {
+  surface: "#111118",
+  surfaceAlt: "#161620",
+  text: "#FFFFFF",
+  textMuted: "rgba(255,255,255,0.6)",
+  textFaint: "rgba(255,255,255,0.5)",
+  textDim: "rgba(255,255,255,0.4)",
+  brand: "#B08D3A",
+  brandLine: "rgba(176,141,58,0.30)",
+  brandFaint: "rgba(176,141,58,0.20)",
+  brandWatermark: "rgba(176,141,58,0.25)",
+  display: "'Cormorant Garamond', Georgia, serif",
+  body: "'DM Sans', system-ui, sans-serif",
+  arabic: "'Cairo', sans-serif",
+};
+
 const AR_REGEX = /[\u0600-\u06FF]/;
 const isArabicText = (s: string | undefined | null) => !!s && AR_REGEX.test(s);
 const ARABIC_FONT = "'Cairo', sans-serif";
@@ -214,6 +244,7 @@ export default function ImageCardGenerator({
   // Inject Cairo font once when this component mounts.
   useEffect(() => {
     ensureCairoFont();
+    ensureBrandFonts();
   }, []);
 
   const hook = extractHook(postText);
@@ -812,239 +843,290 @@ const arDir = (isArabic: boolean) => (isArabic ? ("rtl" as const) : undefined);
 const arAlign = (isArabic: boolean) => (isArabic ? ("right" as const) : undefined);
 const arBodyLh = (isArabic: boolean, fallback: number) => (isArabic ? 1.9 : fallback);
 
-/* CARD 1: Manifesto */
-function ManifestoCard({ tag, hookText, editName, editRole, statValue, statContext, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
+/* ── Aura Premium card primitives ────────────────────────────────────── */
+
+function AuraAuthor({ name, role, isArabic }: { name: string; role: string; isArabic: boolean }) {
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, width: 4, height: "100%", background: accentColor }} />
-      <div style={{ padding: "28px 24px 0 32px", flex: 1, display: "flex", flexDirection: "column" }}>
-        <p style={{ color: preset.tagCol, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 16, textAlign: arAlign(isArabic) }}>
-          {trunc(tag, 35)}
+    <div style={{ marginTop: "auto" }}>
+      <div style={{ height: 1, background: AURA.brandLine, marginBottom: 10 }} />
+      <p style={{
+        color: AURA.brand, fontSize: 11, fontWeight: 600, letterSpacing: ".08em",
+        textTransform: "uppercase", fontFamily: isArabic ? AURA.arabic : AURA.body,
+        textAlign: arAlign(isArabic),
+      }}>{trunc(name, 30)}</p>
+      <p style={{
+        color: AURA.textFaint, fontSize: 10, marginTop: 3,
+        fontFamily: isArabic ? AURA.arabic : AURA.body,
+        textAlign: arAlign(isArabic),
+      }}>{trunc(role, 45)}</p>
+    </div>
+  );
+}
+
+function AuraWatermark({ position = "bottom-right" }: { position?: "bottom-right" | "top-left" }) {
+  const pos: React.CSSProperties =
+    position === "top-left"
+      ? { top: 18, left: 20 }
+      : { bottom: 18, right: 20 };
+  return (
+    <p style={{
+      position: "absolute", ...pos,
+      color: AURA.brandWatermark, fontSize: 8, fontWeight: 700,
+      letterSpacing: 3, textTransform: "uppercase",
+      fontFamily: AURA.body,
+    }}>AURA</p>
+  );
+}
+
+const auraShell: React.CSSProperties = {
+  ...baseCard,
+  background: AURA.surface,
+  padding: 40,
+  display: "flex",
+  flexDirection: "column",
+  height: "100%",
+};
+
+/* CARD 1: Manifesto */
+function ManifestoCard({ hookText, editName, editRole, statValue, statContext, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
+  const bodyFont = isArabic ? AURA.arabic : AURA.body;
+  return (
+    <div dir={arDir(isArabic)} style={auraShell}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        <p style={{ fontFamily: dispFont, fontSize: 72, fontWeight: 600, color: AURA.brand, lineHeight: 1, letterSpacing: -2 }}>
+          {trunc(statValue, 8)}
         </p>
-        <p style={{ color: accentColor, fontSize: Math.min(72, titleFontSize * 3.5), fontWeight: 900, letterSpacing: -3, lineHeight: 1, marginBottom: 16 }}>
-          {statValue}
+        <p style={{ fontFamily: bodyFont, fontSize: 14, color: AURA.textFaint, marginTop: 12, lineHeight: 1.5, maxWidth: 240 }}>
+          {trunc(statContext, 80)}
         </p>
-        <div style={{ fontSize: bodyFontSize * 0.75, color: preset.text, opacity: 0.6, marginTop: -8, marginBottom: 12, lineHeight: arBodyLh(isArabic, 1.4), textAlign: arAlign(isArabic) }}>
-          {trunc(statContext, 75)}
-        </div>
-        <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 700, lineHeight: arBodyLh(isArabic, 1.35), marginBottom: 14, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
-          {trunc(hookText, 85)}
+        <div style={{ width: 60, height: 1, background: AURA.brandLine, margin: "20px 0" }} />
+        <p style={{ fontFamily: dispFont, fontSize: 24, color: AURA.text, lineHeight: 1.3, fontWeight: 500, fontStyle: isArabic ? "normal" : "italic" }}>
+          {trunc(hookText, 90)}
         </p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--surface-ink-raised)", padding: "14px 24px 14px 32px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-        <div>
-          <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
-          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
-        </div>
-        <p style={{ color: "var(--surface-ink-subtle)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
-      </div>
+      <AuraAuthor name={editName} role={editRole} isArabic={isArabic} />
+      <AuraWatermark />
     </div>
   );
 }
 
 /* CARD 2: Newspaper */
-function NewspaperCard({ tag, hookText, editName, editRole, ledeText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
+function NewspaperCard({ tag, hookText, editName, editRole, ledeText, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
+  const bodyFont = isArabic ? AURA.arabic : AURA.body;
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: "var(--surface-subtle)", fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ background: accentColor, padding: "10px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>GCC INTELLIGENCE</span>
-        <span style={{ color: "#fff", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
-      </div>
-      <div style={{ padding: "24px 20px", flex: 1, display: "flex", flexDirection: "column", background: "var(--surface-subtle)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, overflow: "hidden" }}>
-          <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", flexShrink: 0, maxWidth: "55%" }}>{trunc(tag, 35)}</span>
-          <div style={{ flex: 1, height: 1, background: "#d4b896", flexShrink: 1 }} />
-        </div>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.15, letterSpacing: -0.5, marginBottom: 14, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
-          {trunc(hookText, 75)}
-        </p>
-        <div style={{ height: 1, background: "#d4b896", marginBottom: 12 }} />
-        <p style={{ color: "#5a4a30", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.6), textAlign: arAlign(isArabic) }}>{trunc(ledeText, 110)}</p>
-      </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #d4b896", padding: "12px 20px", background: "var(--surface-subtle)" }}>
-        <p style={{ color: accentColor, fontSize: 10, fontWeight: 700 }}>{trunc(editName, 30)}</p>
-        <p style={{ color: "#9a8060", fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
-      </div>
+    <div dir={arDir(isArabic)} style={auraShell}>
+      <p style={{
+        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: "0.2em",
+        textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
+      }}>GCC Intelligence</p>
+      <p style={{
+        fontFamily: AURA.body, fontSize: 11, fontWeight: 500, letterSpacing: ".08em",
+        textTransform: "uppercase", color: AURA.textDim, marginTop: 8, textAlign: arAlign(isArabic),
+      }}>{trunc(tag, 40)}</p>
+      <div style={{ width: 40, height: 1, background: AURA.brandLine, marginTop: 16, marginBottom: 16, marginLeft: isArabic ? "auto" : 0 }} />
+      <p style={{
+        fontFamily: dispFont, fontSize: 28, fontWeight: 600, color: AURA.text,
+        lineHeight: 1.2, marginBottom: 16, textAlign: arAlign(isArabic),
+        display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+      }}>{trunc(hookText, 90)}</p>
+      <p style={{ fontFamily: bodyFont, fontSize: 13, color: AURA.textMuted, lineHeight: arBodyLh(isArabic, 1.6), textAlign: arAlign(isArabic) }}>
+        {trunc(ledeText, 140)}
+      </p>
+      <AuraAuthor name={editName} role={editRole} isArabic={isArabic} />
+      <AuraWatermark />
     </div>
   );
 }
 
-/* CARD 3: Tension Split */
-function TensionSplitCard({ tag, editName, editRole, framePoints, statValue, hasStat, bodyFontSize, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
+/* CARD 3: Tension */
+function TensionSplitCard({ framePoints, editName, editRole, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
+  const bodyFont = isArabic ? AURA.arabic : AURA.body;
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", maxWidth: 220 }}>{trunc(tag, 35)}</span>
-        <span style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</span>
+    <div dir={arDir(isArabic)} style={{
+      ...auraShell,
+      background: `linear-gradient(160deg, ${AURA.surface} 0%, ${AURA.surfaceAlt} 100%)`,
+    }}>
+      <p style={{
+        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: "0.2em",
+        textTransform: "uppercase", color: AURA.brand, marginBottom: 24, textAlign: arAlign(isArabic),
+      }}>Three points of tension</p>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 }}>
+        {[0, 1, 2].map((i) => {
+          const pt = framePoints[i];
+          if (!pt) return null;
+          return (
+            <div key={i}>
+              <div style={{ display: "flex", gap: 14, alignItems: "baseline", flexDirection: isArabic ? "row-reverse" : "row" }}>
+                <span style={{ fontFamily: dispFont, fontSize: 20, color: AURA.brand, fontWeight: 600, minWidth: 28 }}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <p style={{
+                  fontFamily: bodyFont, fontSize: 14, color: AURA.text,
+                  lineHeight: arBodyLh(isArabic, 1.5), flex: 1, textAlign: arAlign(isArabic),
+                }}>{trunc(pt, 70)}</p>
+              </div>
+              {i < 2 && framePoints[i + 1] && (
+                <div style={{ marginTop: 14, borderTop: `1px dashed ${AURA.brandLine}` }} />
+              )}
+            </div>
+          );
+        })}
       </div>
-      <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <div style={{ minWidth: 90, maxWidth: 90, background: accentColor, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: 12, alignSelf: "stretch" }}>
-          <p style={{ color: "#fff", fontSize: Math.min(titleFontSize * 2.5, 44), fontWeight: 900, lineHeight: 1, letterSpacing: -2, maxWidth: 90, wordBreak: "break-all", textAlign: "center" }}>{trunc(statValue, 8)}</p>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 7, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 6, textAlign: "center" }}>{hasStat ? "KEY INSIGHT" : "KEY POINTS"}</p>
-        </div>
-        <div style={{ flex: 1, padding: "20px 18px", display: "flex", flexDirection: "column", gap: 14, justifyContent: "center", alignSelf: "stretch", minWidth: 0 }}>
-          {framePoints.slice(0, 3).map((pt, i) => (
-            <p key={i} style={{
-              color: preset.text, fontSize: bodyFontSize, fontWeight: 600,
-              paddingLeft: isArabic ? 0 : 12,
-              paddingRight: isArabic ? 12 : 0,
-              borderLeft: isArabic ? undefined : `1px solid ${accentColor}33`,
-              borderRight: isArabic ? `1px solid ${accentColor}33` : undefined,
-              lineHeight: arBodyLh(isArabic, 1.4), wordBreak: "break-word",
-              textAlign: arAlign(isArabic),
-            }}>
-              {trunc(pt, 60)}
-            </p>
-          ))}
-        </div>
-      </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--surface-ink-raised)", padding: "14px 20px" }}>
-        <p style={{ color: preset.tagCol, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
-      </div>
+      <AuraAuthor name={editName} role={editRole} isArabic={isArabic} />
+      <AuraWatermark />
     </div>
   );
 }
 
 /* CARD 4: Bold Quote */
-function BoldQuoteCard({ tag, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, isArabic }: CardProps) {
-  // Use guillemets for Arabic quote cards.
-  const openMark = isArabic ? "«" : "“";
-  const arabicQuote = isArabic ? `«${quoteText.replace(/[""„«»]/g, "")}»` : quoteText;
+function BoldQuoteCard({ quoteText, editName, editRole, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
+  const openMark = isArabic ? "«" : "「";
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: accentColor, fontFamily: cardFont }}>
-      <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "28px 24px", position: "relative" }}>
-        <div style={{ position: "absolute", top: 50, left: 16, fontSize: 100, color: "rgba(0,0,0,0.10)", fontFamily: "Georgia, serif", lineHeight: 1, zIndex: 0, pointerEvents: "none" }}>
-          {openMark}
-        </div>
-        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", textAlign: arAlign(isArabic) }}>{trunc(tag, 35)}</p>
-          <div style={{ flex: 1, display: "flex", alignItems: "center", paddingTop: 16, paddingBottom: 16 }}>
-            <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: arBodyLh(isArabic, 1.3), wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
-              {trunc(isArabic ? arabicQuote : quoteText, 110)}
-            </p>
-          </div>
-          <div style={{ marginTop: "auto", paddingTop: 12 }}>
-            <div style={{ width: 28, height: 3, background: "rgba(255,255,255,0.85)", marginBottom: 10, marginLeft: isArabic ? "auto" : 0 }} />
-            <p style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
-            <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 10, marginTop: 2, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
-          </div>
-        </div>
-      </div>
-      <p style={{ position: "absolute", bottom: 18, right: 20, color: "rgba(0,0,0,0.2)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
-    </div>
-  );
-}
-
-/* CARD 5: Dark Editorial */
-function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
-  return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px" }}>
-        <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
-        <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <span style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" }}>{trunc(tag, 35)}</span>
-        <div style={{ width: 4, height: 4, borderRadius: 2, background: accentColor }} />
-        <div style={{ flex: 1, height: 1, background: "var(--surface-ink-subtle)" }} />
-      </div>
-      <div style={{ padding: "0 20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, marginBottom: 10, textAlign: arAlign(isArabic) }}>01 / Key Insight</p>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 900, lineHeight: 1.2, letterSpacing: -0.5, marginBottom: 16, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
-          {trunc(hookText, 80)}
+    <div dir={arDir(isArabic)} style={{ ...auraShell, position: "relative" }}>
+      <span aria-hidden style={{
+        position: "absolute", top: 18, left: isArabic ? "auto" : 28, right: isArabic ? 28 : "auto",
+        fontFamily: dispFont, fontSize: 80, color: AURA.brand, opacity: 0.20,
+        lineHeight: 1, pointerEvents: "none",
+      }}>{openMark}</span>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{
+          fontFamily: dispFont, fontStyle: isArabic ? "normal" : "italic",
+          fontSize: 22, fontWeight: 500, color: AURA.text,
+          lineHeight: arBodyLh(isArabic, 1.45), textAlign: "center",
+        }}>
+          {trunc(quoteText, 140)}
         </p>
-        <p style={{ color: "var(--ink-5)", fontSize: bodyFontSize, lineHeight: arBodyLh(isArabic, 1.65), textAlign: arAlign(isArabic) }}>{trunc(bodyText, 100)}</p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid var(--ink)", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-        <div>
-          <p style={{ color: accentColor, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2 }}>{trunc(editName, 30)}</p>
-          <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 2 }}>{trunc(editRole, 45)}</p>
-        </div>
-        <p style={{ color: "var(--ink-3)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ width: 40, height: 1, background: AURA.brand, marginBottom: 10 }} />
+        <p style={{ fontFamily: AURA.body, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: AURA.brand }}>
+          {trunc(editName, 30)}
+        </p>
+        <p style={{ fontFamily: AURA.body, fontSize: 10, color: AURA.textFaint, marginTop: 3 }}>
+          {trunc(editRole, 45)}
+        </p>
       </div>
+      <AuraWatermark />
     </div>
   );
 }
 
-/* CARD 6: Contrast Framework */
-function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
+/* CARD 5: Editorial */
+function DarkEditorialCard({ tag, hookText, editName, editRole, bodyText, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
+  const bodyFont = isArabic ? AURA.arabic : AURA.body;
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ background: "var(--ink)", padding: 20 }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8, textAlign: arAlign(isArabic) }}>FRAMEWORK</p>
-        <p style={{ color: "#fff", fontSize: titleFontSize, fontWeight: 800, lineHeight: 1.25, textAlign: arAlign(isArabic) }}>{trunc(frameTitle, 65)}</p>
-        <div style={{ width: 28, height: 3, background: accentColor, marginTop: 12, marginLeft: isArabic ? "auto" : 0 }} />
-      </div>
-      <div style={{ padding: 20, flex: 1, display: "flex", flexDirection: "column", gap: 12 }}>
-        {[0, 1, 2].map((i) => (
-          <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-            <span style={{ color: accentColor, fontSize: 28, fontWeight: 900, minWidth: 32, lineHeight: 1 }}>
+    <div dir={arDir(isArabic)} style={auraShell}>
+      <p style={{
+        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: ".15em",
+        textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
+      }}>01 / Key Insight</p>
+      <p style={{
+        fontFamily: AURA.body, fontSize: 11, fontWeight: 500, letterSpacing: ".08em",
+        textTransform: "uppercase", color: AURA.textDim, marginTop: 24, textAlign: arAlign(isArabic),
+      }}>{trunc(tag, 40)}</p>
+      <p style={{
+        fontFamily: dispFont, fontSize: 24, fontWeight: 600, color: AURA.text,
+        lineHeight: 1.25, marginTop: 24, textAlign: arAlign(isArabic),
+      }}>{trunc(hookText, 100)}</p>
+      <p style={{
+        fontFamily: bodyFont, fontSize: 13, color: AURA.textMuted,
+        lineHeight: arBodyLh(isArabic, 1.65), marginTop: 24, textAlign: arAlign(isArabic),
+      }}>{trunc(bodyText, 130)}</p>
+      <AuraAuthor name={editName} role={editRole} isArabic={isArabic} />
+      <AuraWatermark />
+    </div>
+  );
+}
+
+/* CARD 6: Framework */
+function ContrastFrameworkCard({ frameTitle, framePoints, editName, editRole, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
+  const bodyFont = isArabic ? AURA.arabic : AURA.body;
+  return (
+    <div dir={arDir(isArabic)} style={auraShell}>
+      <p style={{
+        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: ".15em",
+        textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
+      }}>Framework</p>
+      <p style={{
+        fontFamily: dispFont, fontSize: 22, fontWeight: 600, color: AURA.text,
+        lineHeight: 1.25, marginTop: 12, textAlign: arAlign(isArabic),
+      }}>{trunc(frameTitle, 70)}</p>
+      <div style={{ width: 60, height: 2, background: AURA.brand, marginTop: 14, marginLeft: isArabic ? "auto" : 0 }} />
+      <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 16, flex: 1 }}>
+        {[0, 1, 2].map((i) => framePoints[i] ? (
+          <div key={i} style={{ display: "flex", gap: 14, alignItems: "baseline", flexDirection: isArabic ? "row-reverse" : "row" }}>
+            <span style={{ fontFamily: dispFont, fontSize: 18, color: AURA.brand, fontWeight: 600, minWidth: 26 }}>
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p style={{ color: preset.text, fontSize: bodyFontSize, fontWeight: 800, lineHeight: arBodyLh(isArabic, 1.35), paddingTop: 4, wordBreak: "break-word", textAlign: arAlign(isArabic), flex: 1 }}>
-              {trunc(framePoints[i] || "", 60)}
-            </p>
+            <p style={{
+              fontFamily: bodyFont, fontSize: 13, color: AURA.text,
+              lineHeight: arBodyLh(isArabic, 1.5), flex: 1, textAlign: arAlign(isArabic),
+            }}>{trunc(framePoints[i], 75)}</p>
           </div>
-        ))}
+        ) : null)}
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12, borderTop: "1px solid #e0d0bc", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ color: preset.text, fontSize: 10 }}>
-          <span style={{ fontWeight: 700 }}>{trunc(editName, 30)}</span> · {trunc(editRole, 45)}
-        </p>
-        <p style={{ color: accentColor, fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
-      </div>
+      <AuraAuthor name={editName} role={editRole} isArabic={isArabic} />
+      <AuraWatermark />
     </div>
   );
 }
 
-/* CARD 7: Minimal Dark */
-function MinimalDarkCard({ tag, hookText, quoteText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
-  const truncated = trunc(quoteText || hookText, 100);
-  const words = truncated.split(/\s+/);
-  const highlightIdx = words.findIndex((w) => w.replace(/[^a-zA-Z]/g, "").length > 5);
+/* CARD 7: Minimal */
+function MinimalDarkCard({ hookText, quoteText, editName, editRole, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, display: "flex", flexDirection: "column", height: "100%", padding: "36px 28px", position: "relative" }}>
-      <p style={{ color: "var(--ink-5)", fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", textAlign: arAlign(isArabic) }}>{trunc(tag, 35)}</p>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <div style={{ width: 24, height: 2, background: accentColor, marginBottom: 20, marginLeft: isArabic ? "auto" : 0 }} />
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: arBodyLh(isArabic, 1.4), wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
-          {words.map((w, i) => (
-            <span key={i} style={{ color: i === highlightIdx ? accentColor : preset.text }}>
-              {w}{i < words.length - 1 ? " " : ""}
-            </span>
-          ))}
+    <div dir={arDir(isArabic)} style={auraShell}>
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{
+          fontFamily: dispFont, fontSize: 26, fontWeight: 500, color: AURA.text,
+          lineHeight: arBodyLh(isArabic, 1.4), textAlign: "center",
+          display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
+        }}>
+          {trunc(quoteText || hookText, 110)}
         </p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12 }}>
-        <p style={{ color: preset.text, fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.2, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
-        <p style={{ color: preset.roleCol, fontSize: 9, marginTop: 3, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 16 }}>
+        <div style={{ width: 40, height: 1, background: AURA.brand, marginBottom: 12 }} />
+        <p style={{ fontFamily: AURA.body, fontSize: 11, fontWeight: 600, letterSpacing: ".08em", textTransform: "uppercase", color: AURA.brand }}>
+          {trunc(editName, 30)}
+        </p>
+        <p style={{ fontFamily: AURA.body, fontSize: 10, color: AURA.textFaint, marginTop: 3 }}>
+          {trunc(editRole, 45)}
+        </p>
       </div>
-      <p style={{ position: "absolute", bottom: 16, right: 16, color: "var(--surface-ink-subtle)", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+      <AuraWatermark />
     </div>
   );
 }
 
-/* CARD 8: Statement Light */
-function StatementLightCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
+/* CARD 8: Statement */
+function StatementLightCard({ tag, hookText, editName, editRole, isArabic }: CardProps) {
+  const dispFont = isArabic ? AURA.arabic : AURA.display;
   return (
-    <div dir={arDir(isArabic)} style={{ ...baseCard, background: preset.bg, fontFamily: cardFont }}>
-      <div style={{ position: "absolute", top: 0, right: 0, width: 68, height: 68, background: accentColor, borderBottomLeftRadius: 14 }} />
-      <div style={{ padding: "28px 24px 24px", display: "flex", flexDirection: "column", height: "100%", position: "relative", zIndex: 1 }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", paddingRight: 76, lineHeight: 1.5, marginBottom: 20, textAlign: arAlign(isArabic) }}>
-          {trunc(tag, 35)}
-        </p>
-        <p style={{ color: preset.text, fontSize: titleFontSize + 1, fontWeight: 800, lineHeight: arBodyLh(isArabic, 1.32), flex: 1, wordBreak: "break-word", textAlign: arAlign(isArabic) }}>
-          {trunc(hookText, 90)}
-        </p>
-        <div style={{ marginTop: "auto", paddingTop: 12 }}>
-          <div style={{ width: 36, height: 3, background: accentColor, marginBottom: 12, marginLeft: isArabic ? "auto" : 0 }} />
-          <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, textAlign: arAlign(isArabic) }}>{trunc(editName, 30)}</p>
-          <p style={{ color: preset.roleCol, fontSize: 10, marginTop: 3, textAlign: arAlign(isArabic) }}>{trunc(editRole, 45)}</p>
-        </div>
+    <div dir={arDir(isArabic)} style={{ ...auraShell, position: "relative" }}>
+      <div style={{ position: "absolute", top: 24, right: 24, width: 8, height: 8, background: AURA.brand }} />
+      <p style={{
+        fontFamily: AURA.body, fontSize: 9, fontWeight: 600, letterSpacing: ".2em",
+        textTransform: "uppercase", color: AURA.brand, textAlign: arAlign(isArabic),
+      }}>{trunc(tag, 40)}</p>
+      <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+        <p style={{
+          fontFamily: dispFont, fontSize: 24, fontWeight: 500, color: AURA.text,
+          lineHeight: arBodyLh(isArabic, 1.35), textAlign: arAlign(isArabic),
+        }}>{trunc(hookText, 110)}</p>
       </div>
-      <p style={{ position: "absolute", bottom: 16, right: 18, color: "#d4b896", fontSize: 8, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase" }}>AURA</p>
+      <AuraAuthor name={editName} role={editRole} isArabic={isArabic} />
+      <AuraWatermark />
     </div>
   );
 }
+
 
 /* CARD 9: Data Point */
 function DataPointCard({ tag, hookText, editName, editRole, statValue, statContext, titleFontSize, bodyFontSize, headerFontSize, accentColor, cardFont, preset, isArabic }: CardProps) {
@@ -1070,28 +1152,36 @@ function DataPointCard({ tag, hookText, editName, editRole, statValue, statConte
   );
 }
 
-/* CARD 10: Arabic (preserved) */
-function ArabicCard({ tag, hookText, editName, editRole, titleFontSize, headerFontSize, accentColor, cardFont, preset }: CardProps) {
+/* CARD 10: Arabic (RTL Aura Premium) */
+function ArabicCard({ tag, hookText, editName, editRole }: CardProps) {
   return (
-    <div dir="rtl" style={{ ...baseCard, background: preset.bg, fontFamily: cardFont, border: "1px solid var(--surface-ink-subtle)", padding: 32, display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ position: "absolute", top: 20, left: 20, display: "flex", gap: 4 }}>
-        {[0, 1, 2].map((i) => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: 3, background: accentColor }} />
-        ))}
-      </div>
-      <p style={{ position: "absolute", top: 20, right: 24, color: accentColor, fontSize: 10, fontWeight: 700, letterSpacing: 3 }}>AURA</p>
-      <div style={{ flex: 1 }}>
-        <p style={{ color: accentColor, fontSize: headerFontSize, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", marginTop: 24, marginBottom: 16, textAlign: "right" }}>
-          {trunc(tag, 35)}
+    <div dir="rtl" style={{ ...auraShell, position: "relative" }}>
+      <p style={{
+        position: "absolute", top: 20, left: 24,
+        fontFamily: AURA.body, fontSize: 8, fontWeight: 700,
+        letterSpacing: 3, textTransform: "uppercase", color: AURA.brand,
+      }}>AURA</p>
+      <p style={{
+        fontFamily: AURA.arabic, fontSize: 11, fontWeight: 600, letterSpacing: ".05em",
+        color: AURA.brand, textAlign: "right", marginTop: 18,
+      }}>{trunc(tag, 40)}</p>
+      <div style={{ width: 60, height: 1, background: AURA.brandLine, marginTop: 16, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
+      <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+        <p style={{
+          fontFamily: AURA.arabic, fontSize: 22, fontWeight: 600, color: AURA.text,
+          lineHeight: 1.9, textAlign: "right",
+        }}>
+          {trunc(hookText || "اكتب النص العربي هنا...", 110)}
         </p>
-        <p style={{ color: preset.text, fontSize: titleFontSize, fontWeight: 700, lineHeight: 2.1, textAlign: "right", direction: "rtl", wordBreak: "break-word" }}>
-          {trunc(hookText || "اكتب النص العربي هنا...", 90)}
-        </p>
       </div>
-      <div style={{ marginTop: "auto", paddingTop: 12 }}>
-        <div style={{ width: 32, height: 2, background: accentColor, marginBottom: 16, marginRight: 0, marginLeft: "auto" }} />
-        <p style={{ color: accentColor, fontSize: 11, fontWeight: 700, textAlign: "right" }}>{trunc(editName, 30)}</p>
-        <p style={{ color: preset.roleCol, fontSize: 10, textAlign: "right", marginTop: 2 }}>{trunc(editRole, 45)}</p>
+      <div style={{ marginTop: "auto" }}>
+        <div style={{ height: 1, background: AURA.brandLine, marginBottom: 10 }} />
+        <p style={{ fontFamily: AURA.arabic, fontSize: 12, fontWeight: 600, color: AURA.brand, textAlign: "right" }}>
+          {trunc(editName, 30)}
+        </p>
+        <p style={{ fontFamily: AURA.arabic, fontSize: 11, color: AURA.textFaint, textAlign: "right", marginTop: 3 }}>
+          {trunc(editRole, 45)}
+        </p>
       </div>
     </div>
   );
