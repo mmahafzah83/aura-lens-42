@@ -623,17 +623,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 boxShadow: "var(--shadow-sm)",
               }}
             >
-              <div
-                style={{
-                  fontSize: 9,
-                  textTransform: "uppercase",
-                  color: "var(--ink-5)",
-                  marginBottom: 12,
-                  letterSpacing: "0.08em",
-                  fontWeight: 600,
-                }}
-              >
-                Signal coverage
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                  SIGNAL COVERAGE
+                </div>
+                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                  How deeply your captures cover each intelligence theme
+                </div>
               </div>
               <div className="space-y-3">
                 {signalStats.themeGroups.map((g) => {
