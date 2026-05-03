@@ -186,7 +186,7 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // Component
 // ────────────────────────────────────────────────
 
-const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
+const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
   // Session is "confirmed" only when auth restore is done AND we have an access
   // token. This is the gate for ALL data fetches — without it, RLS-protected
