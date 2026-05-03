@@ -229,6 +229,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // Competitor alert (read-only, additive)
   const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
 
+  // H2b — Status strip + dynamic primary card
+  const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
+  const [sectorFocus, setSectorFocus] = useState<string>("");
+  const [alarmDismissed, setAlarmDismissed] = useState(false);
+  const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
+  const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
+  const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
+  const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("aura_alarm_seen") === "true";
+  });
+
   // First-login onboarding wizard (3 steps)
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -541,12 +553,13 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         const { data } = await withTimeout(
           supabase
             .from("diagnostic_profiles")
-            .select("first_name")
+            .select("first_name, sector_focus")
             .eq("user_id", uid)
             .maybeSingle(),
           8000,
         );
         if (data?.first_name) name = data.first_name;
+        if ((data as any)?.sector_focus) setSectorFocus((data as any).sector_focus);
       } catch (e) {
         console.warn("[HomeTab] profile name fetch failed", e);
       }
@@ -571,6 +584,17 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       loadTrendsBadge(uid),
         loadCompetitorAlert(uid),
     ]);
+
+    // Load aura score for the status strip + primary card
+    (async () => {
+      try {
+        await supabase.auth.getSession();
+        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        if (!error && res) setAuraData(res as AuraScoreData);
+      } catch (e) {
+        console.warn("[HomeTab] aura score load failed", e);
+      }
+    })();
 
     // Realtime: reload trends list whenever Phase B updates a row to status='new'
     const channel = supabase
