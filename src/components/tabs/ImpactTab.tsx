@@ -933,8 +933,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 style={
                   active
                     ? {
-                        background: "var(--brand)",
-                        color: "#fff",
+                        background: "var(--brand-ghost)",
+                        color: "var(--brand)",
                         border: "0.5px solid var(--brand)",
                         borderRadius: 8,
                         padding: "5px 14px",
@@ -1554,13 +1554,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   label={{ value: "5", position: "right", fontSize: 9, fill: "var(--color-text-muted)" }}
                 />
                 <Tooltip
-                  cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
+                  cursor={{ fill: "var(--brand-ghost)", opacity: 0.3 }}
                   contentStyle={{
-                    background: "var(--color-card)",
-                    border: "0.5px solid var(--color-border)",
+                    background: "var(--vellum)",
+                    border: "0.5px solid var(--brand-line)",
                     borderRadius: 6,
                     fontSize: 11,
-                    color: "var(--color-text-primary)",
+                    color: "var(--ink)",
                   }}
                   formatter={(value: any) => [`${value} captures`, ""]}
                 />
@@ -1663,13 +1663,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       const pct = (count / maxToneCount) * 100;
                       return (
                         <div key={tone} className="flex items-center gap-3">
-                          <span className="text-sm text-foreground capitalize w-28 shrink-0">{tone}</span>
-                          <div className="flex-1 bg-secondary/20 rounded-full h-2 overflow-hidden">
+                          <span className="text-sm capitalize w-28 shrink-0" style={{ color: "var(--ink)" }}>{tone}</span>
+                          <div
+                            className="flex-1 rounded-full h-2 overflow-hidden"
+                            style={{ background: "var(--paper-2)" }}
+                          >
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${pct}%` }}
                               transition={{ duration: 0.6 }}
-                              className="h-full bg-primary/40 rounded-full"
+                              className="h-full rounded-full"
+                              style={{ background: "var(--brand)" }}
                             />
                           </div>
                           <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
