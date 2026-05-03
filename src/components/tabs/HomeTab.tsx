@@ -1000,7 +1000,46 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         );
       })()}
 
+      {/* J12 — Welcome card for new users with zero captures */}
+      {isEmpty && (
+        <AuraCard className="text-center" hover="none">
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "16px 8px" }}>
+            <span style={{ fontSize: 28, color: "var(--brand)", opacity: 0.4, lineHeight: 1 }}>✦</span>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 22,
+                color: "var(--ink)",
+                lineHeight: 1.2,
+              }}
+            >
+              Welcome to Aura{userName ? `, ${userName}` : ""}
+            </div>
+            <p
+              style={{
+                fontSize: 14,
+                color: "var(--ink-3)",
+                maxWidth: 400,
+                margin: 0,
+                lineHeight: 1.5,
+              }}
+            >
+              Capture your first article to see your intelligence at work. Aura needs 3 captures to detect your first signal.
+            </p>
+            <AuraButton
+              variant="primary"
+              size="sm"
+              onClick={() => onOpenCapture?.()}
+              style={{ borderRadius: 4, padding: "7px 18px", marginTop: 4 }}
+            >
+              Capture your first
+            </AuraButton>
+          </div>
+        </AuraCard>
+      )}
+
       {/* H2b — DYNAMIC PRIMARY CARD */}
+      {!isEmpty && (<>
       <SectionHeader
         label="RECOMMENDED MOVES"
         subtitle="Actions Aura suggests based on your latest signals"
