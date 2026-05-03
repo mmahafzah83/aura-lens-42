@@ -232,6 +232,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // Competitor alert (read-only, additive)
   const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
 
+  // J4 — "You're caught up" signal
+  const [caughtUpReady, setCaughtUpReady] = useState(false);
+  const [watchingSignalsCount, setWatchingSignalsCount] = useState<number>(0);
+
   // H2b — Status strip + dynamic primary card
   const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
   const [sectorFocus, setSectorFocus] = useState<string>("");
@@ -590,6 +594,46 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       loadTrendsBadge(uid),
         loadCompetitorAlert(uid),
     ]);
+
+    // J4 — Compute "You're caught up" eligibility (resets per calendar day).
+    (async () => {
+      try {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
+
+        const [movesTodayRes, sigCountRes, recentEntryRes] = await Promise.all([
+          supabase
+            .from("recommended_moves")
+            .select("id, status")
+            .eq("user_id", uid)
+            .gte("created_at", startOfDay.toISOString()),
+          supabase
+            .from("strategic_signals")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .eq("status", "active"),
+          supabase
+            .from("entries")
+            .select("id")
+            .eq("user_id", uid)
+            .gte("created_at", sevenDaysAgo)
+            .limit(1),
+        ]);
+
+        const movesToday = movesTodayRes.data || [];
+        const allActed =
+          movesToday.length > 0 &&
+          movesToday.every(
+            (m: any) => m.status === "completed" || m.status === "dismissed",
+          );
+        const hasRecentCapture = (recentEntryRes.data || []).length > 0;
+        setWatchingSignalsCount(sigCountRes.count || 0);
+        setCaughtUpReady(allActed && hasRecentCapture);
+      } catch (e) {
+        console.warn("[HomeTab] caught-up check failed", e);
+      }
+    })();
 
     // Load aura score for the status strip + primary card
     (async () => {
@@ -1139,6 +1183,64 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   Aura monitors industry publications and alerts you when competitors publish on your signal topics.
                 </div>
               )}
+            </div>
+          );
+        }
+
+        // Priority 1.5 — J4 "You're caught up" signal
+        if (caughtUpReady) {
+          return (
+            <div style={{ animation: "fade-in 400ms ease" }}>
+            <AuraCard hover="none" className="text-center">
+            <div style={{ padding: "12px 6px" }}>
+              <div
+                style={{
+                  fontSize: 24,
+                  color: "var(--brand)",
+                  lineHeight: 1,
+                  marginBottom: 10,
+                }}
+                aria-hidden
+              >
+                ✓
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 20,
+                  color: "var(--ink)",
+                  marginBottom: 6,
+                }}
+              >
+                You're caught up
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--ink-3)",
+                  lineHeight: 1.5,
+                  maxWidth: 460,
+                  margin: "0 auto 14px",
+                }}
+              >
+                Aura is watching {watchingSignalsCount} signal{watchingSignalsCount === 1 ? "" : "s"}. You'll see new moves when something changes.
+              </div>
+              <button
+                onClick={() => onSwitchTab?.("intelligence")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--brand)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Explore your signals →
+              </button>
+            </div>
+            </AuraCard>
             </div>
           );
         }
