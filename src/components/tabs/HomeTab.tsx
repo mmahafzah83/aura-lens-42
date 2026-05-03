@@ -879,40 +879,15 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 >
                   {auraData.aura_score}
                 </span>
-                <button
-                  type="button"
-                  aria-label="About your authority score"
-                  onClick={(e) => { e.stopPropagation(); setScoreTooltipOpen(o => !o); }}
-                  style={{
-                    width: 14, height: 14, borderRadius: "50%",
-                    border: "1px solid hsl(var(--border))",
-                    background: "transparent",
-                    color: "hsl(var(--muted-foreground))",
-                    fontSize: 9, fontWeight: 600,
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    cursor: "pointer", padding: 0, position: "relative",
-                  }}
-                >
-                  ?
-                  {scoreTooltipOpen && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
-                        background: "hsl(var(--popover))",
-                        color: "hsl(var(--popover-foreground))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 6, padding: 10,
-                        fontSize: 11, lineHeight: 1.5, fontWeight: 400,
-                        width: 280, maxWidth: 280, textAlign: "left",
-                        zIndex: 50,
-                        boxShadow: "0 4px 14px hsl(var(--background) / 0.4)",
-                      }}
-                    >
-                      <strong>Your Authority Score:</strong> Signal intelligence (40%) — depth and diversity of your strategic signals. Content authority (40%) — posts published from your intelligence. Capture consistency (20%) — how regularly you feed the system. Your tier (Observer → Strategist → Authority) is determined by this number.
-                    </div>
-                  )}
-                </button>
+                <InfoTooltip side="bottom" label="Authority Score" width={280}>
+                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
+                  <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
+                  <p style={{ margin: "0 0 4px" }}>Content authority — 40%</p>
+                  <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
+                  <div style={{ fontSize: 11, color: "var(--ink-4)", fontStyle: "italic" }}>
+                    Observer → Strategist → Authority
+                  </div>
+                </InfoTooltip>
                 {trend !== null && trend !== undefined && trend !== 0 && (
                   <span
                     style={{
@@ -942,8 +917,8 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     aria-label={`Week ${i + 1}: ${filled ? "active" : "inactive"}`}
                     style={{
                       width: 14, height: 14, borderRadius: 3,
-                      background: filled ? "hsl(var(--primary))" : "transparent",
-                      border: filled ? "1px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
+                      background: filled ? "var(--brand)" : "transparent",
+                      border: filled ? "1px solid var(--brand)" : "1px solid var(--brand-line)",
                     }}
                   />
                 ))}
