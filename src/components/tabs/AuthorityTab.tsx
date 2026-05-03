@@ -584,6 +584,101 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
       <div className="flex-1 min-w-0 space-y-5">
+        {/* Hero CTA — top signal */}
+        {_signals[0] && contentType !== "flash" && contentType !== "framework_summary" && (
+          <div
+            style={{
+              background: "var(--ink)",
+              borderRadius: 16,
+              padding: 22,
+              boxShadow: "var(--shadow-sm)",
+              color: "#fff",
+            }}
+          >
+            <div style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginBottom: 10, fontWeight: 600 }}>
+              Generate from your top signal
+            </div>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, color: "#fff", lineHeight: 1.25, margin: 0 }}>
+              {_signals[0].signal_title}
+            </h2>
+            <div style={{ fontSize: 12, color: "var(--brand)", marginTop: 8, fontWeight: 500 }}>
+              {Math.round((_signals[0].confidence ?? 0) * 100)}% · {_signals[0].fragment_count ?? 0} findings · {_signals[0].unique_orgs ?? 0} organizations
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 mt-4">
+              <button
+                onClick={() => {
+                  const s = _signals[0];
+                  selectSuggestion(s.signal_title, s.explanation || "", "post", s.signal_title, s.explanation || "");
+                  setSelectedSignalId(s.id);
+                  setTimeout(() => generate(), 50);
+                }}
+                disabled={isGeneratingAny}
+                style={{
+                  background: "var(--brand)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 10,
+                  padding: "12px 18px",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: isGeneratingAny ? "not-allowed" : "pointer",
+                  flex: 1,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                Generate post <ArrowRight className="w-4 h-4" />
+              </button>
+              <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "rgba(255,255,255,0.08)" }}>
+                <button
+                  onClick={() => setLang("en")}
+                  style={{
+                    background: lang === "en" ? "rgba(255,255,255,0.15)" : "transparent",
+                    color: lang === "en" ? "#fff" : "rgba(255,255,255,0.55)",
+                    border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                  }}
+                >EN</button>
+                <button
+                  onClick={() => setLang("ar")}
+                  style={{
+                    background: lang === "ar" ? "rgba(255,255,255,0.15)" : "transparent",
+                    color: lang === "ar" ? "#fff" : "rgba(255,255,255,0.55)",
+                    border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer",
+                  }}
+                >العربية</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Customize (collapsible) */}
+        <Collapsible open={customizeOpen} onOpenChange={setCustomizeOpen}>
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                color: "var(--ink-4)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                padding: "4px 0",
+              }}
+            >
+              Customize format & framework
+              <ChevronDown
+                className="w-3.5 h-3.5 transition-transform"
+                style={{ transform: customizeOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+              />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-5 pt-4">
         {/* Format Selector */}
         <div>
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3">Content Format</p>
