@@ -49,7 +49,9 @@ interface StartFromPanelProps {
     context: string,
     format: ContentType,
     signalTitle?: string,
-    signalInsight?: string
+    signalInsight?: string,
+    signalId?: string,
+    confidence?: number
   ) => void;
 }
 
@@ -256,13 +258,13 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
   const handleItemClick = (item: CuratedItem) => {
     if (hasDraft) {
       if (confirmId === item.id) {
-        onSelect(item.title, item.context, item.contentType, item.signalTitle, item.signalInsight);
+        onSelect(item.title, item.context, item.contentType, item.signalTitle, item.signalInsight, item.id, item.confidence);
         setConfirmId(null);
       } else {
         setConfirmId(item.id);
       }
     } else {
-      onSelect(item.title, item.context, item.contentType, item.signalTitle, item.signalInsight);
+      onSelect(item.title, item.context, item.contentType, item.signalTitle, item.signalInsight, item.id, item.confidence);
     }
   };
 
