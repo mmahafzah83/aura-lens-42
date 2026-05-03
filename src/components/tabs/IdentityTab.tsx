@@ -623,17 +623,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 boxShadow: "var(--shadow-sm)",
               }}
             >
-              <div
-                style={{
-                  fontSize: 9,
-                  textTransform: "uppercase",
-                  color: "var(--ink-5)",
-                  marginBottom: 12,
-                  letterSpacing: "0.08em",
-                  fontWeight: 600,
-                }}
-              >
-                Signal coverage
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                  SIGNAL COVERAGE
+                </div>
+                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                  How deeply your captures cover each intelligence theme
+                </div>
               </div>
               <div className="space-y-3">
                 {signalStats.themeGroups.map((g) => {
@@ -641,10 +637,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   return (
                     <div key={g.theme}>
                       <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--surface-ink-subtle)" }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
                           {g.theme}
                         </span>
-                        <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                           {g.count} {g.count === 1 ? "signal" : "signals"}
                         </span>
                       </div>
@@ -704,12 +700,20 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   borderLeft: "3px solid var(--brand)",
                 }}
               >
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                    AUTHORITY STATEMENT
+                  </div>
+                  <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                    Your AI-generated professional positioning based on your signals
+                  </div>
+                </div>
                 <p
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: 13,
                     lineHeight: 1.55,
-                    color: "var(--ink-3)",
+                    color: "var(--ink)",
                     margin: 0,
                   }}
                 >

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { TabSlider } from "@/components/ui/TabSlider";
 import EmptyState from "@/components/ui/EmptyState";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
@@ -822,8 +823,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   {/* RIGHT PANEL — signal list (~42%) */}
                   <div className="intel-command-right" style={{ flex: "0 0 42%", minWidth: 0, background: "var(--surface-ink-raised)", overflowY: "auto", maxHeight: 600 }}>
                     {/* Header */}
-                    <div style={{ padding: "14px 16px", borderBottom: "0.5px solid var(--surface-ink-subtle)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--ink-3)", fontWeight: 600 }}>All signals</span>
+                    <div style={{ padding: "14px 16px", borderBottom: "0.5px solid var(--surface-ink-subtle)", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <SectionHeader
+                        label="YOUR SIGNALS"
+                        subtitle="Patterns detected from your captures"
+                      />
                       <span style={{ fontSize: 10, color: "var(--ink-3)" }}>{sortedByConfidence.length} total</span>
                     </div>
 

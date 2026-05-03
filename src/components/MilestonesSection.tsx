@@ -97,8 +97,11 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
   return (
     <section aria-label="Milestones" className="space-y-4">
       <div>
-        <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
-          Achievements
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", marginBottom: 3, textTransform: "uppercase" }}>
+          ACHIEVEMENTS
+        </div>
+        <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 }}>
+          Professional credentials earned through consistent intelligence work
         </div>
         <h2 style={{
           fontFamily: "var(--font-display)",

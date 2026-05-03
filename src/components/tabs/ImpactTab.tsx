@@ -729,6 +729,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 text="Signal intelligence (40%) — depth and diversity of your strategic signals. Content authority (40%) — posts published from your intelligence. Capture consistency (20%) — how regularly you feed the system."
               />
             </div>
+            <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+              Your composite authority metric — always reflects your current standing
+            </div>
             <div style={{ marginTop: 6 }}>
               <ScoreRing
                 value={latestScore}
@@ -855,6 +858,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               >
                 Trajectory
                 <InfoTooltip label="Trajectory" text="Your authority score over time." />
+              </div>
+              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 0, marginBottom: 6, lineHeight: 1.5 }}>
+                Projected score growth based on your current activity
               </div>
               <div
                 style={{

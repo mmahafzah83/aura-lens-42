@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 interface AuraItem {
   action_type: "PUBLISH" | "CAPTURE" | "WATCH";
@@ -106,11 +107,12 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
 
   return (
     <section>
-      <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", color: "hsl(var(--muted-foreground) / 0.7)" }}>
-          Aura's Read
-        </div>
-        <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground) / 0.7)" }}>
+      <div className="flex items-start justify-between" style={{ marginBottom: 10 }}>
+        <SectionHeader
+          label="AURA'S READ"
+          subtitle="What Aura thinks you should focus on today"
+        />
+        <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
           {formatDate(new Date())}
         </div>
       </div>

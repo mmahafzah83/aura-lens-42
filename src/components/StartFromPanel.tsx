@@ -4,6 +4,7 @@ import {
   TrendingUp, BookOpen, User
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 type ContentType = "post" | "carousel" | "essay" | "framework_summary";
 
@@ -299,12 +300,10 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
       >
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
-            <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "var(--ink-4)" }}>
-              Post angles
-            </h4>
-          </div>
+          <SectionHeader
+            label="START FROM"
+            subtitle="Post angles generated from your strongest signals"
+          />
           <button
             onClick={fetchData}
             disabled={loading}
