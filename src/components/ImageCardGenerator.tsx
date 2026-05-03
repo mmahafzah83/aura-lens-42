@@ -244,6 +244,7 @@ export default function ImageCardGenerator({
   // Inject Cairo font once when this component mounts.
   useEffect(() => {
     ensureCairoFont();
+    ensureBrandFonts();
   }, []);
 
   const hook = extractHook(postText);
