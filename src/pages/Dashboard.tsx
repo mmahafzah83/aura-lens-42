@@ -60,6 +60,7 @@ const Dashboard = () => {
   const [wizardUserId, setWizardUserId] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     if (typeof window === "undefined") return "light";
     return (localStorage.getItem("aura-theme") as "dark" | "light") || "light";
@@ -535,6 +536,7 @@ const Dashboard = () => {
               {/* Global section label removed — each tab owns its own branded header */}
             </div>
             <div className="flex items-center gap-3">
+              <HelpButton onClick={() => setHelpOpen(true)} />
               <NotificationBell />
               <ProfileMenu
                 fullName={user?.fullName ?? null}
