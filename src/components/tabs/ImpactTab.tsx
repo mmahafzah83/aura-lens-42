@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import { AuraButton } from "@/components/ui/AuraButton";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import AuthorityJourney from "@/components/AuthorityJourney";
@@ -1048,20 +1049,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             </p>
 
             {captureScore < 80 && (
-              <button
-                onClick={() => onOpenCapture?.()}
-                className="mt-4 inline-flex items-center gap-1.5"
-                style={{
-                  background: "var(--brand)",
-                  color: "#ffffff",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  padding: "6px 16px",
-                  borderRadius: 4,
-                }}
-              >
-                Capture now →
-              </button>
+              <div className="mt-4">
+                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
+                  Capture now →
+                </AuraButton>
+              </div>
             )}
           </div>
       </section>

@@ -1225,16 +1225,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
               {/* Zone 3 */}
               <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={() => navigate("/publish")}
-                  style={{
-                    background: "var(--brand)", color: "#1A1916",
-                    border: 0, fontSize: 12, fontWeight: 600,
-                    padding: "8px 16px", borderRadius: 4, cursor: "pointer",
-                  }}
-                >
+                <AuraButton variant="signal" size="sm" onClick={() => navigate("/publish")}>
                   Publish now →
-                </button>
+                </AuraButton>
                 {competitorAlert!.url && (
                   <button
                     onClick={() => window.open(competitorAlert!.url!, "_blank", "noopener,noreferrer")}
