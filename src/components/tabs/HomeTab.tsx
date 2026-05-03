@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
