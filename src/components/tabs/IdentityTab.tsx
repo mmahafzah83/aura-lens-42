@@ -637,10 +637,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   return (
                     <div key={g.theme}>
                       <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--surface-ink-subtle)" }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
                           {g.theme}
                         </span>
-                        <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+                        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
                           {g.count} {g.count === 1 ? "signal" : "signals"}
                         </span>
                       </div>
