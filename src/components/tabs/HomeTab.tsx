@@ -1187,6 +1187,67 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           );
         }
 
+        // Priority 1.5 — J4 "You're caught up" signal
+        if (caughtUpReady) {
+          return (
+            <AuraCard
+              hover="none"
+              className="text-center"
+              style={{
+                padding: "28px 24px",
+                animation: "fade-in 400ms ease",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 24,
+                  color: "var(--brand)",
+                  lineHeight: 1,
+                  marginBottom: 10,
+                }}
+                aria-hidden
+              >
+                ✓
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 20,
+                  color: "var(--ink)",
+                  marginBottom: 6,
+                }}
+              >
+                You're caught up
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "var(--ink-3)",
+                  lineHeight: 1.5,
+                  maxWidth: 460,
+                  margin: "0 auto 14px",
+                }}
+              >
+                Aura is watching {watchingSignalsCount} signal{watchingSignalsCount === 1 ? "" : "s"}. You'll see new moves when something changes.
+              </div>
+              <button
+                onClick={() => onSwitchTab?.("intelligence")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--brand)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Explore your signals →
+              </button>
+            </AuraCard>
+          );
+        }
+
         // Priority 2 — nudge card
         if (auraData?.personalized_nudge) {
           const subs = [
