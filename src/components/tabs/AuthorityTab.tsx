@@ -248,6 +248,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
