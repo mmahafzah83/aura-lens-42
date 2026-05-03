@@ -15,6 +15,7 @@ import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
+import { HelpCircle, ChevronDown } from "lucide-react";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -131,6 +132,17 @@ interface CompetitorAlert {
   signalTitle: string;
   fragmentCount: number;
   daysSinceLastPost: number;
+}
+
+interface AuraScoreData {
+  aura_score: number;
+  capture_score: number;
+  signal_score: number;
+  content_score: number;
+  score_trend: number | null;
+  tier_name: string;
+  personalized_nudge: string;
+  weekly_rhythm: { active_weeks: number; total_weeks: number; weekly_data: boolean[] };
 }
 
 const COMPETITOR_KEYWORDS = [
