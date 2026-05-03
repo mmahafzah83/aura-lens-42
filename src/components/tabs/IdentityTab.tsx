@@ -46,7 +46,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
-  const [signalStats, setSignalStats] = useState({ count: 0, topConfidence: 0, totalOrgs: 0, topTags: [] as string[] });
+  const [signalStats, setSignalStats] = useState({
+    count: 0,
+    topConfidence: 0,
+    totalOrgs: 0,
+    topTags: [] as string[],
+    themeGroups: [] as { theme: string; count: number; avgConfidence: number }[],
+    topSignal: null as { title: string; confidence: number } | null,
+    topOrgs: [] as string[],
+  });
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -83,9 +91,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           .select("authority_score").eq("user_id", uid)
           .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
-          .select("signal_title, confidence, unique_orgs, theme_tags")
+          .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids")
           .eq("user_id", uid).eq("status", "active")
-          .order("confidence", { ascending: false }).limit(20),
+          .order("confidence", { ascending: false }).limit(40),
       ]), 12000);
 
       if (profileRes.data) setProfile(profileRes.data);
@@ -107,11 +115,67 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           }
           if (topTags.length >= 6) break;
         }
+
+        // Group signals by theme tag → average confidence + count
+        const themeMap = new Map<string, { conf: number[]; count: number }>();
+        for (const sig of signals) {
+          const tags: string[] = Array.isArray(sig.theme_tags) ? sig.theme_tags : [];
+          for (const raw of tags) {
+            const t = (raw || "").trim();
+            if (!t) continue;
+            const existing = themeMap.get(t) || { conf: [], count: 0 };
+            existing.conf.push(Number(sig.confidence) || 0);
+            existing.count += 1;
+            themeMap.set(t, existing);
+          }
+        }
+        const themeGroups = Array.from(themeMap.entries())
+          .map(([theme, v]) => ({
+            theme,
+            count: v.count,
+            avgConfidence: v.conf.reduce((a, b) => a + b, 0) / v.conf.length,
+          }))
+          .sort((a, b) => b.avgConfidence - a.avgConfidence)
+          .slice(0, 8);
+
+        const topSignal = signals[0]
+          ? { title: signals[0].signal_title || "", confidence: Math.round(Number(signals[0].confidence) * 100) }
+          : null;
+
+        // Pull top org names from evidence_fragments referenced by these signals
+        const allEvidenceIds = Array.from(new Set(
+          signals.flatMap((s: any) => Array.isArray(s.supporting_evidence_ids) ? s.supporting_evidence_ids : [])
+        )).slice(0, 60);
+        let topOrgs: string[] = [];
+        if (allEvidenceIds.length > 0) {
+          const { data: frags } = await (supabase.from("evidence_fragments") as any)
+            .select("entities").in("id", allEvidenceIds);
+          const orgCounts = new Map<string, number>();
+          (frags || []).forEach((f: any) => {
+            const ents: any[] = Array.isArray(f.entities) ? f.entities : [];
+            ents.forEach((e) => {
+              const t = (e?.type || "").toLowerCase();
+              const name = (e?.name || "").trim();
+              if (!name) return;
+              if (t === "organization" || t === "company" || t === "firm") {
+                orgCounts.set(name, (orgCounts.get(name) || 0) + 1);
+              }
+            });
+          });
+          topOrgs = Array.from(orgCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([n]) => n);
+        }
+
         setSignalStats({
           count: signals.length,
           topConfidence: signals.length > 0 ? Math.round(Number(signals[0].confidence) * 100) : 0,
           totalOrgs: signals.reduce((s: number, sig: any) => s + (sig.unique_orgs || 0), 0),
           topTags,
+          themeGroups,
+          topSignal,
+          topOrgs,
         });
       }
     } catch (err) {
