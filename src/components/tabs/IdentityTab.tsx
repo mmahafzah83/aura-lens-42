@@ -46,7 +46,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
-  const [signalStats, setSignalStats] = useState({ count: 0, topConfidence: 0, totalOrgs: 0, topTags: [] as string[] });
+  const [signalStats, setSignalStats] = useState({
+    count: 0,
+    topConfidence: 0,
+    totalOrgs: 0,
+    topTags: [] as string[],
+    themeGroups: [] as { theme: string; count: number; avgConfidence: number }[],
+    topSignal: null as { title: string; confidence: number } | null,
+    topOrgs: [] as string[],
+  });
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
@@ -83,9 +91,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           .select("authority_score").eq("user_id", uid)
           .order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
         (supabase.from("strategic_signals") as any)
-          .select("signal_title, confidence, unique_orgs, theme_tags")
+          .select("signal_title, confidence, unique_orgs, theme_tags, supporting_evidence_ids")
           .eq("user_id", uid).eq("status", "active")
-          .order("confidence", { ascending: false }).limit(20),
+          .order("confidence", { ascending: false }).limit(40),
       ]), 12000);
 
       if (profileRes.data) setProfile(profileRes.data);
@@ -107,11 +115,67 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           }
           if (topTags.length >= 6) break;
         }
+
+        // Group signals by theme tag → average confidence + count
+        const themeMap = new Map<string, { conf: number[]; count: number }>();
+        for (const sig of signals) {
+          const tags: string[] = Array.isArray(sig.theme_tags) ? sig.theme_tags : [];
+          for (const raw of tags) {
+            const t = (raw || "").trim();
+            if (!t) continue;
+            const existing = themeMap.get(t) || { conf: [], count: 0 };
+            existing.conf.push(Number(sig.confidence) || 0);
+            existing.count += 1;
+            themeMap.set(t, existing);
+          }
+        }
+        const themeGroups = Array.from(themeMap.entries())
+          .map(([theme, v]) => ({
+            theme,
+            count: v.count,
+            avgConfidence: v.conf.reduce((a, b) => a + b, 0) / v.conf.length,
+          }))
+          .sort((a, b) => b.avgConfidence - a.avgConfidence)
+          .slice(0, 8);
+
+        const topSignal = signals[0]
+          ? { title: signals[0].signal_title || "", confidence: Math.round(Number(signals[0].confidence) * 100) }
+          : null;
+
+        // Pull top org names from evidence_fragments referenced by these signals
+        const allEvidenceIds = Array.from(new Set(
+          signals.flatMap((s: any) => Array.isArray(s.supporting_evidence_ids) ? s.supporting_evidence_ids : [])
+        )).slice(0, 60);
+        let topOrgs: string[] = [];
+        if (allEvidenceIds.length > 0) {
+          const { data: frags } = await (supabase.from("evidence_fragments") as any)
+            .select("entities").in("id", allEvidenceIds);
+          const orgCounts = new Map<string, number>();
+          (frags || []).forEach((f: any) => {
+            const ents: any[] = Array.isArray(f.entities) ? f.entities : [];
+            ents.forEach((e) => {
+              const t = (e?.type || "").toLowerCase();
+              const name = (e?.name || "").trim();
+              if (!name) return;
+              if (t === "organization" || t === "company" || t === "firm") {
+                orgCounts.set(name, (orgCounts.get(name) || 0) + 1);
+              }
+            });
+          });
+          topOrgs = Array.from(orgCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([n]) => n);
+        }
+
         setSignalStats({
           count: signals.length,
           topConfidence: signals.length > 0 ? Math.round(Number(signals[0].confidence) * 100) : 0,
           totalOrgs: signals.reduce((s: number, sig: any) => s + (sig.unique_orgs || 0), 0),
           topTags,
+          themeGroups,
+          topSignal,
+          topOrgs,
         });
       }
     } catch (err) {
@@ -369,72 +433,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </div>
 
           {/* Assessments */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: 16,
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 9,
-                textTransform: "uppercase",
-                color: "var(--ink-5)",
-                marginBottom: 10,
-                letterSpacing: "0.08em",
-                fontWeight: 600,
-              }}
-            >
-              Completed
-            </div>
-            {assessments.map(a => (
-              <div key={a.name} className="flex items-center gap-2 mb-2 last:mb-0">
-                {a.done ? (
-                  <span
-                    className="flex items-center justify-center shrink-0"
-                    style={{ background: "var(--success)", borderRadius: 4, width: 14, height: 14 }}
-                  >
-                    <Check className="w-2.5 h-2.5" style={{ color: "#fff" }} strokeWidth={3} />
-                  </span>
-                ) : (
-                  <span
-                    className="shrink-0"
-                    style={{
-                      background: "transparent",
-                      border: "1px solid rgba(0,0,0,0.18)",
-                      borderRadius: 4,
-                      width: 14,
-                      height: 14,
-                    }}
-                  />
-                )}
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: a.done ? "var(--ink-3)" : "var(--ink-5)",
-                    flex: 1,
-                  }}
-                >
-                  {a.name}
-                </span>
-                {a.done && a.date ? (
-                  <span style={{ fontSize: 9, color: "var(--ink-5)" }}>{new Date(a.date).toLocaleDateString()}</span>
-                ) : !a.done ? (
-                  <button
-                    onClick={() => {
-                      if (a.name === "Evidence Audit") setAuditOpen(true);
-                      else if (a.name === "Brand Assessment") setBrandOpen(true);
-                    }}
-                    style={{ fontSize: 10, color: "var(--brand)", fontWeight: 600 }}
-                  >
-                    Start →
-                  </button>
-                ) : null}
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* RIGHT COLUMN */}
@@ -614,6 +612,115 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </p>
             )}
           </div>
+
+          {/* Signal Coverage Map */}
+          {signalStats.themeGroups.length > 0 && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: 18,
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  color: "var(--ink-5)",
+                  marginBottom: 12,
+                  letterSpacing: "0.08em",
+                  fontWeight: 600,
+                }}
+              >
+                Signal coverage
+              </div>
+              <div className="space-y-3">
+                {signalStats.themeGroups.map((g) => {
+                  const pct = Math.round(g.avgConfidence * 100);
+                  return (
+                    <div key={g.theme}>
+                      <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--surface-ink-subtle)" }}>
+                          {g.theme}
+                        </span>
+                        <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+                          {g.count} {g.count === 1 ? "signal" : "signals"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 4,
+                            background: "var(--surface-subtle)",
+                            borderRadius: 999,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${Math.max(4, pct)}%`,
+                              height: "100%",
+                              background: "var(--brand)",
+                              borderRadius: 999,
+                            }}
+                          />
+                        </div>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)", fontWeight: 500, minWidth: 32, textAlign: "right" }}>
+                          {pct}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Authority Statement */}
+          {(() => {
+            const fn = profile?.first_name || "You";
+            const sf = profile?.sector_focus || "your sector";
+            const themes = signalStats.themeGroups;
+            const top = themes[0]?.theme;
+            const second = themes[1]?.theme;
+            const orgs = signalStats.topOrgs;
+            const topSig = signalStats.topSignal;
+            if (!top || !topSig) return null;
+            const themesPart = second
+              ? `from ${top} to ${second}`
+              : `centered on ${top}`;
+            const orgsPart = orgs.length > 0
+              ? ` across insights from ${orgs.slice(0, 3).join(", ")}.`
+              : ".";
+            return (
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 12,
+                  padding: "16px 18px",
+                  boxShadow: "var(--shadow-sm)",
+                  borderLeft: "3px solid var(--brand)",
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    color: "var(--ink-3)",
+                    margin: 0,
+                  }}
+                >
+                  {fn} tracks {themes.length} strategic {themes.length === 1 ? "theme" : "themes"} in {sf} — {themesPart}{orgsPart}{" "}
+                  <span style={{ color: "var(--ink-4)" }}>
+                    Deepest expertise: <span style={{ color: "var(--surface-ink-subtle)", fontWeight: 500 }}>{topSig.title}</span> at {topSig.confidence}%.
+                  </span>
+                </p>
+              </div>
+            );
+          })()}
 
           {/* 3-Year Target — Horizontal Timeline */}
           <div
