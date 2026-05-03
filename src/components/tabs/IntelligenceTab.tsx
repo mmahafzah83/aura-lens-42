@@ -19,6 +19,7 @@ import { TabSlider } from "@/components/ui/TabSlider";
 import EmptyState from "@/components/ui/EmptyState";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import type { Database } from "@/integrations/supabase/types";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
