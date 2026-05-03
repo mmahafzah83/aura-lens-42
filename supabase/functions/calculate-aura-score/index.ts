@@ -31,29 +31,34 @@ serve(async (req) => {
     const userId = user.id;
     const now = new Date();
 
-    // --- capture_score: entries + documents in last 7 days / 7 × 100, cap 100 ---
+    // --- capture_score: consistency — active weeks in the last 12 calendar weeks ---
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const [{ count: entryCount }, { count: docCount }] = await Promise.all([
-      admin.from("entries").select("id", { count: "exact", head: true })
-        .eq("user_id", userId).gte("created_at", sevenDaysAgo),
-      admin.from("documents").select("id", { count: "exact", head: true })
-        .eq("user_id", userId).gte("created_at", sevenDaysAgo),
-    ]);
-    const totalCaptures = (entryCount ?? 0) + (docCount ?? 0);
-    const captureScore = Math.min(Math.round((totalCaptures / 7) * 100), 100);
+    const twelveWeeksAgoForCapture = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
+    const { data: captureEntries } = await admin
+      .from("entries")
+      .select("created_at")
+      .eq("user_id", userId)
+      .gte("created_at", twelveWeeksAgoForCapture.toISOString());
+    let activeWeeksInLast12 = 0;
+    for (let i = 0; i < 12; i++) {
+      const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const active = (captureEntries || []).some((e: any) => {
+        const t = new Date(e.created_at).getTime();
+        return t >= wkStart.getTime() && t < wkEnd.getTime();
+      });
+      if (active) activeWeeksInLast12++;
+    }
+    const captureScore = Math.round((activeWeeksInLast12 / 12) * 100);
 
-    // --- signal_score: AVG(confidence) × 100 from active signals ---
+    // --- signal_score: active signal count / 10 × 100, cap 100 ---
     const { data: signals } = await admin
       .from("strategic_signals")
       .select("confidence")
       .eq("user_id", userId)
       .eq("status", "active");
-
-    let signalScore = 0;
-    if (signals && signals.length > 0) {
-      const avg = signals.reduce((sum: number, s: any) => sum + Number(s.confidence), 0) / signals.length;
-      signalScore = Math.round(avg * 100);
-    }
+    const activeSignalCount = signals?.length ?? 0;
+    const signalScore = Math.min(Math.round((activeSignalCount / 10) * 100), 100);
 
     // --- content_score: linkedin_posts in last 30 days / 10 × 100, cap 100 ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -65,8 +70,8 @@ serve(async (req) => {
 
     const contentScore = Math.min(Math.round(((contentCount ?? 0) / 10) * 100), 100);
 
-    // --- aura_score ---
-    const auraScore = Math.round(captureScore * 0.35 + signalScore * 0.35 + contentScore * 0.30);
+    // --- aura_score: weights 40/40/20 (signal/content/capture) ---
+    const auraScore = Math.round(signalScore * 0.40 + contentScore * 0.40 + captureScore * 0.20);
 
     // --- score_status ---
     let scoreStatus: string;
@@ -85,7 +90,7 @@ serve(async (req) => {
       if (signalScore <= minScore) {
         scoreDescription = "Your signals need more diverse sources — capture from different organisations to strengthen confidence.";
       } else if (captureScore <= minScore) {
-        scoreDescription = "You haven't captured recently — feed Aura to keep your intelligence fresh.";
+        scoreDescription = "Your capture consistency has gaps — capture at least once per week to keep your intelligence fresh.";
       } else {
         scoreDescription = "Signals are strong but you haven't published — draft content to push toward Authority.";
       }
