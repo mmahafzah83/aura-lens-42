@@ -68,6 +68,7 @@ const Admin = () => {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
+  const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
 
   // Auth gate — first thing
   useEffect(() => {
@@ -109,8 +110,26 @@ const Admin = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchRows();
+    (async () => {
+      const { data } = await supabase
+        .from("beta_feedback")
+        .select("id,rating,message,page,created_at")
+        .eq("feedback_type", "nps")
+        .order("created_at", { ascending: false });
+      setNpsRows((data || []) as any);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked]);
+
+  const npsStats = useMemo(() => {
+    const valid = npsRows.filter((r) => typeof r.rating === "number");
+    const count = valid.length;
+    const avg = count ? valid.reduce((s, r) => s + (r.rating || 0), 0) / count : 0;
+    const promoters = valid.filter((r) => (r.rating || 0) >= 9).length;
+    const detractors = valid.filter((r) => (r.rating || 0) <= 6).length;
+    const nps = count ? Math.round(((promoters - detractors) / count) * 100) : 0;
+    return { count, avg, nps };
+  }, [npsRows]);
 
   const counts = useMemo(() => {
     const c = { pending: 0, approved: 0, active: 0 };
@@ -489,6 +508,63 @@ const Admin = () => {
               {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send invite"}
             </button>
           </div>
+        </div>
+
+        {/* NPS responses */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+            NPS responses
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+            7-day post-signup survey. Higher NPS = more likely to recommend.
+          </p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--brand-muted)", color: "var(--brand)", border: "1px solid var(--bronze-line)" }}>
+              Avg score: {npsStats.avg.toFixed(1)}
+            </span>
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+              NPS: {npsStats.nps}
+            </span>
+            <span className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+              {npsStats.count} responses
+            </span>
+          </div>
+          {npsRows.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No NPS responses yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {npsRows.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-start gap-3 p-3 rounded-md"
+                  style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
+                >
+                  <div
+                    className="flex items-center justify-center font-semibold text-sm shrink-0"
+                    style={{
+                      width: 36, height: 36, borderRadius: 6,
+                      backgroundColor: (r.rating ?? 0) >= 9 ? "var(--brand)" : (r.rating ?? 0) >= 7 ? "var(--brand-muted)" : "rgba(255,255,255,0.05)",
+                      color: (r.rating ?? 0) >= 9 ? "var(--ink)" : "var(--ink-7)",
+                      border: "1px solid var(--ink-3)",
+                    }}
+                  >
+                    {r.rating ?? "—"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm" style={{ color: "var(--ink-7)" }}>
+                      {r.message?.trim() || <span style={{ color: "var(--ink-5)", fontStyle: "italic" }}>No comment</span>}
+                    </div>
+                    <div className="text-[10px] mt-1" style={{ color: "var(--ink-5)" }}>
+                      {formatDate(r.created_at)} · {r.page || "—"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
