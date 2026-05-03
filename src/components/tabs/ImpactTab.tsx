@@ -287,6 +287,24 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   useEffect(() => { loadAll(selectedDays); /* eslint-disable-next-line */ }, [selectedDays]);
 
+  // Load aura score data once for AuthorityJourney + WeeklyRhythm
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        if (!cancelled) setUserId(user.id);
+        await supabase.auth.getSession();
+        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        if (!cancelled && !error && res) setAuraData(res);
+      } catch (e) {
+        console.error("ImpactTab: aura score load failed", e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // Load content performance (independent of time range)
   useEffect(() => {
     (async () => {
