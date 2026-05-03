@@ -20,6 +20,7 @@ import AuthorityProgressModal from "@/components/AuthorityProgressModal";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
