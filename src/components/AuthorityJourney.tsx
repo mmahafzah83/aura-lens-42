@@ -25,6 +25,21 @@ const TIER_RANGES: Record<string, [number, number]> = {
   Authority: [65, 100],
 };
 
+const TIER_TOOLTIPS: Record<AuraScoreResponse["tier_name"], { title: string; body: string }> = {
+  Observer: {
+    title: "Observer · 0–34",
+    body: "You are building your intelligence foundation. Capture articles and insights weekly to detect your first signals.",
+  },
+  Strategist: {
+    title: "Strategist · 35–64",
+    body: "You are connecting signals to strategy. Start publishing posts that reference your detected signals to build authority.",
+  },
+  Authority: {
+    title: "Authority · 65–100",
+    body: "You are a recognized voice in your domain. Your signals and content compound into market credibility.",
+  },
+};
+
 const AuthorityJourney = ({ userId, data: provided }: Props) => {
   const [data, setData] = useState<AuraScoreResponse | null>(provided ?? null);
   const [loading, setLoading] = useState(!provided);
@@ -136,9 +151,18 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
                     marginTop: 8,
                     color: isCurrent ? "var(--brand)" : "hsl(var(--muted-foreground))",
                     fontWeight: isCurrent ? 600 : 400,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
                   }}
                 >
                   {t}
+                  <InfoTooltip side="bottom" label={t} width={240} triggerSize={14}>
+                    <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>
+                      {TIER_TOOLTIPS[t].title}
+                    </div>
+                    <p style={{ margin: 0 }}>{TIER_TOOLTIPS[t].body}</p>
+                  </InfoTooltip>
                 </div>
               </div>
             );
