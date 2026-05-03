@@ -700,12 +700,20 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   borderLeft: "3px solid var(--brand)",
                 }}
               >
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                    AUTHORITY STATEMENT
+                  </div>
+                  <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                    Your AI-generated professional positioning based on your signals
+                  </div>
+                </div>
                 <p
                   style={{
                     fontFamily: "'DM Sans', sans-serif",
                     fontSize: 13,
                     lineHeight: 1.55,
-                    color: "var(--ink-3)",
+                    color: "var(--ink)",
                     margin: 0,
                   }}
                 >
