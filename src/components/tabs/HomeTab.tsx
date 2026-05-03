@@ -857,7 +857,41 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* H2b — STATUS STRIP */}
-      {(auraData || isEmpty) && (() => {
+      {isEmpty && (
+        <div
+          className="flex items-start justify-between gap-4 flex-wrap"
+          style={{
+            borderBottom: "1px solid hsl(var(--border) / 0.5)",
+            paddingBottom: 16,
+            marginBottom: 8,
+          }}
+        >
+          <div className="flex flex-col" style={{ gap: 2 }}>
+            <div className="flex items-center" style={{ gap: 6 }}>
+              <span
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 36,
+                  fontWeight: 700,
+                  color: "var(--ink-3)",
+                  lineHeight: 1,
+                }}
+              >
+                —
+              </span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+              Starting
+            </div>
+            {sectorFocus && (
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                {sectorFocus}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {!isEmpty && auraData && (() => {
         const trend = auraData.score_trend;
         const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
         while (cells.length < 12) cells.unshift(false);
