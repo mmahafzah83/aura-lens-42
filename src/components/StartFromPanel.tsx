@@ -302,7 +302,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           <div className="flex items-center gap-2">
             <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
             <h4 style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "var(--ink-4)" }}>
-              Start from
+              Post angles
             </h4>
           </div>
           <button
@@ -328,106 +328,83 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               <p style={{ fontSize: 11, color: "var(--ink-5)" }}>Capture more insights to unlock suggestions</p>
             </div>
           ) : (
-            groups.map((group) => (
-              <div key={group.label} style={{ marginBottom: 10 }}>
-                <p
+            curated.filter(i => i.sourceType === "signal").slice(0, 4).map((item, idx) => {
+              const isConfirm = confirmId === item.id;
+              const isRecommended = idx === 0;
+              return (
+                <div
+                  key={item.id}
+                  className="group post-angle-card"
                   style={{
-                    fontSize: 9,
-                    color: "var(--ink-5)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    fontWeight: 700,
-                    marginBottom: 6,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
+                    background: isConfirm ? "var(--brand-pale)" : "var(--surface-subtle)",
+                    borderRadius: 10,
+                    padding: "10px 12px",
+                    marginBottom: 7,
+                    borderLeft: "3px solid transparent",
+                    transition: "border-color 0.15s, background 0.15s",
+                    cursor: "pointer",
                   }}
+                  onClick={() => handleItemClick(item)}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "var(--brand)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderLeftColor = "transparent"; }}
                 >
-                  <group.icon className="w-3 h-3" />
-                  {group.label}
-                </p>
-                {group.items.map((item) => {
-                  const isConfirm = confirmId === item.id;
-                  const isUnused = !usedIds.has(item.id);
-                  const isRecommended = group.label === "Recommended now";
-                  const badgeText = isRecommended ? "Recommended" : (isUnused ? "Unused" : null);
-                  const badgeStyle = isRecommended
-                    ? { background: "var(--brand-pale)", color: "var(--warning)" }
-                    : { background: "var(--surface-subtle)", color: "var(--ink-4)" };
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleItemClick(item)}
-                      style={{
-                        background: isConfirm ? "var(--brand-pale)" : "var(--surface-subtle)",
-                        borderRadius: 10,
-                        padding: "10px 12px",
-                        marginBottom: 7,
-                        cursor: "pointer",
-                        border: isConfirm ? "1px solid var(--bronze-line)" : "0.5px solid transparent",
-                        width: "100%",
-                        textAlign: "left",
-                        transition: "background 0.15s",
-                      }}
-                      className="hover:brightness-[0.98]"
-                    >
-                      {isConfirm ? (
-                        <p style={{ fontSize: 11, color: "var(--warning)", fontWeight: 600 }}>
-                          Replace current draft? Click again to confirm.
-                        </p>
-                      ) : (
-                        <>
-                          <div className="flex items-start justify-between gap-2">
-                            {item.confidence && item.confidence >= 0.7 ? (
-                              <span
-                                style={{
-                                  fontFamily: "'DM Serif Display', serif",
-                                  fontSize: 16,
-                                  color: "var(--brand)",
-                                  lineHeight: 1,
-                                }}
-                              >
-                                {Math.round(item.confidence * 100)}
-                              </span>
-                            ) : (
-                              <span className="shrink-0 mt-0.5">{sourceIcon(item.sourceType)}</span>
-                            )}
-                            {badgeText && (
-                              <span
-                                style={{
-                                  ...badgeStyle,
-                                  fontSize: 9,
-                                  fontWeight: 600,
-                                  padding: "2px 7px",
-                                  borderRadius: 6,
-                                  letterSpacing: "0.02em",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {badgeText}
-                              </span>
-                            )}
-                          </div>
-                          <p
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 500,
-                              color: "var(--surface-ink-subtle)",
-                              lineHeight: 1.4,
-                              marginTop: 4,
-                            }}
-                            className="line-clamp-2"
-                          >
-                            {item.title}
-                          </p>
-                          <p style={{ fontSize: 9, color: "var(--ink-5)", marginTop: 3 }}>{item.reason}</p>
-                        </>
+                  {isConfirm ? (
+                    <p style={{ fontSize: 11, color: "var(--warning)", fontWeight: 600 }}>
+                      Replace current draft? Click again to confirm.
+                    </p>
+                  ) : (
+                    <>
+                      {isRecommended && (
+                        <span
+                          style={{
+                            background: "var(--brand-pale)",
+                            color: "var(--warning)",
+                            fontSize: 9,
+                            fontWeight: 600,
+                            padding: "2px 7px",
+                            borderRadius: 6,
+                            letterSpacing: "0.02em",
+                            display: "inline-block",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Recommended
+                        </span>
                       )}
-                    </button>
-                  );
-                })}
-              </div>
-            ))
+                      <p
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "var(--surface-ink-subtle)",
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {item.angle || item.title}
+                      </p>
+                      <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
+                        {item.signalTitle || item.title}
+                      </p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{
+                          marginTop: 8,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "var(--brand)",
+                          background: "transparent",
+                          border: "none",
+                          padding: 0,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Generate this →
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })
           )}
 
           {/* Voice match card */}
