@@ -874,8 +874,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               }}
             >
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Generate {FORMAT_LABELS[contentType]?.label || "Content"}
+              {generating ? "Generating…" : `Generate ${FORMAT_LABELS[contentType]?.label || "Content"}`}
             </button>
+            {isGeneratingAny && showSlowHint && (
+              <p style={{ fontSize: 12, color: "var(--ink-4)", textAlign: "center", marginTop: 8 }}>
+                This usually takes 10–30 seconds…
+              </p>
+            )}
 
             {/* Output */}
             {displayedOutput && (
