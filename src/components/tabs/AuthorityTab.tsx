@@ -851,7 +851,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             {/* Generate */}
             <button
               id="aura-generate-btn"
-              onClick={generate}
+              onClick={() => generate()}
               disabled={isGeneratingAny || !topic.trim()}
               className="aura-generate-btn w-full"
               style={{
