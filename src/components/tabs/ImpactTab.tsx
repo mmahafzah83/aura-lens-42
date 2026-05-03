@@ -938,6 +938,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
+      {/* ─────────── 3b. CAPTURE RHYTHM (12-week grid) ─────────── */}
+      {auraData && <WeeklyRhythm userId={userId} data={auraData} />}
+
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
         className="p-6"
