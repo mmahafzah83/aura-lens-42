@@ -11,7 +11,7 @@ const Terms = () => (
       { title: "Our Service", body: "We provide the service \"as is\" and will make reasonable efforts to maintain availability and security." },
       { title: "Acceptable Use", body: "You agree not to use Aura for any unlawful purpose." },
       { title: "Termination", body: "Either party may terminate at any time. Upon termination, your data will be retained for 30 days before permanent deletion." },
-      { title: "Contact", body: "mohammad@aura-intel.org" },
+      { title: "Contact", body: "mohammad.mahafdhah@aura-intel.org" },
     ]}
   />
 );
