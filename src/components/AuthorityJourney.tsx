@@ -104,6 +104,9 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
           text="Your path from Observer to Authority. Each tier unlocks with specific actions."
         />
       </div>
+      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, marginBottom: 6, lineHeight: 1.5 }}>
+        Your progression from Observer to recognized Authority
+      </div>
       {/* Waypoint bar */}
       <div className="relative" style={{ paddingTop: 6, paddingBottom: 28 }}>
         <div className="flex items-center justify-between relative">
