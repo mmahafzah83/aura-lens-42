@@ -86,7 +86,7 @@ interface ImpactTabProps {
 const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [selectedDays, setSelectedDays] = useState<RangeDays>(30);
+  const [selectedDays, setSelectedDays] = useState<RangeDays>(90);
 
   const [userId, setUserId] = useState<string | null>(null);
   const [auraData, setAuraData] = useState<any>(null);
@@ -311,13 +311,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       const { data: allPosts } = await supabase
         .from("linkedin_posts")
         .select("theme, tone, format_type, engagement_score, like_count, comment_count, source_type, tracking_status, post_text, published_at")
+        .in("source_type", ["linkedin_export", "external_reference", "aura_generated", "search_discovery"])
         .neq("tracking_status", "rejected")
         .order("published_at", { ascending: false })
-        .limit(200);
+        .limit(500);
 
       const analyzablePosts = (allPosts || []).filter((p: any) =>
         p.source_type === "linkedin_export" ||
         p.source_type === "external_reference" ||
+        p.tracking_status === "external_reference" ||
         (p.source_type === "aura_generated" && p.tracking_status === "published")
       );
 
