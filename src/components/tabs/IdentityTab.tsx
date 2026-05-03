@@ -613,6 +613,115 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             )}
           </div>
 
+          {/* Signal Coverage Map */}
+          {signalStats.themeGroups.length > 0 && (
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: 16,
+                padding: 18,
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  color: "var(--ink-5)",
+                  marginBottom: 12,
+                  letterSpacing: "0.08em",
+                  fontWeight: 600,
+                }}
+              >
+                Signal coverage
+              </div>
+              <div className="space-y-3">
+                {signalStats.themeGroups.map((g) => {
+                  const pct = Math.round(g.avgConfidence * 100);
+                  return (
+                    <div key={g.theme}>
+                      <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--surface-ink-subtle)" }}>
+                          {g.theme}
+                        </span>
+                        <span style={{ fontSize: 11, color: "var(--ink-5)" }}>
+                          {g.count} {g.count === 1 ? "signal" : "signals"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 4,
+                            background: "var(--surface-subtle)",
+                            borderRadius: 999,
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${Math.max(4, pct)}%`,
+                              height: "100%",
+                              background: "var(--brand)",
+                              borderRadius: 999,
+                            }}
+                          />
+                        </div>
+                        <span style={{ fontSize: 11, color: "var(--ink-4)", fontWeight: 500, minWidth: 32, textAlign: "right" }}>
+                          {pct}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Authority Statement */}
+          {(() => {
+            const fn = profile?.first_name || "You";
+            const sf = profile?.sector_focus || "your sector";
+            const themes = signalStats.themeGroups;
+            const top = themes[0]?.theme;
+            const second = themes[1]?.theme;
+            const orgs = signalStats.topOrgs;
+            const topSig = signalStats.topSignal;
+            if (!top || !topSig) return null;
+            const themesPart = second
+              ? `from ${top} to ${second}`
+              : `centered on ${top}`;
+            const orgsPart = orgs.length > 0
+              ? ` across insights from ${orgs.slice(0, 3).join(", ")}.`
+              : ".";
+            return (
+              <div
+                style={{
+                  background: "#fff",
+                  borderRadius: 12,
+                  padding: "16px 18px",
+                  boxShadow: "var(--shadow-sm)",
+                  borderLeft: "3px solid var(--brand)",
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: "'DM Sans', sans-serif",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    color: "var(--ink-3)",
+                    margin: 0,
+                  }}
+                >
+                  {fn} tracks {themes.length} strategic {themes.length === 1 ? "theme" : "themes"} in {sf} — {themesPart}{orgsPart}{" "}
+                  <span style={{ color: "var(--ink-4)" }}>
+                    Deepest expertise: <span style={{ color: "var(--surface-ink-subtle)", fontWeight: 500 }}>{topSig.title}</span> at {topSig.confidence}%.
+                  </span>
+                </p>
+              </div>
+            );
+          })()}
+
           {/* 3-Year Target — Horizontal Timeline */}
           <div
             style={{
