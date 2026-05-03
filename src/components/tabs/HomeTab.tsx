@@ -16,6 +16,7 @@ import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { HelpCircle, ChevronDown } from "lucide-react";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -986,6 +987,10 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       })()}
 
       {/* H2b — DYNAMIC PRIMARY CARD */}
+      <SectionHeader
+        label="RECOMMENDED MOVES"
+        subtitle="Actions Aura suggests based on your latest signals"
+      />
       {(() => {
         const alarmFresh = competitorAlert && !alarmDismissed &&
           (Date.now() - new Date(competitorAlert.fetchedAt).getTime()) < 48 * 3_600_000;
