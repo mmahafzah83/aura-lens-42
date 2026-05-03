@@ -1265,6 +1265,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         onOpenCapture={onOpenCapture}
         onSwitchTab={onSwitchTab}
       />
+      </>)}
 
     </motion.div>
   );
