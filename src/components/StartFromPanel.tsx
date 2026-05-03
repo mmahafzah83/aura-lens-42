@@ -183,6 +183,12 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         bestFormat = "carousel";
       }
 
+      // Derive a provocative 1-line angle from strategic_implications (≤15 words)
+      const rawImpl = (s.strategic_implications || s.explanation || "").trim();
+      const firstSentence = rawImpl.split(/(?<=[.!?])\s+/)[0] || rawImpl;
+      const words = firstSentence.split(/\s+/).filter(Boolean);
+      const angle = words.slice(0, 15).join(" ") + (words.length > 15 ? "…" : "");
+
       addIfNew({
         id: s.id,
         title,
@@ -194,6 +200,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         signalTitle: s.signal_title,
         signalInsight: s.explanation,
         freshness: fresh,
+        angle: angle || s.signal_title,
       });
     }
 
