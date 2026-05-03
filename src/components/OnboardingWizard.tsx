@@ -94,6 +94,13 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
       );
       if (error) throw error;
 
+      // Fire welcome email (best-effort; EF de-dupes)
+      try {
+        supabase.functions.invoke("send-lifecycle-email", {
+          body: { user_id: userId, email_type: "welcome" },
+        });
+      } catch {}
+
       // Best-effort milestones (table may not exist — swallow errors).
       try {
         await (supabase as any)
