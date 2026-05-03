@@ -18,6 +18,36 @@ function ensureCairoFont() {
   document.head.appendChild(link);
 }
 
+/* Brand fonts: Cormorant Garamond (display) + DM Sans (body) */
+const BRAND_FONT_ID = "aura-brand-fonts";
+function ensureBrandFonts() {
+  if (typeof document === "undefined") return;
+  if (document.getElementById(BRAND_FONT_ID)) return;
+  const link = document.createElement("link");
+  link.id = BRAND_FONT_ID;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:wght@400;500;600;700&display=swap";
+  document.head.appendChild(link);
+}
+
+/* Aura Premium design tokens (applied to all infographic cards) */
+const AURA = {
+  surface: "#111118",
+  surfaceAlt: "#161620",
+  text: "#FFFFFF",
+  textMuted: "rgba(255,255,255,0.6)",
+  textFaint: "rgba(255,255,255,0.5)",
+  textDim: "rgba(255,255,255,0.4)",
+  brand: "#B08D3A",
+  brandLine: "rgba(176,141,58,0.30)",
+  brandFaint: "rgba(176,141,58,0.20)",
+  brandWatermark: "rgba(176,141,58,0.25)",
+  display: "'Cormorant Garamond', Georgia, serif",
+  body: "'DM Sans', system-ui, sans-serif",
+  arabic: "'Cairo', sans-serif",
+};
+
 const AR_REGEX = /[\u0600-\u06FF]/;
 const isArabicText = (s: string | undefined | null) => !!s && AR_REGEX.test(s);
 const ARABIC_FONT = "'Cairo', sans-serif";
