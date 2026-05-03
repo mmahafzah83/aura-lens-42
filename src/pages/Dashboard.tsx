@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles } from "lucide-react";
+import { Plus, LogOut, Zap, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -18,6 +18,7 @@ import NotificationBell from "@/components/NotificationBell";
 import { HelpPanel, HelpButton } from "@/components/HelpPanel";
 import ProfileMenu from "@/components/ProfileMenu";
 import FeedbackButton from "@/components/FeedbackButton";
+import InviteColleagueModal from "@/components/InviteColleagueModal";
 import HomeTab from "@/components/tabs/HomeTab";
 import IdentityTab from "@/components/tabs/IdentityTab";
 import IntelligenceTab from "@/components/tabs/IntelligenceTab";
@@ -61,6 +62,7 @@ const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     if (typeof window === "undefined") return "light";
     return (localStorage.getItem("aura-theme") as "dark" | "light") || "light";
@@ -415,6 +417,18 @@ const Dashboard = () => {
             <Menu className="w-4 h-4 shrink-0" />
             {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
           </button>
+
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="w-full flex items-center gap-3 px-3 py-2 transition-all"
+            style={{ color: "var(--ink-3)", borderRadius: "var(--r-md)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--brand)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-3)"; }}
+            title="Invite a colleague"
+          >
+            <UserPlus className="w-4 h-4 shrink-0" />
+            {!sidebarCollapsed && <span className="text-[11px]">Invite a colleague</span>}
+          </button>
         </div>
       </aside>
 
@@ -749,6 +763,7 @@ const Dashboard = () => {
       />
       <FeedbackButton />
       <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
     </div>
   );
 };
