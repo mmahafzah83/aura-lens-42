@@ -20,6 +20,7 @@ import AuthorityProgressModal from "@/components/AuthorityProgressModal";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -912,6 +913,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
+
+      <FirstVisitHint page="home" />
 
       {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
       <MilestoneNotification userId={authUser?.id ?? null} />

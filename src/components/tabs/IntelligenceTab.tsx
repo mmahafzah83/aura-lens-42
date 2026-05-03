@@ -12,6 +12,7 @@ import FrameworkBuilder from "@/components/FrameworkBuilder";
 import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectionError from "@/components/ui/section-error";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
@@ -726,6 +727,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         }
       `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
+        <FirstVisitHint page="intelligence" />
 
         {/* ── Header: title + inline counters ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>

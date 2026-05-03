@@ -18,6 +18,7 @@ import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import ImageCardGenerator from "@/components/ImageCardGenerator";
 import StartFromPanel from "@/components/StartFromPanel";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
@@ -2761,6 +2762,7 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
 
   return (
     <div className="space-y-8">
+      <FirstVisitHint page="publish" />
       {brandDone === false && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
           <Target className="w-4 h-4 text-primary shrink-0" />
