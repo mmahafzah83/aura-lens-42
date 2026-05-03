@@ -68,6 +68,7 @@ const Admin = () => {
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
+  const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
 
   // Auth gate — first thing
   useEffect(() => {
@@ -109,8 +110,26 @@ const Admin = () => {
   useEffect(() => {
     if (!authChecked) return;
     fetchRows();
+    (async () => {
+      const { data } = await supabase
+        .from("beta_feedback")
+        .select("id,rating,message,page,created_at")
+        .eq("feedback_type", "nps")
+        .order("created_at", { ascending: false });
+      setNpsRows((data || []) as any);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked]);
+
+  const npsStats = useMemo(() => {
+    const valid = npsRows.filter((r) => typeof r.rating === "number");
+    const count = valid.length;
+    const avg = count ? valid.reduce((s, r) => s + (r.rating || 0), 0) / count : 0;
+    const promoters = valid.filter((r) => (r.rating || 0) >= 9).length;
+    const detractors = valid.filter((r) => (r.rating || 0) <= 6).length;
+    const nps = count ? Math.round(((promoters - detractors) / count) * 100) : 0;
+    return { count, avg, nps };
+  }, [npsRows]);
 
   const counts = useMemo(() => {
     const c = { pending: 0, approved: 0, active: 0 };
