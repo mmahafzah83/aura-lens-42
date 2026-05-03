@@ -30,10 +30,10 @@ type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
 const NAV_ITEMS = [
   { value: "home", label: "Home", pageHeader: "Home", icon: Compass, docTitle: "Home — Aura" },
-  { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User, docTitle: "My Story — Aura" },
   { value: "intelligence", label: "Intelligence", pageHeader: "Intelligence", icon: Shield, docTitle: "Intelligence — Aura" },
   { value: "authority", label: "Publish", pageHeader: "Content Studio", icon: Crown, docTitle: "Content Studio — Aura" },
   { value: "influence", label: "Impact", pageHeader: "Measure your influence", icon: TrendingUp, docTitle: "Impact — Aura" },
+  { value: "identity", label: "My Story", pageHeader: "Build your foundation", icon: User, docTitle: "My Story — Aura" },
 ] as const;
 
 type TabValue = typeof NAV_ITEMS[number]["value"];
