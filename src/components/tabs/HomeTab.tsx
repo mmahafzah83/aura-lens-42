@@ -15,6 +15,7 @@ import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
+import { HelpCircle, ChevronDown } from "lucide-react";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -133,6 +134,17 @@ interface CompetitorAlert {
   daysSinceLastPost: number;
 }
 
+interface AuraScoreData {
+  aura_score: number;
+  capture_score: number;
+  signal_score: number;
+  content_score: number;
+  score_trend: number | null;
+  tier_name: string;
+  personalized_nudge: string;
+  weekly_rhythm: { active_weeks: number; total_weeks: number; weekly_data: boolean[] };
+}
+
 const COMPETITOR_KEYWORDS = [
   "mckinsey", "pwc", "deloitte", "bcg", "bain",
   "kpmg", "accenture", "strategy&", "oliver wyman",
@@ -216,6 +228,18 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
   // Competitor alert (read-only, additive)
   const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
+
+  // H2b — Status strip + dynamic primary card
+  const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
+  const [sectorFocus, setSectorFocus] = useState<string>("");
+  const [alarmDismissed, setAlarmDismissed] = useState(false);
+  const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
+  const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
+  const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
+  const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("aura_alarm_seen") === "true";
+  });
 
   // First-login onboarding wizard (3 steps)
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -529,12 +553,13 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
         const { data } = await withTimeout(
           supabase
             .from("diagnostic_profiles")
-            .select("first_name")
+            .select("first_name, sector_focus")
             .eq("user_id", uid)
             .maybeSingle(),
           8000,
         );
         if (data?.first_name) name = data.first_name;
+        if ((data as any)?.sector_focus) setSectorFocus((data as any).sector_focus);
       } catch (e) {
         console.warn("[HomeTab] profile name fetch failed", e);
       }
@@ -559,6 +584,17 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
       loadTrendsBadge(uid),
         loadCompetitorAlert(uid),
     ]);
+
+    // Load aura score for the status strip + primary card
+    (async () => {
+      try {
+        await supabase.auth.getSession();
+        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        if (!error && res) setAuraData(res as AuraScoreData);
+      } catch (e) {
+        console.warn("[HomeTab] aura score load failed", e);
+      }
+    })();
 
     // Realtime: reload trends list whenever Phase B updates a row to status='new'
     const channel = supabase
@@ -814,126 +850,358 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
-      {/* SECTION 2 — AI daily briefing */}
-      {briefError && sessionConfirmed ? (
-        <div className="rounded-r-lg border border-l-4" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
-          <SectionError onRetry={() => authUser && loadBriefing(authUser.id)} message="Couldn't load briefing. " />
-        </div>
-      ) : showBriefSkeleton || !sessionConfirmed ? (
-        <div className="border border-l-4 rounded-r-lg p-5 space-y-3" style={{ borderColor: "hsl(var(--border) / 0.5)", borderLeftColor: ACCENT, background: "hsl(var(--card))" }}>
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-11/12" />
-          <Skeleton className="h-4 w-3/4" />
-          <div className="flex gap-2 pt-2">
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-8 w-32" />
-          </div>
-        </div>
-      ) : briefLoading ? (
-        <div className="min-h-[120px]" aria-busy="true" />
-      ) : (
-        <div
-          className="rounded-r-lg border"
-          style={{
-            background: "hsl(var(--card))",
-            borderColor: "hsl(var(--border) / 0.5)",
-            borderLeftWidth: 4,
-            borderLeftColor: ACCENT,
-            padding: "16px 20px",
-          }}
-        >
-          <p style={{ fontSize: 14, lineHeight: 1.75, color: "hsl(var(--muted-foreground))", margin: 0 }}>
-            {narrative.map((p, i) => (
-              <span
-                key={i}
-                style={{
-                  fontWeight: p.bold ? 600 : 400,
-                  color: p.color || (p.bold ? "hsl(var(--foreground))" : undefined),
-                }}
-              >
-                {p.text}
-              </span>
-            ))}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <AuraButton
-              variant="primary"
-              size="sm"
-              onClick={handlePrimaryCTA}
-              style={{ borderRadius: 4, padding: "7px 18px" }}
-            >
-              {primaryLabel}
-            </AuraButton>
-            <AuraButton
-              variant="ghost"
-              size="sm"
-              onClick={() => onSwitchTab?.("intelligence")}
-              style={{ borderRadius: 4, padding: "7px 18px", marginLeft: 4 }}
-            >
-              See your signals →
-            </AuraButton>
-          </div>
-        </div>
-      )}
-
-      {/* SECTION 3 — Aura's Read */}
-      {competitorAlert && (
-        <div
-          className="aura-alert-pulse aura-left-accent-card"
-          style={{
-            background: "hsl(var(--card))",
-            border: "0.5px solid hsl(var(--border))",
-            borderLeft: `3px solid ${RED}`,
-            padding: "14px 16px",
-          }}
-        >
-          <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-            <div className="flex items-center" style={{ gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: RED, display: "inline-block" }} />
-              <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", color: RED, fontWeight: 500 }}>
-                Competitor alert
-              </span>
+      {/* H2b — STATUS STRIP */}
+      {auraData && (() => {
+        const trend = auraData.score_trend;
+        const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
+        while (cells.length < 12) cells.unshift(false);
+        const activeWeeks = auraData.weekly_rhythm?.active_weeks ?? cells.filter(Boolean).length;
+        return (
+          <div
+            className="flex items-start justify-between gap-4 flex-wrap"
+            style={{
+              borderBottom: "1px solid hsl(var(--border) / 0.5)",
+              paddingBottom: 16,
+              marginBottom: 8,
+            }}
+          >
+            <div className="flex flex-col" style={{ gap: 2 }}>
+              <div className="flex items-center" style={{ gap: 6 }}>
+                <span
+                  style={{
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 36,
+                    fontWeight: 700,
+                    color: "hsl(var(--foreground))",
+                    lineHeight: 1,
+                  }}
+                >
+                  {auraData.aura_score}
+                </span>
+                <button
+                  type="button"
+                  aria-label="About your authority score"
+                  onClick={(e) => { e.stopPropagation(); setScoreTooltipOpen(o => !o); }}
+                  style={{
+                    width: 14, height: 14, borderRadius: "50%",
+                    border: "1px solid hsl(var(--border))",
+                    background: "transparent",
+                    color: "hsl(var(--muted-foreground))",
+                    fontSize: 9, fontWeight: 600,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", padding: 0, position: "relative",
+                  }}
+                >
+                  ?
+                  {scoreTooltipOpen && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
+                        background: "hsl(var(--popover))",
+                        color: "hsl(var(--popover-foreground))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 6, padding: 10,
+                        fontSize: 11, lineHeight: 1.5, fontWeight: 400,
+                        width: 280, maxWidth: 280, textAlign: "left",
+                        zIndex: 50,
+                        boxShadow: "0 4px 14px hsl(var(--background) / 0.4)",
+                      }}
+                    >
+                      <strong>Your Authority Score:</strong> Signal intelligence (40%) — depth and diversity of your strategic signals. Content authority (40%) — posts published from your intelligence. Capture consistency (20%) — how regularly you feed the system. Your tier (Observer → Strategist → Authority) is determined by this number.
+                    </div>
+                  )}
+                </button>
+                {trend !== null && trend !== undefined && trend !== 0 && (
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 500, marginLeft: 4,
+                      color: trend > 0 ? "var(--success)" : "hsl(var(--muted-foreground))",
+                    }}
+                  >
+                    {trend > 0 ? "↑" : "↓"} {Math.abs(trend)} pts
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+                {auraData.tier_name}
+              </div>
+              {sectorFocus && (
+                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                  {sectorFocus}
+                </div>
+              )}
             </div>
-            <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>
-              {competitorTimeAgo(competitorAlert.fetchedAt)}
-            </span>
+
+            <div className="flex flex-col items-end" style={{ gap: 6 }}>
+              <div style={{ display: "flex", gap: 3 }}>
+                {cells.map((filled, i) => (
+                  <div
+                    key={i}
+                    aria-label={`Week ${i + 1}: ${filled ? "active" : "inactive"}`}
+                    style={{
+                      width: 14, height: 14, borderRadius: 3,
+                      background: filled ? "hsl(var(--primary))" : "transparent",
+                      border: filled ? "1px solid hsl(var(--primary))" : "1px solid hsl(var(--border))",
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center" style={{ gap: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                <span>{activeWeeks}/12w</span>
+                <button
+                  type="button"
+                  aria-label="About capture rhythm"
+                  onClick={(e) => { e.stopPropagation(); setRhythmTooltipOpen(o => !o); }}
+                  style={{
+                    background: "transparent", border: 0, padding: 0,
+                    cursor: "pointer", color: "hsl(var(--muted-foreground))",
+                    display: "inline-flex", alignItems: "center", position: "relative",
+                  }}
+                >
+                  <HelpCircle size={12} strokeWidth={1.75} />
+                  {rhythmTooltipOpen && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: "absolute", bottom: "calc(100% + 8px)", right: 0,
+                        background: "hsl(var(--popover))",
+                        color: "hsl(var(--popover-foreground))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 6, padding: 10,
+                        fontSize: 11, lineHeight: 1.5, fontWeight: 400,
+                        width: 280, maxWidth: 280, textAlign: "left",
+                        zIndex: 50,
+                        boxShadow: "0 4px 14px hsl(var(--background) / 0.4)",
+                      }}
+                    >
+                      <strong>Capture Rhythm:</strong> Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
+                    </div>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
-          <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--foreground))", margin: 0 }}>
-            {competitorAlert.competitorName} published on {competitorAlert.topic}. Your{" "}
-            <span style={{ fontWeight: 600 }}>{competitorAlert.signalTitle}</span> signal is at{" "}
-            <span style={{ fontWeight: 600 }}>{competitorAlert.fragmentCount} fragments</span> — your strongest position on this topic.
-            {competitorAlert.daysSinceLastPost >= 3 && (
-              <> You haven't published in <span style={{ fontWeight: 600 }}>{competitorAlert.daysSinceLastPost} days</span>. This is the window.</>
-            )}
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <AuraButton
-              variant="signal"
-              size="sm"
-              onClick={() => navigate("/publish")}
-              style={{ borderRadius: 4, padding: "7px 18px" }}
+        );
+      })()}
+
+      {/* H2b — DYNAMIC PRIMARY CARD */}
+      {(() => {
+        const alarmFresh = competitorAlert && !alarmDismissed &&
+          (Date.now() - new Date(competitorAlert.fetchedAt).getTime()) < 48 * 3_600_000;
+
+        // Priority 1 — alarm card
+        if (alarmFresh) {
+          if (!alarmEducationSeen) {
+            try { localStorage.setItem("aura_alarm_seen", "true"); } catch {}
+            // defer state update
+            setTimeout(() => setAlarmEducationSeen(true), 0);
+          }
+          return (
+            <div
+              style={{
+                background: "#1A1916",
+                border: "1px solid hsl(var(--border) / 0.4)",
+                borderRadius: 8,
+                padding: "16px 18px",
+                color: "#fff",
+              }}
             >
-              Publish now →
-            </AuraButton>
-            {competitorAlert.url && (
-              <button
-                onClick={() => window.open(competitorAlert.url!, "_blank", "noopener,noreferrer")}
-                style={{
-                  border: "0.5px solid hsl(var(--border))",
-                  color: "hsl(var(--muted-foreground))",
-                  background: "transparent",
-                  fontSize: 12, padding: "7px 18px", borderRadius: 4,
-                  cursor: "pointer",
-                }}
-              >
-                Read their piece →
-              </button>
-            )}
-          </div>
+              {/* Zone 1 */}
+              <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
+                <div className="flex items-center" style={{ gap: 8 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--danger)", display: "inline-block" }} />
+                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--danger)", fontWeight: 600 }}>
+                    Competitor alert
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
+                  {competitorTimeAgo(competitorAlert!.fetchedAt)}
+                </span>
+              </div>
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+                They published
+              </div>
+              <div style={{ fontSize: 15, color: "#fff", lineHeight: 1.4, fontWeight: 500 }}>
+                {competitorAlert!.topic}
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
+                {competitorAlert!.competitorName}
+              </div>
+
+              {/* Zone 2 */}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "14px 0 10px" }} />
+              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+                Your position
+              </div>
+              <div style={{ fontSize: 13, color: "var(--brand)", fontWeight: 500 }}>
+                {competitorAlert!.signalTitle}
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>
+                {competitorAlert!.fragmentCount} fragments · {topSignal ? Math.round((topSignal.confidence || 0) * 100) : 0}% confidence · {competitorAlert!.daysSinceLastPost} days since you published
+              </div>
+
+              {/* Zone 3 */}
+              <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => navigate("/publish")}
+                  style={{
+                    background: "var(--brand)", color: "#1A1916",
+                    border: 0, fontSize: 12, fontWeight: 600,
+                    padding: "8px 16px", borderRadius: 4, cursor: "pointer",
+                  }}
+                >
+                  Publish now →
+                </button>
+                {competitorAlert!.url && (
+                  <button
+                    onClick={() => window.open(competitorAlert!.url!, "_blank", "noopener,noreferrer")}
+                    style={{
+                      background: "transparent", color: "rgba(255,255,255,0.7)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      fontSize: 12, padding: "8px 16px", borderRadius: 4, cursor: "pointer",
+                    }}
+                  >
+                    Read their piece →
+                  </button>
+                )}
+                <button
+                  onClick={() => setAlarmDismissed(true)}
+                  style={{
+                    background: "transparent", color: "rgba(255,255,255,0.4)",
+                    border: 0, fontSize: 11, cursor: "pointer", marginLeft: "auto",
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+
+              {!alarmEducationSeen && (
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 12, lineHeight: 1.5 }}>
+                  Aura monitors industry publications and alerts you when competitors publish on your signal topics.
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Priority 2 — nudge card
+        if (auraData?.personalized_nudge) {
+          const subs = [
+            { key: "capture", value: auraData.capture_score },
+            { key: "signal", value: auraData.signal_score },
+            { key: "content", value: auraData.content_score },
+          ].sort((a, b) => a.value - b.value);
+          const weakest = subs[0].key;
+          const ctaLabel = weakest === "content" ? "Draft post →" : weakest === "capture" ? "Capture now →" : "See your signals →";
+          const ctaAction = weakest === "content"
+            ? () => navigate("/publish")
+            : weakest === "capture"
+            ? () => onOpenCapture?.()
+            : () => onSwitchTab?.("intelligence");
+          return (
+            <div
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border) / 0.6)",
+                borderRadius: 8,
+                padding: "16px 18px",
+              }}
+            >
+              <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
+                <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
+                  Your briefing
+                </span>
+              </div>
+              <p style={{ fontSize: 14, lineHeight: 1.65, color: "hsl(var(--foreground))", margin: 0 }}>
+                {auraData.personalized_nudge}
+              </p>
+              <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
+                <AuraButton variant="primary" size="sm" onClick={ctaAction} style={{ borderRadius: 4, padding: "7px 18px" }}>
+                  {ctaLabel}
+                </AuraButton>
+                {weakest !== "signal" && (
+                  <AuraButton variant="ghost" size="sm" onClick={() => onSwitchTab?.("intelligence")} style={{ borderRadius: 4, padding: "7px 18px" }}>
+                    See your signals →
+                  </AuraButton>
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        // Priority 3 — promote top recommended move
+        if (topMove) {
+          return (
+            <div
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border) / 0.6)",
+                borderRadius: 8,
+                padding: "16px 18px",
+              }}
+            >
+              <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
+                <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
+                  Recommended move
+                </span>
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>{topMove.title}</div>
+              <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--muted-foreground))", margin: 0 }}>{topMove.rationale}</p>
+              <div className="flex items-center" style={{ marginTop: 14 }}>
+                <AuraButton variant="primary" size="sm" onClick={() => onSwitchTab?.("authority")} style={{ borderRadius: 4, padding: "7px 18px" }}>
+                  Open this move →
+                </AuraButton>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
+
+      {/* Secondary moves (collapsed) */}
+      {moves.length > 1 && (
+        <div>
+          <button
+            onClick={() => setShowSecondaryMoves(s => !s)}
+            style={{
+              fontSize: 12,
+              color: "hsl(var(--muted-foreground))",
+              background: "transparent",
+              border: 0,
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "4px 0",
+            }}
+          >
+            {moves.length - 1} more move{moves.length - 1 === 1 ? "" : "s"}
+            <ChevronDown size={14} style={{ transform: showSecondaryMoves ? "rotate(180deg)" : "none", transition: "transform 200ms" }} />
+          </button>
+          {showSecondaryMoves && (
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+              {moves.slice(1).map(m => (
+                <div key={m.id} style={{
+                  border: "1px solid hsl(var(--border) / 0.5)",
+                  borderRadius: 6,
+                  padding: "10px 12px",
+                  background: "hsl(var(--card))",
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>{m.title}</div>
+                  <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{m.rationale}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* SECTION 3 — Aura's Read */}
+      {/* SECTION 2 — AI daily briefing */}
+      {/* Aura's Read */}
       <AurasRead
         userId={sessionConfirmed ? authUser?.id ?? null : null}
         onOpenCapture={onOpenCapture}
