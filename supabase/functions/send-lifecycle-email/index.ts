@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 const APP_URL = "https://aura-intel.org";
-const FROM = "Mohammad Mahafzah <mohammad@aura-intel.org>";
-const REPLY_TO = "mohammad@aura-intel.org";
+const FROM = "Mohammad Mahafzah <mohammad.mahafdhah@aura-intel.org>";
+const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive";
 
@@ -44,7 +44,7 @@ function buildEmail(
     score: number | null;
     tier: string | null;
     signalCount: number;
-  }
+  },
 ): { subject: string; html: string } {
   const { BRAND, FONT, firstName, entriesCount, topSignals, score, tier, signalCount } = ctx;
   const name = firstName || "there";
@@ -67,9 +67,10 @@ function buildEmail(
 
   if (type === "day1") {
     const subject = "Did Aura find your first signal?";
-    const body = entriesCount < 3
-      ? `<p>Hi ${name},</p><p>Aura needs a few captures to start surfacing signals. Drop in one article — anything you read this morning works.</p>${ctaButton(BRAND, "Capture now", APP_URL)}${signoff()}`
-      : `<p>Hi ${name},</p><p>Nice — ${entriesCount} captures in. Aura should be surfacing your first signals. Take 30 seconds to look.</p>${ctaButton(BRAND, "See Intelligence", APP_URL)}${signoff()}`;
+    const body =
+      entriesCount < 3
+        ? `<p>Hi ${name},</p><p>Aura needs a few captures to start surfacing signals. Drop in one article — anything you read this morning works.</p>${ctaButton(BRAND, "Capture now", APP_URL)}${signoff()}`
+        : `<p>Hi ${name},</p><p>Nice — ${entriesCount} captures in. Aura should be surfacing your first signals. Take 30 seconds to look.</p>${ctaButton(BRAND, "See Intelligence", APP_URL)}${signoff()}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
@@ -112,13 +113,15 @@ serve(async (req) => {
     const { user_id, email_type } = await req.json();
     if (!user_id || !email_type) {
       return new Response(JSON.stringify({ error: "user_id and email_type required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -127,7 +130,8 @@ serve(async (req) => {
     const RESEND_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_KEY) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY missing" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -142,7 +146,8 @@ serve(async (req) => {
       .limit(1);
     if (existing && existing.length > 0 && email_type !== "inactive") {
       return new Response(JSON.stringify({ skipped: "already_sent" }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -150,7 +155,8 @@ serve(async (req) => {
     const { data: userData, error: userErr } = await admin.auth.admin.getUserById(user_id);
     if (userErr || !userData?.user?.email) {
       return new Response(JSON.stringify({ error: "user not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     const recipient = userData.user.email;
@@ -188,17 +194,14 @@ serve(async (req) => {
     const tier = (snap?.components as any)?.tier_name || (snap?.components as any)?.tier || null;
 
     // Brand tokens
-    const { data: dsRow } = await admin
-      .from("design_system")
-      .select("tokens")
-      .eq("is_active", true)
-      .maybeSingle();
+    const { data: dsRow } = await admin.from("design_system").select("tokens").eq("is_active", true).maybeSingle();
     const ds = (dsRow?.tokens as any) || {};
     const BRAND = ds?.colors?.brand?.light || "#B08D3A";
     const FONT = ds?.typography?.body || "DM Sans";
 
     const { subject, html } = buildEmail(email_type, {
-      BRAND, FONT,
+      BRAND,
+      FONT,
       firstName: profile?.first_name || "",
       sectorFocus: profile?.sector_focus || null,
       entriesCount: entriesCount || 0,
@@ -224,7 +227,8 @@ serve(async (req) => {
       const errText = await resendRes.text();
       console.error("Resend failed", resendRes.status, errText);
       return new Response(JSON.stringify({ error: errText }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -237,12 +241,14 @@ serve(async (req) => {
     });
 
     return new Response(JSON.stringify({ success: true }), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e: any) {
     console.error("send-lifecycle-email error", e);
     return new Response(JSON.stringify({ error: e?.message || "Server error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
