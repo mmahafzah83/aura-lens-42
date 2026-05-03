@@ -1,0 +1,1 @@
+DELETE FROM public.strategic_signals WHERE signal_title IS NULL OR signal_title = '' OR signal_title ILIKE 'Untitled%';
