@@ -95,6 +95,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [captureRows, setCaptureRows] = useState<{ created_at: string }[]>([]);
   const [capturesThisMonth, setCapturesThisMonth] = useState(0);
   const [lastCaptureAll, setLastCaptureAll] = useState<Date | null>(null);
+  const [totalCaptureCount, setTotalCaptureCount] = useState<number | null>(null);
 
   // All snapshots (no range filter) for Authority Trajectory forecasting
   const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
@@ -218,6 +219,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       (lastDocRes.data as any)?.[0]?.created_at,
     ].filter(Boolean).map((t: string) => new Date(t).getTime());
     setLastCaptureAll(lastTimes.length ? new Date(Math.max(...lastTimes)) : null);
+
+    // J12 — total all-time capture count for empty state detection
+    const [{ count: totalEntries }, { count: totalDocs }] = await Promise.all([
+      supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("documents").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    ]);
+    setTotalCaptureCount((totalEntries ?? 0) + (totalDocs ?? 0));
 
     // LinkedIn metrics count (overall, for empty state decisions)
     const { count: trueCount } = await supabase
