@@ -248,6 +248,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [lang, setLang] = useState<"en" | "ar">("en");
   const [output, setOutput] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
@@ -430,9 +431,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     }
   };
 
-  const streamGeneration = async (extraPromptInstruction?: string): Promise<string> => {
+  const streamGeneration = async (
+    extraPromptInstruction?: string,
+    overrides?: { topic?: string; context?: string; language?: "en" | "ar"; framework?: ContentFramework; contentType?: ContentType; signal?: AbortSignal }
+  ): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error("Not authenticated");
+    const effTopic = overrides?.topic ?? topic;
+    const effContext = overrides?.context ?? context;
+    const effLang = overrides?.language ?? lang;
+    const effFramework = overrides?.framework ?? framework;
+    const effContentType = overrides?.contentType ?? contentType;
     const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-authority-content`, {
       method: "POST",
       headers: {
@@ -442,15 +451,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       },
       body: JSON.stringify({
         action: "generate_content",
-        content_type: contentType,
-        topic,
-        context,
-        language: lang,
-        framework: framework !== "auto" ? framework : undefined,
+        content_type: effContentType,
+        topic: effTopic,
+        context: effContext,
+        language: effLang,
+        framework: effFramework !== "auto" ? effFramework : undefined,
         extra_instruction: extraPromptInstruction,
       }),
+      signal: overrides?.signal,
     });
-    if (!resp.ok || !resp.body) throw new Error("Generation failed");
+    if (!resp.ok || !resp.body) {
+      let detail = "";
+      try { detail = (await resp.text()).slice(0, 300); } catch {}
+      throw new Error(`Generation failed (${resp.status})${detail ? `: ${detail}` : ""}`);
+    }
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let textBuffer = "";
@@ -476,10 +490,16 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     return accumulated;
   };
 
-  const generate = async () => {
-    if (!topic.trim()) return;
-    if (contentType === "carousel") { setShowCarousel(true); return; }
+  const generate = async (overrides?: { topic?: string; context?: string; language?: "en" | "ar"; framework?: ContentFramework; contentType?: ContentType }) => {
+    const effTopic = (overrides?.topic ?? topic).trim();
+    const effContentType = overrides?.contentType ?? contentType;
+    if (!effTopic) {
+      toast.error("Add a topic before generating.");
+      return;
+    }
+    if (effContentType === "carousel") { setShowCarousel(true); return; }
     setGenerating(true);
+    setShowSlowHint(false);
     setOutput("");
     setCritique(null);
     setCritiqueError(null);
@@ -487,12 +507,26 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     setShortVersion("");
     setShowingShort(false);
     setGenerationTimestamp(new Date().toISOString());
+    const slowTimer = setTimeout(() => setShowSlowHint(true), 5000);
+    const controller = new AbortController();
+    const timeoutTimer = setTimeout(() => controller.abort(), 60000);
     try {
-      const accumulated = await streamGeneration();
+      const accumulated = await streamGeneration(undefined, { ...overrides, topic: effTopic, signal: controller.signal });
       setFullVersion(accumulated);
+      if (!accumulated.trim()) {
+        toast.error("No content was returned. Please try again.");
+      }
     } catch (e: any) {
-      toast.error(e.message);
+      console.error("[generate-authority-content] error:", e);
+      if (e?.name === "AbortError") {
+        toast.error("Generation timed out. Please try again.");
+      } else {
+        toast.error(e?.message || "Generation failed. Please try again.");
+      }
     } finally {
+      clearTimeout(slowTimer);
+      clearTimeout(timeoutTimer);
+      setShowSlowHint(false);
       setGenerating(false);
     }
   };
@@ -624,11 +658,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 size="lg"
                 loading={isGeneratingAny}
                 onClick={() => {
+                  const heroTopic = isCustomAngle ? topic : activeSignal.signal_title;
+                  const heroContext = isCustomAngle ? context : (activeSignal.explanation || "");
                   if (!isCustomAngle) {
                     selectSuggestion(activeSignal.signal_title, activeSignal.explanation || "", "post", activeSignal.signal_title, activeSignal.explanation || "");
                     setSelectedSignalId(activeSignal.id);
                   }
-                  setTimeout(() => generate(), 50);
+                  generate({ topic: heroTopic, context: heroContext, contentType: "post", language: lang, framework });
                 }}
                 style={{ flex: 1, gap: 6, color: "#fff" }}
               >
@@ -817,7 +853,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             {/* Generate */}
             <button
               id="aura-generate-btn"
-              onClick={generate}
+              onClick={() => generate()}
               disabled={isGeneratingAny || !topic.trim()}
               className="aura-generate-btn w-full"
               style={{
@@ -838,8 +874,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               }}
             >
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              Generate {FORMAT_LABELS[contentType]?.label || "Content"}
+              {generating ? "Generating…" : `Generate ${FORMAT_LABELS[contentType]?.label || "Content"}`}
             </button>
+            {isGeneratingAny && showSlowHint && (
+              <p style={{ fontSize: 12, color: "var(--ink-4)", textAlign: "center", marginTop: 8 }}>
+                This usually takes 10–30 seconds…
+              </p>
+            )}
 
             {/* Output */}
             {displayedOutput && (
