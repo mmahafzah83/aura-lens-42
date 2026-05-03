@@ -96,6 +96,9 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           text="Weeks with at least one meaningful capture in the last 12 weeks."
         />
       </div>
+      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+        Your weekly capture consistency over the last 12 weeks
+      </div>
 
       <div
         role="list"
