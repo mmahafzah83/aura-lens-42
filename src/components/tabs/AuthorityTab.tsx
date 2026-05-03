@@ -272,6 +272,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [visualUrl, setVisualUrl] = useState<string | null>(null);
   const [visualLoading, setVisualLoading] = useState(false);
 
+  // Quick actions / variations state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [translatedPost, setTranslatedPost] = useState<string | null>(null);
+  const [translatedLang, setTranslatedLang] = useState<"en" | "ar" | null>(null);
+
   // Free-tier generation limit
   const [monthlyGenerationCount, setMonthlyGenerationCount] = useState(0);
   const FREE_LIMIT = 3;
