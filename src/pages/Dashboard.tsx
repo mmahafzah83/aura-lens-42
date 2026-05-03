@@ -748,6 +748,7 @@ const Dashboard = () => {
         context={chatContext}
       />
       <FeedbackButton />
+      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 };
