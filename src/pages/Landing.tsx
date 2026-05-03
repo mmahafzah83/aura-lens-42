@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap } from "lucide-react";
+import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap, ChevronDown } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 
@@ -594,6 +594,9 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Section 9.5 — FAQ */}
+      <LandingFAQ />
+
       {/* Section 10 — Footer */}
       <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
         <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
@@ -608,3 +611,74 @@ const Landing = () => {
 };
 
 export default Landing;
+
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build authority from intelligence you already have." },
+  { q: "Where is my data stored?", a: "Your data is stored on Supabase (hosted on AWS) with industry-standard encryption. We do not sell, share, or monetize your data. AI processing is done per-request — we do not train models on your content." },
+  { q: "Who is Aura built for?", a: "Senior professionals in the GCC — Directors, VPs, CIOs, CDOs — who read extensively but don't publish enough. Especially those in digital transformation, utilities, critical infrastructure, and Vision 2030 programs." },
+  { q: "How is this different from ChatGPT?", a: "ChatGPT writes from general knowledge. Aura writes from YOUR knowledge — your captured articles, your detected signals, your professional voice. Every post references intelligence you've actually built, not generic AI output." },
+  { q: "What languages does Aura support?", a: "English and Arabic. Arabic content uses contemporary formal Arabic with proper RTL formatting. Technical terms (AI, KPI, IoT) stay in English." },
+  { q: "How long before I see value?", a: "5 minutes. Capture 3 articles → Aura detects your first signal. Generate your first post from that signal. Your authority score starts moving immediately." },
+  { q: "Is this free during beta?", a: "Yes. The private beta is free. We'll introduce pricing ($49/month) after beta, with early access users receiving a founding member rate." },
+  { q: "How do I get access?", a: "Apply at aura-intel.org/request-access. We review applications weekly. Current wait time: 3-5 business days." },
+];
+
+function LandingFAQ() {
+  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  return (
+    <section className="px-5 sm:px-10 py-16 sm:py-24" style={{ background: "var(--ink)" }}>
+      <div className="max-w-3xl mx-auto">
+        <h2
+          className="text-center text-[28px] sm:text-[36px] font-semibold mb-10 sm:mb-14"
+          style={{ color: "var(--ink-7)", fontFamily: "var(--font-display)", letterSpacing: "-0.01em" }}
+        >
+          Frequently asked questions
+        </h2>
+        <div className="flex flex-col" style={{ gap: 0 }}>
+          {FAQ_ITEMS.map((item, i) => {
+            const open = openIndex === i;
+            return (
+              <div
+                key={i}
+                style={{ borderTop: i === 0 ? "1px solid rgba(255,255,255,0.1)" : undefined, borderBottom: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(open ? null : i)}
+                  aria-expanded={open}
+                  className="w-full flex items-center justify-between text-left py-5"
+                  style={{ background: "transparent", border: 0, cursor: "pointer", color: "var(--ink-7)" }}
+                >
+                  <span style={{ fontSize: 15, fontWeight: 500, color: "var(--ink-7)" }}>{item.q}</span>
+                  <ChevronDown
+                    size={18}
+                    style={{
+                      color: "rgba(255,255,255,0.6)",
+                      transform: open ? "rotate(180deg)" : "none",
+                      transition: "transform 200ms ease",
+                      flexShrink: 0,
+                      marginLeft: 16,
+                    }}
+                  />
+                </button>
+                {open && (
+                  <div
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.7,
+                      color: "rgba(255,255,255,0.65)",
+                      paddingBottom: 20,
+                      paddingRight: 34,
+                    }}
+                  >
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
