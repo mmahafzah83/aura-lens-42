@@ -191,6 +191,36 @@ export type Database = {
         }
         Relationships: []
       }
+      beta_feedback: {
+        Row: {
+          created_at: string | null
+          feedback_type: string | null
+          id: string
+          message: string | null
+          page: string | null
+          rating: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          feedback_type?: string | null
+          id?: string
+          message?: string | null
+          page?: string | null
+          rating?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          feedback_type?: string | null
+          id?: string
+          message?: string | null
+          page?: string | null
+          rating?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       captures: {
         Row: {
           created_at: string
@@ -1127,6 +1157,30 @@ export type Database = {
           },
         ]
       }
+      lifecycle_emails: {
+        Row: {
+          email_type: string
+          id: string
+          metadata: Json | null
+          sent_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          email_type: string
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          email_type?: string
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       linkedin_connections: {
         Row: {
           access_token: string
@@ -1567,6 +1621,36 @@ export type Database = {
           theme?: string
           tint_color?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      qa_reports: {
+        Row: {
+          failed: number | null
+          id: string
+          passed: number | null
+          results: Json | null
+          run_at: string | null
+          total_checks: number | null
+          triggered_by: string | null
+        }
+        Insert: {
+          failed?: number | null
+          id?: string
+          passed?: number | null
+          results?: Json | null
+          run_at?: string | null
+          total_checks?: number | null
+          triggered_by?: string | null
+        }
+        Update: {
+          failed?: number | null
+          id?: string
+          passed?: number | null
+          results?: Json | null
+          run_at?: string | null
+          total_checks?: number | null
+          triggered_by?: string | null
         }
         Relationships: []
       }
