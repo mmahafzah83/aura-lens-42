@@ -342,7 +342,7 @@ const SignalDetailPanel = ({
           {/* Action button */}
           <button
             onClick={() => onDraft(signal)}
-            style={{ width: "100%", background: "var(--brand)", color: "#000", border: "none", borderRadius: 6, padding: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            style={{ width: "100%", background: "var(--ink)", color: "#fff", border: "none", borderRadius: 8, padding: 12, fontSize: 14, fontWeight: 500, cursor: "pointer" }}
           >
             Write on this
           </button>
