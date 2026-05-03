@@ -148,7 +148,7 @@ const Onboarding = () => {
             ? Math.round((signalData.reduce((s, r) => s + Number(r.confidence), 0) / signalData.length) * 100)
             : 0;
           const contentScore = Math.min(100, Math.round(((contentRes.count || 0) / 10) * 100));
-          const score = Math.round(captureScore * 0.35 + signalScore * 0.35 + contentScore * 0.3);
+          const score = Math.round(signalScore * 0.40 + contentScore * 0.40 + captureScore * 0.20);
           const tier = score >= 85 ? "Authority" : score >= 65 ? "Gaining momentum" : score >= 40 ? "Building" : "Dormant";
           setAuraScore(score);
           setScoreTier(tier);
