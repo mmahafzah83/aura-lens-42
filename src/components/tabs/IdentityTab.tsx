@@ -208,8 +208,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   // Extract positioning data from brand_assessment_results or identity_intelligence
   const brandResults = profile?.brand_assessment_results || {};
   const identityIntel = profile?.identity_intelligence || {};
-  const positioningTitle = brandResults?.positioning_title || identityIntel?.primary_role || profile?.primary_strength || "";
-  const positioningStatement = brandResults?.positioning_statement || identityIntel?.identity_summary || "";
+  const positioningTitle = brandResults?.positioning_title || brandResults?.primary_archetype || identityIntel?.primary_role || profile?.primary_strength || "";
+  const positioningStatement = brandResults?.positioning_statement || identityIntel?.identity_summary || brandResults?.interpretation || "";
 
   const assessments = [
     { name: "Onboarding", done: profile?.onboarding_completed, date: null },
