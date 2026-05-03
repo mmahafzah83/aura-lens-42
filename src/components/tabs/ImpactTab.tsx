@@ -819,6 +819,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           )}
         </div>
 
+        {/* Authority Journey (Observer → Strategist → Authority) */}
+        {auraData && (
+          <div className="relative mt-6">
+            <AuthorityJourney userId={userId} data={auraData} />
+          </div>
+        )}
+
         {/* Trajectory bar chart */}
         {trajectory && (() => {
           // Build up to 10 bars from existing all-time snapshot scores (latest 10)
