@@ -857,13 +857,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
         {/* Authority Journey (Observer → Strategist → Authority) */}
         {auraData && (
-          <div className="relative mt-6">
+          <div className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
             <AuthorityJourney userId={userId} data={auraData} />
           </div>
         )}
 
         {/* Trajectory bar chart */}
-        {trajectory && (() => {
+        {!isEmpty && trajectory && (() => {
           // Build up to 10 bars from existing all-time snapshot scores (latest 10)
           const recent = allSnapshots.slice(-10).map(s => s.score);
           const bars = recent.length > 0 ? recent : [trajectory.currentScore];
