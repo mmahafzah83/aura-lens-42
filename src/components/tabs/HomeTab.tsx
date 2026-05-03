@@ -237,6 +237,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [caughtUpReady, setCaughtUpReady] = useState(false);
   const [watchingSignalsCount, setWatchingSignalsCount] = useState<number>(0);
 
+  // J13 — New signal notification banner
+  const [newSignal, setNewSignal] = useState<{ id: string; signal_title: string } | null>(null);
+  const [bannerVisible, setBannerVisible] = useState(false);
+
   // H2b — Status strip + dynamic primary card
   const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
   const [sectorFocus, setSectorFocus] = useState<string>("");
