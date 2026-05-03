@@ -618,7 +618,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               {Math.round((activeSignal.confidence ?? 0) * 100)}% · {activeSignal.fragment_count ?? 0} findings · {activeSignal.unique_orgs ?? 0} organizations
             </div>
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
-              <button
+              <AuraButton
+                variant="primary"
+                size="lg"
+                loading={isGeneratingAny}
                 onClick={() => {
                   if (!isCustomAngle) {
                     selectSuggestion(activeSignal.signal_title, activeSignal.explanation || "", "post", activeSignal.signal_title, activeSignal.explanation || "");
@@ -626,25 +629,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   }
                   setTimeout(() => generate(), 50);
                 }}
-                disabled={isGeneratingAny}
-                style={{
-                  background: "var(--brand)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 10,
-                  padding: "12px 18px",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: isGeneratingAny ? "not-allowed" : "pointer",
-                  flex: 1,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                }}
+                style={{ flex: 1, gap: 6, color: "#fff" }}
               >
-                {isGeneratingAny ? "Generating…" : (<>Generate post <ArrowRight className="w-4 h-4" /></>)}
-              </button>
+                Generate post <ArrowRight className="w-4 h-4" />
+              </AuraButton>
               <div className="flex gap-1 rounded-[10px] p-0.5" style={{ background: "rgba(255,255,255,0.08)" }}>
                 <button
                   onClick={() => setLang("en")}
