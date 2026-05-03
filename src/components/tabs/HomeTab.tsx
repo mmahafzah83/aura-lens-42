@@ -232,6 +232,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // Competitor alert (read-only, additive)
   const [competitorAlert, setCompetitorAlert] = useState<CompetitorAlert | null>(null);
 
+  // J4 — "You're caught up" signal
+  const [caughtUpReady, setCaughtUpReady] = useState(false);
+  const [watchingSignalsCount, setWatchingSignalsCount] = useState<number>(0);
+
   // H2b — Status strip + dynamic primary card
   const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
   const [sectorFocus, setSectorFocus] = useState<string>("");
