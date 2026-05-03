@@ -703,7 +703,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               Authority score
               <InfoTooltip
                 label="Aura Score"
-                text="Combines captures (35%), signals (35%), and content (30%)."
+                text="Signal intelligence (40%) — depth and diversity of your strategic signals. Content authority (40%) — posts published from your intelligence. Capture consistency (20%) — how regularly you feed the system."
               />
             </div>
             <div style={{ marginTop: 6 }}>
@@ -960,9 +960,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
-            { kind: "capture" as const, label: "Capture", value: captureScore, desc: "Capture daily to maintain score", color: "var(--brand)" },
+            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
             { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Capture more to strengthen signals", color: "var(--brand)" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
           ]).map((c, idx) => {
             const cfg = subScoreCard(c.kind, c.value);
             return (
