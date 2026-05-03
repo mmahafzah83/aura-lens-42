@@ -1289,8 +1289,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       <StartFromPanel
         currentFormat={(contentType === "flash" ? "post" : contentType) as any}
         hasDraft={!!(topic.trim() || output)}
-        onSelect={(t, ctx, fmt, sigTitle, sigInsight) => {
+        onSelect={(t, ctx, fmt, sigTitle, sigInsight, sigId) => {
           selectSuggestion(t, ctx, fmt, sigTitle, sigInsight);
+          if (sigId) setSelectedSignalId(sigId);
+          // Bring the hero CTA into view so the user sees the loaded angle
+          setTimeout(() => {
+            document.getElementById("aura-hero-cta")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 50);
         }}
       />
       </div>
