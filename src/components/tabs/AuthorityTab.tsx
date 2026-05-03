@@ -19,6 +19,8 @@ import ImageCardGenerator from "@/components/ImageCardGenerator";
 import StartFromPanel from "@/components/StartFromPanel";
 import FlashPanel from "@/components/FlashPanel";
 import EmptyState from "@/components/ui/EmptyState";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary" | "flash";
@@ -215,6 +217,10 @@ interface SignalSuggestion {
   explanation: string;
   content_opportunity: any;
   confidence: number;
+  strategic_implications?: string | null;
+  fragment_count?: number | null;
+  unique_orgs?: number | null;
+  theme_tags?: string[] | null;
 }
 
 interface FrameworkSuggestion {
@@ -270,6 +276,15 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [_frameworks, setFrameworks] = useState<FrameworkSuggestion[]>([]);
   const [_suggestionsLoading, setSuggestionsLoading] = useState(true);
 
+  // Customize collapsible (persisted)
+  const [customizeOpen, setCustomizeOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("aura_publish_expanded") === "1";
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("aura_publish_expanded", customizeOpen ? "1" : "0"); } catch {}
+  }, [customizeOpen]);
+
   const [critiqueLoading, setCritiqueLoading] = useState(false);
   const [critique, setCritique] = useState<any>(null);
   const [critiqueError, setCritiqueError] = useState<string | null>(null);
@@ -291,7 +306,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
   useEffect(() => {
     Promise.all([
-      supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence")
+      supabase.from("strategic_signals").select("id, signal_title, explanation, content_opportunity, confidence, strategic_implications, fragment_count, unique_orgs, theme_tags")
         .eq("status", "active").gte("confidence", 0.6).order("confidence", { ascending: false }).limit(5),
       supabase.from("master_frameworks").select("id, title, summary, tags").order("created_at", { ascending: false }).limit(5),
       supabase.from("authority_voice_profiles").select("vocabulary_preferences, example_posts, preferred_structures").limit(1).single(),
