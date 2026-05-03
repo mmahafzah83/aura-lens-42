@@ -238,6 +238,9 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [alarmDismissed, setAlarmDismissed] = useState(false);
   const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
   const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
+
+  // J12 — empty state for new users with zero captures
+  const isEmpty = Array.isArray(entries) && entries.length === 0;
   const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
   const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
