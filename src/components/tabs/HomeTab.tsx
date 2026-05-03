@@ -640,6 +640,30 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       }
     })();
 
+    // J13 — New signal banner: most recent active signal in last 24h, not seen.
+    (async () => {
+      try {
+        const since = new Date(Date.now() - 24 * 3_600_000).toISOString();
+        const { data } = await supabase
+          .from("strategic_signals")
+          .select("id, signal_title")
+          .eq("user_id", uid)
+          .eq("status", "active")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        let seen: string[] = [];
+        try { seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]"); } catch {}
+        const fresh = (data || []).find((s: any) => !seen.includes(s.id));
+        if (fresh) {
+          setNewSignal({ id: fresh.id, signal_title: fresh.signal_title });
+          setTimeout(() => setBannerVisible(true), 50);
+        }
+      } catch (e) {
+        console.warn("[HomeTab] new signal banner check failed", e);
+      }
+    })();
+
     // Load aura score for the status strip + primary card
     (async () => {
       try {
