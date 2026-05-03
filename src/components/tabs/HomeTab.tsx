@@ -1013,7 +1013,7 @@ const HomeTab = ({ onOpenCapture, onSwitchTab }: HomeTabProps) => {
               {/* Zone 2 */}
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "14px 0 10px" }} />
               <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
-                Your position
+                Your signal on this topic
               </div>
               <div style={{ fontSize: 13, color: "var(--brand)", fontWeight: 500 }}>
                 {competitorAlert!.signalTitle}
