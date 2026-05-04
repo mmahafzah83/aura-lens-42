@@ -64,6 +64,7 @@ const FAQ = [
 
 export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) onClose();
@@ -235,7 +236,7 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
           <AuraButton
             variant="secondary"
             style={{ width: "100%" }}
-            onClick={() => window.open("https://aura-intel.org/guide", "_blank", "noopener,noreferrer")}
+            onClick={() => { onClose(); navigate("/guide"); }}
           >
             Read the full guide →
           </AuraButton>
