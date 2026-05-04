@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
+import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 
 interface Milestone {
   id: string;
@@ -21,6 +22,33 @@ interface Props {
   userId: string | null;
   data?: AuraScoreResponse | null;
 }
+
+const MILESTONE_ICONS: Record<string, string> = {
+  profile_complete: "◆",
+  first_signal: "✦",
+  voice_trained: "✺",
+  first_publish: "✍",
+  brand_assessment: "❖",
+  five_signals: "✦",
+  sector_depth: "◎",
+  weekly_rhythm_4: "◷",
+};
+
+const buildShareContext = (id: string, name: string, ctx: any, sectorFocus: string | null): string => {
+  const sector = sectorFocus || "your sector";
+  if (id === "profile_complete") return `Professional identity configured for ${sector}`;
+  if (id === "first_signal") return `First strategic signal: ${ctx?.signal_title || name}`;
+  if (id === "voice_trained") return "AI voice model trained on my writing style";
+  if (id === "brand_assessment") return "Professional brand archetype identified";
+  if (id === "five_signals") return `${ctx?.count ?? 5} active signals across ${sector}`;
+  if (id === "sector_depth") {
+    const t = Array.isArray(ctx?.themes) ? ctx.themes.length : (ctx?.theme_count ?? 5);
+    return `${t} intelligence themes tracked`;
+  }
+  if (id === "first_publish") return "First AI-assisted post published";
+  if (id === "weekly_rhythm_4") return "4+ active capture weeks in the last 6 weeks";
+  return name;
+};
 
 const NEXT_DESCRIPTIONS: Record<string, string> = {
   profile_complete: "Earned when your profile and sector focus are set.",
@@ -57,6 +85,8 @@ const summarizeContext = (id: string, ctx: any): string | null => {
 const MilestonesSection = ({ userId, data: provided }: Props) => {
   const [data, setData] = useState<AuraScoreResponse | null>(provided ?? null);
   const [loading, setLoading] = useState(!provided);
+  const [profile, setProfile] = useState<{ first_name: string | null; level: string | null; sector_focus: string | null } | null>(null);
+  const [shareData, setShareData] = useState<MilestoneShareData | null>(null);
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -79,6 +109,22 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
     })();
     return () => { cancelled = true; };
   }, [userId, provided]);
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase
+      .from("diagnostic_profiles")
+      .select("first_name, level, sector_focus")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({ data: p }) => {
+        if (p) setProfile({
+          first_name: (p as any).first_name || null,
+          level: (p as any).level || null,
+          sector_focus: (p as any).sector_focus || null,
+        });
+      });
+  }, [userId]);
 
   if (loading) {
     return (
@@ -167,6 +213,36 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     </div>
                   )}
                 </div>
+                <button
+                  type="button"
+                  aria-label={`Share ${m.name} on LinkedIn`}
+                  onClick={() => setShareData({
+                    name: m.name,
+                    context: buildShareContext(m.id, m.name, m.context, profile?.sector_focus || null),
+                    earnedAt: m.earned_at,
+                    icon: MILESTONE_ICONS[m.id] || "✦",
+                    firstName: profile?.first_name || null,
+                    level: profile?.level || null,
+                    sectorFocus: profile?.sector_focus || null,
+                  })}
+                  style={{
+                    background: "transparent",
+                    border: "1px solid hsl(var(--border) / 0.6)",
+                    borderRadius: 6,
+                    padding: "4px 8px",
+                    cursor: "pointer",
+                    color: "hsl(var(--muted-foreground))",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    flexShrink: 0,
+                  }}
+                  title="Share on LinkedIn"
+                >
+                  <Share2 size={12} />
+                  Share
+                </button>
               </div>
             );
           }}
@@ -198,6 +274,14 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
             ))}
           </ul>
         </div>
+      )}
+
+      {shareData && (
+        <MilestoneShareModal
+          open={!!shareData}
+          onClose={() => setShareData(null)}
+          data={shareData}
+        />
       )}
     </section>
   );
