@@ -468,36 +468,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         framework: effFramework !== "auto" ? effFramework : undefined,
         extra_instruction: extraPromptInstruction,
         signal_id: selectedSignalId,
+        stream: false,
       }),
       signal: overrides?.signal,
     });
-    if (!resp.ok || !resp.body) {
+    if (!resp.ok) {
       let detail = "";
       try { detail = (await resp.text()).slice(0, 300); } catch {}
       throw new Error(`Generation failed (${resp.status})${detail ? `: ${detail}` : ""}`);
     }
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let textBuffer = "";
-    let accumulated = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      textBuffer += decoder.decode(value, { stream: true });
-      let nl: number;
-      while ((nl = textBuffer.indexOf("\n")) !== -1) {
-        let line = textBuffer.slice(0, nl);
-        textBuffer = textBuffer.slice(nl + 1);
-        if (line.endsWith("\r")) line = line.slice(0, -1);
-        if (!line.startsWith("data: ")) continue;
-        const json = line.slice(6).trim();
-        if (json === "[DONE]") break;
-        try {
-          const c = JSON.parse(json).choices?.[0]?.delta?.content;
-          if (c) { accumulated += c; setOutput(accumulated); }
-        } catch {}
-      }
-    }
+    const json = await resp.json();
+    const accumulated: string = json?.content || "";
+    if (accumulated) setOutput(accumulated);
     return accumulated;
   };
 
@@ -669,31 +651,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           context,
           language: targetLang,
           extra_instruction: instruction,
+          stream: false,
         }),
       });
-      if (!resp.ok || !resp.body) throw new Error(`Translate failed (${resp.status})`);
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let accumulated = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, nl);
-          textBuffer = textBuffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
-          try {
-            const c = JSON.parse(json).choices?.[0]?.delta?.content;
-            if (c) { accumulated += c; setTranslatedPost(accumulated); }
-          } catch {}
-        }
-      }
+      if (!resp.ok) throw new Error(`Translate failed (${resp.status})`);
+      const j = await resp.json();
+      const accumulated: string = j?.content || "";
+      if (accumulated) setTranslatedPost(accumulated);
     } catch (e: any) {
       setTranslatedPost(null);
       setTranslatedLang(null);
