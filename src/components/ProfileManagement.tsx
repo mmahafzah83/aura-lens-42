@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck, Compass } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck, Compass, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
 import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
-import BetaAccessAdmin from "@/components/BetaAccessAdmin";
 
 interface Skill {
   name: string;
@@ -18,12 +20,21 @@ interface Skill {
 interface ProfileManagementProps {
   onResetDiagnostic?: () => void;
   onNavigate?: (tab: string) => void;
+  startExpanded?: boolean;
 }
 
-const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementProps) => {
+const SECTOR_OPTIONS = [
+  "Consulting", "Energy", "Finance", "Government", "Technology",
+  "Healthcare", "Telecom", "Real Estate", "Manufacturing", "Other",
+];
+
+const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
   const [corePractice, setCorePractice] = useState("");
@@ -34,7 +45,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
   const [skills, setSkills] = useState<Skill[]>([]);
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [newSkillName, setNewSkillName] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(!!startExpanded);
   const [auditOpen, setAuditOpen] = useState(false);
   const [brandOpen, setBrandOpen] = useState(false);
   const [auditCompleted, setAuditCompleted] = useState(false);
@@ -49,6 +60,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
       const { data: profile } = await (supabase.from("diagnostic_profiles" as any) as any)
         .select("*").eq("user_id", user.id).maybeSingle();
       if (profile) {
+        setFirstName(profile.first_name || "");
+        setAvatarUrl(profile.avatar_url || null);
         setFirm(profile.firm || "");
         setLevel(profile.level || "");
         setCorePractice(profile.core_practice || "");
@@ -71,6 +84,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
       .upsert({
         user_id: user.id,
+        first_name: firstName,
+        avatar_url: avatarUrl,
         firm,
         level,
         core_practice: corePractice,
@@ -86,6 +101,30 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate }: ProfileManagementP
       toast({ title: "Profile Updated", description: "Your executive profile has been saved." });
     }
     setSaving(false);
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!file || !userId) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${userId}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = data.publicUrl;
+      setAvatarUrl(url);
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ avatar_url: url }).eq("user_id", userId);
+      toast({ title: "Avatar updated" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e.message, variant: "destructive" });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const addSkill = () => {
