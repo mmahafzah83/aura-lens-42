@@ -1697,7 +1697,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Plan your authority narrative based on signals and insights.</p>
+        <p className="text-sm text-muted-foreground">Plan your authority narrative based on signals and insights — sequence the moves that compound your influence.</p>
         <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2">
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           Generate Plan
