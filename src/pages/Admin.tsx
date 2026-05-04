@@ -555,6 +555,55 @@ const Admin = () => {
           </div>
         </div>
 
+        {/* Active users */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+            Active users
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+            {activeUsers.length} {activeUsers.length === 1 ? "person has" : "people have"} signed in.
+          </p>
+          {activeLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+            </div>
+          ) : activeUsers.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No active users yet.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--ink-3)" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}>
+                    <th className="text-left px-4 py-3 font-medium">Name</th>
+                    <th className="text-left px-4 py-3 font-medium">Email</th>
+                    <th className="text-left px-4 py-3 font-medium">Sector</th>
+                    <th className="text-left px-4 py-3 font-medium">Last login</th>
+                    <th className="text-right px-4 py-3 font-medium">Captures</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeUsers.map((u) => (
+                    <tr key={u.email} style={{ borderTop: "1px solid var(--ink-3)" }}>
+                      <td className="px-4 py-3 text-sm" style={{ color: "var(--ink-7)" }}>
+                        {u.first_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.email}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.sector || "—"}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>
+                        {formatDate(u.last_sign_in_at || u.activated_at)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-right" style={{ color: "var(--ink-7)" }}>{u.captures}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
         {/* NPS responses */}
         <div
           className="rounded-2xl p-6 mt-8"
