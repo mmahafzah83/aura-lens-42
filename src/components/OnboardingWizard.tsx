@@ -63,7 +63,6 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
 
   const finish = () => {
     localStorage.setItem("aura_onboarding_complete", "true");
-    toast("Welcome to Aura. Your intelligence engine is ready.");
     onComplete();
   };
 
