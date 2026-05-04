@@ -362,6 +362,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           My Story
         </h1>
+        <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          The intelligence portrait that evolves with every capture, signal, and published post
+        </p>
       </div>
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
