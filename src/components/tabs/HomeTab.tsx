@@ -204,8 +204,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return localStorage.getItem("aura_welcome_dismissed") === "true";
   });
   const [welcomeLeaving, setWelcomeLeaving] = useState(false);
-  const showWelcome =
-    !welcomeDismissed && Array.isArray(entries) && entries.length < 3;
   const dismissWelcome = () => {
     setWelcomeLeaving(true);
     setTimeout(() => {
@@ -214,6 +212,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }, 300);
   };
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const showWelcome =
+    !welcomeDismissed && Array.isArray(entries) && entries.length < 3 && profileLoaded;
 
   // section-level loading + error
   const [briefLoading, setBriefLoading] = useState(true);
@@ -260,6 +260,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
   // H2b — Status strip + dynamic primary card
   const [auraData, setAuraData] = useState<AuraScoreData | null>(null);
+  const [auraLoading, setAuraLoading] = useState<boolean>(true);
   const [sectorFocus, setSectorFocus] = useState<string>("");
   const [alarmDismissed, setAlarmDismissed] = useState(false);
   const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
@@ -702,6 +703,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         if (!error && res) setAuraData(res as AuraScoreData);
       } catch (e) {
         console.warn("[HomeTab] aura score load failed", e);
+      } finally {
+        setAuraLoading(false);
       }
     })();
 
@@ -943,7 +946,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
-      <FirstVisitHint page="home" />
+      {/* Hide first-visit hint while the persistent welcome card is the
+          primary onboarding. Once the user dismisses welcome, the hint will
+          appear on the next page load. Never both at once. */}
+      {!showWelcome && <FirstVisitHint page="home" />}
 
       {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
       <MilestoneNotification userId={authUser?.id ?? null} />
@@ -1016,7 +1022,38 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* H2b — STATUS STRIP */}
-      {isEmpty && (
+      {auraLoading && !auraData && (
+        <div
+          className="flex items-start justify-between gap-4 flex-wrap"
+          style={{
+            borderBottom: "1px solid hsl(var(--border) / 0.5)",
+            paddingBottom: 16,
+            marginBottom: 8,
+          }}
+        >
+          <div className="flex flex-col" style={{ gap: 6 }}>
+            <div
+              aria-label="Loading score"
+              style={{
+                width: 40,
+                height: 24,
+                borderRadius: 4,
+                background: "hsl(var(--muted) / 0.4)",
+                animation: "pulse 1.6s ease-in-out infinite",
+              }}
+            />
+            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)" }}>
+              Loading…
+            </div>
+            {sectorFocus && (
+              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                {sectorFocus}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {!auraLoading && isEmpty && (
         <div
           className="flex items-start justify-between gap-4 flex-wrap"
           style={{
@@ -1050,7 +1087,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           </div>
         </div>
       )}
-      {!isEmpty && auraData && (() => {
+      {!auraLoading && !isEmpty && auraData && (() => {
         const trend = auraData.score_trend;
         const cells = (auraData.weekly_rhythm?.weekly_data || []).slice(-12);
         while (cells.length < 12) cells.unshift(false);
