@@ -738,6 +738,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
               Intelligence
             </h1>
+            <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+              Patterns emerging from everything you capture — the sharper this gets, the more valuable your content becomes
+            </p>
           </div>
           <div style={{ display: "flex", gap: 24, alignItems: "baseline" }}>
             <div style={{ textAlign: "center" }}>
