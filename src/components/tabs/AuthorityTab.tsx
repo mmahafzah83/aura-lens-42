@@ -2601,15 +2601,30 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [showDrafts, setShowDrafts] = useState(true);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const toggleCardExpand = (id: string) => setExpandedCards(prev => { const next = new Set(prev); if (next.has(id)) { next.delete(id); } else { next.add(id); } return next; });
+  // M-1-1: confirm-publish + URL tracking + preview
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
+  const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
+  const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
 
-  useEffect(() => { loadPosts(); }, []);
+  useEffect(() => { loadPosts(); loadProfile(); }, []);
+
+  const loadProfile = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await (supabase.from("diagnostic_profiles" as any) as any)
+      .select("first_name, level, avatar_url")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (data) setProfile(data);
+  };
 
   const loadPosts = async () => {
     setLoading(true);
     const [liRes, ciRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url")
         .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
@@ -2645,6 +2660,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
     setDrafts(ciDrafts);
     setPublishedPosts(liPublished);
+    const urls: Record<string, string> = {};
+    (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
+    setSavedUrls(urls);
     setLoading(false);
   };
 
@@ -2654,6 +2672,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
+      window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
+      toast.success("Copied. LinkedIn opened in a new tab.");
     } catch (err) {
       console.error("[Library] copy failed", err);
       toast.error("Could not copy — please select and copy manually");
@@ -2690,11 +2710,27 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         .update({ status: "published" })
         .eq("id", id);
       setDrafts(prev => prev.filter(p => p.id !== id));
-      toast.success("Marked as published — visible in your library.");
+      toast.success("Published — this post now contributes to your authority score");
       loadPosts();
     } catch (e: any) {
       toast.error(e.message || "Failed to mark as published");
     }
+  };
+
+  const saveLinkedInUrl = async (postId: string, url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed.startsWith("https://www.linkedin.com/")) {
+      toast.error("URL must start with https://www.linkedin.com/");
+      return;
+    }
+    const { error } = await supabase
+      .from("linkedin_posts")
+      .update({ linkedin_url: trimmed, published_confirmed_at: new Date().toISOString() })
+      .eq("id", postId);
+    if (error) { toast.error("Could not save URL"); return; }
+    setSavedUrls(prev => ({ ...prev, [postId]: trimmed }));
+    setUrlDrafts(prev => { const n = { ...prev }; delete n[postId]; return n; });
+    toast.success("URL linked — engagement data from this post will strengthen your signals");
   };
 
   const deletePost = async (id: string) => {
