@@ -510,6 +510,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 >
                   Your market position
                 </div>
+                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "rgba(255,255,255,0.55)", marginBottom: 10, lineHeight: 1.5 }}>
+                  How a CIO in your sector would see you — based on your intelligence, not your résumé
+                </div>
                 <h3
                   style={{
                     fontFamily: "'DM Serif Display', serif",
