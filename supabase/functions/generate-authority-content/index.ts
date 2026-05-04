@@ -298,56 +298,56 @@ Write with conviction. No generic statements. Every line should demonstrate stra
     : ""
 }`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const userMessageContent = (() => {
+        const themeStr = typeof theme === "string" ? theme.trim() : "";
+        const sectorStrUser = typeof sector === "string" ? sector.trim() : "";
+        const lines: string[] = [`Topic: ${topic}`];
+        if (themeStr) lines.push(`Post theme: ${themeStr}`);
+        if (sectorStrUser) lines.push(`Sector: ${sectorStrUser}`);
+        lines.push("");
+        lines.push(`Context: ${context || "Use your knowledge of the user's expertise and stored insights."}`);
+        return lines.join("\n");
+      })();
+
+      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!ANTHROPIC_API_KEY) {
+        console.error("ANTHROPIC_API_KEY not configured");
+        return new Response(JSON.stringify({ success: false, error: "ANTHROPIC_API_KEY not configured" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4096,
+          system: systemPrompt,
           messages: [
-            { role: "system", content: systemPrompt },
-            {
-              role: "user",
-              content: (() => {
-                const themeStr = typeof theme === "string" ? theme.trim() : "";
-                const sectorStrUser = typeof sector === "string" ? sector.trim() : "";
-                const lines: string[] = [`Topic: ${topic}`];
-                if (themeStr) lines.push(`Post theme: ${themeStr}`);
-                if (sectorStrUser) lines.push(`Sector: ${sectorStrUser}`);
-                lines.push("");
-                lines.push(`Context: ${context || "Use your knowledge of the user's expertise and stored insights."}`);
-                return lines.join("\n");
-              })(),
-            },
+            { role: "user", content: userMessageContent },
           ],
-          stream: !isNonStream,
         }),
       });
 
       if (!response.ok) {
         const t = await response.text();
-        console.error("AI error:", response.status, t);
-        if (isNonStream) {
-          return new Response(JSON.stringify({ success: false, error: `AI error: ${response.status}` }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        throw new Error(`AI error: ${response.status}`);
-      }
-
-      if (isNonStream) {
-        const aiJson = await response.json();
-        const content = aiJson.choices?.[0]?.message?.content || "";
-        return new Response(JSON.stringify({ content, success: true }), {
+        console.error("Anthropic error:", response.status, t);
+        return new Response(JSON.stringify({ success: false, error: `AI error: ${response.status}` }), {
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      return new Response(response.body, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      const aiJson = await response.json();
+      const content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      return new Response(JSON.stringify({ content, success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
