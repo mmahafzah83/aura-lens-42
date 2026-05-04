@@ -326,7 +326,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => { setRadarKey(k => k + 1); setAuditCompleted(true); }} onNavigate={onNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
     </div>
-    <BetaAccessAdmin userId={userId} />
     </>
   );
 };
