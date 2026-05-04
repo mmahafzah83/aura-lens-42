@@ -933,6 +933,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       </div>
 
       {/* Milestones (G7) — reads milestones array from calculate-aura-score */}
+      {/* My writing voice — moved out of the modal so users land directly on it */}
+      <VoiceEngineSection />
+
       <MilestonesSection userId={authUser?.id ?? null} />
 
       {/* Full Profile Modal */}
