@@ -304,7 +304,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
           <SectionHeader
             label="START FROM"
-            subtitle="Post angles generated from your strongest signals"
+            subtitle="Your highest-confidence signals — publishing from these builds authority fastest"
           />
           <button
             onClick={fetchData}
@@ -423,10 +423,13 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                 textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 fontWeight: 700,
-                marginBottom: 8,
+                marginBottom: 4,
               }}
             >
               Voice match
+            </p>
+            <p style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, lineHeight: 1.4 }}>
+              Every post mirrors your writing DNA — trained from your real LinkedIn history
             </p>
             <div className="flex items-start gap-2.5">
               <span
