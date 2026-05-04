@@ -1,4 +1,4 @@
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, UserCog } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ interface ProfileMenuProps {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onSignOut: () => void;
+  onEditProfile?: () => void;
 }
 
 export default function ProfileMenu({
@@ -21,6 +22,7 @@ export default function ProfileMenu({
   theme,
   onToggleTheme,
   onSignOut,
+  onEditProfile,
 }: ProfileMenuProps) {
   const fn = (fullName || "").trim();
   const parts = fn.split(/\s+/).filter(Boolean);
@@ -190,6 +192,34 @@ export default function ProfileMenu({
             margin: "0 4px",
           }}
         />
+
+        {/* EDIT PROFILE */}
+        {onEditProfile && (
+          <button
+            type="button"
+            onClick={onEditProfile}
+            style={{
+              width: "100%",
+              minHeight: 44,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 12px",
+              marginTop: 4,
+              background: "transparent",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: "var(--foreground)",
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+            className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
+          >
+            <UserCog className="w-4 h-4" />
+            Edit profile
+          </button>
+        )}
 
         {/* SIGN OUT */}
         <button
