@@ -844,7 +844,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <CollapsibleContent className="space-y-5 pt-4">
         {/* Format Selector */}
         <div>
-          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3">Content Format</p>
+          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Content Format</p>
+          <p className="text-[12px] text-muted-foreground mb-3">Choose your format — each one is tuned to your voice and sector</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => {
               const active = contentType === key;
@@ -910,7 +911,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <>
             {/* Framework Selector */}
             <div>
-              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Framework</p>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Framework</p>
+              <p className="text-[12px] text-muted-foreground mb-2">Structural patterns that shape how your argument unfolds</p>
               <div className="flex flex-wrap gap-1.5">
                 {FRAMEWORK_OPTIONS.map(fw => {
                   const active = framework === fw.key;
