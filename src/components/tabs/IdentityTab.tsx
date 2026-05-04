@@ -967,6 +967,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* Assessment Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
+      {marketShareData && (
+        <MilestoneShareModal
+          open={!!marketShareData}
+          onClose={() => setMarketShareData(null)}
+          data={marketShareData}
+        />
+      )}
     </div>
   );
 };
