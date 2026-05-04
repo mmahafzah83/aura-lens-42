@@ -1210,6 +1210,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {showWelcome && (
         <div
           role="status"
+          data-onboarding="welcome-card"
           style={{
             background: "var(--brand-ghost)",
             borderLeft: "3px solid var(--brand)",
