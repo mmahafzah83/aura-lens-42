@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Eye, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Compass, Lightbulb, Star, Loader2,
-  Copy, Check, BookmarkPlus, RefreshCw,
+  Copy, Check, BookmarkPlus, RefreshCw, Linkedin,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -159,6 +160,7 @@ export default function FlashPanel() {
     copy: lang === "ar" ? "نسخ" : "Copy",
     saveDraft: lang === "ar" ? "حفظ مسودة" : "Save Draft",
     saved: lang === "ar" ? "تم الحفظ" : "Saved",
+    postOnLinkedIn: lang === "ar" ? "انشر على لينكدإن ←" : "Post on LinkedIn →",
     newVariations: lang === "ar" ? "🔄 نسخ جديدة" : "🔄 New Variations",
     versionWord: lang === "ar" ? "النسخة" : "Version",
   }), [lang]);
@@ -526,6 +528,21 @@ export default function FlashPanel() {
                 >
                   {r.saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookmarkPlus className="w-3 h-3" />}
                   <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.saveDraft}</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 text-xs"
+                  onClick={() => shareToLinkedIn({
+                    text: r.text,
+                    mode: "feed",
+                    toastMessage: lang === "ar"
+                      ? "تم نسخ المنشور — الصقه في لينكدإن."
+                      : "Post copied to clipboard — paste it in LinkedIn.",
+                  })}
+                >
+                  <Linkedin className="w-3 h-3" />
+                  <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.postOnLinkedIn}</span>
                 </Button>
               </div>
             </div>
