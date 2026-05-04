@@ -642,17 +642,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               boxShadow: "var(--shadow-sm)",
             }}
           >
-            <div
-              style={{
-                fontSize: 9,
-                textTransform: "uppercase",
-                color: "var(--ink-5)",
-                marginBottom: 10,
-                letterSpacing: "0.08em",
-                fontWeight: 600,
-              }}
-            >
-              Active focus areas
+            <div style={{ marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  color: "var(--ink-5)",
+                  letterSpacing: "0.08em",
+                  fontWeight: 600,
+                }}
+              >
+                Active focus areas
+              </div>
+              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                The themes your captures concentrate on — this shapes what Aura recommends you publish
+              </div>
             </div>
             {signalStats.topTags.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
