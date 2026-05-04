@@ -778,7 +778,7 @@ const Dashboard = () => {
         context={chatContext}
       />
       <FeedbackButton />
-      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <HelpPanel open={helpOpen} onClose={() => setHelpOpen(false)} activeTab={activeTab} />
       <InviteColleagueModal open={inviteOpen} onClose={() => setInviteOpen(false)} />
       <NpsSurveyModal />
     </div>
