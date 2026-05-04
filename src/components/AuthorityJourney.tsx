@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 
 interface AuraScoreResponse {
   aura_score: number;
@@ -44,6 +46,8 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
   const [data, setData] = useState<AuraScoreResponse | null>(provided ?? null);
   const [loading, setLoading] = useState(!provided);
   const [sector, setSector] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState<string | null>(null);
+  const [shareData, setShareData] = useState<MilestoneShareData | null>(null);
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -69,8 +73,11 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from("diagnostic_profiles").select("sector_focus").eq("user_id", userId).maybeSingle()
-      .then(({ data: p }) => setSector((p as any)?.sector_focus || null));
+    supabase.from("diagnostic_profiles").select("sector_focus, first_name").eq("user_id", userId).maybeSingle()
+      .then(({ data: p }) => {
+        setSector((p as any)?.sector_focus || null);
+        setFirstName((p as any)?.first_name || null);
+      });
   }, [userId]);
 
   if (loading) {
@@ -189,15 +196,45 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       </div>
 
       {/* Tier name + sector */}
-      <div
-        style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: 18,
-          color: "hsl(var(--foreground))",
-          marginTop: 4,
-        }}
-      >
-        {data.tier_name}{sector ? ` in ${sector}` : ""}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
+        <div
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 18,
+            color: "hsl(var(--foreground))",
+          }}
+        >
+          {data.tier_name}{sector ? ` in ${sector}` : ""}
+        </div>
+        <button
+          type="button"
+          aria-label={`Share ${data.tier_name} tier on LinkedIn`}
+          onClick={() => setShareData({
+            name: `${data.tier_name} Tier`,
+            context: `Aura score ${data.aura_score}/100${sector ? ` · ${sector}` : ""}`,
+            earnedAt: new Date().toISOString(),
+            icon: data.tier_name === "Authority" ? "✦" : data.tier_name === "Strategist" ? "◆" : "◎",
+            firstName,
+            level: data.tier_name,
+            sectorFocus: sector,
+          })}
+          style={{
+            background: "transparent",
+            border: "1px solid hsl(var(--border) / 0.6)",
+            borderRadius: 6,
+            padding: "3px 8px",
+            cursor: "pointer",
+            color: "hsl(var(--muted-foreground))",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+            fontSize: 11,
+          }}
+          title="Share on LinkedIn"
+        >
+          <Share2 size={11} />
+          Share
+        </button>
       </div>
 
       {/* Points to next + progress */}
@@ -252,6 +289,13 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
           }
         }
       `}</style>
+      {shareData && (
+        <MilestoneShareModal
+          open={!!shareData}
+          onClose={() => setShareData(null)}
+          data={shareData}
+        />
+      )}
     </section>
   );
 };
