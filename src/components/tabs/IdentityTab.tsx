@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Loader2, Upload, ChevronRight, X, User as UserIcon } from "lucide-react";
+import { Pencil, Check, Loader2, Upload, ChevronRight, X, User as UserIcon, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
@@ -17,6 +17,9 @@ import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { createPortal } from "react-dom";
+import ShareLink from "@/components/ShareLink";
+import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -66,6 +69,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [showFullPositioning, setShowFullPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState(false);
+  const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
 
   useEffect(() => {
     if (!authReady) return;
