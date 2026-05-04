@@ -479,11 +479,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               overflow: "hidden",
             }}
           >
-            {intelligenceStage && (
-              <div style={{ position: "absolute", top: 14, right: 14, zIndex: 2 }}>
-                <IntelligenceStageBadge stage={intelligenceStage} />
-              </div>
-            )}
             {/* Radial glow top-right */}
             <div
               aria-hidden="true"
