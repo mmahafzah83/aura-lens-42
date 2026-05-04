@@ -21,6 +21,7 @@ import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
