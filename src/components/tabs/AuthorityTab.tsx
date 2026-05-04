@@ -3065,8 +3065,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
-                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Copy"}
+                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
+                      {copiedId === p.id ? "Copied" : "Copy to LinkedIn"}
                     </button>
                     <button
                       onClick={() => setPendingDeleteId(p.id)}
@@ -3076,6 +3076,38 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  {/* LinkedIn URL tracker (M-1-1) */}
+                  {p._source === "linkedin_posts" && (
+                    savedUrls[p.id] ? (
+                      <div style={{ marginTop: 10, fontSize: 12, color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }}>
+                        <Check className="w-3 h-3" /> URL linked ✓ —{" "}
+                        <a href={savedUrls[p.id]} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", textDecoration: "underline" }}>
+                          view on LinkedIn
+                        </a>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
+                        <input
+                          type="url"
+                          placeholder="Paste your LinkedIn post URL to track performance"
+                          value={urlDrafts[p.id] || ""}
+                          onChange={(e) => setUrlDrafts(prev => ({ ...prev, [p.id]: e.target.value }))}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveLinkedInUrl(p.id, urlDrafts[p.id] || ""); }}
+                          maxLength={500}
+                          style={{ flex: 1, fontSize: 12, padding: "6px 10px", borderRadius: 4, border: "1px solid var(--color-border)", background: "var(--bg-subtle)", color: "var(--ink)" }}
+                        />
+                        <button
+                          onClick={() => saveLinkedInUrl(p.id, urlDrafts[p.id] || "")}
+                          disabled={!urlDrafts[p.id]?.trim()}
+                          aria-label="Save LinkedIn URL"
+                          style={{ background: "var(--brand)", color: "#fff", border: 0, borderRadius: 4, padding: "6px 8px", cursor: "pointer", display: "inline-flex", alignItems: "center", opacity: urlDrafts[p.id]?.trim() ? 1 : 0.5 }}
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )
+                  )}
                 </motion.div>
               );
             })}
