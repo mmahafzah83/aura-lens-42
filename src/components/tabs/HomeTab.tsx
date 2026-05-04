@@ -1541,6 +1541,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         sectorFocus={sectorFocus}
         userId={sessionConfirmed ? authUser?.id ?? null : null}
       />
+      {scoreJumpShareData && (
+        <MilestoneShareModal
+          open={!!scoreJumpShareData}
+          onClose={() => setScoreJumpShareData(null)}
+          data={scoreJumpShareData}
+        />
+      )}
 
     </motion.div>
   );
