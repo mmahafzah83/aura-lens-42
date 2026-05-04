@@ -1032,34 +1032,82 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       </header>
 
       {/* H2b — STATUS STRIP */}
+      {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
+          weekly rhythm grid so users never see partial flashes (e.g. tier
+          label appearing before the rhythm cells). */}
       {auraLoading && !auraData && (
         <div
           className="flex items-start justify-between gap-4 flex-wrap"
+          aria-busy="true"
+          aria-label="Loading authority status"
           style={{
             borderBottom: "1px solid hsl(var(--border) / 0.5)",
             paddingBottom: 16,
             marginBottom: 8,
           }}
         >
-          <div className="flex flex-col" style={{ gap: 6 }}>
+          {/* Left: score + tier + sector skeletons */}
+          <div className="flex flex-col" style={{ gap: 8 }}>
+            {/* Score number skeleton */}
             <div
-              aria-label="Loading score"
               style={{
-                width: 40,
-                height: 24,
+                width: 56,
+                height: 32,
                 borderRadius: 4,
                 background: "hsl(var(--muted) / 0.4)",
                 animation: "pulse 1.6s ease-in-out infinite",
               }}
             />
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-3)" }}>
-              Loading…
+            {/* Tier name skeleton */}
+            <div
+              style={{
+                width: 110,
+                height: 14,
+                borderRadius: 3,
+                background: "hsl(var(--muted) / 0.35)",
+                animation: "pulse 1.6s ease-in-out infinite",
+                animationDelay: "120ms",
+              }}
+            />
+            {/* Sector subtext skeleton (always reserved to keep layout stable) */}
+            <div
+              style={{
+                width: 140,
+                height: 11,
+                borderRadius: 3,
+                background: "hsl(var(--muted) / 0.3)",
+                animation: "pulse 1.6s ease-in-out infinite",
+                animationDelay: "240ms",
+              }}
+            />
+          </div>
+
+          {/* Right: weekly rhythm grid skeleton (12 cells + counter) */}
+          <div className="flex flex-col items-end" style={{ gap: 6 }}>
+            <div style={{ display: "flex", gap: 3 }}>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: 3,
+                    background: "hsl(var(--muted) / 0.3)",
+                    animation: "pulse 1.6s ease-in-out infinite",
+                    animationDelay: `${i * 40}ms`,
+                  }}
+                />
+              ))}
             </div>
-            {sectorFocus && (
-              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
-                {sectorFocus}
-              </div>
-            )}
+            <div
+              style={{
+                width: 48,
+                height: 11,
+                borderRadius: 3,
+                background: "hsl(var(--muted) / 0.3)",
+                animation: "pulse 1.6s ease-in-out infinite",
+              }}
+            />
           </div>
         </div>
       )}
