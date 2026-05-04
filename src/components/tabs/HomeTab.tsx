@@ -204,8 +204,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return localStorage.getItem("aura_welcome_dismissed") === "true";
   });
   const [welcomeLeaving, setWelcomeLeaving] = useState(false);
-  const showWelcome =
-    !welcomeDismissed && Array.isArray(entries) && entries.length < 3 && profileLoaded;
   const dismissWelcome = () => {
     setWelcomeLeaving(true);
     setTimeout(() => {
@@ -214,6 +212,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }, 300);
   };
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const showWelcome =
+    !welcomeDismissed && Array.isArray(entries) && entries.length < 3 && profileLoaded;
 
   // section-level loading + error
   const [briefLoading, setBriefLoading] = useState(true);
