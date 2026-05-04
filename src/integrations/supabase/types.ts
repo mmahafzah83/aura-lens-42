@@ -1321,13 +1321,17 @@ export type Database = {
           id: string
           like_count: number
           linkedin_post_id: string | null
+          linkedin_url: string | null
           media_type: string | null
           post_text: string | null
           post_url: string | null
           published_at: string | null
+          published_confirmed_at: string | null
+          quality_score: Json | null
           rejection_reason: string | null
           repost_count: number
           source_metadata: Json
+          source_signal_id: string | null
           source_trust: number
           source_type: string
           synced_at: string
@@ -1356,13 +1360,17 @@ export type Database = {
           id?: string
           like_count?: number
           linkedin_post_id?: string | null
+          linkedin_url?: string | null
           media_type?: string | null
           post_text?: string | null
           post_url?: string | null
           published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
           rejection_reason?: string | null
           repost_count?: number
           source_metadata?: Json
+          source_signal_id?: string | null
           source_trust?: number
           source_type?: string
           synced_at?: string
@@ -1391,13 +1399,17 @@ export type Database = {
           id?: string
           like_count?: number
           linkedin_post_id?: string | null
+          linkedin_url?: string | null
           media_type?: string | null
           post_text?: string | null
           post_url?: string | null
           published_at?: string | null
+          published_confirmed_at?: string | null
+          quality_score?: Json | null
           rejection_reason?: string | null
           repost_count?: number
           source_metadata?: Json
+          source_signal_id?: string | null
           source_trust?: number
           source_type?: string
           synced_at?: string
@@ -1410,7 +1422,15 @@ export type Database = {
           visual_strategy_type?: string | null
           visual_style?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "linkedin_posts_source_signal_id_fkey"
+            columns: ["source_signal_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_signals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       master_frameworks: {
         Row: {
