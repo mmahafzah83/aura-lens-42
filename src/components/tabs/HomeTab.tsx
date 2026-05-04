@@ -23,6 +23,7 @@ import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
+import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1253,6 +1254,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           </div>
         );
       })()}
+
+      {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
+      <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
       {/* Persistent welcome card — shows for users with < 3 entries, dismissible */}
       {showWelcome && (
