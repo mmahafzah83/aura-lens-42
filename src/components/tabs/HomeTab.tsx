@@ -948,6 +948,60 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
       <MilestoneNotification userId={authUser?.id ?? null} />
 
+      {/* Score-jump celebratory banner — appears when score grew 10+ pts vs last week */}
+      {!scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10 && (
+        <div
+          role="status"
+          style={{
+            background: "var(--brand-ghost, hsl(43 50% 55% / 0.08))",
+            borderLeft: "3px solid var(--brand)",
+            borderRadius: 10,
+            padding: "12px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ fontSize: 13, color: "var(--ink)", lineHeight: 1.5 }}>
+            <span style={{ marginRight: 6 }}>✨</span>
+            Your score jumped <strong style={{ color: "var(--brand)" }}>{auraData.score_trend} points</strong> this week!{" "}
+            <ShareLink
+              label="Share your progress →"
+              ariaLabel="Share your score progress on LinkedIn"
+              onClick={() => {
+                const dateLabel = new Date().toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+                setScoreJumpShareData({
+                  name: `+${auraData.score_trend} points this week`,
+                  context: `Aura score ${auraData.aura_score}/100 · ${auraData.tier_name}${sectorFocus ? ` · ${sectorFocus}` : ""}`,
+                  earnedAt: new Date().toISOString(),
+                  icon: "✦",
+                  firstName: userName,
+                  level: auraData.tier_name,
+                  sectorFocus,
+                });
+                console.log(`[HomeTab] score-jump share for week of ${dateLabel}`);
+              }}
+            />
+          </div>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => {
+              localStorage.setItem(`aura_score_jump_dismissed_${weekKey}`, "true");
+              setScoreJumpDismissed(true);
+            }}
+            style={{
+              background: "transparent", border: 0, cursor: "pointer",
+              color: "var(--ink-4)", fontSize: 16, lineHeight: 1, padding: 4,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* SECTION 1 — Header bar */}
       <header className="flex items-end justify-between gap-3 pt-1">
         <div>
