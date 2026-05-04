@@ -2247,6 +2247,9 @@ const LibraryCard = ({
               {p.source_metadata?.from_plan && (
                 <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
               )}
+              {p.source_metadata?.signal_titles?.[0] && (
+                <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
+              )}
             </>
           )}
         </div>
