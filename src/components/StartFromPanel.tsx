@@ -475,7 +475,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               </div>
             )}
             <a
-              href="/dashboard?tab=identity"
+              href="/dashboard?tab=identity&focus=voice"
               style={{
                 display: "inline-block",
                 marginTop: 8,
