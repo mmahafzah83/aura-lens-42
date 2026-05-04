@@ -466,6 +466,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         language: effLang,
         framework: effFramework !== "auto" ? effFramework : undefined,
         extra_instruction: extraPromptInstruction,
+        signal_id: selectedSignalId,
       }),
       signal: overrides?.signal,
     });
