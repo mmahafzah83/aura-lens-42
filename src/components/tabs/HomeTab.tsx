@@ -205,7 +205,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   });
   const [welcomeLeaving, setWelcomeLeaving] = useState(false);
   const showWelcome =
-    !welcomeDismissed && Array.isArray(entries) && entries.length < 3;
+    !welcomeDismissed && Array.isArray(entries) && entries.length < 3 && profileLoaded;
   const dismissWelcome = () => {
     setWelcomeLeaving(true);
     setTimeout(() => {
