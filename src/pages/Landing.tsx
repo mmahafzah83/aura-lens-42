@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap, ChevronDown } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
@@ -598,15 +598,79 @@ const Landing = () => {
       <LandingFAQ />
 
       {/* Section 10 — Footer */}
-      <p className="text-center px-5 mt-8" style={{ fontSize: "14px", color: "var(--ink-4)" }}>
-        Built by Mohammad Mahafzah. Designed for senior professionals who read everything but publish nothing.
-      </p>
-      <footer className="landing-compact-footer py-10 px-5 sm:px-10 text-center" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
-        <span className="text-sm font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
-        <p className="mt-2 text-[11px]" style={{ color: "var(--ink-4)" }}>Strategic intelligence for senior professionals.</p>
-        <div className="mt-3 flex justify-center gap-4 text-[11px]" style={{ color: "var(--ink-4)" }}>
-          <a href="/terms">Terms</a>
-          <a href="/privacy">Privacy</a>
+      <footer
+        className="landing-footer"
+        style={{
+          background: "#0D0D0D",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          padding: "48px 40px",
+          color: "rgba(255,255,255,0.4)",
+        }}
+      >
+        <style>{`
+          .landing-footer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 32px;
+            align-items: start;
+            max-width: 1280px;
+            margin: 0 auto;
+          }
+          .landing-footer-col-center { text-align: center; }
+          .landing-footer-col-right { text-align: right; }
+          .landing-footer a {
+            color: rgba(255,255,255,0.4);
+            transition: color 0.15s ease;
+          }
+          .landing-footer a:hover { color: rgba(255,255,255,0.7); }
+          .landing-footer-links {
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            font-size: 12px;
+          }
+          .landing-footer-dot { color: rgba(255,255,255,0.25); }
+          @media (max-width: 768px) {
+            .landing-footer { padding: 32px 20px !important; }
+            .landing-footer-grid {
+              grid-template-columns: 1fr;
+              gap: 20px;
+              text-align: center;
+            }
+            .landing-footer-col-center,
+            .landing-footer-col-right { text-align: center; }
+          }
+        `}</style>
+        <div className="landing-footer-grid">
+          <div>
+            <div className="flex items-center gap-2" style={{ height: 24 }}>
+              <span className="text-base font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Strategic Intelligence OS</span>
+            </div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
+              © 2026 Aura Intelligence. All rights reserved.
+            </p>
+          </div>
+          <div className="landing-footer-col-center">
+            <div className="landing-footer-links">
+              <Link to="/terms">Terms</Link>
+              <span className="landing-footer-dot">·</span>
+              <Link to="/privacy">Privacy</Link>
+              <span className="landing-footer-dot">·</span>
+              <Link to="/guide">Guide</Link>
+              <span className="landing-footer-dot">·</span>
+              <Link to="/request-access">Request Access</Link>
+            </div>
+          </div>
+          <div className="landing-footer-col-right">
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+              Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
+            </p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
+              Built in Riyadh for the world
+            </p>
+          </div>
         </div>
       </footer>
     </div>
