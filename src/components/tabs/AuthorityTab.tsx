@@ -1116,6 +1116,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
                 </div>
 
+                {/* LinkedIn-style preview (collapsed by default) */}
+                {!isGeneratingAny && (
+                  <LinkedInPreview text={stripMarkdown(displayedOutput || "")} language={lang} />
+                )}
+
                 {/* Aura's Strategic Review */}
                 {(fullVersion || shortVersion) && (
                   <div className="mt-4 border border-border/20 rounded-lg overflow-hidden">
