@@ -1,6 +1,6 @@
 import { useEffect, useState, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { HelpCircle, X, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
@@ -64,6 +64,7 @@ const FAQ = [
 
 export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) onClose();
@@ -235,7 +236,7 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
           <AuraButton
             variant="secondary"
             style={{ width: "100%" }}
-            onClick={() => window.open("https://aura-intel.org/guide", "_blank", "noopener,noreferrer")}
+            onClick={() => { onClose(); navigate("/guide"); }}
           >
             Read the full guide →
           </AuraButton>
