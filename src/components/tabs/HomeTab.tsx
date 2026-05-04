@@ -265,6 +265,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [showSecondaryMoves, setShowSecondaryMoves] = useState(false);
   const [scoreTooltipOpen, setScoreTooltipOpen] = useState(false);
 
+  // Score-jump celebratory banner state
+  const [scoreJumpShareData, setScoreJumpShareData] = useState<MilestoneShareData | null>(null);
+  const weekKey = (() => {
+    const d = new Date();
+    const y = d.getUTCFullYear();
+    const w = Math.floor((d.getTime() - new Date(Date.UTC(y, 0, 1)).getTime()) / 604800000);
+    return `${y}-w${w}`;
+  })();
+  const [scoreJumpDismissed, setScoreJumpDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem(`aura_score_jump_dismissed_${weekKey}`) === "true";
+  });
+
   // J12 — empty state for new users with zero captures
   const isEmpty = Array.isArray(entries) && entries.length === 0;
   const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
