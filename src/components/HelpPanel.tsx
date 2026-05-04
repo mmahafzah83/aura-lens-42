@@ -60,6 +60,11 @@ const FAQ = [
   { q: "How is this different from bookmarks?", a: "Bookmarks store links. Aura reads what you bookmark, finds patterns, and turns them into publishable intelligence." },
   { q: "Why did my score drop?", a: "Your score includes Capture Consistency (20%). If you didn't capture this week, that component decreases. One capture restores it." },
   { q: "Can I edit generated content?", a: "Yes. Every generated post is a draft. Copy it, edit it, make it yours." },
+  { q: "Is Aura actually reading my articles?", a: "Yes. When you paste a URL, Aura extracts the key content and looks for patterns across everything you've captured. You can see the evidence by clicking any signal on the Intelligence page." },
+  { q: "Am I wasting my time?", a: "If you read industry articles anyway, no. Aura turns reading you already do into published authority. The only extra step is pasting the URL — under 10 seconds." },
+  { q: "What should I capture?", a: "Anything you'd bookmark, forward to a colleague, or reference in a meeting. Industry reports, competitor announcements, technology trends, regulatory updates. If it matters to your field, capture it." },
+  { q: "How do I know if my posts are good?", a: "Every generated post gets a quality score (out of 80). Above 60 is LinkedIn-ready. The score checks hook strength, structure, voice match, and formatting." },
+  { q: "Can my colleagues see what I capture?", a: "No. Aura is completely private. Your captures, signals, and content are visible only to you." },
 ];
 
 export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -187,9 +192,9 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
 
           <Section label="◎ Understanding your score" defaultOpen>
             <ul style={{ listStyle: "disc", paddingLeft: 18, margin: 0 }}>
-              <li style={itemStyle}><strong style={{ color: "var(--ink)" }}>Signal intelligence (40%):</strong> Captured knowledge that forms patterns</li>
-              <li style={itemStyle}><strong style={{ color: "var(--ink)" }}>Content authority (40%):</strong> Posts published from your signals</li>
-              <li style={itemStyle}><strong style={{ color: "var(--ink)" }}>Capture consistency (20%):</strong> Weekly rhythm of capturing</li>
+              <li style={itemStyle}><strong style={{ color: "var(--ink)" }}>Signal intelligence (40%):</strong> How many articles you've captured and what Aura learned from them</li>
+              <li style={itemStyle}><strong style={{ color: "var(--ink)" }}>Content authority (40%):</strong> Posts you've published that reference your real expertise</li>
+              <li style={itemStyle}><strong style={{ color: "var(--ink)" }}>Capture consistency (20%):</strong> Whether you captured something this week — Aura rewards rhythm, not volume</li>
             </ul>
           </Section>
 
@@ -214,10 +219,10 @@ export function HelpPanel({ open, onClose }: { open: boolean; onClose: () => voi
 
           <Section label="💡 Tips">
             <ul style={{ listStyle: "disc", paddingLeft: 18, margin: 0 }}>
-              <li style={itemStyle}>Capture 3–5 articles per week for best signal detection</li>
-              <li style={itemStyle}>Publish at least 1 post per week from your top signal</li>
-              <li style={itemStyle}>Voice captures count — dictate thoughts on the go</li>
-              <li style={itemStyle}>Ask Aura can draft memos, decks, and 90-day plans</li>
+              <li style={itemStyle}>Capture 3 articles this week. That's the minimum for Aura to detect your first signal. Just paste the URL — it takes 10 seconds each.</li>
+              <li style={itemStyle}>Publish 1 post this week. Go to Publish, click your top signal, hit Generate. Edit it, make it yours, post it on LinkedIn.</li>
+              <li style={itemStyle}>On the go? Hit Capture → Voice and dictate a thought. Aura transcribes it and adds it to your intelligence.</li>
+              <li style={itemStyle}>Need a strategy document? Open Ask Aura and say: "Draft a 90-day plan for digital transformation in water utilities." It uses your real signals.</li>
             </ul>
           </Section>
 
