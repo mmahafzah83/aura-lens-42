@@ -1118,7 +1118,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
                 {/* LinkedIn-style preview (collapsed by default) */}
                 {!isGeneratingAny && (
-                  <LinkedInPreview text={stripMarkdown(displayedOutput || "")} language={lang} />
+                  <LinkedInFeedPreview text={stripMarkdown(displayedOutput || "")} language={lang} />
                 )}
 
                 {/* Aura's Strategic Review */}
