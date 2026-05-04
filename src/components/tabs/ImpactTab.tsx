@@ -675,6 +675,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </p>
         </div>
       </div>
+      <FirstVisitHint page="impact" />
 
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
