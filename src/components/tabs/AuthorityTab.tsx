@@ -466,6 +466,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         language: effLang,
         framework: effFramework !== "auto" ? effFramework : undefined,
         extra_instruction: extraPromptInstruction,
+        signal_id: selectedSignalId,
       }),
       signal: overrides?.signal,
     });
@@ -949,7 +950,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
               <Input
                 value={topic}
-                onChange={(e) => { setTopic(e.target.value); if (trendPrefillLabel) setTrendPrefillLabel(null); }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setTopic(v);
+                  if (trendPrefillLabel) setTrendPrefillLabel(null);
+                  // If user diverges from the pre-filled signal topic, reset signal source
+                  if (selectedSignalId && v.trim() !== (selectedSignalTitle || "").trim()) {
+                    setSelectedSignalId(null);
+                    setSelectedSignalTitle(null);
+                    setSelectedSignalInsight(null);
+                  }
+                }}
                 placeholder="e.g. Why AI-native organizations will outperform digital transformations"
                 className="aura-create-input"
               />
@@ -2224,6 +2235,9 @@ const LibraryCard = ({
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] text-muted-foreground/40">Aura Draft</span>
               </div>
+              {p.source_metadata?.signal_titles?.[0] && (
+                <p className="text-[10px] text-muted-foreground/40 mt-1 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
+              )}
             </>
           ) : (
             <>
@@ -2235,6 +2249,9 @@ const LibraryCard = ({
               )}
               {p.source_metadata?.from_plan && (
                 <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+              )}
+              {p.source_metadata?.signal_titles?.[0] && (
+                <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
               )}
             </>
           )}
@@ -2749,6 +2766,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           engagement_score: 0,
           source_trust: 100,
           source_metadata: item.source_metadata || {},
+          source_signal_id: (item.source_metadata?.signal_ids?.[0]) || null,
           enriched_by: [],
           synced_at: new Date().toISOString(),
         });
