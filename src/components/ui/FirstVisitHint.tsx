@@ -53,15 +53,50 @@ function markVisited(page: string) {
   }
 }
 
-export default function FirstVisitHint({ page }: { page: PageKey }) {
+/**
+ * FirstVisitHint
+ *
+ * Props:
+ *  - page: which page hint to render
+ *  - suppress: when true, the hint is unconditionally hidden AND will not be
+ *    marked as "visited". This lets a parent gate the hint behind another
+ *    onboarding element (e.g. the welcome card) without permanently
+ *    consuming the hint. Critical for the regression: welcome card and
+ *    first-visit hint MUST NEVER appear at the same time.
+ */
+export default function FirstVisitHint({
+  page,
+  suppress = false,
+}: {
+  page: PageKey;
+  suppress?: boolean;
+}) {
   const [show, setShow] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   useEffect(() => {
+    if (suppress) {
+      setShow(false);
+      return;
+    }
     if (!getVisited().includes(page)) setShow(true);
-  }, [page]);
+  }, [page, suppress]);
 
-  if (!show) return null;
+  // Regression guard (dev only): if a sibling welcome card is mounted while
+  // this hint is also visible, log a loud warning so we catch any future
+  // logic that re-introduces the overlap bug.
+  useEffect(() => {
+    if (!show || typeof document === "undefined") return;
+    const welcome = document.querySelector('[data-onboarding="welcome-card"]');
+    if (welcome && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.error(
+        "[FirstVisitHint] Regression: welcome card and first-visit hint are both visible. Pass `suppress` while welcome is shown."
+      );
+    }
+  }, [show]);
+
+  if (suppress || !show) return null;
   const h = HINTS[page];
 
   const dismiss = () => {
