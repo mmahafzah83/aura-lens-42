@@ -1,58 +1,9 @@
-import { useEffect, useState, ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { HelpCircle, X, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
-
-const itemStyle = {
-  fontSize: 13,
-  color: "var(--ink-3)",
-  lineHeight: 1.7,
-  margin: "6px 0",
-};
-
-function Section({ label, defaultOpen, children }: { label: string; defaultOpen?: boolean; children: ReactNode }) {
-  const [open, setOpen] = useState(!!defaultOpen);
-  return (
-    <div style={{ marginBottom: 14, borderBottom: "1px solid var(--brand-line)", paddingBottom: 12 }}>
-      <button
-        type="button"
-        onClick={() => setOpen(o => !o)}
-        style={{
-          width: "100%",
-          background: "transparent",
-          border: 0,
-          padding: 0,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: open ? 12 : 0,
-        }}
-      >
-        <SectionHeader label={label} />
-        <ChevronDown
-          size={14}
-          style={{
-            color: "var(--ink-3)",
-            transform: open ? "rotate(180deg)" : "none",
-            transition: "transform 200ms",
-            marginBottom: 16,
-          }}
-        />
-      </button>
-      {open && <div>{children}</div>}
-    </div>
-  );
-}
-
-const QUICK_START = [
-  { icon: "📎", title: "Capture", desc: "Paste a link, upload a doc, or record a voice note" },
-  { icon: "✦", title: "Detect", desc: "Aura finds patterns across everything you read" },
-  { icon: "✍", title: "Publish", desc: "Create LinkedIn posts in your voice from signals" },
-  { icon: "📈", title: "Grow", desc: "Watch your authority score compound weekly" },
-];
 
 const FAQ = [
   { q: "How does the authority score work?", a: "Your score combines three components: Signal (40%) — how many active, high-confidence signals you've built from captures. Content (40%) — how many posts you've published through Aura in the last 30 days. Capture (20%) — how many of the last 12 weeks you captured at least one source. The formula rewards depth and consistency, not volume." },
