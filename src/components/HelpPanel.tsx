@@ -1,6 +1,6 @@
 import { useEffect, useState, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { HelpCircle, X, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
