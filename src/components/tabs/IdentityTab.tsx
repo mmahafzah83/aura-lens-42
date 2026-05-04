@@ -762,20 +762,34 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     Your AI-generated professional positioning based on your signals
                   </div>
                 </div>
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                    color: "var(--ink)",
-                    margin: 0,
-                  }}
-                >
-                  {fn} tracks {themes.length} strategic {themes.length === 1 ? "theme" : "themes"} in {sf} — {themesPart}{orgsPart}{" "}
-                  <span style={{ color: "var(--ink-4)" }}>
-                    Deepest expertise: <span style={{ color: "var(--surface-ink-subtle)", fontWeight: 500 }}>{topSig.title}</span> at {topSig.confidence}%.
-                  </span>
-                </p>
+                {(() => {
+                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${topSig.title} at ${topSig.confidence}%.`;
+                  return (
+                    <>
+                      <p
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          color: "var(--ink)",
+                          margin: 0,
+                        }}
+                      >
+                        {statementText}
+                      </p>
+                      <div style={{ marginTop: 10 }}>
+                        <ShareLink
+                          label="Share your positioning →"
+                          ariaLabel="Share your positioning on LinkedIn"
+                          onClick={() => shareToLinkedIn({
+                            text: `${statementText}\n\nBuilt with Aura — strategic intelligence for executives.`,
+                            toastMessage: "Positioning copied — paste it in LinkedIn.",
+                          })}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             );
           })()}
