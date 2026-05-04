@@ -1090,42 +1090,49 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         );
       })()}
 
-      {/* J12 — Welcome card for new users with zero captures */}
-      {isEmpty && (
-        <AuraCard className="text-center" hover="none">
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "16px 8px" }}>
-            <span style={{ fontSize: 28, color: "var(--brand)", opacity: 0.4, lineHeight: 1 }}>✦</span>
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 22,
-                color: "var(--ink)",
-                lineHeight: 1.2,
-              }}
-            >
+      {/* Persistent welcome card — shows for users with < 3 entries, dismissible */}
+      {showWelcome && (
+        <div
+          role="status"
+          style={{
+            background: "var(--brand-ghost)",
+            borderLeft: "3px solid var(--brand)",
+            borderRadius: 10,
+            padding: "16px 20px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            opacity: welcomeLeaving ? 0 : 1,
+            transform: welcomeLeaving ? "translateY(-8px)" : "translateY(0)",
+            transition: "opacity 300ms ease, transform 300ms ease",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
               Welcome to Aura{userName ? `, ${userName}` : ""}
             </div>
-            <p
-              style={{
-                fontSize: 14,
-                color: "var(--ink-3)",
-                maxWidth: 400,
-                margin: 0,
-                lineHeight: 1.5,
-              }}
-            >
-              Capture your first article to see your intelligence at work. Aura needs 3 captures to detect your first signal.
+            <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
+              Capture your first article to see your intelligence engine at work. Need help? Click the ? icon in the top-right corner.
             </p>
-            <AuraButton
-              variant="primary"
-              size="sm"
-              onClick={() => onOpenCapture?.()}
-              style={{ borderRadius: 4, padding: "7px 18px", marginTop: 4 }}
-            >
-              Capture your first
-            </AuraButton>
           </div>
-        </AuraCard>
+          <button
+            type="button"
+            onClick={dismissWelcome}
+            aria-label="Dismiss welcome message"
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "var(--ink-3)",
+              cursor: "pointer",
+              fontSize: 18,
+              lineHeight: 1,
+              padding: 4,
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {/* H2b — DYNAMIC PRIMARY CARD */}
