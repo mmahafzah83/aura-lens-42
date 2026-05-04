@@ -212,8 +212,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }, 300);
   };
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const entriesLoaded = Array.isArray(entries);
   const showWelcome =
-    !welcomeDismissed && Array.isArray(entries) && entries.length < 3 && profileLoaded;
+    !welcomeDismissed && entriesLoaded && entries!.length < 3 && profileLoaded;
+  // The welcome card MAY appear once profile + entries are both loaded. Until
+  // we know that for sure, we must NOT render the first-visit hint, otherwise
+  // a slow profile load would let the hint render first and then both would
+  // appear together when the welcome card pops in. This is the regression
+  // guard for the "both visible at the same time" bug.
+  const welcomeMayAppear = !welcomeDismissed && (!entriesLoaded || !profileLoaded);
+  const suppressHint = showWelcome || welcomeLeaving || welcomeMayAppear;
 
   // section-level loading + error
   const [briefLoading, setBriefLoading] = useState(true);
@@ -947,9 +955,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
       {/* Hide first-visit hint while the persistent welcome card is the
-          primary onboarding. Once the user dismisses welcome, the hint will
-          appear on the next page load. Never both at once. */}
-      {!showWelcome && <FirstVisitHint page="home" />}
+          primary onboarding — or while we don't yet know whether welcome
+          will appear (slow profile/entries load). Once the user dismisses
+          welcome, the hint will appear on the next page load. Never both
+          at once. See FirstVisitHint regression guard. */}
+      <FirstVisitHint page="home" suppress={suppressHint} />
 
       {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
       <MilestoneNotification userId={authUser?.id ?? null} />
