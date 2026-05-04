@@ -2235,6 +2235,9 @@ const LibraryCard = ({
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] text-muted-foreground/40">Aura Draft</span>
               </div>
+              {p.source_metadata?.signal_titles?.[0] && (
+                <p className="text-[10px] text-muted-foreground/40 mt-1 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
+              )}
             </>
           ) : (
             <>
