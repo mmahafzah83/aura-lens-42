@@ -21,6 +21,7 @@ import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -366,6 +367,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           The intelligence portrait that evolves with every capture, signal, and published post
         </p>
       </div>
+      <FirstVisitHint page="story" />
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT COLUMN */}

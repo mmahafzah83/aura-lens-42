@@ -104,6 +104,31 @@ const Dashboard = () => {
   // Re-runs when the active tab changes so newly mounted cards get observed.
   useCardEntryAnimation(null, [activeTab]);
 
+  // FirstVisitHint action wiring (M-0-4): respond to events emitted by hint CTAs.
+  useEffect(() => {
+    const openCap = () => setCaptureOpen(true);
+    const openFlash = () => {
+      setActiveTab("authority");
+      setSearchParams({ tab: "authority" });
+      window.setTimeout(() => {
+        const el = document.querySelector('[data-format-tile="flash"]') as HTMLElement | null;
+        if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.click(); }
+      }, 250);
+    };
+    const scrollLi = () => {
+      const el = document.querySelector('[data-section="linkedin-upload"]') as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    window.addEventListener("aura:open-capture", openCap);
+    window.addEventListener("aura:open-flash", openFlash);
+    window.addEventListener("aura:scroll-linkedin-upload", scrollLi);
+    return () => {
+      window.removeEventListener("aura:open-capture", openCap);
+      window.removeEventListener("aura:open-flash", openFlash);
+      window.removeEventListener("aura:scroll-linkedin-upload", scrollLi);
+    };
+  }, [setSearchParams]);
+
   // Handle ?tab=intelligence&signal=xxx from URL
   useEffect(() => {
     const tabParam = searchParams.get("tab");

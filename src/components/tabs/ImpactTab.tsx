@@ -17,6 +17,7 @@ import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import AuthorityJourney from "@/components/AuthorityJourney";
 import WeeklyRhythm from "@/components/WeeklyRhythm";
+import FirstVisitHint from "@/components/ui/FirstVisitHint";
 
 /* ── Types ── */
 interface Snapshot {
@@ -675,6 +676,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </p>
         </div>
       </div>
+      <FirstVisitHint page="impact" />
 
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
