@@ -795,7 +795,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     AUTHORITY STATEMENT
                   </div>
                   <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                    Your AI-generated professional positioning based on your signals
+                    {intelligenceStage === 3
+                      ? "Market-validated positioning — grounded in your intelligence and audience response"
+                      : intelligenceStage === 2
+                      ? <>Positioning informed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{entryCount}</span> captures and <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals</>
+                      : "Your AI-generated positioning based on your assessment — evolves as your intelligence builds"}
                   </div>
                 </div>
                 {(() => {
