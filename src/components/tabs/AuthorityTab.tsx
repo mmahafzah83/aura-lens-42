@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
+import { isArabicText } from "@/lib/utils";
 import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import ImageCardGenerator from "@/components/ImageCardGenerator";
