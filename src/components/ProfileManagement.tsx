@@ -216,13 +216,62 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
         </div>
       ) : (
         <div className="space-y-5">
+          {/* Avatar + first name */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div
+                className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center"
+                style={{ background: "var(--brand-surface, #f3ecd9)", color: "var(--brand)", fontWeight: 600 }}
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{(firstName || "?").charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <label
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center cursor-pointer"
+                style={{ background: "var(--brand)", color: "#fff" }}
+                title="Change avatar"
+              >
+                {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleAvatarUpload(f);
+                  }}
+                />
+              </label>
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">First name</label>
+              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
-            {[{ label: "Firm", value: firm, set: setFirm }, { label: "Level", value: level, set: setLevel }, { label: "Core Practice", value: corePractice, set: setCorePractice }, { label: "Sector Focus", value: sectorFocus, set: setSectorFocus }].map(item => (
+            {[{ label: "Firm", value: firm, set: setFirm }, { label: "Level / Title", value: level, set: setLevel }, { label: "Core Practice", value: corePractice, set: setCorePractice }].map(item => (
               <div key={item.label}>
                 <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
                 <Input value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
+            <div>
+              <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">Sector Focus</label>
+              <Select value={sectorFocus || undefined} onValueChange={setSectorFocus}>
+                <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SECTOR_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div>
