@@ -9,6 +9,8 @@ import {
   Calendar, TrendingUp, BarChart3, Upload, Mic, ChevronLeft, ChevronDown, Image as ImageIcon, Download
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Linkedin } from "lucide-react";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1061,6 +1063,22 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       }}
                     >
                       <Save className="w-3 h-3" /> Save Draft
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1.5 text-xs border-border/15"
+                      onClick={() => {
+                        const text = stripMarkdown(displayedOutput || output || fullVersion || shortVersion || "");
+                        if (!text.trim()) { toast.error("Nothing to share"); return; }
+                        shareToLinkedIn({
+                          text,
+                          mode: "feed",
+                          toastMessage: "Post copied to clipboard — paste it in LinkedIn.",
+                        });
+                      }}
+                    >
+                      <Linkedin className="w-3 h-3" /> Post on LinkedIn →
                     </Button>
                   </div>
                 </div>
