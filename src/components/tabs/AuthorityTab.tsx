@@ -949,7 +949,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
               <Input
                 value={topic}
-                onChange={(e) => { setTopic(e.target.value); if (trendPrefillLabel) setTrendPrefillLabel(null); }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setTopic(v);
+                  if (trendPrefillLabel) setTrendPrefillLabel(null);
+                  // If user diverges from the pre-filled signal topic, reset signal source
+                  if (selectedSignalId && v.trim() !== (selectedSignalTitle || "").trim()) {
+                    setSelectedSignalId(null);
+                    setSelectedSignalTitle(null);
+                    setSelectedSignalInsight(null);
+                  }
+                }}
                 placeholder="e.g. Why AI-native organizations will outperform digital transformations"
                 className="aura-create-input"
               />
