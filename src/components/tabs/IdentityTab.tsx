@@ -569,7 +569,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 )}
               </div>
-              <div className="shrink-0 ml-3 flex items-center gap-2">
+              <div className="shrink-0 ml-3 flex flex-col items-end gap-2">
+                {intelligenceStage && (
+                  <IntelligenceStageBadge stage={intelligenceStage} />
+                )}
+                <div className="flex items-center gap-2">
                 <button
                   type="button"
                   aria-label="Share market position on LinkedIn"
@@ -618,6 +622,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 >
                   {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
                 </button>
+                </div>
               </div>
             </div>
           </div>
