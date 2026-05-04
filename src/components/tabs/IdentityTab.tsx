@@ -542,19 +542,56 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 )}
               </div>
-              <button
-                onClick={regeneratePositioning}
-                disabled={regenerating}
-                style={{
-                  fontSize: 11,
-                  color: "var(--brand)",
-                  background: "transparent",
-                  cursor: regenerating ? "default" : "pointer",
-                }}
-                className="shrink-0 ml-3 hover:opacity-80 transition-opacity"
-              >
-                {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
-              </button>
+              <div className="shrink-0 ml-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Share market position on LinkedIn"
+                  title="Share on LinkedIn"
+                  onClick={() => {
+                    const archetype = brandResults?.primary_archetype || positioningTitle || "Strategic Voice";
+                    const tags = (profile?.brand_pillars || []).slice(0, 3);
+                    setMarketShareData({
+                      name: positioningTitle || "Market Position",
+                      context: [
+                        profile?.level,
+                        profile?.sector_focus,
+                        archetype,
+                        tags.length ? tags.join(" · ") : null,
+                      ].filter(Boolean).join(" — "),
+                      icon: "◆",
+                      firstName: profile?.first_name,
+                      level: profile?.level,
+                      sectorFocus: profile?.sector_focus,
+                    });
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    padding: 4,
+                    cursor: "pointer",
+                    color: "rgba(255,255,255,0.55)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={regeneratePositioning}
+                  disabled={regenerating}
+                  style={{
+                    fontSize: 11,
+                    color: "var(--brand)",
+                    background: "transparent",
+                    cursor: regenerating ? "default" : "pointer",
+                  }}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
+                </button>
+              </div>
             </div>
           </div>
 
