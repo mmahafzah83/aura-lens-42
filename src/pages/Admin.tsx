@@ -46,9 +46,11 @@ const formatDate = (iso: string | null) => {
 
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
-    pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    approved: "bg-green-500/15 text-green-300 border-green-500/30",
-    active: "bg-teal-500/15 text-teal-300 border-teal-500/30",
+    pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
+    invited: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    active: "bg-green-500/15 text-green-300 border-green-500/30",
+    rejected: "bg-red-500/15 text-red-300 border-red-500/30",
   };
   return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
 };
