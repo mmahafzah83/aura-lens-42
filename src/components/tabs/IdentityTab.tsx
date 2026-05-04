@@ -312,6 +312,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   ];
 
   const showSkeleton = useDelayedFlag(loading && !profile, 200);
+
+  const intelligenceStage: IntelligenceStage | null = computeIntelligenceStage({
+    brandAssessmentDone: !!profile?.brand_assessment_completed_at,
+    entryCount,
+    signalCount: signalStats.count,
+    trackedPostCount,
+  });
+
   if (loading && !profile) {
     if (!showSkeleton) {
       // Brief boot window — render nothing instead of flashing a skeleton
