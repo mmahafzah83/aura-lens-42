@@ -184,6 +184,17 @@ const Dashboard = () => {
       else {
         setUser({ email: session.user.email });
         const uid = session.user.id;
+        // Self-promote beta_allowlist row to 'active' on first sign-in.
+        // Fire-and-forget; failures must not block the dashboard.
+        try {
+          const key = `aura_marked_active_${uid}`;
+          if (!localStorage.getItem(key)) {
+            supabase.functions
+              .invoke("mark-user-active", { body: {} })
+              .then(() => localStorage.setItem(key, "1"))
+              .catch((e) => console.warn("mark-user-active failed", e));
+          }
+        } catch {}
         const { data: profile } = await supabase
           .from("diagnostic_profiles" as any)
           .select("completed, onboarding_completed, first_name, avatar_url")
