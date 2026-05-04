@@ -71,6 +71,8 @@ const Admin = () => {
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
+  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number }>>([]);
+  const [activeLoading, setActiveLoading] = useState(false);
 
   // QA health check
   type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
@@ -149,6 +151,17 @@ const Admin = () => {
         .eq("feedback_type", "nps")
         .order("created_at", { ascending: false });
       setNpsRows((data || []) as any);
+    })();
+    (async () => {
+      setActiveLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-active-users", { body: {} });
+        if (!error && data?.users) setActiveUsers(data.users);
+      } catch (e) {
+        console.warn("admin-active-users failed", e);
+      } finally {
+        setActiveLoading(false);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked]);
