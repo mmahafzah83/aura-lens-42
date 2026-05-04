@@ -7,6 +7,19 @@ html.dark  { background-color: var(--paper, #14110C); }
 
 /* Fonts (Cormorant Garamond, DM Sans, Cairo, JetBrains Mono) are loaded via <link> tags in index.html */
 
+/* ── Arabic typography (Cairo + RTL formatting) ── */
+[dir="rtl"],
+.arabic-text,
+[lang="ar"] {
+  font-family: 'Cairo', var(--font-body), sans-serif;
+  line-height: 1.9;
+  letter-spacing: 0;
+}
+[dir="rtl"] .arabic-text,
+.arabic-text {
+  text-align: right;
+}
+
 /* ── Design v2 tokens (warm parchment) ── */
 :root {
   --aura-bg: var(--paper);
