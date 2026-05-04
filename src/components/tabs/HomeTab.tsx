@@ -197,6 +197,20 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());
   const [userName, setUserName] = useState<string>("");
+  const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("aura_welcome_dismissed") === "true";
+  });
+  const [welcomeLeaving, setWelcomeLeaving] = useState(false);
+  const showWelcome =
+    !welcomeDismissed && Array.isArray(entries) && entries.length < 3;
+  const dismissWelcome = () => {
+    setWelcomeLeaving(true);
+    setTimeout(() => {
+      localStorage.setItem("aura_welcome_dismissed", "true");
+      setWelcomeDismissed(true);
+    }, 300);
+  };
   const [profileLoaded, setProfileLoaded] = useState(false);
 
   // section-level loading + error
