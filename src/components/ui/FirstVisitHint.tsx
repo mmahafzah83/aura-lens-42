@@ -1,34 +1,31 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 const STORAGE_KEY = "aura_visited_pages";
 
 type PageKey = "home" | "intelligence" | "publish" | "impact" | "story";
 
-const HINTS: Record<PageKey, { icon: string; title: string; desc: string }> = {
+type HintAction = { label: string; eventName: string };
+
+const HINTS: Record<PageKey, { desc: string; action?: HintAction }> = {
   home: {
-    icon: "🏠",
-    title: "Your command center",
-    desc: "Aura shows your most important action at the top. A competitor alert means someone published on your topic — respond fast. Recommended moves are your daily to-do list.",
-  },
-  intelligence: {
-    icon: "📡",
-    title: "Your strategic radar",
-    desc: "Every article you capture feeds the signal engine. Higher confidence = deeper expertise. Click any signal to see what's behind it. 3+ captures unlock your first signal.",
-  },
-  publish: {
-    icon: "✦",
-    title: "Your content engine",
-    desc: "Pick a post angle from the sidebar — these come from your strongest signals. Click Generate, choose EN or Arabic, then refine. The quality score shows how LinkedIn-ready your post is.",
-  },
-  impact: {
-    icon: "📈",
-    title: "Your authority trajectory",
-    desc: "Your score combines signals (40%), published content (40%), and capture rhythm (20%). The journey bar shows your tier. The trajectory chart shows where you're heading.",
+    desc: "Your intelligence command center. Start by capturing something you read today — that's how the system learns what matters to you.",
+    action: { label: "Capture now →", eventName: "aura:open-capture" },
   },
   story: {
-    icon: "🎯",
-    title: "Your market position",
-    desc: "This is how the professional market sees you. Signal coverage shows your expertise depth. Your archetype and authority statement are generated from your real signals — share them.",
+    desc: "This is how the market sees you. Right now it's based on your assessment — the more you capture and publish, the more evidence-backed this portrait becomes.",
+  },
+  intelligence: {
+    desc: "Signals appear here as you capture. You won't see much yet — that's normal. After 5–10 captures, patterns start emerging, and each one becomes a publishing opportunity.",
+    action: { label: "Capture your first source →", eventName: "aura:open-capture" },
+  },
+  publish: {
+    desc: "Create content from your signals — try Flash mode for 3 Arabic or English post variations in 60 seconds.",
+    action: { label: "Try Flash mode →", eventName: "aura:open-flash" },
+  },
+  impact: {
+    desc: "Your authority trajectory starts here. The score updates as you capture, build signals, and publish — upload your LinkedIn analytics to see the full picture.",
+    action: { label: "Upload LinkedIn data →", eventName: "aura:scroll-linkedin-upload" },
   },
 };
 
@@ -108,15 +105,15 @@ export default function FirstVisitHint({
   return (
     <div
       style={{
-        background: "var(--brand-ghost)",
+        background: "var(--surface-subtle, var(--paper-2, rgba(176,141,58,0.06)))",
         borderLeft: "3px solid var(--brand)",
-        borderRadius: 10,
+        borderRadius: 8,
         borderTopLeftRadius: 0,
         borderBottomLeftRadius: 0,
-        padding: "16px 20px",
+        padding: "12px 16px",
         display: "flex",
         alignItems: "flex-start",
-        gap: 14,
+        gap: 12,
         marginBottom: 16,
         opacity: leaving ? 0 : 1,
         transform: leaving ? "translateY(-6px)" : "translateY(0)",
@@ -124,35 +121,39 @@ export default function FirstVisitHint({
       }}
       role="note"
     >
-      <span
-        aria-hidden
-        style={{
-          width: 32, height: 32, borderRadius: "50%",
-          background: "rgba(176,141,58,0.10)",
-          display: "inline-flex", alignItems: "center", justifyContent: "center",
-          fontSize: 16, flexShrink: 0,
-        }}
-      >
-        {h.icon}
-      </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.3 }}>
-          {h.title}
-        </div>
-        <div style={{ fontSize: 12, color: "var(--ink-3)", lineHeight: 1.6, marginTop: 4 }}>
+        <div style={{ fontSize: 13, color: "var(--ink)", lineHeight: 1.55 }}>
           {h.desc}
         </div>
+        {h.action && (
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent(h.action!.eventName));
+              dismiss();
+            }}
+            style={{
+              marginTop: 8,
+              background: "transparent", border: 0, padding: 0,
+              fontSize: 12, color: "var(--brand)", fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {h.action.label}
+          </button>
+        )}
       </div>
       <button
         type="button"
         onClick={dismiss}
+        aria-label="Dismiss hint"
         style={{
-          background: "transparent", border: 0, padding: "2px 6px",
-          fontSize: 12, color: "var(--brand)", fontWeight: 600,
-          cursor: "pointer", flexShrink: 0,
+          background: "transparent", border: 0, padding: 4,
+          color: "var(--ink-3)", cursor: "pointer", flexShrink: 0,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
         }}
       >
-        Got it
+        <X size={14} />
       </button>
     </div>
   );
