@@ -21,6 +21,8 @@ import { HelpCircle, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import ShareLink from "@/components/ShareLink";
+import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
