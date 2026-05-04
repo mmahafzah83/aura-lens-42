@@ -2192,7 +2192,10 @@ const LibraryCard = ({
         <div className="flex-1 min-w-0">
           {p._source === "content_items" ? (
             <>
-              <p className="text-sm text-foreground leading-snug line-clamp-3" dir="auto">
+              <p
+                className={`text-sm text-foreground leading-snug line-clamp-3 ${isArabicText(p.post_text) ? "arabic-text" : ""}`}
+                dir={isArabicText(p.post_text) ? "rtl" : "auto"}
+              >
                 {p.post_text || "Untitled"}
               </p>
               <div className="flex items-center gap-2 mt-1">
