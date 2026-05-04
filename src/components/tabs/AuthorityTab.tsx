@@ -2901,6 +2901,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   }}
                   className="hover:bg-muted/20 hover:border-l-brand"
                 >
+                  {/* LinkedIn preview (M-1-1) */}
+                  <LinkedInPreview text={p.post_text} profile={profile} />
+
                   {/* Body text */}
                   <p style={{ fontSize: 14, color: "var(--color-foreground, var(--ink-7))", lineHeight: 1.6 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
                     {p.post_text || "Untitled draft"}
@@ -2938,11 +2941,11 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
-                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Copy"}
+                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
+                      {copiedId === p.id ? "Copied" : "Copy to LinkedIn"}
                     </button>
                     <button
-                      onClick={() => markPublished(p.id)}
+                      onClick={() => setConfirmingId(p.id)}
                       style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
@@ -2956,6 +2959,22 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  {/* Inline confirmation (M-1-1) */}
+                  {confirmingId === p.id && (
+                    <div style={{ marginTop: 12, padding: 10, background: "var(--bg-subtle)", borderRadius: 6, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 13, color: "var(--ink)" }}>Did you publish this on LinkedIn?</span>
+                      <div style={{ flex: 1 }} />
+                      <button
+                        onClick={async () => { setConfirmingId(null); await markPublished(p.id); }}
+                        style={{ fontSize: 12, fontWeight: 600, color: "#fff", background: "var(--brand)", border: 0, borderRadius: 4, padding: "5px 10px", cursor: "pointer" }}
+                      >Yes, it's live</button>
+                      <button
+                        onClick={() => setConfirmingId(null)}
+                        style={{ fontSize: 12, color: "var(--color-muted)", background: "transparent", border: 0, cursor: "pointer" }}
+                      >Not yet</button>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}
