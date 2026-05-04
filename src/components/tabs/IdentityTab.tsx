@@ -20,6 +20,7 @@ import { createPortal } from "react-dom";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -70,6 +71,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState(false);
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
+  const [entryCount, setEntryCount] = useState<number>(0);
+  const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
 
   useEffect(() => {
     if (!authReady) return;
@@ -102,6 +105,22 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       if (profileRes.data) setProfile(profileRes.data);
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
+      // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
+      try {
+        const [entriesCountRes, postsCountRes] = await Promise.all([
+          (supabase.from("entries") as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid),
+          (supabase.from("linkedin_posts") as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .not("tracking_status", "is", null),
+        ]);
+        setEntryCount(entriesCountRes.count || 0);
+        setTrackedPostCount(postsCountRes.count || 0);
+      } catch (e) {
+        console.warn("[IdentityTab] stage counts failed", e);
+      }
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
         const seen = new Set<string>();
