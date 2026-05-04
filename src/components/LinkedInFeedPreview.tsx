@@ -9,7 +9,7 @@ interface Props {
   language?: "en" | "ar";
 }
 
-const LinkedInPreview = ({ text, language }: Props) => {
+const LinkedInFeedPreview = ({ text, language }: Props) => {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<{ name: string; level: string | null; avatar_url: string | null } | null>(null);
 
@@ -151,4 +151,4 @@ const LinkedInPreview = ({ text, language }: Props) => {
   );
 };
 
-export default LinkedInPreview;
+export default LinkedInFeedPreview;
