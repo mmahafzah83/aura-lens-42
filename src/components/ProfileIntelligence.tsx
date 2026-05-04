@@ -42,14 +42,14 @@ const EMPTY_IDENTITY: IdentityModel = {
 };
 
 const SECTION_CONFIG = [
-  { key: "expertise_areas", label: "Expertise Areas", icon: Layers, color: "text-primary" },
-  { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400" },
-  { key: "knowledge_domains", label: "Knowledge Domains", icon: Lightbulb, color: "text-amber-400" },
-  { key: "capabilities", label: "Capabilities", icon: Star, color: "text-violet-400" },
-  { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400" },
-  { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400" },
-  { key: "authority_ambitions", label: "Authority Ambitions", icon: Target, color: "text-primary" },
-  { key: "strategic_goals", label: "Strategic Goals", icon: Target, color: "text-emerald-400" },
+  { key: "expertise_areas", label: "Expertise Areas", icon: Layers, color: "text-primary", subtitle: "Where your captured intelligence shows real depth" },
+  { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400", subtitle: "The sectors your signals consistently track" },
+  { key: "knowledge_domains", label: "Knowledge Domains", icon: Lightbulb, color: "text-amber-400", subtitle: "The fields where your captured intelligence runs deepest" },
+  { key: "capabilities", label: "Capabilities", icon: Star, color: "text-violet-400", subtitle: "Skills your intelligence and assessment reveal — gaps here are publishing opportunities" },
+  { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400", subtitle: "The decision-makers your expertise serves" },
+  { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400", subtitle: "What drives your approach — these shape your voice and content tone" },
+  { key: "authority_ambitions", label: "Authority Ambitions", icon: Target, color: "text-primary", subtitle: "Where you are heading — Aura measures every action against these targets" },
+  { key: "strategic_goals", label: "Strategic Goals", icon: Target, color: "text-emerald-400", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
 ] as const;
 
 type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
@@ -213,15 +213,20 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
 
           {/* Sections Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {SECTION_CONFIG.map(({ key, label, icon: Icon, color }) => (
+            {SECTION_CONFIG.map(({ key, label, icon: Icon, color, subtitle }) => (
               <div key={key} className="p-4 rounded-xl bg-secondary/30 border border-border/10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${color}`} />
-                    <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{label}</span>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Icon className={`w-4 h-4 ${color}`} />
+                      <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{label}</span>
+                    </div>
+                    {subtitle && (
+                      <p className="text-[11px] text-muted-foreground/70 mt-1 leading-snug">{subtitle}</p>
+                    )}
                   </div>
                   {editing !== key && (
-                    <button onClick={() => startEdit(key)} className="text-muted-foreground hover:text-primary transition-colors">
+                    <button onClick={() => startEdit(key)} className="text-muted-foreground hover:text-primary transition-colors shrink-0 ml-2">
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                   )}

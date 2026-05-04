@@ -670,6 +670,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
             Impact
           </h1>
+          <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+            How your authority compounds over time — the score reflects real intelligence depth, not vanity metrics
+          </p>
         </div>
       </div>
 
@@ -1066,6 +1069,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         >
           Score breakdown
         </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
+          Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
             { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
@@ -1153,6 +1159,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         >
           Follower growth — daily new followers
         </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
+          Your audience trajectory — upload your LinkedIn analytics to see the connection between signals and followers
+        </p>
         {followerRows.length === 0 ? (
           <div
             className="rounded-lg p-6 text-center"
@@ -1560,6 +1569,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         >
           Capture activity — last {selectedDays} days
         </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
+          Your intelligence rhythm — consistency matters more than volume
+        </p>
         <div
           className="rounded-lg p-4"
           style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}

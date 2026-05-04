@@ -362,6 +362,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           My Story
         </h1>
+        <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          The intelligence portrait that evolves with every capture, signal, and published post
+        </p>
       </div>
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
@@ -507,6 +510,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 >
                   Your market position
                 </div>
+                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "rgba(255,255,255,0.55)", marginBottom: 10, lineHeight: 1.5 }}>
+                  How a CIO in your sector would see you — based on your intelligence, not your résumé
+                </div>
                 <h3
                   style={{
                     fontFamily: "'DM Serif Display', serif",
@@ -636,17 +642,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               boxShadow: "var(--shadow-sm)",
             }}
           >
-            <div
-              style={{
-                fontSize: 9,
-                textTransform: "uppercase",
-                color: "var(--ink-5)",
-                marginBottom: 10,
-                letterSpacing: "0.08em",
-                fontWeight: 600,
-              }}
-            >
-              Active focus areas
+            <div style={{ marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  color: "var(--ink-5)",
+                  letterSpacing: "0.08em",
+                  fontWeight: 600,
+                }}
+              >
+                Active focus areas
+              </div>
+              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                The themes your captures concentrate on — this shapes what Aura recommends you publish
+              </div>
             </div>
             {signalStats.topTags.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">

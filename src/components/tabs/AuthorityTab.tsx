@@ -736,6 +736,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Publish
         </h1>
+        <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          Create from your intelligence, not from templates — every post is grounded in your real signals
+        </p>
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
@@ -841,7 +844,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <CollapsibleContent className="space-y-5 pt-4">
         {/* Format Selector */}
         <div>
-          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-3">Content Format</p>
+          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Content Format</p>
+          <p className="text-[12px] text-muted-foreground mb-3">Choose your format — each one is tuned to your voice and sector</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => {
               const active = contentType === key;
@@ -907,7 +911,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <>
             {/* Framework Selector */}
             <div>
-              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Framework</p>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Framework</p>
+              <p className="text-[12px] text-muted-foreground mb-2">Structural patterns that shape how your argument unfolds</p>
               <div className="flex flex-wrap gap-1.5">
                 {FRAMEWORK_OPTIONS.map(fw => {
                   const active = framework === fw.key;
@@ -1692,7 +1697,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Plan your authority narrative based on signals and insights.</p>
+        <p className="text-sm text-muted-foreground">Plan your authority narrative based on signals and insights — sequence the moves that compound your influence.</p>
         <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2">
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           Generate Plan
@@ -2775,7 +2780,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               Your Drafts
             </h3>
             <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
-              Posts you've started but not yet published
+              Posts waiting to become authority — each one is already signal-grounded and voice-matched
             </span>
           </div>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--brand)" }}>
@@ -2886,7 +2891,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               Published Posts
             </h3>
             <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
-              Content that's live on LinkedIn
+              Your published authority trail — engagement data flows back to strengthen your signals
             </span>
           </div>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>
