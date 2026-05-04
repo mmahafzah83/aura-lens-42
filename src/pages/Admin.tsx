@@ -46,9 +46,11 @@ const formatDate = (iso: string | null) => {
 
 const statusBadge = (status: string) => {
   const map: Record<string, string> = {
-    pending: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-    approved: "bg-green-500/15 text-green-300 border-green-500/30",
-    active: "bg-teal-500/15 text-teal-300 border-teal-500/30",
+    pending: "bg-neutral-500/15 text-neutral-300 border-neutral-500/30",
+    invited: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+    active: "bg-green-500/15 text-green-300 border-green-500/30",
+    rejected: "bg-red-500/15 text-red-300 border-red-500/30",
   };
   return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
 };
@@ -69,6 +71,8 @@ const Admin = () => {
   const [directEmail, setDirectEmail] = useState("");
   const [directSending, setDirectSending] = useState(false);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
+  const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number }>>([]);
+  const [activeLoading, setActiveLoading] = useState(false);
 
   // QA health check
   type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
@@ -147,6 +151,17 @@ const Admin = () => {
         .eq("feedback_type", "nps")
         .order("created_at", { ascending: false });
       setNpsRows((data || []) as any);
+    })();
+    (async () => {
+      setActiveLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-active-users", { body: {} });
+        if (!error && data?.users) setActiveUsers(data.users);
+      } catch (e) {
+        console.warn("admin-active-users failed", e);
+      } finally {
+        setActiveLoading(false);
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authChecked]);
@@ -538,6 +553,55 @@ const Admin = () => {
               {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send invite"}
             </button>
           </div>
+        </div>
+
+        {/* Active users */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+            Active users
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+            {activeUsers.length} {activeUsers.length === 1 ? "person has" : "people have"} signed in.
+          </p>
+          {activeLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
+            </div>
+          ) : activeUsers.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No active users yet.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--ink-3)" }}>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}>
+                    <th className="text-left px-4 py-3 font-medium">Name</th>
+                    <th className="text-left px-4 py-3 font-medium">Email</th>
+                    <th className="text-left px-4 py-3 font-medium">Sector</th>
+                    <th className="text-left px-4 py-3 font-medium">Last login</th>
+                    <th className="text-right px-4 py-3 font-medium">Captures</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeUsers.map((u) => (
+                    <tr key={u.email} style={{ borderTop: "1px solid var(--ink-3)" }}>
+                      <td className="px-4 py-3 text-sm" style={{ color: "var(--ink-7)" }}>
+                        {u.first_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.email}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>{u.sector || "—"}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: "var(--ink-5)" }}>
+                        {formatDate(u.last_sign_in_at || u.activated_at)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-right" style={{ color: "var(--ink-7)" }}>{u.captures}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* NPS responses */}
