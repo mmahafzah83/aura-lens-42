@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Loader2, Copy, Check, Crown, RefreshCw, Pencil, Eye, Globe, Image as ImageIcon } from "lucide-react";
+import { Loader2, Copy, Check, Crown, RefreshCw, Pencil, Eye, Globe, Image as ImageIcon, Linkedin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from "@/components/ui/sheet";
@@ -232,6 +233,21 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                   className="text-xs border-border/15"
                 >
                   <RefreshCw className="w-3 h-3 mr-1.5" /> Regenerate
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (!draft.trim()) { toast.error("Nothing to share"); return; }
+                    shareToLinkedIn({
+                      text: draft,
+                      mode: "feed",
+                      toastMessage: "Post copied to clipboard — paste it in LinkedIn.",
+                    });
+                  }}
+                  className="text-xs border-border/15"
+                >
+                  <Linkedin className="w-3 h-3 mr-1.5" /> Post on LinkedIn →
                 </Button>
               </div>
 

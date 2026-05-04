@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Pencil, Check, Loader2, Upload, ChevronRight, X, User as UserIcon } from "lucide-react";
+import { Pencil, Check, Loader2, Upload, ChevronRight, X, User as UserIcon, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProfileIntelligence from "@/components/ProfileIntelligence";
@@ -17,6 +17,9 @@ import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { createPortal } from "react-dom";
+import ShareLink from "@/components/ShareLink";
+import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -66,6 +69,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [showFullPositioning, setShowFullPositioning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState(false);
+  const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
 
   useEffect(() => {
     if (!authReady) return;
@@ -538,19 +542,56 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 )}
               </div>
-              <button
-                onClick={regeneratePositioning}
-                disabled={regenerating}
-                style={{
-                  fontSize: 11,
-                  color: "var(--brand)",
-                  background: "transparent",
-                  cursor: regenerating ? "default" : "pointer",
-                }}
-                className="shrink-0 ml-3 hover:opacity-80 transition-opacity"
-              >
-                {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
-              </button>
+              <div className="shrink-0 ml-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="Share market position on LinkedIn"
+                  title="Share on LinkedIn"
+                  onClick={() => {
+                    const archetype = brandResults?.primary_archetype || positioningTitle || "Strategic Voice";
+                    const tags = (profile?.brand_pillars || []).slice(0, 3);
+                    setMarketShareData({
+                      name: positioningTitle || "Market Position",
+                      context: [
+                        profile?.level,
+                        profile?.sector_focus,
+                        archetype,
+                        tags.length ? tags.join(" · ") : null,
+                      ].filter(Boolean).join(" — "),
+                      icon: "◆",
+                      firstName: profile?.first_name,
+                      level: profile?.level,
+                      sectorFocus: profile?.sector_focus,
+                    });
+                  }}
+                  style={{
+                    background: "transparent",
+                    border: 0,
+                    padding: 4,
+                    cursor: "pointer",
+                    color: "rgba(255,255,255,0.55)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={regeneratePositioning}
+                  disabled={regenerating}
+                  style={{
+                    fontSize: 11,
+                    color: "var(--brand)",
+                    background: "transparent",
+                    cursor: regenerating ? "default" : "pointer",
+                  }}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -721,20 +762,34 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     Your AI-generated professional positioning based on your signals
                   </div>
                 </div>
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13,
-                    lineHeight: 1.55,
-                    color: "var(--ink)",
-                    margin: 0,
-                  }}
-                >
-                  {fn} tracks {themes.length} strategic {themes.length === 1 ? "theme" : "themes"} in {sf} — {themesPart}{orgsPart}{" "}
-                  <span style={{ color: "var(--ink-4)" }}>
-                    Deepest expertise: <span style={{ color: "var(--surface-ink-subtle)", fontWeight: 500 }}>{topSig.title}</span> at {topSig.confidence}%.
-                  </span>
-                </p>
+                {(() => {
+                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${topSig.title} at ${topSig.confidence}%.`;
+                  return (
+                    <>
+                      <p
+                        style={{
+                          fontFamily: "'DM Sans', sans-serif",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          color: "var(--ink)",
+                          margin: 0,
+                        }}
+                      >
+                        {statementText}
+                      </p>
+                      <div style={{ marginTop: 10 }}>
+                        <ShareLink
+                          label="Share your positioning →"
+                          ariaLabel="Share your positioning on LinkedIn"
+                          onClick={() => shareToLinkedIn({
+                            text: `${statementText}\n\nBuilt with Aura — strategic intelligence for executives.`,
+                            toastMessage: "Positioning copied — paste it in LinkedIn.",
+                          })}
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -912,6 +967,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* Assessment Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
       <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onNavigate={handleNavigate} />
+      {marketShareData && (
+        <MilestoneShareModal
+          open={!!marketShareData}
+          onClose={() => setMarketShareData(null)}
+          data={marketShareData}
+        />
+      )}
     </div>
   );
 };

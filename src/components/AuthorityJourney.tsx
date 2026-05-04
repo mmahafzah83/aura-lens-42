@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
+import ShareLink from "@/components/ShareLink";
 
 interface AuraScoreResponse {
   aura_score: number;
@@ -240,7 +241,24 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       {/* Points to next + progress */}
       <div className="font-sans" style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
         {atAuthority ? (
-          <span>You've reached Authority — maintain your edge.</span>
+          <>
+            <div>You've reached Authority — maintain your edge.</div>
+            <div style={{ marginTop: 8 }}>
+              <ShareLink
+                label="Share your Authority status →"
+                ariaLabel="Share Authority tier on LinkedIn"
+                onClick={() => setShareData({
+                  name: `${data.tier_name} Tier`,
+                  context: `Aura score ${data.aura_score}/100${sector ? ` · ${sector}` : ""}`,
+                  earnedAt: new Date().toISOString(),
+                  icon: "✦",
+                  firstName,
+                  level: data.tier_name,
+                  sectorFocus: sector,
+                })}
+              />
+            </div>
+          </>
         ) : (
           <>
             <div>{data.points_to_next} points to {data.next_tier_name}</div>
