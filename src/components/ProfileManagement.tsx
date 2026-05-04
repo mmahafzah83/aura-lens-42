@@ -157,7 +157,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
             <UserCog className="w-4 h-4 text-primary" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">Profile & Skills</h3>
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">Profile & Skills</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Your declared starting point — Aura refines this as evidence accumulates</p>
+          </div>
         </div>
         <button onClick={() => setExpanded(!expanded)} className="text-xs text-muted-foreground hover:text-primary transition-colors">
           {expanded ? "Collapse" : "Edit Profile"}
