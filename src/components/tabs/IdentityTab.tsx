@@ -20,6 +20,7 @@ import { createPortal } from "react-dom";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -70,6 +71,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loadError, setLoadError] = useState(false);
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
+  const [entryCount, setEntryCount] = useState<number>(0);
+  const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
 
   useEffect(() => {
     if (!authReady) return;
@@ -102,6 +105,22 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
       if (profileRes.data) setProfile(profileRes.data);
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
+      // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
+      try {
+        const [entriesCountRes, postsCountRes] = await Promise.all([
+          (supabase.from("entries") as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid),
+          (supabase.from("linkedin_posts") as any)
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", uid)
+            .not("tracking_status", "is", null),
+        ]);
+        setEntryCount(entriesCountRes.count || 0);
+        setTrackedPostCount(postsCountRes.count || 0);
+      } catch (e) {
+        console.warn("[IdentityTab] stage counts failed", e);
+      }
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
         const seen = new Set<string>();
@@ -293,6 +312,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   ];
 
   const showSkeleton = useDelayedFlag(loading && !profile, 200);
+
+  const intelligenceStage: IntelligenceStage | null = computeIntelligenceStage({
+    brandAssessmentDone: !!profile?.brand_assessment_completed_at,
+    entryCount,
+    signalCount: signalStats.count,
+    trackedPostCount,
+  });
+
   if (loading && !profile) {
     if (!showSkeleton) {
       // Brief boot window — render nothing instead of flashing a skeleton
@@ -542,7 +569,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 )}
               </div>
-              <div className="shrink-0 ml-3 flex items-center gap-2">
+              <div className="shrink-0 ml-3 flex flex-col items-end gap-2">
+                {intelligenceStage && (
+                  <IntelligenceStageBadge stage={intelligenceStage} />
+                )}
+                <div className="flex items-center gap-2">
                 <button
                   type="button"
                   aria-label="Share market position on LinkedIn"
@@ -591,6 +622,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 >
                   {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
                 </button>
+                </div>
               </div>
             </div>
           </div>
@@ -669,7 +701,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   SIGNAL COVERAGE
                 </div>
                 <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                  How deeply your captures cover each intelligence theme
+                  {intelligenceStage === 3
+                    ? <>Your authority territory — backed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals and market engagement data</>
+                    : intelligenceStage === 2
+                    ? <>Your intelligence footprint — <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> active signals across <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.themeGroups.length}</span> themes</>
+                    : "Your starting coverage map — grows sharper with every capture"}
                 </div>
               </div>
               <div className="space-y-3">
@@ -759,7 +795,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     AUTHORITY STATEMENT
                   </div>
                   <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                    Your AI-generated professional positioning based on your signals
+                    {intelligenceStage === 3
+                      ? "Market-validated positioning — grounded in your intelligence and audience response"
+                      : intelligenceStage === 2
+                      ? <>Positioning informed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{entryCount}</span> captures and <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals</>
+                      : "Your AI-generated positioning based on your assessment — evolves as your intelligence builds"}
                   </div>
                 </div>
                 {(() => {
@@ -952,7 +992,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-7)", marginBottom: 20 }}>Strategic Identity</h2>
 
             <div className="space-y-6">
-              <ProfileIntelligence onGenerateContent={handleGenerateContent} />
+              <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
               <VoiceEngineSection />
               <BrandArchetypeWidget onStartAssessment={() => { setFullProfileOpen(false); setBrandOpen(true); }} />
               <AuditRadarWidget onStartAudit={() => { setFullProfileOpen(false); setAuditOpen(true); }} />

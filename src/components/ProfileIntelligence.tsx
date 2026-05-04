@@ -56,9 +56,10 @@ type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
 
 interface ProfileIntelligenceProps {
   onGenerateContent?: (topic: string, context?: string) => void;
+  intelligenceStage?: 1 | 2 | 3 | null;
 }
 
-const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) => {
+const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: ProfileIntelligenceProps) => {
   const [identity, setIdentity] = useState<IdentityModel>(EMPTY_IDENTITY);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -271,6 +272,15 @@ const ProfileIntelligence = ({ onGenerateContent }: ProfileIntelligenceProps) =>
           {/* Authority Theme Suggestions */}
           {identity.authority_themes.length > 0 && (
             <div className="space-y-3">
+              {intelligenceStage && (
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground" style={{ letterSpacing: "0.08em" }}>
+                  {intelligenceStage === 3
+                    ? "Your proven authority territories"
+                    : intelligenceStage === 2
+                    ? "Emerging from your signals"
+                    : "Suggested from your assessment"}
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Target className="w-4 h-4 text-primary" />
                 <h4 className="text-sm font-semibold text-foreground">Where to build authority next</h4>
