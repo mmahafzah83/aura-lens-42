@@ -736,6 +736,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Publish
         </h1>
+        <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          Create from your intelligence, not from templates — every post is grounded in your real signals
+        </p>
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
