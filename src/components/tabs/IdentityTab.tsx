@@ -701,7 +701,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   SIGNAL COVERAGE
                 </div>
                 <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                  How deeply your captures cover each intelligence theme
+                  {intelligenceStage === 3
+                    ? <>Your authority territory — backed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals and market engagement data</>
+                    : intelligenceStage === 2
+                    ? <>Your intelligence footprint — <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> active signals across <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.themeGroups.length}</span> themes</>
+                    : "Your starting coverage map — grows sharper with every capture"}
                 </div>
               </div>
               <div className="space-y-3">
