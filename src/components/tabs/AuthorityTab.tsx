@@ -2760,6 +2760,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           engagement_score: 0,
           source_trust: 100,
           source_metadata: item.source_metadata || {},
+          source_signal_id: (item.source_metadata?.signal_ids?.[0]) || null,
           enriched_by: [],
           synced_at: new Date().toISOString(),
         });
