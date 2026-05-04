@@ -367,6 +367,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           The intelligence portrait that evolves with every capture, signal, and published post
         </p>
       </div>
+      <FirstVisitHint page="story" />
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT COLUMN */}
