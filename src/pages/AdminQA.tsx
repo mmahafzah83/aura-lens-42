@@ -242,22 +242,40 @@ const AdminQA = () => {
         continue;
       }
 
-      let domResults: QaResult[] = [];
+      // Lightweight inline checks against iframe document (full audit util uses global `document`)
       try {
-        domResults = await runDomAudit(doc);
-      } catch (e: any) {
-        domResults = [{ testId: "dom.crash", testName: "DOM audit crashed", category: "dom", status: "fail", details: { description: e?.message || String(e), page } }];
-      }
-      domResults.forEach((d) => {
-        allRows.push({
-          run_id, run_by: userId, layer: "dom",
-          category: d.category,
-          test_id: `${page}.${d.testId}`,
-          test_name: `[${page}] ${d.testName}`,
-          status: d.status,
-          details: { ...d.details, page },
+        const buttons = doc.querySelectorAll("button, [role='button']");
+        const links = doc.querySelectorAll("a[href]");
+        const imgs = doc.querySelectorAll("img");
+        const brokenImgs = Array.from(imgs).filter((i) => {
+          const im = i as HTMLImageElement;
+          return im.complete && im.naturalWidth === 0;
         });
-      });
+        allRows.push({
+          run_id, run_by: userId, layer: "dom", category: "iframe",
+          test_id: `${page}.iframe.rendered`,
+          test_name: `[${page}] page rendered in iframe`,
+          status: buttons.length + links.length > 0 ? "pass" : "warn",
+          details: { description: "Iframe DOM accessible", page, buttons: buttons.length, links: links.length, images: imgs.length },
+        });
+        if (brokenImgs.length > 0) {
+          allRows.push({
+            run_id, run_by: userId, layer: "dom", category: "iframe",
+            test_id: `${page}.iframe.broken_images`,
+            test_name: `[${page}] broken images`,
+            status: "fail",
+            details: { description: `${brokenImgs.length} broken image(s)`, page, count: brokenImgs.length },
+          });
+        }
+      } catch (e: any) {
+        allRows.push({
+          run_id, run_by: userId, layer: "dom", category: "iframe",
+          test_id: `${page}.iframe.crash`,
+          test_name: `[${page}] iframe DOM audit crashed`,
+          status: "fail",
+          details: { description: e?.message || String(e), page },
+        });
+      }
 
       // Capture screenshot of iframe body (best effort)
       try {
@@ -281,8 +299,27 @@ const AdminQA = () => {
     // Cleanup iframe
     if (iframeContainerRef.current) iframeContainerRef.current.innerHTML = "";
 
+    // Also run the full DOM audit util against the current /admin/qa page
+    try {
+      const localResults = await runDomAudit();
+      localResults.forEach((d) => {
+        allRows.push({
+          run_id, run_by: userId, layer: "dom",
+          category: d.category,
+          test_id: `admin-qa.${d.testId}`,
+          test_name: `[admin-qa] ${d.testName}`,
+          status: d.status,
+          details: { ...d.details, page: "admin-qa" },
+        });
+      });
+    } catch (e) {
+      console.warn("local DOM audit failed", e);
+    }
+
     if (crossOriginBlocked) {
-      toast.message("DOM audit limited to current page. For full DOM audit, visit each page and run 'DOM Only' from that page.");
+      toast.message("DOM audit limited. For full DOM audit, visit each page and run 'DOM Only' from that page.");
+    } else {
+      toast.message("Iframe DOM audit uses lightweight checks. Visit each page directly for full audit.");
     }
 
     if (allRows.length > 0) {
