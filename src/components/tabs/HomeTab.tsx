@@ -24,6 +24,7 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
+import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -972,6 +973,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
       <MilestoneNotification userId={authUser?.id ?? null} />
+
+      {/* M3-4 — identity drift suggestion (frontend-only, session-scoped) */}
+      <IdentityDriftBanner />
 
       {/* Score-jump celebratory banner — appears when score grew 10+ pts vs last week */}
       {!scoreJumpDismissed && auraData && (auraData.score_trend ?? 0) >= 10 && (
