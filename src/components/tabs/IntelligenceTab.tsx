@@ -617,7 +617,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         return;
       }
       const [signalsRes, entriesRes, documentsRes, movesRes] = await Promise.all([
-        supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
+        supabase
+          .from("strategic_signals")
+          .select("*, signal_velocity, velocity_status, commercial_validation_score")
+          .eq("status", "active")
+          .order("confidence", { ascending: false })
+          .limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
@@ -642,8 +647,30 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   useEffect(() => { loadSignals(); }, [loadSignals]);
 
   const sortedByConfidence = useMemo(() => {
-    return [...signals].sort((a, b) => b.confidence - a.confidence);
+    const order: Record<string, number> = { fading: 0, accelerating: 1, stable: 2, dormant: 3 };
+    return [...signals].sort((a, b) => {
+      const ao = order[a.velocity_status || "stable"] ?? 2;
+      const bo = order[b.velocity_status || "stable"] ?? 2;
+      if (ao !== bo) return ao - bo;
+      return b.confidence - a.confidence;
+    });
   }, [signals]);
+
+  const fadingSignals = useMemo(() => signals.filter(s => s.velocity_status === "fading"), [signals]);
+  const dormantSignals = useMemo(() => signals.filter(s => s.velocity_status === "dormant"), [signals]);
+  const topFading = useMemo(() => [...fadingSignals].sort((a, b) => b.confidence - a.confidence)[0] || null, [fadingSignals]);
+
+  const archiveDormant = async () => {
+    if (dormantSignals.length === 0) return;
+    const ids = dormantSignals.map(s => s.id);
+    const { error } = await supabase.from("strategic_signals").update({ status: "archived" } as any).in("id", ids);
+    if (error) {
+      toast.error("Couldn't archive signals");
+      return;
+    }
+    toast.success(`Archived ${ids.length} dormant signal${ids.length > 1 ? "s" : ""}`);
+    await loadSignals();
+  };
 
   const selectedSignal = useMemo(() => {
     return sortedByConfidence.find(s => s.id === selectedSignalId) || sortedByConfidence[0] || null;
