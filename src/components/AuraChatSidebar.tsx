@@ -1468,9 +1468,9 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     </button>
                   );
                 })}
-                {/* Shadow Twin chip (BB-4) */}
+                {/* Market Mirror chip (O-3, formerly Shadow Twin BB-4) */}
                 <button
-                  key="shadow-twin"
+                  key="market-mirror"
                   onClick={() => send("Generate my Shadow Twin portrait.")}
                   disabled={isLoading}
                   className="flex items-center gap-1.5 text-[11px] transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap shrink-0 tactile-press"
@@ -1481,7 +1481,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     fontWeight: 500,
                   }}
                 >
-                  Shadow Twin ↗
+                  Market Mirror ↗
                 </button>
               </div>
 
