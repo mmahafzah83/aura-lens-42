@@ -108,6 +108,61 @@ serve(async (req) => {
     const prevScore = (prevSnapshot && prevSnapshot.length > 0) ? prevSnapshot[0].score : null;
     const scoreTrend = prevScore !== null ? auraScore - prevScore : null;
 
+    // ── Tier transition detection (O-2a) ──
+    const tierFromScore = (s: number): "observer" | "strategist" | "authority" =>
+      s < 35 ? "observer" : s < 65 ? "strategist" : "authority";
+    const currentTier = tierFromScore(auraScore);
+
+    const { data: lastSnap } = await admin
+      .from("score_snapshots")
+      .select("score,tier")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const previousTier: "observer" | "strategist" | "authority" | null =
+      lastSnap && lastSnap.length > 0
+        ? ((lastSnap[0] as any).tier as any) || tierFromScore((lastSnap[0] as any).score ?? 0)
+        : null;
+
+    const tierRank = { observer: 1, strategist: 2, authority: 3 } as const;
+    let tier_transition: { from: string; to: string; is_new: boolean } | null = null;
+    if (previousTier && previousTier !== currentTier && tierRank[currentTier] > tierRank[previousTier]) {
+      const milestoneId = `tier_${currentTier}`;
+      const tierLabel = currentTier.charAt(0).toUpperCase() + currentTier.slice(1);
+      const { data: existingTierMs } = await admin
+        .from("user_milestones")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("milestone_id", milestoneId)
+        .maybeSingle();
+      const isNew = !existingTierMs;
+      if (isNew) {
+        const { data: topSig } = await admin
+          .from("strategic_signals")
+          .select("signal_title")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .order("confidence", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        await admin.from("user_milestones").insert({
+          user_id: userId,
+          milestone_id: milestoneId,
+          milestone_name: `Reached ${tierLabel} Tier`,
+          context: {
+            previous_tier: previousTier,
+            new_tier: currentTier,
+            score: auraScore,
+            top_signal_title: (topSig as any)?.signal_title || null,
+            timestamp: new Date().toISOString(),
+          },
+          acknowledged: false,
+          shared: false,
+        });
+      }
+      tier_transition = { from: previousTier, to: currentTier, is_new: isNew };
+    }
+
     // --- Store weekly snapshot (max 1 per day) ---
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const { data: todaySnap } = await admin
@@ -121,6 +176,7 @@ serve(async (req) => {
       await admin.from("score_snapshots").insert({
         user_id: userId,
         score: auraScore,
+        tier: currentTier,
         components: { capture_score: captureScore, signal_score: signalScore, content_score: contentScore },
       });
     }
@@ -311,6 +367,8 @@ serve(async (req) => {
       weekly_rhythm,
       milestones,
       newly_earned,
+      tier: currentTier,
+      tier_transition,
     };
 
     return new Response(JSON.stringify(result), {
