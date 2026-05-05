@@ -1333,7 +1333,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         className="max-w-[85%]"
                         style={{ fontSize: 10, color: "#534AB7", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 500, marginBottom: 4 }}
                       >
-                        YOUR SHADOW TWIN — 18 MONTHS AHEAD
+                        YOUR MARKET MIRROR — 18 MONTHS AHEAD
                       </div>
                     )}
                     <div
