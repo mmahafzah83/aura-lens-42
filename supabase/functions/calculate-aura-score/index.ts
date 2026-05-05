@@ -137,6 +137,14 @@ serve(async (req) => {
         .maybeSingle();
       const isNew = !existingTierMs;
       if (isNew) {
+        const { data: topSig } = await admin
+          .from("strategic_signals")
+          .select("signal_title")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .order("confidence", { ascending: false })
+          .limit(1)
+          .maybeSingle();
         await admin.from("user_milestones").insert({
           user_id: userId,
           milestone_id: milestoneId,
@@ -145,7 +153,7 @@ serve(async (req) => {
             previous_tier: previousTier,
             new_tier: currentTier,
             score: auraScore,
-            top_signal_title: topSignalTitleForTier(),
+            top_signal_title: (topSig as any)?.signal_title || null,
             timestamp: new Date().toISOString(),
           },
           acknowledged: false,
@@ -153,13 +161,6 @@ serve(async (req) => {
         });
       }
       tier_transition = { from: previousTier, to: currentTier, is_new: isNew };
-    }
-
-    // Helper kept inline to avoid restructuring: top signal lookup for tier context
-    function topSignalTitleForTier(): string | null {
-      // signalsFull is computed later; do a lightweight inline call would require await,
-      // so we resolve via a separate query synchronously below using a closure trick.
-      return null;
     }
 
     // --- Store weekly snapshot (max 1 per day) ---
