@@ -3,7 +3,7 @@ import { Download, Loader2, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import SchematicRenderer, { SchematicSpec } from "./SchematicRenderer";
-import { exportCardAsPng, downloadBlob } from "./exportCard";
+import { exportCardAsPng, exportSvgAsPng, downloadBlob } from "./exportCard";
 
 interface SchematicPreviewPanelProps {
   postText: string;
@@ -48,7 +48,11 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
     if (!wrapperRef.current) return;
     setExporting(true);
     try {
-      const blob = await exportCardAsPng(wrapperRef.current, "aura-schematic.png");
+      // Prefer native SVG rasterization for crisp text; fall back to html2canvas.
+      const svg = wrapperRef.current.querySelector('svg') as SVGSVGElement | null;
+      const blob = svg
+        ? await exportSvgAsPng(svg, { scale: 3, background: '#0d0d0d' })
+        : await exportCardAsPng(wrapperRef.current, "aura-schematic.png");
       if (!blob) throw new Error("Export failed");
       const safe = (topicLabel || spec?.title || "schematic").replace(/\s+/g, "-").slice(0, 40);
       downloadBlob(blob, `aura-schematic-${safe}.png`);
