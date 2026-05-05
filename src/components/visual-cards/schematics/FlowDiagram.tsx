@@ -1,4 +1,4 @@
-import { BLACKBOARD, SchematicSpec, edgeStroke } from './blackboard';
+import { BLACKBOARD, SchematicSpec, SchematicEdge, edgeStroke } from './blackboard';
 
 interface Props { spec: SchematicSpec; width: number; height: number; }
 
@@ -32,7 +32,7 @@ export default function FlowDiagram({ spec, width, height }: Props) {
           <path d="M0,0 L10,5 L0,10 z" fill={BLACKBOARD.gold} />
         </marker>
       </defs>
-      {(spec.edges ?? nodes.slice(0, -1).map((n, i) => ({ from: n.id, to: nodes[i + 1].id }))).map((e, i) => {
+      {(spec.edges ?? nodes.slice(0, -1).map<SchematicEdge>((n, i) => ({ from: n.id, to: nodes[i + 1].id }))).map((e, i) => {
         const a = positions[e.from], b = positions[e.to];
         if (!a || !b) return null;
         const x1 = a.x + nodeW, y1 = a.y + nodeH / 2;
