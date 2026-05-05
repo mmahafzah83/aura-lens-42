@@ -1,3 +1,5 @@
+import { createContext, useContext } from 'react';
+
 export const BLACKBOARD = {
   bg: '#0d0d0d',
   chalk: '#e8e4d9',
@@ -71,4 +73,19 @@ export function edgeStroke(style?: 'solid' | 'dashed' | 'gold') {
   if (style === 'gold') return { stroke: BLACKBOARD.gold, strokeWidth: 2, strokeDasharray: undefined };
   if (style === 'dashed') return { stroke: BLACKBOARD.chalkFaint, strokeWidth: 1.5, strokeDasharray: '6 6' };
   return { stroke: BLACKBOARD.chalkDim, strokeWidth: 1.5, strokeDasharray: undefined };
+}
+
+export const SchematicLangContext = createContext<'en' | 'ar'>('en');
+export function useSchematicFonts() {
+  const lang = useContext(SchematicLangContext);
+  const isRtl = lang === 'ar';
+  const arabic = "'Cairo', 'DM Sans', sans-serif";
+  return {
+    isRtl,
+    body: isRtl ? arabic : BLACKBOARD.fonts.body,
+    title: isRtl ? arabic : BLACKBOARD.fonts.title,
+    mono: isRtl ? arabic : BLACKBOARD.fonts.mono,
+    handwritten: isRtl ? arabic : BLACKBOARD.fonts.handwritten,
+    direction: isRtl ? ('rtl' as const) : ('ltr' as const),
+  };
 }
