@@ -1,5 +1,5 @@
 import type { CardStyleConfig } from "../styles/cardStyles";
-import type { VisualCardProps } from "../VisualCardRenderer";
+import type { VisualCardProps } from "../types";
 
 export default function InsightLayout({ style, props }: { style: CardStyleConfig; props: VisualCardProps }) {
   const isAr = props.language === 'ar';
