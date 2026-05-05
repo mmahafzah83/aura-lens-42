@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { buildConfidenceExplanation } from "../_shared/confidence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,22 +55,11 @@ function daysBetween(a: Date, b: Date): number {
 
 function calcConfidence(
   aiBaseScore: number,
+  fragmentCount: number,
   uniqueOrgs: number,
   newestFragmentDate: string,
-): { confidence: number; confidence_explanation: string } {
-  const aiComponent = Math.min(Math.max(aiBaseScore, 0), 1) * 0.5;
-  const sourceDiversityWeight = Math.min(uniqueOrgs / 5, 1.0);
-  const diversityComponent = sourceDiversityWeight * 0.3;
-  const daysSince = daysBetween(new Date(), new Date(newestFragmentDate));
-  const recencyWeight = daysSince < 7 ? 1.0 : daysSince <= 30 ? 0.7 : daysSince <= 90 ? 0.4 : 0.2;
-  const recencyComponent = recencyWeight * 0.2;
-  const confidence = Math.min(aiComponent + diversityComponent + recencyComponent, 1.0);
-  const srcLabel = uniqueOrgs === 1 ? "organisation" : "organisations";
-  const ageLabel = daysSince === 0 ? "today" : `${daysSince} days ago`;
-  const confidence_explanation =
-    `AI confidence ${(aiBaseScore * 100).toFixed(0)}%, ${uniqueOrgs} ${srcLabel}, newest evidence ${ageLabel}. ` +
-    `Formula: (${aiComponent.toFixed(2)} AI) + (${diversityComponent.toFixed(2)} diversity) + (${recencyComponent.toFixed(2)} recency) = ${confidence.toFixed(2)}.`;
-  return { confidence, confidence_explanation };
+) {
+  return buildConfidenceExplanation(aiBaseScore, fragmentCount, uniqueOrgs, newestFragmentDate);
 }
 
 /* Count unique orgs from evidence fragment content */
@@ -294,7 +284,7 @@ ${identityCtx}`;
       const newFragCount = mergedEvidence.length;
       const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence);
       const now = new Date().toISOString();
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
 
       await admin.from("strategic_signals").update({
@@ -321,7 +311,7 @@ ${identityCtx}`;
     } else {
       const now = new Date().toISOString();
       const initialUniqueOrgs = await countUniqueOrgs(admin, targetFragmentIds);
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, targetFragmentIds.length, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, targetFragmentIds.length, admin, user_id, newTags);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
