@@ -1019,6 +1019,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         );
                       }}
                     />
+                    {/* Per-row velocity meta strip rendered above; render extra row metadata via wrapper instead */}
+                  </div>
+                        );
+                      }}
+                    />
                   </div>
                 </div>
               </>
