@@ -80,6 +80,9 @@ export default function SchematicRenderer({ spec, width = 1080, height = 1350, l
           <feColorMatrix type="matrix" values="0 0 0 0 0.91  0 0 0 0 0.89  0 0 0 0 0.85  0 0 0 0.06 0" />
           <feComposite in2="SourceGraphic" operator="in" />
         </filter>
+        {isRtl && (
+          <style>{`text { font-family: 'Cairo', 'DM Sans', sans-serif !important; }`}</style>
+        )}
       </defs>
 
       {/* Background */}
