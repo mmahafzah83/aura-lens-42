@@ -59,6 +59,9 @@ interface Signal {
   created_at: string;
   updated_at: string;
   user_signal_feedback?: string | null;
+  signal_velocity?: number | null;
+  velocity_status?: "accelerating" | "stable" | "fading" | "dormant" | null;
+  commercial_validation_score?: number | null;
 }
 
 interface Insight {
