@@ -1280,16 +1280,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               </div>
             )}
 
-            {/* Image Card Generator */}
-            {displayedOutput && !isGeneratingAny && (
-              <ImageCardGenerator
-                postText={displayedOutput}
-                topicLabel={topic}
-                lang={lang}
-                userName={profileName}
-                userRole={profileRole}
-              />
-            )}
+            {/* Visual companion is rendered below in its dedicated section */}
 
             {/* Quick Actions + Variations (visible after a post is generated) */}
             {displayedOutput && !isGeneratingAny && contentType === "post" && (
