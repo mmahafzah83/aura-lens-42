@@ -16,6 +16,7 @@ export interface QaResult {
     element?: string;
     expected?: string;
     actual?: string;
+    severity?: "critical" | "high" | "medium" | "low";
     [key: string]: unknown;
   };
 }
@@ -519,8 +520,281 @@ export async function runDomAudit(): Promise<QaResult[]> {
   await safeRun(results, () => auditColors(results), { testId: "colors.error", testName: "Colors group", category: "colors" });
   await safeRun(results, () => auditImages(results), { testId: "images.error", testName: "Images group", category: "images" });
   await safeRun(results, () => auditAnimations(results), { testId: "animations.error", testName: "Animations group", category: "animations" });
+  await safeRun(results, () => auditTooltipDeep(results), { testId: "tooltips_deep.error", testName: "Tooltip deep group", category: "tooltips_deep" });
+  await safeRun(results, () => auditLoadingStates(results), { testId: "loading.error", testName: "Loading states group", category: "loading" });
+  await safeRun(results, () => auditEmptyStates(results), { testId: "empty.error", testName: "Empty states group", category: "empty" });
+  await safeRun(results, () => auditAccessibility(results), { testId: "a11y.error", testName: "Accessibility group", category: "accessibility" });
 
   return results;
 }
 
 export default runDomAudit;
+
+/* ---------------- helpers for new groups ---------------- */
+function parseRgb(s: string): [number, number, number, number] | null {
+  const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?/);
+  if (!m) return null;
+  return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), m[4] ? parseFloat(m[4]) : 1];
+}
+function relLum([r, g, b]: [number, number, number]) {
+  const f = (c: number) => {
+    const x = c / 255;
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function contrastRatio(fg: string, bg: string): number | null {
+  const a = parseRgb(fg); const b = parseRgb(bg);
+  if (!a || !b) return null;
+  const L1 = relLum([a[0], a[1], a[2]]);
+  const L2 = relLum([b[0], b[1], b[2]]);
+  const [hi, lo] = L1 > L2 ? [L1, L2] : [L2, L1];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/* ---------------- GROUP 11 — Tooltip Deep ---------------- */
+async function auditTooltipDeep(results: QaResult[]) {
+  const triggers = new Set<Element>();
+  document.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((s) => {
+    const t = s.closest("button, [role='button'], span, div");
+    if (t) triggers.add(t);
+  });
+  document.querySelectorAll("button, span").forEach((el) => {
+    const txt = (el as HTMLElement).innerText?.trim();
+    if (txt === "?" || txt === "ⓘ") triggers.add(el);
+  });
+  const visible = Array.from(triggers).filter(isVisible);
+  const behaviors: string[] = [];
+  let i = 0;
+  for (const el of visible.slice(0, 30)) {
+    const before = new Set(document.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]"));
+    el.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+    el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    await sleep(250);
+    const onHover = Array.from(document.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n));
+    const opensOnHover = onHover.length > 0;
+    let opensOnClick = false;
+    if (!opensOnHover) {
+      (el as HTMLElement).click();
+      await sleep(250);
+      opensOnClick = Array.from(document.querySelectorAll("[role='tooltip'], [role='dialog'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n)).length > 0;
+    }
+    el.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await sleep(300);
+    const trigger = opensOnHover ? "hover" : opensOnClick ? "click" : "none";
+    behaviors.push(trigger);
+    results.push({
+      testId: `tooltip_deep.${i++}`,
+      testName: "Tooltip trigger behavior",
+      category: "tooltips_deep",
+      status: trigger === "none" ? "warn" : "pass",
+      details: {
+        description: `Trigger: ${trigger}`,
+        element: describe(el),
+        expected: "Consistent hover-to-open across the app",
+        actual: trigger,
+        severity: trigger === "none" ? "medium" : "low",
+      },
+    });
+  }
+  const set = new Set(behaviors.filter(b => b !== "none"));
+  if (set.size > 1) {
+    results.push({
+      testId: "tooltip_deep.consistency",
+      testName: "Tooltip pattern consistency",
+      category: "tooltips_deep",
+      status: "fail",
+      details: {
+        description: `Mixed tooltip patterns found: ${Array.from(set).join(", ")}`,
+        expected: "All tooltips use the same trigger pattern",
+        actual: Array.from(set).join(", "),
+        severity: "high",
+      },
+    });
+  }
+}
+
+/* ---------------- GROUP 12 — Loading States ---------------- */
+function auditLoadingStates(results: QaResult[]) {
+  const skeletons = document.querySelectorAll("[class*='skeleton' i], [data-skeleton], [class*='shimmer' i]");
+  const spinners = document.querySelectorAll("[class*='spinner' i], svg.lucide-loader-2, [class*='loading' i]");
+  results.push({
+    testId: "loading.skeletons",
+    testName: "Skeleton loaders present",
+    category: "loading",
+    status: skeletons.length === 0 && spinners.length === 0 ? "warn" : "pass",
+    details: {
+      description: `Found ${skeletons.length} skeletons, ${spinners.length} spinners`,
+      expected: "Skeleton or spinner during data fetch",
+      actual: `skeletons=${skeletons.length}, spinners=${spinners.length}`,
+      severity: "medium",
+    },
+  });
+  const badSpinners: string[] = [];
+  spinners.forEach((s) => {
+    if (!isVisible(s)) return;
+    const cs = getComputedStyle(s);
+    const color = cs.color.toLowerCase();
+    const rgb = parseRgb(color);
+    if (rgb) {
+      // bronze ~ #C5A55A => rgb(197,165,90)
+      const isBronze = Math.abs(rgb[0] - 197) < 40 && Math.abs(rgb[1] - 165) < 40 && Math.abs(rgb[2] - 90) < 40;
+      const isInk = rgb[0] > 200 && rgb[1] > 200 && rgb[2] > 200;
+      if (!isBronze && !isInk) badSpinners.push(describe(s));
+    }
+  });
+  if (badSpinners.length > 0) {
+    results.push({
+      testId: "loading.spinner_color",
+      testName: "Spinner brand color",
+      category: "loading",
+      status: "warn",
+      details: {
+        description: `${badSpinners.length} spinners not using brand bronze`,
+        expected: "Brand bronze (#C5A55A) or ink",
+        actual: "off-brand color",
+        samples: badSpinners.slice(0, 5),
+        severity: "low",
+      } as any,
+    });
+  }
+}
+
+/* ---------------- GROUP 13 — Empty States ---------------- */
+function auditEmptyStates(results: QaResult[]) {
+  const empties = document.querySelectorAll("[class*='empty' i], [data-empty]");
+  let generic = 0;
+  empties.forEach((el, idx) => {
+    if (!isVisible(el)) return;
+    const txt = ((el as HTMLElement).innerText || "").toLowerCase();
+    if (/no data yet|nothing here|empty/.test(txt) && txt.length < 60) {
+      generic++;
+      results.push({
+        testId: `empty.${idx}`,
+        testName: "Generic empty state copy",
+        category: "empty",
+        status: "warn",
+        details: {
+          description: "Empty state uses generic copy",
+          element: describe(el),
+          expected: "Personalized copy referencing user context",
+          actual: txt.slice(0, 80),
+          severity: "medium",
+        },
+      });
+    }
+  });
+  results.push({
+    testId: "empty.summary",
+    testName: "Empty states summary",
+    category: "empty",
+    status: empties.length === 0 ? "warn" : generic > 0 ? "warn" : "pass",
+    details: {
+      description: `${empties.length} empty-state regions, ${generic} generic`,
+      severity: "low",
+    },
+  });
+}
+
+/* ---------------- GROUP 14 — Accessibility ---------------- */
+function auditAccessibility(results: QaResult[]) {
+  // alt text
+  const imgs = Array.from(document.querySelectorAll("img")) as HTMLImageElement[];
+  const noAlt = imgs.filter((i) => !i.hasAttribute("alt"));
+  noAlt.forEach((i, idx) => results.push({
+    testId: `a11y.alt.${idx}`,
+    testName: "Image missing alt text",
+    category: "accessibility",
+    status: "fail",
+    details: { description: "Image has no alt attribute", element: describe(i), expected: "alt attribute (empty allowed for decorative)", actual: "(missing)", severity: "high" },
+  }));
+
+  // contrast
+  const samples = Array.from(document.querySelectorAll("p, span, h1, h2, h3, button, a, label")).filter(isVisible).slice(0, 80);
+  const contrastFails: any[] = [];
+  samples.forEach((el, idx) => {
+    const he = el as HTMLElement;
+    const text = he.innerText?.trim();
+    if (!text || text.length < 2) return;
+    const cs = getComputedStyle(he);
+    // walk up to find non-transparent bg
+    let bg = cs.backgroundColor;
+    let p: HTMLElement | null = he;
+    while (p && (!bg || /rgba\([^)]*,\s*0(?:\.0+)?\)/.test(bg) || bg === "transparent")) {
+      p = p.parentElement;
+      if (!p) break;
+      bg = getComputedStyle(p).backgroundColor;
+    }
+    if (!bg || bg === "transparent") bg = "rgb(10,10,10)";
+    const ratio = contrastRatio(cs.color, bg);
+    if (ratio === null) return;
+    const fontSize = parseFloat(cs.fontSize);
+    const fontWeight = parseInt(cs.fontWeight) || 400;
+    const isLarge = fontSize >= 18 || (fontSize >= 14 && fontWeight >= 700);
+    const min = isLarge ? 3 : 4.5;
+    if (ratio < min) {
+      contrastFails.push({
+        testId: `a11y.contrast.${idx}`,
+        element: describe(he),
+        ratio: ratio.toFixed(2),
+        required: min,
+        fg: cs.color,
+        bg,
+        text: text.slice(0, 40),
+      });
+    }
+  });
+  contrastFails.slice(0, 20).forEach((f) => results.push({
+    testId: f.testId,
+    testName: "WCAG contrast below threshold",
+    category: "accessibility",
+    status: "fail",
+    details: {
+      description: `Contrast ${f.ratio}:1 < ${f.required}:1 — "${f.text}"`,
+      element: f.element,
+      expected: `${f.required}:1`,
+      actual: `${f.ratio}:1`,
+      fg: f.fg,
+      bg: f.bg,
+      severity: "high",
+    } as any,
+  }));
+  results.push({
+    testId: "a11y.contrast.summary",
+    testName: "Contrast summary",
+    category: "accessibility",
+    status: contrastFails.length === 0 ? "pass" : "fail",
+    details: { description: `${contrastFails.length} contrast violations among ${samples.length} sampled`, severity: "high" },
+  });
+
+  // focus visibility — check :focus-visible style on buttons
+  const buttons = Array.from(document.querySelectorAll("button, a, [role='button']")).filter(isVisible).slice(0, 30);
+  let unfocusable = 0;
+  buttons.forEach((b, idx) => {
+    const he = b as HTMLElement;
+    he.focus({ preventScroll: true } as any);
+    const cs = getComputedStyle(he);
+    const hasOutline = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0;
+    const hasRing = cs.boxShadow && cs.boxShadow !== "none";
+    if (!hasOutline && !hasRing) {
+      unfocusable++;
+      if (unfocusable <= 8) {
+        results.push({
+          testId: `a11y.focus.${idx}`,
+          testName: "Missing focus indicator",
+          category: "accessibility",
+          status: "fail",
+          details: {
+            description: "Element has no visible focus indicator on Tab",
+            element: describe(he),
+            expected: "outline or ring on :focus-visible",
+            actual: "none",
+            severity: "high",
+          },
+        });
+      }
+    }
+    he.blur();
+  });
+}

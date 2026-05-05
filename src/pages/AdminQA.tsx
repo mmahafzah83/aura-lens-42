@@ -24,6 +24,14 @@ type ResultRow = {
 
 type RunSummary = { run_id: string; run_at: string; total: number; pass: number; warn: number; fail: number };
 
+type IframeStatus = {
+  route: string;
+  state: "pending" | "ok" | "fail";
+  ms?: number;
+  tests?: number;
+  error?: string;
+};
+
 const STATUS_COLORS: Record<string, string> = {
   pass: "#16a34a",
   warn: "#d97706",
@@ -36,9 +44,10 @@ function StatusBadge({ status }: { status: string }) {
       style={{
         background: STATUS_COLORS[status] || "#666",
         color: "white",
-        fontSize: 11,
-        padding: "2px 8px",
-        borderRadius: 4,
+        fontSize: 12,
+        fontWeight: 600,
+        padding: "4px 10px",
+        borderRadius: 5,
         textTransform: "uppercase",
         fontFamily: "var(--font-mono, monospace)",
         letterSpacing: 0.5,
@@ -70,6 +79,12 @@ function genFixPrompt(r: ResultRow): string {
   return `Fix ${r.test_name}: ${description}. Expected: ${expected}. Actual: ${actual}. Location: ${location}. DO NOT change anything else.`;
 }
 
+function formatRunDate(s: string): string {
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 const AdminQA = () => {
   const navigate = useNavigate();
   const [authChecked, setAuthChecked] = useState(false);
@@ -84,6 +99,8 @@ const AdminQA = () => {
   const [compareSel, setCompareSel] = useState<string[]>([]);
   const [compareData, setCompareData] = useState<{ a: ResultRow[]; b: ResultRow[] } | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [iframeStatuses, setIframeStatuses] = useState<IframeStatus[]>([]);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -161,10 +178,12 @@ const AdminQA = () => {
   // ---------------- Orchestrator ----------------
   async function runBackend(run_id: string): Promise<void> {
     setProgress("Layer 1/3 — Backend audit… ~8s");
+    setBackendError(null);
     try {
-      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend" } });
+      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend", run_id } });
       if (error) {
         const msg = error.message || String(error);
+        setBackendError(msg);
         if (/not\s*found|404/i.test(msg)) {
           toast.error("Backend audit EF not found — skip to DOM audit");
         } else {
@@ -172,7 +191,9 @@ const AdminQA = () => {
         }
       }
     } catch (e: any) {
-      toast.error(`Backend audit failed: ${e?.message || String(e)}. Check that run-qa-audit EF is deployed.`);
+      const msg = e?.message || String(e);
+      setBackendError(msg);
+      toast.error(`Backend audit failed: ${msg}. Check that run-qa-audit EF is deployed.`);
     }
     void run_id;
   }
@@ -205,20 +226,32 @@ const AdminQA = () => {
     setProgress("Layer 2/3 — DOM audit across pages…");
     screenshotsRef.current = [];
     const allRows: any[] = [];
+    const statuses: IframeStatus[] = DOM_ROUTES.map(r => ({ route: r, state: "pending" }));
+    setIframeStatuses(statuses);
 
     // Always include current page (admin/qa) results too — using local document
     let crossOriginBlocked = false;
 
-    for (const route of DOM_ROUTES) {
+    for (let idx = 0; idx < DOM_ROUTES.length; idx++) {
+      const route = DOM_ROUTES[idx];
       const page = route.replace(/^\//, "") || "root";
       setProgress(`Layer 2/3 — DOM audit on ${page}…`);
+      const t0 = performance.now();
       let iframe: HTMLIFrameElement | null = null;
       try {
         iframe = await loadIframe(route);
       } catch (e) {
         console.warn("iframe load failed", route, e);
+        statuses[idx] = { route, state: "fail", error: (e as any)?.message || String(e) };
+        setIframeStatuses([...statuses]);
       }
-      if (!iframe) continue;
+      if (!iframe) {
+        if (statuses[idx].state === "pending") {
+          statuses[idx] = { route, state: "fail", error: "iframe not created" };
+          setIframeStatuses([...statuses]);
+        }
+        continue;
+      }
 
       let doc: Document | null = null;
       try {
@@ -232,6 +265,8 @@ const AdminQA = () => {
 
       if (!doc) {
         crossOriginBlocked = true;
+        statuses[idx] = { route, state: "fail", ms: Math.round(performance.now() - t0), error: "DOM access blocked" };
+        setIframeStatuses([...statuses]);
         allRows.push({
           run_id, run_by: userId, layer: "dom", category: "iframe",
           test_id: `${page}.iframe.blocked`,
@@ -242,6 +277,7 @@ const AdminQA = () => {
         continue;
       }
 
+      let testCount = 0;
       // Lightweight inline checks against iframe document (full audit util uses global `document`)
       try {
         const buttons = doc.querySelectorAll("button, [role='button']");
@@ -258,6 +294,7 @@ const AdminQA = () => {
           status: buttons.length + links.length > 0 ? "pass" : "warn",
           details: { description: "Iframe DOM accessible", page, buttons: buttons.length, links: links.length, images: imgs.length },
         });
+        testCount += 1;
         if (brokenImgs.length > 0) {
           allRows.push({
             run_id, run_by: userId, layer: "dom", category: "iframe",
@@ -266,6 +303,7 @@ const AdminQA = () => {
             status: "fail",
             details: { description: `${brokenImgs.length} broken image(s)`, page, count: brokenImgs.length },
           });
+          testCount += 1;
         }
       } catch (e: any) {
         allRows.push({
@@ -275,6 +313,7 @@ const AdminQA = () => {
           status: "fail",
           details: { description: e?.message || String(e), page },
         });
+        testCount += 1;
       }
 
       // Capture screenshot of iframe body (best effort)
@@ -294,6 +333,8 @@ const AdminQA = () => {
       } catch (e) {
         console.warn("screenshot failed for", page, e);
       }
+      statuses[idx] = { route, state: "ok", ms: Math.round(performance.now() - t0), tests: testCount };
+      setIframeStatuses([...statuses]);
     }
 
     // Cleanup iframe
@@ -441,21 +482,23 @@ const AdminQA = () => {
     <div style={{
       minHeight: "100vh",
       background: "var(--bg, #0a0a0a)",
-      color: "var(--ink, #ECECEC)",
+      color: "var(--ink, #F4EFE6)",
       fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
+      fontSize: 15,
+      lineHeight: 1.55,
       padding: "32px 40px 80px",
     }}>
       <header style={{ marginBottom: 32 }}>
         <button
           onClick={() => navigate("/admin")}
-          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "var(--ink-2,#999)", padding: "6px 12px", borderRadius: 6, marginBottom: 16, cursor: "pointer" }}
+          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.18)", color: "var(--ink, #F4EFE6)", padding: "6px 12px", borderRadius: 6, marginBottom: 16, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
         >
           ← Admin
         </button>
-        <h1 style={{ fontFamily: "var(--font-display,'Cormorant Garamond',serif)", fontSize: 40, fontWeight: 500, margin: 0 }}>
+        <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 48, fontWeight: 500, margin: 0, color: "#F4EFE6", letterSpacing: 0.2 }}>
           QA Audit Console
         </h1>
-        <p style={{ color: "var(--ink-2,#999)", marginTop: 4 }}>Backend + DOM + AI evaluation across the Aura surface.</p>
+        <p style={{ color: "#B8B0A2", marginTop: 6, fontSize: 15 }}>Backend + DOM + AI evaluation across the Aura surface.</p>
       </header>
       {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
       <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
@@ -472,7 +515,7 @@ const AdminQA = () => {
         </div>
         {(running || progress) && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 13, color: "var(--ink-2,#999)" }}>{progress}</div>
+            <div style={{ fontSize: 14, color: "#D4CCBC" }}>{progress}</div>
             <div style={{ marginTop: 6, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#C5A55A)", transition: "width 0.4s" }} />
             </div>
@@ -480,20 +523,60 @@ const AdminQA = () => {
         )}
       </Section>
 
+      {/* Iframe audit status */}
+      {iframeStatuses.length > 0 && (
+        <Section title="Iframe audit status">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {iframeStatuses.map((s) => (
+              <div key={s.route} style={{
+                ...cardStyle,
+                display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+              }}>
+                <span style={{ width: 18, fontSize: 16, color: s.state === "ok" ? STATUS_COLORS.pass : s.state === "fail" ? STATUS_COLORS.fail : "#999" }}>
+                  {s.state === "ok" ? "✓" : s.state === "fail" ? "✗" : "…"}
+                </span>
+                <code style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", minWidth: 140 }}>{s.route}</code>
+                <span style={{ fontSize: 13, color: "#B8B0A2" }}>
+                  {s.state === "ok" && `loaded (${((s.ms || 0) / 1000).toFixed(1)}s) — ${s.tests || 0} tests run`}
+                  {s.state === "fail" && `failed to load — ${s.error || "unknown error"}`}
+                  {s.state === "pending" && "pending…"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Backend error visibility */}
+      {backendError && (
+        <Section title="Backend audit error">
+          <div style={{
+            ...cardStyle,
+            borderColor: "rgba(220,38,38,0.4)",
+            background: "rgba(220,38,38,0.08)",
+          }}>
+            <div style={{ fontSize: 13, color: STATUS_COLORS.fail, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>
+              run-qa-audit failed
+            </div>
+            <pre style={{ margin: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 13, color: "#F4EFE6", whiteSpace: "pre-wrap" }}>{backendError}</pre>
+          </div>
+        </Section>
+      )}
+
       {/* Section 2 — Summary */}
       {results.length > 0 && (
         <>
           <Section title="Results summary">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-              <Stat label="Total" value={summary.total} />
+              <Stat label="Total" value={summary.total} emphasis />
               <Stat label="Pass" value={summary.pass} color={STATUS_COLORS.pass} />
               <Stat label="Warn" value={summary.warn} color={STATUS_COLORS.warn} />
               <Stat label="Fail" value={summary.fail} color={STATUS_COLORS.fail} />
             </div>
             <div style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 13, color: "var(--ink-2,#999)", display: "flex", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 15, color: "#F4EFE6", display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Overall pass rate</span>
-                <span style={{ fontFamily: "var(--font-mono,monospace)" }}>{summary.rate}% • {(elapsedMs / 1000).toFixed(1)}s</span>
+                <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 16 }}>{summary.rate}% &nbsp;•&nbsp; {(elapsedMs / 1000).toFixed(1)}s</span>
               </div>
               <div style={{ marginTop: 6, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${summary.rate}%`, background: STATUS_COLORS.pass }} />
@@ -504,9 +587,9 @@ const AdminQA = () => {
                 const s = layerSummary(l);
                 return (
                   <div key={l} style={cardStyle}>
-                    <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--ink-2,#999)" }}>{l}</div>
-                    <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 24, marginTop: 4 }}>{s.rate}%</div>
-                    <div style={{ fontSize: 12, color: "var(--ink-2,#999)" }}>{s.pass} / {s.total} passing</div>
+                    <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: "#B8B0A2", fontWeight: 600 }}>{l}</div>
+                    <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 28, marginTop: 4, color: "#F4EFE6" }}>{s.rate}%</div>
+                    <div style={{ fontSize: 13, color: "#B8B0A2" }}>{s.pass} / {s.total} passing</div>
                   </div>
                 );
               })}
@@ -587,9 +670,9 @@ const AdminQA = () => {
 
       {/* Section 3 — History */}
       <Section title="History">
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead>
-            <tr style={{ textAlign: "left", color: "var(--ink-2,#999)", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6 }}>
+            <tr style={{ textAlign: "left", color: "#D4CCBC", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600 }}>
               <th style={thStyle}>When</th>
               <th style={thStyle}>Total</th>
               <th style={thStyle}>Pass rate</th>
@@ -601,9 +684,10 @@ const AdminQA = () => {
           <tbody>
             {history.map((h) => {
               const rate = h.total ? Math.round((h.pass / h.total) * 100) : 0;
+              const isCurrent = currentRunId === h.run_id;
               return (
-                <tr key={h.run_id} style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                  <td style={tdStyle}>{new Date(h.run_at).toLocaleString()}</td>
+                <tr key={h.run_id} style={{ borderTop: "1px solid rgba(255,255,255,0.08)", background: isCurrent ? "rgba(197,165,90,0.06)" : "transparent" }}>
+                  <td style={{ ...tdStyle, whiteSpace: "nowrap", color: "#F4EFE6", fontFamily: "var(--font-mono, monospace)" }}>{formatRunDate(h.run_at)}</td>
                   <td style={tdStyle}>{h.total}</td>
                   <td style={tdStyle}>{rate}%</td>
                   <td style={tdStyle}>
@@ -624,7 +708,7 @@ const AdminQA = () => {
                     />
                   </td>
                   <td style={tdStyle}>
-                    <button onClick={() => loadRun(h.run_id)} style={linkBtn}>View</button>
+                    <button onClick={() => loadRun(h.run_id)} style={linkBtn}>{isCurrent ? "Viewing" : "View"}</button>
                   </td>
                 </tr>
               );
@@ -671,24 +755,24 @@ const AdminQA = () => {
 
 const cardStyle: React.CSSProperties = {
   background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 8,
-  padding: 14,
+  padding: 16,
 };
 
-const thStyle: React.CSSProperties = { padding: "8px 10px", fontWeight: 500 };
-const tdStyle: React.CSSProperties = { padding: "8px 10px" };
-const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "var(--ink,#ECECEC)", padding: "4px 10px", borderRadius: 4, cursor: "pointer", fontSize: 12 };
+const thStyle: React.CSSProperties = { padding: "10px 12px", fontWeight: 600 };
+const tdStyle: React.CSSProperties = { padding: "10px 12px", color: "#F4EFE6" };
+const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#F4EFE6", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" };
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
   background: "var(--brand,#C5A55A)", color: "#0a0a0a", border: "none",
-  padding: "10px 18px", borderRadius: 6, fontWeight: 600, cursor: "pointer",
+  padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
 };
 const secondaryBtnStyle: React.CSSProperties = {
-  background: "transparent", color: "var(--ink,#ECECEC)",
-  border: "1px solid rgba(255,255,255,0.15)", padding: "10px 14px",
-  borderRadius: 6, cursor: "pointer",
+  background: "transparent", color: "#F4EFE6",
+  border: "1px solid rgba(255,255,255,0.2)", padding: "10px 16px",
+  borderRadius: 6, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
 };
 
 function PrimaryBtn(p: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -701,17 +785,17 @@ function SecondaryBtn(p: React.ButtonHTMLAttributes<HTMLButtonElement>) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section style={{ marginTop: 32 }}>
-      <h2 style={{ fontFamily: "var(--font-display,'Cormorant Garamond',serif)", fontSize: 24, fontWeight: 500, margin: "0 0 12px", borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 8 }}>{title}</h2>
+      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 500, margin: "0 0 14px", borderBottom: "1px solid rgba(255,255,255,0.12)", paddingBottom: 10, color: "#F4EFE6", letterSpacing: 0.2 }}>{title}</h2>
       {children}
     </section>
   );
 }
 
-function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
+function Stat({ label, value, color, emphasis }: { label: string; value: number; color?: string; emphasis?: boolean }) {
   return (
-    <div style={cardStyle}>
-      <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8, color: "var(--ink-2,#999)" }}>{label}</div>
-      <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 28, marginTop: 4, color: color || "var(--ink,#ECECEC)" }}>{value}</div>
+    <div style={{ ...cardStyle, ...(emphasis ? { background: "rgba(197,165,90,0.08)", border: "1px solid rgba(197,165,90,0.4)" } : null) }}>
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #C5A55A)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#F4EFE6", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
   );
 }
@@ -726,17 +810,21 @@ function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown }: {
 }) {
   const fail = rows.filter((r) => r.status === "fail").length;
   const warn = rows.filter((r) => r.status === "warn").length;
+  const pass = rows.filter((r) => r.status === "pass").length;
   return (
     <div style={{ ...cardStyle, marginBottom: 10 }}>
       <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
-        {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 12, color: "var(--ink-2,#999)" }}>{cat}</span>
-        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--ink-2,#999)" }}>
-          {rows.length} • <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span> • <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
+        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
+        <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+          <span>{rows.length} total</span>
+          <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
+          <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
+          <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span>
         </span>
       </button>
       {open && (
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {rows.map((r) => <ResultRowView key={r.id} r={r} onCopyFix={onCopyFix} onMarkKnown={onMarkKnown} />)}
         </div>
       )}
@@ -751,31 +839,50 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
 }) {
   const [open, setOpen] = useState(r.status !== "pass");
   const d = r.details || {};
+  const severity = (d.severity as string) || (r.status === "fail" ? "high" : r.status === "warn" ? "medium" : "low");
+  const sevColor = severity === "critical" ? "#dc2626" : severity === "high" ? "#ea580c" : severity === "medium" ? "#d97706" : "#65a30d";
+  const isColor = r.category === "colors" || r.category === "accessibility";
+  const fg: string | undefined = (d as any).fg;
+  const bg: string | undefined = (d as any).bg;
   return (
-    <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: 6 }}>
-      <button onClick={() => setOpen((p) => !p)} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: 4, textAlign: "left" }}>
+    <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
+      <button onClick={() => setOpen((p) => !p)} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: 4, textAlign: "left", flexWrap: "wrap" }}>
         <StatusBadge status={r.status} />
-        <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 11, color: "var(--ink-2,#999)" }}>{r.test_id}</span>
-        <span style={{ fontSize: 13 }}>{r.test_name}</span>
+        {r.status !== "pass" && (
+          <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 4, background: `${sevColor}22`, color: sevColor, border: `1px solid ${sevColor}66`, textTransform: "uppercase", letterSpacing: 0.4 }}>{severity}</span>
+        )}
+        <span style={{ fontSize: 14, color: "#F4EFE6", fontWeight: 500 }}>{r.test_name}</span>
+        <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, color: "#9C9485", marginLeft: "auto" }}>{r.test_id}</span>
       </button>
       {open && (
-        <div style={{ padding: "6px 8px 8px 28px", fontSize: 12, color: "var(--ink-2,#bbb)" }}>
-          {d.description && <div style={{ marginBottom: 4 }}>{d.description}</div>}
-          {d.element && <div><span style={{ color: "var(--ink-2,#888)" }}>Element:</span> <code>{String(d.element)}</code></div>}
-          {(d.expected !== undefined) && <div><span style={{ color: "var(--ink-2,#888)" }}>Expected:</span> <code>{String(d.expected)}</code></div>}
-          {(d.actual !== undefined) && <div><span style={{ color: "var(--ink-2,#888)" }}>Actual:</span> <code>{String(d.actual)}</code></div>}
+        <div style={{ padding: "10px 12px 12px 12px", fontSize: 14, color: "#D4CCBC", display: "flex", flexDirection: "column", gap: 6, marginTop: 6, background: "rgba(0,0,0,0.25)", borderRadius: 6 }}>
+          {d.description && <div style={{ color: "#F4EFE6" }}>{d.description}</div>}
+          {d.page && <div><Label>Location</Label><code style={codeStyle}>{String(d.page)}{d.element ? ` → ${String(d.element)}` : ""}</code></div>}
+          {!d.page && d.element && <div><Label>Location</Label><code style={codeStyle}>{String(d.element)}</code></div>}
+          {(d.expected !== undefined) && <div><Label>Expected</Label><code style={codeStyle}>{String(d.expected)}</code></div>}
+          {(d.actual !== undefined) && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <Label>Actual</Label><code style={codeStyle}>{String(d.actual)}</code>
+              {isColor && fg && bg && (
+                <span style={{ display: "inline-flex", gap: 6, alignItems: "center", marginLeft: 8 }}>
+                  <Swatch color={fg} label="fg" />
+                  <Swatch color={bg} label="bg" />
+                </span>
+              )}
+            </div>
+          )}
           {Array.isArray(d.samples) && d.samples.length > 0 && (
             <details style={{ marginTop: 4 }}>
-              <summary style={{ cursor: "pointer" }}>{d.samples.length} samples</summary>
-              <pre style={{ fontSize: 11, whiteSpace: "pre-wrap", margin: "4px 0", color: "var(--ink-2,#888)" }}>{d.samples.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)).join("\n")}</pre>
+              <summary style={{ cursor: "pointer", color: "#B8B0A2", fontSize: 13 }}>{d.samples.length} samples</summary>
+              <pre style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: "6px 0", color: "#B8B0A2", fontFamily: "var(--font-mono, monospace)" }}>{d.samples.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)).join("\n")}</pre>
             </details>
           )}
-          {r.status === "fail" && (
-            <div style={{ marginTop: 8, display: "flex", gap: 6 }}>
-              <button onClick={() => onCopyFix(r)} style={{ ...secondaryBtnStyle, padding: "4px 10px", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <Copy size={11} /> Generate fix prompt
+          {r.status !== "pass" && (
+            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={() => onCopyFix(r)} style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Copy size={13} /> Generate fix prompt
               </button>
-              <button onClick={() => onMarkKnown(r.test_id)} style={{ ...secondaryBtnStyle, padding: "4px 10px", fontSize: 11 }}>
+              <button onClick={() => onMarkKnown(r.test_id)} style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13 }}>
                 Mark as known issue
               </button>
             </div>
@@ -783,6 +890,29 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
         </div>
       )}
     </div>
+  );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <span style={{ display: "inline-block", minWidth: 80, fontSize: 12, color: "#9C9485", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginRight: 8 }}>{children}</span>;
+}
+
+const codeStyle: React.CSSProperties = {
+  fontFamily: "var(--font-mono, monospace)",
+  fontSize: 13,
+  color: "#F4EFE6",
+  background: "rgba(255,255,255,0.05)",
+  padding: "2px 6px",
+  borderRadius: 4,
+  wordBreak: "break-word",
+};
+
+function Swatch({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#B8B0A2" }}>
+      <span style={{ width: 16, height: 16, borderRadius: 3, background: color, border: "1px solid rgba(255,255,255,0.2)" }} />
+      <code style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12 }}>{label}: {color}</code>
+    </span>
   );
 }
 
