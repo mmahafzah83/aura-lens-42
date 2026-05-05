@@ -22,13 +22,21 @@ interface SchematicRendererProps {
   spec: SchematicSpec;
   width?: number;
   height?: number;
+  language?: 'en' | 'ar';
 }
 
-export default function SchematicRenderer({ spec, width = 1080, height = 1350 }: SchematicRendererProps) {
+export default function SchematicRenderer({ spec, width = 1080, height = 1350, language = 'en' }: SchematicRendererProps) {
   const titleAreaH = 200;
   const footerH = 110;
   const diagramH = height - titleAreaH - footerH;
   const diagramY = titleAreaH;
+  const isRtl = language === 'ar';
+  const arabicFont = "'Cairo', 'DM Sans', sans-serif";
+  const titleFont = isRtl ? arabicFont : BLACKBOARD.fonts.title;
+  const bodyFont = isRtl ? arabicFont : BLACKBOARD.fonts.body;
+  const textAnchor = isRtl ? 'end' : 'start';
+  const xStart = isRtl ? width - 70 : 70;
+  const xEnd = isRtl ? 70 : width - 70;
 
   const renderDiagram = () => {
     switch (spec.type) {
@@ -82,18 +90,24 @@ export default function SchematicRenderer({ spec, width = 1080, height = 1350 }:
       {/* Title section */}
       <g>
         {spec.tag && (
-          <text x={70} y={90} fontFamily={BLACKBOARD.fonts.mono} fontSize={18}
-            fill={BLACKBOARD.gold} letterSpacing={3}>
+          <text x={xStart} y={90} textAnchor={textAnchor}
+            fontFamily={BLACKBOARD.fonts.mono} fontSize={18}
+            fill={BLACKBOARD.gold} letterSpacing={3}
+            direction={isRtl ? 'rtl' : 'ltr'}>
             {spec.tag.toUpperCase()}
           </text>
         )}
-        <text x={70} y={spec.tag ? 145 : 110} fontFamily={BLACKBOARD.fonts.title}
-          fontSize={42} fontWeight={500} fill={BLACKBOARD.chalk}>
+        <text x={xStart} y={spec.tag ? 145 : 110} textAnchor={textAnchor}
+          fontFamily={titleFont}
+          fontSize={42} fontWeight={500} fill={BLACKBOARD.chalk}
+          direction={isRtl ? 'rtl' : 'ltr'}>
           {spec.title}
         </text>
         {spec.subtitle && (
-          <text x={70} y={spec.tag ? 180 : 145} fontFamily={BLACKBOARD.fonts.body}
-            fontSize={20} fill={BLACKBOARD.chalkDim}>
+          <text x={xStart} y={spec.tag ? 180 : 145} textAnchor={textAnchor}
+            fontFamily={bodyFont}
+            fontSize={20} fill={BLACKBOARD.chalkDim}
+            direction={isRtl ? 'rtl' : 'ltr'}>
             {spec.subtitle}
           </text>
         )}
@@ -108,15 +122,19 @@ export default function SchematicRenderer({ spec, width = 1080, height = 1350 }:
       <g>
         <line x1={70} y1={height - footerH + 10} x2={width - 70} y2={height - footerH + 10}
           stroke={BLACKBOARD.chalkFaint} strokeWidth={1} />
-        <text x={70} y={height - 50} fontFamily={BLACKBOARD.fonts.body}
-          fontSize={20} fontWeight={500} fill={BLACKBOARD.chalk}>
+        <text x={xStart} y={height - 50} textAnchor={textAnchor}
+          fontFamily={bodyFont}
+          fontSize={20} fontWeight={500} fill={BLACKBOARD.chalk}
+          direction={isRtl ? 'rtl' : 'ltr'}>
           {spec.author.name}
         </text>
-        <text x={70} y={height - 26} fontFamily={BLACKBOARD.fonts.mono}
-          fontSize={13} fill={BLACKBOARD.chalkDim} letterSpacing={1.5}>
-          {spec.author.title.toUpperCase()}
+        <text x={xStart} y={height - 26} textAnchor={textAnchor}
+          fontFamily={isRtl ? bodyFont : BLACKBOARD.fonts.mono}
+          fontSize={13} fill={BLACKBOARD.chalkDim} letterSpacing={isRtl ? 0 : 1.5}
+          direction={isRtl ? 'rtl' : 'ltr'}>
+          {isRtl ? spec.author.title : spec.author.title.toUpperCase()}
         </text>
-        <text x={width - 70} y={height - 38} textAnchor="end"
+        <text x={xEnd} y={height - 38} textAnchor={isRtl ? 'start' : 'end'}
           fontFamily={BLACKBOARD.fonts.display} fontSize={28}
           fontStyle="italic" fill={BLACKBOARD.gold}>
           Aura

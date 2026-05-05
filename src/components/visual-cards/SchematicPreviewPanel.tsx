@@ -91,6 +91,7 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
       <div className="w-full overflow-y-auto bg-surface-ink p-4" style={{ maxHeight: "60vh" }}>
         <div
           ref={wrapperRef}
+          dir={language === 'ar' ? 'rtl' : 'ltr'}
           style={{
             width: 1080,
             height: 1350,
@@ -99,7 +100,7 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
             margin: "0 auto",
           }}
         >
-          {spec && <SchematicRenderer spec={spec} />}
+          {spec && <SchematicRenderer spec={spec} language={language} />}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border/8 bg-secondary/10">
