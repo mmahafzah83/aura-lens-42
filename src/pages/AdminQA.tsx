@@ -3,12 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
-import { runDomAudit, type QaResult } from "@/utils/qaInteractionAudit";
+import { runDomAudit } from "@/utils/qaInteractionAudit";
 import { Loader2, Copy, ChevronDown, ChevronRight } from "lucide-react";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const DOM_ROUTES = ["/home", "/intelligence", "/publish", "/impact", "/my-story"];
-const RETURN_PATH = "/admin/qa";
 const KNOWN_KEY = "qa_known_issues_v1";
 
 type ResultRow = {
@@ -87,6 +86,7 @@ const AdminQA = () => {
   const [elapsedMs, setElapsedMs] = useState<number>(0);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
+  const iframeContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Auth gate
   useEffect(() => {
@@ -161,62 +161,171 @@ const AdminQA = () => {
   // ---------------- Orchestrator ----------------
   async function runBackend(run_id: string): Promise<void> {
     setProgress("Layer 1/3 — Backend audit… ~8s");
-    const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend" } });
-    if (error) toast.error(`Backend audit failed: ${error.message}`);
-    // Note: EF stamps its own run_id. We keep our run_id as the user-facing umbrella and link via run_at.
+    try {
+      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend" } });
+      if (error) {
+        const msg = error.message || String(error);
+        if (/not\s*found|404/i.test(msg)) {
+          toast.error("Backend audit EF not found — skip to DOM audit");
+        } else {
+          toast.error(`Backend audit failed: ${msg}. Check that run-qa-audit EF is deployed.`);
+        }
+      }
+    } catch (e: any) {
+      toast.error(`Backend audit failed: ${e?.message || String(e)}. Check that run-qa-audit EF is deployed.`);
+    }
     void run_id;
+  }
+
+  async function loadIframe(src: string): Promise<HTMLIFrameElement | null> {
+    const container = iframeContainerRef.current;
+    if (!container) return null;
+    // Clean up previous iframe
+    container.innerHTML = "";
+    const iframe = document.createElement("iframe");
+    iframe.style.width = "1280px";
+    iframe.style.height = "900px";
+    iframe.style.border = "0";
+    iframe.style.position = "absolute";
+    iframe.style.left = "-99999px";
+    iframe.style.top = "0";
+    iframe.setAttribute("aria-hidden", "true");
+    container.appendChild(iframe);
+    await new Promise<void>((resolve) => {
+      const done = () => resolve();
+      iframe.addEventListener("load", done, { once: true });
+      iframe.src = src;
+    });
+    // Extra settle delay for SPA hydration
+    await new Promise((r) => setTimeout(r, 2000));
+    return iframe;
   }
 
   async function runDomAcrossRoutes(run_id: string, userId: string): Promise<void> {
     setProgress("Layer 2/3 — DOM audit across pages…");
     screenshotsRef.current = [];
     const allRows: any[] = [];
+
+    // Always include current page (admin/qa) results too — using local document
+    let crossOriginBlocked = false;
+
     for (const route of DOM_ROUTES) {
       const page = route.replace(/^\//, "") || "root";
       setProgress(`Layer 2/3 — DOM audit on ${page}…`);
-      navigate(route);
-      await new Promise((r) => setTimeout(r, 2000));
-      let domResults: QaResult[] = [];
+      let iframe: HTMLIFrameElement | null = null;
       try {
-        domResults = await runDomAudit();
-      } catch (e: any) {
-        domResults = [{ testId: "dom.crash", testName: "DOM audit crashed", category: "dom", status: "fail", details: { description: e?.message || String(e), page } }];
+        iframe = await loadIframe(route);
+      } catch (e) {
+        console.warn("iframe load failed", route, e);
       }
-      domResults.forEach((d) => {
-        allRows.push({
-          run_id,
-          run_by: userId,
-          layer: "dom",
-          category: d.category,
-          test_id: `${page}.${d.testId}`,
-          test_name: `[${page}] ${d.testName}`,
-          status: d.status,
-          details: { ...d.details, page },
-        });
-      });
-      // Capture screenshot for AI evaluation step (skip if html2canvas fails)
+      if (!iframe) continue;
+
+      let doc: Document | null = null;
       try {
-        const canvas = await html2canvas(document.body, {
-          width: window.innerWidth,
-          height: Math.min(window.innerHeight, 1400),
-          scale: 0.6,
-          useCORS: true,
-          backgroundColor: null,
-          logging: false,
-        } as any);
-        const dataUrl = canvas.toDataURL("image/png");
-        const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
-        screenshotsRef.current.push({ page, imageBase64: base64 });
+        doc = iframe.contentDocument;
+        // Touch it to trigger any cross-origin throw
+        void doc?.body;
+      } catch {
+        crossOriginBlocked = true;
+        doc = null;
+      }
+
+      if (!doc) {
+        crossOriginBlocked = true;
+        allRows.push({
+          run_id, run_by: userId, layer: "dom", category: "iframe",
+          test_id: `${page}.iframe.blocked`,
+          test_name: `[${page}] iframe DOM access blocked`,
+          status: "warn",
+          details: { description: "contentDocument unavailable; skipped DOM audit for this page", page },
+        });
+        continue;
+      }
+
+      // Lightweight inline checks against iframe document (full audit util uses global `document`)
+      try {
+        const buttons = doc.querySelectorAll("button, [role='button']");
+        const links = doc.querySelectorAll("a[href]");
+        const imgs = doc.querySelectorAll("img");
+        const brokenImgs = Array.from(imgs).filter((i) => {
+          const im = i as HTMLImageElement;
+          return im.complete && im.naturalWidth === 0;
+        });
+        allRows.push({
+          run_id, run_by: userId, layer: "dom", category: "iframe",
+          test_id: `${page}.iframe.rendered`,
+          test_name: `[${page}] page rendered in iframe`,
+          status: buttons.length + links.length > 0 ? "pass" : "warn",
+          details: { description: "Iframe DOM accessible", page, buttons: buttons.length, links: links.length, images: imgs.length },
+        });
+        if (brokenImgs.length > 0) {
+          allRows.push({
+            run_id, run_by: userId, layer: "dom", category: "iframe",
+            test_id: `${page}.iframe.broken_images`,
+            test_name: `[${page}] broken images`,
+            status: "fail",
+            details: { description: `${brokenImgs.length} broken image(s)`, page, count: brokenImgs.length },
+          });
+        }
+      } catch (e: any) {
+        allRows.push({
+          run_id, run_by: userId, layer: "dom", category: "iframe",
+          test_id: `${page}.iframe.crash`,
+          test_name: `[${page}] iframe DOM audit crashed`,
+          status: "fail",
+          details: { description: e?.message || String(e), page },
+        });
+      }
+
+      // Capture screenshot of iframe body (best effort)
+      try {
+        if (doc.body) {
+          const canvas = await html2canvas(doc.body, {
+            width: 1280,
+            height: 900,
+            scale: 0.6,
+            useCORS: true,
+            backgroundColor: null,
+            logging: false,
+          } as any);
+          const dataUrl = canvas.toDataURL("image/png");
+          screenshotsRef.current.push({ page, imageBase64: dataUrl.replace(/^data:image\/png;base64,/, "") });
+        }
       } catch (e) {
         console.warn("screenshot failed for", page, e);
       }
     }
+
+    // Cleanup iframe
+    if (iframeContainerRef.current) iframeContainerRef.current.innerHTML = "";
+
+    // Also run the full DOM audit util against the current /admin/qa page
+    try {
+      const localResults = await runDomAudit();
+      localResults.forEach((d) => {
+        allRows.push({
+          run_id, run_by: userId, layer: "dom",
+          category: d.category,
+          test_id: `admin-qa.${d.testId}`,
+          test_name: `[admin-qa] ${d.testName}`,
+          status: d.status,
+          details: { ...d.details, page: "admin-qa" },
+        });
+      });
+    } catch (e) {
+      console.warn("local DOM audit failed", e);
+    }
+
+    if (crossOriginBlocked) {
+      toast.message("DOM audit limited. For full DOM audit, visit each page and run 'DOM Only' from that page.");
+    } else {
+      toast.message("Iframe DOM audit uses lightweight checks. Visit each page directly for full audit.");
+    }
+
     if (allRows.length > 0) {
       const { error } = await supabase.from("qa_audit_results").insert(allRows);
       if (error) toast.error(`Failed to save DOM results: ${error.message}`);
     }
-    navigate(RETURN_PATH);
-    await new Promise((r) => setTimeout(r, 600));
   }
 
   async function runAi(run_id: string): Promise<void> {
@@ -348,6 +457,8 @@ const AdminQA = () => {
         </h1>
         <p style={{ color: "var(--ink-2,#999)", marginTop: 4 }}>Backend + DOM + AI evaluation across the Aura surface.</p>
       </header>
+      {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
+      <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
 
       {/* Section 1 — Run Controls */}
       <Section title="Run controls">
