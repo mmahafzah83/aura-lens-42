@@ -24,6 +24,14 @@ type ResultRow = {
 
 type RunSummary = { run_id: string; run_at: string; total: number; pass: number; warn: number; fail: number };
 
+type IframeStatus = {
+  route: string;
+  state: "pending" | "ok" | "fail";
+  ms?: number;
+  tests?: number;
+  error?: string;
+};
+
 const STATUS_COLORS: Record<string, string> = {
   pass: "#16a34a",
   warn: "#d97706",
@@ -36,9 +44,10 @@ function StatusBadge({ status }: { status: string }) {
       style={{
         background: STATUS_COLORS[status] || "#666",
         color: "white",
-        fontSize: 11,
-        padding: "2px 8px",
-        borderRadius: 4,
+        fontSize: 12,
+        fontWeight: 600,
+        padding: "4px 10px",
+        borderRadius: 5,
         textTransform: "uppercase",
         fontFamily: "var(--font-mono, monospace)",
         letterSpacing: 0.5,
@@ -70,6 +79,12 @@ function genFixPrompt(r: ResultRow): string {
   return `Fix ${r.test_name}: ${description}. Expected: ${expected}. Actual: ${actual}. Location: ${location}. DO NOT change anything else.`;
 }
 
+function formatRunDate(s: string): string {
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return s;
+  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 const AdminQA = () => {
   const navigate = useNavigate();
   const [authChecked, setAuthChecked] = useState(false);
@@ -84,6 +99,8 @@ const AdminQA = () => {
   const [compareSel, setCompareSel] = useState<string[]>([]);
   const [compareData, setCompareData] = useState<{ a: ResultRow[]; b: ResultRow[] } | null>(null);
   const [elapsedMs, setElapsedMs] = useState<number>(0);
+  const [iframeStatuses, setIframeStatuses] = useState<IframeStatus[]>([]);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -161,10 +178,12 @@ const AdminQA = () => {
   // ---------------- Orchestrator ----------------
   async function runBackend(run_id: string): Promise<void> {
     setProgress("Layer 1/3 — Backend audit… ~8s");
+    setBackendError(null);
     try {
-      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend" } });
+      const { error } = await supabase.functions.invoke("run-qa-audit", { body: { layer: "backend", run_id } });
       if (error) {
         const msg = error.message || String(error);
+        setBackendError(msg);
         if (/not\s*found|404/i.test(msg)) {
           toast.error("Backend audit EF not found — skip to DOM audit");
         } else {
@@ -172,7 +191,9 @@ const AdminQA = () => {
         }
       }
     } catch (e: any) {
-      toast.error(`Backend audit failed: ${e?.message || String(e)}. Check that run-qa-audit EF is deployed.`);
+      const msg = e?.message || String(e);
+      setBackendError(msg);
+      toast.error(`Backend audit failed: ${msg}. Check that run-qa-audit EF is deployed.`);
     }
     void run_id;
   }
@@ -205,20 +226,32 @@ const AdminQA = () => {
     setProgress("Layer 2/3 — DOM audit across pages…");
     screenshotsRef.current = [];
     const allRows: any[] = [];
+    const statuses: IframeStatus[] = DOM_ROUTES.map(r => ({ route: r, state: "pending" }));
+    setIframeStatuses(statuses);
 
     // Always include current page (admin/qa) results too — using local document
     let crossOriginBlocked = false;
 
-    for (const route of DOM_ROUTES) {
+    for (let idx = 0; idx < DOM_ROUTES.length; idx++) {
+      const route = DOM_ROUTES[idx];
       const page = route.replace(/^\//, "") || "root";
       setProgress(`Layer 2/3 — DOM audit on ${page}…`);
+      const t0 = performance.now();
       let iframe: HTMLIFrameElement | null = null;
       try {
         iframe = await loadIframe(route);
       } catch (e) {
         console.warn("iframe load failed", route, e);
+        statuses[idx] = { route, state: "fail", error: (e as any)?.message || String(e) };
+        setIframeStatuses([...statuses]);
       }
-      if (!iframe) continue;
+      if (!iframe) {
+        if (statuses[idx].state === "pending") {
+          statuses[idx] = { route, state: "fail", error: "iframe not created" };
+          setIframeStatuses([...statuses]);
+        }
+        continue;
+      }
 
       let doc: Document | null = null;
       try {
@@ -232,6 +265,8 @@ const AdminQA = () => {
 
       if (!doc) {
         crossOriginBlocked = true;
+        statuses[idx] = { route, state: "fail", ms: Math.round(performance.now() - t0), error: "DOM access blocked" };
+        setIframeStatuses([...statuses]);
         allRows.push({
           run_id, run_by: userId, layer: "dom", category: "iframe",
           test_id: `${page}.iframe.blocked`,
@@ -242,6 +277,7 @@ const AdminQA = () => {
         continue;
       }
 
+      let testCount = 0;
       // Lightweight inline checks against iframe document (full audit util uses global `document`)
       try {
         const buttons = doc.querySelectorAll("button, [role='button']");
@@ -258,6 +294,7 @@ const AdminQA = () => {
           status: buttons.length + links.length > 0 ? "pass" : "warn",
           details: { description: "Iframe DOM accessible", page, buttons: buttons.length, links: links.length, images: imgs.length },
         });
+        testCount += 1;
         if (brokenImgs.length > 0) {
           allRows.push({
             run_id, run_by: userId, layer: "dom", category: "iframe",
@@ -266,6 +303,7 @@ const AdminQA = () => {
             status: "fail",
             details: { description: `${brokenImgs.length} broken image(s)`, page, count: brokenImgs.length },
           });
+          testCount += 1;
         }
       } catch (e: any) {
         allRows.push({
@@ -275,6 +313,7 @@ const AdminQA = () => {
           status: "fail",
           details: { description: e?.message || String(e), page },
         });
+        testCount += 1;
       }
 
       // Capture screenshot of iframe body (best effort)
@@ -294,6 +333,8 @@ const AdminQA = () => {
       } catch (e) {
         console.warn("screenshot failed for", page, e);
       }
+      statuses[idx] = { route, state: "ok", ms: Math.round(performance.now() - t0), tests: testCount };
+      setIframeStatuses([...statuses]);
     }
 
     // Cleanup iframe
