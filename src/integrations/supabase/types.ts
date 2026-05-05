@@ -1432,6 +1432,36 @@ export type Database = {
           },
         ]
       }
+      market_mirror_cache: {
+        Row: {
+          client_cio_text: string | null
+          curator_text: string | null
+          gaps: Json | null
+          generated_at: string
+          headhunter_text: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          client_cio_text?: string | null
+          curator_text?: string | null
+          gaps?: Json | null
+          generated_at?: string
+          headhunter_text?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          client_cio_text?: string | null
+          curator_text?: string | null
+          gaps?: Json | null
+          generated_at?: string
+          headhunter_text?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       master_frameworks: {
         Row: {
           created_at: string
