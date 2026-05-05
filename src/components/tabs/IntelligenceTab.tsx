@@ -22,6 +22,11 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import type { Database } from "@/integrations/supabase/types";
+import { VelocityPill, VelocityTrend, ValidationBadge, daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
@@ -59,6 +64,9 @@ interface Signal {
   created_at: string;
   updated_at: string;
   user_signal_feedback?: string | null;
+  signal_velocity?: number | null;
+  velocity_status?: "accelerating" | "stable" | "fading" | "dormant" | null;
+  commercial_validation_score?: number | null;
 }
 
 interface Insight {
@@ -288,6 +296,13 @@ const SignalDetailPanel = ({
           <p style={{ fontSize: 64, fontWeight: 800, color: "var(--brand)", letterSpacing: -3, lineHeight: 1, margin: "0 0 4px" }}>
             {confPct}%
           </p>
+
+          {/* Velocity, trend, validation */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            <VelocityPill status={signal.velocity_status} />
+            <VelocityTrend velocity={signal.signal_velocity} />
+            <ValidationBadge score={signal.commercial_validation_score} />
+          </div>
 
           {/* Title */}
           <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink-7)", lineHeight: 1.3, margin: "0 0 16px" }}>
@@ -609,7 +624,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         return;
       }
       const [signalsRes, entriesRes, documentsRes, movesRes] = await Promise.all([
-        supabase.from("strategic_signals").select("*").eq("status", "active").order("confidence", { ascending: false }).limit(50),
+        supabase
+          .from("strategic_signals")
+          .select("*, signal_velocity, velocity_status, commercial_validation_score")
+          .eq("status", "active")
+          .order("confidence", { ascending: false })
+          .limit(50),
         supabase.from("entries").select("id", { count: "exact", head: true }),
         supabase.from("documents").select("id", { count: "exact", head: true }),
         supabase.from("recommended_moves").select("id", { count: "exact", head: true }).eq("status", "active").eq("user_id", user.id),
@@ -634,8 +654,30 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
   useEffect(() => { loadSignals(); }, [loadSignals]);
 
   const sortedByConfidence = useMemo(() => {
-    return [...signals].sort((a, b) => b.confidence - a.confidence);
+    const order: Record<string, number> = { fading: 0, accelerating: 1, stable: 2, dormant: 3 };
+    return [...signals].sort((a, b) => {
+      const ao = order[a.velocity_status || "stable"] ?? 2;
+      const bo = order[b.velocity_status || "stable"] ?? 2;
+      if (ao !== bo) return ao - bo;
+      return b.confidence - a.confidence;
+    });
   }, [signals]);
+
+  const fadingSignals = useMemo(() => signals.filter(s => s.velocity_status === "fading"), [signals]);
+  const dormantSignals = useMemo(() => signals.filter(s => s.velocity_status === "dormant"), [signals]);
+  const topFading = useMemo(() => [...fadingSignals].sort((a, b) => b.confidence - a.confidence)[0] || null, [fadingSignals]);
+
+  const archiveDormant = async () => {
+    if (dormantSignals.length === 0) return;
+    const ids = dormantSignals.map(s => s.id);
+    const { error } = await supabase.from("strategic_signals").update({ status: "archived" } as any).in("id", ids);
+    if (error) {
+      toast.error("Couldn't archive signals");
+      return;
+    }
+    toast.success(`Archived ${ids.length} dormant signal${ids.length > 1 ? "s" : ""}`);
+    await loadSignals();
+  };
 
   const selectedSignal = useMemo(() => {
     return sortedByConfidence.find(s => s.id === selectedSignalId) || sortedByConfidence[0] || null;
@@ -800,6 +842,91 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               />
             </p>
 
+            {/* Fading-signal urgency alert */}
+            {fadingSignals.length > 0 && topFading && (
+              <div
+                role="status"
+                style={{
+                  border: "1px solid hsl(24 95% 53% / 0.5)",
+                  background: "hsl(24 95% 53% / 0.06)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  marginBottom: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(24 95% 53%)" }}>
+                  ⚠ {fadingSignals.length} signal{fadingSignals.length > 1 ? "s are" : " is"} losing strength
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
+                  <strong style={{ color: "var(--ink-6)" }}>{topFading.signal_title}</strong> dropped to {Math.round(topFading.confidence * 100)}% confidence.
+                  New evidence in the next {daysUntilDormant(topFading.confidence)} days will reverse the trend.
+                </div>
+                <button
+                  onClick={() => onOpenCapture?.()}
+                  style={{
+                    alignSelf: "flex-start",
+                    fontSize: 12, padding: "5px 12px", borderRadius: 6,
+                    background: "hsl(24 95% 53%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 500,
+                  }}
+                >
+                  Capture for "{topFading.signal_title}" →
+                </button>
+              </div>
+            )}
+
+            {/* Dormant signal alert */}
+            {dormantSignals.length > 0 && (
+              <div
+                role="status"
+                style={{
+                  border: "0.5px solid var(--brand-line)",
+                  background: "var(--surface-ink-subtle)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  marginBottom: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-5)" }}>
+                  ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
+                  These signals had no new evidence for 60+ days. Capture relevant intelligence to reactivate them, or archive signals that no longer represent your focus.
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      style={{
+                        alignSelf: "flex-start",
+                        fontSize: 12, padding: "5px 12px", borderRadius: 6,
+                        background: "transparent", color: "var(--ink-5)",
+                        border: "0.5px solid var(--brand-line)", cursor: "pointer", fontWeight: 500,
+                      }}
+                    >
+                      Archive Dormant Signals
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Archive {dormantSignals.length} dormant signal{dormantSignals.length > 1 ? "s" : ""}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Archived signals are removed from your active radar. You can still find them in your data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={archiveDormant}>Archive</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+
             {signals.length === 0 ? (
               entryCount === 0 ? (
                 <EmptyState
@@ -891,6 +1018,11 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             <p style={{ fontSize: 9, color: "var(--ink-3)", margin: "2px 0 0" }}>
                               {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
                             </p>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                              <VelocityPill status={s.velocity_status} compact />
+                              <VelocityTrend velocity={s.signal_velocity} />
+                              <ValidationBadge score={s.commercial_validation_score} />
+                            </div>
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "var(--brand)" : "var(--ink-5)", flexShrink: 0 }}>
                             {confPct}%
