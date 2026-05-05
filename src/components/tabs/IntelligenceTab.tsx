@@ -1011,16 +1011,16 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             <p style={{ fontSize: 9, color: "var(--ink-3)", margin: "2px 0 0" }}>
                               {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
                             </p>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                              <VelocityPill status={s.velocity_status} compact />
+                              <VelocityTrend velocity={s.signal_velocity} />
+                              <ValidationBadge score={s.commercial_validation_score} />
+                            </div>
                           </div>
                           <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "var(--brand)" : "var(--ink-5)", flexShrink: 0 }}>
                             {confPct}%
                           </span>
                         </div>
-                        );
-                      }}
-                    />
-                    {/* Per-row velocity meta strip rendered above; render extra row metadata via wrapper instead */}
-                  </div>
                         );
                       }}
                     />
