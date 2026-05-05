@@ -25,6 +25,7 @@ import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
 import SilenceAlarm from "@/components/SilenceAlarm";
+import TierCeremonyModal from "@/components/TierCeremonyModal";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
@@ -974,6 +975,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* Milestone notification (G7) — shows newly_earned from calculate-aura-score */}
       <MilestoneNotification userId={authUser?.id ?? null} />
+
+      {/* O-2b — Tier transition ceremony (modal renders when unacknowledged tier_* exists) */}
+      <TierCeremonyModal userId={authUser?.id ?? null} />
 
       {/* M3-4 — identity drift suggestion (frontend-only, session-scoped) */}
       <IdentityDriftBanner />
