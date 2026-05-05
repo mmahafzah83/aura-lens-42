@@ -1674,6 +1674,45 @@ export type Database = {
         }
         Relationships: []
       }
+      qa_audit_results: {
+        Row: {
+          category: string
+          details: Json | null
+          id: string
+          layer: string
+          run_at: string | null
+          run_by: string | null
+          run_id: string
+          status: string
+          test_id: string
+          test_name: string
+        }
+        Insert: {
+          category: string
+          details?: Json | null
+          id?: string
+          layer: string
+          run_at?: string | null
+          run_by?: string | null
+          run_id: string
+          status: string
+          test_id: string
+          test_name: string
+        }
+        Update: {
+          category?: string
+          details?: Json | null
+          id?: string
+          layer?: string
+          run_at?: string | null
+          run_by?: string | null
+          run_id?: string
+          status?: string
+          test_id?: string
+          test_name?: string
+        }
+        Relationships: []
+      }
       qa_reports: {
         Row: {
           failed: number | null
