@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BarChart3, Plus, Upload, Loader2, CheckCircle2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { calculateCommercialValidation } from "@/lib/calculateCommercialValidation";
 
 interface Props {
   onComplete?: () => void;
@@ -81,6 +82,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
     }
     setForm(EMPTY);
     setIngesting(false);
+    if (user?.id) calculateCommercialValidation(user.id);
     onComplete?.();
   };
 
@@ -141,6 +143,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
     setResult({ inserted, errors });
     toast({ title: "CSV metrics imported", description: `${inserted} metric snapshots added.` });
     setIngesting(false);
+    if (user?.id) calculateCommercialValidation(user.id);
     onComplete?.();
     if (fileRef.current) fileRef.current.value = "";
   };
