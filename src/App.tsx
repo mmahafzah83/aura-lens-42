@@ -14,6 +14,7 @@ import RequestAccess from "./pages/RequestAccess";
 import Admin from "./pages/Admin";
 import AdminDesignSystem from "./pages/AdminDesignSystem";
 import AdminExperience from "./pages/AdminExperience";
+import AdminQA from "./pages/AdminQA";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="/admin/design-system" element={<AdminDesignSystem />} />
             <Route path="/admin/experience" element={<AdminExperience />} />
+            <Route path="/admin/qa" element={<AdminQA />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
             <Route path="/trends/:id" element={<TrendDetail />} />
