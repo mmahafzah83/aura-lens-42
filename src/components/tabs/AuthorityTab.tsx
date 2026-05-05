@@ -19,7 +19,8 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { isArabicText } from "@/lib/utils";
 import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
-import ImageCardGenerator from "@/components/ImageCardGenerator";
+import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
+import SchematicPreviewPanel from "@/components/visual-cards/SchematicPreviewPanel";
 import StartFromPanel from "@/components/StartFromPanel";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import FlashPanel from "@/components/FlashPanel";
@@ -273,8 +274,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generatingShort, setGeneratingShort] = useState(false);
 
   // Visual companion state
-  const [visualUrl, setVisualUrl] = useState<string | null>(null);
-  const [visualLoading, setVisualLoading] = useState(false);
+  const [visualMode, setVisualMode] = useState<'card' | 'schematic'>('card');
+  const [cardRecommendation, setCardRecommendation] = useState<any>(null);
 
   // Quick actions / variations state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
