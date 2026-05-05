@@ -793,7 +793,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Stat({ label, value, color, emphasis }: { label: string; value: number; color?: string; emphasis?: boolean }) {
   return (
-    <div style={{ ...cardStyle, background: emphasis ? "rgba(197,165,90,0.08)" : cardStyle.background, borderColor: emphasis ? "rgba(197,165,90,0.4)" : cardStyle.border as any }}>
+    <div style={{ ...cardStyle, ...(emphasis ? { background: "rgba(197,165,90,0.08)", border: "1px solid rgba(197,165,90,0.4)" } : null) }}>
       <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #C5A55A)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#F4EFE6", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
