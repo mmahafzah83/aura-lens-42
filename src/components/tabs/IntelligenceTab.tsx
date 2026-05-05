@@ -22,6 +22,11 @@ import InfoTooltip from "@/components/ui/InfoTooltip";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import type { Database } from "@/integrations/supabase/types";
+import { VelocityPill, VelocityTrend, ValidationBadge, daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Entry = Database["public"]["Tables"]["entries"]["Row"];
 
