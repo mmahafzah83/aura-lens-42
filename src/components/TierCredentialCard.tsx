@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import { Download, Copy, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -207,26 +207,17 @@ export default function TierCredentialCard({ userId, tierName, earnedAt, onShare
 
 /* --- Credential card surface (1200x628 LinkedIn OG) --- */
 
-const CredentialCardSurface = (() => {
-  // forwardRef inline
-  const C = (
-    {
-      tierName,
-      fullName,
-      role,
-      dateStr,
-      signals,
-      posts,
-    }: {
-      tierName: string;
-      fullName: string;
-      role: string;
-      dateStr: string;
-      signals: number;
-      posts: number;
-    },
-    ref: React.Ref<HTMLDivElement>
-  ) => {
+interface SurfaceProps {
+  tierName: string;
+  fullName: string;
+  role: string;
+  dateStr: string;
+  signals: number;
+  posts: number;
+}
+
+const CredentialCardSurface = forwardRef<HTMLDivElement, SurfaceProps>(
+  ({ tierName, fullName, role, dateStr, signals, posts }, ref) => {
     return (
       <div
         ref={ref}
@@ -317,15 +308,6 @@ const CredentialCardSurface = (() => {
         </div>
       </div>
     );
-  };
-  return require("react").forwardRef(C) as React.ForwardRefExoticComponent<
-    {
-      tierName: string;
-      fullName: string;
-      role: string;
-      dateStr: string;
-      signals: number;
-      posts: number;
-    } & React.RefAttributes<HTMLDivElement>
-  >;
-})();
+  }
+);
+CredentialCardSurface.displayName = "CredentialCardSurface";
