@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import DocumentUpload from "@/components/DocumentUpload";
+import { bumpCaptureAndCheckDrift } from "@/lib/identityDriftCheck";
 
 type CaptureType = "link" | "voice" | "text" | "image" | "document";
 
@@ -350,6 +351,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         onCaptured();
         onOpenChange(false);
 
+        // M3-4 identity drift check (frontend only, fire-and-forget)
+        bumpCaptureAndCheckDrift(session.user.id);
+
         // Fire-and-forget signal detection
         if (entryRow?.id) {
           supabase.functions
@@ -525,6 +529,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       setDuplicateInfo(null);
       onCaptured();
       onOpenChange(false);
+
+      // M3-4 identity drift check (frontend only, fire-and-forget)
+      bumpCaptureAndCheckDrift(session.user.id);
 
       // Fire-and-forget: extract evidence then detect signals (unified pipeline)
       if (entryRow?.id) {
