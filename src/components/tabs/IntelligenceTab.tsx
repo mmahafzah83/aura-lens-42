@@ -297,6 +297,13 @@ const SignalDetailPanel = ({
             {confPct}%
           </p>
 
+          {/* Velocity, trend, validation */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            <VelocityPill status={signal.velocity_status} />
+            <VelocityTrend velocity={signal.signal_velocity} />
+            <ValidationBadge score={signal.commercial_validation_score} />
+          </div>
+
           {/* Title */}
           <h3 style={{ fontSize: 18, fontWeight: 700, color: "var(--ink-7)", lineHeight: 1.3, margin: "0 0 16px" }}>
             {signal.signal_title}
