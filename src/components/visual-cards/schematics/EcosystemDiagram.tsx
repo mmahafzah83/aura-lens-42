@@ -1,4 +1,4 @@
-import { BLACKBOARD, SchematicSpec, edgeStroke } from './blackboard';
+import { BLACKBOARD, SchematicSpec } from './blackboard';
 
 interface Props { spec: SchematicSpec; width: number; height: number; }
 
@@ -104,8 +104,6 @@ export default function EcosystemDiagram({ spec, width, height }: Props) {
         <text x={336} y={4} fontFamily={BLACKBOARD.fonts.mono} fontSize={10} fill={BLACKBOARD.ember}>CRITICAL GAP</text>
       </g>
 
-      {/* swallow unused import */}
-      {false && edgeStroke('solid')}
     </g>
   );
 }
