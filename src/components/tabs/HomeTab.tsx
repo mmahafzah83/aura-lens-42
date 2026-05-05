@@ -24,6 +24,7 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
+import SilenceAlarm from "@/components/SilenceAlarm";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
@@ -1269,6 +1270,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
+
+      {/* Silence Alarm — substance-backed urgency when capture has paused 3+ days */}
+      <SilenceAlarm
+        daysSinceCapture={daysSinceCapture}
+        onOpenCapture={onOpenCapture}
+        onSwitchTab={onSwitchTab}
+      />
 
       {/* Persistent welcome card — shows for users with < 3 entries, dismissible */}
       {showWelcome && (
