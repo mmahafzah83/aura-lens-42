@@ -1402,165 +1402,60 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               </div>
             )}
 
-            {/* Visual Companion — LinkedIn Post Visual */}
-            {topic.trim() && !isGeneratingAny && (() => {
-              const visualMode = visualLoading || !!visualUrl;
-              return (
-                <div className={`rounded-xl border transition-all duration-300 ${
-                  visualMode
-                    ? "border-primary/20 bg-card/80 backdrop-blur-sm shadow-lg shadow-primary/5"
-                    : "border-border/10 bg-card/60 backdrop-blur-sm"
-                }`}>
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
-                    <div className="flex items-center gap-2">
-                      <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
-                      <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
-                        Visual Companion
-                      </p>
-                      {visualLoading && (
-                        <span className="text-[10px] text-primary/70 font-medium animate-pulse ml-1">
-                          Generating visual…
-                        </span>
-                      )}
-                      {visualUrl && !visualLoading && (
-                        <span className="text-[10px] text-emerald-500/80 font-medium ml-1">
-                          ✓ Visual ready
-                        </span>
-                      )}
-                    </div>
-                    {!visualUrl && !visualLoading && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={generateVisual}
-                        className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
-                      >
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Generate Schematic
-                      </Button>
-                    )}
+            {/* Visual Companion — Branded Card or AI Schematic */}
+            {displayedOutput && !isGeneratingAny && (
+              <div className="rounded-xl border border-border/10 bg-card/60 backdrop-blur-sm">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
+                      Visual Companion
+                    </p>
                   </div>
-
-                  {/* States */}
-                  {visualLoading ? (
-                    <div className="flex flex-col items-center justify-center py-16 gap-3">
-                      <Loader2 className="w-6 h-6 text-primary/50 animate-spin" />
-                      <p className="text-xs text-muted-foreground/50">Creating your visual…</p>
-                    </div>
-                  ) : visualUrl ? (
-                    <div>
-                      {/* Scrollable visual preview */}
-                      <div className="w-full overflow-y-auto bg-surface-ink p-4" style={{ maxHeight: "60vh" }}>
-                        <img
-                          src={visualUrl}
-                          alt="Visual companion schematic"
-                          className="max-w-full h-auto object-contain rounded-lg mx-auto block"
-                        />
-                      </div>
-                      {/* Action bar */}
-                      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border/8 bg-secondary/10">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={generateVisual}
-                          disabled={visualLoading}
-                          className="h-7 text-[11px] gap-1.5 border-border/15"
-                        >
-                          <Sparkles className="w-3 h-3" /> Regenerate Visual
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setVisualUrl(null)}
-                          className="h-7 text-[11px] gap-1.5 border-border/15"
-                        >
-                          <PenTool className="w-3 h-3" /> Edit Text
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            try {
-                              const { data: { session } } = await supabase.auth.getSession();
-                              if (!session?.user?.id) throw new Error("Not authenticated");
-                              const { data: profile } = await supabase.from("diagnostic_profiles")
-                                .select("level, sector_focus, firm")
-                                .eq("user_id", session.user.id)
-                                .maybeSingle();
-                              const { error } = await supabase.from("content_items").insert({
-                                user_id: session.user.id,
-                                type: "linkedin_post",
-                                title: topic,
-                                body: stripMarkdown(output || fullVersion || ""),
-                                status: "draft",
-                                language: lang,
-                                generation_params: {
-                                  visual_url: visualUrl,
-                                  framework,
-                                  content_type: contentType,
-                                  signal_ids: selectedSignalId ? [selectedSignalId] : [],
-                                  signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
-                                  language: lang ?? null,
-                                  identity_snapshot: {
-                                    role: profile?.level ?? null,
-                                    sector: profile?.sector_focus ?? null,
-                                    firm: profile?.firm ?? null,
-                                  },
-                                  timestamp: new Date().toISOString(),
-                                },
-                              });
-                              if (error) throw error;
-                              toast.success("Draft saved to your library.");
-                            } catch (e: any) {
-                              toast.error(e.message || "Failed to save");
-                            }
-                          }}
-                          className="h-7 text-[11px] gap-1.5 border-border/15"
-                        >
-                          <Save className="w-3 h-3" /> Save to Library
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            try {
-                              const resp = await fetch(visualUrl!);
-                              const blob = await resp.blob();
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download = `visual-${topic.replace(/\s+/g, "-").slice(0, 30)}.png`;
-                              document.body.appendChild(a);
-                              a.click();
-                              document.body.removeChild(a);
-                              URL.revokeObjectURL(url);
-                            } catch {
-                              toast.error("Failed to download");
-                            }
-                          }}
-                          className="h-7 text-[11px] gap-1.5 border-border/15"
-                        >
-                          <Download className="w-3 h-3" /> Download
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setVisualUrl(null)}
-                          className="h-7 text-[11px] gap-1.5 text-muted-foreground hover:text-foreground ml-auto"
-                        >
-                          <X className="w-3 h-3" /> Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="py-8 text-center">
-                      <p className="text-[10px] text-muted-foreground/30">Generate a strategic visual to complement your content</p>
-                    </div>
-                  )}
+                  <div className="inline-flex rounded-md border border-border/15 overflow-hidden">
+                    {([
+                      { key: 'card', label: 'Branded Card' },
+                      { key: 'schematic', label: 'AI Schematic' },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setVisualMode(opt.key)}
+                        className="px-2.5 h-7 text-[11px] font-medium transition-colors"
+                        style={{
+                          background: visualMode === opt.key ? "var(--brand)" : "transparent",
+                          color: visualMode === opt.key ? "var(--ink-on-brand, #0d0d0d)" : "var(--muted-foreground)",
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              );
-            })()}
+                {visualMode === 'card' ? (
+                  <div className="p-3">
+                    <CardPreviewPanel
+                      postText={displayedOutput}
+                      topicLabel={topic}
+                      language={lang}
+                      authorName={profileName || 'Author'}
+                      authorTitle={profileRole || 'Professional'}
+                      recommendedStyle={cardRecommendation?.style}
+                      recommendedType={cardRecommendation?.card_type}
+                      recommendedHighlight={cardRecommendation?.highlight}
+                    />
+                  </div>
+                ) : (
+                  <SchematicPreviewPanel
+                    postText={displayedOutput}
+                    topicLabel={topic}
+                    language={lang}
+                    authorName={profileName || 'Author'}
+                    authorTitle={profileRole || 'Professional'}
+                  />
+                )}
+              </div>
+            )}
 
             
           </>
