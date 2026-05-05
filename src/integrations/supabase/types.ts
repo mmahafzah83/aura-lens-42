@@ -1722,6 +1722,7 @@ export type Database = {
           created_at: string
           id: string
           score: number
+          tier: string | null
           user_id: string
         }
         Insert: {
@@ -1729,6 +1730,7 @@ export type Database = {
           created_at?: string
           id?: string
           score?: number
+          tier?: string | null
           user_id: string
         }
         Update: {
@@ -1736,6 +1738,7 @@ export type Database = {
           created_at?: string
           id?: string
           score?: number
+          tier?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2044,27 +2047,33 @@ export type Database = {
       }
       user_milestones: {
         Row: {
+          acknowledged: boolean
           context: Json
           earned_at: string
           id: string
           milestone_id: string
           milestone_name: string
+          shared: boolean
           user_id: string
         }
         Insert: {
+          acknowledged?: boolean
           context?: Json
           earned_at?: string
           id?: string
           milestone_id: string
           milestone_name: string
+          shared?: boolean
           user_id: string
         }
         Update: {
+          acknowledged?: boolean
           context?: Json
           earned_at?: string
           id?: string
           milestone_id?: string
           milestone_name?: string
+          shared?: boolean
           user_id?: string
         }
         Relationships: []
