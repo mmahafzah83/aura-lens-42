@@ -457,6 +457,8 @@ const AdminQA = () => {
         </h1>
         <p style={{ color: "var(--ink-2,#999)", marginTop: 4 }}>Backend + DOM + AI evaluation across the Aura surface.</p>
       </header>
+      {/* Hidden iframe container used by the DOM audit to load other routes without unmounting this page */}
+      <div ref={iframeContainerRef} aria-hidden="true" style={{ position: "fixed", left: -99999, top: 0, width: 0, height: 0, overflow: "hidden", pointerEvents: "none" }} />
 
       {/* Section 1 — Run Controls */}
       <Section title="Run controls">
