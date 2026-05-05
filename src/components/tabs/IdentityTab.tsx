@@ -15,6 +15,7 @@ import SectionError from "@/components/ui/section-error";
 import EmptyState from "@/components/ui/EmptyState";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import MarketMirror from "@/components/MarketMirror";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { createPortal } from "react-dom";
 import ShareLink from "@/components/ShareLink";
