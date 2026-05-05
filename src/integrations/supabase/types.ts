@@ -1847,8 +1847,10 @@ export type Database = {
           fragment_count: number
           framework_opportunity: Json | null
           id: string
+          last_decay_at: string | null
           priority_score: number
           signal_title: string
+          signal_velocity: number | null
           skill_pillars: string[]
           status: string
           strategic_implications: string
@@ -1858,6 +1860,7 @@ export type Database = {
           updated_at: string
           user_id: string
           user_signal_feedback: string | null
+          velocity_status: string | null
           what_it_means_for_you: string | null
         }
         Insert: {
@@ -1870,8 +1873,10 @@ export type Database = {
           fragment_count?: number
           framework_opportunity?: Json | null
           id?: string
+          last_decay_at?: string | null
           priority_score?: number
           signal_title: string
+          signal_velocity?: number | null
           skill_pillars?: string[]
           status?: string
           strategic_implications: string
@@ -1881,6 +1886,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_signal_feedback?: string | null
+          velocity_status?: string | null
           what_it_means_for_you?: string | null
         }
         Update: {
@@ -1893,8 +1899,10 @@ export type Database = {
           fragment_count?: number
           framework_opportunity?: Json | null
           id?: string
+          last_decay_at?: string | null
           priority_score?: number
           signal_title?: string
+          signal_velocity?: number | null
           skill_pillars?: string[]
           status?: string
           strategic_implications?: string
@@ -1904,6 +1912,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_signal_feedback?: string | null
+          velocity_status?: string | null
           what_it_means_for_you?: string | null
         }
         Relationships: []

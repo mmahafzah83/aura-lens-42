@@ -305,6 +305,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     return () => clearInterval(t);
   }, []);
 
+  // Fire-and-forget signal decay engine on Home load (rate-limited server-side to 6h)
+  useEffect(() => {
+    if (!sessionConfirmed || !authUser?.id) return;
+    supabase.functions
+      .invoke("signal-decay-engine", { body: { user_id: authUser.id } })
+      .catch((err) => console.warn("Decay engine error (non-blocking):", err));
+  }, [sessionConfirmed, authUser?.id]);
+
   // First-login onboarding gate — only after the session is confirmed,
   // and only if there is no diagnostic_profiles row for this user yet.
   useEffect(() => {
