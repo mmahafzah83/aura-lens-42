@@ -835,6 +835,91 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               />
             </p>
 
+            {/* Fading-signal urgency alert */}
+            {fadingSignals.length > 0 && topFading && (
+              <div
+                role="status"
+                style={{
+                  border: "1px solid hsl(24 95% 53% / 0.5)",
+                  background: "hsl(24 95% 53% / 0.06)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  marginBottom: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(24 95% 53%)" }}>
+                  ⚠ {fadingSignals.length} signal{fadingSignals.length > 1 ? "s are" : " is"} losing strength
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
+                  <strong style={{ color: "var(--ink-6)" }}>{topFading.signal_title}</strong> dropped to {Math.round(topFading.confidence * 100)}% confidence.
+                  New evidence in the next {daysUntilDormant(topFading.confidence)} days will reverse the trend.
+                </div>
+                <button
+                  onClick={() => onOpenCapture?.()}
+                  style={{
+                    alignSelf: "flex-start",
+                    fontSize: 12, padding: "5px 12px", borderRadius: 6,
+                    background: "hsl(24 95% 53%)", color: "#fff", border: "none", cursor: "pointer", fontWeight: 500,
+                  }}
+                >
+                  Capture for "{topFading.signal_title}" →
+                </button>
+              </div>
+            )}
+
+            {/* Dormant signal alert */}
+            {dormantSignals.length > 0 && (
+              <div
+                role="status"
+                style={{
+                  border: "0.5px solid var(--brand-line)",
+                  background: "var(--surface-ink-subtle)",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  marginBottom: 12,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ink-5)" }}>
+                  ◌ {dormantSignals.length} signal{dormantSignals.length > 1 ? "s have" : " has"} gone dormant
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
+                  These signals had no new evidence for 60+ days. Capture relevant intelligence to reactivate them, or archive signals that no longer represent your focus.
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      style={{
+                        alignSelf: "flex-start",
+                        fontSize: 12, padding: "5px 12px", borderRadius: 6,
+                        background: "transparent", color: "var(--ink-5)",
+                        border: "0.5px solid var(--brand-line)", cursor: "pointer", fontWeight: 500,
+                      }}
+                    >
+                      Archive Dormant Signals
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Archive {dormantSignals.length} dormant signal{dormantSignals.length > 1 ? "s" : ""}?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Archived signals are removed from your active radar. You can still find them in your data.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={archiveDormant}>Archive</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+
             {signals.length === 0 ? (
               entryCount === 0 ? (
                 <EmptyState
