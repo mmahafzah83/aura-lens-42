@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/integrations/supabase/client";
 import useMilestones, { type Milestone } from "@/hooks/useMilestones";
+import TierCredentialCard from "@/components/TierCredentialCard";
 
 interface Props {
   userId: string | null;
@@ -52,6 +53,7 @@ export default function TierCeremonyModal({ userId }: Props) {
   const [stats, setStats] = useState<{ signals: number; posts: number; weeks: number } | null>(null);
   const [topSignal, setTopSignal] = useState<{ title: string; confidence: number } | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showCredential, setShowCredential] = useState(false);
 
   useEffect(() => {
     if (!tierMilestone || !userId) return;
@@ -106,10 +108,10 @@ export default function TierCeremonyModal({ userId }: Props) {
     await acknowledgeMilestone(tierMilestone.id);
   };
 
-  const onShare = async () => {
+  const onShare = () => setShowCredential(true);
+
+  const handleSharedSuccess = async () => {
     await shareMilestone(tierMilestone.id);
-    // Credential card UI is delivered in O-2c. For now, dismiss after marking shared.
-    await acknowledgeMilestone(tierMilestone.id);
   };
 
   const node = (
@@ -199,7 +201,7 @@ export default function TierCeremonyModal({ userId }: Props) {
         )}
 
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
-          <button
+          {!showCredential && <button
             onClick={onShare}
             style={{
               flex: "1 1 200px",
@@ -215,7 +217,7 @@ export default function TierCeremonyModal({ userId }: Props) {
             }}
           >
             Share this credential →
-          </button>
+          </button>}
           <button
             onClick={close}
             style={{
@@ -231,9 +233,20 @@ export default function TierCeremonyModal({ userId }: Props) {
               fontFamily: "inherit",
             }}
           >
-            Continue →
+            {showCredential ? "Close" : "Continue →"}
           </button>
         </div>
+
+        {showCredential && userId && (
+          <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--brand-line, rgba(197,165,90,0.2))" }}>
+            <TierCredentialCard
+              userId={userId}
+              tierName={copy.name}
+              earnedAt={tierMilestone.earned_at}
+              onShared={handleSharedSuccess}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
