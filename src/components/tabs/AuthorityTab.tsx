@@ -408,7 +408,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       setFullVersion("");
       setShortVersion("");
       setShowingShort(false);
-      setVisualUrl(null);
+      setCardRecommendation(null);
       setPlanRef(null);
       if (signalPrefill.trendHeadline) {
         setTrendPrefillLabel(signalPrefill.trendHeadline);
@@ -420,27 +420,26 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     }
   }, [signalPrefill]);
 
-  // Visual companion generation
-  const generateVisual = async () => {
-    setVisualLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-      const prompt = `Strategic framework diagram for: ${topic}. Key insight: ${output ? output.slice(0, 120) : context.slice(0, 120)}`;
-      const { data, error } = await supabase.functions.invoke("regenerate-schematic", {
-        body: { image_prompt: prompt },
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setVisualUrl(data.image_url || null);
-      toast.success("Visual generated");
-    } catch (e: any) {
-      toast.error(e.message || "Failed to generate visual");
-    } finally {
-      setVisualLoading(false);
-    }
-  };
+  // Auto-detect best card style/type after content is generated
+  const displayedOutputForDetect = output;
+  useEffect(() => {
+    if (!displayedOutputForDetect || displayedOutputForDetect.length < 30) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data } = await supabase.functions.invoke("detect-card-style", {
+          body: { post_text: displayedOutputForDetect, language: lang },
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (!cancelled && data?.recommendation) setCardRecommendation(data.recommendation);
+      } catch (err) {
+        console.warn("Card detection failed (non-blocking):", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [displayedOutputForDetect, lang]);
 
   const streamGeneration = async (
     extraPromptInstruction?: string,
