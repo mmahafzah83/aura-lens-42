@@ -24,6 +24,7 @@ interface StrategicSignal {
   consulting_opportunity: any;
   status: string;
   created_at: string;
+  commercial_validation_score?: number | null;
 }
 
 interface StrategicSignalsProps {
@@ -206,6 +207,21 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                       }`}>
                         {confidencePct}% match
                       </span>
+                      {typeof signal.commercial_validation_score === "number" && (
+                        signal.commercial_validation_score > 1.5 ? (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 bg-green-500/15 text-green-400">
+                            ✦ Market validated · {signal.commercial_validation_score.toFixed(1)}× avg
+                          </span>
+                        ) : signal.commercial_validation_score >= 1.0 ? (
+                          <span className="text-[9px] text-muted-foreground/70 flex-shrink-0">
+                            {signal.commercial_validation_score.toFixed(1)}× avg engagement
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground/40 flex-shrink-0">
+                            Below average engagement
+                          </span>
+                        )
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground/70 leading-relaxed line-clamp-2">{signal.explanation}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-2.5">

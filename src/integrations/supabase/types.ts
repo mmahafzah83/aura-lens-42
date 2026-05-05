@@ -1838,6 +1838,7 @@ export type Database = {
       }
       strategic_signals: {
         Row: {
+          commercial_validation_score: number | null
           confidence: number
           confidence_explanation: string | null
           consulting_opportunity: Json | null
@@ -1864,6 +1865,7 @@ export type Database = {
           what_it_means_for_you: string | null
         }
         Insert: {
+          commercial_validation_score?: number | null
           confidence?: number
           confidence_explanation?: string | null
           consulting_opportunity?: Json | null
@@ -1890,6 +1892,7 @@ export type Database = {
           what_it_means_for_you?: string | null
         }
         Update: {
+          commercial_validation_score?: number | null
           confidence?: number
           confidence_explanation?: string | null
           consulting_opportunity?: Json | null
