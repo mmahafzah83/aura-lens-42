@@ -7,6 +7,14 @@ import TimelineDiagram from './schematics/TimelineDiagram';
 import LayersDiagram from './schematics/LayersDiagram';
 import RadarDiagram from './schematics/RadarDiagram';
 import BarChartDiagram from './schematics/BarChartDiagram';
+import BridgeDiagram from './schematics/BridgeDiagram';
+import PyramidDiagram from './schematics/PyramidDiagram';
+import GaugeDiagram from './schematics/GaugeDiagram';
+import ScatterDiagram from './schematics/ScatterDiagram';
+import VennDiagram from './schematics/VennDiagram';
+import ProcessDiagram from './schematics/ProcessDiagram';
+import EquationDiagram from './schematics/EquationDiagram';
+import EcosystemDiagram from './schematics/EcosystemDiagram';
 
 export type { SchematicSpec } from './schematics/blackboard';
 
@@ -32,6 +40,14 @@ export default function SchematicRenderer({ spec, width = 1080, height = 1350 }:
       case 'layers':    return <LayersDiagram spec={spec} width={width} height={diagramH} />;
       case 'radar':     return <RadarDiagram spec={spec} width={width} height={diagramH} />;
       case 'bar_chart': return <BarChartDiagram spec={spec} width={width} height={diagramH} />;
+      case 'bridge':    return <BridgeDiagram spec={spec} width={width} height={diagramH} />;
+      case 'pyramid':   return <PyramidDiagram spec={spec} width={width} height={diagramH} />;
+      case 'gauge':     return <GaugeDiagram spec={spec} width={width} height={diagramH} />;
+      case 'scatter':   return <ScatterDiagram spec={spec} width={width} height={diagramH} />;
+      case 'venn':      return <VennDiagram spec={spec} width={width} height={diagramH} />;
+      case 'process':   return <ProcessDiagram spec={spec} width={width} height={diagramH} />;
+      case 'equation':  return <EquationDiagram spec={spec} width={width} height={diagramH} />;
+      case 'ecosystem': return <EcosystemDiagram spec={spec} width={width} height={diagramH} />;
       default:
         return (
           <text x={width / 2} y={diagramH / 2} textAnchor="middle"
