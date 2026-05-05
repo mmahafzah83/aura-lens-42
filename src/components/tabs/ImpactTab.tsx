@@ -18,6 +18,7 @@ import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/li
 import AuthorityJourney from "@/components/AuthorityJourney";
 import WeeklyRhythm from "@/components/WeeklyRhythm";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import MarketMirror from "@/components/MarketMirror";
 
 /* ── Types ── */
 interface Snapshot {
@@ -677,6 +678,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </div>
       <FirstVisitHint page="impact" />
+
+      {/* Market Mirror (O-3) — replaces single Shadow Twin chip */}
+      <MarketMirror userId={userId} />
 
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section

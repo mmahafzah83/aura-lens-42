@@ -15,6 +15,7 @@ import SectionError from "@/components/ui/section-error";
 import EmptyState from "@/components/ui/EmptyState";
 import { withTimeout, showQueryErrorToast } from "@/lib/safeQuery";
 import { useAuthReady } from "@/hooks/useAuthReady";
+import MarketMirror from "@/components/MarketMirror";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { createPortal } from "react-dom";
 import ShareLink from "@/components/ShareLink";
@@ -355,6 +356,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {loadError && (
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
+      {/* Market Mirror (O-3) — three audience perspectives + gaps */}
+      <MarketMirror userId={authUser?.id ?? null} />
       {/* Branded header */}
       <div style={{ marginBottom: 0 }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
