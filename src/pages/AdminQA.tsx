@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
-import { runDomAudit, type QaResult } from "@/utils/qaInteractionAudit";
+import { runDomAudit } from "@/utils/qaInteractionAudit";
 import { Loader2, Copy, ChevronDown, ChevronRight } from "lucide-react";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
