@@ -357,7 +357,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
       {/* Market Mirror (O-3) — three audience perspectives + gaps */}
-      <MarketMirror userId={authUser?.id ?? null} />
+      <div data-testid="story-market-mirror">
+        <MarketMirror userId={authUser?.id ?? null} />
+      </div>
       {/* Branded header */}
       <div style={{ marginBottom: 0 }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
@@ -423,6 +425,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
             {/* Name & role */}
             <p
+              data-testid="story-name"
               style={{
                 fontFamily: "'DM Serif Display', serif",
                 fontSize: 16,
@@ -445,7 +448,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           {/* Identity Facts */}
           <div style={{ background: "var(--vellum)", border: "1px solid var(--brand-line)", borderRadius: 10, padding: 12 }}>
             {identityFacts.map(fact => (
-              <div key={fact.key} className="mb-2 last:mb-0">
+              <div
+                key={fact.key}
+                className="mb-2 last:mb-0"
+                data-testid={fact.key === "firm" ? "story-firm" : fact.key === "sector_focus" ? "story-sector" : undefined}
+              >
                 <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-2)", letterSpacing: "0.05em" }}>{fact.label}</div>
                 {editingField === fact.key ? (
                   <div className="flex items-center gap-1 mt-0.5">
@@ -704,6 +711,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           {/* Signal Coverage Map */}
           {signalStats.themeGroups.length > 0 && (
             <div
+              data-testid="story-signal-coverage"
               style={{
                 background: "#fff",
                 borderRadius: 16,
@@ -992,7 +1000,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* My writing voice — moved out of the modal so users land directly on it */}
       <VoiceEngineSection />
 
-      <MilestonesSection userId={authUser?.id ?? null} />
+      <div data-testid="story-milestones">
+        <MilestonesSection userId={authUser?.id ?? null} />
+      </div>
 
       {/* Full Profile Modal */}
       {fullProfileOpen && createPortal(
@@ -1010,8 +1020,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div className="space-y-6">
               <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
               <VoiceEngineSection />
-              <BrandArchetypeWidget onStartAssessment={() => { setFullProfileOpen(false); setBrandOpen(true); }} />
-              <AuditRadarWidget onStartAudit={() => { setFullProfileOpen(false); setAuditOpen(true); }} />
+              <div data-testid="story-brand-assessment">
+                <BrandArchetypeWidget onStartAssessment={() => { setFullProfileOpen(false); setBrandOpen(true); }} />
+              </div>
+              <div data-testid="story-evidence-audit">
+                <AuditRadarWidget onStartAudit={() => { setFullProfileOpen(false); setAuditOpen(true); }} />
+              </div>
 
               <div className="pt-4 border-t border-ink-3">
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-7)", marginBottom: 12 }}>Profile Settings</h3>

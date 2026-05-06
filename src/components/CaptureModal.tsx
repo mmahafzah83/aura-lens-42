@@ -647,7 +647,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
+    <div data-testid="capture-panel" className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
       {/* Blurred backdrop */}
       <div
         className="fixed inset-0 capture-backdrop"
@@ -797,6 +797,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               <div style={{ position: "relative" }}>
                 <input
                   type="text"
+                  data-testid="capture-url-input"
                   placeholder="Paste a URL..."
                   value={content}
                   onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}

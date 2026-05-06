@@ -1042,7 +1042,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div className="text-foreground" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em" }}>
             {fmtTime(now)}
           </div>
-          <div className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
+          <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
             {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
           </div>
         </div>
@@ -1180,6 +1180,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <div className="flex flex-col" style={{ gap: 2 }}>
               <div className="flex items-center" style={{ gap: 6 }}>
                 <span
+                  data-testid="home-score"
                   style={{
                     fontFamily: "'Cormorant Garamond', serif",
                     fontSize: 36,
@@ -1191,7 +1192,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   {auraData.aura_score}
                 </span>
                 <InfoTooltip side="bottom" align="left" label="Authority Score" width={280}>
-                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
+                  <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
                   <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
                   <p style={{ margin: "0 0 4px" }}>Content authority — 40%</p>
                   <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
@@ -1210,7 +1211,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+              <div data-testid="home-tier" style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
                 {auraData.tier_name}
               </div>
               {sectorFocus && (
@@ -1220,7 +1221,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               )}
             </div>
 
-            <div className="flex flex-col items-end" style={{ gap: 6 }}>
+            <div data-testid="home-capture-rhythm" className="flex flex-col items-end" style={{ gap: 6 }}>
               <div style={{ display: "flex", gap: 3 }}>
                 {cells.map((filled, i) => (
                   <div
@@ -1276,11 +1277,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
       {/* Silence Alarm — substance-backed urgency when capture has paused 3+ days */}
-      <SilenceAlarm
-        daysSinceCapture={daysSinceCapture}
-        onOpenCapture={onOpenCapture}
-        onSwitchTab={onSwitchTab}
-      />
+      <div data-testid="home-silence-alarm">
+        <SilenceAlarm
+          daysSinceCapture={daysSinceCapture}
+          onOpenCapture={onOpenCapture}
+          onSwitchTab={onSwitchTab}
+        />
+      </div>
 
       {/* Persistent welcome card — shows for users with < 3 entries, dismissible */}
       {showWelcome && (
@@ -1381,6 +1384,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           </button>
         </div>
       )}
+      <div data-testid="home-moves">
       <SectionHeader
         label="RECOMMENDED MOVES"
         subtitle="Actions Aura suggests based on your latest signals"
@@ -1610,6 +1614,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         }
         return null;
       })()}
+      </div>
 
 
       {/* Secondary moves (collapsed) */}
@@ -1652,11 +1657,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 2 — AI daily briefing */}
       {/* Aura's Read */}
-      <AurasRead
-        userId={sessionConfirmed ? authUser?.id ?? null : null}
-        onOpenCapture={onOpenCapture}
-        onSwitchTab={onSwitchTab}
-      />
+      <div data-testid="home-live-intel">
+        <AurasRead
+          userId={sessionConfirmed ? authUser?.id ?? null : null}
+          onOpenCapture={onOpenCapture}
+          onSwitchTab={onSwitchTab}
+        />
+      </div>
       </>)}
 
       <AuthorityProgressModal

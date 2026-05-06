@@ -157,6 +157,7 @@ export default function ProfileMenu({
                 <button
                   key={mode}
                   type="button"
+                  data-testid={mode === "light" ? "nav-theme-toggle" : undefined}
                   onClick={(e) => {
                     e.preventDefault();
                     setTheme(mode);

@@ -104,6 +104,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
       />
       <aside
         role="dialog"
+        data-testid="help-panel"
         aria-label="How Aura works"
         style={{
           position: "fixed",
@@ -223,6 +224,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
+      data-testid="nav-help"
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       aria-label="Help"

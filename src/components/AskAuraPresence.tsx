@@ -235,6 +235,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
     >
       <button
         onClick={handleClick}
+        data-testid="nav-ask-aura"
         className={
           className ??
           "w-full flex items-center gap-3 tactile-press group aura-ask-btn"

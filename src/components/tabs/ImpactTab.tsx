@@ -731,7 +731,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
               Your composite authority metric — always reflects your current standing
             </div>
-            <div style={{ marginTop: 6 }}>
+            <div data-testid="impact-score" style={{ marginTop: 6 }}>
               {isEmpty ? (
                 <div
                   style={{
@@ -867,7 +867,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
         {/* Authority Journey (Observer → Strategist → Authority) */}
         {auraData && (
-          <div className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
+          <div data-testid="impact-tier" className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
             <AuthorityJourney userId={userId} data={auraData} />
           </div>
         )}
@@ -983,7 +983,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         })()}
 
         {/* Scenario toggle */}
-        <div className="relative flex flex-wrap gap-2 mt-5">
+        <div data-testid="impact-trajectory" className="relative flex flex-wrap gap-2 mt-5">
           {([
             { key: "current", label: "Current pace" },
             { key: "publish2x", label: "2× publishing" },
@@ -994,6 +994,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <button
                 key={b.key}
                 type="button"
+                data-testid={
+                  b.key === "current" ? "impact-scenario-current"
+                  : b.key === "publish2x" ? "impact-scenario-2x"
+                  : "impact-scenario-stop"
+                }
+                data-active={active ? "true" : "false"}
                 onClick={() => setScenario(b.key)}
                 style={
                   active
@@ -1078,7 +1084,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
           Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
             { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
             { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
@@ -1186,6 +1192,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             {postMetricsCount === 0 && (
               <button
                 onClick={handleUploadClick}
+                data-testid="impact-linkedin-upload"
                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
                 style={{ background: "var(--brand)", color: "#ffffff" }}
               >
@@ -1579,6 +1586,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Your intelligence rhythm — consistency matters more than volume
         </p>
         <div
+          data-testid="impact-capture-chart"
           className="rounded-lg p-4"
           style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
         >
