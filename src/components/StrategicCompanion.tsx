@@ -49,7 +49,7 @@ const ALERT_COLORS: Record<string, string> = {
   strategic_opportunity: "text-amber-400 bg-amber-500/10 border-amber-500/20",
   idea_maturity: "text-blue-400 bg-blue-500/10 border-blue-500/20",
   pattern_detection: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  authority_momentum: "text-orange-400 bg-orange-500/10 border-orange-500/20",
+  authority_momentum: "text-[#B08D3A] bg-[#B08D3A]/10 border-[#B08D3A]/20",
   strategic_drift: "text-red-400 bg-red-500/10 border-red-500/20",
 };
 
