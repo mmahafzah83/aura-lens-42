@@ -403,11 +403,11 @@ const Landing = () => {
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <span style={{ fontSize: 14, color: "var(--brand)" }}>↑</span>
-                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
+                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "'JetBrains Mono', ui-monospace, monospace", lineHeight: 1 }}>
                   <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>
-              <div className="mt-1 uppercase tracking-[0.15em]" style={{ fontSize: 9, color: "var(--ink-4)" }}>{s.label}</div>
+              <div className="mt-1 uppercase tracking-[0.15em]" style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "'DM Sans', sans-serif" }}>{s.label}</div>
               <div className="mt-0.5" style={{ fontSize: 10, color: "var(--ink-4)" }}>{s.sub}</div>
             </div>
           </div>
