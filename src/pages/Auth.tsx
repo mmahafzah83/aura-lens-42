@@ -122,9 +122,9 @@ const Auth = () => {
         }
         .auth-headline {
           color: #ffffff !important;
-          font-family: 'DM Serif Display', Georgia, serif !important;
+          font-family: 'Cormorant Garamond', Georgia, serif !important;
           font-weight: 400 !important;
-          font-size: 30px !important;
+          font-size: 34px !important;
           letter-spacing: -0.02em !important;
           line-height: 1.15 !important;
           opacity: 1 !important;
@@ -148,11 +148,12 @@ const Auth = () => {
         .auth-tagline {
           color: var(--ink-7) !important;
           opacity: 1 !important;
-          font-size: 16px !important;
-          font-weight: 300 !important;
+          font-size: 24px !important;
+          font-weight: 400 !important;
           text-align: center !important;
-          font-family: 'DM Sans', sans-serif !important;
-          line-height: 1.5 !important;
+          font-family: 'Cormorant Garamond', Georgia, serif !important;
+          line-height: 1.35 !important;
+          letter-spacing: -0.01em !important;
           background: none !important;
           -webkit-text-fill-color: var(--ink-7) !important;
         }
@@ -223,10 +224,11 @@ const Auth = () => {
         .auth-divider-line { height: 0.5px; background: var(--ink-3); flex: 1; }
         .auth-divider-text { font-size: 11px; color: var(--ink-4); font-family: 'DM Sans', sans-serif; }
         .auth-wordmark {
-          font-family: 'DM Serif Display', Georgia, serif;
-          font-size: 20px;
+          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-weight: 500;
+          font-size: 22px;
           color: #ffffff;
-          letter-spacing: -0.01em;
+          letter-spacing: 0.04em;
           line-height: 1;
         }
         .auth-wordmark-sub {
@@ -256,12 +258,8 @@ const Auth = () => {
         .auth-link { font-size: 12px; color: var(--ink-4); font-family: 'DM Sans', sans-serif; }
         .auth-link-orange { color: var(--brand); font-weight: 500; }
         .auth-brand-large {
-          font-family: 'DM Serif Display', Georgia, serif;
-          font-size: 56px;
-          color: var(--brand);
-          letter-spacing: -0.03em;
-          text-align: center;
-          line-height: 1;
+          display: flex;
+          justify-content: center;
         }
         .auth-feature-icon {
           width: 36px;
@@ -290,11 +288,8 @@ const Auth = () => {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-2">
-            <AuraLogo size={40} variant="dark" />
-            <div>
-              <div className="auth-wordmark">Aura</div>
-              <div className="auth-wordmark-sub">Strategic Intelligence</div>
-            </div>
+            <AuraLogo size={40} variant="dark" withWordmark />
+            <div className="auth-wordmark-sub" style={{ marginTop: 0 }}>Strategic Intelligence</div>
           </div>
 
           {/* Beta pill */}
@@ -427,7 +422,7 @@ const Auth = () => {
       {/* RIGHT — brand panel (hidden on mobile) */}
       <div
         className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
-        style={{ backgroundColor: "var(--ink)" }}
+        style={{ backgroundColor: "var(--surface-ink-subtle, #1C1812)" }}
       >
         {/* Centered radial glow */}
         <div
@@ -446,8 +441,10 @@ const Auth = () => {
         />
 
         <div className="max-w-md text-center" style={{ position: "relative", zIndex: 1 }}>
-          <h2 className="auth-brand-large">Aura</h2>
-          <p className="auth-tagline mt-4">
+          <div className="auth-brand-large">
+            <AuraLogo size={60} variant="dark" />
+          </div>
+          <p className="auth-tagline mt-6">
             Your expertise is invisible. Aura fixes that.
           </p>
 
