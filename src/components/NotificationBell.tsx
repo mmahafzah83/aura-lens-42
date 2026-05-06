@@ -96,7 +96,8 @@ const NotificationBell = () => {
     <Popover open={open} onOpenChange={handleOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative tactile-press p-2"
+          aria-label="Notifications"
+          className="relative tactile-press p-2 inline-flex items-center justify-center min-w-[44px] min-h-[44px]"
           style={{
             background: "var(--paper-2)",
             border: "0.5px solid var(--paper-3)",
