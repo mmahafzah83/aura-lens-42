@@ -267,7 +267,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [watchingSignalsCount, setWatchingSignalsCount] = useState<number>(0);
 
   // J13 — New signal notification banner
-  const [newSignal, setNewSignal] = useState<{ id: string; signal_title: string } | null>(null);
+  const [newSignal, setNewSignal] = useState<{ id: string; signal_title: string; isFirst?: boolean } | null>(null);
+  const [returnGreeting, setReturnGreeting] = useState<{ days: number; fadingCount: number } | null>(null);
   const [bannerVisible, setBannerVisible] = useState(false);
 
   // H2b — Status strip + dynamic primary card
@@ -707,12 +708,45 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         try { seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]"); } catch {}
         const fresh = (data || []).find((s: any) => !seen.includes(s.id));
         if (fresh) {
-          setNewSignal({ id: fresh.id, signal_title: fresh.signal_title });
+          // First signal revelation — only ever once
+          let isFirst = false;
+          try {
+            const firstSeen = localStorage.getItem("aura_first_signal_seen");
+            if (!firstSeen) {
+              const { count: totalSig } = await supabase
+                .from("strategic_signals")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", uid);
+              if ((totalSig ?? 0) === 1) isFirst = true;
+            }
+          } catch {}
+          setNewSignal({ id: fresh.id, signal_title: fresh.signal_title, isFirst });
           setTimeout(() => setBannerVisible(true), 50);
         }
       } catch (e) {
         console.warn("[HomeTab] new signal banner check failed", e);
       }
+    })();
+
+    // Return-state greeting: if last visit > 3 days ago, show welcome-back line.
+    (async () => {
+      try {
+        const key = "aura_last_visit";
+        const prev = localStorage.getItem(key);
+        const nowMs = Date.now();
+        if (prev) {
+          const days = Math.floor((nowMs - parseInt(prev, 10)) / 86_400_000);
+          if (days >= 3) {
+            const { count: fadingCount } = await supabase
+              .from("strategic_signals")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", uid)
+              .in("velocity_status", ["fading", "dormant"]);
+            setReturnGreeting({ days, fadingCount: fadingCount ?? 0 });
+          }
+        }
+        localStorage.setItem(key, String(nowMs));
+      } catch {}
     })();
 
     // Load aura score for the status strip + primary card
