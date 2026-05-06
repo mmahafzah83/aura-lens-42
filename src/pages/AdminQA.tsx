@@ -185,6 +185,7 @@ const AdminQA = () => {
   const [iframeStatuses, setIframeStatuses] = useState<IframeStatus[]>([]);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [batchModal, setBatchModal] = useState<{ title: string; text: string } | null>(null);
+  const [showDesignSection, setShowDesignSection] = useState<boolean>(false);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
