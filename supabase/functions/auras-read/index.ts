@@ -58,15 +58,6 @@ async function getAuthenticatedUserId(supabase: any, authHeader: string) {
 
   if (!token) return null;
 
-  const authApi = supabase.auth as { getClaims?: (jwt: string) => Promise<any> };
-
-  if (typeof authApi.getClaims === "function") {
-    const { data, error } = await authApi.getClaims(token);
-    if (!error && data?.claims?.sub) {
-      return data.claims.sub as string;
-    }
-  }
-
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data?.user?.id) {
     return null;

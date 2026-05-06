@@ -1564,8 +1564,8 @@ serve(async (req) => {
       if (!isServiceCall) {
         const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
         const token = authHeader.replace("Bearer ", "");
-        const { data: claimsData } = await userClient.auth.getClaims(token);
-        userId = (claimsData?.claims?.sub as string | null) ?? null;
+        const { data: userData } = await userClient.auth.getUser(token);
+        userId = userData?.user?.id ?? null;
       }
       if (!userId || bodyCandidateIds.length === 0) {
         return new Response(JSON.stringify({ error: "phase=enrich requires user_id and candidate_ids" }), {
@@ -1589,13 +1589,13 @@ serve(async (req) => {
     // ── Phase A: user-initiated discovery ──
     const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims?.sub) {
+    const { data: { user }, error: claimsErr } = await userClient.auth.getUser(token);
+    if (claimsErr || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
 
     const { data: profile } = await adminClient
       .from("diagnostic_profiles")
