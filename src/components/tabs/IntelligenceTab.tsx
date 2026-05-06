@@ -177,8 +177,8 @@ const AutomationStrip = () => {
                 {c.icon}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>{c.title}</p>
-                <p className="intel-automation-desc" style={{ fontSize: 9, color: "var(--ink-4)", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
+                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "var(--ink)", margin: 0 }}>{c.title}</p>
+                <p className="intel-automation-desc" style={{ fontSize: 9, color: "var(--ink-2)", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
                 <span style={{ fontSize: 9, fontWeight: 700, color: c.statusColor }}>
                   <span className={c.status === "Active" ? "aura-pulse-dot" : undefined} style={{ display: "inline-block" }}>●</span> {c.status}
                 </span>
@@ -819,7 +819,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               data-aura-tab-active={activeSubTab === tab.value ? "true" : undefined}
               style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-5)",
+              color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-2)",
               background: "transparent", border: "none",
               borderBottom: activeSubTab === tab.value ? "2px solid var(--brand)" : "2px solid transparent",
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,

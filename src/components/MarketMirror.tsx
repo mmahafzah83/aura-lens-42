@@ -128,14 +128,14 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
       </div>
 
       {loading && (
-        <div style={{ padding: 24, textAlign: "center", color: "var(--ink-muted, rgba(245,239,225,0.5))" }}>
+        <div style={{ padding: 24, textAlign: "center", color: "var(--ink-2)" }}>
           <Loader2 className="animate-spin" size={16} style={{ display: "inline-block" }} />
         </div>
       )}
 
       {!loading && !row && (
         <div style={{ padding: "24px 8px", textAlign: "center" }}>
-          <p style={{ color: "var(--ink-muted, rgba(245,239,225,0.7))", fontSize: 14, marginBottom: 16 }}>
+          <p style={{ color: "var(--ink-2)", fontSize: 14, marginBottom: 16 }}>
             See your positioning through three market-facing perspectives — and the gaps each one would call out.
           </p>
           <button

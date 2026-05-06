@@ -71,9 +71,10 @@ html.dark  { background-color: var(--paper, #14110C); }
   --vellum-2: #211C14;
   --ink: #F0EAD9;
   --ink-2: #C8BFA6;
-  --ink-3: #948A72;
-  --ink-4: #6A604E;
-  --ink-5: #423A2C;
+  /* A11y: brightened to meet WCAG AA (≥4.5:1) on --paper #14110C */
+  --ink-3: #B8AE94;
+  --ink-4: #948A72;
+  --ink-5: #6A604E;
 
   /* Bronze (primary brand) — dark mode default */
   --bronze: #D4B056;
@@ -89,11 +90,11 @@ html.dark  { background-color: var(--paper, #14110C); }
   --signal-line: rgba(255,138,61,0.30);
 
   /* Functional semantics */
-  --success: #7AB648;
+  --success: #9BD66A;
   --success-pale: rgba(122,182,72,0.12);
-  --danger: #C45050;
+  --danger: #E47878;
   --danger-pale: rgba(196,80,80,0.12);
-  --info: #6B9DC4;
+  --info: #8FBCE0;
   --info-pale: rgba(107,157,196,0.12);
 
   /* Structure */
