@@ -19,13 +19,13 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authErr } = await userClient.auth.getClaims(token);
-    if (authErr || !claimsData?.claims?.sub) {
+    const { data: { user: authUser }, error: authErr } = await userClient.auth.getUser(token);
+    if (authErr || !authUser) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const user = { id: claimsData.claims.sub as string };
+    const user = { id: authUser.id };
 
     const admin = createClient(supabaseUrl, serviceKey);
     const userId = user.id;
