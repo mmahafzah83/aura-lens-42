@@ -785,7 +785,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               Patterns emerging from everything you capture — the sharper this gets, the more valuable your content becomes
             </p>
           </div>
-          <div style={{ display: "flex", gap: 24, alignItems: "baseline" }}>
+          <div data-testid="intel-stats" style={{ display: "flex", gap: 24, alignItems: "baseline" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{entryCount}</div>
               <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>sources</div>
@@ -807,7 +807,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         <AutomationStrip />
 
         {/* ── Your Next Move ── */}
-        <div className="aura-hero-card" style={{ marginBottom: 14 }}>
+        <div data-testid="intel-next-move" className="aura-hero-card" style={{ marginBottom: 14 }}>
           <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
         </div>
 
@@ -815,6 +815,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         <div className="aura-tab-bar scrollbar-hide" style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }}>
           {SUB_TABS.map(tab => (
             <button key={tab.value} onClick={() => setActiveSubTab(tab.value)}
+              data-testid={tab.value === "signals" ? "intel-tab-signals" : tab.value === "sources" ? "intel-tab-sources" : undefined}
               data-aura-tab="true"
               data-aura-tab-active={activeSubTab === tab.value ? "true" : undefined}
               style={{
@@ -958,7 +959,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             ) : (
               <>
                 {/* Command Center container */}
-                <div className="intel-command-center" style={{ background: "transparent", border: "none", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
+                <div data-testid="intel-signals" className="intel-command-center" style={{ background: "transparent", border: "none", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
                   <div className="intel-command-left" style={{ flex: "0 0 58%", minWidth: 0, borderRight: "0.5px solid var(--surface-ink-subtle)" }}>
                     {selectedSignal && (
@@ -995,6 +996,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         return (
                         <div
                           key={s.id}
+                          data-testid="intel-signal-card"
                           className="intel-signal-row"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
@@ -1034,7 +1036,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                     />
                   </div>
                 </div>
-                <MarketCoverageSection onOpenCapture={onOpenCapture} />
+                <div data-testid="intel-coverage">
+                  <MarketCoverageSection onOpenCapture={onOpenCapture} />
+                </div>
               </>
             )}
           </>
