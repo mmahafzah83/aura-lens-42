@@ -1488,6 +1488,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
               <div className="flex gap-2">
                 <Textarea
                   ref={textareaRef}
+                  data-testid="aura-chat-input"
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -1496,6 +1497,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[44px] max-h-[120px]"
                 />
                 <Button
+                  data-testid="aura-send-btn"
                   onClick={() => send(input)}
                   disabled={isLoading || !input.trim()}
                   size="icon"
