@@ -9,6 +9,7 @@ import { useCardEntryAnimation } from "@/hooks/useCardEntryAnimation";
 import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
+import AuraLogo from "@/components/brand/AuraLogo";
 import OnboardingSequence from "@/components/OnboardingSequence";
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import OnboardingWizard from "@/components/OnboardingWizard";
@@ -339,22 +340,7 @@ const Dashboard = () => {
           className="flex items-center gap-3 px-4 py-5"
           style={{ borderBottom: "0.5px solid var(--paper-3)" }}
         >
-          <div
-            className="flex items-center justify-center shrink-0"
-            style={{
-              width: 32,
-              height: 32,
-              background: "var(--ink)",
-              borderRadius: "var(--r-md)",
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 20,
-              fontWeight: 600,
-              color: "var(--bronze)",
-              lineHeight: 1,
-            }}
-          >
-            A
-          </div>
+          <AuraLogo size={sidebarCollapsed ? 24 : 32} variant="auto" />
           {!sidebarCollapsed && (
             <div className="overflow-hidden min-w-0">
               <h1
