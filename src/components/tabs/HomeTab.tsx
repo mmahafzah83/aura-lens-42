@@ -1079,6 +1079,26 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
             {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
           </div>
+          {returnGreeting && (
+            <div
+              data-testid="home-return-greeting"
+              style={{
+                fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                fontSize: 16,
+                color: "var(--ink-2, var(--ink))",
+                marginTop: 8,
+                lineHeight: 1.4,
+                maxWidth: 540,
+              }}
+            >
+              Welcome back{userName ? `, ${userName}` : ""}.
+              {returnGreeting.fadingCount > 0 ? (
+                <> While you were away, {returnGreeting.fadingCount} signal{returnGreeting.fadingCount === 1 ? "" : "s"} shifted. Here's what needs your attention.</>
+              ) : (
+                <> It's been {returnGreeting.days} days. Aura kept watching.</>
+              )}
+            </div>
+          )}
         </div>
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
