@@ -990,7 +990,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
   const contextType = activeConv?.linked_type || context?.linkedType;
 
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
+    <div data-testid="aura-chat-panel" className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" style={{ zIndex: 999, pointerEvents: "all" }} onClick={onClose} />
 
       <div
