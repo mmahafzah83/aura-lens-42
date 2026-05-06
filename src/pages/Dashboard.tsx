@@ -440,6 +440,7 @@ const Dashboard = () => {
           <AskAuraPresence collapsed={sidebarCollapsed} onOpen={() => openChat()} />
           <button
             onClick={() => setCaptureOpen(true)}
+            data-testid="nav-capture"
             className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
             style={{
               background: "transparent",
@@ -540,10 +541,19 @@ const Dashboard = () => {
               </div>
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.value;
+                const navTestId = ({
+                  home: "nav-home",
+                  identity: "nav-mystory",
+                  intelligence: "nav-intelligence",
+                  authority: "nav-publish",
+                  influence: "nav-impact",
+                } as Record<string, string>)[item.value] || `nav-${item.value}`;
                 return (
                   <button
                     key={item.value}
                     onClick={() => switchTab(item.value)}
+                    data-testid={navTestId}
+                    data-active={isActive ? "true" : "false"}
                     className={`w-full flex items-center gap-3 aura-nav-item ${isActive ? "is-active" : ""}`}
                     style={{
                       padding: "10px 24px",
@@ -568,6 +578,7 @@ const Dashboard = () => {
               />
               <button
                 onClick={() => { setMobileSidebarOpen(false); setCaptureOpen(true); }}
+                data-testid="nav-capture"
                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 transition-all text-xs"
                 style={{
                   color: "var(--ink-3)",
