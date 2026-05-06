@@ -514,8 +514,22 @@ const AdminQA = () => {
     // Pre-existing functional-ish groups:
     "buttons", "links", "forms", "images", "loading", "empty", "iframe",
   ]);
-  const functionalRows = domRows.filter((r) => FUNCTIONAL_CATS.has(r.category));
-  const designRows = domRows.filter((r) => !FUNCTIONAL_CATS.has(r.category));
+  // Aura.* page-aware tests are always functional.
+  const isFunctional = (cat: string) => FUNCTIONAL_CATS.has(cat) || cat.startsWith("aura.") || cat === "aura";
+  const functionalRows = domRows.filter((r) => isFunctional(r.category));
+  const designRows = domRows.filter((r) => !isFunctional(r.category));
+
+  // Group functional rows by PAGE for the "CDO-friendly" layout.
+  const functionalByPage: Record<string, ResultRow[]> = {};
+  functionalRows.forEach((r) => {
+    const page = (r.details?.page as string) || (r.test_id.split(".")[0] || "shared");
+    (functionalByPage[page] ||= []).push(r);
+  });
+  const PAGE_ORDER = ["home", "intelligence", "publish", "impact", "my-story", "ask-aura", "capture", "shared"];
+  const sortedPages = Object.keys(functionalByPage).sort((a, b) => {
+    const ia = PAGE_ORDER.indexOf(a); const ib = PAGE_ORDER.indexOf(b);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
 
   function toggleGroup(k: string) { setOpenGroups((p) => ({ ...p, [k]: !p[k] })); }
 
