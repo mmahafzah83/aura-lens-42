@@ -320,6 +320,18 @@ html.dark  { background-color: var(--paper, #14110C); }
 
   h4 { font-size: 16px; }
   h5 { font-size: 14px; }
+
+  /* Global focus-visible indicator for all interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--brand, #B08D3A);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 @layer utilities {
