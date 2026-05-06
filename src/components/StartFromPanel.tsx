@@ -17,6 +17,7 @@ interface RawSignal {
   created_at: string;
   status: string;
   strategic_implications?: string | null;
+  velocity_status?: string | null;
 }
 
 interface RawFramework {
@@ -87,11 +88,11 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
       const [sRes, fRes, usedRes] = await Promise.all([
         supabase
           .from("strategic_signals")
-          .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status, strategic_implications")
-          .eq("status", "active")
-          .gte("confidence", 0.5)
+          .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status, strategic_implications, velocity_status")
+          .in("status", ["active", "merged"])
+          .gte("confidence", 0.3)
           .order("confidence", { ascending: false })
-          .limit(10),
+          .limit(20),
         supabase
           .from("master_frameworks")
           .select("id, title, summary, tags, created_at")
