@@ -165,6 +165,12 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
+                  data-testid={
+                    t.key === "headhunter" ? "story-mirror-headhunter"
+                    : t.key === "client_cio" ? "story-mirror-cio"
+                    : "story-mirror-curator"
+                  }
+                  data-active={active ? "true" : "false"}
                   style={{
                     padding: "8px 12px",
                     background: "transparent",
