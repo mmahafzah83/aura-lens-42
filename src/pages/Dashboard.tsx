@@ -367,7 +367,7 @@ const Dashboard = () => {
                 style={{
                   fontSize: 9,
                   letterSpacing: "0.08em",
-                  color: "var(--ink-4)",
+                  color: "var(--ink-2)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textTransform: "uppercase",
@@ -388,7 +388,7 @@ const Dashboard = () => {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.18em",
-                color: "var(--ink-4)",
+                color: "var(--ink-2)",
                 padding: "12px 24px 8px",
                 textTransform: "uppercase",
               }}
