@@ -899,6 +899,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               {editingField !== "north_star_goal" && (
                 <button
                   onClick={() => startEdit("north_star_goal", profile?.north_star_goal || "")}
+                  aria-label="Edit north star goal"
                   className="opacity-50 hover:opacity-100 transition-opacity ml-2 shrink-0"
                 >
                   <Pencil className="w-3 h-3" style={{ color: "var(--ink-5)" }} />

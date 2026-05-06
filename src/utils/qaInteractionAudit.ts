@@ -216,7 +216,14 @@ function auditButtons(results: QaResult[], doc: Document) {
 
   buttons.forEach((b, idx) => {
     const he = b as HTMLElement;
-    const hasHandler = (he as any).onclick !== null || hasReactClickHandler(he) || he.getAttribute("type") === "submit";
+    // Radix UI primitives bind click handlers internally and don't expose them
+    // via onclick or React fiber props — skip the dead-button check for them.
+    const isRadixPrimitive = /^radix-:/.test(he.id || "");
+    const hasHandler =
+      isRadixPrimitive ||
+      (he as any).onclick !== null ||
+      hasReactClickHandler(he) ||
+      he.getAttribute("type") === "submit";
     const w = he.offsetWidth, h = he.offsetHeight;
     const label = (he.innerText || "").trim() || he.getAttribute("aria-label") || he.getAttribute("title") || "";
     if (!hasHandler) { dead++; if (samples.length < 5) samples.push(`dead: ${describe(he)}`); }
