@@ -227,7 +227,7 @@ export function HelpButton({ onClick }: { onClick: () => void }) {
       onMouseLeave={() => setHover(false)}
       aria-label="Help"
       style={{
-        width: 28, height: 28, borderRadius: "50%",
+        width: 44, height: 44, borderRadius: "50%",
         background: "transparent", border: 0, cursor: "pointer",
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         color: hover ? "var(--brand)" : "var(--ink-3)",
