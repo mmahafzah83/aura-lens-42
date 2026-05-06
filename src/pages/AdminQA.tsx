@@ -492,6 +492,17 @@ const AdminQA = () => {
   const domRows = visibleResults.filter((r) => r.layer === "dom");
   const aiRows = visibleResults.filter((r) => r.layer === "ai");
 
+  // Functional vs Design/Accessibility split for DOM results.
+  // Functional categories (NEW): test whether the product works.
+  const FUNCTIONAL_CATS = new Set([
+    "tooltip", "modal", "navflow", "formval", "content", "dataint",
+    "capture", "askaura", "cta", "errorstate",
+    // Pre-existing functional-ish groups:
+    "buttons", "links", "forms", "images", "loading", "empty", "iframe",
+  ]);
+  const functionalRows = domRows.filter((r) => FUNCTIONAL_CATS.has(r.category));
+  const designRows = domRows.filter((r) => !FUNCTIONAL_CATS.has(r.category));
+
   function toggleGroup(k: string) { setOpenGroups((p) => ({ ...p, [k]: !p[k] })); }
 
   function copyText(s: string) {
