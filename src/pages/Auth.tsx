@@ -288,11 +288,8 @@ const Auth = () => {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-2">
-            <AuraLogo size={40} variant="dark" />
-            <div>
-              <div className="auth-wordmark">Aura</div>
-              <div className="auth-wordmark-sub">Strategic Intelligence</div>
-            </div>
+            <AuraLogo size={40} variant="dark" withWordmark />
+            <div className="auth-wordmark-sub" style={{ marginTop: 0 }}>Strategic Intelligence</div>
           </div>
 
           {/* Beta pill */}
@@ -425,7 +422,7 @@ const Auth = () => {
       {/* RIGHT — brand panel (hidden on mobile) */}
       <div
         className="hidden md:flex md:w-[60%] min-h-screen relative items-center justify-center px-12"
-        style={{ backgroundColor: "var(--ink)" }}
+        style={{ backgroundColor: "var(--surface-ink-subtle, #1C1812)" }}
       >
         {/* Centered radial glow */}
         <div
@@ -444,8 +441,10 @@ const Auth = () => {
         />
 
         <div className="max-w-md text-center" style={{ position: "relative", zIndex: 1 }}>
-          <h2 className="auth-brand-large">Aura</h2>
-          <p className="auth-tagline mt-4">
+          <div className="auth-brand-large">
+            <AuraLogo size={60} variant="dark" />
+          </div>
+          <p className="auth-tagline mt-6">
             Your expertise is invisible. Aura fixes that.
           </p>
 
