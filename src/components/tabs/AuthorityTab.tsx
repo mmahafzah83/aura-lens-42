@@ -1084,6 +1084,36 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
                 </div>
 
+                {/* Generation attribution — connect post to user's real intelligence */}
+                {!isGeneratingAny && (() => {
+                  const sig = (selectedSignalId && _signals.find(s => s.id === selectedSignalId)) || _signals[0];
+                  if (sig && (selectedSignalTitle || sig.signal_title)) {
+                    const title = selectedSignalTitle || sig.signal_title;
+                    const conf = Math.round((sig.confidence ?? 0) * 100);
+                    return (
+                      <div
+                        className="text-[11px]"
+                        style={{
+                          color: "var(--ink-3)",
+                          fontStyle: "italic",
+                          paddingLeft: 2,
+                          letterSpacing: "0.01em",
+                        }}
+                      >
+                        Grounded in your <span style={{ color: "var(--brand)", fontStyle: "normal", fontWeight: 500 }}>{title}</span> signal · {conf}% confidence
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      className="text-[11px]"
+                      style={{ color: "var(--ink-3)", fontStyle: "italic", paddingLeft: 2 }}
+                    >
+                      Based on your voice profile
+                    </div>
+                  );
+                })()}
+
                 {/* LinkedIn-style preview (collapsed by default) */}
                 {!isGeneratingAny && (
                   <LinkedInFeedPreview text={stripMarkdown(displayedOutput || "")} language={lang} />
@@ -2635,7 +2665,13 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         .update({ status: "published" })
         .eq("id", id);
       setDrafts(prev => prev.filter(p => p.id !== id));
-      toast.success("Published — this post now contributes to your authority score");
+      const sigTitle = item.source_metadata?.signal_titles?.[0];
+      toast.success(
+        sigTitle
+          ? `Authority compounding. Your ${sigTitle} territory just got stronger.`
+          : "Authority compounding. Your territory just got stronger.",
+        { duration: 4000 },
+      );
       loadPosts();
     } catch (e: any) {
       toast.error(e.message || "Failed to mark as published");

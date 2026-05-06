@@ -267,7 +267,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [watchingSignalsCount, setWatchingSignalsCount] = useState<number>(0);
 
   // J13 — New signal notification banner
-  const [newSignal, setNewSignal] = useState<{ id: string; signal_title: string } | null>(null);
+  const [newSignal, setNewSignal] = useState<{ id: string; signal_title: string; isFirst?: boolean } | null>(null);
+  const [returnGreeting, setReturnGreeting] = useState<{ days: number; fadingCount: number } | null>(null);
   const [bannerVisible, setBannerVisible] = useState(false);
 
   // H2b — Status strip + dynamic primary card
@@ -707,12 +708,45 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         try { seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]"); } catch {}
         const fresh = (data || []).find((s: any) => !seen.includes(s.id));
         if (fresh) {
-          setNewSignal({ id: fresh.id, signal_title: fresh.signal_title });
+          // First signal revelation — only ever once
+          let isFirst = false;
+          try {
+            const firstSeen = localStorage.getItem("aura_first_signal_seen");
+            if (!firstSeen) {
+              const { count: totalSig } = await supabase
+                .from("strategic_signals")
+                .select("id", { count: "exact", head: true })
+                .eq("user_id", uid);
+              if ((totalSig ?? 0) === 1) isFirst = true;
+            }
+          } catch {}
+          setNewSignal({ id: fresh.id, signal_title: fresh.signal_title, isFirst });
           setTimeout(() => setBannerVisible(true), 50);
         }
       } catch (e) {
         console.warn("[HomeTab] new signal banner check failed", e);
       }
+    })();
+
+    // Return-state greeting: if last visit > 3 days ago, show welcome-back line.
+    (async () => {
+      try {
+        const key = "aura_last_visit";
+        const prev = localStorage.getItem(key);
+        const nowMs = Date.now();
+        if (prev) {
+          const days = Math.floor((nowMs - parseInt(prev, 10)) / 86_400_000);
+          if (days >= 3) {
+            const { count: fadingCount } = await supabase
+              .from("strategic_signals")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", uid)
+              .in("velocity_status", ["fading", "dormant"]);
+            setReturnGreeting({ days, fadingCount: fadingCount ?? 0 });
+          }
+        }
+        localStorage.setItem(key, String(nowMs));
+      } catch {}
     })();
 
     // Load aura score for the status strip + primary card
@@ -1045,6 +1079,26 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
             {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
           </div>
+          {returnGreeting && (
+            <div
+              data-testid="home-return-greeting"
+              style={{
+                fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+                fontSize: 16,
+                color: "var(--ink-2, var(--ink))",
+                marginTop: 8,
+                lineHeight: 1.4,
+                maxWidth: 540,
+              }}
+            >
+              Welcome back{userName ? `, ${userName}` : ""}.
+              {returnGreeting.fadingCount > 0 ? (
+                <> While you were away, {returnGreeting.fadingCount} signal{returnGreeting.fadingCount === 1 ? "" : "s"} shifted. Here's what needs your attention.</>
+              ) : (
+                <> It's been {returnGreeting.days} days. Aura kept watching.</>
+              )}
+            </div>
+          )}
         </div>
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
@@ -1334,6 +1388,52 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* H2b — DYNAMIC PRIMARY CARD */}
       {!isEmpty && (<>
       {newSignal && (
+        newSignal.isFirst ? (
+          <div
+            style={{
+              background: "var(--brand-ghost)",
+              border: "1px solid var(--brand)",
+              borderRadius: 14,
+              padding: "20px 22px",
+              marginBottom: 14,
+              opacity: bannerVisible ? 1 : 0,
+              transform: bannerVisible ? "translateY(0)" : "translateY(-8px)",
+              transition: "all 400ms ease",
+            }}
+          >
+            <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 8 }}>
+              ✦ Revelation
+            </div>
+            <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.2, marginBottom: 6 }}>
+              Your first signal has emerged.
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
+              {newSignal.signal_title}
+            </div>
+            <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+              Aura found this pattern in what you captured. This is the market theme where your intelligence runs deepest. Capture more on this topic to strengthen it.
+            </p>
+            <button
+              onClick={() => {
+                try {
+                  localStorage.setItem("aura_first_signal_seen", "true");
+                  const seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]");
+                  if (!seen.includes(newSignal.id)) seen.push(newSignal.id);
+                  localStorage.setItem("aura_seen_signals", JSON.stringify(seen));
+                } catch {}
+                onSwitchTab?.("intelligence");
+                setNewSignal(null);
+              }}
+              style={{
+                background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
+                border: "none", borderRadius: 8, padding: "9px 16px",
+                fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              See this signal →
+            </button>
+          </div>
+        ) : (
         <div
           style={{
             background: "var(--brand-ghost)",
@@ -1383,6 +1483,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             ×
           </button>
         </div>
+        )
       )}
       <div data-testid="home-moves">
       <SectionHeader

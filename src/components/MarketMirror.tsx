@@ -191,21 +191,30 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
             {text || "No perspective generated."}
           </p>
 
-          {gap && (
-            <div
-              style={{
-                marginTop: 8, padding: "10px 12px",
-                background: `${ORANGE}14`,
-                borderLeft: `3px solid ${ORANGE}`,
-                borderRadius: 6,
-              }}
-            >
-              <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: ORANGE, fontWeight: 600, marginBottom: 4 }}>
-                Authority gap
+          {gap && (() => {
+            const persona = tab === "headhunter" ? "headhunter" : tab === "client_cio" ? "CIO" : "curator";
+            const ALERT = "#F97316";
+            return (
+              <div
+                style={{
+                  marginTop: 8, padding: "12px 14px",
+                  background: "rgba(249,115,22,0.04)",
+                  borderLeft: `3px solid ${ALERT}`,
+                  borderRadius: 6,
+                }}
+              >
+                <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: ALERT, fontWeight: 600, marginBottom: 6 }}>
+                  Authority gap
+                </div>
+                <div style={{ fontSize: 13, color: "var(--ink, #f5efe1)", lineHeight: 1.55 }}>
+                  A {persona} would notice: {gap}
+                </div>
+                <div style={{ fontSize: 13, color: "var(--ink, #f5efe1)", lineHeight: 1.55, marginTop: 6, fontStyle: "italic", opacity: 0.85 }}>
+                  Is that a choice?
+                </div>
               </div>
-              <div style={{ fontSize: 13, color: "var(--ink, #f5efe1)", lineHeight: 1.5 }}>{gap}</div>
-            </div>
-          )}
+            );
+          })()}
         </>
       )}
     </div>

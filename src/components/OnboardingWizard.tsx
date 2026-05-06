@@ -205,22 +205,22 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
   );
 
   const stepLabels: Record<number, string> = {
-    1: "Your Identity",
-    2: "Import LinkedIn",
-    3: "First Capture",
-    4: "Ready",
+    1: "Calibrate",
+    2: "Voice",
+    3: "First insight",
+    4: "Live",
   };
   const stepTitles: Record<number, string> = {
-    1: "Tell Aura who you are",
-    2: "Import your LinkedIn history",
-    3: "Feed Aura your first insight",
-    4: "Your Aura is active",
+    1: "Let's calibrate your intelligence",
+    2: "Show Aura your voice",
+    3: "Feed your first insight",
+    4: "Your intelligence system is live",
   };
   const stepSubs: Record<number, string> = {
-    1: "This shapes every signal and piece of content Aura creates for you.",
-    2: "Aura analyzes your posts to learn your voice and detect initial signals.",
-    3: "Paste a URL or type a note. Your first signal appears within 60 seconds.",
-    4: `You're now an Observer in ${industry || "your sector"}. Explore your intelligence.`,
+    1: "Aura adapts to your level, sector, and ambition. This takes 60 seconds.",
+    2: "Your writing DNA shapes every post Aura generates. Import a few posts and it learns how you think.",
+    3: "Paste one article you read this week. Aura will find the strategic pattern inside it.",
+    4: "Every capture sharpens your signals. Every signal strengthens your authority. The compound effect starts now.",
   };
 
   const content = (
