@@ -1277,11 +1277,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
       {/* Silence Alarm — substance-backed urgency when capture has paused 3+ days */}
-      <SilenceAlarm
-        daysSinceCapture={daysSinceCapture}
-        onOpenCapture={onOpenCapture}
-        onSwitchTab={onSwitchTab}
-      />
+      <div data-testid="home-silence-alarm">
+        <SilenceAlarm
+          daysSinceCapture={daysSinceCapture}
+          onOpenCapture={onOpenCapture}
+          onSwitchTab={onSwitchTab}
+        />
+      </div>
 
       {/* Persistent welcome card — shows for users with < 3 entries, dismissible */}
       {showWelcome && (
@@ -1382,6 +1384,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           </button>
         </div>
       )}
+      <div data-testid="home-moves">
       <SectionHeader
         label="RECOMMENDED MOVES"
         subtitle="Actions Aura suggests based on your latest signals"
@@ -1611,6 +1614,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         }
         return null;
       })()}
+      </div>
 
 
       {/* Secondary moves (collapsed) */}
@@ -1653,11 +1657,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 2 — AI daily briefing */}
       {/* Aura's Read */}
-      <AurasRead
-        userId={sessionConfirmed ? authUser?.id ?? null : null}
-        onOpenCapture={onOpenCapture}
-        onSwitchTab={onSwitchTab}
-      />
+      <div data-testid="home-live-intel">
+        <AurasRead
+          userId={sessionConfirmed ? authUser?.id ?? null : null}
+          onOpenCapture={onOpenCapture}
+          onSwitchTab={onSwitchTab}
+        />
+      </div>
       </>)}
 
       <AuthorityProgressModal
