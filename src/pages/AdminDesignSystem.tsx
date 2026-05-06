@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, RotateCcw, Eye, Save, Sun, Moon, Check } from "lucide-react";
+import AuraLogo from "@/components/brand/AuraLogo";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 
@@ -442,7 +443,9 @@ const AdminDesignSystem = () => {
       <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <div style={{ color: "var(--brand)", fontWeight: 800, fontSize: 18, marginBottom: 4 }}>Aura</div>
+            <div style={{ marginBottom: 8 }}>
+              <AuraLogo size={28} variant="auto" withWordmark />
+            </div>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--ink-7, #eee)" }}>Design system</h1>
             <p style={{ fontSize: 13, color: "var(--ink-5, #888)", marginTop: 4 }}>
               Edit, preview, and activate brand tokens. Reads from the design_system table.

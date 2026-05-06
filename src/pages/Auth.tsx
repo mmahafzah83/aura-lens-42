@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
-import { Zap, Loader2, Radio, PenLine, TrendingUp } from "lucide-react";
+import { Loader2, Radio, PenLine, TrendingUp } from "lucide-react";
+import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 
 const Auth = () => {
@@ -289,12 +290,7 @@ const Auth = () => {
         <div className="w-full max-w-sm">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: "var(--brand)" }}
-            >
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <AuraLogo size={40} variant="dark" />
             <div>
               <div className="auth-wordmark">Aura</div>
               <div className="auth-wordmark-sub">Strategic Intelligence</div>

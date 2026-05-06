@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Loader2, Zap, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown } from "lucide-react";
+import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown } from "lucide-react";
+import AuraLogo from "@/components/brand/AuraLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -1033,8 +1034,8 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
           ) : (
             <>
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-                  <Zap className="w-4 h-4 text-primary-foreground" />
+                <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                  <AuraLogo size={32} variant="auto" />
                 </div>
                 <div className="min-w-0 flex-1">
                   {editingTitle && activeConv ? (
@@ -1295,7 +1296,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
               ) : messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-8">
                   <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    <Zap className="w-7 h-7 text-primary" />
+                    <AuraLogo size={40} variant="auto" />
                   </div>
                   <h3 className="text-base font-semibold text-foreground mb-1">Strategic Intelligence</h3>
                   <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
