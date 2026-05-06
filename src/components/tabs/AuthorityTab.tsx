@@ -3072,6 +3072,8 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
+              data-testid={`pub-tab-${tab.key}`}
+              data-active={active ? "true" : "false"}
               style={{
                 fontSize: 12,
                 padding: "6px 16px",
