@@ -538,9 +538,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           key={i}
                           style={{
                             background: primary
-                              ? "var(--brand-muted)"
-                              : "rgba(255,255,255,0.07)",
-                            color: primary ? "var(--brand)" : "var(--ink-7)",
+                              ? "var(--bronze-pale)"
+                              : "var(--paper-3)",
+                            color: primary ? "var(--bronze-glow)" : "var(--ink)",
                             border: `0.5px solid ${
                               primary ? "var(--bronze-line)" : "rgba(255,255,255,0.1)"
                             }`,
