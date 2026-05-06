@@ -135,9 +135,7 @@ export default function FirstVisitHint({
             style={{
               marginTop: 8,
               background: "transparent", border: 0, padding: 0,
-              fontSize: 12, color: "var(--bronze-glow, var(--brand))", fontWeight: 700,
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
+              fontSize: 12, color: "var(--bronze-glow, var(--brand))", fontWeight: 600,
               cursor: "pointer",
             }}
           >
