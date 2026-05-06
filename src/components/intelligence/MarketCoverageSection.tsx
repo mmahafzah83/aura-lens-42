@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatSmartDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 
-const ORANGE = "#F97316";
+const ORANGE = "#B08D3A"; // bronze — coverage accent, not a signal indicator
 const REFRESH_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const STORAGE_KEY = "market_coverage_cache_v1";
 
