@@ -201,12 +201,10 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       </defs>
       <rect width={w} height={h} fill={bgIsGradient ? "url(#bgGrad)" : style.bg} />
 
-      {/* Section label */}
-      {slide.section_label && (
-        <text x={60} y={70} fontFamily={style.bodyFont} fontSize={20} letterSpacing={3} fill={style.accent} fontWeight={600}>
-          {slide.section_label.toUpperCase()}
-        </text>
-      )}
+      {/* Section label — always render (fallback to slide_type) */}
+      <text x={60} y={70} fontFamily={style.bodyFont} fontSize={20} letterSpacing={3} fill={style.accent} fontWeight={600}>
+        {(slide.section_label || slide.slide_type || "").toUpperCase()}
+      </text>
 
       {/* Page number */}
       <text x={w - 60} y={70} textAnchor="end" fontFamily={style.monoFont} fontSize={24} fill={style.muted}>
@@ -220,7 +218,7 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       <g>
         <HorizonEye x={60} y={h - 60} size={20} color={style.accent} />
         <text x={90} y={h - 45} fontFamily={style.bodyFont} fontSize={16} fill={style.fg}>
-          {slide.slide_type === "CTA" ? "Built with Aura · " : ""}{carousel.author_name || "M. Mahafzah"}
+          {carousel.author_name || "M. Mahafzah"}
         </text>
         <text x={w - 60} y={h - 45} textAnchor="end" fontFamily={style.bodyFont} fontSize={14} fill={style.muted}>
           aura-intel.org
@@ -246,9 +244,10 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
   const cy = h / 2;
   switch (slide.slide_type) {
     case "COVER": {
-      const lines = wrapText(slide.headline || "", 22);
+      const lines = wrapText(slide.headline || "", 20);
       const lh = 84;
       const startY = cy - (lines.length * lh) / 2 + 30;
+      const bodyLines = wrapText(slide.body || "", 40);
       return (
         <g>
           {lines.map((ln, i) => (
@@ -257,12 +256,12 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
-          {slide.body && (
-            <text x={cx} y={startY + lines.length * lh + 40} textAnchor="middle"
+          {bodyLines.map((ln, i) => (
+            <text key={`b${i}`} x={cx} y={startY + lines.length * lh + 40 + i * 32} textAnchor="middle"
                   fontFamily={style.bodyFont} fontSize={24} fill={style.muted}>
-              {slide.body}
+              {ln}
             </text>
-          )}
+          ))}
         </g>
       );
     }
@@ -283,7 +282,9 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     }
     case "REFRAME": {
       const beliefLines = wrapText(slide.headline || "", 28);
-      const truthLines = wrapText(slide.body || "", 24);
+      // Truth can come from body OR headline_accent — fall back gracefully
+      const truthRaw = slide.body || slide.headline_accent || "";
+      const truthLines = wrapText(truthRaw, 24);
       const beliefStartY = cy - 140;
       return (
         <g>
@@ -299,11 +300,15 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
           <text x={60} y={cy + 60} fontFamily={style.bodyFont} fontSize={14} letterSpacing={2} fill={style.accent}>
             THE TRUTH
           </text>
-          {truthLines.map((ln, i) => (
+          {truthLines.length > 0 ? truthLines.map((ln, i) => (
             <text key={i} x={60} y={cy + 110 + i * 56} fontFamily={style.headingFont} fontSize={48} fontWeight={600} fill={style.fg}>
               {ln}
             </text>
-          ))}
+          )) : (
+            <text x={60} y={cy + 110} fontFamily={style.bodyFont} fontSize={20} fill={style.muted} fontStyle="italic">
+              (Add the truth in the Body field)
+            </text>
+          )}
         </g>
       );
     }
@@ -378,10 +383,11 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       const items = slide.grid_items || [];
       const cols = items.length > 4 ? 2 : 2;
       const rows = Math.ceil(items.length / cols);
-      const gridX = 60, gridY = 220, gridW = w - 120, gridH = h - 380;
-      const gap = 24;
+      const gridX = 60, gridY = 220, gridW = w - 120;
+      const gap = 20;
+      // Tighter, content-hugging cells (capped height)
       const cellW = (gridW - gap * (cols - 1)) / cols;
-      const cellH = (gridH - gap * (rows - 1)) / Math.max(rows, 1);
+      const cellH = Math.min(160, (h - 420 - gap * (rows - 1)) / Math.max(rows, 1));
       return (
         <g>
           {slide.headline && (
@@ -394,16 +400,18 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
             const c = i % cols;
             const x = gridX + c * (cellW + gap);
             const y = gridY + r * (cellH + gap);
-            const wrapped = wrapText(it, 28);
+            const wrapped = wrapText(it, 30);
+            const textBlockH = wrapped.length * 28;
+            const textStartY = y + cellH / 2 - textBlockH / 2 + 20;
             return (
               <g key={i}>
                 <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill="none" stroke={style.border} strokeWidth={1} />
-                <circle cx={x + 36} cy={y + 36} r={20} fill={style.emphasis} fillOpacity={0.15} />
-                <text x={x + 36} y={y + 43} textAnchor="middle" fontFamily={style.monoFont} fontSize={18} fontWeight={700} fill={style.emphasis}>
+                <circle cx={x + 36} cy={y + cellH / 2} r={20} fill={style.emphasis} fillOpacity={0.15} />
+                <text x={x + 36} y={y + cellH / 2 + 7} textAnchor="middle" fontFamily={style.monoFont} fontSize={18} fontWeight={700} fill={style.emphasis}>
                   {i + 1}
                 </text>
                 {wrapped.map((ln, li) => (
-                  <text key={li} x={x + 24} y={y + 90 + li * 30} fontFamily={style.bodyFont} fontSize={22} fill={style.muted}>
+                  <text key={li} x={x + 72} y={textStartY + li * 28} fontFamily={style.bodyFont} fontSize={20} fill={style.fg}>
                     {ln}
                   </text>
                 ))}
@@ -518,7 +526,9 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       );
     }
     case "CTA": {
-      const headlineLines = wrapText(slide.headline || "", 24);
+      const headlineLines = wrapText(slide.headline || "", 22);
+      const ctaMainLines = wrapText(slide.cta_main || "", 38);
+      const ctaSubLines = wrapText(slide.cta_sub || "", 38);
       return (
         <g>
           {headlineLines.map((ln, i) => (
@@ -526,16 +536,16 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
               {ln}
             </text>
           ))}
-          {slide.cta_main && (
-            <text x={60} y={cy + 80} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
-              {slide.cta_main}
+          {ctaMainLines.map((ln, i) => (
+            <text key={`m${i}`} x={60} y={cy + 80 + i * 32} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
+              {ln}
             </text>
-          )}
-          {slide.cta_sub && (
-            <text x={60} y={cy + 120} fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
-              {slide.cta_sub}
+          ))}
+          {ctaSubLines.map((ln, i) => (
+            <text key={`s${i}`} x={60} y={cy + 80 + ctaMainLines.length * 32 + 16 + i * 32} fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
+              {ln}
             </text>
-          )}
+          ))}
           {slide.cta_button && (
             <g>
               <rect x={60} y={cy + 160} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
