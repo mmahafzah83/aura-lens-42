@@ -448,7 +448,8 @@ const Dashboard = () => {
 
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="w-full flex items-center gap-3 px-3 py-2 transition-all"
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
             style={{ color: "var(--ink-4)", borderRadius: "var(--r-md)" }}
           >
             <Menu className="w-4 h-4 shrink-0" />
@@ -457,7 +458,8 @@ const Dashboard = () => {
 
           <button
             onClick={() => setInviteOpen(true)}
-            className="w-full flex items-center gap-3 px-3 py-2 transition-all"
+            aria-label="Invite a colleague"
+            className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
             style={{ color: "var(--ink-3)", borderRadius: "var(--r-md)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--brand)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-3)"; }}
