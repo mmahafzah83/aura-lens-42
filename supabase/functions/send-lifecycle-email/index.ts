@@ -11,7 +11,7 @@ const APP_URL = "https://aura-intel.org";
 const FROM = "Mohammad Mahafzah <mohammad.mahafdhah@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
-type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive";
+type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence";
 
 const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
@@ -73,14 +73,24 @@ function buildEmail(
     score: number | null;
     tier: string | null;
     signalCount: number;
+    fadingSignals: { signal_title: string; confidence: number; velocity_status: string | null }[];
+    fadingCount: number;
+    publishedCount: number;
+    recentTrend: { headline: string; source: string } | null;
   },
 ): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount } = ctx;
+  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount, fadingSignals, fadingCount, publishedCount, recentTrend } = ctx;
   const name = firstName || "there";
+  const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
+  const tierMessage = (() => {
+    const t = (tier || "").toLowerCase();
+    if (t.includes("authority")) return "You're in the top tier. Maintain your edge.";
+    if (t.includes("strategist")) return "You're reading the market — patterns are forming.";
+    return "You're building your intelligence foundation.";
+  })();
 
   if (type === "welcome") {
     const subject = "Your intelligence OS is active";
-    const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
     const body = `
       ${heading(`Welcome to Aura, ${name}.`)}
       <p style="margin:0 0 18px;">Your system is live. Every article you capture, every insight you note, every voice memo you record — Aura finds the strategic patterns you didn't know were there.</p>
@@ -92,43 +102,81 @@ function buildEmail(
   }
 
   if (type === "day1") {
-    const subject = "Did Aura find your first signal?";
-    const body =
-      entriesCount < 3
-        ? `<p>Hi ${name},</p><p>Aura needs a few captures to start surfacing signals. Drop in one article — anything you read this morning works.</p>${ctaButton(BRAND, "Capture now", APP_URL)}${signoff(name, level)}`
-        : `<p>Hi ${name},</p><p>Nice — ${entriesCount} captures in. Aura should be surfacing your first signals. Take 30 seconds to look.</p>${ctaButton(BRAND, "See Intelligence", APP_URL)}${signoff(name, level)}`;
+    const subject = "Your first signals are forming";
+    const top = topSignals[0];
+    const body = top
+      ? `
+        ${heading(`${name}, your signal graph is forming.`)}
+        <p style="margin:0 0 18px;">Aura detected ${signalCount} pattern${signalCount === 1 ? "" : "s"} from your captures. Your strongest: <strong>${top.signal_title}</strong> at ${Math.round(top.confidence * 100)}% confidence.</p>
+        <p style="margin:0 0 18px;">This is the topic where your intelligence runs deepest. One more capture on this topic strengthens the signal. Two more and Aura can generate a post that sounds like you wrote it.</p>
+        ${ctaButton(BRAND, "See your signals →", `${APP_URL}/dashboard?tab=intelligence`)}
+        ${signoff(name, level)}`
+      : `
+        ${heading(`${name}, your signal graph is waiting.`)}
+        <p style="margin:0 0 18px;">The captures you've made are being analyzed — signals emerge when Aura detects recurring themes across multiple sources.</p>
+        <p style="margin:0 0 18px;">Feed it one more article. That's all it takes to start the pattern.</p>
+        ${ctaButton(BRAND, "Capture something →", APP_URL)}
+        ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
   if (type === "day3") {
-    const subject = `Your intelligence is building, ${name}`;
-    const top = topSignals[0];
-    const body = top
-      ? `<p>Hi ${name},</p><p>Top signal so far: <strong>"${top.signal_title}"</strong> (${Math.round(top.confidence * 100)}% confidence).</p><p>That's a publishable angle. Want to draft on it?</p>${ctaButton(BRAND, "Draft a post", APP_URL)}${signoff(name, level)}`
-      : `<p>Hi ${name},</p><p>Aura hasn't found enough patterns yet — a few more captures unlocks signal detection. Aim for five total.</p>${ctaButton(BRAND, "Capture more", APP_URL)}${signoff(name, level)}`;
-    return { subject, html: shell(BRAND, FONT, body) };
-  }
-
-  if (type === "day7") {
-    const subject = "One week with Aura — your progress";
+    const subject = "The market moved this week — here's what matters to you";
+    const trendLine = recentTrend
+      ? `The market conversation in ${focus} shifted — '<strong>${recentTrend.headline}</strong>' (via ${recentTrend.source}). You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} tracking this space.`
+      : `Aura is watching ${focus} for fresh market movement. You have ${signalCount} active signal${signalCount === 1 ? "" : "s"} ready to anchor your next post.`;
     const body = `
-      <p>Hi ${name},</p>
-      <p>Seven days in. Here's where you stand:</p>
-      <ul style="padding-left:20px;color:#333;">
-        <li>Authority score: <strong>${score ?? 0}</strong>${tier ? ` · ${tier}` : ""}</li>
-        <li>Signals detected: <strong>${signalCount}</strong></li>
-        <li>Captures: <strong>${entriesCount}</strong></li>
-      </ul>
-      <p>${entriesCount > 10 ? "You're past the inflection point — the system is now learning your sector." : "Keep going. The compounding starts around capture 10."}</p>
-      <p>Reply with one word: what's working, what isn't?</p>
-      ${ctaButton(BRAND, "Open Aura", APP_URL)}
+      ${heading(`${name}, your authority score is ${score ?? 0}.`)}
+      <p style="margin:0 0 18px;">${tierMessage}</p>
+      <p style="margin:0 0 18px;">${trendLine}</p>
+      <p style="margin:0 0 18px;">Publishing from your strongest signal builds authority fastest. Your signals are ready.</p>
+      ${ctaButton(BRAND, "Generate your first post →", `${APP_URL}/dashboard?tab=publish`)}
       ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
-  // inactive
-  const subject = `Your authority score is slipping, ${name}`;
-  const body = `<p>Hi ${name},</p><p>No captures in five days — your authority score drifts when Aura goes quiet. One capture reverses it.</p>${ctaButton(BRAND, "Capture one thing", APP_URL)}${signoff(name, level)}`;
+  if (type === "day7") {
+    const subject = "Your weekly intelligence brief";
+    const top = topSignals[0];
+    const topLine = top
+      ? `<strong>${top.signal_title}</strong> leads at ${Math.round(top.confidence * 100)}%.`
+      : "No leading signal yet — a few more captures unlocks signal detection.";
+    const fadingLine = fadingCount > 0
+      ? `${fadingCount} signal${fadingCount === 1 ? "" : "s"} fading — they need fresh evidence.`
+      : "No signals fading.";
+    const trendLine = recentTrend ? `<strong>${recentTrend.headline}</strong> (${recentTrend.source}).` : "Quiet week in your tracked sources.";
+    const body = `
+      ${heading("One week with Aura. Here's your brief:")}
+      <p style="margin:0 0 14px;">${signalCount} active signal${signalCount === 1 ? "" : "s"}. ${topLine} ${fadingLine} ${publishedCount} post${publishedCount === 1 ? "" : "s"} published.</p>
+      <p style="margin:0 0 14px;">Authority score: <strong>${score ?? 0}</strong>${tier ? ` (${tier})` : ""}.</p>
+      <p style="margin:0 0 18px;">This week's market movement: ${trendLine}</p>
+      <p style="margin:0 0 18px;">The professionals who compound authority fastest publish from their signals weekly. Yours are ready.</p>
+      ${ctaButton(BRAND, "Open your weekly brief →", `${APP_URL}/dashboard?tab=intelligence`)}
+      ${signoff(name, level)}`;
+    return { subject, html: shell(BRAND, FONT, body) };
+  }
+
+  // silence / inactive — both paths use the same signal-decay framing
+  const f1 = fadingSignals[0];
+  const f2 = fadingSignals[1];
+  const topFadingTitle = f1?.signal_title || "leading";
+  const subject = `Your ${topFadingTitle} signal is decaying`;
+  const f1Line = f1
+    ? `Your '<strong>${f1.signal_title}</strong>' dropped to ${Math.round(f1.confidence * 100)}% confidence.`
+    : "Your strongest signals are losing freshness.";
+  const f2Line = f2
+    ? ` ${f2.signal_title} is now <strong>${f2.velocity_status || "fading"}</strong>.`
+    : "";
+  const trendLine = recentTrend
+    ? `Meanwhile, ${recentTrend.source} published on '<strong>${recentTrend.headline}</strong>' — your territory.`
+    : `Meanwhile, the market in ${focus} keeps moving — your territory.`;
+  const body = `
+    ${heading(`${name}, while you were away:`)}
+    <p style="margin:0 0 18px;">${f1Line}${f2Line}</p>
+    <p style="margin:0 0 18px;">${trendLine}</p>
+    <p style="margin:0 0 18px;">One capture reverses the trajectory. The intelligence graph rewards consistency, not volume.</p>
+    ${ctaButton(BRAND, "Capture now →", APP_URL)}
+    ${signoff(name, level)}`;
   return { subject, html: shell(BRAND, FONT, body) };
 }
 
@@ -143,7 +191,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive"];
+    const types: EmailType[] = ["welcome", "day1", "day3", "day7", "inactive", "silence"];
     if (!types.includes(email_type)) {
       return new Response(JSON.stringify({ error: "invalid email_type" }), {
         status: 400,
@@ -170,7 +218,7 @@ serve(async (req) => {
       .eq("user_id", user_id)
       .eq("email_type", email_type)
       .limit(1);
-    if (existing && existing.length > 0 && email_type !== "inactive") {
+    if (existing && existing.length > 0 && email_type !== "inactive" && email_type !== "silence") {
       return new Response(JSON.stringify({ skipped: "already_sent" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -209,6 +257,34 @@ serve(async (req) => {
       .order("confidence", { ascending: false })
       .limit(3);
 
+    // Fading signals (decaying / dormant — lowest confidence first)
+    const { data: fading, count: fadingCount } = await admin
+      .from("strategic_signals")
+      .select("signal_title, confidence, velocity_status", { count: "exact" })
+      .eq("user_id", user_id)
+      .in("velocity_status", ["fading", "dormant"])
+      .order("confidence", { ascending: true })
+      .limit(3);
+
+    // Published post count
+    const { count: publishedCount } = await admin
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user_id)
+      .eq("tracking_status", "published");
+
+    // Recent trend (last 7 days, not dismissed, top by final_score)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: trendRow } = await admin
+      .from("industry_trends")
+      .select("headline, source")
+      .eq("user_id", user_id)
+      .neq("status", "dismissed")
+      .gte("fetched_at", sevenDaysAgo)
+      .order("final_score", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     // Latest score
     const { data: snap } = await admin
       .from("score_snapshots")
@@ -236,6 +312,10 @@ serve(async (req) => {
       score: snap?.score ?? null,
       tier,
       signalCount: signalCount || 0,
+      fadingSignals: (fading as any[]) || [],
+      fadingCount: fadingCount || 0,
+      publishedCount: publishedCount || 0,
+      recentTrend: trendRow ? { headline: (trendRow as any).headline, source: (trendRow as any).source } : null,
     });
 
     const resendRes = await fetch("https://api.resend.com/emails", {
