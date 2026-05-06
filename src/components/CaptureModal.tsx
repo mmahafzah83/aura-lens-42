@@ -647,7 +647,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
   };
 
   return (
-    <div className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
+    <div data-testid="capture-panel" className="fixed inset-0 z-[10000] flex flex-col items-center justify-end" style={{ willChange: "unset" }}>
       {/* Blurred backdrop */}
       <div
         className="fixed inset-0 capture-backdrop"
