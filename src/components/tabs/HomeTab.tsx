@@ -1042,7 +1042,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div className="text-foreground" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em" }}>
             {fmtTime(now)}
           </div>
-          <div className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
+          <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
             {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
           </div>
         </div>
@@ -1180,6 +1180,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <div className="flex flex-col" style={{ gap: 2 }}>
               <div className="flex items-center" style={{ gap: 6 }}>
                 <span
+                  data-testid="home-score"
                   style={{
                     fontFamily: "'Cormorant Garamond', serif",
                     fontSize: 36,
@@ -1210,7 +1211,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   </span>
                 )}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+              <div data-testid="home-tier" style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
                 {auraData.tier_name}
               </div>
               {sectorFocus && (
@@ -1220,7 +1221,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               )}
             </div>
 
-            <div className="flex flex-col items-end" style={{ gap: 6 }}>
+            <div data-testid="home-capture-rhythm" className="flex flex-col items-end" style={{ gap: 6 }}>
               <div style={{ display: "flex", gap: 3 }}>
                 {cells.map((filled, i) => (
                   <div
