@@ -13,23 +13,51 @@ const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive";
 
-function shell(BRAND: string, FONT: string, body: string) {
+const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
+const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
+
+function horizonEye(size: number, color: string) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 80 80" fill="none">
+    <path d="M8 40 C 22 22, 58 22, 72 40 C 58 58, 22 58, 8 40 Z" stroke="${color}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <circle cx="40" cy="40" r="11" stroke="${color}" stroke-width="2" fill="none"/>
+    <circle cx="40" cy="40" r="4" fill="${color}"/>
+    <line x1="40" y1="6" x2="40" y2="14" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="40" y1="66" x2="40" y2="74" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="6" y1="40" x2="14" y2="40" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="66" y1="40" x2="74" y2="40" stroke="${color}" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function shell(BRAND: string, _FONT: string, body: string) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f6f4f0;font-family:'${FONT}',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;color:#1a1a1a;">
-<div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-  <div style="background:#ffffff;border-radius:10px;padding:32px 28px;line-height:1.6;font-size:15px;color:#1a1a1a;">
-    ${body}
+<body style="margin:0;padding:0;background:#f5f1e8;font-family:${BODY_FONT};color:#1c1812;">
+<div style="max-width:560px;margin:0 auto;padding:32px 16px;">
+  <div style="background:#ffffff;border-radius:12px;overflow:hidden;">
+    <div style="padding:32px 36px 0;">${horizonEye(40, BRAND)}</div>
+    <div style="padding:20px 36px 36px;line-height:1.7;font-size:15px;color:#3a3530;">
+      ${body}
+    </div>
+    <div style="padding:20px 36px;border-top:1px solid #efeae0;">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td style="vertical-align:middle;padding-right:10px;">${horizonEye(20, BRAND)}</td>
+        <td style="vertical-align:middle;font-size:12px;color:#6b665c;">Aura · Strategic Intelligence · <a href="${APP_URL}" style="color:#6b665c;text-decoration:none;">aura-intel.org</a></td>
+      </tr></table>
+    </div>
   </div>
-  <p style="font-size:12px;color:#888;text-align:center;margin-top:18px;">Aura · Strategic Intelligence · <a href="${APP_URL}" style="color:#888;">aura-intel.org</a></p>
 </div></body></html>`;
 }
 
 function ctaButton(BRAND: string, label: string, href: string) {
-  return `<p style="margin:24px 0;"><a href="${href}" style="display:inline-block;padding:12px 22px;background:${BRAND};color:#0d0d0d;font-weight:600;border-radius:8px;text-decoration:none;font-size:14px;">${label}</a></p>`;
+  return `<p style="margin:28px 0;"><a href="${href}" style="display:inline-block;background:${BRAND};color:#ffffff;padding:0 28px;height:44px;line-height:44px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;font-family:${BODY_FONT};">${label}</a></p>`;
 }
 
-function signoff() {
-  return `<p style="margin-top:24px;color:#444;">— Mohammad,<br/>Director of Digital Transformation, EY GCC</p>`;
+function heading(text: string) {
+  return `<h1 style="font-family:${HEADING_FONT};font-size:28px;line-height:1.2;font-weight:500;color:#1c1812;margin:0 0 20px;">${text}</h1>`;
+}
+
+function signoff(firstName: string, level: string | null) {
+  const role = level ? `${level}` : "Founder, Aura";
+  return `<p style="margin-top:28px;color:#3a3530;">— ${firstName || "Mohammad"}, ${role}<br/><span style="color:#8a8478;font-size:13px;">Aura · Strategic Intelligence</span></p>`;
 }
 
 function buildEmail(
@@ -39,6 +67,7 @@ function buildEmail(
     FONT: string;
     firstName: string;
     sectorFocus: string | null;
+    level: string | null;
     entriesCount: number;
     topSignals: { signal_title: string; confidence: number }[];
     score: number | null;
@@ -46,22 +75,19 @@ function buildEmail(
     signalCount: number;
   },
 ): { subject: string; html: string } {
-  const { BRAND, FONT, firstName, entriesCount, topSignals, score, tier, signalCount } = ctx;
+  const { BRAND, FONT, firstName, sectorFocus, level, entriesCount, topSignals, score, tier, signalCount } = ctx;
   const name = firstName || "there";
 
   if (type === "welcome") {
-    const subject = `Welcome to Aura, ${name} — here's your first 5 minutes`;
+    const subject = "Your intelligence OS is active";
+    const focus = sectorFocus && sectorFocus.trim() ? sectorFocus.trim() : "your sector";
     const body = `
-      <p>Hi ${name},</p>
-      <p>Aura is ready. Three steps to your first signal:</p>
-      <ol style="padding-left:20px;color:#333;">
-        <li>Capture one article you'd normally read.</li>
-        <li>Wait 60 seconds — Aura extracts the strategic signal.</li>
-        <li>Open Intelligence to see what changed.</li>
-      </ol>
-      <p>That's the loop. Five minutes today is enough to start compounding.</p>
-      ${ctaButton(BRAND, "Open Aura", APP_URL)}
-      ${signoff()}`;
+      ${heading(`Welcome to Aura, ${name}.`)}
+      <p style="margin:0 0 18px;">Your system is live. Every article you capture, every insight you note, every voice memo you record — Aura finds the strategic patterns you didn't know were there.</p>
+      <p style="margin:0 0 18px;">Your first mission: capture one thing you read this week that shaped your thinking about ${focus}. That single capture seeds your signal graph.</p>
+      <p style="margin:0 0 18px;">One capture. That's the beginning.</p>
+      ${ctaButton(BRAND, "Make your first capture →", APP_URL)}
+      ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
@@ -69,8 +95,8 @@ function buildEmail(
     const subject = "Did Aura find your first signal?";
     const body =
       entriesCount < 3
-        ? `<p>Hi ${name},</p><p>Aura needs a few captures to start surfacing signals. Drop in one article — anything you read this morning works.</p>${ctaButton(BRAND, "Capture now", APP_URL)}${signoff()}`
-        : `<p>Hi ${name},</p><p>Nice — ${entriesCount} captures in. Aura should be surfacing your first signals. Take 30 seconds to look.</p>${ctaButton(BRAND, "See Intelligence", APP_URL)}${signoff()}`;
+        ? `<p>Hi ${name},</p><p>Aura needs a few captures to start surfacing signals. Drop in one article — anything you read this morning works.</p>${ctaButton(BRAND, "Capture now", APP_URL)}${signoff(name, level)}`
+        : `<p>Hi ${name},</p><p>Nice — ${entriesCount} captures in. Aura should be surfacing your first signals. Take 30 seconds to look.</p>${ctaButton(BRAND, "See Intelligence", APP_URL)}${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
@@ -78,8 +104,8 @@ function buildEmail(
     const subject = `Your intelligence is building, ${name}`;
     const top = topSignals[0];
     const body = top
-      ? `<p>Hi ${name},</p><p>Top signal so far: <strong>"${top.signal_title}"</strong> (${Math.round(top.confidence * 100)}% confidence).</p><p>That's a publishable angle. Want to draft on it?</p>${ctaButton(BRAND, "Draft a post", APP_URL)}${signoff()}`
-      : `<p>Hi ${name},</p><p>Aura hasn't found enough patterns yet — a few more captures unlocks signal detection. Aim for five total.</p>${ctaButton(BRAND, "Capture more", APP_URL)}${signoff()}`;
+      ? `<p>Hi ${name},</p><p>Top signal so far: <strong>"${top.signal_title}"</strong> (${Math.round(top.confidence * 100)}% confidence).</p><p>That's a publishable angle. Want to draft on it?</p>${ctaButton(BRAND, "Draft a post", APP_URL)}${signoff(name, level)}`
+      : `<p>Hi ${name},</p><p>Aura hasn't found enough patterns yet — a few more captures unlocks signal detection. Aim for five total.</p>${ctaButton(BRAND, "Capture more", APP_URL)}${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
@@ -96,13 +122,13 @@ function buildEmail(
       <p>${entriesCount > 10 ? "You're past the inflection point — the system is now learning your sector." : "Keep going. The compounding starts around capture 10."}</p>
       <p>Reply with one word: what's working, what isn't?</p>
       ${ctaButton(BRAND, "Open Aura", APP_URL)}
-      ${signoff()}`;
+      ${signoff(name, level)}`;
     return { subject, html: shell(BRAND, FONT, body) };
   }
 
   // inactive
   const subject = `Your authority score is slipping, ${name}`;
-  const body = `<p>Hi ${name},</p><p>No captures in five days — your authority score drifts when Aura goes quiet. One capture reverses it.</p>${ctaButton(BRAND, "Capture one thing", APP_URL)}${signoff()}`;
+  const body = `<p>Hi ${name},</p><p>No captures in five days — your authority score drifts when Aura goes quiet. One capture reverses it.</p>${ctaButton(BRAND, "Capture one thing", APP_URL)}${signoff(name, level)}`;
   return { subject, html: shell(BRAND, FONT, body) };
 }
 
@@ -164,7 +190,7 @@ serve(async (req) => {
     // Profile
     const { data: profile } = await admin
       .from("diagnostic_profiles")
-      .select("first_name, sector_focus")
+      .select("first_name, sector_focus, level")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -204,6 +230,7 @@ serve(async (req) => {
       FONT,
       firstName: profile?.first_name || "",
       sectorFocus: profile?.sector_focus || null,
+      level: (profile as any)?.level || null,
       entriesCount: entriesCount || 0,
       topSignals: (signals as any[]) || [],
       score: snap?.score ?? null,
