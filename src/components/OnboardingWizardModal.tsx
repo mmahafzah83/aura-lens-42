@@ -386,11 +386,10 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
         <div style={{ padding: 36, overflowY: "auto", fontFamily: fontSans }}>
           {step === 1 && (
             <>
-              <div style={stepLabelStyle}>Step 1 of 3 — Your identity</div>
-              <h2 style={stepTitleStyle}>Tell Aura who you are</h2>
+              <div style={stepLabelStyle}>Step 1 of 3 — Calibrate</div>
+              <h2 style={stepTitleStyle}>Let's calibrate your intelligence</h2>
               <p style={stepSubStyle}>
-                This calibrates every signal, every post, every strategic recommendation. The more
-                specific, the sharper your intelligence.
+                Aura adapts to your level, sector, and ambition. This takes 60 seconds.
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -462,11 +461,10 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
 
           {step === 2 && (
             <>
-              <div style={stepLabelStyle}>Step 2 of 3 — Feed Aura</div>
-              <h2 style={stepTitleStyle}>Make your first capture</h2>
+              <div style={stepLabelStyle}>Step 2 of 3 — First insight</div>
+              <h2 style={stepTitleStyle}>Feed your first insight</h2>
               <p style={stepSubStyle}>
-                Paste an article or report you've read this week. Aura will detect your first
-                strategic signal within 60 seconds.
+                Paste one article you read this week. Aura will find the strategic pattern inside it.
               </p>
 
               {/* Tabs */}
