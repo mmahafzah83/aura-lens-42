@@ -486,22 +486,7 @@ const Dashboard = () => {
               style={{ borderBottom: "0.5px solid var(--paper-3)" }}
             >
               <div className="flex items-center gap-2.5">
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: 32,
-                    height: 32,
-                    background: "var(--ink)",
-                    borderRadius: "var(--r-md)",
-                    fontFamily: "'Cormorant Garamond', serif",
-                    fontSize: 20,
-                    fontWeight: 600,
-                    color: "var(--bronze)",
-                    lineHeight: 1,
-                  }}
-                >
-                  A
-                </div>
+                <AuraLogo size={32} variant="auto" />
                 <span className="text-lg font-semibold" style={{ color: "var(--ink)" }}>Aura</span>
               </div>
               <button
