@@ -959,7 +959,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               className="aura-generate-btn w-full"
               style={{
                 background: isGeneratingAny || !topic.trim() ? "var(--brand-pale)" : "var(--brand)",
-                color: "var(--paper)",
+                color: "var(--surface-ink)",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
