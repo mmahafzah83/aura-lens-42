@@ -15,29 +15,30 @@ export default function ComparisonLayout({ style, props }: { style: CardStyleCon
         fontSize: style.headlineSize * 2, lineHeight: 1.2, color: style.headlineColor, margin: 0,
       }}>{props.content}</h1>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: 0, flex: 1, alignItems: 'stretch' }}>
-        <ColumnView style={style} header={left?.label ?? 'A'} points={leftPoints} />
+        <ColumnView style={style} header={left?.label ?? 'A'} points={leftPoints} accent={false} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
           <div style={{ width: 1, flex: 1, background: `${style.accent}55` }} />
           <div style={{ fontFamily: style.headlineFont, fontSize: 48, color: style.accent }}>→</div>
           <div style={{ width: 1, flex: 1, background: `${style.accent}55` }} />
         </div>
-        <ColumnView style={style} header={right?.label ?? 'B'} points={rightPoints} />
+        <ColumnView style={style} header={right?.label ?? 'B'} points={rightPoints} accent={true} />
       </div>
     </div>
   );
 }
 
-function ColumnView({ style, header, points }: { style: CardStyleConfig; header: string; points: { label: string }[] }) {
+function ColumnView({ style, header, points, accent }: { style: CardStyleConfig; header: string; points: { label: string }[]; accent: boolean }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{
         fontFamily: style.headlineFont, fontWeight: style.headlineWeight,
-        fontSize: 36, color: style.headlineColor,
+        fontSize: 36, color: accent ? style.accent : style.bodyColor,
+        textTransform: 'uppercase', letterSpacing: '0.08em',
       }}>{header}</div>
       {points.map((p, i) => (
         <div key={i} style={{
           fontFamily: style.bodyFont, fontSize: style.bodySize * 1.6,
-          color: style.bodyColor, lineHeight: 1.5,
+          color: accent ? style.headlineColor : style.bodyColor, lineHeight: 1.5,
         }}>• {p.label}</div>
       ))}
     </div>
