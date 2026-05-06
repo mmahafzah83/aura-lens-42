@@ -983,7 +983,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         })()}
 
         {/* Scenario toggle */}
-        <div className="relative flex flex-wrap gap-2 mt-5">
+        <div data-testid="impact-trajectory" className="relative flex flex-wrap gap-2 mt-5">
           {([
             { key: "current", label: "Current pace" },
             { key: "publish2x", label: "2× publishing" },
@@ -994,6 +994,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <button
                 key={b.key}
                 type="button"
+                data-testid={
+                  b.key === "current" ? "impact-scenario-current"
+                  : b.key === "publish2x" ? "impact-scenario-2x"
+                  : "impact-scenario-stop"
+                }
+                data-active={active ? "true" : "false"}
                 onClick={() => setScenario(b.key)}
                 style={
                   active
