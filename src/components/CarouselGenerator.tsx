@@ -103,22 +103,22 @@ const PALETTES: Record<Style, {
   emphBg: string; emphFg: string;
 }> = {
   minimal_creator: {
-    bg: "var(--surface-subtle)", fg: "var(--surface-ink-subtle)", accent: "#C8A862", muted: "#6B6560",
-    subtle: "var(--surface-subtle)", gradientFrom: "var(--surface-subtle)", gradientTo: "#F8F0E3",
-    name: "Minimal Creator",
-    emphBg: "var(--surface-ink-subtle)", emphFg: "var(--surface-subtle)",
+    bg: "#F7F3E8", fg: "#1C1812", accent: "#B08D3A", muted: "#6B6456",
+    subtle: "#EFE8D6", gradientFrom: "#F7F3E8", gradientTo: "#EFE8D6",
+    name: "Clean paper",
+    emphBg: "#B08D3A", emphFg: "#F7F3E8",
   },
   dark_creator: {
-    bg: "var(--ink)", fg: "#FFFFFF", accent: "#FFD700", muted: "#9CA3AF",
-    subtle: "var(--surface-ink-subtle)", gradientFrom: "var(--ink)", gradientTo: "var(--ink)",
-    name: "Dark Creator",
-    emphBg: "#FFD700", emphFg: "var(--ink)",
+    bg: "#1C1812", fg: "#F4EFE2", accent: "#D4B056", muted: "#888376",
+    subtle: "#2A1F14", gradientFrom: "#1C1812", gradientTo: "#2A1F14",
+    name: "Bold statement",
+    emphBg: "#F97316", emphFg: "#1C1812",
   },
   corporate_gradient: {
-    bg: "#0C1B2E", fg: "#FFFFFF", accent: "#2ECDA7", muted: "#8BA4CC",
-    subtle: "#142640", gradientFrom: "#0C1B2E", gradientTo: "#1A2B45",
-    name: "Corporate Gradient",
-    emphBg: "#2ECDA7", emphFg: "#0C1B2E",
+    bg: "#F7F3E8", fg: "#1C1812", accent: "#B08D3A", muted: "#6B6456",
+    subtle: "#EFE8D6", gradientFrom: "#F7F3E8", gradientTo: "#F0E8D2",
+    name: "Executive briefing",
+    emphBg: "#B08D3A", emphFg: "#F7F3E8",
   },
 };
 
