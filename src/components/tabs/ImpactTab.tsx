@@ -1078,7 +1078,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
           Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
             { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
             { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
