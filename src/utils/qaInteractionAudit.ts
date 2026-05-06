@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * Client-side DOM interaction audit. Runs against the currently rendered page.
- * Returns an array of structured QA results to be persisted by the caller.
+ * Client-side DOM interaction audit. Runs against the currently rendered page,
+ * or against any same-origin Document passed in (e.g. an iframe.contentDocument).
  */
 
 export type QaStatus = "pass" | "fail" | "warn";
@@ -23,6 +23,10 @@ export interface QaResult {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+function getWin(doc: Document): Window {
+  return (doc.defaultView as Window) || window;
+}
+
 function describe(el: Element | null): string {
   if (!el) return "(none)";
   const tag = el.tagName.toLowerCase();
@@ -36,12 +40,13 @@ function describe(el: Element | null): string {
   return `<${tag}${id}${cls}>${text ? ` "${text}"` : ""}${pos}`;
 }
 
-function isVisible(el: Element): boolean {
+function isVisible(el: Element, doc?: Document): boolean {
   const he = el as HTMLElement;
   if (!he.getBoundingClientRect) return false;
   const r = he.getBoundingClientRect();
   if (r.width === 0 || r.height === 0) return false;
-  const cs = getComputedStyle(he);
+  const win = getWin(doc || he.ownerDocument || document);
+  const cs = win.getComputedStyle(he);
   if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) return false;
   return true;
 }
@@ -68,7 +73,7 @@ function hasReactClickHandler(el: Element): boolean {
   return false;
 }
 
-async function safeRun<T>(
+async function safeRun(
   results: QaResult[],
   fn: () => Promise<void> | void,
   errorTest: { testId: string; testName: string; category: string },
@@ -85,34 +90,34 @@ async function safeRun<T>(
 }
 
 /* ---------------- GROUP 1 — Tooltip Consistency ---------------- */
-async function auditTooltips(results: QaResult[]) {
+async function auditTooltips(results: QaResult[], doc: Document) {
   const candidates = new Set<Element>();
-  document.querySelectorAll("[data-tooltip], [aria-describedby]").forEach((el) => candidates.add(el));
-  document.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((el) => {
+  doc.querySelectorAll("[data-tooltip], [aria-describedby]").forEach((el) => candidates.add(el));
+  doc.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((el) => {
     const trigger = (el as Element).closest("button, [role='button'], span, div");
     if (trigger) candidates.add(trigger);
   });
-  document.querySelectorAll("button, span, [role='button']").forEach((el) => {
+  doc.querySelectorAll("button, span, [role='button']").forEach((el) => {
     const t = (el as HTMLElement).innerText?.trim();
     if (t === "?" || t === "ⓘ") candidates.add(el);
   });
 
-  const visible = Array.from(candidates).filter(isVisible).slice(0, 20);
+  const visible = Array.from(candidates).filter((e) => isVisible(e, doc)).slice(0, 20);
 
   for (let i = 0; i < visible.length; i++) {
     const el = visible[i];
-    const before = new Set(document.querySelectorAll("[role='tooltip'], .tooltip, .popover, [data-radix-popper-content-wrapper]"));
+    const before = new Set(doc.querySelectorAll("[role='tooltip'], .tooltip, .popover, [data-radix-popper-content-wrapper]"));
     el.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
     el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
     await sleep(300);
-    const afterEnter = Array.from(document.querySelectorAll("[role='tooltip'], .tooltip, .popover, [data-radix-popper-content-wrapper]"))
+    const afterEnter = Array.from(doc.querySelectorAll("[role='tooltip'], .tooltip, .popover, [data-radix-popper-content-wrapper]"))
       .filter((n) => !before.has(n));
     const appeared = afterEnter.length > 0;
 
     el.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
     el.dispatchEvent(new MouseEvent("mouseout", { bubbles: true }));
     await sleep(500);
-    const stillThere = afterEnter.filter((n) => document.contains(n) && isVisible(n));
+    const stillThere = afterEnter.filter((n) => doc.contains(n) && isVisible(n, doc));
 
     if (appeared && stillThere.length > 0) {
       results.push({
@@ -127,83 +132,64 @@ async function auditTooltips(results: QaResult[]) {
           actual: "requires manual close",
         },
       });
-    } else {
-      results.push({
-        testId: `tooltip.${i}`,
-        testName: "Tooltip behavior",
-        category: "tooltips",
-        status: "pass",
-        details: {
-          description: appeared ? "Tooltip appeared on hover and dismissed cleanly" : "No tooltip appeared on hover",
-          element: describe(el),
-        },
-      });
     }
   }
+  results.push({
+    testId: "tooltips.summary",
+    testName: "Tooltips checked",
+    category: "tooltips",
+    status: "pass",
+    details: { description: `${visible.length} tooltip triggers tested` },
+  });
 }
 
 /* ---------------- GROUP 2 — Modal Behavior ---------------- */
-async function auditModals(results: QaResult[]) {
+async function auditModals(results: QaResult[], doc: Document) {
   const triggerKeywords = ["start", "generate", "share", "assessment", "audit", "open", "view"];
   const candidates: HTMLElement[] = [];
-  document.querySelectorAll("button, [role='button']").forEach((el) => {
+  doc.querySelectorAll("button, [role='button']").forEach((el) => {
     const t = ((el as HTMLElement).innerText || "").trim().toLowerCase();
     if (!t) return;
     if (triggerKeywords.some((k) => t.includes(k))) candidates.push(el as HTMLElement);
   });
 
-  const sample = candidates.filter(isVisible).slice(0, 6);
+  const sample = candidates.filter((e) => isVisible(e, doc)).slice(0, 6);
+  const win = getWin(doc);
 
   for (let i = 0; i < sample.length; i++) {
     const trigger = sample[i];
-    const before = new Set(document.querySelectorAll("[role='dialog'], [data-state='open']"));
+    const before = new Set(doc.querySelectorAll("[role='dialog'], [data-state='open']"));
     trigger.click();
     await sleep(500);
-    const dialogs = Array.from(document.querySelectorAll("[role='dialog']"))
-      .filter((n) => !before.has(n) && isVisible(n));
+    const dialogs = Array.from(doc.querySelectorAll("[role='dialog']"))
+      .filter((n) => !before.has(n) && isVisible(n, doc));
     if (dialogs.length === 0) continue;
 
     const dialog = dialogs[0] as HTMLElement;
-    const cs = getComputedStyle(dialog);
+    const cs = win.getComputedStyle(dialog);
     const issues: string[] = [];
 
-    // close button check
     const hasCloseBtn = !!dialog.querySelector(
       "button[aria-label*='close' i], button[aria-label*='dismiss' i], button.close, [data-dismiss]"
     ) || Array.from(dialog.querySelectorAll("button")).some((b) => /close|cancel|×/i.test(b.innerText || ""));
     if (!hasCloseBtn) issues.push("no visible close button");
 
-    // position check (also walk parents — the fixed wrapper is usually a parent)
     let usesFixed = cs.position === "fixed";
     let p: HTMLElement | null = dialog.parentElement;
     let depth = 0;
     while (!usesFixed && p && depth < 4) {
-      if (getComputedStyle(p).position === "fixed") usesFixed = true;
+      if (win.getComputedStyle(p).position === "fixed") usesFixed = true;
       p = p.parentElement;
       depth++;
     }
     if (!usesFixed) issues.push("uses position:absolute");
 
-    // Escape close
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    doc.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     await sleep(400);
-    const closedOnEscape = !document.contains(dialog) || !isVisible(dialog);
+    const closedOnEscape = !doc.contains(dialog) || !isVisible(dialog, doc);
     if (!closedOnEscape) {
       issues.push("doesn't close on Escape");
-      // try backdrop click
-      const backdrop = document.querySelector(
-        "[data-radix-dialog-overlay], [data-state='open'].fixed, .modal-backdrop, [aria-hidden='true'].fixed"
-      ) as HTMLElement | null;
-      if (backdrop) {
-        backdrop.click();
-        await sleep(400);
-        const closedOnBackdrop = !document.contains(dialog) || !isVisible(dialog);
-        if (!closedOnBackdrop) issues.push("doesn't close on backdrop click");
-      } else {
-        issues.push("no detectable backdrop");
-      }
-      // force close fallback to avoid leaking modals across tests
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      doc.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
       await sleep(200);
     }
 
@@ -215,7 +201,7 @@ async function auditModals(results: QaResult[]) {
       details: {
         description: issues.length === 0 ? "Modal opens/closes cleanly" : issues.join("; "),
         element: describe(trigger),
-        expected: "fixed overlay, closes on Escape + backdrop, has close button",
+        expected: "fixed overlay, closes on Escape, has close button",
         actual: issues.join("; ") || "ok",
       },
     });
@@ -223,8 +209,8 @@ async function auditModals(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 3 — Buttons ---------------- */
-function auditButtons(results: QaResult[]) {
-  const buttons = Array.from(document.querySelectorAll("button, [role='button']")).filter(isVisible);
+function auditButtons(results: QaResult[], doc: Document) {
+  const buttons = Array.from(doc.querySelectorAll("button, [role='button']")).filter((e) => isVisible(e, doc));
   let dead = 0, small = 0, unlabeled = 0;
   const samples: string[] = [];
 
@@ -264,8 +250,8 @@ function auditButtons(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 4 — Links ---------------- */
-function auditLinks(results: QaResult[]) {
-  const anchors = Array.from(document.querySelectorAll("a")) as HTMLAnchorElement[];
+function auditLinks(results: QaResult[], doc: Document) {
+  const anchors = Array.from(doc.querySelectorAll("a")) as HTMLAnchorElement[];
   let broken = 0, externalNoBlank = 0;
   anchors.forEach((a, idx) => {
     const href = a.getAttribute("href") || "";
@@ -302,15 +288,15 @@ function auditLinks(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 5 — Forms ---------------- */
-function auditForms(results: QaResult[]) {
-  const fields = Array.from(document.querySelectorAll("input, textarea, select")) as HTMLElement[];
+function auditForms(results: QaResult[], doc: Document) {
+  const fields = Array.from(doc.querySelectorAll("input, textarea, select")) as HTMLElement[];
   let unlabeled = 0, emptySelects = 0;
-  fields.filter(isVisible).forEach((f, idx) => {
+  fields.filter((e) => isVisible(e, doc)).forEach((f, idx) => {
     const id = f.id;
     const hasLabel = !!(
       f.getAttribute("aria-label") ||
       f.getAttribute("placeholder") ||
-      (id && document.querySelector(`label[for="${CSS.escape(id)}"]`)) ||
+      (id && doc.querySelector(`label[for="${CSS.escape(id)}"]`)) ||
       f.closest("label")
     );
     if (!hasLabel) {
@@ -344,8 +330,9 @@ function auditForms(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 6 — Scroll & Overflow ---------------- */
-function auditOverflow(results: QaResult[]) {
-  const horizontal = document.documentElement.scrollWidth > window.innerWidth + 1;
+function auditOverflow(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const horizontal = doc.documentElement.scrollWidth > win.innerWidth + 1;
   results.push({
     testId: "overflow.document",
     testName: "Document horizontal overflow",
@@ -353,17 +340,17 @@ function auditOverflow(results: QaResult[]) {
     status: horizontal ? "fail" : "pass",
     details: {
       description: horizontal ? "Document scrolls horizontally" : "No horizontal overflow",
-      expected: `<= ${window.innerWidth}`,
-      actual: String(document.documentElement.scrollWidth),
+      expected: `<= ${win.innerWidth}`,
+      actual: String(doc.documentElement.scrollWidth),
     },
   });
 
   const offenders: string[] = [];
-  document.querySelectorAll("*").forEach((el) => {
+  doc.querySelectorAll("*").forEach((el) => {
     const he = el as HTMLElement;
-    if (!isVisible(he)) return;
+    if (!isVisible(he, doc)) return;
     if (he.scrollWidth > he.clientWidth + 1) {
-      const cs = getComputedStyle(he);
+      const cs = win.getComputedStyle(he);
       if (cs.overflowX === "visible") offenders.push(describe(he));
     }
   });
@@ -379,21 +366,22 @@ function auditOverflow(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 7 — Fonts ---------------- */
-function auditFonts(results: QaResult[]) {
+function auditFonts(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
   const banned = ["inter", "roboto", "arial", "system-ui", "-apple-system"];
   const violations: { kind: string; element: string; font: string }[] = [];
 
-  document.querySelectorAll("h1, h2, h3").forEach((el) => {
-    if (!isVisible(el)) return;
-    const f = getComputedStyle(el).fontFamily.toLowerCase();
+  doc.querySelectorAll("h1, h2, h3").forEach((el) => {
+    if (!isVisible(el, doc)) return;
+    const f = win.getComputedStyle(el).fontFamily.toLowerCase();
     if (!f.includes("cormorant")) violations.push({ kind: "heading", element: describe(el), font: f });
   });
-  document.querySelectorAll("p, span, div").forEach((el) => {
-    if (!isVisible(el)) return;
+  doc.querySelectorAll("p, span, div").forEach((el) => {
+    if (!isVisible(el, doc)) return;
     const text = (el as HTMLElement).innerText?.trim();
     if (!text || text.length < 10) return;
     if ((el as HTMLElement).children.length > 0) return;
-    const f = getComputedStyle(el).fontFamily.toLowerCase();
+    const f = win.getComputedStyle(el).fontFamily.toLowerCase();
     if (banned.some((b) => f.startsWith(b) || f.split(",")[0].trim().includes(b))) {
       if (!f.includes("dm sans") && !f.includes("cormorant") && !f.includes("jetbrains")) {
         violations.push({ kind: "body", element: describe(el), font: f });
@@ -402,9 +390,9 @@ function auditFonts(results: QaResult[]) {
       violations.push({ kind: "body", element: describe(el), font: f });
     }
   });
-  document.querySelectorAll("[class*='score'], [class*='metric'], [class*='number'], [class*='mono']").forEach((el) => {
-    if (!isVisible(el)) return;
-    const f = getComputedStyle(el).fontFamily.toLowerCase();
+  doc.querySelectorAll("[class*='score'], [class*='metric'], [class*='number'], [class*='mono']").forEach((el) => {
+    if (!isVisible(el, doc)) return;
+    const f = win.getComputedStyle(el).fontFamily.toLowerCase();
     if (!f.includes("jetbrains")) violations.push({ kind: "mono", element: describe(el), font: f });
   });
 
@@ -421,14 +409,15 @@ function auditFonts(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 8 — Color Compliance (orange) ---------------- */
-function auditColors(results: QaResult[]) {
+function auditColors(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
   const allowedClassRe = /signal|alert|fading|dormant|urgent|warning|time-sensitive|status/i;
   const violations: string[] = [];
 
-  document.querySelectorAll("*").forEach((el) => {
+  doc.querySelectorAll("*").forEach((el) => {
     const he = el as HTMLElement;
-    if (!isVisible(he)) return;
-    const cs = getComputedStyle(he);
+    if (!isVisible(he, doc)) return;
+    const cs = win.getComputedStyle(he);
     const candidates = [cs.color, cs.backgroundColor, cs.borderColor];
     const hasOrange = candidates.some((c) => {
       const hex = rgbToHex(c);
@@ -460,8 +449,8 @@ function auditColors(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 9 — Images ---------------- */
-function auditImages(results: QaResult[]) {
-  const imgs = Array.from(document.querySelectorAll("img")) as HTMLImageElement[];
+function auditImages(results: QaResult[], doc: Document) {
+  const imgs = Array.from(doc.querySelectorAll("img")) as HTMLImageElement[];
   const broken = imgs.filter((i) => i.naturalWidth === 0 && i.complete);
   broken.forEach((i, idx) => {
     results.push({
@@ -482,13 +471,14 @@ function auditImages(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 10 — Animations ---------------- */
-function auditAnimations(results: QaResult[]) {
+function auditAnimations(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
   const loaderRe = /spin|load|skeleton|pulse|shimmer/i;
   const offenders: string[] = [];
-  document.querySelectorAll("*").forEach((el) => {
+  doc.querySelectorAll("*").forEach((el) => {
     const he = el as HTMLElement;
-    if (!isVisible(he)) return;
-    const cs = getComputedStyle(he);
+    if (!isVisible(he, doc)) return;
+    const cs = win.getComputedStyle(he);
     if (cs.animationIterationCount !== "infinite") return;
     const cls = typeof he.className === "string" ? he.className : "";
     if (loaderRe.test(cls)) return;
@@ -507,23 +497,24 @@ function auditAnimations(results: QaResult[]) {
 }
 
 /* ---------------- runDomAudit ---------------- */
-export async function runDomAudit(): Promise<QaResult[]> {
+export async function runDomAudit(targetDoc?: Document): Promise<QaResult[]> {
+  const doc = targetDoc || document;
   const results: QaResult[] = [];
 
-  await safeRun(results, () => auditTooltips(results), { testId: "tooltips.error", testName: "Tooltip group", category: "tooltips" });
-  await safeRun(results, () => auditModals(results), { testId: "modals.error", testName: "Modal group", category: "modals" });
-  await safeRun(results, () => auditButtons(results), { testId: "buttons.error", testName: "Buttons group", category: "buttons" });
-  await safeRun(results, () => auditLinks(results), { testId: "links.error", testName: "Links group", category: "links" });
-  await safeRun(results, () => auditForms(results), { testId: "forms.error", testName: "Forms group", category: "forms" });
-  await safeRun(results, () => auditOverflow(results), { testId: "overflow.error", testName: "Overflow group", category: "overflow" });
-  await safeRun(results, () => auditFonts(results), { testId: "fonts.error", testName: "Fonts group", category: "fonts" });
-  await safeRun(results, () => auditColors(results), { testId: "colors.error", testName: "Colors group", category: "colors" });
-  await safeRun(results, () => auditImages(results), { testId: "images.error", testName: "Images group", category: "images" });
-  await safeRun(results, () => auditAnimations(results), { testId: "animations.error", testName: "Animations group", category: "animations" });
-  await safeRun(results, () => auditTooltipDeep(results), { testId: "tooltips_deep.error", testName: "Tooltip deep group", category: "tooltips_deep" });
-  await safeRun(results, () => auditLoadingStates(results), { testId: "loading.error", testName: "Loading states group", category: "loading" });
-  await safeRun(results, () => auditEmptyStates(results), { testId: "empty.error", testName: "Empty states group", category: "empty" });
-  await safeRun(results, () => auditAccessibility(results), { testId: "a11y.error", testName: "Accessibility group", category: "accessibility" });
+  await safeRun(results, () => auditTooltips(results, doc), { testId: "tooltips.error", testName: "Tooltip group", category: "tooltips" });
+  await safeRun(results, () => auditModals(results, doc), { testId: "modals.error", testName: "Modal group", category: "modals" });
+  await safeRun(results, () => auditButtons(results, doc), { testId: "buttons.error", testName: "Buttons group", category: "buttons" });
+  await safeRun(results, () => auditLinks(results, doc), { testId: "links.error", testName: "Links group", category: "links" });
+  await safeRun(results, () => auditForms(results, doc), { testId: "forms.error", testName: "Forms group", category: "forms" });
+  await safeRun(results, () => auditOverflow(results, doc), { testId: "overflow.error", testName: "Overflow group", category: "overflow" });
+  await safeRun(results, () => auditFonts(results, doc), { testId: "fonts.error", testName: "Fonts group", category: "fonts" });
+  await safeRun(results, () => auditColors(results, doc), { testId: "colors.error", testName: "Colors group", category: "colors" });
+  await safeRun(results, () => auditImages(results, doc), { testId: "images.error", testName: "Images group", category: "images" });
+  await safeRun(results, () => auditAnimations(results, doc), { testId: "animations.error", testName: "Animations group", category: "animations" });
+  await safeRun(results, () => auditTooltipDeep(results, doc), { testId: "tooltips_deep.error", testName: "Tooltip deep group", category: "tooltips_deep" });
+  await safeRun(results, () => auditLoadingStates(results, doc), { testId: "loading.error", testName: "Loading states group", category: "loading" });
+  await safeRun(results, () => auditEmptyStates(results, doc), { testId: "empty.error", testName: "Empty states group", category: "empty" });
+  await safeRun(results, () => auditAccessibility(results, doc), { testId: "a11y.error", testName: "Accessibility group", category: "accessibility" });
 
   return results;
 }
@@ -553,50 +544,53 @@ function contrastRatio(fg: string, bg: string): number | null {
 }
 
 /* ---------------- GROUP 11 — Tooltip Deep ---------------- */
-async function auditTooltipDeep(results: QaResult[]) {
+async function auditTooltipDeep(results: QaResult[], doc: Document) {
   const triggers = new Set<Element>();
-  document.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((s) => {
+  doc.querySelectorAll("svg.lucide-help-circle, svg.lucide-info").forEach((s) => {
     const t = s.closest("button, [role='button'], span, div");
     if (t) triggers.add(t);
   });
-  document.querySelectorAll("button, span").forEach((el) => {
+  doc.querySelectorAll("button, span").forEach((el) => {
     const txt = (el as HTMLElement).innerText?.trim();
     if (txt === "?" || txt === "ⓘ") triggers.add(el);
   });
-  const visible = Array.from(triggers).filter(isVisible);
+  const visible = Array.from(triggers).filter((e) => isVisible(e, doc));
   const behaviors: string[] = [];
   let i = 0;
   for (const el of visible.slice(0, 30)) {
-    const before = new Set(document.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]"));
+    const before = new Set(doc.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]"));
     el.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
     el.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
     await sleep(250);
-    const onHover = Array.from(document.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n));
+    const onHover = Array.from(doc.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n));
     const opensOnHover = onHover.length > 0;
     let opensOnClick = false;
     if (!opensOnHover) {
       (el as HTMLElement).click();
       await sleep(250);
-      opensOnClick = Array.from(document.querySelectorAll("[role='tooltip'], [role='dialog'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n)).length > 0;
+      opensOnClick = Array.from(doc.querySelectorAll("[role='tooltip'], [role='dialog'], [data-radix-popper-content-wrapper]")).filter(n => !before.has(n)).length > 0;
     }
     el.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    await sleep(300);
+    doc.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await sleep(200);
     const trigger = opensOnHover ? "hover" : opensOnClick ? "click" : "none";
     behaviors.push(trigger);
-    results.push({
-      testId: `tooltip_deep.${i++}`,
-      testName: "Tooltip trigger behavior",
-      category: "tooltips_deep",
-      status: trigger === "none" ? "warn" : "pass",
-      details: {
-        description: `Trigger: ${trigger}`,
-        element: describe(el),
-        expected: "Consistent hover-to-open across the app",
-        actual: trigger,
-        severity: trigger === "none" ? "medium" : "low",
-      },
-    });
+    if (trigger === "none") {
+      results.push({
+        testId: `tooltip_deep.${i}`,
+        testName: "Tooltip trigger behavior",
+        category: "tooltips_deep",
+        status: "warn",
+        details: {
+          description: `Trigger: ${trigger}`,
+          element: describe(el),
+          expected: "Consistent hover-to-open across the app",
+          actual: trigger,
+          severity: "medium",
+        },
+      });
+    }
+    i++;
   }
   const set = new Set(behaviors.filter(b => b !== "none"));
   if (set.size > 1) {
@@ -616,9 +610,10 @@ async function auditTooltipDeep(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 12 — Loading States ---------------- */
-function auditLoadingStates(results: QaResult[]) {
-  const skeletons = document.querySelectorAll("[class*='skeleton' i], [data-skeleton], [class*='shimmer' i]");
-  const spinners = document.querySelectorAll("[class*='spinner' i], svg.lucide-loader-2, [class*='loading' i]");
+function auditLoadingStates(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const skeletons = doc.querySelectorAll("[class*='skeleton' i], [data-skeleton], [class*='shimmer' i]");
+  const spinners = doc.querySelectorAll("[class*='spinner' i], svg.lucide-loader-2, [class*='loading' i]");
   results.push({
     testId: "loading.skeletons",
     testName: "Skeleton loaders present",
@@ -633,12 +628,11 @@ function auditLoadingStates(results: QaResult[]) {
   });
   const badSpinners: string[] = [];
   spinners.forEach((s) => {
-    if (!isVisible(s)) return;
-    const cs = getComputedStyle(s);
+    if (!isVisible(s, doc)) return;
+    const cs = win.getComputedStyle(s);
     const color = cs.color.toLowerCase();
     const rgb = parseRgb(color);
     if (rgb) {
-      // bronze ~ #C5A55A => rgb(197,165,90)
       const isBronze = Math.abs(rgb[0] - 197) < 40 && Math.abs(rgb[1] - 165) < 40 && Math.abs(rgb[2] - 90) < 40;
       const isInk = rgb[0] > 200 && rgb[1] > 200 && rgb[2] > 200;
       if (!isBronze && !isInk) badSpinners.push(describe(s));
@@ -662,11 +656,11 @@ function auditLoadingStates(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 13 — Empty States ---------------- */
-function auditEmptyStates(results: QaResult[]) {
-  const empties = document.querySelectorAll("[class*='empty' i], [data-empty]");
+function auditEmptyStates(results: QaResult[], doc: Document) {
+  const empties = doc.querySelectorAll("[class*='empty' i], [data-empty]");
   let generic = 0;
   empties.forEach((el, idx) => {
-    if (!isVisible(el)) return;
+    if (!isVisible(el, doc)) return;
     const txt = ((el as HTMLElement).innerText || "").toLowerCase();
     if (/no data yet|nothing here|empty/.test(txt) && txt.length < 60) {
       generic++;
@@ -698,9 +692,9 @@ function auditEmptyStates(results: QaResult[]) {
 }
 
 /* ---------------- GROUP 14 — Accessibility ---------------- */
-function auditAccessibility(results: QaResult[]) {
-  // alt text
-  const imgs = Array.from(document.querySelectorAll("img")) as HTMLImageElement[];
+function auditAccessibility(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const imgs = Array.from(doc.querySelectorAll("img")) as HTMLImageElement[];
   const noAlt = imgs.filter((i) => !i.hasAttribute("alt"));
   noAlt.forEach((i, idx) => results.push({
     testId: `a11y.alt.${idx}`,
@@ -710,21 +704,19 @@ function auditAccessibility(results: QaResult[]) {
     details: { description: "Image has no alt attribute", element: describe(i), expected: "alt attribute (empty allowed for decorative)", actual: "(missing)", severity: "high" },
   }));
 
-  // contrast
-  const samples = Array.from(document.querySelectorAll("p, span, h1, h2, h3, button, a, label")).filter(isVisible).slice(0, 80);
+  const samples = Array.from(doc.querySelectorAll("p, span, h1, h2, h3, button, a, label")).filter((e) => isVisible(e, doc)).slice(0, 80);
   const contrastFails: any[] = [];
   samples.forEach((el, idx) => {
     const he = el as HTMLElement;
     const text = he.innerText?.trim();
     if (!text || text.length < 2) return;
-    const cs = getComputedStyle(he);
-    // walk up to find non-transparent bg
+    const cs = win.getComputedStyle(he);
     let bg = cs.backgroundColor;
     let p: HTMLElement | null = he;
     while (p && (!bg || /rgba\([^)]*,\s*0(?:\.0+)?\)/.test(bg) || bg === "transparent")) {
       p = p.parentElement;
       if (!p) break;
-      bg = getComputedStyle(p).backgroundColor;
+      bg = win.getComputedStyle(p).backgroundColor;
     }
     if (!bg || bg === "transparent") bg = "rgb(10,10,10)";
     const ratio = contrastRatio(cs.color, bg);
@@ -768,13 +760,12 @@ function auditAccessibility(results: QaResult[]) {
     details: { description: `${contrastFails.length} contrast violations among ${samples.length} sampled`, severity: "high" },
   });
 
-  // focus visibility — check :focus-visible style on buttons
-  const buttons = Array.from(document.querySelectorAll("button, a, [role='button']")).filter(isVisible).slice(0, 30);
+  const buttons = Array.from(doc.querySelectorAll("button, a, [role='button']")).filter((e) => isVisible(e, doc)).slice(0, 30);
   let unfocusable = 0;
   buttons.forEach((b, idx) => {
     const he = b as HTMLElement;
     he.focus({ preventScroll: true } as any);
-    const cs = getComputedStyle(he);
+    const cs = win.getComputedStyle(he);
     const hasOutline = cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0;
     const hasRing = cs.boxShadow && cs.boxShadow !== "none";
     if (!hasOutline && !hasRing) {

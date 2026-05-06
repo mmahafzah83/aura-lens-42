@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import { runDomAudit } from "@/utils/qaInteractionAudit";
-import { Loader2, Copy, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Copy, ChevronDown, ChevronRight, X, Download } from "lucide-react";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const DOM_ROUTES = ["/home", "/intelligence", "/publish", "/impact", "/my-story"];
@@ -79,6 +79,80 @@ function genFixPrompt(r: ResultRow): string {
   return `Fix ${r.test_name}: ${description}. Expected: ${expected}. Actual: ${actual}. Location: ${location}. DO NOT change anything else.`;
 }
 
+function genBatchFixPrompt(category: string, rows: ResultRow[]): string {
+  const fails = rows.filter((r) => r.status !== "pass");
+  if (fails.length === 0) return "";
+  const byPage: Record<string, ResultRow[]> = {};
+  fails.forEach((r) => {
+    const page = (r.details?.page as string) || (r.test_id.split(".")[0] || "unknown");
+    (byPage[page] ||= []).push(r);
+  });
+  const pages = Object.keys(byPage);
+  let out = `Fix ${fails.length} ${category} issues across ${pages.join(", ")}:\n`;
+  for (const page of pages) {
+    out += `\nPage: /${page === "unknown" ? "" : page}\n`;
+    for (const r of byPage[page]) {
+      const d = r.details || {};
+      const desc = d.description || r.test_name;
+      const loc = d.element || "(unknown element)";
+      const exp = d.expected ?? "—";
+      const act = d.actual ?? "—";
+      out += `- ${desc} at ${loc}\n  ${exp} → ${act}\n`;
+    }
+  }
+  out += `\nFor each issue, change actual to match expected. Fix all of them in one pass.\nDO NOT change anything else. Only fix the listed issues.`;
+  return out;
+}
+
+function genFullBatchFixPrompt(rows: ResultRow[]): string {
+  const fails = rows.filter((r) => r.status !== "pass");
+  if (fails.length === 0) return "";
+  const byCat: Record<string, ResultRow[]> = {};
+  fails.forEach((r) => { (byCat[r.category] ||= []).push(r); });
+  let out = `# Aura QA — Full Batch Fix\n\nFix ${fails.length} issues across ${Object.keys(byCat).length} categories:\n`;
+  for (const cat of Object.keys(byCat)) {
+    out += `\n## ${cat.toUpperCase()} (${byCat[cat].length})\n`;
+    out += genBatchFixPrompt(cat, byCat[cat]).split("\n").slice(1).join("\n") + "\n";
+  }
+  return out;
+}
+
+function genMarkdownReport(rows: ResultRow[], summary: { total: number; pass: number; warn: number; fail: number; rate: number }, runId: string | null): string {
+  const now = new Date().toISOString();
+  let md = `# Aura QA Report\n\n- Run ID: ${runId || "(none)"}\n- Date: ${now}\n- Total: ${summary.total} • Pass: ${summary.pass} • Warn: ${summary.warn} • Fail: ${summary.fail} • Pass rate: ${summary.rate}%\n\n`;
+  const byPage: Record<string, ResultRow[]> = {};
+  rows.forEach((r) => {
+    const page = (r.details?.page as string) || (r.test_id.split(".")[0] || "unknown");
+    (byPage[page] ||= []).push(r);
+  });
+  md += `## Per-page breakdown\n\n`;
+  for (const page of Object.keys(byPage)) {
+    const list = byPage[page];
+    const p = list.filter(r => r.status === "pass").length;
+    const w = list.filter(r => r.status === "warn").length;
+    const f = list.filter(r => r.status === "fail").length;
+    md += `- **${page}** — ${list.length} tests • ${p} pass / ${w} warn / ${f} fail\n`;
+  }
+  md += `\n## Failures\n\n`;
+  rows.filter(r => r.status !== "pass").forEach((r) => {
+    const d = r.details || {};
+    md += `### [${r.category}] ${r.test_name} (${r.status})\n`;
+    md += `- test_id: \`${r.test_id}\`\n`;
+    if (d.element) md += `- location: \`${d.element}\`\n`;
+    if (d.expected !== undefined) md += `- expected: ${d.expected}\n`;
+    if (d.actual !== undefined) md += `- actual: ${d.actual}\n`;
+    if (d.description) md += `- ${d.description}\n`;
+    md += `\n`;
+  });
+  md += `## Batch fix prompts\n\n`;
+  const byCat: Record<string, ResultRow[]> = {};
+  rows.filter(r => r.status !== "pass").forEach((r) => { (byCat[r.category] ||= []).push(r); });
+  for (const cat of Object.keys(byCat)) {
+    md += `### ${cat}\n\n\`\`\`\n${genBatchFixPrompt(cat, byCat[cat])}\n\`\`\`\n\n`;
+  }
+  return md;
+}
+
 function formatRunDate(s: string): string {
   const d = new Date(s);
   if (isNaN(d.getTime())) return s;
@@ -101,6 +175,7 @@ const AdminQA = () => {
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [iframeStatuses, setIframeStatuses] = useState<IframeStatus[]>([]);
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [batchModal, setBatchModal] = useState<{ title: string; text: string } | null>(null);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -229,7 +304,6 @@ const AdminQA = () => {
     const statuses: IframeStatus[] = DOM_ROUTES.map(r => ({ route: r, state: "pending" }));
     setIframeStatuses(statuses);
 
-    // Always include current page (admin/qa) results too — using local document
     let crossOriginBlocked = false;
 
     for (let idx = 0; idx < DOM_ROUTES.length; idx++) {
@@ -278,33 +352,20 @@ const AdminQA = () => {
       }
 
       let testCount = 0;
-      // Lightweight inline checks against iframe document (full audit util uses global `document`)
+      // Run the FULL DOM audit against the iframe's document
       try {
-        const buttons = doc.querySelectorAll("button, [role='button']");
-        const links = doc.querySelectorAll("a[href]");
-        const imgs = doc.querySelectorAll("img");
-        const brokenImgs = Array.from(imgs).filter((i) => {
-          const im = i as HTMLImageElement;
-          return im.complete && im.naturalWidth === 0;
-        });
-        allRows.push({
-          run_id, run_by: userId, layer: "dom", category: "iframe",
-          test_id: `${page}.iframe.rendered`,
-          test_name: `[${page}] page rendered in iframe`,
-          status: buttons.length + links.length > 0 ? "pass" : "warn",
-          details: { description: "Iframe DOM accessible", page, buttons: buttons.length, links: links.length, images: imgs.length },
-        });
-        testCount += 1;
-        if (brokenImgs.length > 0) {
+        const pageResults = await runDomAudit(doc);
+        pageResults.forEach((d) => {
           allRows.push({
-            run_id, run_by: userId, layer: "dom", category: "iframe",
-            test_id: `${page}.iframe.broken_images`,
-            test_name: `[${page}] broken images`,
-            status: "fail",
-            details: { description: `${brokenImgs.length} broken image(s)`, page, count: brokenImgs.length },
+            run_id, run_by: userId, layer: "dom",
+            category: d.category,
+            test_id: `${page}.${d.testId}`,
+            test_name: `[${page}] ${d.testName}`,
+            status: d.status,
+            details: { ...d.details, page },
           });
-          testCount += 1;
-        }
+        });
+        testCount = pageResults.length;
       } catch (e: any) {
         allRows.push({
           run_id, run_by: userId, layer: "dom", category: "iframe",
@@ -340,27 +401,10 @@ const AdminQA = () => {
     // Cleanup iframe
     if (iframeContainerRef.current) iframeContainerRef.current.innerHTML = "";
 
-    // Also run the full DOM audit util against the current /admin/qa page
-    try {
-      const localResults = await runDomAudit();
-      localResults.forEach((d) => {
-        allRows.push({
-          run_id, run_by: userId, layer: "dom",
-          category: d.category,
-          test_id: `admin-qa.${d.testId}`,
-          test_name: `[admin-qa] ${d.testName}`,
-          status: d.status,
-          details: { ...d.details, page: "admin-qa" },
-        });
-      });
-    } catch (e) {
-      console.warn("local DOM audit failed", e);
-    }
+    // NOTE: We intentionally do NOT audit /admin/qa itself — it's the testing tool, not the product.
 
     if (crossOriginBlocked) {
-      toast.message("DOM audit limited. For full DOM audit, visit each page and run 'DOM Only' from that page.");
-    } else {
-      toast.message("Iframe DOM audit uses lightweight checks. Visit each page directly for full audit.");
+      toast.message("DOM audit limited. iframe DOM access was blocked for some routes.");
     }
 
     if (allRows.length > 0) {
@@ -444,6 +488,29 @@ const AdminQA = () => {
 
   function copyText(s: string) {
     navigator.clipboard.writeText(s).then(() => toast.success("Copied"));
+  }
+
+  function openBatchFix(category: string, rows: ResultRow[]) {
+    const text = genBatchFixPrompt(category, rows);
+    if (!text) { toast.message("No failures in this category"); return; }
+    setBatchModal({ title: `Batch fix — ${category} (${rows.filter(r=>r.status!=="pass").length} issues)`, text });
+  }
+
+  function openFullBatchFix() {
+    const text = genFullBatchFixPrompt(visibleResults);
+    if (!text) { toast.message("No failures to fix"); return; }
+    setBatchModal({ title: `Full batch fix`, text });
+  }
+
+  function exportReport() {
+    const md = genMarkdownReport(visibleResults, summary, currentRunId);
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aura-qa-report-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.md`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   function markKnown(test_id: string) {
@@ -573,6 +640,14 @@ const AdminQA = () => {
               <Stat label="Warn" value={summary.warn} color={STATUS_COLORS.warn} />
               <Stat label="Fail" value={summary.fail} color={STATUS_COLORS.fail} />
             </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+              <SecondaryBtn onClick={openFullBatchFix} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Copy size={14} /> Generate FULL batch fix
+              </SecondaryBtn>
+              <SecondaryBtn onClick={exportReport} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Download size={14} /> Export report
+              </SecondaryBtn>
+            </div>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 15, color: "#F4EFE6", display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Overall pass rate</span>
@@ -601,7 +676,8 @@ const AdminQA = () => {
             <Section title="Backend audit">
               {Object.entries(groupBy(backendRows)).map(([cat, rows]) => (
                 <Group key={cat} cat={cat} rows={rows} open={openGroups[`be-${cat}`]} onToggle={() => toggleGroup(`be-${cat}`)}
-                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown} />
+                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                  onBatchFix={() => openBatchFix(cat, rows)} />
               ))}
             </Section>
           )}
@@ -611,7 +687,8 @@ const AdminQA = () => {
             <Section title="DOM interaction audit">
               {Object.entries(groupBy(domRows)).map(([cat, rows]) => (
                 <Group key={cat} cat={cat} rows={rows} open={openGroups[`dom-${cat}`]} onToggle={() => toggleGroup(`dom-${cat}`)}
-                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown} />
+                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                  onBatchFix={() => openBatchFix(cat, rows)} />
               ))}
             </Section>
           )}
@@ -747,6 +824,22 @@ const AdminQA = () => {
           </div>
         </Section>
       )}
+
+      {batchModal && (
+        <div onClick={() => setBatchModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#15140f", border: "1px solid rgba(197,165,90,0.4)", borderRadius: 10, padding: 20, width: "min(900px, 100%)", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
+              <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#F4EFE6", cursor: "pointer" }}><X size={18} /></button>
+            </div>
+            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "#0a0a0a", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 13, lineHeight: 1.5 }} />
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <SecondaryBtn onClick={() => setBatchModal(null)}>Close</SecondaryBtn>
+              <PrimaryBtn onClick={() => copyText(batchModal.text)}><Copy size={14} /> Copy to clipboard</PrimaryBtn>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -800,29 +893,37 @@ function Stat({ label, value, color, emphasis }: { label: string; value: number;
   );
 }
 
-function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown }: {
+function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown, onBatchFix }: {
   cat: string;
   rows: ResultRow[];
   open: boolean;
   onToggle: () => void;
   onCopyFix: (r: ResultRow) => void;
   onMarkKnown: (test_id: string) => void;
+  onBatchFix?: () => void;
 }) {
   const fail = rows.filter((r) => r.status === "fail").length;
   const warn = rows.filter((r) => r.status === "warn").length;
   const pass = rows.filter((r) => r.status === "pass").length;
   return (
     <div style={{ ...cardStyle, marginBottom: 10 }}>
-      <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
-        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
-        <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
-          <span>{rows.length} total</span>
-          <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
-          <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
-          <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span>
-        </span>
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
+          {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
+          <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+            <span>{rows.length} total</span>
+            <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
+            <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
+            <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span>
+          </span>
+        </button>
+        {onBatchFix && (fail + warn) > 0 && (
+          <button onClick={onBatchFix} style={{ ...secondaryBtnStyle, padding: "6px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Copy size={12} /> Batch fix
+          </button>
+        )}
+      </div>
       {open && (
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {rows.map((r) => <ResultRowView key={r.id} r={r} onCopyFix={onCopyFix} onMarkKnown={onMarkKnown} />)}
