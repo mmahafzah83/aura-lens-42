@@ -2018,7 +2018,7 @@ interface SavedPost {
 
 const FORMAT_BADGE: Record<string, { label: string; cls: string }> = {
   post: { label: "Post", cls: "bg-amber-500/15 text-amber-400 border-amber-500/20" },
-  post_short: { label: "Short", cls: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
+  post_short: { label: "Short", cls: "bg-[#B08D3A]/15 text-[#B08D3A] border-[#B08D3A]/20" },
   carousel: { label: "Carousel", cls: "bg-blue-500/15 text-blue-400 border-blue-500/20" },
   framework: { label: "Framework", cls: "bg-purple-500/15 text-purple-400 border-purple-500/20" },
   essay: { label: "Essay", cls: "bg-muted/30 text-muted-foreground border-border/20" },
