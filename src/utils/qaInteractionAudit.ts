@@ -523,6 +523,15 @@ export async function runDomAudit(targetDoc?: Document): Promise<QaResult[]> {
   await safeRun(results, () => auditEmptyStates(results, doc), { testId: "empty.error", testName: "Empty states group", category: "empty" });
   await safeRun(results, () => auditAccessibility(results, doc), { testId: "a11y.error", testName: "Accessibility group", category: "accessibility" });
 
+  // ── Functional UX groups (additive) ──
+  await safeRun(results, () => auditTooltipsConsistency(results, doc), { testId: "tooltip.error", testName: "Tooltip consistency group", category: "tooltip" });
+  await safeRun(results, () => auditModalsBehavior(results, doc), { testId: "modal.error", testName: "Modal behavior group", category: "modal" });
+  await safeRun(results, () => auditFormValidation(results, doc), { testId: "formval.error", testName: "Form validation group", category: "formval" });
+  await safeRun(results, () => auditContentGeneration(results, doc), { testId: "content.error", testName: "Content generation group", category: "content" });
+  await safeRun(results, () => auditDataIntegrity(results, doc), { testId: "dataint.error", testName: "Data integrity group", category: "dataint" });
+  // Navigation flow runs LAST because it may navigate the iframe away.
+  await safeRun(results, () => auditNavFlow(results, doc), { testId: "navflow.error", testName: "Navigation flow group", category: "navflow" });
+
   return results;
 }
 
