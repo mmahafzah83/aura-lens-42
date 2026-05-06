@@ -523,6 +523,15 @@ export async function runDomAudit(targetDoc?: Document): Promise<QaResult[]> {
   await safeRun(results, () => auditEmptyStates(results, doc), { testId: "empty.error", testName: "Empty states group", category: "empty" });
   await safeRun(results, () => auditAccessibility(results, doc), { testId: "a11y.error", testName: "Accessibility group", category: "accessibility" });
 
+  // ── Functional UX groups (additive) ──
+  await safeRun(results, () => auditTooltipsConsistency(results, doc), { testId: "tooltip.error", testName: "Tooltip consistency group", category: "tooltip" });
+  await safeRun(results, () => auditModalsBehavior(results, doc), { testId: "modal.error", testName: "Modal behavior group", category: "modal" });
+  await safeRun(results, () => auditFormValidation(results, doc), { testId: "formval.error", testName: "Form validation group", category: "formval" });
+  await safeRun(results, () => auditContentGeneration(results, doc), { testId: "content.error", testName: "Content generation group", category: "content" });
+  await safeRun(results, () => auditDataIntegrity(results, doc), { testId: "dataint.error", testName: "Data integrity group", category: "dataint" });
+  // Navigation flow runs LAST because it may navigate the iframe away.
+  await safeRun(results, () => auditNavFlow(results, doc), { testId: "navflow.error", testName: "Navigation flow group", category: "navflow" });
+
   return results;
 }
 
@@ -795,4 +804,577 @@ function auditAccessibility(results: QaResult[], doc: Document) {
     }
     he.blur();
   });
+}
+
+/* ============================================================
+ * Functional UX audit groups (additive — do not modify above).
+ * All event dispatches use the passed-in `doc` so they work
+ * inside an iframe.contentDocument context.
+ * ============================================================ */
+
+function locationOf(el: Element): string {
+  let p: Element | null = el;
+  while (p) {
+    if ((p as HTMLElement).id) return `#${(p as HTMLElement).id}`;
+    const tag = p.tagName.toLowerCase();
+    if (tag === "section" || tag === "main" || tag === "header" || tag === "nav") {
+      const heading = p.querySelector("h1, h2, h3");
+      if (heading) return `${tag} › "${(heading as HTMLElement).innerText?.trim().slice(0, 40)}"`;
+      return tag;
+    }
+    p = p.parentElement;
+  }
+  return "(unknown)";
+}
+
+function rectsNear(a: DOMRect, b: DOMRect, px = 200): boolean {
+  const dx = Math.max(0, Math.max(a.left - b.right, b.left - a.right));
+  const dy = Math.max(0, Math.max(a.top - b.bottom, b.top - a.bottom));
+  return Math.hypot(dx, dy) <= px;
+}
+
+function findTooltipNear(doc: Document, trigger: Element, before: Set<Element>): HTMLElement | null {
+  const win = getWin(doc);
+  const triggerRect = (trigger as HTMLElement).getBoundingClientRect();
+  const candidates = Array.from(
+    doc.querySelectorAll(
+      "[role='tooltip'], [data-radix-popper-content-wrapper], [class*='tooltip' i], [class*='popover' i], [class*='tip' i]"
+    )
+  );
+  for (const c of candidates) {
+    if (before.has(c)) continue;
+    if (!isVisible(c, doc)) continue;
+    const cs = win.getComputedStyle(c as HTMLElement);
+    if (cs.position !== "fixed" && cs.position !== "absolute") {
+      // also accept role='tooltip' regardless of position
+      if (c.getAttribute("role") !== "tooltip") continue;
+    }
+    const r = (c as HTMLElement).getBoundingClientRect();
+    if (rectsNear(triggerRect, r, 220)) return c as HTMLElement;
+  }
+  return null;
+}
+
+/* ---------------- Tooltip Consistency ---------------- */
+async function auditTooltipsConsistency(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const triggers = new Set<Element>();
+  doc.querySelectorAll("[data-tooltip], [data-tip], [aria-describedby]").forEach((el) => triggers.add(el));
+  doc.querySelectorAll("svg[class*='help' i], svg[class*='info' i], svg[class*='question' i]").forEach((s) => {
+    const t = s.closest("button, [role='button'], span, div");
+    if (t) triggers.add(t);
+  });
+  doc.querySelectorAll("button, span, [role='button']").forEach((el) => {
+    const t = (el as HTMLElement).innerText?.trim();
+    if (t === "?" || t === "ⓘ") triggers.add(el);
+  });
+
+  const visible = Array.from(triggers).filter((e) => isVisible(e, doc)).slice(0, 30);
+  const counts = { "hover-dismiss": 0, "click-dismiss": 0, "click-manual": 0, "hover-sticky": 0, "no-tooltip": 0 } as Record<string, number>;
+
+  for (let i = 0; i < visible.length; i++) {
+    const el = visible[i];
+    const before = new Set(
+      doc.querySelectorAll("[role='tooltip'], [data-radix-popper-content-wrapper], [class*='tooltip' i], [class*='popover' i], [class*='tip' i]")
+    );
+
+    let category: keyof typeof counts = "no-tooltip";
+
+    try {
+      el.dispatchEvent(new (win as any).MouseEvent("mouseenter", { bubbles: true }));
+      el.dispatchEvent(new (win as any).MouseEvent("mouseover", { bubbles: true }));
+      await sleep(400);
+      let tip = findTooltipNear(doc, el, before);
+
+      if (tip) {
+        el.dispatchEvent(new (win as any).MouseEvent("mouseleave", { bubbles: true }));
+        el.dispatchEvent(new (win as any).MouseEvent("mouseout", { bubbles: true }));
+        await sleep(600);
+        const stillThere = doc.contains(tip) && isVisible(tip, doc);
+        category = stillThere ? "hover-sticky" : "hover-dismiss";
+      } else {
+        try { (el as HTMLElement).click(); } catch { /* noop */ }
+        await sleep(400);
+        tip = findTooltipNear(doc, el, before);
+        if (tip) {
+          (doc.body || doc.documentElement).dispatchEvent(new (win as any).MouseEvent("mousedown", { bubbles: true }));
+          (doc.body || doc.documentElement).dispatchEvent(new (win as any).MouseEvent("click", { bubbles: true }));
+          await sleep(400);
+          const stillThere = doc.contains(tip) && isVisible(tip, doc);
+          category = stillThere ? "click-manual" : "click-dismiss";
+        } else {
+          category = "no-tooltip";
+        }
+      }
+    } catch {
+      category = "no-tooltip";
+    }
+
+    counts[category]++;
+
+    const status: QaStatus =
+      category === "hover-dismiss" || category === "click-dismiss"
+        ? "pass"
+        : category === "no-tooltip"
+          ? "warn"
+          : "fail";
+
+    results.push({
+      testId: `tooltip.${i}`,
+      testName: "Tooltip behavior",
+      category: "tooltip",
+      status,
+      details: {
+        description: `Trigger categorized as "${category}"`,
+        element: describe(el),
+        location: locationOf(el),
+        expected: "hover-dismiss or click-dismiss",
+        actual: category,
+        severity: status === "fail" ? "high" : "low",
+      } as any,
+    });
+
+    await sleep(150);
+  }
+
+  const goodTypes = ["hover-dismiss", "click-dismiss"].filter((k) => counts[k] > 0);
+  const badTypes = ["click-manual", "hover-sticky"].filter((k) => counts[k] > 0);
+  const mixed = goodTypes.length + badTypes.length > 1;
+
+  results.push({
+    testId: "tooltip.summary",
+    testName: "Tooltip consistency summary",
+    category: "tooltip",
+    status: badTypes.length > 0 ? "fail" : mixed ? "warn" : "pass",
+    details: {
+      description: `Tested ${visible.length} triggers — ${Object.entries(counts).map(([k, v]) => `${k}=${v}`).join(", ")}`,
+      expected: "Single consistent tooltip pattern",
+      actual: mixed ? "mixed patterns on this page" : "consistent",
+      severity: badTypes.length > 0 ? "high" : "medium",
+    } as any,
+  });
+}
+
+/* ---------------- Modal Behavior ---------------- */
+async function auditModalsBehavior(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const keywords = ["start", "generate", "share", "view", "edit", "regenerate", "refresh"];
+  const candidates: HTMLElement[] = [];
+
+  doc.querySelectorAll("button, [role='button'], a").forEach((el) => {
+    const he = el as HTMLElement;
+    if (!isVisible(he, doc)) return;
+    const t = (he.innerText || "").trim().toLowerCase();
+    const cls = typeof he.className === "string" ? he.className.toLowerCase() : "";
+    if (
+      keywords.some((k) => t.includes(k)) ||
+      /modal|dialog/.test(cls) ||
+      /start assessment|start audit/.test(t)
+    ) {
+      candidates.push(he);
+    }
+  });
+
+  const sample = candidates.slice(0, 8);
+  let modalsFound = 0;
+
+  for (let i = 0; i < sample.length; i++) {
+    const trigger = sample[i];
+    const before = new Set(doc.querySelectorAll("[role='dialog'], [data-state='open']"));
+    let dialog: HTMLElement | null = null;
+
+    try {
+      trigger.click();
+      await sleep(800);
+
+      const dialogs = Array.from(
+        doc.querySelectorAll("[role='dialog'], [class*='modal' i], [class*='dialog' i], [class*='overlay' i]")
+      ).filter((n) => !before.has(n) && isVisible(n, doc));
+
+      // also accept any new fixed-position element covering most of viewport
+      if (dialogs.length === 0) {
+        const all = Array.from(doc.querySelectorAll("body *")).filter((n) => !before.has(n) && isVisible(n, doc));
+        for (const n of all) {
+          const cs = win.getComputedStyle(n as HTMLElement);
+          if (cs.position === "fixed") {
+            const r = (n as HTMLElement).getBoundingClientRect();
+            if (r.width > win.innerWidth * 0.5 && r.height > win.innerHeight * 0.4) {
+              dialog = n as HTMLElement;
+              break;
+            }
+          }
+        }
+      } else {
+        dialog = dialogs[0] as HTMLElement;
+      }
+    } catch {
+      // navigation or other — skip
+      continue;
+    }
+
+    if (!dialog) {
+      results.push({
+        testId: `modal.${i}`,
+        testName: "Modal trigger",
+        category: "modal",
+        status: "pass",
+        details: {
+          description: "Trigger did not open a modal (likely navigation or inline action)",
+          element: describe(trigger),
+          actual: "no-modal",
+          severity: "low",
+        } as any,
+      });
+      continue;
+    }
+
+    modalsFound++;
+
+    const hasCloseBtn =
+      !!dialog.querySelector(
+        "button[aria-label*='close' i], button[aria-label*='dismiss' i], [data-dismiss], button.close"
+      ) ||
+      Array.from(dialog.querySelectorAll("button")).some((b) => /close|cancel|×/i.test(b.innerText || ""));
+
+    // Escape
+    doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+    await sleep(400);
+    let closesOnEscape = !doc.contains(dialog) || !isVisible(dialog, doc);
+
+    // Backdrop click
+    let closesOnBackdrop = closesOnEscape;
+    if (!closesOnEscape) {
+      const backdrop =
+        doc.querySelector("[data-radix-dialog-overlay], [class*='overlay' i], [class*='backdrop' i]") as HTMLElement | null;
+      if (backdrop && isVisible(backdrop, doc)) {
+        try {
+          backdrop.dispatchEvent(new (win as any).MouseEvent("mousedown", { bubbles: true }));
+          backdrop.dispatchEvent(new (win as any).MouseEvent("click", { bubbles: true }));
+        } catch { /* noop */ }
+        await sleep(400);
+        closesOnBackdrop = !doc.contains(dialog) || !isVisible(dialog, doc);
+      }
+    }
+
+    // Best-effort: ensure closed before next test
+    if (doc.contains(dialog) && isVisible(dialog, doc)) {
+      doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+      await sleep(200);
+      const closeBtn = dialog.querySelector(
+        "button[aria-label*='close' i], button[aria-label*='dismiss' i]"
+      ) as HTMLElement | null;
+      if (closeBtn) try { closeBtn.click(); } catch { /* noop */ }
+      await sleep(200);
+    }
+
+    const issues: string[] = [];
+    if (!hasCloseBtn) issues.push("no close button");
+    if (!closesOnEscape) issues.push("does not close on Escape");
+    if (!closesOnBackdrop) issues.push("does not close on backdrop click");
+
+    results.push({
+      testId: `modal.${i}`,
+      testName: "Modal behavior",
+      category: "modal",
+      status: issues.length === 0 ? "pass" : "fail",
+      details: {
+        description: issues.length === 0 ? "Modal opens and closes cleanly" : issues.join("; "),
+        element: describe(trigger),
+        location: locationOf(trigger),
+        expected: "Has close button, closes on Escape, closes on backdrop",
+        actual: `has_close_button=${hasCloseBtn}, closes_on_escape=${closesOnEscape}, closes_on_backdrop=${closesOnBackdrop}`,
+        severity: issues.length > 0 ? "high" : "low",
+      } as any,
+    });
+
+    await sleep(200);
+  }
+
+  results.push({
+    testId: "modal.summary",
+    testName: "Modal behavior summary",
+    category: "modal",
+    status: "pass",
+    details: {
+      description: `${sample.length} triggers tested, ${modalsFound} modals opened`,
+    },
+  });
+}
+
+/* ---------------- Form Validation ---------------- */
+async function auditFormValidation(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const inputs = (Array.from(doc.querySelectorAll("input, textarea")) as HTMLElement[])
+    .filter((e) => isVisible(e, doc))
+    .filter((e) => {
+      const type = (e.getAttribute("type") || "").toLowerCase();
+      return !["hidden", "checkbox", "radio", "file", "submit", "button"].includes(type);
+    })
+    .slice(0, 6);
+
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i] as HTMLInputElement | HTMLTextAreaElement;
+    const form = input.closest("form");
+    const submit =
+      (form?.querySelector("button[type='submit'], input[type='submit']") as HTMLElement | null) ||
+      (input.parentElement?.querySelector("button") as HTMLElement | null) ||
+      (input.closest("div")?.querySelector("button") as HTMLElement | null);
+
+    if (!submit) continue;
+
+    try {
+      input.value = "";
+      input.dispatchEvent(new (win as any).Event("input", { bubbles: true }));
+      input.dispatchEvent(new (win as any).Event("change", { bubbles: true }));
+      const beforeText = (doc.body.innerText || "").length;
+      submit.click();
+      await sleep(500);
+      const afterText = (doc.body.innerText || "").length;
+
+      const errorEl = doc.querySelector(
+        "[role='alert'], [class*='error' i]:not([class*='boundary' i]), [aria-invalid='true'], [data-sonner-toast]"
+      );
+      const hasValidation = !!errorEl || afterText > beforeText + 5;
+
+      results.push({
+        testId: `formval.${i}`,
+        testName: "Empty submission validation",
+        category: "formval",
+        status: hasValidation ? "pass" : "warn",
+        details: {
+          description: hasValidation
+            ? "Empty submission produced validation feedback"
+            : "Empty submission produced no warning",
+          element: describe(input),
+          location: locationOf(input),
+          expected: "Visible error/toast on empty submit",
+          actual: hasValidation ? "validation shown" : "silent submission",
+          severity: hasValidation ? "low" : "medium",
+        } as any,
+      });
+    } catch (e: any) {
+      results.push({
+        testId: `formval.${i}`,
+        testName: "Empty submission validation",
+        category: "formval",
+        status: "warn",
+        details: { description: `Could not test: ${e?.message ?? String(e)}`, element: describe(input) },
+      });
+    }
+
+    await sleep(150);
+  }
+}
+
+/* ---------------- Content Generation Smoke ---------------- */
+async function auditContentGeneration(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const path = win.location?.pathname || "";
+  if (!/\/publish/.test(path)) {
+    results.push({
+      testId: "content.skip",
+      testName: "Content generation smoke",
+      category: "content",
+      status: "pass",
+      details: { description: "not_applicable: only runs on /publish" },
+    });
+    return;
+  }
+
+  const buttons = Array.from(doc.querySelectorAll("button, [role='button']")) as HTMLElement[];
+  const trigger = buttons.find((b) => {
+    const t = (b.innerText || "").toLowerCase();
+    return /generate/.test(t) && isVisible(b, doc);
+  });
+
+  if (!trigger) {
+    results.push({
+      testId: "content.skip",
+      testName: "Content generation smoke",
+      category: "content",
+      status: "pass",
+      details: { description: "not_applicable: no generate button found" },
+    });
+    return;
+  }
+
+  const input = (Array.from(doc.querySelectorAll("input, textarea")) as HTMLElement[]).find((e) => isVisible(e, doc)) as
+    | HTMLInputElement
+    | HTMLTextAreaElement
+    | undefined;
+
+  try {
+    if (input) {
+      input.focus();
+      input.value = "Digital transformation in water utilities";
+      input.dispatchEvent(new (win as any).Event("input", { bubbles: true }));
+      input.dispatchEvent(new (win as any).Event("change", { bubbles: true }));
+    }
+    const beforeText = (doc.body.innerText || "").length;
+    trigger.click();
+    await sleep(10000);
+    const afterText = (doc.body.innerText || "").length;
+    const delta = afterText - beforeText;
+
+    results.push({
+      testId: "content.generate",
+      testName: "Generate post smoke",
+      category: "content",
+      status: delta > 100 ? "pass" : "warn",
+      details: {
+        description: delta > 100 ? `New content rendered (+${delta} chars)` : `Insufficient new content (+${delta} chars)`,
+        element: describe(trigger),
+        expected: "> 100 chars of new content",
+        actual: `+${delta} chars`,
+        severity: delta > 100 ? "low" : "medium",
+      } as any,
+    });
+  } catch (e: any) {
+    results.push({
+      testId: "content.generate",
+      testName: "Generate post smoke",
+      category: "content",
+      status: "warn",
+      details: { description: `Generation test errored: ${e?.message ?? String(e)}` },
+    });
+  }
+}
+
+/* ---------------- Data Display Integrity ---------------- */
+function auditDataIntegrity(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const path = win.location?.pathname || "";
+
+  const checks: { id: string; name: string; pass: boolean; detail: string }[] = [];
+
+  if (/\/home/.test(path) || path === "/") {
+    const scoreEl = Array.from(doc.querySelectorAll("[class*='score' i], [class*='metric' i]")).find((el) => {
+      const t = (el as HTMLElement).innerText?.trim() || "";
+      const n = parseFloat(t);
+      return !Number.isNaN(n) && n > 0;
+    });
+    checks.push({ id: "dataint.home_score", name: "Home score visible", pass: !!scoreEl, detail: scoreEl ? "score present" : "no positive score found" });
+  }
+
+  if (/\/intelligence/.test(path)) {
+    const signalCard = doc.querySelector("[class*='signal' i], [data-signal], [class*='card']");
+    checks.push({ id: "dataint.intel_signal", name: "Intelligence signal card", pass: !!signalCard, detail: signalCard ? "card present" : "no signal card" });
+  }
+
+  if (/\/impact/.test(path)) {
+    const text = (doc.body.innerText || "").toLowerCase();
+    const hasBreakdown = /capture/.test(text) && /content/.test(text) && /signal/.test(text);
+    checks.push({ id: "dataint.impact_breakdown", name: "Impact score breakdown", pass: hasBreakdown, detail: hasBreakdown ? "breakdown present" : "missing capture/content/signal labels" });
+  }
+
+  if (/\/my-story/.test(path)) {
+    const text = (doc.body.innerText || "").toLowerCase();
+    const hasFields = /firm|sector|company|role/.test(text);
+    checks.push({ id: "dataint.story_fields", name: "My Story profile fields", pass: hasFields, detail: hasFields ? "fields present" : "no profile field labels" });
+  }
+
+  if (/\/publish/.test(path)) {
+    const text = (doc.body.innerText || "");
+    const hasTabs = /Plan/.test(text) && /Create/.test(text) && /Library/.test(text);
+    checks.push({ id: "dataint.publish_tabs", name: "Publish tab navigation", pass: hasTabs, detail: hasTabs ? "tabs present" : "missing Plan/Create/Library" });
+  }
+
+  if (checks.length === 0) {
+    results.push({
+      testId: "dataint.skip",
+      testName: "Data integrity",
+      category: "dataint",
+      status: "pass",
+      details: { description: `not_applicable for path ${path}` },
+    });
+    return;
+  }
+
+  checks.forEach((c) =>
+    results.push({
+      testId: c.id,
+      testName: c.name,
+      category: "dataint",
+      status: c.pass ? "pass" : "fail",
+      details: {
+        description: c.detail,
+        expected: "Real data rendered",
+        actual: c.pass ? "ok" : "empty/missing",
+        severity: c.pass ? "low" : "high",
+      } as any,
+    })
+  );
+}
+
+/* ---------------- Navigation Flow (LAST) ---------------- */
+async function auditNavFlow(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const sidebar =
+    doc.querySelector("[data-aura-sidebar], aside, nav") ||
+    doc.querySelector("[class*='sidebar' i]");
+  if (!sidebar) {
+    results.push({
+      testId: "navflow.skip",
+      testName: "Navigation flow",
+      category: "navflow",
+      status: "pass",
+      details: { description: "no sidebar found" },
+    });
+    return;
+  }
+
+  const items = Array.from(sidebar.querySelectorAll("a, button, [role='button']"))
+    .filter((e) => isVisible(e, doc))
+    .filter((e) => {
+      const t = (e as HTMLElement).innerText?.trim() || "";
+      return t.length > 0 && t.length < 30;
+    })
+    .slice(0, 6);
+
+  for (let i = 0; i < items.length; i++) {
+    const el = items[i] as HTMLElement;
+    const text = el.innerText?.trim() || "";
+    const beforePath = win.location?.pathname || "";
+    const beforeBodyLen = (doc.body.innerText || "").length;
+    let afterPath = beforePath;
+    let renderedOk = false;
+    let errored = false;
+
+    try {
+      el.click();
+      await sleep(1500);
+      afterPath = win.location?.pathname || "";
+      const afterBodyLen = (doc.body.innerText || "").length;
+      renderedOk = afterPath !== beforePath || Math.abs(afterBodyLen - beforeBodyLen) > 50;
+    } catch (e: any) {
+      errored = true;
+    }
+
+    const changed = afterPath !== beforePath;
+    const blank = (doc.body.innerText || "").trim().length < 100;
+
+    results.push({
+      testId: `navflow.${i}`,
+      testName: "Sidebar nav button",
+      category: "navflow",
+      status: errored || blank ? "fail" : changed || renderedOk ? "pass" : "warn",
+      details: {
+        description: errored
+          ? "Click threw an error"
+          : blank
+            ? "Navigated to blank/404 page"
+            : changed
+              ? `Navigated ${beforePath} → ${afterPath}`
+              : "URL did not change",
+        element: describe(el),
+        expected: "URL change and content render",
+        actual: `from=${beforePath} to=${afterPath} rendered=${renderedOk}`,
+        button_text: text,
+        severity: errored || blank ? "high" : "low",
+      } as any,
+    });
+
+    // After first navigation the page is gone — stop iterating.
+    if (changed) break;
+  }
 }
