@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -618,6 +618,7 @@ export default function CarouselStudio() {
   const [exporting, setExporting] = useState(false);
   const [contextText, setContextText] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(undefined);
+  const [showSignals, setShowSignals] = useState(true);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
 
@@ -665,6 +666,8 @@ export default function CarouselStudio() {
       }
       const numbered = data.slides.map((s: Slide, i: number) => ({ ...s, slide_number: i + 1 }));
       setCarousel({ ...data, slides: numbered, total_slides: numbered.length });
+      // Auto-collapse signals once a real carousel is loaded
+      setShowSignals(false);
       setActiveIdx(0);
       toast.success(`${numbered.length} slides generated`);
     } catch (e: any) {
@@ -831,9 +834,9 @@ export default function CarouselStudio() {
       </div>
 
       {/* Main */}
-      <div className="px-4 md:px-8 py-6 grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="px-4 md:px-8 py-6 grid gap-6 lg:grid-cols-[1fr_360px]">
         <div className="grid gap-6" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
-          <div className="grid gap-6 md:grid-cols-[3fr_2fr]">
+          <div className="grid gap-6">
             {/* Preview */}
             <div className="space-y-4">
               <div className="mx-auto" style={{ maxWidth: dim === "1200x628" ? 900 : 640, width: "100%" }}>
@@ -893,37 +896,50 @@ export default function CarouselStudio() {
                 <button onClick={deleteSlide} className="p-1.5 rounded bg-white/5 text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
-
-            {/* Edit panel */}
-            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-              <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-wider opacity-60">Edit · {slide?.slide_type}</div>
-                <div className="text-xs opacity-50">Slide {activeIdx + 1} of {slides.length}</div>
-              </div>
-              {slide && <EditPanel slide={slide} onChange={updateSlide} />}
-
-              <div className="pt-3 mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-                <div className="text-xs uppercase tracking-wider opacity-60 mb-2">Author & attribution</div>
-                <Field label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
-                <Field label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
-                <Field label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
-                <Field label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
-              </div>
-            </div>
           </div>
         </div>
-        {/* Signal sidebar */}
-        <aside className="lg:sticky lg:top-4 self-start">
-          <StartFromPanel
-            currentFormat="carousel"
-            hasDraft={false}
-            onSelect={(t, ctx, _format, _signalTitle, _insight, signalId) => {
-              setTopic(t);
-              if (ctx) setContextText(ctx);
-              setSelectedSignalId(signalId);
-              toast.success("Signal loaded — click Generate Carousel");
-            }}
-          />
+        {/* Right column: signals (collapsible) + edit panel */}
+        <aside className="space-y-4 lg:sticky lg:top-4 self-start" style={{ maxHeight: "calc(100vh - 32px)", overflowY: "auto" }}>
+          <div className="rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <button
+              onClick={() => setShowSignals(s => !s)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="text-xs uppercase tracking-wider opacity-70 font-semibold">Your publishing window</span>
+              {showSignals ? <ChevronUp className="w-4 h-4 opacity-60" /> : <ChevronDown className="w-4 h-4 opacity-60" />}
+            </button>
+            {showSignals && (
+              <div style={{ maxHeight: 320, overflowY: "auto" }} className="px-1 pb-2">
+                <StartFromPanel
+                  currentFormat="carousel"
+                  hasDraft={false}
+                  onSelect={(t, ctx, _format, _signalTitle, _insight, signalId) => {
+                    setTopic(t);
+                    if (ctx) setContextText(ctx);
+                    setSelectedSignalId(signalId);
+                    toast.success("Signal loaded — click Generate Carousel");
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Edit panel */}
+          <div className="space-y-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="flex items-center justify-between">
+              <div className="text-xs uppercase tracking-wider opacity-60">Edit · {slide?.slide_type}</div>
+              <div className="text-xs opacity-50">Slide {activeIdx + 1} of {slides.length}</div>
+            </div>
+            {slide && <EditPanel slide={slide} onChange={updateSlide} />}
+
+            <div className="pt-3 mt-3 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+              <div className="text-xs uppercase tracking-wider opacity-60 mb-2">Author & attribution</div>
+              <Field label="Name" value={carousel.author_name || ""} onChange={v => setCarousel({ ...carousel, author_name: v })} />
+              <Field label="Title" value={carousel.author_title || ""} onChange={v => setCarousel({ ...carousel, author_title: v })} />
+              <Field label="Handle" value={carousel.author_handle || ""} onChange={v => setCarousel({ ...carousel, author_handle: v })} />
+              <Field label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
+            </div>
+          </div>
         </aside>
       </div>
 
