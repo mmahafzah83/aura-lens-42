@@ -999,7 +999,9 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {/* My writing voice — moved out of the modal so users land directly on it */}
       <VoiceEngineSection />
 
-      <MilestonesSection userId={authUser?.id ?? null} />
+      <div data-testid="story-milestones">
+        <MilestonesSection userId={authUser?.id ?? null} />
+      </div>
 
       {/* Full Profile Modal */}
       {fullProfileOpen && createPortal(
