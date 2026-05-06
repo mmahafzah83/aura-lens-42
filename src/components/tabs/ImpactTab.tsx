@@ -867,7 +867,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
         {/* Authority Journey (Observer → Strategist → Authority) */}
         {auraData && (
-          <div className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
+          <div data-testid="impact-tier" className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
             <AuthorityJourney userId={userId} data={auraData} />
           </div>
         )}
