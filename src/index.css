@@ -90,11 +90,11 @@ html.dark  { background-color: var(--paper, #14110C); }
   --signal-line: rgba(255,138,61,0.30);
 
   /* Functional semantics */
-  --success: #7AB648;
+  --success: #9BD66A;
   --success-pale: rgba(122,182,72,0.12);
-  --danger: #C45050;
+  --danger: #E47878;
   --danger-pale: rgba(196,80,80,0.12);
-  --info: #6B9DC4;
+  --info: #8FBCE0;
   --info-pale: rgba(107,157,196,0.12);
 
   /* Structure */
