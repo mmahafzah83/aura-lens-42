@@ -21,7 +21,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "curator", label: "Conference curator" },
 ];
 
-const ORANGE = "#F97316";
+const ORANGE = "#B08D3A"; // bronze — was orange; restricted to signal/status only
 
 function relTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

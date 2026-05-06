@@ -322,8 +322,8 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     <div id="beta-admin-section" className="mt-8 pt-8 border-t border-border/40 scroll-mt-24">
       <div className="glass-card rounded-2xl p-6 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
-            <Shield className="w-4 h-4 text-orange-400" />
+          <div className="w-8 h-8 rounded-xl bg-[#B08D3A]/10 flex items-center justify-center border border-[#B08D3A]/30">
+            <Shield className="w-4 h-4 text-[#B08D3A]" />
           </div>
           <h3
             className="text-xs font-semibold uppercase tracking-[0.15em]"
@@ -420,10 +420,10 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           <>
             {/* Bulk action bar */}
             {selectedIds.size > 0 && (
-              <div className="mb-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-3 sm:p-4 space-y-3">
+              <div className="mb-3 rounded-xl border border-[#B08D3A]/30 bg-[#B08D3A]/5 p-3 sm:p-4 space-y-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2 text-sm">
-                    <CheckSquare className="w-4 h-4 text-orange-400" />
+                    <CheckSquare className="w-4 h-4 text-[#B08D3A]" />
                     <span className="text-foreground font-medium">
                       {selectedIds.size} selected
                     </span>
@@ -527,7 +527,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                   <Fragment key={r.id}>
                     <tr
                       className={`border-t border-border/30 hover:bg-secondary/20 ${
-                        selectedIds.has(r.id) ? "bg-orange-500/5" : ""
+                        selectedIds.has(r.id) ? "bg-[#B08D3A]/5" : ""
                       }`}
                     >
                       <td className="px-3 py-3 align-middle">
@@ -666,8 +666,8 @@ const BetaAccessAdmin = ({ userId }: Props) => {
       {/* Audit Log */}
       <div className="glass-card rounded-2xl p-6 sm:p-8 mt-6">
         <div className="flex items-center gap-3 mb-5">
-          <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
-            <History className="w-4 h-4 text-orange-400" />
+          <div className="w-8 h-8 rounded-xl bg-[#B08D3A]/10 flex items-center justify-center border border-[#B08D3A]/30">
+            <History className="w-4 h-4 text-[#B08D3A]" />
           </div>
           <div>
             <h3
@@ -728,7 +728,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       <td className="px-3 py-3">
                         {hasNote ? (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border bg-orange-500/10 text-orange-300 border-orange-500/30"
+                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border bg-[#B08D3A]/10 text-[#D4B056] border-[#B08D3A]/30"
                             title={r.personal_note || ""}
                           >
                             <StickyNote className="w-3 h-3" />
