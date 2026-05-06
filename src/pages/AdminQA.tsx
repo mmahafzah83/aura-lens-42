@@ -893,29 +893,37 @@ function Stat({ label, value, color, emphasis }: { label: string; value: number;
   );
 }
 
-function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown }: {
+function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown, onBatchFix }: {
   cat: string;
   rows: ResultRow[];
   open: boolean;
   onToggle: () => void;
   onCopyFix: (r: ResultRow) => void;
   onMarkKnown: (test_id: string) => void;
+  onBatchFix?: () => void;
 }) {
   const fail = rows.filter((r) => r.status === "fail").length;
   const warn = rows.filter((r) => r.status === "warn").length;
   const pass = rows.filter((r) => r.status === "pass").length;
   return (
     <div style={{ ...cardStyle, marginBottom: 10 }}>
-      <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
-        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
-        <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
-          <span>{rows.length} total</span>
-          <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
-          <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
-          <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span>
-        </span>
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
+          {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
+          <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+            <span>{rows.length} total</span>
+            <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
+            <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
+            <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span>
+          </span>
+        </button>
+        {onBatchFix && (fail + warn) > 0 && (
+          <button onClick={onBatchFix} style={{ ...secondaryBtnStyle, padding: "6px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Copy size={12} /> Batch fix
+          </button>
+        )}
+      </div>
       {open && (
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
           {rows.map((r) => <ResultRowView key={r.id} r={r} onCopyFix={onCopyFix} onMarkKnown={onMarkKnown} />)}
