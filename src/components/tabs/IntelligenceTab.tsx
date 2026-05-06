@@ -819,7 +819,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               data-aura-tab-active={activeSubTab === tab.value ? "true" : undefined}
               style={{
               padding: "10px 20px", fontSize: 14, fontWeight: 500,
-              color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-5)",
+              color: activeSubTab === tab.value ? "var(--brand)" : "var(--ink-2)",
               background: "transparent", border: "none",
               borderBottom: activeSubTab === tab.value ? "2px solid var(--brand)" : "2px solid transparent",
               cursor: "pointer", whiteSpace: "nowrap", transition: "color 0.2s, border-color 0.2s", flexShrink: 0,
