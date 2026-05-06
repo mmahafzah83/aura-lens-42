@@ -97,7 +97,13 @@ function genBatchFixPrompt(category: string, rows: ResultRow[]): string {
     (byPage[page] ||= []).push(r);
   });
   const pages = Object.keys(byPage);
-  let out = `Fix ${fails.length} ${category} issues across ${pages.join(", ")}:\n`;
+  const FUNCTIONAL = new Set([
+    "tooltip", "modal", "navflow", "formval", "content", "dataint",
+    "capture", "askaura", "cta", "errorstate", "buttons", "links", "forms",
+    "images", "loading", "empty",
+  ]);
+  const isFunctional = FUNCTIONAL.has(category);
+  let out = `Fix ${fails.length} ${category} ${isFunctional ? "FUNCTIONAL" : ""} issues across ${pages.join(", ")}:\n`;
   for (const page of pages) {
     out += `\nPage: /${page === "unknown" ? "" : page}\n`;
     for (const r of byPage[page]) {
@@ -106,10 +112,17 @@ function genBatchFixPrompt(category: string, rows: ResultRow[]): string {
       const loc = d.element || "(unknown element)";
       const exp = d.expected ?? "—";
       const act = d.actual ?? "—";
-      out += `- ${desc} at ${loc}\n  ${exp} → ${act}\n`;
+      if (isFunctional) {
+        out += `- ${r.test_name} at ${loc}\n`;
+        out += `  EXPECTED BEHAVIOR: ${exp}\n`;
+        out += `  CURRENT BEHAVIOR: ${act}\n`;
+        out += `  DETAIL: ${desc}\n`;
+      } else {
+        out += `- ${desc} at ${loc}\n  ${exp} → ${act}\n`;
+      }
     }
   }
-  out += `\nFor each issue, change actual to match expected. Fix all of them in one pass.\nDO NOT change anything else. Only fix the listed issues.`;
+  out += `\nFor each issue, change the current behavior to match the expected behavior. Fix all of them in one pass.\nDO NOT change anything else. Only fix the listed issues.`;
   return out;
 }
 
