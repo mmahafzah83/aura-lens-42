@@ -17,6 +17,7 @@ interface RawSignal {
   created_at: string;
   status: string;
   strategic_implications?: string | null;
+  velocity_status?: string | null;
 }
 
 interface RawFramework {
@@ -39,6 +40,7 @@ interface CuratedItem {
   signalInsight?: string;
   freshness: number; // days ago
   angle?: string; // post angle (≤15 words)
+  velocityStatus?: string | null;
 }
 
 interface StartFromPanelProps {
@@ -87,11 +89,11 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
       const [sRes, fRes, usedRes] = await Promise.all([
         supabase
           .from("strategic_signals")
-          .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status, strategic_implications")
-          .eq("status", "active")
-          .gte("confidence", 0.5)
+          .select("id, signal_title, explanation, content_opportunity, confidence, created_at, status, strategic_implications, velocity_status")
+          .in("status", ["active", "merged"])
+          .gte("confidence", 0.3)
           .order("confidence", { ascending: false })
-          .limit(10),
+          .limit(20),
         supabase
           .from("master_frameworks")
           .select("id, title, summary, tags, created_at")
@@ -204,6 +206,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         signalInsight: s.explanation,
         freshness: fresh,
         angle: angle || s.signal_title,
+        velocityStatus: (s as any).velocity_status || null,
       });
     }
 
@@ -303,8 +306,8 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
           <SectionHeader
-            label="START FROM"
-            subtitle="Your highest-confidence signals — publishing from these builds authority fastest"
+            label="YOUR PUBLISHING WINDOW"
+            subtitle="Your strongest signal territories — publish here first"
           />
           <button
             onClick={fetchData}
@@ -385,6 +388,22 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                       <p style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4, lineHeight: 1.3 }} className="line-clamp-1">
                         {item.signalTitle || item.title}
                       </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                        {typeof item.confidence === "number" && (
+                          <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#B08D3A", fontWeight: 600 }}>
+                            {Math.round(item.confidence * 100)}%
+                          </span>
+                        )}
+                        {item.velocityStatus === "fading" && (
+                          <span style={{ fontSize: 10, color: "#F97316", fontWeight: 600 }}>↓ Fading</span>
+                        )}
+                        {item.velocityStatus === "accelerating" && (
+                          <span style={{ fontSize: 10, color: "hsl(140 60% 40%)", fontWeight: 600 }}>↑ Gaining</span>
+                        )}
+                        {item.velocityStatus === "stable" && (
+                          <span style={{ fontSize: 10, color: "var(--ink-4)", fontWeight: 600 }}>→ Stable</span>
+                        )}
+                      </div>
                       <button
                         onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
@@ -399,7 +418,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                           cursor: "pointer",
                         }}
                       >
-                        Generate this →
+                        Write on this →
                       </button>
                     </>
                   )}
