@@ -514,11 +514,55 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         }
       }
 
-      // Success
-      toast({
-        title: "Source saved",
-        description: "Your source has been saved.",
-      });
+      // Success — celebrate the FIRST EVER capture (count = 1 for this user)
+      try {
+        const { count } = await supabase
+          .from("entries")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", session.user.id);
+        if (count === 1 && !localStorage.getItem("aura_first_capture_celebrated")) {
+          localStorage.setItem("aura_first_capture_celebrated", "true");
+          (await import("sonner")).toast.custom((id) => (
+            // Inline JSX-free element using DOM-friendly object — sonner accepts ReactNode.
+            // Use a div with brand styling.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (require("react") as any).createElement("div", {
+              style: {
+                background: "var(--ink, #1C1812)",
+                color: "var(--ink-on-brand, #f5efe1)",
+                border: "1px solid var(--brand, #C5A55A)",
+                borderRadius: 12,
+                padding: "14px 18px",
+                boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
+                maxWidth: 360,
+              },
+            },
+              (require("react") as any).createElement("div", {
+                style: {
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: 18,
+                  lineHeight: 1.25,
+                  marginBottom: 4,
+                  color: "var(--brand, #C5A55A)",
+                },
+              }, "Your intelligence system is now active."),
+              (require("react") as any).createElement("div", {
+                style: { fontSize: 12, opacity: 0.75 },
+              }, "Aura is analyzing.")
+            )
+          ), { duration: 4000 });
+        } else {
+          toast({
+            title: "Source saved",
+            description: "Your source has been saved.",
+          });
+        }
+      } catch {
+        toast({
+          title: "Source saved",
+          description: "Your source has been saved.",
+        });
+      }
 
       setContent("");
       setVoiceAudioUrl(null);
