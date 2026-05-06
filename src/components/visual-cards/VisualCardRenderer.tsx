@@ -177,9 +177,22 @@ export default function VisualCardRenderer(props: VisualCardProps) {
             }}>{props.authorTitle}</div>
           </div>
           <div style={{
-            fontFamily: FONTS.COR, fontSize: 36, fontStyle: 'italic',
-            color: style.footerAccentColor, fontWeight: 500,
-          }}>Aura</div>
+            display: 'flex', alignItems: 'center', gap: 10,
+            color: style.footerAccentColor,
+          }}>
+            {/* Horizon Eye watermark — bronze, scales with card */}
+            <svg width="28" height="28" viewBox="0 0 80 80" fill="none" aria-hidden>
+              <path d="M8 40 C 22 22, 58 22, 72 40 C 58 58, 22 58, 8 40 Z" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+              <circle cx="40" cy="40" r="11" stroke="currentColor" strokeWidth="2" fill="none"/>
+              <circle cx="40" cy="40" r="4" fill="currentColor"/>
+            </svg>
+            <div style={{
+              fontFamily: FONTS.MONO, fontSize: 13, letterSpacing: '0.08em',
+              textTransform: 'uppercase', fontWeight: 500,
+            }}>
+              Powered by Aura · aura-intel.org
+            </div>
+          </div>
         </div>
       </div>
     </div>
