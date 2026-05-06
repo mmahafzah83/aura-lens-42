@@ -1368,6 +1368,52 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* H2b — DYNAMIC PRIMARY CARD */}
       {!isEmpty && (<>
       {newSignal && (
+        newSignal.isFirst ? (
+          <div
+            style={{
+              background: "var(--brand-ghost)",
+              border: "1px solid var(--brand)",
+              borderRadius: 14,
+              padding: "20px 22px",
+              marginBottom: 14,
+              opacity: bannerVisible ? 1 : 0,
+              transform: bannerVisible ? "translateY(0)" : "translateY(-8px)",
+              transition: "all 400ms ease",
+            }}
+          >
+            <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 8 }}>
+              ✦ Revelation
+            </div>
+            <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.2, marginBottom: 6 }}>
+              Your first signal has emerged.
+            </div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
+              {newSignal.signal_title}
+            </div>
+            <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+              Aura found this pattern in what you captured. This is the market theme where your intelligence runs deepest. Capture more on this topic to strengthen it.
+            </p>
+            <button
+              onClick={() => {
+                try {
+                  localStorage.setItem("aura_first_signal_seen", "true");
+                  const seen = JSON.parse(localStorage.getItem("aura_seen_signals") || "[]");
+                  if (!seen.includes(newSignal.id)) seen.push(newSignal.id);
+                  localStorage.setItem("aura_seen_signals", JSON.stringify(seen));
+                } catch {}
+                onSwitchTab?.("intelligence");
+                setNewSignal(null);
+              }}
+              style={{
+                background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
+                border: "none", borderRadius: 8, padding: "9px 16px",
+                fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}
+            >
+              See this signal →
+            </button>
+          </div>
+        ) : (
         <div
           style={{
             background: "var(--brand-ghost)",
@@ -1417,6 +1463,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             ×
           </button>
         </div>
+        )
       )}
       <div data-testid="home-moves">
       <SectionHeader
