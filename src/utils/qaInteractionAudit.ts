@@ -529,6 +529,10 @@ export async function runDomAudit(targetDoc?: Document): Promise<QaResult[]> {
   await safeRun(results, () => auditFormValidation(results, doc), { testId: "formval.error", testName: "Form validation group", category: "formval" });
   await safeRun(results, () => auditContentGeneration(results, doc), { testId: "content.error", testName: "Content generation group", category: "content" });
   await safeRun(results, () => auditDataIntegrity(results, doc), { testId: "dataint.error", testName: "Data integrity group", category: "dataint" });
+  await safeRun(results, () => auditCapturePipeline(results, doc), { testId: "capture.error", testName: "Capture pipeline group", category: "capture" });
+  await safeRun(results, () => auditAskAura(results, doc), { testId: "askaura.error", testName: "Ask Aura group", category: "askaura" });
+  await safeRun(results, () => auditCTAIntegrity(results, doc), { testId: "cta.error", testName: "CTA integrity group", category: "cta" });
+  await safeRun(results, () => auditErrorStates(results, doc), { testId: "errorstate.error", testName: "Error states group", category: "errorstate" });
   // Navigation flow runs LAST because it may navigate the iframe away.
   await safeRun(results, () => auditNavFlow(results, doc), { testId: "navflow.error", testName: "Navigation flow group", category: "navflow" });
 
@@ -1377,4 +1381,255 @@ async function auditNavFlow(results: QaResult[], doc: Document) {
     // After first navigation the page is gone — stop iterating.
     if (changed) break;
   }
+}
+
+/* ---------------- Capture Pipeline ---------------- */
+async function auditCapturePipeline(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const path = win.location?.pathname || "";
+  if (!/\/home/.test(path) && path !== "/") {
+    return;
+  }
+  const buttons = (Array.from(doc.querySelectorAll("button, [role='button']")) as HTMLElement[])
+    .filter((b) => isVisible(b, doc));
+  const trigger = buttons.find((b) => /capture/i.test(b.innerText || "") || /capture/i.test(b.getAttribute("aria-label") || ""));
+  if (!trigger) {
+    results.push({
+      testId: "capture.skip",
+      testName: "Capture pipeline",
+      category: "capture",
+      status: "warn",
+      details: { description: "No capture trigger found on this page", severity: "medium" } as any,
+    });
+    return;
+  }
+  try {
+    trigger.click();
+    await sleep(800);
+    const sheet = doc.querySelector("[role='dialog'], [class*='sheet' i], [class*='capture' i]");
+    const hasUrlInput = !!doc.querySelector("input[type='url'], input[placeholder*='url' i], input[placeholder*='link' i]");
+    const hasTextOption = !!Array.from(doc.querySelectorAll("button, [role='tab']")).find((e) =>
+      /text|note/i.test((e as HTMLElement).innerText || "")
+    );
+    const hasVoiceOption = !!Array.from(doc.querySelectorAll("button, [role='tab']")).find((e) =>
+      /voice|record|mic/i.test((e as HTMLElement).innerText || "")
+    );
+    const submitBtn = Array.from(doc.querySelectorAll("button")).find((b) =>
+      /save|submit|capture|add/i.test((b as HTMLElement).innerText || "")
+    ) as HTMLElement | undefined;
+
+    const issues: string[] = [];
+    if (!sheet) issues.push("capture sheet did not open");
+    if (!hasUrlInput) issues.push("no URL input");
+    if (!hasTextOption) issues.push("no text/note option");
+    if (!hasVoiceOption) issues.push("no voice option");
+    if (!submitBtn) issues.push("no submit button");
+
+    results.push({
+      testId: "capture.interface",
+      testName: "Capture interface",
+      category: "capture",
+      status: issues.length === 0 ? "pass" : "fail",
+      details: {
+        description: issues.length === 0 ? "Capture interface complete" : issues.join("; "),
+        expected: "URL input, text option, voice option, submit button",
+        actual: issues.join("; ") || "ok",
+        severity: issues.length > 0 ? "high" : "low",
+      } as any,
+    });
+
+    // close
+    doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+    await sleep(300);
+  } catch (e: any) {
+    results.push({
+      testId: "capture.error_run",
+      testName: "Capture pipeline",
+      category: "capture",
+      status: "warn",
+      details: { description: `Could not test: ${e?.message ?? String(e)}` },
+    });
+  }
+}
+
+/* ---------------- Ask Aura Availability ---------------- */
+async function auditAskAura(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const buttons = (Array.from(doc.querySelectorAll("button, [role='button']")) as HTMLElement[])
+    .filter((b) => isVisible(b, doc));
+  const trigger = buttons.find((b) => /ask aura/i.test(b.innerText || "") || /ask aura/i.test(b.getAttribute("aria-label") || ""));
+  if (!trigger) {
+    results.push({
+      testId: "askaura.skip",
+      testName: "Ask Aura availability",
+      category: "askaura",
+      status: "warn",
+      details: { description: "No Ask Aura button found", severity: "medium" } as any,
+    });
+    return;
+  }
+  try {
+    trigger.click();
+    await sleep(1000);
+    const panel = doc.querySelector("[role='dialog'], [class*='chat' i], [class*='aura' i][class*='panel' i]");
+    const input = doc.querySelector("textarea, input[type='text']") as HTMLElement | null;
+    const sendBtn = Array.from(doc.querySelectorAll("button")).find((b) =>
+      /send|ask/i.test((b as HTMLElement).innerText || "") || /send/i.test(b.getAttribute("aria-label") || "")
+    ) as HTMLElement | undefined;
+
+    const issues: string[] = [];
+    if (!panel) issues.push("chat panel did not open");
+    if (!input) issues.push("no input field");
+    if (!sendBtn) issues.push("no send button");
+
+    results.push({
+      testId: "askaura.open",
+      testName: "Ask Aura opens",
+      category: "askaura",
+      status: issues.length === 0 ? "pass" : "fail",
+      details: {
+        description: issues.length === 0 ? "Ask Aura panel ready" : issues.join("; "),
+        expected: "Panel with input and send button",
+        actual: issues.join("; ") || "ok",
+        severity: issues.length > 0 ? "high" : "low",
+      } as any,
+    });
+
+    // close
+    doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+    await sleep(300);
+  } catch (e: any) {
+    results.push({
+      testId: "askaura.error_run",
+      testName: "Ask Aura availability",
+      category: "askaura",
+      status: "warn",
+      details: { description: `Could not test: ${e?.message ?? String(e)}` },
+    });
+  }
+}
+
+/* ---------------- CTA Integrity (dead CTA detection) ---------------- */
+async function auditCTAIntegrity(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const ctaTextRe = /(capture now|see your signals|upload linkedin|generate this|train voice|view all|see more|explore|→)/i;
+  const destructiveRe = /(delete|remove|clear|reset|disconnect|sign out|log ?out)/i;
+  const candidates = (Array.from(doc.querySelectorAll("button, a, [role='button']")) as HTMLElement[])
+    .filter((e) => isVisible(e, doc))
+    .filter((e) => {
+      const t = (e.innerText || "").trim();
+      if (!t) return false;
+      if (destructiveRe.test(t)) return false;
+      return ctaTextRe.test(t) || /→/.test(t);
+    })
+    .slice(0, 8);
+
+  for (let i = 0; i < candidates.length; i++) {
+    const el = candidates[i];
+    const beforeUrl = win.location?.href || "";
+    const beforeOpenDialogs = doc.querySelectorAll("[role='dialog'][data-state='open'], [aria-expanded='true']").length;
+    const beforeChildren = doc.body?.children.length || 0;
+    let acted = false;
+    try {
+      el.click();
+      await sleep(1000);
+      const afterUrl = win.location?.href || "";
+      const afterOpenDialogs = doc.querySelectorAll("[role='dialog'][data-state='open'], [aria-expanded='true']").length;
+      const afterChildren = doc.body?.children.length || 0;
+      acted =
+        afterUrl !== beforeUrl ||
+        afterOpenDialogs !== beforeOpenDialogs ||
+        afterChildren !== beforeChildren;
+    } catch {
+      acted = true; // navigation throw counts as action
+    }
+    results.push({
+      testId: `cta.${i}`,
+      testName: "CTA action",
+      category: "cta",
+      status: acted ? "pass" : "fail",
+      details: {
+        description: acted ? "CTA produced an action" : "CTA appears dead — clicking did nothing",
+        element: describe(el),
+        location: locationOf(el),
+        expected: "Navigation, modal/panel, or visible state change",
+        actual: acted ? "action observed" : "no observable change",
+        severity: acted ? "low" : "high",
+      } as any,
+    });
+    // best-effort cleanup
+    doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+    await sleep(150);
+  }
+}
+
+/* ---------------- Loading & Error State Detection ---------------- */
+function auditErrorStates(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const text = (doc.body?.innerText || "");
+
+  // Stuck spinners (visible loaders)
+  const spinners = Array.from(
+    doc.querySelectorAll("[class*='spinner' i], svg.lucide-loader-2, [class*='loading' i], .animate-spin")
+  ).filter((e) => isVisible(e, doc));
+  if (spinners.length > 0) {
+    results.push({
+      testId: "errorstate.spinners",
+      testName: "Visible loading spinners",
+      category: "errorstate",
+      status: "warn",
+      details: {
+        description: `${spinners.length} spinner(s) visible at audit time — may be stuck`,
+        samples: spinners.slice(0, 5).map(describe),
+        severity: "medium",
+      } as any,
+    });
+  }
+
+  // Visible error text
+  const errorRe = /(something went wrong|failed to load|an error occurred|try again|error \d{3})/i;
+  if (errorRe.test(text)) {
+    const match = text.match(errorRe)?.[0] || "error";
+    results.push({
+      testId: "errorstate.visible_error",
+      testName: "Visible error message",
+      category: "errorstate",
+      status: "fail",
+      details: {
+        description: `Page renders an error message: "${match}"`,
+        expected: "Successful render with no surfaced error",
+        actual: match,
+        severity: "high",
+      } as any,
+    });
+  }
+
+  // Blank tall containers (possible failed fetch)
+  const blanks: string[] = [];
+  doc.querySelectorAll("section, article, main > div, [data-section]").forEach((el) => {
+    const he = el as HTMLElement;
+    if (!isVisible(he, doc)) return;
+    const r = he.getBoundingClientRect();
+    if (r.height < 50) return;
+    const inner = (he.innerText || "").trim();
+    const childCount = he.children.length;
+    if (childCount === 0 && inner.length === 0) {
+      blanks.push(describe(he));
+    }
+  });
+  if (blanks.length > 0) {
+    results.push({
+      testId: "errorstate.blank_sections",
+      testName: "Blank data sections",
+      category: "errorstate",
+      status: "warn",
+      details: {
+        description: `${blanks.length} visible section(s) have no content`,
+        samples: blanks.slice(0, 5),
+        severity: "medium",
+      } as any,
+    });
+  }
+
+  void win;
 }

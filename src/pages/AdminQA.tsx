@@ -97,7 +97,13 @@ function genBatchFixPrompt(category: string, rows: ResultRow[]): string {
     (byPage[page] ||= []).push(r);
   });
   const pages = Object.keys(byPage);
-  let out = `Fix ${fails.length} ${category} issues across ${pages.join(", ")}:\n`;
+  const FUNCTIONAL = new Set([
+    "tooltip", "modal", "navflow", "formval", "content", "dataint",
+    "capture", "askaura", "cta", "errorstate", "buttons", "links", "forms",
+    "images", "loading", "empty",
+  ]);
+  const isFunctional = FUNCTIONAL.has(category);
+  let out = `Fix ${fails.length} ${category} ${isFunctional ? "FUNCTIONAL" : ""} issues across ${pages.join(", ")}:\n`;
   for (const page of pages) {
     out += `\nPage: /${page === "unknown" ? "" : page}\n`;
     for (const r of byPage[page]) {
@@ -106,10 +112,17 @@ function genBatchFixPrompt(category: string, rows: ResultRow[]): string {
       const loc = d.element || "(unknown element)";
       const exp = d.expected ?? "—";
       const act = d.actual ?? "—";
-      out += `- ${desc} at ${loc}\n  ${exp} → ${act}\n`;
+      if (isFunctional) {
+        out += `- ${r.test_name} at ${loc}\n`;
+        out += `  EXPECTED BEHAVIOR: ${exp}\n`;
+        out += `  CURRENT BEHAVIOR: ${act}\n`;
+        out += `  DETAIL: ${desc}\n`;
+      } else {
+        out += `- ${desc} at ${loc}\n  ${exp} → ${act}\n`;
+      }
     }
   }
-  out += `\nFor each issue, change actual to match expected. Fix all of them in one pass.\nDO NOT change anything else. Only fix the listed issues.`;
+  out += `\nFor each issue, change the current behavior to match the expected behavior. Fix all of them in one pass.\nDO NOT change anything else. Only fix the listed issues.`;
   return out;
 }
 
@@ -185,6 +198,7 @@ const AdminQA = () => {
   const [iframeStatuses, setIframeStatuses] = useState<IframeStatus[]>([]);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [batchModal, setBatchModal] = useState<{ title: string; text: string } | null>(null);
+  const [showDesignSection, setShowDesignSection] = useState<boolean>(false);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -492,6 +506,17 @@ const AdminQA = () => {
   const domRows = visibleResults.filter((r) => r.layer === "dom");
   const aiRows = visibleResults.filter((r) => r.layer === "ai");
 
+  // Functional vs Design/Accessibility split for DOM results.
+  // Functional categories (NEW): test whether the product works.
+  const FUNCTIONAL_CATS = new Set([
+    "tooltip", "modal", "navflow", "formval", "content", "dataint",
+    "capture", "askaura", "cta", "errorstate",
+    // Pre-existing functional-ish groups:
+    "buttons", "links", "forms", "images", "loading", "empty", "iframe",
+  ]);
+  const functionalRows = domRows.filter((r) => FUNCTIONAL_CATS.has(r.category));
+  const designRows = domRows.filter((r) => !FUNCTIONAL_CATS.has(r.category));
+
   function toggleGroup(k: string) { setOpenGroups((p) => ({ ...p, [k]: !p[k] })); }
 
   function copyText(s: string) {
@@ -692,13 +717,41 @@ const AdminQA = () => {
 
           {/* Section 2C — DOM */}
           {domRows.length > 0 && (
-            <Section title="DOM interaction audit">
-              {Object.entries(groupBy(domRows)).map(([cat, rows]) => (
-                <Group key={cat} cat={cat} rows={rows} open={openGroups[`dom-${cat}`]} onToggle={() => toggleGroup(`dom-${cat}`)}
-                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
-                  onBatchFix={() => openBatchFix(cat, rows)} />
-              ))}
-            </Section>
+            <>
+              {functionalRows.length > 0 && (
+                <Section title={`Functional tests — does the product work? (${functionalRows.length})`}>
+                  <p style={{ marginTop: 0, marginBottom: 12, color: "#B8B0A2", fontSize: 13 }}>
+                    Behavior, navigation, modals, generation, data presence. These determine whether the product actually delivers.
+                  </p>
+                  {Object.entries(groupBy(functionalRows)).map(([cat, rows]) => (
+                    <Group key={cat} cat={cat} rows={rows}
+                      open={openGroups[`func-${cat}`] ?? true}
+                      onToggle={() => toggleGroup(`func-${cat}`)}
+                      onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                      onBatchFix={() => openBatchFix(cat, rows)} />
+                  ))}
+                </Section>
+              )}
+              {designRows.length > 0 && (
+                <Section title={`Design & accessibility (${designRows.length})`}>
+                  <button
+                    onClick={() => setShowDesignSection((v) => !v)}
+                    style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    {showDesignSection ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    {showDesignSection ? "Hide" : "Show"} contrast, fonts, colors, focus
+                  </button>
+                  {showDesignSection &&
+                    Object.entries(groupBy(designRows)).map(([cat, rows]) => (
+                      <Group key={cat} cat={cat} rows={rows}
+                        open={openGroups[`des-${cat}`] ?? false}
+                        onToggle={() => toggleGroup(`des-${cat}`)}
+                        onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                        onBatchFix={() => openBatchFix(cat, rows)} />
+                    ))}
+                </Section>
+              )}
+            </>
           )}
 
           {/* Section 2D — AI */}
