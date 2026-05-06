@@ -177,8 +177,8 @@ const AutomationStrip = () => {
                 {c.icon}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>{c.title}</p>
-                <p className="intel-automation-desc" style={{ fontSize: 9, color: "var(--ink-4)", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
+                <p className="intel-automation-title" style={{ fontSize: 10, fontWeight: 700, color: "var(--ink)", margin: 0 }}>{c.title}</p>
+                <p className="intel-automation-desc" style={{ fontSize: 9, color: "var(--ink-2)", margin: "2px 0 4px", lineHeight: 1.4 }}>{c.desc}</p>
                 <span style={{ fontSize: 9, fontWeight: 700, color: c.statusColor }}>
                   <span className={c.status === "Active" ? "aura-pulse-dot" : undefined} style={{ display: "inline-block" }}>●</span> {c.status}
                 </span>
