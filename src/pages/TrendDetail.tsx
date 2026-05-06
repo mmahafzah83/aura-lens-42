@@ -473,7 +473,7 @@ export default function TrendDetail() {
           disabled={drafting}
           style={{
             fontSize: 13, padding: "8px 16px", borderRadius: 8,
-            border: "0.5px solid #F9731566",
+            border: "0.5px solid var(--bronze-line)",
             background: "var(--brand)", color: "#fff",
             fontWeight: 500, cursor: drafting ? "not-allowed" : "pointer",
             opacity: drafting ? 0.7 : 1,
