@@ -398,13 +398,13 @@ const Dashboard = () => {
           )}
           {NAV_ITEMS.map((item) => {
             const isActive = activeTab === item.value;
-            const navTestId =
-              item.value === "home" ? "nav-home"
-              : item.value === "identity" ? "nav-mystory"
-              : item.value === "intelligence" ? "nav-intelligence"
-              : item.value === "authority" ? "nav-publish"
-              : item.value === "influence" ? "nav-impact"
-              : `nav-${item.value}`;
+            const navTestId = ({
+              home: "nav-home",
+              identity: "nav-mystory",
+              intelligence: "nav-intelligence",
+              authority: "nav-publish",
+              influence: "nav-impact",
+            } as Record<string, string>)[item.value] || `nav-${item.value}`;
             return (
               <button
                 key={item.value}
