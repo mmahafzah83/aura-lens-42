@@ -301,8 +301,8 @@ const AdminQA = () => {
       iframe.addEventListener("load", done, { once: true });
       iframe.src = src;
     });
-    // Extra settle delay for SPA hydration
-    await new Promise((r) => setTimeout(r, 2000));
+    // Extra settle delay for SPA hydration + tab switch + initial data fetch
+    await new Promise((r) => setTimeout(r, 4000));
     return iframe;
   }
 
