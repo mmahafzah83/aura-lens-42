@@ -175,6 +175,7 @@ const AdminQA = () => {
   const [elapsedMs, setElapsedMs] = useState<number>(0);
   const [iframeStatuses, setIframeStatuses] = useState<IframeStatus[]>([]);
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [batchModal, setBatchModal] = useState<{ title: string; text: string } | null>(null);
 
   const screenshotsRef = useRef<{ page: string; imageBase64: string }[]>([]);
   const iframeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -303,7 +304,6 @@ const AdminQA = () => {
     const statuses: IframeStatus[] = DOM_ROUTES.map(r => ({ route: r, state: "pending" }));
     setIframeStatuses(statuses);
 
-    // Always include current page (admin/qa) results too — using local document
     let crossOriginBlocked = false;
 
     for (let idx = 0; idx < DOM_ROUTES.length; idx++) {
@@ -352,33 +352,20 @@ const AdminQA = () => {
       }
 
       let testCount = 0;
-      // Lightweight inline checks against iframe document (full audit util uses global `document`)
+      // Run the FULL DOM audit against the iframe's document
       try {
-        const buttons = doc.querySelectorAll("button, [role='button']");
-        const links = doc.querySelectorAll("a[href]");
-        const imgs = doc.querySelectorAll("img");
-        const brokenImgs = Array.from(imgs).filter((i) => {
-          const im = i as HTMLImageElement;
-          return im.complete && im.naturalWidth === 0;
-        });
-        allRows.push({
-          run_id, run_by: userId, layer: "dom", category: "iframe",
-          test_id: `${page}.iframe.rendered`,
-          test_name: `[${page}] page rendered in iframe`,
-          status: buttons.length + links.length > 0 ? "pass" : "warn",
-          details: { description: "Iframe DOM accessible", page, buttons: buttons.length, links: links.length, images: imgs.length },
-        });
-        testCount += 1;
-        if (brokenImgs.length > 0) {
+        const pageResults = await runDomAudit(doc);
+        pageResults.forEach((d) => {
           allRows.push({
-            run_id, run_by: userId, layer: "dom", category: "iframe",
-            test_id: `${page}.iframe.broken_images`,
-            test_name: `[${page}] broken images`,
-            status: "fail",
-            details: { description: `${brokenImgs.length} broken image(s)`, page, count: brokenImgs.length },
+            run_id, run_by: userId, layer: "dom",
+            category: d.category,
+            test_id: `${page}.${d.testId}`,
+            test_name: `[${page}] ${d.testName}`,
+            status: d.status,
+            details: { ...d.details, page },
           });
-          testCount += 1;
-        }
+        });
+        testCount = pageResults.length;
       } catch (e: any) {
         allRows.push({
           run_id, run_by: userId, layer: "dom", category: "iframe",
@@ -414,27 +401,10 @@ const AdminQA = () => {
     // Cleanup iframe
     if (iframeContainerRef.current) iframeContainerRef.current.innerHTML = "";
 
-    // Also run the full DOM audit util against the current /admin/qa page
-    try {
-      const localResults = await runDomAudit();
-      localResults.forEach((d) => {
-        allRows.push({
-          run_id, run_by: userId, layer: "dom",
-          category: d.category,
-          test_id: `admin-qa.${d.testId}`,
-          test_name: `[admin-qa] ${d.testName}`,
-          status: d.status,
-          details: { ...d.details, page: "admin-qa" },
-        });
-      });
-    } catch (e) {
-      console.warn("local DOM audit failed", e);
-    }
+    // NOTE: We intentionally do NOT audit /admin/qa itself — it's the testing tool, not the product.
 
     if (crossOriginBlocked) {
-      toast.message("DOM audit limited. For full DOM audit, visit each page and run 'DOM Only' from that page.");
-    } else {
-      toast.message("Iframe DOM audit uses lightweight checks. Visit each page directly for full audit.");
+      toast.message("DOM audit limited. iframe DOM access was blocked for some routes.");
     }
 
     if (allRows.length > 0) {
