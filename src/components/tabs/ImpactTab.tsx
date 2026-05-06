@@ -731,7 +731,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
               Your composite authority metric — always reflects your current standing
             </div>
-            <div style={{ marginTop: 6 }}>
+            <div data-testid="impact-score" style={{ marginTop: 6 }}>
               {isEmpty ? (
                 <div
                   style={{
