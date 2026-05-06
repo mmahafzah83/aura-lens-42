@@ -704,13 +704,41 @@ const AdminQA = () => {
 
           {/* Section 2C — DOM */}
           {domRows.length > 0 && (
-            <Section title="DOM interaction audit">
-              {Object.entries(groupBy(domRows)).map(([cat, rows]) => (
-                <Group key={cat} cat={cat} rows={rows} open={openGroups[`dom-${cat}`]} onToggle={() => toggleGroup(`dom-${cat}`)}
-                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
-                  onBatchFix={() => openBatchFix(cat, rows)} />
-              ))}
-            </Section>
+            <>
+              {functionalRows.length > 0 && (
+                <Section title={`Functional tests — does the product work? (${functionalRows.length})`}>
+                  <p style={{ marginTop: 0, marginBottom: 12, color: "#B8B0A2", fontSize: 13 }}>
+                    Behavior, navigation, modals, generation, data presence. These determine whether the product actually delivers.
+                  </p>
+                  {Object.entries(groupBy(functionalRows)).map(([cat, rows]) => (
+                    <Group key={cat} cat={cat} rows={rows}
+                      open={openGroups[`func-${cat}`] ?? true}
+                      onToggle={() => toggleGroup(`func-${cat}`)}
+                      onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                      onBatchFix={() => openBatchFix(cat, rows)} />
+                  ))}
+                </Section>
+              )}
+              {designRows.length > 0 && (
+                <Section title={`Design & accessibility (${designRows.length})`}>
+                  <button
+                    onClick={() => setShowDesignSection((v) => !v)}
+                    style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                  >
+                    {showDesignSection ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    {showDesignSection ? "Hide" : "Show"} contrast, fonts, colors, focus
+                  </button>
+                  {showDesignSection &&
+                    Object.entries(groupBy(designRows)).map(([cat, rows]) => (
+                      <Group key={cat} cat={cat} rows={rows}
+                        open={openGroups[`des-${cat}`] ?? false}
+                        onToggle={() => toggleGroup(`des-${cat}`)}
+                        onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                        onBatchFix={() => openBatchFix(cat, rows)} />
+                    ))}
+                </Section>
+              )}
+            </>
           )}
 
           {/* Section 2D — AI */}
