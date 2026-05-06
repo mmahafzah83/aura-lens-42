@@ -305,13 +305,13 @@ const Landing = () => {
 
       {/* Section 1 — Nav */}
       <nav className="landing-nav flex items-center justify-between px-5 sm:px-10 py-5 sticky top-0 z-[200]" style={{
-        background: "rgba(13,13,13,0.95)",
+        background: "rgba(28,24,18,0.92)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         borderBottom: "1px solid var(--surface-ink-subtle)",
         paddingTop: "max(env(safe-area-inset-top), 16px)",
       }}>
-        <span className="text-lg font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)" }}>AURA</span>
+        <AuraLogo size={28} variant="dark" withWordmark />
         <button onClick={() => navigate("/auth")} className="text-sm px-4 py-2 rounded-lg border transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", borderColor: "var(--bronze-line)" }}>
           Sign in
         </button>
@@ -330,8 +330,11 @@ const Landing = () => {
           background: "linear-gradient(to bottom, rgba(13,13,13,0.95) 0%, rgba(13,13,13,0.60) 40%, rgba(13,13,13,0.60) 60%, rgba(13,13,13,0.95) 100%)",
         }} />
         <div className="relative z-10 max-w-2xl mx-auto">
-          <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "var(--ink-4)" }}>For senior professionals worldwide</p>
-          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 font-sans">
+          <div className="flex justify-center mb-6">
+            <AuraLogo size={80} variant="dark" withWordmark />
+          </div>
+          <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "var(--ink-4)" }}>For senior transformation leaders</p>
+          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
             Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>authority</span>.
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
@@ -378,10 +381,10 @@ const Landing = () => {
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "var(--ink)", fontWeight: 500 }}>
+            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "#FFF8E7", fontWeight: 500 }}>
               Get early access
             </button>
-            <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-white/5" style={{ color: "var(--ink-5)", border: "0.5px solid var(--ink-4)", background: "transparent", fontWeight: 400 }}>
+            <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", border: "1px solid var(--brand)", background: "transparent", fontWeight: 500 }}>
               See how it works
             </button>
           </div>
