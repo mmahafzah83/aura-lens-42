@@ -737,13 +737,48 @@ const AdminQA = () => {
                   <p style={{ marginTop: 0, marginBottom: 12, color: "#B8B0A2", fontSize: 13 }}>
                     Behavior, navigation, modals, generation, data presence. These determine whether the product actually delivers.
                   </p>
-                  {Object.entries(groupBy(functionalRows)).map(([cat, rows]) => (
-                    <Group key={cat} cat={cat} rows={rows}
-                      open={openGroups[`func-${cat}`] ?? true}
-                      onToggle={() => toggleGroup(`func-${cat}`)}
-                      onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
-                      onBatchFix={() => openBatchFix(cat, rows)} />
-                  ))}
+                  {sortedPages.map((page) => {
+                    const rows = functionalByPage[page];
+                    const fail = rows.filter((r) => r.status === "fail").length;
+                    const warn = rows.filter((r) => r.status === "warn").length;
+                    const pass = rows.filter((r) => r.status === "pass").length;
+                    const key = `func-page-${page}`;
+                    const open = openGroups[key] ?? true;
+                    return (
+                      <div key={page} style={{ ...cardStyle, marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <button onClick={() => toggleGroup(key)} style={{ background: "none", border: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
+                            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                            <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>
+                              {page === "ask-aura" ? "ASK AURA" : page === "my-story" ? "MY STORY" : page.toUpperCase()}
+                            </span>
+                            <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+                              <span>{rows.length} tests</span>
+                              <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
+                              <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
+                              <span style={{ color: STATUS_COLORS.fail }}>{fail} fail</span>
+                            </span>
+                          </button>
+                          {(fail + warn) > 0 && (
+                            <button onClick={() => openBatchFix(`page:${page}`, rows)} style={{ ...secondaryBtnStyle, padding: "6px 10px", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                              <Copy size={12} /> Batch fix this page
+                            </button>
+                          )}
+                        </div>
+                        {open && (
+                          <div style={{ marginTop: 12 }}>
+                            {Object.entries(groupBy(rows)).map(([cat, catRows]) => (
+                              <Group key={cat} cat={cat} rows={catRows}
+                                open={openGroups[`func-${page}-${cat}`] ?? true}
+                                onToggle={() => toggleGroup(`func-${page}-${cat}`)}
+                                onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                                onBatchFix={() => openBatchFix(cat, catRows)} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </Section>
               )}
               {designRows.length > 0 && (
