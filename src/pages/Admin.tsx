@@ -274,7 +274,9 @@ const Admin = () => {
     >
       <div className="max-w-5xl mx-auto px-6 py-10">
         {/* Header */}
-        <div className="text-primary font-extrabold text-2xl mb-6">Aura</div>
+        <div className="mb-6">
+          <AuraLogo size={28} variant="dark" withWordmark />
+        </div>
         <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--ink-7)" }}>
           Beta Access — Admin
         </h1>
