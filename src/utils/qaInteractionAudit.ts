@@ -1663,12 +1663,12 @@ function txt(el: Element | null | undefined): string {
 function bodyText(doc: Document): string {
   return (doc.body?.innerText || "").trim();
 }
-function findByText(doc: Document, selector: string, re: RegExp): HTMLElement | null {
-  const list = Array.from(doc.querySelectorAll(selector)) as HTMLElement[];
+function findByText(root: ParentNode, selector: string, re: RegExp): HTMLElement | null {
+  const list = Array.from(root.querySelectorAll(selector)) as HTMLElement[];
   return list.find((e) => re.test(e.innerText || "")) || null;
 }
-function findAllByText(doc: Document, selector: string, re: RegExp): HTMLElement[] {
-  return (Array.from(doc.querySelectorAll(selector)) as HTMLElement[]).filter((e) => re.test(e.innerText || ""));
+function findAllByText(root: ParentNode, selector: string, re: RegExp): HTMLElement[] {
+  return (Array.from(root.querySelectorAll(selector)) as HTMLElement[]).filter((e) => re.test(e.innerText || ""));
 }
 function pushPage(
   results: QaResult[],
