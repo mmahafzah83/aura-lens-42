@@ -490,6 +490,29 @@ const AdminQA = () => {
     navigator.clipboard.writeText(s).then(() => toast.success("Copied"));
   }
 
+  function openBatchFix(category: string, rows: ResultRow[]) {
+    const text = genBatchFixPrompt(category, rows);
+    if (!text) { toast.message("No failures in this category"); return; }
+    setBatchModal({ title: `Batch fix — ${category} (${rows.filter(r=>r.status!=="pass").length} issues)`, text });
+  }
+
+  function openFullBatchFix() {
+    const text = genFullBatchFixPrompt(visibleResults);
+    if (!text) { toast.message("No failures to fix"); return; }
+    setBatchModal({ title: `Full batch fix`, text });
+  }
+
+  function exportReport() {
+    const md = genMarkdownReport(visibleResults, summary, currentRunId);
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `aura-qa-report-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.md`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function markKnown(test_id: string) {
     const next = new Set(knownIssues); next.add(test_id); persistKnown(next);
     toast.success("Marked as known issue");
@@ -617,6 +640,14 @@ const AdminQA = () => {
               <Stat label="Warn" value={summary.warn} color={STATUS_COLORS.warn} />
               <Stat label="Fail" value={summary.fail} color={STATUS_COLORS.fail} />
             </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+              <SecondaryBtn onClick={openFullBatchFix} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Copy size={14} /> Generate FULL batch fix
+              </SecondaryBtn>
+              <SecondaryBtn onClick={exportReport} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Download size={14} /> Export report
+              </SecondaryBtn>
+            </div>
             <div style={{ marginTop: 16 }}>
               <div style={{ fontSize: 15, color: "#F4EFE6", display: "flex", justifyContent: "space-between", fontWeight: 500 }}>
                 <span>Overall pass rate</span>
@@ -645,7 +676,8 @@ const AdminQA = () => {
             <Section title="Backend audit">
               {Object.entries(groupBy(backendRows)).map(([cat, rows]) => (
                 <Group key={cat} cat={cat} rows={rows} open={openGroups[`be-${cat}`]} onToggle={() => toggleGroup(`be-${cat}`)}
-                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown} />
+                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                  onBatchFix={() => openBatchFix(cat, rows)} />
               ))}
             </Section>
           )}
@@ -655,7 +687,8 @@ const AdminQA = () => {
             <Section title="DOM interaction audit">
               {Object.entries(groupBy(domRows)).map(([cat, rows]) => (
                 <Group key={cat} cat={cat} rows={rows} open={openGroups[`dom-${cat}`]} onToggle={() => toggleGroup(`dom-${cat}`)}
-                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown} />
+                  onCopyFix={(r) => copyText(genFixPrompt(r))} onMarkKnown={markKnown}
+                  onBatchFix={() => openBatchFix(cat, rows)} />
               ))}
             </Section>
           )}
@@ -790,6 +823,22 @@ const AdminQA = () => {
             ))}
           </div>
         </Section>
+      )}
+
+      {batchModal && (
+        <div onClick={() => setBatchModal(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#15140f", border: "1px solid rgba(197,165,90,0.4)", borderRadius: 10, padding: 20, width: "min(900px, 100%)", maxHeight: "85vh", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h3 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
+              <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#F4EFE6", cursor: "pointer" }}><X size={18} /></button>
+            </div>
+            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "#0a0a0a", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 13, lineHeight: 1.5 }} />
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <SecondaryBtn onClick={() => setBatchModal(null)}>Close</SecondaryBtn>
+              <PrimaryBtn onClick={() => copyText(batchModal.text)}><Copy size={14} /> Copy to clipboard</PrimaryBtn>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
