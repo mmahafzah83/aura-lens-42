@@ -1586,6 +1586,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Your intelligence rhythm — consistency matters more than volume
         </p>
         <div
+          data-testid="impact-capture-chart"
           className="rounded-lg p-4"
           style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
         >
