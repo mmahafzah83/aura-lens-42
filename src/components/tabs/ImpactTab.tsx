@@ -1192,6 +1192,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             {postMetricsCount === 0 && (
               <button
                 onClick={handleUploadClick}
+                data-testid="impact-linkedin-upload"
                 className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
                 style={{ background: "var(--brand)", color: "#ffffff" }}
               >
