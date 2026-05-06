@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.admin-active-users]
 verify_jwt = false
+
+[functions.generate-carousel-v2]
+verify_jwt = false
