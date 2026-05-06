@@ -2635,7 +2635,13 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         .update({ status: "published" })
         .eq("id", id);
       setDrafts(prev => prev.filter(p => p.id !== id));
-      toast.success("Published — this post now contributes to your authority score");
+      const sigTitle = item.source_metadata?.signal_titles?.[0];
+      toast.success(
+        sigTitle
+          ? `Authority compounding. Your ${sigTitle} territory just got stronger.`
+          : "Authority compounding. Your territory just got stronger.",
+        { duration: 4000 },
+      );
       loadPosts();
     } catch (e: any) {
       toast.error(e.message || "Failed to mark as published");
