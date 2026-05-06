@@ -398,10 +398,19 @@ const Dashboard = () => {
           )}
           {NAV_ITEMS.map((item) => {
             const isActive = activeTab === item.value;
+            const navTestId =
+              item.value === "home" ? "nav-home"
+              : item.value === "identity" ? "nav-mystory"
+              : item.value === "intelligence" ? "nav-intelligence"
+              : item.value === "authority" ? "nav-publish"
+              : item.value === "influence" ? "nav-impact"
+              : `nav-${item.value}`;
             return (
               <button
                 key={item.value}
                 onClick={() => switchTab(item.value)}
+                data-testid={navTestId}
+                data-active={isActive ? "true" : "false"}
                 className={`w-full flex items-center gap-3 tactile-press group aura-nav-item ${isActive ? "is-active" : ""}`}
                 style={{
                   padding: "10px 24px",
