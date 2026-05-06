@@ -546,14 +546,17 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
               {ln}
             </text>
           ))}
-          {slide.cta_button && (
-            <g>
-              <rect x={60} y={cy + 160} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
-              <text x={270} y={cy + 200} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
-                {slide.cta_button}
-              </text>
-            </g>
-          )}
+          {slide.cta_button && (() => {
+            const btnY = Math.max(cy + 160, cy + 80 + ctaMainLines.length * 32 + 16 + ctaSubLines.length * 32 + 32);
+            return (
+              <g>
+                <rect x={60} y={btnY} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
+                <text x={270} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
+                  {slide.cta_button}
+                </text>
+              </g>
+            );
+          })()}
         </g>
       );
     }
