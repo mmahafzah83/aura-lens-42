@@ -64,16 +64,13 @@ const RequestAccess = () => {
       <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <AuraLogo size={40} variant="dark" />
-          <div className="leading-tight">
-            <div className="text-primary font-extrabold text-2xl">Aura</div>
-            <div className="text-xs" style={{ color: "var(--ink-5)" }}>Strategic Intelligence</div>
-          </div>
+          <AuraLogo size={40} variant="dark" withWordmark />
+          <div className="text-xs" style={{ color: "var(--ink-5)" }}>Strategic Intelligence</div>
         </div>
 
         {!isDone && (
           <>
-            <h1 className="text-[28px] font-bold mb-2" style={{ color: "var(--ink-7)" }}>
+            <h1 className="text-[28px] mb-2" style={{ color: "var(--ink-7)", fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 500 }}>
               Request early access
             </h1>
             <p
@@ -206,13 +203,13 @@ const RequestAccess = () => {
           <div
             className="rounded-xl p-6 text-center text-sm"
             style={{
-              backgroundColor: "rgba(34,197,94,0.08)",
-              border: "1px solid rgba(34,197,94,0.4)",
-              color: "#86efac",
+              backgroundColor: "var(--brand-muted)",
+              border: "1px solid var(--bronze-line)",
+              color: "var(--ink-7)",
             }}
           >
-            ✓ You're on the list. We'll reach out at{" "}
-            <span className="font-semibold">{submittedEmail}</span> when your spot opens.
+            Your request has been received. Aura is invite-only — we review every application personally. We'll be in touch at{" "}
+            <span className="font-semibold" style={{ color: "var(--brand)" }}>{submittedEmail}</span>.
           </div>
         )}
 
