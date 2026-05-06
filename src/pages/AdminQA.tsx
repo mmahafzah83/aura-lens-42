@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
 import { runDomAudit } from "@/utils/qaInteractionAudit";
-import { Loader2, Copy, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, Copy, ChevronDown, ChevronRight, X, Download } from "lucide-react";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
 const DOM_ROUTES = ["/home", "/intelligence", "/publish", "/impact", "/my-story"];
@@ -77,6 +77,80 @@ function genFixPrompt(r: ResultRow): string {
   const actual = d.actual ?? JSON.stringify(d).slice(0, 240);
   const location = d.element || d.page || r.category;
   return `Fix ${r.test_name}: ${description}. Expected: ${expected}. Actual: ${actual}. Location: ${location}. DO NOT change anything else.`;
+}
+
+function genBatchFixPrompt(category: string, rows: ResultRow[]): string {
+  const fails = rows.filter((r) => r.status !== "pass");
+  if (fails.length === 0) return "";
+  const byPage: Record<string, ResultRow[]> = {};
+  fails.forEach((r) => {
+    const page = (r.details?.page as string) || (r.test_id.split(".")[0] || "unknown");
+    (byPage[page] ||= []).push(r);
+  });
+  const pages = Object.keys(byPage);
+  let out = `Fix ${fails.length} ${category} issues across ${pages.join(", ")}:\n`;
+  for (const page of pages) {
+    out += `\nPage: /${page === "unknown" ? "" : page}\n`;
+    for (const r of byPage[page]) {
+      const d = r.details || {};
+      const desc = d.description || r.test_name;
+      const loc = d.element || "(unknown element)";
+      const exp = d.expected ?? "—";
+      const act = d.actual ?? "—";
+      out += `- ${desc} at ${loc}\n  ${exp} → ${act}\n`;
+    }
+  }
+  out += `\nFor each issue, change actual to match expected. Fix all of them in one pass.\nDO NOT change anything else. Only fix the listed issues.`;
+  return out;
+}
+
+function genFullBatchFixPrompt(rows: ResultRow[]): string {
+  const fails = rows.filter((r) => r.status !== "pass");
+  if (fails.length === 0) return "";
+  const byCat: Record<string, ResultRow[]> = {};
+  fails.forEach((r) => { (byCat[r.category] ||= []).push(r); });
+  let out = `# Aura QA — Full Batch Fix\n\nFix ${fails.length} issues across ${Object.keys(byCat).length} categories:\n`;
+  for (const cat of Object.keys(byCat)) {
+    out += `\n## ${cat.toUpperCase()} (${byCat[cat].length})\n`;
+    out += genBatchFixPrompt(cat, byCat[cat]).split("\n").slice(1).join("\n") + "\n";
+  }
+  return out;
+}
+
+function genMarkdownReport(rows: ResultRow[], summary: { total: number; pass: number; warn: number; fail: number; rate: number }, runId: string | null): string {
+  const now = new Date().toISOString();
+  let md = `# Aura QA Report\n\n- Run ID: ${runId || "(none)"}\n- Date: ${now}\n- Total: ${summary.total} • Pass: ${summary.pass} • Warn: ${summary.warn} • Fail: ${summary.fail} • Pass rate: ${summary.rate}%\n\n`;
+  const byPage: Record<string, ResultRow[]> = {};
+  rows.forEach((r) => {
+    const page = (r.details?.page as string) || (r.test_id.split(".")[0] || "unknown");
+    (byPage[page] ||= []).push(r);
+  });
+  md += `## Per-page breakdown\n\n`;
+  for (const page of Object.keys(byPage)) {
+    const list = byPage[page];
+    const p = list.filter(r => r.status === "pass").length;
+    const w = list.filter(r => r.status === "warn").length;
+    const f = list.filter(r => r.status === "fail").length;
+    md += `- **${page}** — ${list.length} tests • ${p} pass / ${w} warn / ${f} fail\n`;
+  }
+  md += `\n## Failures\n\n`;
+  rows.filter(r => r.status !== "pass").forEach((r) => {
+    const d = r.details || {};
+    md += `### [${r.category}] ${r.test_name} (${r.status})\n`;
+    md += `- test_id: \`${r.test_id}\`\n`;
+    if (d.element) md += `- location: \`${d.element}\`\n`;
+    if (d.expected !== undefined) md += `- expected: ${d.expected}\n`;
+    if (d.actual !== undefined) md += `- actual: ${d.actual}\n`;
+    if (d.description) md += `- ${d.description}\n`;
+    md += `\n`;
+  });
+  md += `## Batch fix prompts\n\n`;
+  const byCat: Record<string, ResultRow[]> = {};
+  rows.filter(r => r.status !== "pass").forEach((r) => { (byCat[r.category] ||= []).push(r); });
+  for (const cat of Object.keys(byCat)) {
+    md += `### ${cat}\n\n\`\`\`\n${genBatchFixPrompt(cat, byCat[cat])}\n\`\`\`\n\n`;
+  }
+  return md;
 }
 
 function formatRunDate(s: string): string {
