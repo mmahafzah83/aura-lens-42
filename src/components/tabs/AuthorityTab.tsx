@@ -812,13 +812,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
         <div>
           <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Content Format</p>
           <p className="text-[12px] text-muted-foreground mb-3">Choose your format — each one is tuned to your voice and sector</p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div data-testid="pub-format-selector" className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => {
               const active = contentType === key;
               return (
                 <button
                   key={key}
                   onClick={() => setContentType(key)}
+                  data-testid={key === "flash" ? "pub-flash-trigger" : undefined}
                   style={{
                     background: active ? "var(--vellum)" : "#fff",
                     borderRadius: 12,
@@ -914,6 +915,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               )}
               <p className="text-label uppercase tracking-wider text-xs font-semibold mb-2">Topic</p>
               <Input
+                data-testid="pub-topic-input"
                 value={topic}
                 onChange={(e) => {
                   const v = e.target.value;
@@ -945,7 +947,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             {/* Language */}
             <div className="flex items-center gap-3">
               <p className="text-label uppercase tracking-wider text-xs font-semibold">Language</p>
-              <div className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
+              <div data-testid="pub-lang-toggle" className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
                 <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
                 <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
               </div>
@@ -954,6 +956,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             {/* Generate */}
             <button
               id="aura-generate-btn"
+              data-testid="pub-generate-btn"
               onClick={() => generate()}
               disabled={isGeneratingAny || !topic.trim()}
               className="aura-generate-btn w-full"
@@ -985,13 +988,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
             {/* Output */}
             {displayedOutput && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+              <motion.div data-testid="pub-output" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-label uppercase tracking-wider text-xs font-semibold">
                     {showingShort ? "Short Version" : "Generated Content"}
                   </span>
                   <div className="flex items-center gap-1.5">
-                    <Button size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
+                    <Button data-testid="pub-copy-btn" size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
                       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       {copied ? "Copied" : "Copy"}
                     </Button>
