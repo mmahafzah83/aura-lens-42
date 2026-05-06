@@ -16,6 +16,7 @@ const ShareLink = ({ label, onClick, ariaLabel }: Props) => (
     onClick={onClick}
     aria-label={ariaLabel || label}
     className="aura-share-link"
+    data-external="true"
     style={{
       background: "transparent",
       border: 0,

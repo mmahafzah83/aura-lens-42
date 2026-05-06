@@ -4,6 +4,7 @@ import { Download, Copy, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadBlob, trunc } from "@/components/visual-cards/exportCard";
+import AuraLogo from "@/components/brand/AuraLogo";
 
 interface Props {
   userId: string;
@@ -301,9 +302,13 @@ const CredentialCardSurface = forwardRef<HTMLDivElement, SurfaceProps>(
               letterSpacing: 2,
               color: "#7a6a3f",
               textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
             }}
           >
-            Powered by Aura — Strategic Intelligence OS · aura-intel.org
+            <AuraLogo size={20} variant="light" />
+            <span>Aura · Strategic Intelligence · aura-intel.org</span>
           </div>
         </div>
       </div>
