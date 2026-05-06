@@ -105,7 +105,7 @@ export default function FirstVisitHint({
   return (
     <div
       style={{
-        background: "var(--surface-subtle, var(--paper-2, rgba(176,141,58,0.06)))",
+        background: "var(--paper-2)",
         borderLeft: "3px solid var(--brand)",
         borderRadius: 8,
         borderTopLeftRadius: 0,
