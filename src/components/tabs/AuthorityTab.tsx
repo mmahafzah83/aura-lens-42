@@ -844,11 +844,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? "var(--warning)" : "var(--surface-ink-subtle)", lineHeight: 1.2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: active ? "var(--brand)" : "var(--ink)", lineHeight: 1.2 }}>
                     {label}
                   </span>
                   {subtitle && (
-                    <span style={{ fontSize: 9, color: "var(--ink-5)", marginTop: 2, fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
+                    <span style={{ fontSize: 9, color: "var(--ink-2)", marginTop: 2, fontFamily: "Cairo, sans-serif" }}>{subtitle}</span>
                   )}
                 </button>
               );
@@ -946,8 +946,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             <div className="flex items-center gap-3">
               <p className="text-label uppercase tracking-wider text-xs font-semibold">Language</p>
               <div className="flex gap-1 bg-secondary/30 rounded-lg p-0.5 border border-border/10">
-                <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>English</button>
-                <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary/15 text-primary" : "text-muted-foreground"}`}>العربية</button>
+                <button onClick={() => setLang("en")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "en" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>English</button>
+                <button onClick={() => setLang("ar")} className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${lang === "ar" ? "bg-primary text-primary-foreground" : "text-foreground"}`}>العربية</button>
               </div>
             </div>
 
@@ -959,7 +959,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               className="aura-generate-btn w-full"
               style={{
                 background: isGeneratingAny || !topic.trim() ? "var(--brand-pale)" : "var(--brand)",
-                color: "#fff",
+                color: "var(--paper)",
                 border: "none",
                 borderRadius: 12,
                 padding: 14,
