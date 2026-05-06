@@ -1636,3 +1636,802 @@ function auditErrorStates(results: QaResult[], doc: Document) {
 
   void win;
 }
+
+/* ============================================================
+ * Aura-specific page-aware functional tests.
+ * Each helper runs only when the iframe URL matches the target page.
+ * URL detection works for both /home, /intelligence, etc. AND
+ * /home?tab=intelligence (the SPA tab routing used in AdminQA).
+ * ============================================================ */
+
+function getCurrentPage(doc: Document): "home" | "intelligence" | "publish" | "impact" | "my-story" | "other" {
+  const win = getWin(doc);
+  const path = win.location?.pathname || "";
+  const search = win.location?.search || "";
+  const tab = (search.match(/[?&]tab=([^&]+)/) || [])[1];
+  if (/\/intelligence\b/.test(path) || tab === "intelligence") return "intelligence";
+  if (/\/publish\b/.test(path) || tab === "authority") return "publish";
+  if (/\/impact\b/.test(path) || tab === "influence") return "impact";
+  if (/\/my-story\b/.test(path) || tab === "identity") return "my-story";
+  if (/\/home\b/.test(path) || path === "/" || (path === "/home" && !tab)) return "home";
+  return "other";
+}
+
+function txt(el: Element | null | undefined): string {
+  return ((el as HTMLElement | null)?.innerText || "").trim();
+}
+function bodyText(doc: Document): string {
+  return (doc.body?.innerText || "").trim();
+}
+function findByText(doc: Document, selector: string, re: RegExp): HTMLElement | null {
+  const list = Array.from(doc.querySelectorAll(selector)) as HTMLElement[];
+  return list.find((e) => re.test(e.innerText || "")) || null;
+}
+function findAllByText(doc: Document, selector: string, re: RegExp): HTMLElement[] {
+  return (Array.from(doc.querySelectorAll(selector)) as HTMLElement[]).filter((e) => re.test(e.innerText || ""));
+}
+function pushPage(
+  results: QaResult[],
+  page: string,
+  id: string,
+  name: string,
+  status: QaStatus,
+  description: string,
+  expected?: string,
+  actual?: string,
+  severity: "critical" | "high" | "medium" | "low" = "high",
+) {
+  results.push({
+    testId: `aura.${page}.${id}`,
+    testName: name,
+    category: `aura.${page}`,
+    status,
+    details: { description, expected, actual, page, severity } as any,
+  });
+}
+
+/* ---------------- Router ---------------- */
+async function auditAuraPage(results: QaResult[], doc: Document) {
+  const page = getCurrentPage(doc);
+  switch (page) {
+    case "home": await auditHomePage(results, doc); break;
+    case "intelligence": await auditIntelligencePage(results, doc); break;
+    case "publish": await auditPublishPage(results, doc); break;
+    case "impact": await auditImpactPage(results, doc); break;
+    case "my-story": await auditMyStoryPage(results, doc); break;
+    default: break;
+  }
+  // Ask Aura + Capture run on every authenticated page where the trigger exists.
+  await auditAskAuraDeep(results, doc);
+  await auditCaptureDeep(results, doc);
+}
+
+/* ---------------- HOME ---------------- */
+async function auditHomePage(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const text = bodyText(doc);
+
+  // H1 — Aura Score visible and valid + tier match
+  try {
+    const scoreCandidates = Array.from(doc.querySelectorAll("[class*='score' i], [class*='ring' i], svg text, h1, h2, .text-metric, [class*='metric' i]"))
+      .map((e) => txt(e))
+      .map((t) => parseInt(t.match(/\b(\d{1,3})\b/)?.[1] || "", 10))
+      .filter((n) => !Number.isNaN(n) && n >= 0 && n <= 100);
+    const tierMatch = text.match(/\b(Observer|Strategist|Authority)\b/);
+    const tier = tierMatch?.[1];
+    const score = scoreCandidates.find((n) => n > 0) ?? scoreCandidates[0];
+
+    if (score === undefined || Number.isNaN(score)) {
+      pushPage(results, "home", "h1", "Aura Score visible", "fail",
+        "No score number 0–100 found on Home", "score 0–100 displayed", "missing");
+    } else if (!tier) {
+      pushPage(results, "home", "h1", "Aura Score visible", "warn",
+        `Score ${score} found but no tier label`, "tier label near score", "no tier label");
+    } else {
+      const expectedTier = score >= 65 ? "Authority" : score >= 35 ? "Strategist" : "Observer";
+      const ok = tier === expectedTier;
+      pushPage(results, "home", "h1", "Aura Score and tier match", ok ? "pass" : "fail",
+        ok ? `Score ${score} matches tier ${tier}` : `Score ${score} but tier shows ${tier} (expected ${expectedTier})`,
+        `tier=${expectedTier} for score=${score}`,
+        `tier=${tier}`);
+    }
+  } catch (e: any) {
+    pushPage(results, "home", "h1", "Aura Score visible", "warn", `Error: ${e?.message || e}`);
+  }
+
+  // H2 — Personalized greeting
+  const greetingEl = Array.from(doc.querySelectorAll("h1, h2, h3, p, div"))
+    .find((e) => /good (morning|afternoon|evening)/i.test(txt(e))) as HTMLElement | undefined;
+  if (!greetingEl) {
+    pushPage(results, "home", "h2", "Personalized greeting", "warn",
+      "No 'Good morning/afternoon/evening' greeting found", "personalized greeting with first name", "missing");
+  } else {
+    const g = txt(greetingEl);
+    const bad = /undefined|null|\bUser\b/.test(g);
+    const hasName = /,\s*[A-Z][a-z]+/.test(g) || /good (morning|afternoon|evening)\s+[A-Z][a-z]+/i.test(g);
+    pushPage(results, "home", "h2", "Personalized greeting",
+      bad ? "fail" : hasName ? "pass" : "warn",
+      bad ? `Greeting contains placeholder: "${g.slice(0, 60)}"`
+          : hasName ? `Greeting personalized: "${g.slice(0, 60)}"`
+                    : `Greeting present but name unclear: "${g.slice(0, 60)}"`,
+      "Greeting includes user's first name",
+      g.slice(0, 80));
+  }
+
+  // H3 — Recommended moves / Aura's Read
+  const moveSection = findByText(doc, "section, div, article", /YOUR NEXT MOVE|AURA'?S READ|recommended move/i);
+  if (!moveSection) {
+    pushPage(results, "home", "h3", "Recommended moves section", "warn",
+      "No 'Your Next Move' or 'Aura's Read' section found", "section visible", "missing");
+  } else {
+    const ctas = Array.from(moveSection.querySelectorAll("button, a")).filter((b) => /publish|capture|view|read|→/i.test(txt(b)));
+    const ok = ctas.length > 0 && txt(moveSection).length > 40;
+    pushPage(results, "home", "h3", "Recommended moves with CTAs", ok ? "pass" : "fail",
+      ok ? `Found ${ctas.length} CTA(s)` : "Section present but no actionable CTAs",
+      ">=1 move with CTA button", `${ctas.length} CTAs found`);
+  }
+
+  // H4 — Live Intelligence feed
+  const liveSection = findByText(doc, "section, div, article", /LIVE INTELLIGENCE|trending|industry trends/i);
+  if (liveSection) {
+    const cards = liveSection.querySelectorAll("[class*='card' i], article, li");
+    const refreshBtn = findByText(liveSection, "button", /refresh/i);
+    pushPage(results, "home", "h4", "Live Intelligence feed",
+      cards.length > 0 || refreshBtn ? "pass" : "fail",
+      cards.length > 0 ? `${cards.length} trend card(s)` : refreshBtn ? "Empty state with refresh CTA" : "Section blank — no cards and no empty state",
+      ">=1 trend card OR refresh empty-state",
+      `cards=${cards.length}`);
+  }
+
+  // H5 — Silence Alarm (best-effort)
+  if (/INTELLIGENCE IS DECAYING|days since|fading signals/i.test(text)) {
+    const cta = findByText(doc, "button, a", /capture now|→/i);
+    pushPage(results, "home", "h5", "Silence alarm CTA", cta ? "pass" : "warn",
+      cta ? "Silence alarm has actionable CTA" : "Silence alarm present without CTA",
+      "alarm with capture CTA",
+      cta ? "ok" : "missing CTA");
+  }
+
+  // H6 — Authority journey
+  if (/Observer/i.test(text) && /Strategist/i.test(text) && /Authority/i.test(text)) {
+    pushPage(results, "home", "h6", "Authority journey ladder", "pass",
+      "Observer/Strategist/Authority labels present");
+  } else {
+    pushPage(results, "home", "h6", "Authority journey ladder", "warn",
+      "Tier ladder labels not all visible", "Observer + Strategist + Authority", "incomplete");
+  }
+
+  // H7 — Capture rhythm grid
+  const rhythm = doc.querySelector("[class*='rhythm' i], [data-capture-rhythm]");
+  if (rhythm) {
+    const cells = rhythm.querySelectorAll("[class*='cell' i], [class*='dot' i], [class*='square' i], div > div");
+    const filled = Array.from(cells).filter((c) => {
+      const cs = win.getComputedStyle(c as HTMLElement);
+      const bg = cs.backgroundColor;
+      return bg && bg !== "transparent" && !/rgba\([^)]*,\s*0(?:\.0+)?\)/.test(bg);
+    });
+    pushPage(results, "home", "h7", "Capture rhythm grid",
+      cells.length >= 4 ? "pass" : "fail",
+      cells.length >= 4 ? `${cells.length} cells (${filled.length} filled)` : "Not enough rhythm cells",
+      ">=4 rhythm cells", `${cells.length} cells`);
+  }
+
+  // H8 — Score breakdown
+  const breakdownOk = /capture/i.test(text) && /content/i.test(text) && /signal/i.test(text);
+  pushPage(results, "home", "h8", "Score breakdown components",
+    breakdownOk ? "pass" : "warn",
+    breakdownOk ? "Capture / Content / Signal labels present" : "Score breakdown labels missing",
+    "Capture + Content + Signal labels",
+    breakdownOk ? "all present" : "incomplete");
+}
+
+/* ---------------- INTELLIGENCE ---------------- */
+async function auditIntelligencePage(results: QaResult[], doc: Document) {
+  const text = bodyText(doc);
+
+  // I1 — Signal cards
+  const signalCards = Array.from(doc.querySelectorAll("[class*='signal' i], [data-signal], article"))
+    .filter((e) => isVisible(e, doc));
+  if (signalCards.length === 0 && /no signals yet/i.test(text)) {
+    pushPage(results, "intelligence", "i1", "Signal cards display", "fail",
+      "Empty 'no signals yet' state shown for user with captures", "signal cards visible", "empty state");
+  } else {
+    pushPage(results, "intelligence", "i1", "Signal cards display",
+      signalCards.length > 0 ? "pass" : "warn",
+      signalCards.length > 0 ? `${signalCards.length} signal-like card(s)` : "No signal cards detected",
+      ">=1 signal card", `${signalCards.length}`);
+  }
+
+  // I2 — Confidence percentages
+  const pcts = (text.match(/\b(\d{1,3})\s*%/g) || [])
+    .map((s) => parseInt(s, 10))
+    .filter((n) => n > 0 && n <= 100);
+  if (pcts.length > 0) {
+    const sortedDesc = [...pcts].sort((a, b) => b - a);
+    const isDesc = pcts.slice(0, sortedDesc.length).every((v, i) => v >= (pcts[i + 1] ?? -Infinity)) ||
+      pcts.join(",") === sortedDesc.join(",");
+    pushPage(results, "intelligence", "i2", "Confidence values valid",
+      isDesc ? "pass" : "warn",
+      isDesc ? `${pcts.length} confidence values, descending` : `${pcts.length} confidence values, not strictly ordered`,
+      "1–100, ordered descending",
+      `count=${pcts.length}, ordered=${isDesc}`);
+  }
+
+  // I3 — Velocity badges
+  const velocityRe = /accelerating|stable|fading|dormant/i;
+  pushPage(results, "intelligence", "i3", "Velocity badges",
+    velocityRe.test(text) ? "pass" : "warn",
+    velocityRe.test(text) ? "Velocity vocabulary present" : "No velocity badges detected",
+    "accelerating/stable/fading/dormant",
+    velocityRe.test(text) ? "found" : "missing");
+
+  // I4 — Signals vs Sources tabs
+  const sourcesTab = findByText(doc, "button, [role='tab'], a", /^sources$/i);
+  const signalsTab = findByText(doc, "button, [role='tab'], a", /^signals$/i);
+  if (sourcesTab && signalsTab) {
+    try {
+      const before = bodyText(doc);
+      sourcesTab.click(); await sleep(800);
+      const after = bodyText(doc);
+      const changed = Math.abs(after.length - before.length) > 30 || after.slice(0, 200) !== before.slice(0, 200);
+      pushPage(results, "intelligence", "i4", "Signals/Sources tabs switch",
+        changed ? "pass" : "fail",
+        changed ? "Sources tab changed content" : "Tabs didn't change content",
+        "Tab click changes content",
+        changed ? "changed" : "no change");
+      signalsTab.click(); await sleep(500);
+    } catch (e: any) {
+      pushPage(results, "intelligence", "i4", "Signals/Sources tabs switch", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // I5 — Signal expand
+  const firstCard = signalCards[0] as HTMLElement | undefined;
+  if (firstCard) {
+    try {
+      const before = bodyText(doc).length;
+      firstCard.click(); await sleep(700);
+      const after = bodyText(doc).length;
+      pushPage(results, "intelligence", "i5", "Signal expand",
+        after - before > 40 ? "pass" : "warn",
+        after - before > 40 ? `Detail expanded (+${after - before} chars)` : "Click did not reveal detail",
+        "Expanded detail visible",
+        `delta=${after - before}`);
+    } catch (e: any) {
+      pushPage(results, "intelligence", "i5", "Signal expand", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // I6 — Market Coverage
+  if (/MARKET COVERAGE/i.test(text)) {
+    const hasPct = /\b\d{1,3}\s*%/.test(text);
+    pushPage(results, "intelligence", "i6", "Market coverage section",
+      hasPct ? "pass" : "warn",
+      hasPct ? "Coverage section with percentage" : "Coverage section missing percentage",
+      "Coverage % badge",
+      hasPct ? "ok" : "no %");
+  }
+
+  // I7 — Your next move
+  const move = findByText(doc, "section, div, article", /YOUR NEXT MOVE/i);
+  if (move) {
+    const cta = findByText(move, "button, a", /publish|→/i);
+    pushPage(results, "intelligence", "i7", "Your next move CTA",
+      cta ? "pass" : "fail",
+      cta ? "Move with publish CTA" : "Move section missing CTA",
+      "Publish → button",
+      cta ? "ok" : "missing");
+  }
+
+  // I8 — Stats strip
+  const statsRe = /(SOURCES|SIGNALS|MOVES)/g;
+  const labels = [...new Set((text.toUpperCase().match(statsRe) || []))];
+  if (labels.length >= 2) {
+    const numbers = (text.match(/\b\d+\b/g) || []).map(Number).filter((n) => n > 0);
+    pushPage(results, "intelligence", "i8", "Stats strip non-zero",
+      numbers.length > 0 ? "pass" : "fail",
+      numbers.length > 0 ? `Stats strip shows positive counters` : "All stat counters appear zero",
+      "At least one counter > 0",
+      `positive_numbers=${numbers.length}`);
+  }
+}
+
+/* ---------------- PUBLISH ---------------- */
+async function auditPublishPage(results: QaResult[], doc: Document) {
+  const text = bodyText(doc);
+
+  // P1 — Three tabs
+  const planTab = findByText(doc, "button, [role='tab'], a", /^plan$/i);
+  const createTab = findByText(doc, "button, [role='tab'], a", /^create$/i);
+  const libraryTab = findByText(doc, "button, [role='tab'], a", /^library$/i);
+  const tabsFound = [planTab, createTab, libraryTab].filter(Boolean).length;
+  pushPage(results, "publish", "p1", "Plan/Create/Library tabs",
+    tabsFound === 3 ? "pass" : "fail",
+    tabsFound === 3 ? "All three tabs present" : `Only ${tabsFound}/3 tabs found`,
+    "Plan + Create + Library", `${tabsFound}/3`);
+
+  // P2 — Create tab form
+  if (createTab) {
+    try {
+      createTab.click(); await sleep(800);
+      const input = doc.querySelector("textarea, input[type='text']") as HTMLElement | null;
+      const langToggle = findByText(doc, "button, [role='tab']", /english|arabic/i);
+      pushPage(results, "publish", "p2", "Create tab form",
+        input ? "pass" : "fail",
+        input ? "Topic input + language toggle present" : "No topic input on Create tab",
+        "input + language toggle",
+        `input=${!!input}, lang=${!!langToggle}`);
+    } catch (e: any) {
+      pushPage(results, "publish", "p2", "Create tab form", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // P3 — Generate button (no destructive submit; just verify presence + handler)
+  const genBtn = findByText(doc, "button", /generate/i);
+  pushPage(results, "publish", "p3", "Generate button present",
+    genBtn ? "pass" : "fail",
+    genBtn ? `Generate button found` : "No Generate button visible",
+    "Generate button visible + clickable",
+    genBtn ? "ok" : "missing");
+
+  // P4 — Flash mode
+  const flash = findByText(doc, "button, a", /flash mode|try flash/i);
+  pushPage(results, "publish", "p4", "Flash mode trigger",
+    flash ? "pass" : "warn",
+    flash ? "Flash mode trigger present" : "No Flash mode trigger found",
+    "Flash mode CTA",
+    flash ? "ok" : "missing");
+
+  // P5 — Output actions (only meaningful if generated content exists)
+  const copyBtn = findByText(doc, "button", /copy/i);
+  const saveBtn = findByText(doc, "button", /save|library/i);
+  if (copyBtn || saveBtn) {
+    pushPage(results, "publish", "p5", "Post output actions", "pass",
+      `Found Copy=${!!copyBtn}, Save=${!!saveBtn}`);
+  }
+
+  // P6 — Library
+  if (libraryTab) {
+    try {
+      libraryTab.click(); await sleep(900);
+      const libText = bodyText(doc);
+      const isEmpty = /no posts|nothing here|empty/i.test(libText) && libText.length < 400;
+      pushPage(results, "publish", "p6", "Library tab content",
+        isEmpty ? "fail" : "pass",
+        isEmpty ? "Library appears empty" : "Library has content",
+        "Drafts/Published visible",
+        isEmpty ? "empty" : "ok");
+    } catch (e: any) {
+      pushPage(results, "publish", "p6", "Library tab", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // P7 — Plan tab
+  if (planTab) {
+    try {
+      planTab.click(); await sleep(900);
+      const planText = bodyText(doc);
+      const cards = doc.querySelectorAll("[class*='card' i], article");
+      const ok = cards.length > 0 && planText.length > 200;
+      pushPage(results, "publish", "p7", "Plan tab suggestions",
+        ok ? "pass" : "fail",
+        ok ? `${cards.length} suggestion-like cards` : "Plan tab appears empty",
+        ">=1 angle suggestion",
+        `cards=${cards.length}`);
+    } catch (e: any) {
+      pushPage(results, "publish", "p7", "Plan tab", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // P8 — Voice match
+  if (/VOICE MATCH|train voice|voice engine/i.test(text)) {
+    pushPage(results, "publish", "p8", "Voice match indicator", "pass",
+      "Voice match / train voice indicator present");
+  } else {
+    pushPage(results, "publish", "p8", "Voice match indicator", "warn",
+      "No voice match indicator found", "Voice match status visible", "missing");
+  }
+}
+
+/* ---------------- IMPACT ---------------- */
+async function auditImpactPage(results: QaResult[], doc: Document) {
+  const text = bodyText(doc);
+
+  // M1 — Score and tier
+  const tierMatch = text.match(/\b(Observer|Strategist|Authority)\b/);
+  const numbers = (text.match(/\b(\d{1,3})\b/g) || []).map(Number).filter((n) => n >= 0 && n <= 100);
+  const score = numbers.find((n) => n > 0);
+  if (score === undefined) {
+    pushPage(results, "impact", "m1", "Authority score visible", "fail",
+      "No score number found on Impact", "score 0–100", "missing");
+  } else if (tierMatch) {
+    const expectedTier = score >= 65 ? "Authority" : score >= 35 ? "Strategist" : "Observer";
+    const ok = tierMatch[1] === expectedTier;
+    pushPage(results, "impact", "m1", "Score and tier match",
+      ok ? "pass" : "fail",
+      ok ? `Score ${score} matches ${tierMatch[1]}` : `Score ${score} but tier ${tierMatch[1]} (expected ${expectedTier})`,
+      `tier=${expectedTier}`,
+      `tier=${tierMatch[1]}`);
+  }
+
+  // M2 — Breakdown components
+  const hasAll = /capture/i.test(text) && /content/i.test(text) && /signal/i.test(text);
+  pushPage(results, "impact", "m2", "Score breakdown 3 components",
+    hasAll ? "pass" : "fail",
+    hasAll ? "Capture/Content/Signal labels present" : "Missing one or more breakdown labels",
+    "Capture + Content + Signal", hasAll ? "all" : "missing");
+
+  // M3 — Trajectory scenario toggles
+  const scenarios = ["current pace", "2x publishing", "stop capturing"];
+  const buttons = scenarios.map((s) => findByText(doc, "button, [role='tab']", new RegExp(s.replace(/[*+?^${}()|[\]\\]/g, "\\$&"), "i")));
+  if (buttons.filter(Boolean).length >= 2) {
+    try {
+      const snapshots: string[] = [];
+      for (const b of buttons) {
+        if (!b) continue;
+        b.click(); await sleep(500);
+        snapshots.push(bodyText(doc).slice(0, 800));
+      }
+      const allSame = snapshots.every((s) => s === snapshots[0]);
+      pushPage(results, "impact", "m3", "Trajectory scenarios differ",
+        allSame ? "fail" : "pass",
+        allSame ? "All scenarios show identical numbers" : "Scenarios produce different forecasts",
+        "Each scenario shows different forecast",
+        allSame ? "identical" : "different");
+    } catch (e: any) {
+      pushPage(results, "impact", "m3", "Trajectory scenarios", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // M4 — Capture activity
+  const chart = doc.querySelector("svg, canvas, [class*='chart' i], [class*='heatmap' i]");
+  pushPage(results, "impact", "m4", "Capture activity chart",
+    chart ? "pass" : "warn",
+    chart ? "Chart element rendered" : "No chart element found",
+    "Chart or heatmap visible",
+    chart ? "ok" : "missing");
+
+  // M5 — LinkedIn data section
+  if (/upload linkedin|post performance/i.test(text)) {
+    const upload = findByText(doc, "button, a", /upload/i);
+    pushPage(results, "impact", "m5", "LinkedIn data section",
+      upload ? "pass" : "warn",
+      upload ? "Upload action present" : "Section without upload CTA",
+      "Upload button or rendered data",
+      upload ? "ok" : "missing");
+  }
+
+  // M6 — Market Mirror / Shadow Twin
+  if (/market mirror|shadow twin/i.test(text)) {
+    pushPage(results, "impact", "m6", "Market Mirror present", "pass",
+      "Market Mirror section detected");
+  }
+}
+
+/* ---------------- MY STORY ---------------- */
+async function auditMyStoryPage(results: QaResult[], doc: Document) {
+  const text = bodyText(doc);
+
+  // S1 — Profile fields
+  const hasName = /name/i.test(text);
+  const hasFirm = /firm|company|organi[sz]ation/i.test(text);
+  const hasSector = /sector|industry/i.test(text);
+  const editBtns = findAllByText(doc, "button", /edit/i);
+  const ok = hasName && hasFirm && hasSector;
+  pushPage(results, "my-story", "s1", "Profile fields populated",
+    ok ? "pass" : "fail",
+    ok ? `Name + Firm + Sector visible (${editBtns.length} edit btns)` : "One or more profile field labels missing",
+    "Name + Firm + Sector visible",
+    `name=${hasName}, firm=${hasFirm}, sector=${hasSector}`);
+
+  // S2 — Strategic identity
+  if (/strategic identity|archetype|expertise|target client/i.test(text)) {
+    pushPage(results, "my-story", "s2", "Strategic identity section", "pass",
+      "Identity section content present");
+  }
+
+  // S3 — Signal coverage
+  if (/signal coverage|coverage map/i.test(text)) {
+    const pcts = (text.match(/\b(\d{1,3})\s*%/g) || []).map((s) => parseInt(s, 10)).filter((n) => n > 0 && n <= 100);
+    pushPage(results, "my-story", "s3", "Signal coverage map",
+      pcts.length > 0 ? "pass" : "warn",
+      pcts.length > 0 ? `${pcts.length} coverage values` : "Coverage section without %",
+      ">=1 theme bar with %",
+      `pcts=${pcts.length}`);
+  }
+
+  // S4 — Market Mirror tabs
+  if (/market mirror/i.test(text)) {
+    const tabs = ["headhunter", "client cio|client", "conference"]
+      .map((re) => findByText(doc, "button, [role='tab']", new RegExp(re, "i")))
+      .filter(Boolean) as HTMLElement[];
+    if (tabs.length >= 2) {
+      try {
+        const snaps: string[] = [];
+        for (const t of tabs) {
+          t.click(); await sleep(500);
+          const panel = doc.querySelector("[role='tabpanel'], [class*='mirror' i]") || doc.body;
+          snaps.push(((panel as HTMLElement).innerText || "").slice(0, 500));
+        }
+        const allSame = snaps.every((s) => s === snaps[0]);
+        pushPage(results, "my-story", "s4", "Market Mirror perspectives differ",
+          allSame ? "fail" : "pass",
+          allSame ? "All perspectives show identical text" : "Perspectives differ",
+          "Each tab unique perspective",
+          allSame ? "identical" : "different");
+      } catch (e: any) {
+        pushPage(results, "my-story", "s4", "Market Mirror perspectives", "warn", `Error: ${e?.message || e}`);
+      }
+    }
+  }
+
+  // S5 — Brand assessment
+  const brand = findByText(doc, "button, a", /start assessment|brand assessment/i);
+  pushPage(results, "my-story", "s5", "Brand assessment trigger",
+    brand ? "pass" : "warn",
+    brand ? "Brand assessment button present" : "No brand assessment trigger",
+    "Start Assessment button",
+    brand ? "ok" : "missing");
+
+  // S6 — Evidence audit
+  const audit = findByText(doc, "button, a", /start audit|evidence audit/i);
+  pushPage(results, "my-story", "s6", "Evidence audit trigger",
+    audit ? "pass" : "warn",
+    audit ? "Evidence audit button present" : "No evidence audit trigger",
+    "Start Audit button",
+    audit ? "ok" : "missing");
+
+  // S7 — Milestones
+  if (/milestone|achievement/i.test(text)) {
+    pushPage(results, "my-story", "s7", "Milestones section", "pass",
+      "Milestones/achievements present");
+  }
+}
+
+/* ---------------- ASK AURA (deep) ---------------- */
+async function auditAskAuraDeep(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const trigger = findByText(doc, "button, a, [role='button']", /ask aura/i);
+  if (!trigger) return;
+  // A1 + A2: open
+  let panel: Element | null = null;
+  try {
+    trigger.click(); await sleep(1000);
+    panel = doc.querySelector("[role='dialog'], [class*='chat' i], [class*='aura' i][class*='panel' i]");
+    pushPage(results, "ask-aura", "a1", "Ask Aura opens",
+      panel ? "pass" : "fail",
+      panel ? "Chat panel opened" : "Click did not open chat",
+      "Chat panel visible",
+      panel ? "open" : "no panel");
+  } catch (e: any) {
+    pushPage(results, "ask-aura", "a1", "Ask Aura opens", "warn", `Error: ${e?.message || e}`);
+    return;
+  }
+
+  if (!panel) return;
+
+  const input = doc.querySelector("[role='dialog'] textarea, [role='dialog'] input[type='text'], textarea, input[type='text']") as HTMLInputElement | HTMLTextAreaElement | null;
+  const sendBtn = Array.from(doc.querySelectorAll("button")).find((b) =>
+    /send|ask/i.test(txt(b)) || /send/i.test(b.getAttribute("aria-label") || "")
+  ) as HTMLElement | undefined;
+  pushPage(results, "ask-aura", "a2", "Ask Aura input + send",
+    input && sendBtn ? "pass" : "fail",
+    input && sendBtn ? "Input and send button present" : `input=${!!input}, send=${!!sendBtn}`,
+    "Input + Send button", `input=${!!input}, send=${!!sendBtn}`);
+
+  // A3 + A4: question/response (best-effort)
+  if (input && sendBtn) {
+    try {
+      const before = (panel as HTMLElement).innerText.length;
+      input.value = "What should I publish this week?";
+      input.dispatchEvent(new (win as any).Event("input", { bubbles: true }));
+      sendBtn.click();
+      await sleep(10000);
+      const after = ((panel as HTMLElement).innerText || "").length;
+      const delta = after - before;
+      const responseText = ((panel as HTMLElement).innerText || "").slice(before);
+      const ok = delta > 50 && !/^error/i.test(responseText.trim());
+      pushPage(results, "ask-aura", "a3", "Ask Aura responds",
+        ok ? "pass" : "fail",
+        ok ? `Response received (+${delta} chars)` : "No useful response after 10s",
+        ">50 chars of response",
+        `delta=${delta}`);
+      if (ok) {
+        const hasSignalLike = /\d{1,3}\s*%/.test(responseText) || /\*\*/.test(responseText);
+        const hasRec = /publish|write|post|capture/i.test(responseText);
+        const quality = hasSignalLike || hasRec;
+        pushPage(results, "ask-aura", "a4", "Response quality (uses signals/recommendations)",
+          quality ? "pass" : "warn",
+          quality ? "Response references signals or recommends action" : "Response is generic",
+          "Mentions signal % or actionable verb",
+          `signal=${hasSignalLike}, rec=${hasRec}`);
+      }
+    } catch (e: any) {
+      pushPage(results, "ask-aura", "a3", "Ask Aura responds", "warn", `Error: ${e?.message || e}`);
+    }
+  }
+
+  // close
+  try { doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true })); } catch { /* noop */ }
+  await sleep(300);
+}
+
+/* ---------------- CAPTURE (deep) ---------------- */
+async function auditCaptureDeep(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+  const trigger = findByText(doc, "button, a, [role='button']", /^capture$|capture now/i);
+  if (!trigger) return;
+  try {
+    trigger.click(); await sleep(1000);
+    const sheet = doc.querySelector("[role='dialog'], [class*='sheet' i], [class*='capture' i]");
+    pushPage(results, "capture", "c1", "Capture interface opens",
+      sheet ? "pass" : "fail",
+      sheet ? "Capture interface opened" : "Click did not open capture",
+      "Capture sheet/modal", sheet ? "open" : "missing");
+    if (!sheet) return;
+
+    const urlInput = doc.querySelector("input[type='url'], input[placeholder*='url' i], input[placeholder*='link' i]") as HTMLInputElement | null;
+    const textOpt = findByText(doc, "button, [role='tab']", /text|note/i);
+    const voiceOpt = findByText(doc, "button, [role='tab']", /voice|record|mic/i);
+    const types = [urlInput, textOpt, voiceOpt].filter(Boolean).length;
+    pushPage(results, "capture", "c2", "Capture input types",
+      types >= 2 ? "pass" : "fail",
+      `Found ${types} capture types (url=${!!urlInput}, text=${!!textOpt}, voice=${!!voiceOpt})`,
+      ">=2 capture types",
+      `${types}`);
+
+    if (urlInput) {
+      try {
+        urlInput.value = "https://example.com/test";
+        urlInput.dispatchEvent(new (win as any).Event("input", { bubbles: true }));
+        await sleep(200);
+        const submit = findByText(doc, "button", /save|submit|capture|add/i);
+        const enabled = !!submit && !(submit as HTMLButtonElement).disabled;
+        pushPage(results, "capture", "c3", "Submit enabled with content",
+          enabled ? "pass" : "fail",
+          enabled ? "Submit enabled when input has content" : "Submit missing or disabled",
+          "Enabled submit button",
+          `submit=${!!submit}, disabled=${(submit as HTMLButtonElement | null)?.disabled}`);
+      } catch (e: any) {
+        pushPage(results, "capture", "c3", "Submit enabled", "warn", `Error: ${e?.message || e}`);
+      }
+    }
+
+    // close
+    doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+    await sleep(300);
+  } catch (e: any) {
+    pushPage(results, "capture", "c1", "Capture interface", "warn", `Error: ${e?.message || e}`);
+  }
+}
+
+/* ---------------- CROSS-PAGE CONSISTENCY ---------------- */
+async function auditCrossPage(results: QaResult[], doc: Document) {
+  const win = getWin(doc);
+
+  // X1 — Sidebar active state
+  const sidebar =
+    doc.querySelector("[data-aura-sidebar], aside, nav") ||
+    doc.querySelector("[class*='sidebar' i]");
+  if (sidebar) {
+    const items = Array.from(sidebar.querySelectorAll("a, button")).filter((e) => isVisible(e, doc));
+    const active = items.find((it) => {
+      const cls = typeof (it as HTMLElement).className === "string" ? (it as HTMLElement).className : "";
+      const aria = (it as HTMLElement).getAttribute("aria-current");
+      return /active|selected|current/i.test(cls) || aria === "page" || aria === "true";
+    });
+    results.push({
+      testId: "aura.crosspage.x1",
+      testName: "Sidebar active state",
+      category: "aura.crosspage",
+      status: active ? "pass" : "fail",
+      details: {
+        description: active ? `Active item: "${txt(active).slice(0, 30)}"` : "No active state on any sidebar item",
+        expected: "One sidebar item visually marked active",
+        actual: active ? "active item found" : "none",
+        severity: "high",
+      } as any,
+    });
+  }
+
+  // X2 — Help icon
+  const help =
+    findByText(doc, "button, [role='button']", /^\?$/) ||
+    (doc.querySelector("svg[class*='help' i], svg[class*='question' i]")?.closest("button, [role='button']") as HTMLElement | null);
+  if (help) {
+    try {
+      const before = doc.querySelectorAll("[role='dialog'], [class*='panel' i]").length;
+      help.click(); await sleep(500);
+      const after = doc.querySelectorAll("[role='dialog'], [class*='panel' i]").length;
+      const opened = after > before;
+      results.push({
+        testId: "aura.crosspage.x2",
+        testName: "Help panel opens",
+        category: "aura.crosspage",
+        status: opened ? "pass" : "warn",
+        details: {
+          description: opened ? "Help panel opened" : "Help icon click had no observable effect",
+          severity: opened ? "low" : "medium",
+        } as any,
+      });
+      if (opened) {
+        doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+        await sleep(200);
+      }
+    } catch (e: any) {
+      results.push({
+        testId: "aura.crosspage.x2",
+        testName: "Help panel opens",
+        category: "aura.crosspage",
+        status: "warn",
+        details: { description: `Error: ${e?.message || e}` } as any,
+      });
+    }
+  }
+
+  // X3 — Theme toggle
+  const themeBtn =
+    doc.querySelector("[aria-label*='theme' i], [aria-label*='dark' i], [aria-label*='light' i]") as HTMLElement | null;
+  if (themeBtn) {
+    try {
+      const root = doc.documentElement;
+      const beforeTheme = root.getAttribute("data-theme") || (root.classList.contains("dark") ? "dark" : "light");
+      themeBtn.click(); await sleep(500);
+      const afterTheme = root.getAttribute("data-theme") || (root.classList.contains("dark") ? "dark" : "light");
+      const changed = afterTheme !== beforeTheme;
+      // restore
+      if (changed) { themeBtn.click(); await sleep(300); }
+      results.push({
+        testId: "aura.crosspage.x3",
+        testName: "Theme toggle",
+        category: "aura.crosspage",
+        status: changed ? "pass" : "fail",
+        details: {
+          description: changed ? `Toggled ${beforeTheme} → ${afterTheme}` : "Theme did not change",
+          expected: "Visible theme change",
+          actual: changed ? "changed" : "no change",
+          severity: changed ? "low" : "high",
+        } as any,
+      });
+    } catch (e: any) {
+      results.push({
+        testId: "aura.crosspage.x3",
+        testName: "Theme toggle",
+        category: "aura.crosspage",
+        status: "warn",
+        details: { description: `Error: ${e?.message || e}` } as any,
+      });
+    }
+  }
+
+  // X4 — Notification bell
+  const bell = doc.querySelector("button[aria-label='Notifications'], button[aria-label*='notification' i]") as HTMLElement | null;
+  if (bell) {
+    try {
+      bell.click(); await sleep(500);
+      const popup = doc.querySelector("[role='dialog'], [data-radix-popper-content-wrapper], [class*='popover' i]");
+      results.push({
+        testId: "aura.crosspage.x4",
+        testName: "Notification bell",
+        category: "aura.crosspage",
+        status: popup ? "pass" : "warn",
+        details: {
+          description: popup ? "Notification panel opened" : "Bell click had no visible panel",
+          severity: popup ? "low" : "medium",
+        } as any,
+      });
+      if (popup) {
+        doc.dispatchEvent(new (win as any).KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+        await sleep(200);
+      }
+    } catch (e: any) {
+      results.push({
+        testId: "aura.crosspage.x4",
+        testName: "Notification bell",
+        category: "aura.crosspage",
+        status: "warn",
+        details: { description: `Error: ${e?.message || e}` } as any,
+      });
+    }
+  }
+}
