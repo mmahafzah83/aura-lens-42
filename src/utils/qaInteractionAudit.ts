@@ -529,6 +529,10 @@ export async function runDomAudit(targetDoc?: Document): Promise<QaResult[]> {
   await safeRun(results, () => auditFormValidation(results, doc), { testId: "formval.error", testName: "Form validation group", category: "formval" });
   await safeRun(results, () => auditContentGeneration(results, doc), { testId: "content.error", testName: "Content generation group", category: "content" });
   await safeRun(results, () => auditDataIntegrity(results, doc), { testId: "dataint.error", testName: "Data integrity group", category: "dataint" });
+  await safeRun(results, () => auditCapturePipeline(results, doc), { testId: "capture.error", testName: "Capture pipeline group", category: "capture" });
+  await safeRun(results, () => auditAskAura(results, doc), { testId: "askaura.error", testName: "Ask Aura group", category: "askaura" });
+  await safeRun(results, () => auditCTAIntegrity(results, doc), { testId: "cta.error", testName: "CTA integrity group", category: "cta" });
+  await safeRun(results, () => auditErrorStates(results, doc), { testId: "errorstate.error", testName: "Error states group", category: "errorstate" });
   // Navigation flow runs LAST because it may navigate the iframe away.
   await safeRun(results, () => auditNavFlow(results, doc), { testId: "navflow.error", testName: "Navigation flow group", category: "navflow" });
 
