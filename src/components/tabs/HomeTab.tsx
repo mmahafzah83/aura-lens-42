@@ -1192,7 +1192,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   {auraData.aura_score}
                 </span>
                 <InfoTooltip side="bottom" align="left" label="Authority Score" width={280}>
-                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
+                  <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
                   <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
                   <p style={{ margin: "0 0 4px" }}>Content authority — 40%</p>
                   <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
