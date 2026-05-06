@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import StartFromPanel from "@/components/StartFromPanel";
 
 /* ============================ STYLES ============================ */
 
@@ -602,6 +603,8 @@ export default function CarouselStudio() {
   const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
   const [activeIdx, setActiveIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [contextText, setContextText] = useState("");
+  const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(undefined);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
 
@@ -618,18 +621,42 @@ export default function CarouselStudio() {
     setGenerating(true);
     try {
       const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) {
+        toast.error("Please sign in to generate a carousel");
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
-        body: { topic, lang: "en", style: styleKey, total_slides: 8, user_id: sess.session?.user?.id },
+        body: {
+          topic,
+          context: contextText || undefined,
+          lang: "en",
+          style: styleKey,
+          total_slides: 8,
+          user_id: sess.session.user.id,
+          signal_id: selectedSignalId,
+        },
       });
-      if (error) throw error;
-      if (!data?.slides?.length) throw new Error("No slides returned");
+      console.log("EF raw response:", { data, error, hasSlides: !!data?.slides });
+      if (error) {
+        console.error("EF invoke error:", error);
+        toast.error("Generation failed: " + (error.message || JSON.stringify(error)));
+        return;
+      }
+      if (data?.error) {
+        toast.error("Generation failed: " + data.error);
+        return;
+      }
+      if (!data?.slides?.length) {
+        toast.error("No slides returned — check edge function logs");
+        return;
+      }
       const numbered = data.slides.map((s: Slide, i: number) => ({ ...s, slide_number: i + 1 }));
       setCarousel({ ...data, slides: numbered, total_slides: numbered.length });
       setActiveIdx(0);
       toast.success(`${numbered.length} slides generated`);
     } catch (e: any) {
-      console.error(e);
-      toast.error(e.message || "Generation failed");
+      console.error("Carousel generation failed:", e);
+      toast.error("Generation failed: " + (e?.message || JSON.stringify(e)));
     } finally {
       setGenerating(false);
     }
@@ -791,7 +818,7 @@ export default function CarouselStudio() {
       </div>
 
       {/* Main */}
-      <div className="px-4 md:px-8 py-6 grid gap-6" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+      <div className="px-4 md:px-8 py-6 grid gap-6 lg:grid-cols-[1fr_320px]">
         <div className="grid gap-6" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
           <div className="grid gap-6 md:grid-cols-[3fr_2fr]">
             {/* Preview */}
@@ -872,6 +899,19 @@ export default function CarouselStudio() {
             </div>
           </div>
         </div>
+        {/* Signal sidebar */}
+        <aside className="lg:sticky lg:top-4 self-start">
+          <StartFromPanel
+            currentFormat="carousel"
+            hasDraft={false}
+            onSelect={(t, ctx, _format, _signalTitle, _insight, signalId) => {
+              setTopic(t);
+              if (ctx) setContextText(ctx);
+              setSelectedSignalId(signalId);
+              toast.success("Signal loaded — click Generate Carousel");
+            }}
+          />
+        </aside>
       </div>
 
       {/* Sticky bottom bar */}
