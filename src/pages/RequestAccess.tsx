@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Zap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import AuraLogo from "@/components/brand/AuraLogo";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
@@ -63,12 +64,7 @@ const RequestAccess = () => {
       <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "var(--brand)" }}
-          >
-            <Zap className="w-5 h-5 text-white" />
-          </div>
+          <AuraLogo size={40} variant="dark" />
           <div className="leading-tight">
             <div className="text-primary font-extrabold text-2xl">Aura</div>
             <div className="text-xs" style={{ color: "var(--ink-5)" }}>Strategic Intelligence</div>
