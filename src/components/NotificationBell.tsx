@@ -97,6 +97,7 @@ const NotificationBell = () => {
       <PopoverTrigger asChild>
         <button
           aria-label="Notifications"
+          data-testid="nav-notifications"
           className="relative tactile-press p-2 inline-flex items-center justify-center min-w-[44px] min-h-[44px]"
           style={{
             background: "var(--paper-2)",
