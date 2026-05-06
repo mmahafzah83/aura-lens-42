@@ -826,6 +826,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 </div>
                 {(() => {
+                  // Public authority declaration — positioning, not data dump.
+                  const lvl = profile?.level || "Executive";
+                  const firmPart = profile?.firm ? ` at ${profile.firm}` : "";
+                  const sectorPart = sf && sf !== "your sector" ? ` in ${sf}` : "";
+                  const shareText = `${fn} | ${lvl}${firmPart} | ${signalStats.count} strategic signal${signalStats.count === 1 ? "" : "s"}${sectorPart} | Powered by Aura — strategic intelligence for executives. aura-intel.org`;
+                  // In-card preview keeps the richer internal phrasing.
                   const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${topSig.title} at ${topSig.confidence}%.`;
                   return (
                     <>
@@ -845,7 +851,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           label="Share your positioning →"
                           ariaLabel="Share your positioning on LinkedIn"
                           onClick={() => shareToLinkedIn({
-                            text: `${statementText}\n\nBuilt with Aura — strategic intelligence for executives.`,
+                            text: shareText,
                             toastMessage: "Positioning copied — paste it in LinkedIn.",
                           })}
                         />
