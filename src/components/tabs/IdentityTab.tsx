@@ -443,10 +443,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </div>
 
           {/* Identity Facts */}
-          <div style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)", borderRadius: 10, padding: 12 }}>
+          <div style={{ background: "var(--vellum)", border: "1px solid var(--brand-line)", borderRadius: 10, padding: 12 }}>
             {identityFacts.map(fact => (
               <div key={fact.key} className="mb-2 last:mb-0">
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-5)", letterSpacing: "0.05em" }}>{fact.label}</div>
+                <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-2)", letterSpacing: "0.05em" }}>{fact.label}</div>
                 {editingField === fact.key ? (
                   <div className="flex items-center gap-1 mt-0.5">
                     <input
@@ -461,7 +461,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   </div>
                 ) : (
                   <div className="flex items-center justify-between group mt-0.5">
-                    <span style={{ fontSize: 11, color: "var(--ink-7)", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
+                    <span style={{ fontSize: 11, color: "var(--ink)", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
                     <button onClick={() => startEdit(fact.key, fact.value)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
                       <Pencil className="w-2.5 h-2.5 text-ink-5 hover:text-brand" />
                     </button>
