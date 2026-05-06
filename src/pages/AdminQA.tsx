@@ -7,7 +7,16 @@ import { runDomAudit } from "@/utils/qaInteractionAudit";
 import { Loader2, Copy, ChevronDown, ChevronRight, X, Download } from "lucide-react";
 
 const ADMIN_USER_ID = "9e0c6ee1-6562-4fdc-89ba-d62b39f02bb3";
-const DOM_ROUTES = ["/home", "/intelligence", "/publish", "/impact", "/my-story"];
+// Map "page label" → real SPA URL. The app renders those areas as tabs on /home
+// (NAV_ITEMS in Dashboard: home, intelligence, authority, influence, identity).
+// Loading bare /intelligence etc. hits the NotFound route — the iframe needs the tab param.
+const DOM_ROUTES: { page: string; src: string }[] = [
+  { page: "home",         src: "/home" },
+  { page: "intelligence", src: "/home?tab=intelligence" },
+  { page: "publish",      src: "/home?tab=authority" },
+  { page: "impact",       src: "/home?tab=influence" },
+  { page: "my-story",     src: "/home?tab=identity" },
+];
 const KNOWN_KEY = "qa_known_issues_v1";
 
 type ResultRow = {
@@ -301,14 +310,13 @@ const AdminQA = () => {
     setProgress("Layer 2/3 — DOM audit across pages…");
     screenshotsRef.current = [];
     const allRows: any[] = [];
-    const statuses: IframeStatus[] = DOM_ROUTES.map(r => ({ route: r, state: "pending" }));
+    const statuses: IframeStatus[] = DOM_ROUTES.map(r => ({ route: r.src, state: "pending" }));
     setIframeStatuses(statuses);
 
     let crossOriginBlocked = false;
 
     for (let idx = 0; idx < DOM_ROUTES.length; idx++) {
-      const route = DOM_ROUTES[idx];
-      const page = route.replace(/^\//, "") || "root";
+      const { page, src: route } = DOM_ROUTES[idx];
       setProgress(`Layer 2/3 — DOM audit on ${page}…`);
       const t0 = performance.now();
       let iframe: HTMLIFrameElement | null = null;
