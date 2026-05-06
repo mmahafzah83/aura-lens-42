@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
+import CarouselStudio from "./pages/CarouselStudio";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/guide" element={<Guide />} />
+            <Route path="/carousel-studio" element={<CarouselStudio />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

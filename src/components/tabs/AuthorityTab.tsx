@@ -855,6 +855,21 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               );
             })}
           </div>
+          <div className="mt-3">
+            <a
+              href="/carousel-studio"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 10,
+                background: "linear-gradient(135deg,#1C1812,#2A1F14)",
+                color: "#D4B056", fontSize: 12, fontWeight: 600,
+                border: "1px solid #D4B056", textDecoration: "none",
+              }}
+            >
+              ✨ Carousel Studio
+              <span style={{ opacity: 0.7, fontWeight: 400 }}>— viral, multi-style</span>
+            </a>
+          </div>
         </div>
 
         {/* Framework Builder Mode */}
