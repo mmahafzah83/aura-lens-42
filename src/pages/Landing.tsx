@@ -648,11 +648,13 @@ const Landing = () => {
         `}</style>
         <div className="landing-footer-grid">
           <div>
-            <div className="flex items-center gap-2" style={{ height: 24 }}>
-              <span className="text-base font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Strategic Intelligence OS</span>
+            <div className="flex items-center gap-3" style={{ height: 28 }}>
+              <AuraLogo size={24} variant="dark" />
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "'DM Sans', sans-serif" }}>
+                Aura · Strategic Intelligence · aura-intel.org
+              </span>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
               © 2026 Aura Intelligence. All rights reserved.
             </p>
           </div>
