@@ -341,8 +341,8 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
 
     // Backfill author info if model omitted
     if (isArabic) {
-      parsed.author_name = parsed.author_name || p.first_name || "محمد";
-      parsed.author_title = parsed.author_title || `${p.level ? 'مدير التحول الرقمي' : ''} في ${p.firm || 'EY'}`.trim();
+      parsed.author_name = "محمد محافظة";
+      parsed.author_title = "مدير التحول الرقمي";
     } else {
       parsed.author_name = parsed.author_name || p.first_name || "Mohammad";
       parsed.author_title = parsed.author_title || `${p.level}${p.firm ? ', ' + p.firm : ''}`;
