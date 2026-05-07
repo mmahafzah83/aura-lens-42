@@ -1116,7 +1116,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     const root = ReactDOM.createRoot(wrapper);
     await new Promise<void>((resolve) => {
       root.render(
-        <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} />
+        <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
       );
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     });
@@ -1227,7 +1227,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <div className="space-y-4">
               <div className="mx-auto" style={{ maxWidth: dim === "1200x628" ? 900 : 640, width: "100%" }}>
                 <div style={{ aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden" }}>
-                  {slide && <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} />}
+                  {slide && <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />}
                 </div>
               </div>
 
@@ -1262,7 +1262,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                                 border: i === activeIdx ? "2px solid #C5A55A" : "1px solid rgba(255,255,255,0.1)",
                                 cursor: "pointer", padding: 0, background: "transparent", display: "block",
                               }}>
-                        <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} />
+                        <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
                       </button>
                       <button
                         onClick={(e) => { e.stopPropagation(); regenerateSlide(i); }}
