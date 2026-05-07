@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -332,6 +332,9 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       <text x={w - 60} y={70} textAnchor="end" fontFamily={style.monoFont} fontSize={24} fill={style.muted}>
         {slide.slide_number}/{total}
       </text>
+
+      {/* Header → content divider */}
+      <line x1={60} y1={92} x2={w - 60} y2={92} stroke={style.accent} strokeOpacity={0.13} strokeWidth={1} />
 
       {/* Slide-type body */}
       <SlideBody slide={slide} style={style} w={w} h={h} />
