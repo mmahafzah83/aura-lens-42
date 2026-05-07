@@ -375,26 +375,41 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
 
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
-        <g>
-          <rect x={isRTL ? w - 56 - Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16) : 56}
-                y={h - 148} rx={4} ry={4}
-                width={Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16)}
-                height={22}
-                fill={style.accent} fillOpacity={0.1}
-                stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
-          <g transform={`translate(${isRTL ? w - 78 : 64}, ${h - 142})`}>
-            <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
-                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
-            <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
-                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
-          </g>
-          <text x={isRTL ? w - 84 : 84} y={h - 132}
-                textAnchor={isRTL ? "end" : "start"}
-                fontFamily={monoFont} fontSize={11}
-                letterSpacing={isRTL ? 0 : 0.5} fill={style.accent}>
-            {carousel.signal_attribution}
-          </text>
-        </g>
+        (() => {
+          // For Arabic, prefer a localized short badge using extracted % when possible
+          const raw = carousel.signal_attribution!;
+          const pct = raw.match(/(\d{1,3})\s*%/);
+          const badgeText = isRTL
+            ? (pct ? `إشارة بثقة ${pct[1]}%` : "مبني على إشارة")
+            : raw;
+          const maxW = Math.floor(w * 0.6);
+          const charW = isRTL ? 9 : 7;
+          const estW = Math.min(maxW, 18 + badgeText.length * charW + 16);
+          const padEdge = 56;
+          const rectX = isRTL ? w - padEdge - estW : padEdge;
+          const iconX = isRTL ? w - padEdge - 14 : padEdge + 8;
+          const textX = isRTL ? w - padEdge - 28 : padEdge + 28;
+          return (
+            <g>
+              <rect x={rectX} y={h - 148} rx={4} ry={4}
+                    width={estW} height={22}
+                    fill={style.accent} fillOpacity={0.1}
+                    stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
+              <g transform={`translate(${iconX}, ${h - 142})`}>
+                <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
+                      strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+                <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
+                      strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+              </g>
+              <text x={textX} y={h - 132}
+                    textAnchor={isRTL ? "end" : "start"}
+                    fontFamily={monoFont} fontSize={11}
+                    letterSpacing={isRTL ? 0 : 0.5} fill={style.accent}>
+                {badgeText}
+              </text>
+            </g>
+          );
+        })()
       )}
 
       {/* Footer */}
