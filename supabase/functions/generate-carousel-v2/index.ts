@@ -234,7 +234,7 @@ Same 8-slide structure, Arabic pacing:
 - REFRAME: SHORT phrases for impact. headline (myth) = 3-5 Arabic words, headline_accent (truth) = 3-6 Arabic words. The truth must directly contradict the myth. Maximum impact per word.
 - BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
 - TERMINAL: filename can be English (audit_v3.log); terminal_lines and terminal_punchline in Arabic
-- COMPARE: Put the CORRECT/FIX content in compare_left_* fields and the WRONG/MISTAKE content in compare_right_* fields. The renderer auto-swaps visual position for RTL so the wrong approach renders on the right (read first) and the correct one on the left (read second).
+- COMPARE: keep English convention — compare_left_* = the WRONG/mistake, compare_right_* = the CORRECT/fix. The renderer auto-swaps visual position for RTL so the wrong approach is read first on the right and the correct fix sits on the left.
 - QUESTION: Arabic question ending with ؟
 - CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع @mmahafzah ←"
 
