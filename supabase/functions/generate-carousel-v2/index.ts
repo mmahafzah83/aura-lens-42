@@ -313,7 +313,7 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        max_tokens: 16384,
+        max_tokens: 32768,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -343,19 +343,50 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
       try {
         parsed = JSON.parse(cleaned);
       } catch {
-        // Repair truncated JSON: drop trailing partial token, close open string/braces
-        let s = cleaned;
-        // If last char is inside an unterminated string, trim back to last safe boundary
-        const lastBrace = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
-        if (lastBrace > 0) s = s.substring(0, lastBrace + 1);
-        // Balance brackets
-        const opens = (s.match(/\{/g) || []).length;
-        const closes = (s.match(/\}/g) || []).length;
-        const opensA = (s.match(/\[/g) || []).length;
-        const closesA = (s.match(/\]/g) || []).length;
-        s = s + "]".repeat(Math.max(0, opensA - closesA)) + "}".repeat(Math.max(0, opens - closes));
+        // Repair truncated JSON. The model often cuts mid-string mid-slide.
+        // Strategy: walk char-by-char tracking string/escape/depth; cut at the
+        // last position where we were OUTSIDE a string AND just closed a complete
+        // slide object inside the slides array, then close remaining brackets.
+        const tryRepair = (input: string): string => {
+          let inStr = false;
+          let esc = false;
+          let depth = 0;
+          const stack: string[] = [];
+          let lastSafe = -1; // position right after a top-level safe close
+          for (let i = 0; i < input.length; i++) {
+            const c = input[i];
+            if (esc) { esc = false; continue; }
+            if (c === "\\") { esc = true; continue; }
+            if (c === '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
+            if (c === "{" || c === "[") { stack.push(c); depth++; }
+            else if (c === "}" || c === "]") { stack.pop(); depth--; lastSafe = i; }
+          }
+          // Cut at last safe boundary if we're stuck inside a string or partial token
+          let s = input;
+          if (inStr && lastSafe > 0) {
+            s = input.substring(0, lastSafe + 1);
+          }
+          // Now rebuild stack on the trimmed string and close everything
+          const stk: string[] = [];
+          let inS = false, es = false;
+          for (let i = 0; i < s.length; i++) {
+            const c = s[i];
+            if (es) { es = false; continue; }
+            if (c === "\\") { es = true; continue; }
+            if (c === '"') { inS = !inS; continue; }
+            if (inS) continue;
+            if (c === "{") stk.push("}");
+            else if (c === "[") stk.push("]");
+            else if (c === "}" || c === "]") stk.pop();
+          }
+          // Strip trailing comma/whitespace before closing
+          s = s.replace(/[,\s]+$/, "");
+          while (stk.length) s += stk.pop();
+          return s;
+        };
         try {
-          parsed = JSON.parse(s);
+          parsed = JSON.parse(tryRepair(cleaned));
         } catch (e) {
           console.error("JSON repair failed. Raw length:", raw.length, "First 500:", raw.substring(0, 500));
           throw new Error("AI returned malformed JSON (likely truncated). Try regenerating.");
