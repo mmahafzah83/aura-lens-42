@@ -581,23 +581,33 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const startLinesY = innerTop + Math.max(0, (innerH - totalContent) / 2) + 24;
       const punchY = startLinesY + linesBlockH + 32;
       const renderLine = (line: string, idx: number) => {
+        // Arabic RTL: strip leading "→"/"->" prefix; append "←" so arrow sits on the right edge
+        let displayLine = line;
+        let isStep: boolean;
+        if (isRTL) {
+          const stripped = line.replace(/^[→\->]+\s*/, "").replace(/\s*[←]+$/, "");
+          isStep = stripped !== line || /^[→\->]/.test(line);
+          displayLine = `${stripped} ←`;
+        } else {
+          isStep = line.startsWith("→");
+          displayLine = line;
+        }
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
         const re = /(\[[^\]]+\])/g;
         let lastIdx = 0;
-        const matches = Array.from(line.matchAll(re));
-        const isStep = line.startsWith("→");
+        const matches = Array.from(displayLine.matchAll(re));
         const baseColor = isStep ? style.muted : style.fg;
         if (matches.length === 0) {
-          parts.push({ text: line, color: baseColor });
+          parts.push({ text: displayLine, color: baseColor });
         } else {
           for (const m of matches) {
             const i = m.index!;
-            if (i > lastIdx) parts.push({ text: line.slice(lastIdx, i), color: baseColor });
+            if (i > lastIdx) parts.push({ text: displayLine.slice(lastIdx, i), color: baseColor });
             parts.push({ text: m[0].slice(1, -1), color: style.accent });
             lastIdx = i + m[0].length;
           }
-          if (lastIdx < line.length) parts.push({ text: line.slice(lastIdx), color: baseColor });
+          if (lastIdx < displayLine.length) parts.push({ text: displayLine.slice(lastIdx), color: baseColor });
         }
         // Apply terminal_keywords highlighting on top of any base segments
         let withKw = parts;
