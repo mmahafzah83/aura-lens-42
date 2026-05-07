@@ -1089,7 +1089,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           author_name: carousel.author_name,
           author_title: carousel.author_title,
           total_slides: slides.length,
-          lang: 'en',
+          lang,
         },
         tracking_status: 'draft',
       } as any);
