@@ -505,6 +505,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     }
     case "REFRAME": {
       const beliefLines = wrapText(slide.headline || "", isRTL ? 22 : 28);
+      // Strip duplicated myth-label prefix if the model included it in the headline.
+      const stripMythPrefix = (s: string) =>
+        s.replace(/^\s*(يعتقد الأغلبية|MOST PEOPLE THINK|Most people think)[:\s\-—]*/i, "").trim();
+      const cleanedBelief = stripMythPrefix(slide.headline || "");
+      const beliefLinesClean = wrapText(cleanedBelief || (slide.headline || ""), isRTL ? 22 : 28);
       const truthRaw = slide.body || slide.headline_accent || "";
       const truthLines = wrapText(truthRaw, isRTL ? 20 : 24);
       const beliefStartY = cy - 160;
@@ -515,7 +520,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 fontWeight={isRTL ? 700 : 400}>
             {L.myth}
           </text>
-          {beliefLines.map((ln, i) => (
+          {beliefLinesClean.map((ln, i) => (
             <text key={i} x={startX} y={beliefStartY + i * 36} textAnchor={sideAnchor}
                   fontFamily={bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
                   fontWeight={isRTL ? 600 : 400}
