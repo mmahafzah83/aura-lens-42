@@ -226,6 +226,17 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 - "في هذا السياق"
 - "تجدر الإشارة إلى"
 - "مما لا شك فيه"
+- "الجزر الرقمية" (digital islands — not used in GCC executive Arabic)
+- "الصوامع الرقمية" (digital silos — use "أنظمة منعزلة" instead)
+
+═══ PREFERRED ARABIC TERMINOLOGY (use these exact replacements) ═══
+- Instead of "الجزر الرقمية" / "الصوامع" → use "أنظمة منعزلة" or "بيانات مبعثرة"
+- Instead of "التكامل الشامل" → use "الربط المتكامل"
+- Instead of "المنظومة الرقمية" → use "النظام البيئي الرقمي"
+- Instead of "التحول الرقمي الشامل" → use "التحول المؤسسي الرقمي"
+
+═══ CTA SLIDE — MANDATORY HEADLINE (Arabic) ═══
+The CTA slide MUST include a `headline` field with a bold imperative statement (3-5 Arabic words). Examples: "ابدأ من البيانات", "حان وقت التغيير", "افعل هذا الآن". The headline is the emotional peak ABOVE the save/share/follow lines. Never omit it.
 
 ═══ ARABIC NARRATIVE RHYTHM ═══
 Same 8-slide structure, Arabic pacing:
