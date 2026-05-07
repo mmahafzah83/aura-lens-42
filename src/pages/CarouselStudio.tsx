@@ -184,6 +184,7 @@ interface RenderProps {
   style: StylePalette;
   dim: Dimension;
   carousel: Carousel;
+  lang?: "en" | "ar";
 }
 
 /* Per-type accent strip color (left edge) */
