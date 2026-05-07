@@ -591,7 +591,12 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         if (isRTL) {
           const stripped = line.replace(/^[→\->]+\s*/, "").replace(/\s*[←]+$/, "");
           isStep = stripped !== line || /^[→\->]/.test(line);
-          displayLine = `${stripped} ←`;
+          // Force the whole line into RTL paragraph context (RLM at start) so
+          // mixed Arabic+English (SCADA, IoT, AI/ML) renders in Arabic order
+          // with English terms kept LTR-internal via the Unicode bidi algorithm.
+          // The "←" arrow is appended after another RLM so it visually sits on
+          // the LEFT (end of RTL line).
+          displayLine = `\u200F${stripped} \u200F←`;
         } else {
           isStep = line.startsWith("→");
           displayLine = line;
