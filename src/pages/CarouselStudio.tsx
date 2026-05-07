@@ -930,20 +930,31 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
 
 /* ============================ EXPORT ============================ */
 
+const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=block');`;
+
 function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const xml = new XMLSerializer().serializeToString(svgEl);
+    // Clone and inject <style> with @import so fonts load inside the SVG sandbox
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    styleEl.setAttribute("type", "text/css");
+    styleEl.textContent = FONT_IMPORT_CSS;
+    clone.insertBefore(styleEl, clone.firstChild);
+    const xml = new XMLSerializer().serializeToString(clone);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
+      // Small delay so SVG-loaded fonts have a frame to apply before raster
+      setTimeout(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
+      }, 250);
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
     img.src = url;
