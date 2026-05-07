@@ -142,7 +142,7 @@ FOR EACH SLIDE:
 {
   slide_number: number,
   slide_type: 'COVER'|'BOLD_CLAIM'|'REFRAME'|'BIG_NUMBER'|'TERMINAL'|'GRID'|'COMPARE'|'QUESTION'|'LIST'|'INSIGHT'|'CTA',
-  section_label: string (topic category, ALL CAPS, 2-4 words),
+  section_label: string (a SHORT topic-relevant label in ALL CAPS that describes what THIS SLIDE is about — e.g., "THE FAILURE RATE", "ROOT CAUSES", "STRATEGY SHIFT", "FUTURE-PROOFING", "CALL TO ACTION". NEVER use the slide_type name as the label. NEVER output "BOLD_CLAIM", "BIG_NUMBER", "TERMINAL", "COMPARE", "QUESTION", "INSIGHT", "REFRAME", "GRID", "LIST", or "CTA" as a section_label. Each slide's label should be unique and meaningful within the carousel's narrative.),
   headline: string,
   headline_accent: string (the phrase to highlight in accent color),
   body: string (optional — only for COVER, INSIGHT, CTA),
@@ -153,6 +153,7 @@ FOR EACH SLIDE:
   terminal_file: string (TERMINAL only),
   terminal_lines: string[] (TERMINAL only),
   terminal_punchline: string (TERMINAL only),
+  terminal_keywords: string[] (TERMINAL only — 1-2 KEY WORDS per terminal_line to highlight in accent color. Extract the most important technical term from each line. e.g., for "-> Ingest varied unstructured data" the keyword is "unstructured data". For "-> Model scenario impact, risk factors" the keyword is "scenario impact"),
   grid_items: string[] (GRID only — short bold phrases, NOT sentences),
   compare_left_title: string (COMPARE only — sharp label, not generic),
   compare_left_items: string[] (COMPARE only),
@@ -181,6 +182,8 @@ WRAPPER:
 ${isArabic ? "Write ALL content in professional executive Arabic (فصحى معاصرة — not dialect, not bureaucratic MSA). Short lines creating tension→insight rhythm. One specific number mid-carousel. Closing with an uncomfortable question. Technical terms stay in English (AI, IoT, KPI, dashboard, smart meter). Use ◆ for main points, ↳ for sub-points. Arabic quote marks «»." : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
 
 BANNED WORDS: delve, tapestry, landscape, synergy, leverage (as verb), holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm
+
+BANNED SECTION_LABELS: COVER, BOLD_CLAIM, REFRAME, BIG_NUMBER, TERMINAL, GRID, COMPARE, QUESTION, LIST, INSIGHT, CTA — never use a slide_type name as a section_label.
 
 OUTPUT: Valid JSON only. No markdown fences. No preamble. No explanation.`;
 
