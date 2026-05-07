@@ -289,8 +289,12 @@ function NoiseTexture({ id, opacity, w, h }: { id: string; opacity: number; w: n
   );
 }
 
-function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
+function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderProps) {
   const { w, h } = DIM[dim];
+  const isRTL = lang === "ar";
+  const arFont = "'Cairo', 'DM Sans', sans-serif";
+  const bodyFont = isRTL ? arFont : style.bodyFont;
+  const monoFont = isRTL ? arFont : style.monoFont;
   const bgIsGradient = !!style.bgGradient && style.key === "bold_statement";
   const stripColor = STRIP_COLORS[slide.slide_type] || style.accent;
   const displayLabel = getDisplayLabel(slide);
@@ -302,11 +306,27 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
     ? 0.015
     : 0;
   const noiseId = `noise-${slide.slide_number}-${style.key}`;
-  // Approx label text width for icon placement
-  const labelTextX = 60 + 22; // 22 = icon width + gap
+  // Header positions — mirror in RTL
+  const labelIconX = isRTL ? w - 60 - 16 : 60;
+  const labelTextX = isRTL ? w - 60 - 16 - 8 : 60 + 22;
+  const labelAnchor: "start" | "end" = isRTL ? "end" : "start";
+  const numberX = isRTL ? 60 : w - 60;
+  const numberAnchor: "start" | "end" = isRTL ? "start" : "end";
+  // Footer
+  const authorEyeX = isRTL ? w - 60 - 20 : 60;
+  const authorTextX = isRTL ? w - 60 - 30 : 90;
+  const authorAnchor: "start" | "end" = isRTL ? "end" : "start";
+  const urlX = isRTL ? 60 : w - 60;
+  const urlAnchor: "start" | "end" = isRTL ? "start" : "end";
+  const swipeX = isRTL ? 60 : w - 60;
+  const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
+  const swipeText = isRTL ? "← اسحب" : "SWIPE →";
+  const stripX = isRTL ? w - 4 : 0;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%", display: "block" }}>
+    <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
+         direction={isRTL ? "rtl" : "ltr"}
+         style={{ width: "100%", height: "100%", display: "block", direction: isRTL ? "rtl" : "ltr" }}>
       <defs>
         {bgIsGradient && (
           <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -320,17 +340,20 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       {/* Subtle texture overlay */}
       {textureOpacity > 0 && <NoiseTexture id={noiseId} opacity={textureOpacity} w={w} h={h} />}
 
-      {/* Left accent strip */}
-      <rect x={0} y={0} width={4} height={h} fill={stripColor} rx={0} />
+      {/* Accent strip — left in LTR, right in RTL */}
+      <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />
 
       {/* Section label + icon */}
-      <TypeIcon type={slide.slide_type} x={60} y={56} color={style.accent} size={16} />
-      <text x={labelTextX} y={70} fontFamily={style.bodyFont} fontSize={18} letterSpacing={3} fill={style.accent} fontWeight={600}>
+      <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
+      <text x={labelTextX} y={70} textAnchor={labelAnchor}
+            fontFamily={bodyFont} fontSize={18} letterSpacing={isRTL ? 0 : 3}
+            fill={style.accent} fontWeight={isRTL ? 700 : 600}>
         {displayLabel}
       </text>
 
       {/* Page number */}
-      <text x={w - 60} y={70} textAnchor="end" fontFamily={style.monoFont} fontSize={24} fill={style.muted}>
+      <text x={numberX} y={70} textAnchor={numberAnchor}
+            fontFamily={monoFont} fontSize={24} fill={style.muted}>
         {slide.slide_number}/{total}
       </text>
 
@@ -338,7 +361,7 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       <line x1={60} y1={92} x2={w - 60} y2={92} stroke={style.accent} strokeOpacity={0.13} strokeWidth={1} />
 
       {/* Slide-type body */}
-      <SlideBody slide={slide} style={style} w={w} h={h} />
+      <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} />
 
       {/* Progress dots — above footer */}
       <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 100} accent={style.accent} dotOutline={dotOutline} />
@@ -346,19 +369,22 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
         <g>
-          <rect x={56} y={h - 148} rx={4} ry={4}
+          <rect x={isRTL ? w - 56 - Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16) : 56}
+                y={h - 148} rx={4} ry={4}
                 width={Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16)}
                 height={22}
                 fill={style.accent} fillOpacity={0.1}
                 stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
-          <g transform={`translate(${64}, ${h - 142})`}>
+          <g transform={`translate(${isRTL ? w - 78 : 64}, ${h - 142})`}>
             <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
                   strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
             <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
                   strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
           </g>
-          <text x={84} y={h - 132} fontFamily={style.monoFont} fontSize={11}
-                letterSpacing={0.5} fill={style.accent}>
+          <text x={isRTL ? w - 84 : 84} y={h - 132}
+                textAnchor={isRTL ? "end" : "start"}
+                fontFamily={monoFont} fontSize={11}
+                letterSpacing={isRTL ? 0 : 0.5} fill={style.accent}>
             {carousel.signal_attribution}
           </text>
         </g>
@@ -366,16 +392,19 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
 
       {/* Footer */}
       <g>
-        <HorizonEye x={60} y={h - 60} size={20} color={style.accent} />
-        <text x={90} y={h - 45} fontFamily={style.bodyFont} fontSize={16} fill={style.fg}>
+        <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+        <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
+              fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {carousel.author_name || "M. Mahafzah"}
         </text>
-        <text x={w - 60} y={h - 45} textAnchor="end" fontFamily={style.bodyFont} fontSize={14} fill={style.muted}>
+        <text x={urlX} y={h - 45} textAnchor={urlAnchor}
+              fontFamily={bodyFont} fontSize={14} fill={style.muted}>
           aura-intel.org
         </text>
         {slide.slide_type === "COVER" && (
-          <text x={w - 60} y={h - 95} textAnchor="end" fontFamily={style.bodyFont} fontSize={18} fill={style.accent} fontWeight={600}>
-            SWIPE →
+          <text x={swipeX} y={h - 95} textAnchor={swipeAnchor}
+                fontFamily={bodyFont} fontSize={18} fill={style.accent} fontWeight={600}>
+            {swipeText}
           </text>
         )}
       </g>
@@ -383,7 +412,8 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       {/* Progress bar */}
       <g>
         <rect x={0} y={h - 3} width={w} height={3} fill={style.border} />
-        <rect x={0} y={h - 3} width={(slide.slide_number / total) * w} height={3} fill={style.accent} />
+        <rect x={isRTL ? w - (slide.slide_number / total) * w : 0}
+              y={h - 3} width={(slide.slide_number / total) * w} height={3} fill={style.accent} />
       </g>
     </svg>
   );
