@@ -946,7 +946,7 @@ export default function CarouselStudio() {
         body: {
           topic,
           context: contextText || undefined,
-          lang: "en",
+          lang,
           style: styleKey,
           total_slides: 8,
           user_id: sess.session.user.id,
@@ -1041,7 +1041,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         body: {
           topic: topic || carousel.carousel_title || "",
           context: ctx,
-          lang: "en",
+          lang,
           style: styleKey,
           total_slides: 1,
           user_id: sess.session.user.id,
