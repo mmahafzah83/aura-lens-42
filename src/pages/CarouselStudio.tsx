@@ -570,6 +570,16 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const keywords = (slide.terminal_keywords || []).filter(Boolean);
       const lineX = isRTL ? blockX + blockW - 40 : blockX + 40;
       const lineAnchor: "start" | "end" = isRTL ? "end" : "start";
+      // Vertically distribute the lines block + punchline within the terminal box
+      const lineGap = 36;
+      const linesBlockH = lines.length * lineGap;
+      const punchH = slide.terminal_punchline ? 40 : 0;
+      const innerTop = blockY + 70; // below the dot bar
+      const innerBottom = blockY + blockH - 30;
+      const innerH = innerBottom - innerTop;
+      const totalContent = linesBlockH + (punchH ? punchH + 24 : 0);
+      const startLinesY = innerTop + Math.max(0, (innerH - totalContent) / 2) + 24;
+      const punchY = startLinesY + linesBlockH + 32;
       const renderLine = (line: string, idx: number) => {
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
@@ -611,7 +621,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           }
         }
         return (
-          <text key={idx} x={lineX} y={blockY + 110 + idx * 36} textAnchor={lineAnchor}
+          <text key={idx} x={lineX} y={startLinesY + idx * lineGap} textAnchor={lineAnchor}
                 fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22}>
             {withKw.map((p, i) => (
               <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
@@ -632,7 +642,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           )}
           {lines.map(renderLine)}
           {slide.terminal_punchline && (
-            <text x={lineX} y={blockY + blockH - 40} textAnchor={lineAnchor}
+            <text x={lineX} y={punchY} textAnchor={lineAnchor}
                   fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22} fontWeight={isRTL ? 800 : 700} fill={style.accent}>
               {slide.terminal_punchline}
             </text>
