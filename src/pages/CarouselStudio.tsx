@@ -23,44 +23,58 @@ interface StylePalette {
   bodyFont: string;
   headingFont: string;
   monoFont: string;
+  // New differentiation fields
+  headingWeight?: number;       // weight for headings (default 700)
+  stripPosition?: "left" | "right" | "none";
+  stripColor?: string;          // overrides per-slide STRIP_COLORS when set
+  topAccentLine?: boolean;      // executive briefing
+  pattern?: "none" | "dots" | "diagonal" | "circuit";
+  numberBadgeBg?: string;       // override for grid number circle / hi-contrast
+  numberBadgeFg?: string;
 }
 
 const STYLES: Record<StyleKey, StylePalette> = {
   clean_paper: {
     key: "clean_paper", name: "Clean Paper",
-    bg: "#F7F3E8", fg: "#2A2419", accent: "#B08D3A", emphasis: "#B08D3A", muted: "#888888", border: "#D3D1C7", codeBg: "#EFEAD9",
+    bg: "#FAFAF8", fg: "#2D2D2D", accent: "#2D2D2D", emphasis: "#2D2D2D", muted: "#888888", border: "#E5E5E5", codeBg: "#F0F0EE",
     bodyFont: "'DM Sans', system-ui, sans-serif",
-    headingFont: "'Cormorant Garamond', Georgia, serif",
+    headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "none", pattern: "none",
   },
   bold_statement: {
     key: "bold_statement", name: "Bold Statement",
-    bg: "#1C1812", bgGradient: "linear-gradient(135deg,#1C1812 0%,#2A1F14 100%)",
-    fg: "#F5F0E6", accent: "#D4B056", emphasis: "#F97316", muted: "#888888", border: "#3A3128", codeBg: "#0D0B08",
+    bg: "#1A1714", bgGradient: "linear-gradient(135deg,#1A1714 0%,#241D16 100%)",
+    fg: "#F5F0F0", accent: "#D4B056", emphasis: "#D4B056", muted: "#9A9388", border: "rgba(255,255,255,0.1)", codeBg: "#0D0B08",
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "left", stripColor: "#D4B056", pattern: "dots",
   },
   executive_briefing: {
     key: "executive_briefing", name: "Executive Briefing",
-    bg: "#F7F3E8", fg: "#2A2419", accent: "#B08D3A", emphasis: "#B08D3A", muted: "#5F5E5A", border: "#D3D1C7", codeBg: "#EFEAD9",
+    bg: "#F5F0E8", fg: "#2A2419", accent: "#6B4F1D", emphasis: "#6B4F1D", muted: "#6F6A60", border: "#D4C5A0", codeBg: "#EBE3D2",
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "none", topAccentLine: true, pattern: "diagonal",
   },
   terminal: {
     key: "terminal", name: "Terminal",
-    bg: "#0D0B08", fg: "#E8E3D8", accent: "#D4B056", emphasis: "#F97316", muted: "#666666", border: "#1F1B14", codeBg: "#0A0908",
+    bg: "#0D1117", fg: "#E6EDF3", accent: "#58A6FF", emphasis: "#58A6FF", muted: "#7D8590", border: "rgba(88,166,255,0.15)", codeBg: "#010409",
     bodyFont: "'JetBrains Mono', ui-monospace, monospace",
     headingFont: "'JetBrains Mono', ui-monospace, monospace",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "left", stripColor: "#3FB950", pattern: "circuit",
   },
   high_contrast: {
     key: "high_contrast", name: "High Contrast",
-    bg: "#0A0908", fg: "#FFFFFF", accent: "#D4B056", emphasis: "#D4B056", muted: "#777777", border: "#1F1B14", codeBg: "#000000",
+    bg: "#000000", fg: "#FFFFFF", accent: "#FFFFFF", emphasis: "#FFFFFF", muted: "rgba(255,255,255,0.55)", border: "rgba(255,255,255,0.15)", codeBg: "#0A0A0A",
     bodyFont: "'DM Sans', system-ui, sans-serif",
-    headingFont: "'Cormorant Garamond', Georgia, serif",
+    headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 900, stripPosition: "none", pattern: "none",
+    numberBadgeBg: "#FFFFFF", numberBadgeFg: "#000000",
   },
 };
 
@@ -289,6 +303,46 @@ function NoiseTexture({ id, opacity, w, h }: { id: string; opacity: number; w: n
   );
 }
 
+/* Per-style decorative background pattern, behind all content */
+function BackgroundPattern({ kind, color, w, h, id }: { kind: "none"|"dots"|"diagonal"|"circuit"; color: string; w: number; h: number; id: string }) {
+  if (kind === "none") return null;
+  if (kind === "dots") {
+    return (
+      <g pointerEvents="none">
+        <defs>
+          <pattern id={id} x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="1" fill={color} fillOpacity="0.18" />
+          </pattern>
+        </defs>
+        <rect width={w} height={h} fill={`url(#${id})`} />
+      </g>
+    );
+  }
+  if (kind === "diagonal") {
+    return (
+      <g pointerEvents="none">
+        <defs>
+          <pattern id={id} x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(135)">
+            <line x1="0" y1="0" x2="0" y2="20" stroke={color} strokeOpacity="0.10" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width={w} height={h} fill={`url(#${id})`} />
+      </g>
+    );
+  }
+  // circuit
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <pattern id={id} x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M0 0 H40 M0 0 V40" stroke={color} strokeOpacity="0.08" strokeWidth="1" fill="none" />
+        </pattern>
+      </defs>
+      <rect width={w} height={h} fill={`url(#${id})`} />
+    </g>
+  );
+}
+
 function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderProps) {
   const { w, h } = DIM[dim];
   const isRTL = lang === "ar";
@@ -296,7 +350,8 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   const bodyFont = isRTL ? arFont : style.bodyFont;
   const monoFont = isRTL ? arFont : style.monoFont;
   const bgIsGradient = !!style.bgGradient && style.key === "bold_statement";
-  const stripColor = STRIP_COLORS[slide.slide_type] || style.accent;
+  const stripColor = style.stripColor || STRIP_COLORS[slide.slide_type] || style.accent;
+  const stripPos = style.stripPosition ?? "left";
   const displayLabel = getDisplayLabel(slide);
   const isDarkStyle = style.key === "bold_statement" || style.key === "terminal" || style.key === "high_contrast";
   const dotOutline = isDarkStyle ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)";
@@ -323,10 +378,20 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   const swipeX = isRTL ? edgePad : w - edgePad;
   const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
   const swipeText = isRTL ? "← اسحب" : "SWIPE →";
-  const stripX = isRTL ? w - 4 : 0;
+  // Strip placement: in LTR strip is on left; in RTL it mirrors to right.
+  // stripPosition === "right" forces right edge regardless of language.
+  const stripX =
+    stripPos === "right" ? w - 4 :
+    stripPos === "left"  ? (isRTL ? w - 4 : 0) :
+    -10;
+  const showStrip = stripPos !== "none";
   // Author name fallback for Arabic
   const rawAuthor = carousel.author_name || "M. Mahafzah";
   const displayAuthor = isRTL && /^mohammad$/i.test(rawAuthor.trim()) ? "محمد" : rawAuthor;
+  const authorInitial = isRTL ? "م" : (displayAuthor.trim().charAt(0).toUpperCase() || "M");
+  const isCoverOrCta = slide.slide_type === "COVER" || slide.slide_type === "CTA";
+  const showWatermarkNumber = ["BOLD_CLAIM", "QUESTION", "REFRAME"].includes(slide.slide_type);
+  const patternId = `pat-${slide.slide_number}-${style.key}`;
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
@@ -347,8 +412,28 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Subtle texture overlay */}
       {textureOpacity > 0 && <NoiseTexture id={noiseId} opacity={textureOpacity} w={w} h={h} />}
 
-      {/* Accent strip — left in LTR, right in RTL */}
-      <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />
+      {/* Per-style decorative background pattern (behind content) */}
+      <BackgroundPattern kind={style.pattern || "none"} color={style.accent} w={w} h={h} id={patternId} />
+
+      {/* Faint slide-number watermark on text-heavy slides */}
+      {showWatermarkNumber && (
+        <text x={isRTL ? edgePad + 40 : w - edgePad - 40} y={h / 2 + 200}
+              textAnchor={isRTL ? "start" : "end"}
+              fontFamily={style.headingFont} fontSize={520}
+              fill={style.fg} fillOpacity={0.03} fontWeight={900}>
+          {slide.slide_number}
+        </text>
+      )}
+
+      {/* Accent strip */}
+      {showStrip && <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />}
+
+      {/* Top accent line under section_label (Executive Briefing only) */}
+      {style.topAccentLine && (
+        <line x1={isRTL ? w - edgePad - 200 : edgePad} y1={84}
+              x2={isRTL ? w - edgePad : edgePad + 200} y2={84}
+              stroke={style.accent} strokeWidth={2} />
+      )}
 
       {/* Section label + icon */}
       <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
@@ -412,9 +497,34 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         })()
       )}
 
+      {/* Cover swipe chevron — subtle vertical hint on right edge (left for RTL) */}
+      {slide.slide_type === "COVER" && (() => {
+        const cx2 = isRTL ? 28 : w - 28;
+        return (
+          <g opacity={0.35}>
+            <line x1={cx2} y1={h * 0.35} x2={cx2} y2={h * 0.65} stroke={style.accent} strokeWidth={1} />
+            <text x={cx2} y={h / 2 + 8} textAnchor="middle"
+                  fontFamily={style.bodyFont} fontSize={28} fill={style.accent} fontWeight={700}>
+              {isRTL ? "‹" : "›"}
+            </text>
+          </g>
+        );
+      })()}
+
       {/* Footer */}
       <g>
-        <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+        {isCoverOrCta ? (
+          <g transform={`translate(${authorEyeX},${h - 60})`}>
+            <circle cx={10} cy={10} r={11} fill={style.accent} />
+            <text x={10} y={14} textAnchor="middle"
+                  fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
+                  fontWeight={800} fill={style.bg}>
+              {authorInitial}
+            </text>
+          </g>
+        ) : (
+          <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+        )}
         <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
@@ -949,20 +1059,40 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const headLineH = 56;
       const lineH = 32;
       const btnH = slide.cta_button ? 80 : 0;
+      const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
       const mainBlockH = ctaMainLines.length * lineH;
       const subBlockH = ctaSubLines.length * lineH;
       const gap1 = headBlockH && mainBlockH ? 32 : 0;
       const gap2 = mainBlockH && subBlockH ? 18 : 0;
+      const gapIcons = headBlockH ? 28 : 0;
       const gap3 = (headBlockH || mainBlockH || subBlockH) && btnH ? 32 : 0;
-      const totalH = headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
+      const totalH = headBlockH + gapIcons + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
-      const mainY = top + headBlockH + gap1 + lineH * 0.8;
+      const iconRowY = top + headBlockH + gapIcons;
+      const mainY = iconRowY + iconRowH + gap1 + lineH * 0.8 - headLineH; // align with old layout
       const subY = mainY + (mainBlockH ? mainBlockH - lineH * 0.2 : 0) + gap2;
-      const btnY = top + headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
+      const btnY = iconRowY + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
       const btnW = 420;
       const btnX = cx - btnW / 2;
+      const actions = isRTL
+        ? [
+            { icon: "♡", label: "أعجبني", sub: "دعمنا" },
+            { icon: "✎", label: "علّق",  sub: "رأيك يهم" },
+            { icon: "↗", label: "شارك",  sub: "انشر الفائدة" },
+            { icon: "❒", label: "احفظ",  sub: "للرجوع لاحقًا" },
+          ]
+        : [
+            { icon: "♡", label: "Like",    sub: "Show support" },
+            { icon: "✎", label: "Comment", sub: "Your view matters" },
+            { icon: "↗", label: "Share",   sub: "Spread insight" },
+            { icon: "❒", label: "Save",    sub: "For later" },
+          ];
+      const iconCount = actions.length;
+      const iconBlockW = Math.min(680, w - edgePad * 2);
+      const iconStep = iconBlockW / iconCount;
+      const iconStartX = cx - iconBlockW / 2 + iconStep / 2;
       return (
         <g>
           {headlineLines.map((ln, i) => (
@@ -971,6 +1101,32 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
+          {/* Action icon row — Like / Comment / Share / Save */}
+          {actions.map((a, i) => {
+            const acx = iconStartX + i * iconStep;
+            const cyc = iconRowY + 30;
+            return (
+              <g key={`act-${i}`}>
+                <circle cx={acx} cy={cyc} r={26}
+                        fill="none" stroke={style.accent} strokeWidth={1.5} strokeOpacity={0.7} />
+                <text x={acx} y={cyc + 9} textAnchor="middle"
+                      fontFamily={bodyFont} fontSize={24} fill={style.accent} fontWeight={700}>
+                  {a.icon}
+                </text>
+                <text x={acx} y={cyc + 50} textAnchor="middle"
+                      fontFamily={bodyFont} fontSize={14} fill={style.fg}
+                      fontWeight={isRTL ? 700 : 600}
+                      letterSpacing={isRTL ? 0 : 1}>
+                  {a.label}
+                </text>
+                <text x={acx} y={cyc + 70} textAnchor="middle"
+                      fontFamily={bodyFont} fontSize={11} fill={style.muted}
+                      fontWeight={isRTL ? 600 : 400}>
+                  {a.sub}
+                </text>
+              </g>
+            );
+          })}
           {ctaMainLines.map((ln, i) => (
             <text key={`m${i}`} x={cx} y={mainY + i * lineH} textAnchor="middle"
                   fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
