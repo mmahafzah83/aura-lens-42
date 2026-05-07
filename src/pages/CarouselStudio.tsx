@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -332,6 +332,9 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       <text x={w - 60} y={70} textAnchor="end" fontFamily={style.monoFont} fontSize={24} fill={style.muted}>
         {slide.slide_number}/{total}
       </text>
+
+      {/* Header → content divider */}
+      <line x1={60} y1={92} x2={w - 60} y2={92} stroke={style.accent} strokeOpacity={0.13} strokeWidth={1} />
 
       {/* Slide-type body */}
       <SlideBody slide={slide} style={style} w={w} h={h} />
@@ -740,36 +743,44 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       const headLineH = 56;
       const lineH = 32;
       const btnH = slide.cta_button ? 80 : 0;
-      const totalH =
-        headlineLines.length * headLineH +
-        24 + ctaMainLines.length * lineH +
-        16 + ctaSubLines.length * lineH +
-        btnH;
-      const startY = cy - totalH / 2 + headLineH;
-      const mainY = startY + (headlineLines.length - 1) * headLineH + 60;
-      const subY = mainY + ctaMainLines.length * lineH + 16;
-      const btnY = subY + ctaSubLines.length * lineH + 24;
+      const headBlockH = headlineLines.length * headLineH;
+      const mainBlockH = ctaMainLines.length * lineH;
+      const subBlockH = ctaSubLines.length * lineH;
+      const gap1 = headBlockH && mainBlockH ? 32 : 0;
+      const gap2 = mainBlockH && subBlockH ? 18 : 0;
+      const gap3 = (headBlockH || mainBlockH || subBlockH) && btnH ? 32 : 0;
+      const totalH = headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
+      const top = cy - totalH / 2;
+      const startY = top + headLineH;            // baseline of first headline line
+      const mainY = top + headBlockH + gap1 + lineH * 0.8;
+      const subY = mainY + (mainBlockH ? mainBlockH - lineH * 0.2 : 0) + gap2;
+      const btnY = top + headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
+      const btnW = 420;
+      const btnX = cx - btnW / 2;
       return (
         <g>
           {headlineLines.map((ln, i) => (
-            <text key={i} x={60} y={startY + i * headLineH} fontFamily={style.headingFont} fontSize={48} fontWeight={500} fill={style.fg}>
+            <text key={i} x={cx} y={startY + i * headLineH} textAnchor="middle"
+                  fontFamily={style.headingFont} fontSize={48} fontWeight={500} fill={style.fg}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
           {ctaMainLines.map((ln, i) => (
-            <text key={`m${i}`} x={60} y={mainY + i * lineH} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
+            <text key={`m${i}`} x={cx} y={mainY + i * lineH} textAnchor="middle"
+                  fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
               {ln}
             </text>
           ))}
           {ctaSubLines.map((ln, i) => (
-            <text key={`s${i}`} x={60} y={subY + i * lineH} fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
+            <text key={`s${i}`} x={cx} y={subY + i * lineH} textAnchor="middle"
+                  fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
               {ln}
             </text>
           ))}
           {slide.cta_button && (
             <g>
-              <rect x={60} y={btnY} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
-              <text x={270} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
+              <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
+              <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
                 {slide.cta_button}
               </text>
             </g>
@@ -836,6 +847,9 @@ export default function CarouselStudio() {
   const [contextText, setContextText] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(undefined);
   const [showSignals, setShowSignals] = useState(true);
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedToLibrary, setSavedToLibrary] = useState(false);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
 
@@ -886,6 +900,7 @@ export default function CarouselStudio() {
       // Auto-collapse signals once a real carousel is loaded
       setShowSignals(false);
       setActiveIdx(0);
+      setSavedToLibrary(false);
       toast.success(`${numbered.length} slides generated`);
     } catch (e: any) {
       console.error("Carousel generation failed:", e);
@@ -933,6 +948,88 @@ export default function CarouselStudio() {
       return { ...c, slides: next.map((s, i) => ({ ...s, slide_number: i + 1 })) };
     });
     setActiveIdx(newIdx);
+  };
+
+  const regenerateSlide = async (slideIndex: number) => {
+    const target = slides[slideIndex];
+    if (!target) return;
+    setRegeneratingIndex(slideIndex);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
+      const prev = slideIndex > 0 ? slides[slideIndex - 1].headline : "none";
+      const next = slideIndex < slides.length - 1 ? slides[slideIndex + 1].headline : "none";
+      const ctx = `Regenerate ONLY slide ${slideIndex + 1} of ${slides.length}.
+It MUST be slide_type: ${target.slide_type}.
+Carousel topic: ${carousel.carousel_title || topic}.
+Previous slide headline: ${prev}.
+Next slide headline: ${next}.
+Make it sharper, more specific, more provocative than: "${target.headline || target.question_text || target.cta_main || ''}".`;
+      const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
+        body: {
+          topic: topic || carousel.carousel_title || "",
+          context: ctx,
+          lang: "en",
+          style: styleKey,
+          total_slides: 1,
+          user_id: sess.session.user.id,
+          signal_id: selectedSignalId,
+        },
+      });
+      if (error) throw error;
+      const newSlide = data?.slides?.[0];
+      if (!newSlide) { toast.error("No slide returned"); return; }
+      setCarousel(c => ({
+        ...c,
+        slides: c.slides.map((s, i) => i === slideIndex
+          ? { ...newSlide, slide_type: s.slide_type, slide_number: s.slide_number }
+          : s),
+      }));
+      toast.success(`Slide ${slideIndex + 1} regenerated`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Regenerate failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setRegeneratingIndex(null);
+    }
+  };
+
+  const saveToLibrary = async () => {
+    if (!slides.length) return;
+    setSaving(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
+      const { error } = await supabase.from('linkedin_posts').insert({
+        user_id: sess.session.user.id,
+        post_text: carousel.linkedin_caption || '',
+        hook: slides[0]?.headline || carousel.carousel_title || '',
+        title: carousel.carousel_title || topic || 'Carousel',
+        content_type: 'carousel',
+        source_type: 'carousel_studio',
+        source_metadata: {
+          slides,
+          style: styleKey,
+          carousel_title: carousel.carousel_title,
+          hashtags: carousel.hashtags,
+          signal_id: selectedSignalId,
+          signal_attribution: carousel.signal_attribution,
+          author_name: carousel.author_name,
+          author_title: carousel.author_title,
+          total_slides: slides.length,
+          lang: 'en',
+        },
+        tracking_status: 'draft',
+      } as any);
+      if (error) throw error;
+      setSavedToLibrary(true);
+      toast.success("Carousel saved to Library");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Save failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderSlideToBlob = async (s: Slide): Promise<Blob> => {
@@ -1085,15 +1182,34 @@ export default function CarouselStudio() {
               <div className="overflow-x-auto -mx-4 px-4">
                 <div className="flex gap-2 pb-2">
                   {slides.map((s, i) => (
-                    <button key={i} onClick={() => setActiveIdx(i)}
-                            style={{
-                              flex: "0 0 auto", width: 96, aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`,
-                              borderRadius: 8, overflow: "hidden",
-                              border: i === activeIdx ? "2px solid #C5A55A" : "1px solid rgba(255,255,255,0.1)",
-                              cursor: "pointer", padding: 0, background: "transparent",
-                            }}>
-                      <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} />
-                    </button>
+                    <div key={i} className="group relative" style={{ flex: "0 0 auto", width: 96 }}>
+                      <button onClick={() => setActiveIdx(i)}
+                              style={{
+                                width: "100%", aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`,
+                                borderRadius: 8, overflow: "hidden",
+                                border: i === activeIdx ? "2px solid #C5A55A" : "1px solid rgba(255,255,255,0.1)",
+                                cursor: "pointer", padding: 0, background: "transparent", display: "block",
+                              }}>
+                        <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); regenerateSlide(i); }}
+                        disabled={regeneratingIndex !== null}
+                        title={`Regenerate slide ${i + 1}`}
+                        className="absolute top-1 right-1 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                        style={{ background: "rgba(15,14,12,0.85)", border: "1px solid rgba(197,165,90,0.4)" }}
+                      >
+                        {regeneratingIndex === i
+                          ? <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#C5A55A" }} />
+                          : <RefreshCw className="w-3 h-3" style={{ color: "#C5A55A" }} />}
+                      </button>
+                      {regeneratingIndex === i && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg"
+                             style={{ background: "rgba(15,14,12,0.6)" }}>
+                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1225,6 +1341,17 @@ export default function CarouselStudio() {
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
                 style={{ background: "#C5A55A", color: "#0A0908" }}>
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} PDF
+        </button>
+        <button onClick={saveToLibrary} disabled={saving || savedToLibrary || !slides.length}
+                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
+                style={{
+                  background: savedToLibrary ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.1)",
+                  color: savedToLibrary ? "#22c55e" : "inherit",
+                  border: savedToLibrary ? "1px solid rgba(34,197,94,0.4)" : "1px solid transparent",
+                }}>
+          {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+            : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
+            : <><BookmarkPlus className="w-3.5 h-3.5" /> Save to Library</>}
         </button>
       </div>
 
