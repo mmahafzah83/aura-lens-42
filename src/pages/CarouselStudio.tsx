@@ -1001,15 +1001,10 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
 
 const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=block');`;
 
-// Cache of base64 data URLs for Cairo font weights — embedding directly in SVG
-// guarantees the font is available inside the Image()/canvas raster sandbox,
-// which cannot fetch external @import URLs reliably.
-const CAIRO_WOFF2_URLS: Record<number, string> = {
-  400: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
-  600: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
-  700: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
-  800: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
-};
+// Resolve per-weight Cairo font URLs dynamically from Google's CSS endpoint,
+// then inline each weight as a base64 woff2/ttf inside the SVG. This is the
+// only reliable way to get the correct font into the Image()/canvas raster
+// sandbox (external @import does not load there).
 let CAIRO_EMBEDDED_CSS: string | null = null;
 let CAIRO_EMBED_PROMISE: Promise<string> | null = null;
 async function getCairoEmbeddedCSS(): Promise<string> {
@@ -1017,17 +1012,33 @@ async function getCairoEmbeddedCSS(): Promise<string> {
   if (CAIRO_EMBED_PROMISE) return CAIRO_EMBED_PROMISE;
   CAIRO_EMBED_PROMISE = (async () => {
     try {
-      const weights = [400, 600, 700, 800];
-      const fetched = await Promise.all(weights.map(async (w) => {
-        const res = await fetch(CAIRO_WOFF2_URLS[w]);
-        const buf = await res.arrayBuffer();
-        let bin = "";
+      const cssRes = await fetch(
+        "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=block"
+      );
+      const cssText = await cssRes.text();
+      // Parse @font-face blocks, extract weight + src URL, inline as base64.
+      const blocks = cssText.split("@font-face").slice(1);
+      const out: string[] = [];
+      for (const blk of blocks) {
+        const wMatch = blk.match(/font-weight:\s*(\d+)/);
+        const uMatch = blk.match(/url\((https:\/\/[^)]+)\)/);
+        const fMatch = blk.match(/format\(['"]?([^'")]+)/);
+        if (!wMatch || !uMatch) continue;
+        const w = wMatch[1];
+        const url = uMatch[1];
+        const fmt = fMatch ? fMatch[1] : (url.endsWith(".woff2") ? "woff2" : "truetype");
+        const mime = fmt === "woff2" ? "font/woff2" : "font/ttf";
+        const fr = await fetch(url);
+        const buf = await fr.arrayBuffer();
         const bytes = new Uint8Array(buf);
+        let bin = "";
         for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
         const b64 = btoa(bin);
-        return `@font-face{font-family:'Cairo';font-style:normal;font-weight:${w};font-display:block;src:url(data:font/woff2;base64,${b64}) format('woff2');}`;
-      }));
-      CAIRO_EMBEDDED_CSS = fetched.join("\n");
+        out.push(
+          `@font-face{font-family:'Cairo';font-style:normal;font-weight:${w};font-display:block;src:url(data:${mime};base64,${b64}) format('${fmt}');}`
+        );
+      }
+      CAIRO_EMBEDDED_CSS = out.join("\n");
       return CAIRO_EMBEDDED_CSS;
     } catch (e) {
       console.warn("Cairo embed failed, falling back to @import", e);
