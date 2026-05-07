@@ -950,6 +950,36 @@ function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Prom
   });
 }
 
+async function ensureFontsReady(lang: "en" | "ar") {
+  try {
+    if ((document as any).fonts?.ready) {
+      await (document as any).fonts.ready;
+    }
+    const families = lang === "ar"
+      ? ["16px Cairo", "700 16px Cairo", "800 16px Cairo"]
+      : ["16px 'DM Sans'", "16px 'Cormorant Garamond'", "16px 'JetBrains Mono'"];
+    const checks = families.map((f) => {
+      try { return (document as any).fonts?.check?.(f); } catch { return true; }
+    });
+    if (checks.some((c) => !c)) {
+      // Force-load by injecting offscreen text
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;";
+      probe.innerHTML = lang === "ar"
+        ? `<span style="font-family:'Cairo';font-weight:400">تحميل</span>
+           <span style="font-family:'Cairo';font-weight:700">تحميل</span>
+           <span style="font-family:'Cairo';font-weight:800">تحميل</span>`
+        : `<span style="font-family:'DM Sans'">Aa</span>
+           <span style="font-family:'Cormorant Garamond'">Aa</span>
+           <span style="font-family:'JetBrains Mono'">Aa</span>`;
+      document.body.appendChild(probe);
+      try { await (document as any).fonts?.ready; } catch {}
+      document.body.removeChild(probe);
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  } catch {}
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
