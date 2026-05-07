@@ -303,6 +303,46 @@ function NoiseTexture({ id, opacity, w, h }: { id: string; opacity: number; w: n
   );
 }
 
+/* Per-style decorative background pattern, behind all content */
+function BackgroundPattern({ kind, color, w, h, id }: { kind: "none"|"dots"|"diagonal"|"circuit"; color: string; w: number; h: number; id: string }) {
+  if (kind === "none") return null;
+  if (kind === "dots") {
+    return (
+      <g pointerEvents="none">
+        <defs>
+          <pattern id={id} x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="1" fill={color} fillOpacity="0.18" />
+          </pattern>
+        </defs>
+        <rect width={w} height={h} fill={`url(#${id})`} />
+      </g>
+    );
+  }
+  if (kind === "diagonal") {
+    return (
+      <g pointerEvents="none">
+        <defs>
+          <pattern id={id} x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(135)">
+            <line x1="0" y1="0" x2="0" y2="20" stroke={color} strokeOpacity="0.10" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width={w} height={h} fill={`url(#${id})`} />
+      </g>
+    );
+  }
+  // circuit
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <pattern id={id} x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M0 0 H40 M0 0 V40" stroke={color} strokeOpacity="0.08" strokeWidth="1" fill="none" />
+        </pattern>
+      </defs>
+      <rect width={w} height={h} fill={`url(#${id})`} />
+    </g>
+  );
+}
+
 function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderProps) {
   const { w, h } = DIM[dim];
   const isRTL = lang === "ar";
