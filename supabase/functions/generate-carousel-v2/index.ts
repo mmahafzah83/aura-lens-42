@@ -170,7 +170,27 @@ WRAPPER:
 {
   slides: [...],
   carousel_title: string (sharp, specific — not just the topic restated),
-  linkedin_caption: string (3-4 short paragraphs: hook line, context, value promise, CTA question. Professional advisory tone. No emojis.),
+  linkedin_caption: string — A standalone LinkedIn post that makes people WANT to open the carousel. NOT a description of the carousel.
+
+ENGLISH CAPTION STRUCTURE (4 paragraphs, 150-200 words, NO emojis):
+- P1 HOOK: First person ("I" or "We") + specific number + uncomfortable truth. e.g. "We spent $4M on smart meters last year. The data told us nothing we didn't already know."
+- P2 TENSION: Expand the problem. Name what "everyone" does wrong. Use a contradictory pair: "Everyone invests in X. Almost nobody asks about Y."
+- P3 PIVOT: What the carousel reveals. Frame as insider knowledge: "These 8 slides break down the 6 investments that actually move the needle — and the 4 that just look good in board decks."
+- P4 QUESTION: End with a specific, uncomfortable question that invites comments. Not "What do you think?" but a concrete sector question.
+
+ARABIC CAPTION STRUCTURE (4 paragraphs, 150-180 words, فصحى معاصرة, NO emojis):
+- ف1 الخطاف: First person plural (نحن/استثمرنا). One specific number. واقع يعرفه الجميع.
+- ف2 التوتر: Contradictory pair. "الجميع يستثمر في... لكن قليلون يسألون عن..."
+- ف3 التحول: "٨ شرائح تكشف..." or reference the carousel's core insight.
+- ف4 السؤال: Uncomfortable sector-specific question. e.g. "هل مؤسستك مستعدة للانتقال من..."
+
+CAPTION RULES (BOTH LANGUAGES):
+- MUST include one specific number ($4M, 86%, 6 investments)
+- MUST name the audience (Directors, CDOs, "whoever approves your next transformation budget")
+- NEVER start with "This carousel...", "In this post...", or "هذا الكاروسيل يغطي" — start with a personal observation or striking fact
+- Arabic: words normal people use. NOT bureaucratic MSA. "نقاط بيانات منعزلة" NOT "بيانات في جزر رقمية". "ربط الأنظمة" NOT "التكامل الشامل للمنظومة".
+- Each paragraph separated by a blank line
+- Tone: peer strategist sharing hard-won insight, NOT a marketer promoting content,
   hashtags: string[] (5-7, mix of broad + niche),
   total_slides: number,
   author_name: string,
