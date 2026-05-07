@@ -247,6 +247,10 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 - "في هذا السياق"
 - "تجدر الإشارة إلى"
 - "مما لا شك فيه"
+- "هذا الكاروسيل يغطي" / "يتناول هذا المنشور" — never describe, always hook
+- "في عالمنا الرقمي"
+- "من الضروري أن ندرك"
+- "يسعدنا أن نقدم"
 - "الجزر الرقمية" (digital islands — not used in GCC executive Arabic)
 - "الصوامع الرقمية" (digital silos — use "أنظمة منعزلة" instead)
 - ANY use of "جزر" or "الجزر" as a metaphor for data/digital silos (e.g., "بيانات في جزر", "جزر معلوماتية", "جزر بيانات"). The word "جزر" is BANNED in this metaphorical sense — no exceptions.
