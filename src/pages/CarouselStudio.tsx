@@ -692,8 +692,15 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "COMPARE": {
-      const left = slide.compare_left_items || [];
-      const right = slide.compare_right_items || [];
+      // RTL swap: in Arabic the WRONG (compare_left_*) renders on visual RIGHT (read first)
+      // and the CORRECT (compare_right_*) renders on visual LEFT (read second).
+      const visLeftTitle = isRTL ? (slide.compare_right_title || "AFTER") : (slide.compare_left_title || "BEFORE");
+      const visLeftItems = isRTL ? (slide.compare_right_items || []) : (slide.compare_left_items || []);
+      const visRightTitle = isRTL ? (slide.compare_left_title || "BEFORE") : (slide.compare_right_title || "AFTER");
+      const visRightItems = isRTL ? (slide.compare_left_items || []) : (slide.compare_right_items || []);
+      // visLeft = "muted/strikethrough" column; visRight = "accent/bold" column
+      const left = visLeftItems;
+      const right = visRightItems;
       const itemH = 60;
       const rowsCount = Math.max(left.length, right.length, 1);
       const blockH = 80 + rowsCount * itemH;
@@ -716,11 +723,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
           <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={18}
                 letterSpacing={isRTL ? 0 : 2} fill={style.muted} opacity={0.4} fontWeight={isRTL ? 600 : 400}>
-            {(slide.compare_left_title || "BEFORE").toUpperCase()}
+            {visLeftTitle.toUpperCase()}
           </text>
           <text x={rightColX} y={headerY} fontFamily={bodyFont} fontSize={20}
                 letterSpacing={isRTL ? 0 : 2} fill={style.accent} fontWeight={isRTL ? 800 : 700}>
-            {(slide.compare_right_title || "AFTER").toUpperCase()}
+            {visRightTitle.toUpperCase()}
           </text>
           {left.map((it, i) => {
             const lns = wrapText(it, isRTL ? 18 : 24);
