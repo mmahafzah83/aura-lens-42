@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -82,6 +82,7 @@ interface Slide {
   terminal_file?: string;
   terminal_lines?: string[];
   terminal_punchline?: string;
+  terminal_keywords?: string[];
   grid_items?: string[];
   compare_left_title?: string;
   compare_left_items?: string[];
@@ -338,6 +339,27 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       {/* Progress dots — above footer */}
       <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 100} accent={style.accent} dotOutline={dotOutline} />
 
+      {/* Signal attribution badge — COVER only */}
+      {slide.slide_type === "COVER" && carousel.signal_attribution && (
+        <g>
+          <rect x={56} y={h - 148} rx={4} ry={4}
+                width={Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16)}
+                height={22}
+                fill={style.accent} fillOpacity={0.1}
+                stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
+          <g transform={`translate(${64}, ${h - 142})`}>
+            <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
+                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+            <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
+                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+          </g>
+          <text x={84} y={h - 132} fontFamily={style.monoFont} fontSize={11}
+                letterSpacing={0.5} fill={style.accent}>
+            {carousel.signal_attribution}
+          </text>
+        </g>
+      )}
+
       {/* Footer */}
       <g>
         <HorizonEye x={60} y={h - 60} size={20} color={style.accent} />
@@ -462,6 +484,7 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     case "TERMINAL": {
       const blockX = 60, blockY = 180, blockW = w - 120, blockH = h - 360;
       const lines = slide.terminal_lines || [];
+      const keywords = (slide.terminal_keywords || []).filter(Boolean);
       const renderLine = (line: string, idx: number) => {
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
@@ -481,9 +504,32 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
           }
           if (lastIdx < line.length) parts.push({ text: line.slice(lastIdx), color: baseColor });
         }
+        // Apply terminal_keywords highlighting on top of any base segments
+        let withKw = parts;
+        if (keywords.length) {
+          for (const kw of keywords) {
+            if (!kw) continue;
+            const next: { text: string; color: string }[] = [];
+            for (const seg of withKw) {
+              if (seg.color === style.accent) { next.push(seg); continue; }
+              const lower = seg.text.toLowerCase();
+              const ki = lower.indexOf(kw.toLowerCase());
+              if (ki === -1) { next.push(seg); continue; }
+              const before = seg.text.slice(0, ki);
+              const mid = seg.text.slice(ki, ki + kw.length);
+              const after = seg.text.slice(ki + kw.length);
+              if (before) next.push({ text: before, color: seg.color });
+              next.push({ text: mid, color: style.accent });
+              if (after) next.push({ text: after, color: seg.color });
+            }
+            withKw = next;
+          }
+        }
         return (
           <text key={idx} x={blockX + 40} y={blockY + 110 + idx * 36} fontFamily={style.monoFont} fontSize={22}>
-            {parts.map((p, i) => <tspan key={i} fill={p.color}>{p.text}</tspan>)}
+            {withKw.map((p, i) => (
+              <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
+            ))}
           </text>
         );
       };
@@ -781,7 +827,7 @@ function slugify(s: string): string {
 export default function CarouselStudio() {
   const navigate = useNavigate();
   const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
-  const [dim, setDim] = useState<Dimension>("1080x1080");
+  const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
   const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
@@ -1111,6 +1157,44 @@ export default function CarouselStudio() {
               <Field label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
             </div>
           </div>
+
+          {/* LinkedIn caption + hashtags */}
+          {(carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
+            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase tracking-wider opacity-60">LinkedIn caption</div>
+                <button
+                  onClick={() => {
+                    const tags = (carousel.hashtags || []).map(h => h.startsWith("#") ? h : "#" + h).join(" ");
+                    const text = `${carousel.linkedin_caption || ""}${tags ? "\n\n" + tags : ""}`;
+                    navigator.clipboard.writeText(text).then(
+                      () => toast.success("Caption copied to clipboard"),
+                      () => toast.error("Copy failed"),
+                    );
+                  }}
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10"
+                >
+                  <Copy className="w-3 h-3" /> Copy
+                </button>
+              </div>
+              <textarea
+                value={carousel.linkedin_caption || ""}
+                onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500"
+                style={{ borderColor: "rgba(255,255,255,0.1)", minHeight: 130, resize: "vertical" }}
+              />
+              {carousel.hashtags && carousel.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {carousel.hashtags.map((h, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: "rgba(197,165,90,0.12)", color: "#C5A55A", border: "1px solid rgba(197,165,90,0.25)" }}>
+                      {h.startsWith("#") ? h : "#" + h}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </aside>
       </div>
 
