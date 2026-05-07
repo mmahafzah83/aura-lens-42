@@ -209,12 +209,13 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 - headline: 4-8 words MAX
 - headline_accent: 2-5 words MAX
 - body: 6-12 words MAX
-- terminal_lines: 4-5 lines, each 4-8 words
+- terminal_lines: 4 lines MAX, each 3-6 Arabic words + English terms
 - grid_items: 2-4 words each
 - compare items: 3-6 words each
 - question_text: 8-15 words MAX
 - cta_main: 6-10 words
 - cta_sub: 8-12 words
+- INSIGHT body: 15-25 Arabic words MAX (2-3 SHORT lines). Cut aggressively. Every word must earn its place.
 
 ═══ ARABIC BANNED PHRASES (AI-tells — NEVER use) ═══
 - "في عالم اليوم المتغير"
@@ -228,9 +229,11 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 - "مما لا شك فيه"
 - "الجزر الرقمية" (digital islands — not used in GCC executive Arabic)
 - "الصوامع الرقمية" (digital silos — use "أنظمة منعزلة" instead)
+- ANY use of "جزر" or "الجزر" as a metaphor for data/digital silos (e.g., "بيانات في جزر", "جزر معلوماتية", "جزر بيانات"). The word "جزر" is BANNED in this metaphorical sense — no exceptions.
 
 ═══ PREFERRED ARABIC TERMINOLOGY (use these exact replacements) ═══
 - Instead of "الجزر الرقمية" / "الصوامع" → use "أنظمة منعزلة" or "بيانات مبعثرة"
+- Instead of "جزر بيانات" / "جزر معلوماتية" → use "بيانات غير مترابطة" or "أنظمة منعزلة"
 - Instead of "التكامل الشامل" → use "الربط المتكامل"
 - Instead of "المنظومة الرقمية" → use "النظام البيئي الرقمي"
 - Instead of "التحول الرقمي الشامل" → use "التحول المؤسسي الرقمي"
@@ -242,7 +245,7 @@ The CTA slide MUST include a "headline" field with a bold imperative statement (
 Same 8-slide structure, Arabic pacing:
 - COVER: provocative Arabic headline + Arabic body. Use "اسحب ←" (NOT "SWIPE →") if you include a swipe cue.
 - REFRAME: "يعتقد الأغلبية" (struck-through belief) vs "الحقيقة" (bold truth)
-- REFRAME: SHORT phrases for impact. headline (myth) = 3-5 Arabic words, headline_accent (truth) = 3-6 Arabic words. The truth must directly contradict the myth. Maximum impact per word.
+- REFRAME: SHORT phrases for impact. headline (myth) = 3-5 Arabic words — write ONLY the myth statement itself, do NOT prefix with "يعتقد الأغلبية:" (the renderer adds that label). headline_accent (truth) = 3-6 Arabic words. The truth must directly contradict the myth.
 - BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
 - TERMINAL: filename can be English (audit_v3.log); terminal_lines and terminal_punchline in Arabic
 - COMPARE: keep English convention — compare_left_* = the WRONG/mistake, compare_right_* = the CORRECT/fix. The renderer auto-swaps visual position for RTL so the wrong approach is read first on the right and the correct fix sits on the left.
