@@ -236,7 +236,7 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 - Instead of "التحول الرقمي الشامل" → use "التحول المؤسسي الرقمي"
 
 ═══ CTA SLIDE — MANDATORY HEADLINE (Arabic) ═══
-The CTA slide MUST include a `headline` field with a bold imperative statement (3-5 Arabic words). Examples: "ابدأ من البيانات", "حان وقت التغيير", "افعل هذا الآن". The headline is the emotional peak ABOVE the save/share/follow lines. Never omit it.
+The CTA slide MUST include a "headline" field with a bold imperative statement (3-5 Arabic words). Examples: "ابدأ من البيانات", "حان وقت التغيير", "افعل هذا الآن". The headline is the emotional peak ABOVE the save/share/follow lines. Never omit it.
 
 ═══ ARABIC NARRATIVE RHYTHM ═══
 Same 8-slide structure, Arabic pacing:
