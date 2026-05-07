@@ -1059,20 +1059,40 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const headLineH = 56;
       const lineH = 32;
       const btnH = slide.cta_button ? 80 : 0;
+      const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
       const mainBlockH = ctaMainLines.length * lineH;
       const subBlockH = ctaSubLines.length * lineH;
       const gap1 = headBlockH && mainBlockH ? 32 : 0;
       const gap2 = mainBlockH && subBlockH ? 18 : 0;
+      const gapIcons = headBlockH ? 28 : 0;
       const gap3 = (headBlockH || mainBlockH || subBlockH) && btnH ? 32 : 0;
-      const totalH = headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
+      const totalH = headBlockH + gapIcons + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
-      const mainY = top + headBlockH + gap1 + lineH * 0.8;
+      const iconRowY = top + headBlockH + gapIcons;
+      const mainY = iconRowY + iconRowH + gap1 + lineH * 0.8 - headLineH; // align with old layout
       const subY = mainY + (mainBlockH ? mainBlockH - lineH * 0.2 : 0) + gap2;
-      const btnY = top + headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
+      const btnY = iconRowY + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
       const btnW = 420;
       const btnX = cx - btnW / 2;
+      const actions = isRTL
+        ? [
+            { icon: "♡", label: "أعجبني", sub: "دعمنا" },
+            { icon: "✎", label: "علّق",  sub: "رأيك يهم" },
+            { icon: "↗", label: "شارك",  sub: "انشر الفائدة" },
+            { icon: "❒", label: "احفظ",  sub: "للرجوع لاحقًا" },
+          ]
+        : [
+            { icon: "♡", label: "Like",    sub: "Show support" },
+            { icon: "✎", label: "Comment", sub: "Your view matters" },
+            { icon: "↗", label: "Share",   sub: "Spread insight" },
+            { icon: "❒", label: "Save",    sub: "For later" },
+          ];
+      const iconCount = actions.length;
+      const iconBlockW = Math.min(680, w - edgePad * 2);
+      const iconStep = iconBlockW / iconCount;
+      const iconStartX = cx - iconBlockW / 2 + iconStep / 2;
       return (
         <g>
           {headlineLines.map((ln, i) => (
@@ -1081,6 +1101,32 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
+          {/* Action icon row — Like / Comment / Share / Save */}
+          {actions.map((a, i) => {
+            const acx = iconStartX + i * iconStep;
+            const cyc = iconRowY + 30;
+            return (
+              <g key={`act-${i}`}>
+                <circle cx={acx} cy={cyc} r={26}
+                        fill="none" stroke={style.accent} strokeWidth={1.5} strokeOpacity={0.7} />
+                <text x={acx} y={cyc + 9} textAnchor="middle"
+                      fontFamily={bodyFont} fontSize={24} fill={style.accent} fontWeight={700}>
+                  {a.icon}
+                </text>
+                <text x={acx} y={cyc + 50} textAnchor="middle"
+                      fontFamily={bodyFont} fontSize={14} fill={style.fg}
+                      fontWeight={isRTL ? 700 : 600}
+                      letterSpacing={isRTL ? 0 : 1}>
+                  {a.label}
+                </text>
+                <text x={acx} y={cyc + 70} textAnchor="middle"
+                      fontFamily={bodyFont} fontSize={11} fill={style.muted}
+                      fontWeight={isRTL ? 600 : 400}>
+                  {a.sub}
+                </text>
+              </g>
+            );
+          })}
           {ctaMainLines.map((ln, i) => (
             <text key={`m${i}`} x={cx} y={mainY + i * lineH} textAnchor="middle"
                   fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
