@@ -330,8 +330,11 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
-         style={{ width: "100%", height: "100%", display: "block" }}>
+         style={{ width: "100%", height: "100%", display: "block", unicodeBidi: "plaintext" as any }}>
       <defs>
+        {isRTL && (
+          <style>{`text, tspan { unicode-bidi: plaintext; }`}</style>
+        )}
         {bgIsGradient && (
           <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#1C1812" />
@@ -372,26 +375,41 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
 
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
-        <g>
-          <rect x={isRTL ? w - 56 - Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16) : 56}
-                y={h - 148} rx={4} ry={4}
-                width={Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16)}
-                height={22}
-                fill={style.accent} fillOpacity={0.1}
-                stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
-          <g transform={`translate(${isRTL ? w - 78 : 64}, ${h - 142})`}>
-            <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
-                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
-            <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
-                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
-          </g>
-          <text x={isRTL ? w - 84 : 84} y={h - 132}
-                textAnchor={isRTL ? "end" : "start"}
-                fontFamily={monoFont} fontSize={11}
-                letterSpacing={isRTL ? 0 : 0.5} fill={style.accent}>
-            {carousel.signal_attribution}
-          </text>
-        </g>
+        (() => {
+          // For Arabic, prefer a localized short badge using extracted % when possible
+          const raw = carousel.signal_attribution!;
+          const pct = raw.match(/(\d{1,3})\s*%/);
+          const badgeText = isRTL
+            ? (pct ? `إشارة بثقة ${pct[1]}%` : "مبني على إشارة")
+            : raw;
+          const maxW = Math.floor(w * 0.6);
+          const charW = isRTL ? 9 : 7;
+          const estW = Math.min(maxW, 18 + badgeText.length * charW + 16);
+          const padEdge = 56;
+          const rectX = isRTL ? w - padEdge - estW : padEdge;
+          const iconX = isRTL ? w - padEdge - 14 : padEdge + 8;
+          const textX = isRTL ? w - padEdge - 28 : padEdge + 28;
+          return (
+            <g>
+              <rect x={rectX} y={h - 148} rx={4} ry={4}
+                    width={estW} height={22}
+                    fill={style.accent} fillOpacity={0.1}
+                    stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
+              <g transform={`translate(${iconX}, ${h - 142})`}>
+                <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
+                      strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+                <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
+                      strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+              </g>
+              <text x={textX} y={h - 132}
+                    textAnchor={isRTL ? "end" : "start"}
+                    fontFamily={monoFont} fontSize={11}
+                    letterSpacing={isRTL ? 0 : 0.5} fill={style.accent}>
+                {badgeText}
+              </text>
+            </g>
+          );
+        })()
       )}
 
       {/* Footer */}
@@ -552,6 +570,16 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const keywords = (slide.terminal_keywords || []).filter(Boolean);
       const lineX = isRTL ? blockX + blockW - 40 : blockX + 40;
       const lineAnchor: "start" | "end" = isRTL ? "end" : "start";
+      // Vertically distribute the lines block + punchline within the terminal box
+      const lineGap = 36;
+      const linesBlockH = lines.length * lineGap;
+      const punchH = slide.terminal_punchline ? 40 : 0;
+      const innerTop = blockY + 70; // below the dot bar
+      const innerBottom = blockY + blockH - 30;
+      const innerH = innerBottom - innerTop;
+      const totalContent = linesBlockH + (punchH ? punchH + 24 : 0);
+      const startLinesY = innerTop + Math.max(0, (innerH - totalContent) / 2) + 24;
+      const punchY = startLinesY + linesBlockH + 32;
       const renderLine = (line: string, idx: number) => {
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
@@ -593,7 +621,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           }
         }
         return (
-          <text key={idx} x={lineX} y={blockY + 110 + idx * 36} textAnchor={lineAnchor}
+          <text key={idx} x={lineX} y={startLinesY + idx * lineGap} textAnchor={lineAnchor}
                 fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22}>
             {withKw.map((p, i) => (
               <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
@@ -614,7 +642,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           )}
           {lines.map(renderLine)}
           {slide.terminal_punchline && (
-            <text x={lineX} y={blockY + blockH - 40} textAnchor={lineAnchor}
+            <text x={lineX} y={punchY} textAnchor={lineAnchor}
                   fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22} fontWeight={isRTL ? 800 : 700} fill={style.accent}>
               {slide.terminal_punchline}
             </text>
@@ -674,8 +702,15 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "COMPARE": {
-      const left = slide.compare_left_items || [];
-      const right = slide.compare_right_items || [];
+      // RTL swap: in Arabic the WRONG (compare_left_*) renders on visual RIGHT (read first)
+      // and the CORRECT (compare_right_*) renders on visual LEFT (read second).
+      const visLeftTitle = isRTL ? (slide.compare_right_title || "AFTER") : (slide.compare_left_title || "BEFORE");
+      const visLeftItems = isRTL ? (slide.compare_right_items || []) : (slide.compare_left_items || []);
+      const visRightTitle = isRTL ? (slide.compare_left_title || "BEFORE") : (slide.compare_right_title || "AFTER");
+      const visRightItems = isRTL ? (slide.compare_left_items || []) : (slide.compare_right_items || []);
+      // visLeft = "muted/strikethrough" column; visRight = "accent/bold" column
+      const left = visLeftItems;
+      const right = visRightItems;
       const itemH = 60;
       const rowsCount = Math.max(left.length, right.length, 1);
       const blockH = 80 + rowsCount * itemH;
@@ -698,11 +733,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
           <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={18}
                 letterSpacing={isRTL ? 0 : 2} fill={style.muted} opacity={0.4} fontWeight={isRTL ? 600 : 400}>
-            {(slide.compare_left_title || "BEFORE").toUpperCase()}
+            {visLeftTitle.toUpperCase()}
           </text>
           <text x={rightColX} y={headerY} fontFamily={bodyFont} fontSize={20}
                 letterSpacing={isRTL ? 0 : 2} fill={style.accent} fontWeight={isRTL ? 800 : 700}>
-            {(slide.compare_right_title || "AFTER").toUpperCase()}
+            {visRightTitle.toUpperCase()}
           </text>
           {left.map((it, i) => {
             const lns = wrapText(it, isRTL ? 18 : 24);
@@ -803,20 +838,25 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const bodyLineH = 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
+      // Arabic: center horizontally (matches COVER/QUESTION feel)
+      const insightX = isRTL ? cx : startX;
+      const insightAnchor: "start" | "middle" | "end" = isRTL ? "middle" : sideAnchor;
+      const dividerX1 = isRTL ? cx - 30 : edgePad;
+      const dividerX2 = isRTL ? cx + 30 : edgePad + 30;
       return (
         <g>
           {headlineLines.map((ln, i) => (
-            <text key={i} x={startX} y={startY + i * headLineH} textAnchor={sideAnchor}
+            <text key={i} x={insightX} y={startY + i * headLineH} textAnchor={insightAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={isRTL ? 800 : 600}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
-          <line x1={isRTL ? w - edgePad - 30 : edgePad} y1={startY + headlineLines.length * headLineH + 16}
-                x2={isRTL ? w - edgePad : edgePad + 30} y2={startY + headlineLines.length * headLineH + 16}
+          <line x1={dividerX1} y1={startY + headlineLines.length * headLineH + 16}
+                x2={dividerX2} y2={startY + headlineLines.length * headLineH + 16}
                 stroke={style.accent} strokeWidth={2} opacity={0.5} />
           {bodyLines.map((ln, i) => (
-            <text key={i} x={startX} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
-                  textAnchor={sideAnchor}
+            <text key={i} x={insightX} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
+                  textAnchor={insightAnchor}
                   fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
               {ln}
             </text>
@@ -890,24 +930,65 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
 
 /* ============================ EXPORT ============================ */
 
+const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=block');`;
+
 function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const xml = new XMLSerializer().serializeToString(svgEl);
+    // Clone and inject <style> with @import so fonts load inside the SVG sandbox
+    const clone = svgEl.cloneNode(true) as SVGSVGElement;
+    const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    styleEl.setAttribute("type", "text/css");
+    styleEl.textContent = FONT_IMPORT_CSS;
+    clone.insertBefore(styleEl, clone.firstChild);
+    const xml = new XMLSerializer().serializeToString(clone);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
+      // Small delay so SVG-loaded fonts have a frame to apply before raster
+      setTimeout(() => {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
+      }, 250);
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
     img.src = url;
   });
+}
+
+async function ensureFontsReady(lang: "en" | "ar") {
+  try {
+    if ((document as any).fonts?.ready) {
+      await (document as any).fonts.ready;
+    }
+    const families = lang === "ar"
+      ? ["16px Cairo", "700 16px Cairo", "800 16px Cairo"]
+      : ["16px 'DM Sans'", "16px 'Cormorant Garamond'", "16px 'JetBrains Mono'"];
+    const checks = families.map((f) => {
+      try { return (document as any).fonts?.check?.(f); } catch { return true; }
+    });
+    if (checks.some((c) => !c)) {
+      // Force-load by injecting offscreen text
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:absolute;left:-9999px;top:-9999px;visibility:hidden;";
+      probe.innerHTML = lang === "ar"
+        ? `<span style="font-family:'Cairo';font-weight:400">تحميل</span>
+           <span style="font-family:'Cairo';font-weight:700">تحميل</span>
+           <span style="font-family:'Cairo';font-weight:800">تحميل</span>`
+        : `<span style="font-family:'DM Sans'">Aa</span>
+           <span style="font-family:'Cormorant Garamond'">Aa</span>
+           <span style="font-family:'JetBrains Mono'">Aa</span>`;
+      document.body.appendChild(probe);
+      try { await (document as any).fonts?.ready; } catch {}
+      document.body.removeChild(probe);
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  } catch {}
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -1152,6 +1233,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   const exportCurrent = async () => {
     setExporting(true);
     try {
+      await ensureFontsReady(lang);
       const blob = await renderSlideToBlob(slide);
       downloadBlob(blob, `slide-${slide.slide_number}-${slugify(carousel.carousel_title || topic)}.png`);
     } catch (e: any) { toast.error(e.message || "Export failed"); }
@@ -1161,6 +1243,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   const exportZip = async () => {
     setExporting(true);
     try {
+      await ensureFontsReady(lang);
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
       for (let i = 0; i < slides.length; i++) {
@@ -1178,6 +1261,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   const exportPdf = async () => {
     setExporting(true);
     try {
+      await ensureFontsReady(lang);
       const { jsPDF } = await import("jspdf");
       const { w, h } = DIM[dim];
       const pdf = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "px", format: [w, h] });
