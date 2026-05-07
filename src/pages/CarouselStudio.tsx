@@ -911,6 +911,7 @@ export default function CarouselStudio() {
   const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
   const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState("");
+  const [lang, setLang] = useState<"en" | "ar">("en");
   const [generating, setGenerating] = useState(false);
   const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
   const [activeIdx, setActiveIdx] = useState(0);
