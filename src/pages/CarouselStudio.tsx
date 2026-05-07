@@ -782,7 +782,7 @@ function slugify(s: string): string {
 export default function CarouselStudio() {
   const navigate = useNavigate();
   const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
-  const [dim, setDim] = useState<Dimension>("1080x1080");
+  const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState("");
   const [generating, setGenerating] = useState(false);
   const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
