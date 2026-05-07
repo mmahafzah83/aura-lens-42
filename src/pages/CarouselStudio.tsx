@@ -712,17 +712,19 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "COMPARE": {
-      // RTL swap: in Arabic the WRONG (compare_left_*) renders on visual RIGHT (read first)
-      // and the CORRECT (compare_right_*) renders on visual LEFT (read second).
-      const visLeftTitle = isRTL ? (slide.compare_right_title || "AFTER") : (slide.compare_left_title || "BEFORE");
-      const visLeftItems = isRTL ? (slide.compare_right_items || []) : (slide.compare_left_items || []);
-      const visRightTitle = isRTL ? (slide.compare_left_title || "BEFORE") : (slide.compare_right_title || "AFTER");
-      const visRightItems = isRTL ? (slide.compare_left_items || []) : (slide.compare_right_items || []);
-      // visLeft = "muted/strikethrough" column; visRight = "accent/bold" column
-      const left = visLeftItems;
-      const right = visRightItems;
+      // Convention: compare_left_* = WRONG (mistake, muted+strike), compare_right_* = CORRECT (gold, bold).
+      // RTL swap: in Arabic the WRONG renders on visual RIGHT (read first), CORRECT on visual LEFT (read second, payoff).
+      const wrongTitle = slide.compare_left_title || "BEFORE";
+      const wrongItems = slide.compare_left_items || [];
+      const correctTitle = slide.compare_right_title || "AFTER";
+      const correctItems = slide.compare_right_items || [];
+      const visLeftTitle = isRTL ? correctTitle : wrongTitle;
+      const visLeftItems = isRTL ? correctItems : wrongItems;
+      const visRightTitle = isRTL ? wrongTitle : correctTitle;
+      const visRightItems = isRTL ? wrongItems : correctItems;
+      const correctOnLeft = isRTL;
       const itemH = 60;
-      const rowsCount = Math.max(left.length, right.length, 1);
+      const rowsCount = Math.max(visLeftItems.length, visRightItems.length, 1);
       const blockH = 80 + rowsCount * itemH;
       const headlineSpace = slide.headline ? 70 : 0;
       const blockTop = Math.max(140, cy - blockH / 2 - headlineSpace / 2);
@@ -731,28 +733,72 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const rightColX = cx + 30;
       const rightColW = w - edgePad - rightColX;
       const leftColX = edgePad + 20;
+      const leftColW = cx - leftColX - 10;
+      // Headline centered above
+      const headlineLines = slide.headline ? wrapText(slide.headline, isRTL ? 22 : 28) : [];
+      const headLineH = 44;
       return (
         <g>
-          {slide.headline && (
-            <text x={startX} y={blockTop - 30} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={36} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
-              {slide.headline}
+          {headlineLines.map((ln, i) => (
+            <text key={`hl${i}`} x={cx}
+                  y={blockTop - 24 - (headlineLines.length - 1 - i) * headLineH}
+                  textAnchor="middle"
+                  fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
+                  fontWeight={isRTL ? 800 : 600} fill={style.fg}>
+              {ln}
             </text>
-          )}
+          ))}
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
-          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
-          <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={18}
-                letterSpacing={isRTL ? 0 : 2} fill={style.muted} opacity={0.4} fontWeight={isRTL ? 600 : 400}>
+          {/* Gold tinted background lives on whichever side holds the CORRECT column */}
+          {correctOnLeft ? (
+            <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+          ) : (
+            <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+          )}
+          <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 20 : 18}
+                letterSpacing={isRTL ? 0 : 2}
+                fill={correctOnLeft ? style.accent : style.muted}
+                opacity={correctOnLeft ? 1 : 0.4}
+                fontWeight={correctOnLeft ? (isRTL ? 800 : 700) : (isRTL ? 600 : 400)}
+                textAnchor={isRTL ? "end" : "start"}
+                {...(isRTL ? { x: leftColX + leftColW } : {})}>
             {visLeftTitle.toUpperCase()}
           </text>
-          <text x={rightColX} y={headerY} fontFamily={bodyFont} fontSize={20}
-                letterSpacing={isRTL ? 0 : 2} fill={style.accent} fontWeight={isRTL ? 800 : 700}>
+          <text x={isRTL ? rightColX + rightColW : rightColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 18 : 20}
+                letterSpacing={isRTL ? 0 : 2}
+                fill={correctOnLeft ? style.muted : style.accent}
+                opacity={correctOnLeft ? 0.4 : 1}
+                fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (isRTL ? 800 : 700)}
+                textAnchor={isRTL ? "end" : "start"}>
             {visRightTitle.toUpperCase()}
           </text>
-          {left.map((it, i) => {
+          {/* Visual LEFT column items */}
+          {visLeftItems.map((it, i) => {
             const lns = wrapText(it, isRTL ? 18 : 24);
+            const rowY = rowsStartY + i * itemH;
+            const textXi = isRTL ? leftColX + leftColW : leftColX;
+            const anchor: "start" | "end" = isRTL ? "end" : "start";
+            if (correctOnLeft) {
+              return (
+                <g key={`l${i}`}>
+                  {/* Gold accent on the inner edge (right side in RTL since text reads RTL) */}
+                  <line
+                    x1={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
+                    y1={rowY - 24}
+                    x2={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
+                    y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                    stroke={style.accent} strokeWidth={2} />
+                  {lns.map((ln, li) => (
+                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                      {ln}
+                    </text>
+                  ))}
+                </g>
+              );
+            }
             return lns.map((ln, li) => (
-              <text key={`l${i}-${li}`} x={leftColX} y={rowsStartY + i * itemH + li * 28}
+              <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
@@ -760,21 +806,34 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               </text>
             ));
           })}
-          {right.map((it, i) => {
+          {/* Visual RIGHT column items */}
+          {visRightItems.map((it, i) => {
             const lns = wrapText(it, isRTL ? 18 : 24);
             const rowY = rowsStartY + i * itemH;
-            return (
-              <g key={`rg${i}`}>
-                <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
-                      stroke={style.accent} strokeWidth={2} />
-                {lns.map((ln, li) => (
-                  <text key={`r${i}-${li}`} x={rightColX} y={rowY + li * 28}
-                        fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
-                    {ln}
-                  </text>
-                ))}
-              </g>
-            );
+            const textXi = isRTL ? rightColX + rightColW : rightColX;
+            const anchor: "start" | "end" = isRTL ? "end" : "start";
+            if (!correctOnLeft) {
+              return (
+                <g key={`rg${i}`}>
+                  <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                        stroke={style.accent} strokeWidth={2} />
+                  {lns.map((ln, li) => (
+                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                      {ln}
+                    </text>
+                  ))}
+                </g>
+              );
+            }
+            return lns.map((ln, li) => (
+              <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
+                    fontWeight={isRTL ? 600 : 400}
+                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
+                {ln}
+              </text>
+            ));
           })}
         </g>
       );
