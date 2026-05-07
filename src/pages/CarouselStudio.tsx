@@ -504,7 +504,6 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "REFRAME": {
-      const beliefLines = wrapText(slide.headline || "", isRTL ? 22 : 28);
       // Strip duplicated myth-label prefix if the model included it in the headline.
       const stripMythPrefix = (s: string) =>
         s.replace(/^\s*(يعتقد الأغلبية|MOST PEOPLE THINK|Most people think)[:\s\-—]*/i, "").trim();
