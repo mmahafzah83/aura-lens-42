@@ -419,8 +419,15 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   );
 }
 
-function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; w: number; h: number }) {
+function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: StylePalette; w: number; h: number; lang?: "en" | "ar" }) {
   const cx = w / 2;
+  const isRTL = lang === "ar";
+  const arFont = "'Cairo', 'DM Sans', sans-serif";
+  const headingFont = isRTL ? arFont : style.headingFont;
+  const bodyFont = isRTL ? arFont : style.bodyFont;
+  const monoFont = isRTL ? arFont : style.monoFont;
+  const startX = isRTL ? w - 60 : 60;
+  const sideAnchor: "start" | "end" = isRTL ? "end" : "start";
   // Vertical center of the *content zone* (between header ~100 and footer ~120)
   const contentTop = 100;
   const contentBottom = h - 120;
@@ -428,20 +435,20 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
   switch (slide.slide_type) {
     case "COVER": {
       const lines = wrapText(slide.headline || "", 20);
-      const lh = 84;
+      const lh = isRTL ? 96 : 84;
       const startY = cy - (lines.length * lh) / 2 + 30;
       const bodyLines = wrapText(slide.body || "", 40);
       return (
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={style.headingFont} fontSize={72} fontWeight={500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 60 : 72} fontWeight={isRTL ? 800 : 500}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
           {bodyLines.map((ln, i) => (
             <text key={`b${i}`} x={cx} y={startY + lines.length * lh + 40 + i * 32} textAnchor="middle"
-                  fontFamily={style.bodyFont} fontSize={24} fill={style.muted}>
+                  fontFamily={bodyFont} fontSize={24} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
               {ln}
             </text>
           ))}
@@ -450,13 +457,13 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     }
     case "BOLD_CLAIM": {
       const lines = wrapText(slide.headline || "", 22);
-      const lh = 72;
+      const lh = isRTL ? 84 : 72;
       const startY = cy - (lines.length * lh) / 2 + 24;
       return (
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={style.headingFont} fontSize={60} fontWeight={500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={isRTL ? 800 : 500}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
             </text>
           ))}
@@ -465,31 +472,39 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     }
     case "REFRAME": {
       const beliefLines = wrapText(slide.headline || "", 28);
-      // Truth can come from body OR headline_accent — fall back gracefully
       const truthRaw = slide.body || slide.headline_accent || "";
       const truthLines = wrapText(truthRaw, 24);
       const beliefStartY = cy - 160;
       return (
         <g>
-          <text x={60} y={beliefStartY - 30} fontFamily={style.bodyFont} fontSize={14} letterSpacing={2} fill={style.muted}>
-            MOST PEOPLE THINK
+          <text x={startX} y={beliefStartY - 30} textAnchor={sideAnchor}
+                fontFamily={bodyFont} fontSize={14} letterSpacing={isRTL ? 0 : 2} fill={style.muted}
+                fontWeight={isRTL ? 700 : 400}>
+            {isRTL ? "يعتقد الأغلبية" : "MOST PEOPLE THINK"}
           </text>
           {beliefLines.map((ln, i) => (
-            <text key={i} x={60} y={beliefStartY + i * 36} fontFamily={style.bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
+            <text key={i} x={startX} y={beliefStartY + i * 36} textAnchor={sideAnchor}
+                  fontFamily={bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
+                  fontWeight={isRTL ? 600 : 400}
                   textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
               {ln}
             </text>
           ))}
           <line x1={60} y1={cy} x2={w - 60} y2={cy} stroke={style.accent} strokeWidth={1.5} opacity={0.4} />
-          <text x={60} y={cy + 60} fontFamily={style.bodyFont} fontSize={14} letterSpacing={2} fill={style.accent}>
-            THE TRUTH
+          <text x={startX} y={cy + 60} textAnchor={sideAnchor}
+                fontFamily={bodyFont} fontSize={14} letterSpacing={isRTL ? 0 : 2} fill={style.accent}
+                fontWeight={isRTL ? 800 : 400}>
+            {isRTL ? "الحقيقة" : "THE TRUTH"}
           </text>
           {truthLines.length > 0 ? truthLines.map((ln, i) => (
-            <text key={i} x={60} y={cy + 120 + i * 64} fontFamily={style.headingFont} fontSize={56} fontWeight={700} fill={style.fg}>
+            <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
+                  fontFamily={headingFont} fontSize={isRTL ? 48 : 56} fontWeight={isRTL ? 800 : 700} fill={style.fg}>
               {ln}
             </text>
           )) : (
-            <text x={60} y={cy + 110} fontFamily={style.bodyFont} fontSize={20} fill={style.muted} fontStyle="italic">
+            <text x={startX} y={cy + 110} textAnchor={sideAnchor}
+                  fontFamily={bodyFont} fontSize={20} fill={style.muted}
+                  fontStyle={isRTL ? "normal" : "italic"}>
               (Add the truth in the Body field)
             </text>
           )}
@@ -499,16 +514,17 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     case "BIG_NUMBER": {
       return (
         <g>
-          <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={700} fill={style.accent}>
+          <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={700} fill={style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
           {slide.number_context && (
-            <text x={cx} y={cy + 100} textAnchor="middle" fontFamily={style.bodyFont} fontSize={28} fill={style.muted}>
+            <text x={cx} y={cy + 100} textAnchor="middle" fontFamily={bodyFont} fontSize={isRTL ? 24 : 28} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
               {slide.number_context}
             </text>
           )}
           {slide.number_source && (
-            <text x={cx} y={cy + 160} textAnchor="middle" fontFamily={style.bodyFont} fontSize={18} fill={style.muted} fontStyle="italic">
+            <text x={cx} y={cy + 160} textAnchor="middle" fontFamily={bodyFont} fontSize={18} fill={style.muted}
+                  fontStyle={isRTL ? "normal" : "italic"} fontWeight={isRTL ? 600 : 400}>
               {slide.number_source}
             </text>
           )}
@@ -519,6 +535,8 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       const blockX = 60, blockY = 180, blockW = w - 120, blockH = h - 360;
       const lines = slide.terminal_lines || [];
       const keywords = (slide.terminal_keywords || []).filter(Boolean);
+      const lineX = isRTL ? blockX + blockW - 40 : blockX + 40;
+      const lineAnchor: "start" | "end" = isRTL ? "end" : "start";
       const renderLine = (line: string, idx: number) => {
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
