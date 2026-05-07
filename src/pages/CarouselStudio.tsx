@@ -838,20 +838,25 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const bodyLineH = 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
+      // Arabic: center horizontally (matches COVER/QUESTION feel)
+      const insightX = isRTL ? cx : startX;
+      const insightAnchor: "start" | "middle" | "end" = isRTL ? "middle" : sideAnchor;
+      const dividerX1 = isRTL ? cx - 30 : edgePad;
+      const dividerX2 = isRTL ? cx + 30 : edgePad + 30;
       return (
         <g>
           {headlineLines.map((ln, i) => (
-            <text key={i} x={startX} y={startY + i * headLineH} textAnchor={sideAnchor}
+            <text key={i} x={insightX} y={startY + i * headLineH} textAnchor={insightAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={isRTL ? 800 : 600}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
-          <line x1={isRTL ? w - edgePad - 30 : edgePad} y1={startY + headlineLines.length * headLineH + 16}
-                x2={isRTL ? w - edgePad : edgePad + 30} y2={startY + headlineLines.length * headLineH + 16}
+          <line x1={dividerX1} y1={startY + headlineLines.length * headLineH + 16}
+                x2={dividerX2} y2={startY + headlineLines.length * headLineH + 16}
                 stroke={style.accent} strokeWidth={2} opacity={0.5} />
           {bodyLines.map((ln, i) => (
-            <text key={i} x={startX} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
-                  textAnchor={sideAnchor}
+            <text key={i} x={insightX} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
+                  textAnchor={insightAnchor}
                   fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
               {ln}
             </text>
