@@ -990,7 +990,17 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             <g>
               <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
               <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
-                {slide.cta_button}
+                {(() => {
+                  let t = slide.cta_button || "";
+                  if (isRTL) {
+                    // Normalise: strip any arrows, ensure pattern "تابع @handle ←"
+                    const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
+                    // RLM ... LRM@handle LRM ... RLM← keeps handle LTR and arrow on visual left
+                    return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
+                  }
+                  if (!/[→←]/.test(t)) t = t.replace(/\s*$/, " →");
+                  return t;
+                })()}
               </text>
             </g>
           )}
