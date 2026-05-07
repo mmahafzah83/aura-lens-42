@@ -231,9 +231,10 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 Same 8-slide structure, Arabic pacing:
 - COVER: provocative Arabic headline + Arabic body. Use "اسحب ←" (NOT "SWIPE →") if you include a swipe cue.
 - REFRAME: "يعتقد الأغلبية" (struck-through belief) vs "الحقيقة" (bold truth)
+- REFRAME: SHORT phrases for impact. headline (myth) = 3-5 Arabic words, headline_accent (truth) = 3-6 Arabic words. The truth must directly contradict the myth. Maximum impact per word.
 - BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
 - TERMINAL: filename can be English (audit_v3.log); terminal_lines and terminal_punchline in Arabic
-- COMPARE: right column = the CORRECT answer (RTL — right is read first). Left = the mistake.
+- COMPARE: Put the CORRECT/FIX content in compare_left_* fields and the WRONG/MISTAKE content in compare_right_* fields. The renderer auto-swaps visual position for RTL so the wrong approach renders on the right (read first) and the correct one on the left (read second).
 - QUESTION: Arabic question ending with ؟
 - CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع @mmahafzah ←"
 
