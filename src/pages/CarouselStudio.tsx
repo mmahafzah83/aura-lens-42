@@ -375,9 +375,6 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   const authorAnchor: "start" | "end" = isRTL ? "end" : "start";
   const urlX = isRTL ? edgePad : w - edgePad;
   const urlAnchor: "start" | "end" = isRTL ? "start" : "end";
-  const swipeX = isRTL ? edgePad : w - edgePad;
-  const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
-  const swipeText = isRTL ? "← اسحب" : "SWIPE →";
   // Strip placement: in LTR strip is on left; in RTL it mirrors to right.
   // stripPosition === "right" forces right edge regardless of language.
   const stripX =
@@ -456,7 +453,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} />
 
       {/* Progress dots — above footer */}
-      <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 100} accent={style.accent} dotOutline={dotOutline} />
+      <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 110} accent={style.accent} dotOutline={dotOutline} />
 
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
@@ -514,7 +511,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Footer */}
       <g>
         {isCoverOrCta ? (
-          <g transform={`translate(${authorEyeX},${h - 60})`}>
+          <g transform={`translate(${authorEyeX},${h - 79})`}>
             <circle cx={10} cy={10} r={11} fill={style.accent} />
             <text x={10} y={14} textAnchor="middle"
                   fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
@@ -523,22 +520,16 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
             </text>
           </g>
         ) : (
-          <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+          <HorizonEye x={authorEyeX} y={h - 79} size={20} color={style.accent} />
         )}
-        <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
+        <text x={authorTextX} y={h - 64} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
         </text>
-        <text x={urlX} y={h - 45} textAnchor={urlAnchor}
+        <text x={urlX} y={h - 64} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
           aura-intel.org
         </text>
-        {slide.slide_type === "COVER" && (
-          <text x={swipeX} y={h - 95} textAnchor={swipeAnchor}
-                fontFamily={bodyFont} fontSize={18} fill={style.accent} fontWeight={600}>
-            {swipeText}
-          </text>
-        )}
       </g>
 
       {/* Progress bar */}
@@ -585,7 +576,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={isRTL ? 800 : 500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -606,7 +597,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={isRTL ? 800 : 500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
             </text>
           ))}
@@ -645,7 +636,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           </text>
           {truthLines.length > 0 ? truthLines.map((ln, i) => (
             <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={isRTL ? 800 : 700} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
           )) : (
@@ -661,7 +652,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     case "BIG_NUMBER": {
       return (
         <g>
-          <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={700} fill={style.accent} direction="ltr">
+      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={style.headingWeight ?? 700} fill={style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
           {slide.number_context && (
@@ -814,8 +805,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             return (
               <g key={i}>
                 <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill="none" stroke={style.border} strokeWidth={1} />
-                <circle cx={numCx} cy={y + cellH / 2} r={20} fill={style.emphasis} fillOpacity={0.15} />
-                <text x={numCx} y={y + cellH / 2 + 7} textAnchor="middle" fontFamily={monoFont} fontSize={18} fontWeight={700} fill={style.emphasis}>
+                <circle cx={numCx} cy={y + cellH / 2} r={20}
+                        fill={style.numberBadgeBg ?? style.accent}
+                        fillOpacity={style.numberBadgeBg ? 1 : 0.15} />
+                <text x={numCx} y={y + cellH / 2 + 7} textAnchor="middle" fontFamily={monoFont} fontSize={18} fontWeight={700}
+                      fill={style.numberBadgeFg ?? style.emphasis}>
                   {i + 1}
                 </text>
                 {wrapped.map((ln, li) => (
@@ -863,7 +857,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                   y={blockTop - 24 - (headlineLines.length - 1 - i) * headLineH}
                   textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
-                  fontWeight={isRTL ? 800 : 600} fill={style.fg}>
+                  fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
           ))}
@@ -878,7 +872,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 letterSpacing={isRTL ? 0 : 2}
                 fill={correctOnLeft ? style.accent : style.muted}
                 opacity={correctOnLeft ? 1 : 0.4}
-                fontWeight={correctOnLeft ? (isRTL ? 800 : 700) : (isRTL ? 600 : 400)}
+                fontWeight={correctOnLeft ? (style.headingWeight ?? 700) : (isRTL ? 600 : 400)}
                 textAnchor={isRTL ? "end" : "start"}
                 {...(isRTL ? { x: leftColX + leftColW } : {})}>
             {visLeftTitle.toUpperCase()}
@@ -887,7 +881,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 letterSpacing={isRTL ? 0 : 2}
                 fill={correctOnLeft ? style.muted : style.accent}
                 opacity={correctOnLeft ? 0.4 : 1}
-                fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (isRTL ? 800 : 700)}
+                fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (style.headingWeight ?? 700)}
                 textAnchor={isRTL ? "end" : "start"}>
             {visRightTitle.toUpperCase()}
           </text>
@@ -1011,7 +1005,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 42 : 48}
-                  fontStyle={isRTL ? "normal" : "italic"} fontWeight={isRTL ? 800 : 400}
+                  fontStyle={isRTL ? "normal" : "italic"} fontWeight={style.headingWeight ?? 700}
                   fill={style.fg}>
               {ln}
             </text>
@@ -1035,7 +1029,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={insightX} y={startY + i * headLineH} textAnchor={insightAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={isRTL ? 800 : 600}>
+                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -1097,7 +1091,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * headLineH} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
