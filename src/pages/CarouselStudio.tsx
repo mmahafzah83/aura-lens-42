@@ -805,8 +805,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             return (
               <g key={i}>
                 <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill="none" stroke={style.border} strokeWidth={1} />
-                <circle cx={numCx} cy={y + cellH / 2} r={20} fill={style.emphasis} fillOpacity={0.15} />
-                <text x={numCx} y={y + cellH / 2 + 7} textAnchor="middle" fontFamily={monoFont} fontSize={18} fontWeight={700} fill={style.emphasis}>
+                <circle cx={numCx} cy={y + cellH / 2} r={20}
+                        fill={style.numberBadgeBg ?? style.accent}
+                        fillOpacity={style.numberBadgeBg ? 1 : 0.15} />
+                <text x={numCx} y={y + cellH / 2 + 7} textAnchor="middle" fontFamily={monoFont} fontSize={18} fontWeight={700}
+                      fill={style.numberBadgeFg ?? style.emphasis}>
                   {i + 1}
                 </text>
                 {wrapped.map((ln, li) => (
