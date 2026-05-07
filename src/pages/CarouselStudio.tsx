@@ -654,7 +654,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           {slide.terminal_punchline && (
             <text x={lineX} y={punchY} textAnchor={lineAnchor}
                   fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22} fontWeight={isRTL ? 800 : 700} fill={style.accent}>
-              {slide.terminal_punchline}
+              {isRTL ? slide.terminal_punchline.replace(/^\/\/\s*/, "").replace(/^[→\->]+\s*/, "") : slide.terminal_punchline}
             </text>
           )}
         </g>
