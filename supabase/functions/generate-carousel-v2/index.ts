@@ -242,12 +242,24 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 The CTA slide MUST include a "headline" field with a bold imperative statement (3-5 Arabic words). Examples: "ابدأ من البيانات", "حان وقت التغيير", "افعل هذا الآن". The headline is the emotional peak ABOVE the save/share/follow lines. Never omit it.
 
 ═══ ARABIC NARRATIVE RHYTHM ═══
-Same 8-slide structure, Arabic pacing:
+ARABIC SLIDE TYPE RESTRICTION: Do NOT use TERMINAL slide type for Arabic carousels. The code-block aesthetic breaks with Arabic text direction (BiDi jumbles English technical terms with Arabic). Instead, use GRID for action steps — present the same content as short numbered items in a 2×2 or 2×3 grid. The GRID type handles Arabic text correctly.
+
+Arabic 8-slide rhythm (replaces the English one):
+- Slide 1: COVER
+- Slide 2: REFRAME or BOLD_CLAIM
+- Slide 3: BIG_NUMBER
+- Slide 4: GRID (action steps — replaces TERMINAL)
+- Slide 5: COMPARE or LIST
+- Slide 6: INSIGHT
+- Slide 7: QUESTION
+- Slide 8: CTA
+
+Per-slide Arabic notes:
 - COVER: provocative Arabic headline + Arabic body. Use "اسحب ←" (NOT "SWIPE →") if you include a swipe cue.
 - REFRAME: "يعتقد الأغلبية" (struck-through belief) vs "الحقيقة" (bold truth)
 - REFRAME: SHORT phrases for impact. headline (myth) = 3-5 Arabic words — write ONLY the myth statement itself, do NOT prefix with "يعتقد الأغلبية:" (the renderer adds that label). headline_accent (truth) = 3-6 Arabic words. The truth must directly contradict the myth.
 - BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
-- TERMINAL: filename can be English (audit_v3.log); terminal_lines and terminal_punchline in Arabic
+- GRID (used in place of TERMINAL): 4-6 short numbered Arabic action phrases, 2-4 words each. No English code syntax.
 - COMPARE: keep English convention — compare_left_* = the WRONG/mistake, compare_right_* = the CORRECT/fix. The renderer auto-swaps visual position for RTL so the wrong approach is read first on the right and the correct fix sits on the left.
 - QUESTION: Arabic question ending with ؟
 - CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع @mmahafzah ←"
