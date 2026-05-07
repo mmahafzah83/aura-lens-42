@@ -760,9 +760,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
           {/* Gold tinted background lives on whichever side holds the CORRECT column */}
           {correctOnLeft ? (
-            <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+            <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} fill={style.accent} fillOpacity={0.08} rx={8} />
           ) : (
-            <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+            <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.08} rx={8} />
           )}
           <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 20 : 18}
                 letterSpacing={isRTL ? 0 : 2}
