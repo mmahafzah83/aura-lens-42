@@ -1263,7 +1263,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     if (!svgEl) throw new Error("SVG not found");
     svgEl.setAttribute("width", String(w));
     svgEl.setAttribute("height", String(h));
-    const blob = await svgToPngBlob(svgEl, w, h);
+    // For Arabic, embed Cairo as base64 inside the SVG so the raster sandbox uses it.
+    const extraCSS = lang === "ar" ? await getCairoEmbeddedCSS() : "";
+    const blob = await svgToPngBlob(svgEl, w, h, extraCSS);
     root.unmount();
     return blob;
   };
