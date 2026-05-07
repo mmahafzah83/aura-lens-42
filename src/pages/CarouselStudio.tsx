@@ -1222,6 +1222,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   const exportCurrent = async () => {
     setExporting(true);
     try {
+      await ensureFontsReady(lang);
       const blob = await renderSlideToBlob(slide);
       downloadBlob(blob, `slide-${slide.slide_number}-${slugify(carousel.carousel_title || topic)}.png`);
     } catch (e: any) { toast.error(e.message || "Export failed"); }
@@ -1231,6 +1232,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   const exportZip = async () => {
     setExporting(true);
     try {
+      await ensureFontsReady(lang);
       const JSZip = (await import("jszip")).default;
       const zip = new JSZip();
       for (let i = 0; i < slides.length; i++) {
@@ -1248,6 +1250,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
   const exportPdf = async () => {
     setExporting(true);
     try {
+      await ensureFontsReady(lang);
       const { jsPDF } = await import("jspdf");
       const { w, h } = DIM[dim];
       const pdf = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "px", format: [w, h] });
