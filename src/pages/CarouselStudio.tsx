@@ -306,22 +306,27 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
     ? 0.015
     : 0;
   const noiseId = `noise-${slide.slide_number}-${style.key}`;
+  // Generous edge padding for RTL — Arabic glyphs are wider and need breathing room
+  const edgePad = isRTL ? 96 : 60;
   // Header positions — mirror in RTL
-  const labelIconX = isRTL ? w - 60 - 16 : 60;
-  const labelTextX = isRTL ? w - 60 - 16 - 8 : 60 + 22;
+  const labelIconX = isRTL ? w - edgePad - 16 : edgePad;
+  const labelTextX = isRTL ? w - edgePad - 16 - 8 : edgePad + 22;
   const labelAnchor: "start" | "end" = isRTL ? "end" : "start";
-  const numberX = isRTL ? 60 : w - 60;
+  const numberX = isRTL ? edgePad : w - edgePad;
   const numberAnchor: "start" | "end" = isRTL ? "start" : "end";
   // Footer
-  const authorEyeX = isRTL ? w - 60 - 20 : 60;
-  const authorTextX = isRTL ? w - 60 - 30 : 90;
+  const authorEyeX = isRTL ? w - edgePad - 20 : edgePad;
+  const authorTextX = isRTL ? w - edgePad - 30 : edgePad + 30;
   const authorAnchor: "start" | "end" = isRTL ? "end" : "start";
-  const urlX = isRTL ? 60 : w - 60;
+  const urlX = isRTL ? edgePad : w - edgePad;
   const urlAnchor: "start" | "end" = isRTL ? "start" : "end";
-  const swipeX = isRTL ? 60 : w - 60;
+  const swipeX = isRTL ? edgePad : w - edgePad;
   const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
   const swipeText = isRTL ? "← اسحب" : "SWIPE →";
   const stripX = isRTL ? w - 4 : 0;
+  // Author name fallback for Arabic
+  const rawAuthor = carousel.author_name || "M. Mahafzah";
+  const displayAuthor = isRTL && /^mohammad$/i.test(rawAuthor.trim()) ? "محمد" : rawAuthor;
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
@@ -346,7 +351,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Section label + icon */}
       <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
       <text x={labelTextX} y={70} textAnchor={labelAnchor}
-            fontFamily={bodyFont} fontSize={18} letterSpacing={isRTL ? 0 : 3}
+            fontFamily={bodyFont} fontSize={isRTL ? 20 : 18} letterSpacing={isRTL ? 0 : 3}
             fill={style.accent} fontWeight={isRTL ? 700 : 600}>
         {displayLabel}
       </text>
@@ -395,7 +400,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
         <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
-          {carousel.author_name || "M. Mahafzah"}
+          {displayAuthor}
         </text>
         <text x={urlX} y={h - 45} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
