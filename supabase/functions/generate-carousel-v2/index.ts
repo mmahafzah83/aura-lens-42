@@ -262,7 +262,7 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        max_tokens: 8192,
+        max_tokens: 16384,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userMessage },
@@ -286,9 +286,30 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
     try {
       parsed = JSON.parse(raw);
     } catch {
-      const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+      let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
       const start = cleaned.search(/[{[]/);
-      parsed = JSON.parse(cleaned.substring(start));
+      if (start > 0) cleaned = cleaned.substring(start);
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        // Repair truncated JSON: drop trailing partial token, close open string/braces
+        let s = cleaned;
+        // If last char is inside an unterminated string, trim back to last safe boundary
+        const lastBrace = Math.max(s.lastIndexOf("}"), s.lastIndexOf("]"));
+        if (lastBrace > 0) s = s.substring(0, lastBrace + 1);
+        // Balance brackets
+        const opens = (s.match(/\{/g) || []).length;
+        const closes = (s.match(/\}/g) || []).length;
+        const opensA = (s.match(/\[/g) || []).length;
+        const closesA = (s.match(/\]/g) || []).length;
+        s = s + "]".repeat(Math.max(0, opensA - closesA)) + "}".repeat(Math.max(0, opens - closes));
+        try {
+          parsed = JSON.parse(s);
+        } catch (e) {
+          console.error("JSON repair failed. Raw length:", raw.length, "First 500:", raw.substring(0, 500));
+          throw new Error("AI returned malformed JSON (likely truncated). Try regenerating.");
+        }
+      }
     }
 
     // Backfill author info if model omitted
