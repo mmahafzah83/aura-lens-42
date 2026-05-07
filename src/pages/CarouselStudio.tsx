@@ -576,7 +576,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={isRTL ? 800 : 500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -597,7 +597,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={isRTL ? 800 : 500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 52 : 60} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
             </text>
           ))}
@@ -636,7 +636,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           </text>
           {truthLines.length > 0 ? truthLines.map((ln, i) => (
             <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={isRTL ? 800 : 700} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
           )) : (
@@ -652,7 +652,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     case "BIG_NUMBER": {
       return (
         <g>
-          <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={700} fill={style.accent} direction="ltr">
+      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={style.headingWeight ?? 700} fill={style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
           {slide.number_context && (
@@ -854,7 +854,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                   y={blockTop - 24 - (headlineLines.length - 1 - i) * headLineH}
                   textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
-                  fontWeight={isRTL ? 800 : 600} fill={style.fg}>
+                  fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
           ))}
@@ -869,7 +869,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 letterSpacing={isRTL ? 0 : 2}
                 fill={correctOnLeft ? style.accent : style.muted}
                 opacity={correctOnLeft ? 1 : 0.4}
-                fontWeight={correctOnLeft ? (isRTL ? 800 : 700) : (isRTL ? 600 : 400)}
+                fontWeight={correctOnLeft ? (style.headingWeight ?? 700) : (isRTL ? 600 : 400)}
                 textAnchor={isRTL ? "end" : "start"}
                 {...(isRTL ? { x: leftColX + leftColW } : {})}>
             {visLeftTitle.toUpperCase()}
@@ -878,7 +878,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 letterSpacing={isRTL ? 0 : 2}
                 fill={correctOnLeft ? style.muted : style.accent}
                 opacity={correctOnLeft ? 0.4 : 1}
-                fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (isRTL ? 800 : 700)}
+                fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (style.headingWeight ?? 700)}
                 textAnchor={isRTL ? "end" : "start"}>
             {visRightTitle.toUpperCase()}
           </text>
@@ -1002,7 +1002,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 42 : 48}
-                  fontStyle={isRTL ? "normal" : "italic"} fontWeight={isRTL ? 800 : 400}
+                  fontStyle={isRTL ? "normal" : "italic"} fontWeight={style.headingWeight ?? 700}
                   fill={style.fg}>
               {ln}
             </text>
@@ -1026,7 +1026,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={insightX} y={startY + i * headLineH} textAnchor={insightAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={isRTL ? 800 : 600}>
+                  fontFamily={headingFont} fontSize={isRTL ? 44 : 50} fontWeight={style.headingWeight ?? 700}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -1088,7 +1088,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {headlineLines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * headLineH} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 42 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
