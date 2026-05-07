@@ -375,9 +375,6 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   const authorAnchor: "start" | "end" = isRTL ? "end" : "start";
   const urlX = isRTL ? edgePad : w - edgePad;
   const urlAnchor: "start" | "end" = isRTL ? "start" : "end";
-  const swipeX = isRTL ? edgePad : w - edgePad;
-  const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
-  const swipeText = isRTL ? "← اسحب" : "SWIPE →";
   // Strip placement: in LTR strip is on left; in RTL it mirrors to right.
   // stripPosition === "right" forces right edge regardless of language.
   const stripX =
@@ -456,7 +453,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} />
 
       {/* Progress dots — above footer */}
-      <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 100} accent={style.accent} dotOutline={dotOutline} />
+      <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 110} accent={style.accent} dotOutline={dotOutline} />
 
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
@@ -514,7 +511,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Footer */}
       <g>
         {isCoverOrCta ? (
-          <g transform={`translate(${authorEyeX},${h - 60})`}>
+          <g transform={`translate(${authorEyeX},${h - 79})`}>
             <circle cx={10} cy={10} r={11} fill={style.accent} />
             <text x={10} y={14} textAnchor="middle"
                   fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
@@ -523,22 +520,16 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
             </text>
           </g>
         ) : (
-          <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+          <HorizonEye x={authorEyeX} y={h - 79} size={20} color={style.accent} />
         )}
-        <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
+        <text x={authorTextX} y={h - 64} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
         </text>
-        <text x={urlX} y={h - 45} textAnchor={urlAnchor}
+        <text x={urlX} y={h - 64} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
           aura-intel.org
         </text>
-        {slide.slide_type === "COVER" && (
-          <text x={swipeX} y={h - 95} textAnchor={swipeAnchor}
-                fontFamily={bodyFont} fontSize={18} fill={style.accent} fontWeight={600}>
-            {swipeText}
-          </text>
-        )}
       </g>
 
       {/* Progress bar */}
