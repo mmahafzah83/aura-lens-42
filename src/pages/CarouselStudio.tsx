@@ -1174,15 +1174,34 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
               <div className="overflow-x-auto -mx-4 px-4">
                 <div className="flex gap-2 pb-2">
                   {slides.map((s, i) => (
-                    <button key={i} onClick={() => setActiveIdx(i)}
-                            style={{
-                              flex: "0 0 auto", width: 96, aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`,
-                              borderRadius: 8, overflow: "hidden",
-                              border: i === activeIdx ? "2px solid #C5A55A" : "1px solid rgba(255,255,255,0.1)",
-                              cursor: "pointer", padding: 0, background: "transparent",
-                            }}>
-                      <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} />
-                    </button>
+                    <div key={i} className="group relative" style={{ flex: "0 0 auto", width: 96 }}>
+                      <button onClick={() => setActiveIdx(i)}
+                              style={{
+                                width: "100%", aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`,
+                                borderRadius: 8, overflow: "hidden",
+                                border: i === activeIdx ? "2px solid #C5A55A" : "1px solid rgba(255,255,255,0.1)",
+                                cursor: "pointer", padding: 0, background: "transparent", display: "block",
+                              }}>
+                        <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); regenerateSlide(i); }}
+                        disabled={regeneratingIndex !== null}
+                        title={`Regenerate slide ${i + 1}`}
+                        className="absolute top-1 right-1 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                        style={{ background: "rgba(15,14,12,0.85)", border: "1px solid rgba(197,165,90,0.4)" }}
+                      >
+                        {regeneratingIndex === i
+                          ? <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#C5A55A" }} />
+                          : <RefreshCw className="w-3 h-3" style={{ color: "#C5A55A" }} />}
+                      </button>
+                      {regeneratingIndex === i && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg"
+                             style={{ background: "rgba(15,14,12,0.6)" }}>
+                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} />
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1314,6 +1333,17 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
                 style={{ background: "#C5A55A", color: "#0A0908" }}>
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} PDF
+        </button>
+        <button onClick={saveToLibrary} disabled={saving || savedToLibrary || !slides.length}
+                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
+                style={{
+                  background: savedToLibrary ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.1)",
+                  color: savedToLibrary ? "#22c55e" : "inherit",
+                  border: savedToLibrary ? "1px solid rgba(34,197,94,0.4)" : "1px solid transparent",
+                }}>
+          {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
+            : savedToLibrary ? <><Check className="w-3.5 h-3.5" /> Saved to Library</>
+            : <><BookmarkPlus className="w-3.5 h-3.5" /> Save to Library</>}
         </button>
       </div>
 
