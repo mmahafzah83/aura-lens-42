@@ -1012,7 +1012,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           lang: 'en',
         },
         tracking_status: 'draft',
-      });
+      } as any);
       if (error) throw error;
       setSavedToLibrary(true);
       toast.success("Carousel saved to Library");
