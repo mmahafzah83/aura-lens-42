@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -82,6 +82,7 @@ interface Slide {
   terminal_file?: string;
   terminal_lines?: string[];
   terminal_punchline?: string;
+  terminal_keywords?: string[];
   grid_items?: string[];
   compare_left_title?: string;
   compare_left_items?: string[];
