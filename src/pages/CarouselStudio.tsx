@@ -306,22 +306,27 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
     ? 0.015
     : 0;
   const noiseId = `noise-${slide.slide_number}-${style.key}`;
+  // Generous edge padding for RTL — Arabic glyphs are wider and need breathing room
+  const edgePad = isRTL ? 96 : 60;
   // Header positions — mirror in RTL
-  const labelIconX = isRTL ? w - 60 - 16 : 60;
-  const labelTextX = isRTL ? w - 60 - 16 - 8 : 60 + 22;
+  const labelIconX = isRTL ? w - edgePad - 16 : edgePad;
+  const labelTextX = isRTL ? w - edgePad - 16 - 8 : edgePad + 22;
   const labelAnchor: "start" | "end" = isRTL ? "end" : "start";
-  const numberX = isRTL ? 60 : w - 60;
+  const numberX = isRTL ? edgePad : w - edgePad;
   const numberAnchor: "start" | "end" = isRTL ? "start" : "end";
   // Footer
-  const authorEyeX = isRTL ? w - 60 - 20 : 60;
-  const authorTextX = isRTL ? w - 60 - 30 : 90;
+  const authorEyeX = isRTL ? w - edgePad - 20 : edgePad;
+  const authorTextX = isRTL ? w - edgePad - 30 : edgePad + 30;
   const authorAnchor: "start" | "end" = isRTL ? "end" : "start";
-  const urlX = isRTL ? 60 : w - 60;
+  const urlX = isRTL ? edgePad : w - edgePad;
   const urlAnchor: "start" | "end" = isRTL ? "start" : "end";
-  const swipeX = isRTL ? 60 : w - 60;
+  const swipeX = isRTL ? edgePad : w - edgePad;
   const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
   const swipeText = isRTL ? "← اسحب" : "SWIPE →";
   const stripX = isRTL ? w - 4 : 0;
+  // Author name fallback for Arabic
+  const rawAuthor = carousel.author_name || "M. Mahafzah";
+  const displayAuthor = isRTL && /^mohammad$/i.test(rawAuthor.trim()) ? "محمد" : rawAuthor;
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
@@ -346,7 +351,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Section label + icon */}
       <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
       <text x={labelTextX} y={70} textAnchor={labelAnchor}
-            fontFamily={bodyFont} fontSize={18} letterSpacing={isRTL ? 0 : 3}
+            fontFamily={bodyFont} fontSize={isRTL ? 20 : 18} letterSpacing={isRTL ? 0 : 3}
             fill={style.accent} fontWeight={isRTL ? 700 : 600}>
         {displayLabel}
       </text>
@@ -395,7 +400,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
         <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
-          {carousel.author_name || "M. Mahafzah"}
+          {displayAuthor}
         </text>
         <text x={urlX} y={h - 45} textAnchor={urlAnchor}
               fontFamily={bodyFont} fontSize={14} fill={style.muted}>
@@ -426,8 +431,19 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
   const headingFont = isRTL ? arFont : style.headingFont;
   const bodyFont = isRTL ? arFont : style.bodyFont;
   const monoFont = isRTL ? arFont : style.monoFont;
-  const startX = isRTL ? w - 60 : 60;
+  const edgePad = isRTL ? 96 : 60;
+  const startX = isRTL ? w - edgePad : edgePad;
   const sideAnchor: "start" | "end" = isRTL ? "end" : "start";
+  const L = {
+    myth: isRTL ? "يعتقد الأغلبية" : "MOST PEOPLE THINK",
+    truth: isRTL ? "الحقيقة" : "THE TRUTH",
+    KILL: isRTL ? "حذف" : "KILL",
+    KEEP: isRTL ? "إبقاء" : "KEEP",
+    STOP: isRTL ? "توقف" : "STOP",
+    START: isRTL ? "ابدأ" : "START",
+    DO: isRTL ? "افعل" : "DO",
+    DONT: isRTL ? "لا تفعل" : "DONT",
+  } as Record<string, string>;
   // Vertical center of the *content zone* (between header ~100 and footer ~120)
   const contentTop = 100;
   const contentBottom = h - 120;
@@ -442,7 +458,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {lines.map((ln, i) => (
             <text key={i} x={cx} y={startY + i * lh} textAnchor="middle"
-                  fontFamily={headingFont} fontSize={isRTL ? 60 : 72} fontWeight={isRTL ? 800 : 500}>
+                  fontFamily={headingFont} fontSize={isRTL ? 56 : 72} fontWeight={isRTL ? 800 : 500}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
@@ -471,16 +487,16 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "REFRAME": {
-      const beliefLines = wrapText(slide.headline || "", 28);
+      const beliefLines = wrapText(slide.headline || "", isRTL ? 22 : 28);
       const truthRaw = slide.body || slide.headline_accent || "";
-      const truthLines = wrapText(truthRaw, 24);
+      const truthLines = wrapText(truthRaw, isRTL ? 20 : 24);
       const beliefStartY = cy - 160;
       return (
         <g>
           <text x={startX} y={beliefStartY - 30} textAnchor={sideAnchor}
-                fontFamily={bodyFont} fontSize={14} letterSpacing={isRTL ? 0 : 2} fill={style.muted}
+                fontFamily={bodyFont} fontSize={isRTL ? 16 : 14} letterSpacing={isRTL ? 0 : 2} fill={style.muted}
                 fontWeight={isRTL ? 700 : 400}>
-            {isRTL ? "يعتقد الأغلبية" : "MOST PEOPLE THINK"}
+            {L.myth}
           </text>
           {beliefLines.map((ln, i) => (
             <text key={i} x={startX} y={beliefStartY + i * 36} textAnchor={sideAnchor}
@@ -490,15 +506,15 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               {ln}
             </text>
           ))}
-          <line x1={60} y1={cy} x2={w - 60} y2={cy} stroke={style.accent} strokeWidth={1.5} opacity={0.4} />
+          <line x1={edgePad} y1={cy} x2={w - edgePad} y2={cy} stroke={style.accent} strokeWidth={1.5} opacity={0.4} />
           <text x={startX} y={cy + 60} textAnchor={sideAnchor}
-                fontFamily={bodyFont} fontSize={14} letterSpacing={isRTL ? 0 : 2} fill={style.accent}
+                fontFamily={bodyFont} fontSize={isRTL ? 16 : 14} letterSpacing={isRTL ? 0 : 2} fill={style.accent}
                 fontWeight={isRTL ? 800 : 400}>
-            {isRTL ? "الحقيقة" : "THE TRUTH"}
+            {L.truth}
           </text>
           {truthLines.length > 0 ? truthLines.map((ln, i) => (
             <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 48 : 56} fontWeight={isRTL ? 800 : 700} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={isRTL ? 800 : 700} fill={style.fg}>
               {ln}
             </text>
           )) : (
@@ -532,7 +548,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "TERMINAL": {
-      const blockX = 60, blockY = 180, blockW = w - 120, blockH = h - 360;
+      const blockX = edgePad, blockY = 180, blockW = w - edgePad * 2, blockH = h - 360;
       const lines = slide.terminal_lines || [];
       const keywords = (slide.terminal_keywords || []).filter(Boolean);
       const lineX = isRTL ? blockX + blockW - 40 : blockX + 40;
@@ -579,7 +595,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         }
         return (
           <text key={idx} x={lineX} y={blockY + 110 + idx * 36} textAnchor={lineAnchor}
-                fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 20 : 22}>
+                fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22}>
             {withKw.map((p, i) => (
               <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
             ))}
@@ -600,7 +616,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           {lines.map(renderLine)}
           {slide.terminal_punchline && (
             <text x={lineX} y={blockY + blockH - 40} textAnchor={lineAnchor}
-                  fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 20 : 22} fontWeight={isRTL ? 800 : 700} fill={style.accent}>
+                  fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22} fontWeight={isRTL ? 800 : 700} fill={style.accent}>
               {slide.terminal_punchline}
             </text>
           )}
@@ -612,9 +628,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const cols = items.length > 4 ? 2 : 2;
       const rows = Math.ceil(items.length / cols);
       const gap = 20;
-      const gridX = 60, gridW = w - 120;
+      const gridX = edgePad, gridW = w - edgePad * 2;
       const cellW = (gridW - gap * (cols - 1)) / cols;
-      const cellH = 120;
+      const cellH = isRTL ? 130 : 120;
       const gridTotalH = rows * cellH + (rows - 1) * gap;
       const headlineSpace = slide.headline ? 80 : 0;
       const gridY = Math.max(180, cy - gridTotalH / 2 + headlineSpace / 2);
@@ -632,8 +648,8 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             const cVisual = isRTL ? (cols - 1 - c) : c;
             const x = gridX + cVisual * (cellW + gap);
             const y = gridY + r * (cellH + gap);
-            const wrapped = wrapText(it, 28);
-            const lineH = 26;
+            const wrapped = wrapText(it, isRTL ? 22 : 28);
+            const lineH = isRTL ? 28 : 26;
             const textBlockH = wrapped.length * lineH;
             const textStartY = y + cellH / 2 - textBlockH / 2 + 18;
             const numCx = isRTL ? x + cellW - 36 : x + 36;
@@ -648,7 +664,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 </text>
                 {wrapped.map((ln, li) => (
                   <text key={li} x={textXi} y={textStartY + li * lineH} textAnchor={cellTextAnchor}
-                        fontFamily={bodyFont} fontSize={19} fill={style.fg} fontWeight={isRTL ? 600 : 400}>
+                        fontFamily={bodyFont} fontSize={isRTL ? 17 : 19} fill={style.fg} fontWeight={isRTL ? 600 : 400}>
                     {ln}
                   </text>
                 ))}
@@ -669,7 +685,8 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const headerY = blockTop + 30;
       const rowsStartY = blockTop + 80;
       const rightColX = cx + 30;
-      const rightColW = w - 60 - rightColX;
+      const rightColW = w - edgePad - rightColX;
+      const leftColX = edgePad + 20;
       return (
         <g>
           {slide.headline && (
@@ -680,7 +697,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           )}
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
           <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
-          <text x={80} y={headerY} fontFamily={bodyFont} fontSize={18}
+          <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={18}
                 letterSpacing={isRTL ? 0 : 2} fill={style.muted} opacity={0.4} fontWeight={isRTL ? 600 : 400}>
             {(slide.compare_left_title || "BEFORE").toUpperCase()}
           </text>
@@ -689,10 +706,10 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             {(slide.compare_right_title || "AFTER").toUpperCase()}
           </text>
           {left.map((it, i) => {
-            const lns = wrapText(it, 24);
+            const lns = wrapText(it, isRTL ? 18 : 24);
             return lns.map((ln, li) => (
-              <text key={`l${i}-${li}`} x={80} y={rowsStartY + i * itemH + li * 28}
-                    fontFamily={bodyFont} fontSize={22} fill={style.muted} opacity={0.4}
+              <text key={`l${i}-${li}`} x={leftColX} y={rowsStartY + i * itemH + li * 28}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
                 {ln}
@@ -700,7 +717,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             ));
           })}
           {right.map((it, i) => {
-            const lns = wrapText(it, 24);
+            const lns = wrapText(it, isRTL ? 18 : 24);
             const rowY = rowsStartY + i * itemH;
             return (
               <g key={`rg${i}`}>
@@ -708,7 +725,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                       stroke={style.accent} strokeWidth={2} />
                 {lns.map((ln, li) => (
                   <text key={`r${i}-${li}`} x={rightColX} y={rowY + li * 28}
-                        fontFamily={bodyFont} fontSize={24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                        fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                     {ln}
                   </text>
                 ))}
@@ -720,6 +737,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     }
     case "LIST": {
       const items = slide.list_items || [];
+      const itemSpacing = isRTL ? 80 : 90;
+      const totalListH = items.length * itemSpacing;
+      const listStartY = (slide.headline ? 230 : Math.max(180, cy - totalListH / 2));
       return (
         <g>
           {slide.headline && (
@@ -729,22 +749,23 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             </text>
           )}
           {items.map((it, i) => {
-            const y = 230 + i * 90;
+            const y = listStartY + i * itemSpacing;
             const isKill = it.label === "KILL" || it.label === "DONT";
             const labelColor = isKill ? "#ef4444" : style.accent;
             const textColor = isKill ? style.muted : style.fg;
-            const labelX = isRTL ? w - 60 : 60;
-            const itemTextX = isRTL ? w - 200 : 200;
+            const labelX = isRTL ? w - edgePad : edgePad;
+            const itemTextX = isRTL ? w - edgePad - 140 : edgePad + 140;
             const listAnchor: "start" | "end" = isRTL ? "end" : "start";
+            const labelText = L[it.label] || it.label;
             return (
               <g key={i}>
-                <line x1={60} y1={y - 30} x2={w - 60} y2={y - 30} stroke={style.border} />
+                <line x1={edgePad} y1={y - 30} x2={w - edgePad} y2={y - 30} stroke={style.border} />
                 <text x={labelX} y={y + 18} textAnchor={listAnchor}
                       fontFamily={monoFont} fontSize={18} fontWeight={700} fill={labelColor}>
-                  {it.label}
+                  {labelText}
                 </text>
                 <text x={itemTextX} y={y + 18} textAnchor={listAnchor}
-                      fontFamily={bodyFont} fontSize={26} fill={textColor} fontWeight={isRTL ? 600 : 400}
+                      fontFamily={bodyFont} fontSize={isRTL ? 22 : 26} fill={textColor} fontWeight={isRTL ? 600 : 400}
                       textDecoration={isKill ? "line-through" : "none"}>
                   {it.text}
                 </text>
@@ -791,8 +812,8 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
-          <line x1={isRTL ? w - 60 - 30 : 60} y1={startY + headlineLines.length * headLineH + 16}
-                x2={isRTL ? w - 60 : 90} y2={startY + headlineLines.length * headLineH + 16}
+          <line x1={isRTL ? w - edgePad - 30 : edgePad} y1={startY + headlineLines.length * headLineH + 16}
+                x2={isRTL ? w - edgePad : edgePad + 30} y2={startY + headlineLines.length * headLineH + 16}
                 stroke={style.accent} strokeWidth={2} opacity={0.5} />
           {bodyLines.map((ln, i) => (
             <text key={i} x={startX} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
