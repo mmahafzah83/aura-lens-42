@@ -581,23 +581,33 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const startLinesY = innerTop + Math.max(0, (innerH - totalContent) / 2) + 24;
       const punchY = startLinesY + linesBlockH + 32;
       const renderLine = (line: string, idx: number) => {
+        // Arabic RTL: strip leading "→"/"->" prefix; append "←" so arrow sits on the right edge
+        let displayLine = line;
+        let isStep: boolean;
+        if (isRTL) {
+          const stripped = line.replace(/^[→\->]+\s*/, "").replace(/\s*[←]+$/, "");
+          isStep = stripped !== line || /^[→\->]/.test(line);
+          displayLine = `${stripped} ←`;
+        } else {
+          isStep = line.startsWith("→");
+          displayLine = line;
+        }
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
         const re = /(\[[^\]]+\])/g;
         let lastIdx = 0;
-        const matches = Array.from(line.matchAll(re));
-        const isStep = line.startsWith("→");
+        const matches = Array.from(displayLine.matchAll(re));
         const baseColor = isStep ? style.muted : style.fg;
         if (matches.length === 0) {
-          parts.push({ text: line, color: baseColor });
+          parts.push({ text: displayLine, color: baseColor });
         } else {
           for (const m of matches) {
             const i = m.index!;
-            if (i > lastIdx) parts.push({ text: line.slice(lastIdx, i), color: baseColor });
+            if (i > lastIdx) parts.push({ text: displayLine.slice(lastIdx, i), color: baseColor });
             parts.push({ text: m[0].slice(1, -1), color: style.accent });
             lastIdx = i + m[0].length;
           }
-          if (lastIdx < line.length) parts.push({ text: line.slice(lastIdx), color: baseColor });
+          if (lastIdx < displayLine.length) parts.push({ text: displayLine.slice(lastIdx), color: baseColor });
         }
         // Apply terminal_keywords highlighting on top of any base segments
         let withKw = parts;
@@ -644,7 +654,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           {slide.terminal_punchline && (
             <text x={lineX} y={punchY} textAnchor={lineAnchor}
                   fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22} fontWeight={isRTL ? 800 : 700} fill={style.accent}>
-              {slide.terminal_punchline}
+              {isRTL ? slide.terminal_punchline.replace(/^\/\/\s*/, "").replace(/^[→\->]+\s*/, "") : slide.terminal_punchline}
             </text>
           )}
         </g>
@@ -702,17 +712,19 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "COMPARE": {
-      // RTL swap: in Arabic the WRONG (compare_left_*) renders on visual RIGHT (read first)
-      // and the CORRECT (compare_right_*) renders on visual LEFT (read second).
-      const visLeftTitle = isRTL ? (slide.compare_right_title || "AFTER") : (slide.compare_left_title || "BEFORE");
-      const visLeftItems = isRTL ? (slide.compare_right_items || []) : (slide.compare_left_items || []);
-      const visRightTitle = isRTL ? (slide.compare_left_title || "BEFORE") : (slide.compare_right_title || "AFTER");
-      const visRightItems = isRTL ? (slide.compare_left_items || []) : (slide.compare_right_items || []);
-      // visLeft = "muted/strikethrough" column; visRight = "accent/bold" column
-      const left = visLeftItems;
-      const right = visRightItems;
+      // Convention: compare_left_* = WRONG (mistake, muted+strike), compare_right_* = CORRECT (gold, bold).
+      // RTL swap: in Arabic the WRONG renders on visual RIGHT (read first), CORRECT on visual LEFT (read second, payoff).
+      const wrongTitle = slide.compare_left_title || "BEFORE";
+      const wrongItems = slide.compare_left_items || [];
+      const correctTitle = slide.compare_right_title || "AFTER";
+      const correctItems = slide.compare_right_items || [];
+      const visLeftTitle = isRTL ? correctTitle : wrongTitle;
+      const visLeftItems = isRTL ? correctItems : wrongItems;
+      const visRightTitle = isRTL ? wrongTitle : correctTitle;
+      const visRightItems = isRTL ? wrongItems : correctItems;
+      const correctOnLeft = isRTL;
       const itemH = 60;
-      const rowsCount = Math.max(left.length, right.length, 1);
+      const rowsCount = Math.max(visLeftItems.length, visRightItems.length, 1);
       const blockH = 80 + rowsCount * itemH;
       const headlineSpace = slide.headline ? 70 : 0;
       const blockTop = Math.max(140, cy - blockH / 2 - headlineSpace / 2);
@@ -721,28 +733,72 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const rightColX = cx + 30;
       const rightColW = w - edgePad - rightColX;
       const leftColX = edgePad + 20;
+      const leftColW = cx - leftColX - 10;
+      // Headline centered above
+      const headlineLines = slide.headline ? wrapText(slide.headline, isRTL ? 22 : 28) : [];
+      const headLineH = 44;
       return (
         <g>
-          {slide.headline && (
-            <text x={startX} y={blockTop - 30} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={36} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
-              {slide.headline}
+          {headlineLines.map((ln, i) => (
+            <text key={`hl${i}`} x={cx}
+                  y={blockTop - 24 - (headlineLines.length - 1 - i) * headLineH}
+                  textAnchor="middle"
+                  fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
+                  fontWeight={isRTL ? 800 : 600} fill={style.fg}>
+              {ln}
             </text>
-          )}
+          ))}
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
-          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
-          <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={18}
-                letterSpacing={isRTL ? 0 : 2} fill={style.muted} opacity={0.4} fontWeight={isRTL ? 600 : 400}>
+          {/* Gold tinted background lives on whichever side holds the CORRECT column */}
+          {correctOnLeft ? (
+            <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+          ) : (
+            <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+          )}
+          <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 20 : 18}
+                letterSpacing={isRTL ? 0 : 2}
+                fill={correctOnLeft ? style.accent : style.muted}
+                opacity={correctOnLeft ? 1 : 0.4}
+                fontWeight={correctOnLeft ? (isRTL ? 800 : 700) : (isRTL ? 600 : 400)}
+                textAnchor={isRTL ? "end" : "start"}
+                {...(isRTL ? { x: leftColX + leftColW } : {})}>
             {visLeftTitle.toUpperCase()}
           </text>
-          <text x={rightColX} y={headerY} fontFamily={bodyFont} fontSize={20}
-                letterSpacing={isRTL ? 0 : 2} fill={style.accent} fontWeight={isRTL ? 800 : 700}>
+          <text x={isRTL ? rightColX + rightColW : rightColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 18 : 20}
+                letterSpacing={isRTL ? 0 : 2}
+                fill={correctOnLeft ? style.muted : style.accent}
+                opacity={correctOnLeft ? 0.4 : 1}
+                fontWeight={correctOnLeft ? (isRTL ? 600 : 400) : (isRTL ? 800 : 700)}
+                textAnchor={isRTL ? "end" : "start"}>
             {visRightTitle.toUpperCase()}
           </text>
-          {left.map((it, i) => {
+          {/* Visual LEFT column items */}
+          {visLeftItems.map((it, i) => {
             const lns = wrapText(it, isRTL ? 18 : 24);
+            const rowY = rowsStartY + i * itemH;
+            const textXi = isRTL ? leftColX + leftColW : leftColX;
+            const anchor: "start" | "end" = isRTL ? "end" : "start";
+            if (correctOnLeft) {
+              return (
+                <g key={`l${i}`}>
+                  {/* Gold accent on the inner edge (right side in RTL since text reads RTL) */}
+                  <line
+                    x1={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
+                    y1={rowY - 24}
+                    x2={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
+                    y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                    stroke={style.accent} strokeWidth={2} />
+                  {lns.map((ln, li) => (
+                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                      {ln}
+                    </text>
+                  ))}
+                </g>
+              );
+            }
             return lns.map((ln, li) => (
-              <text key={`l${i}-${li}`} x={leftColX} y={rowsStartY + i * itemH + li * 28}
+              <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
@@ -750,21 +806,34 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               </text>
             ));
           })}
-          {right.map((it, i) => {
+          {/* Visual RIGHT column items */}
+          {visRightItems.map((it, i) => {
             const lns = wrapText(it, isRTL ? 18 : 24);
             const rowY = rowsStartY + i * itemH;
-            return (
-              <g key={`rg${i}`}>
-                <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
-                      stroke={style.accent} strokeWidth={2} />
-                {lns.map((ln, li) => (
-                  <text key={`r${i}-${li}`} x={rightColX} y={rowY + li * 28}
-                        fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
-                    {ln}
-                  </text>
-                ))}
-              </g>
-            );
+            const textXi = isRTL ? rightColX + rightColW : rightColX;
+            const anchor: "start" | "end" = isRTL ? "end" : "start";
+            if (!correctOnLeft) {
+              return (
+                <g key={`rg${i}`}>
+                  <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                        stroke={style.accent} strokeWidth={2} />
+                  {lns.map((ln, li) => (
+                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                      {ln}
+                    </text>
+                  ))}
+                </g>
+              );
+            }
+            return lns.map((ln, li) => (
+              <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
+                    fontWeight={isRTL ? 600 : 400}
+                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
+                {ln}
+              </text>
+            ));
           })}
         </g>
       );
@@ -932,13 +1001,51 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
 
 const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=block');`;
 
-function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Promise<Blob> {
+// Cache of base64 data URLs for Cairo font weights — embedding directly in SVG
+// guarantees the font is available inside the Image()/canvas raster sandbox,
+// which cannot fetch external @import URLs reliably.
+const CAIRO_WOFF2_URLS: Record<number, string> = {
+  400: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+  600: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+  700: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+  800: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+};
+let CAIRO_EMBEDDED_CSS: string | null = null;
+let CAIRO_EMBED_PROMISE: Promise<string> | null = null;
+async function getCairoEmbeddedCSS(): Promise<string> {
+  if (CAIRO_EMBEDDED_CSS) return CAIRO_EMBEDDED_CSS;
+  if (CAIRO_EMBED_PROMISE) return CAIRO_EMBED_PROMISE;
+  CAIRO_EMBED_PROMISE = (async () => {
+    try {
+      const weights = [400, 600, 700, 800];
+      const fetched = await Promise.all(weights.map(async (w) => {
+        const res = await fetch(CAIRO_WOFF2_URLS[w]);
+        const buf = await res.arrayBuffer();
+        let bin = "";
+        const bytes = new Uint8Array(buf);
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const b64 = btoa(bin);
+        return `@font-face{font-family:'Cairo';font-style:normal;font-weight:${w};font-display:block;src:url(data:font/woff2;base64,${b64}) format('woff2');}`;
+      }));
+      CAIRO_EMBEDDED_CSS = fetched.join("\n");
+      return CAIRO_EMBEDDED_CSS;
+    } catch (e) {
+      console.warn("Cairo embed failed, falling back to @import", e);
+      CAIRO_EMBEDDED_CSS = "";
+      return "";
+    }
+  })();
+  return CAIRO_EMBED_PROMISE;
+}
+
+function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extraCSS = ""): Promise<Blob> {
   return new Promise((resolve, reject) => {
     // Clone and inject <style> with @import so fonts load inside the SVG sandbox
     const clone = svgEl.cloneNode(true) as SVGSVGElement;
     const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
     styleEl.setAttribute("type", "text/css");
-    styleEl.textContent = FONT_IMPORT_CSS;
+    // Inline base64 fonts FIRST so they are guaranteed to load in the Image() sandbox.
+    styleEl.textContent = (extraCSS ? extraCSS + "\n" : "") + FONT_IMPORT_CSS;
     clone.insertBefore(styleEl, clone.firstChild);
     const xml = new XMLSerializer().serializeToString(clone);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
@@ -954,7 +1061,7 @@ function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Prom
         ctx.drawImage(img, 0, 0, width, height);
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
-      }, 250);
+      }, 500);
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
     img.src = url;
@@ -1225,7 +1332,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     if (!svgEl) throw new Error("SVG not found");
     svgEl.setAttribute("width", String(w));
     svgEl.setAttribute("height", String(h));
-    const blob = await svgToPngBlob(svgEl, w, h);
+    // For Arabic, embed Cairo as base64 inside the SVG so the raster sandbox uses it.
+    const extraCSS = lang === "ar" ? await getCairoEmbeddedCSS() : "";
+    const blob = await svgToPngBlob(svgEl, w, h, extraCSS);
     root.unmount();
     return blob;
   };
