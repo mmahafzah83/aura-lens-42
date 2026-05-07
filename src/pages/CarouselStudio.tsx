@@ -932,13 +932,51 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
 
 const FONT_IMPORT_CSS = `@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=block');`;
 
-function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Promise<Blob> {
+// Cache of base64 data URLs for Cairo font weights — embedding directly in SVG
+// guarantees the font is available inside the Image()/canvas raster sandbox,
+// which cannot fetch external @import URLs reliably.
+const CAIRO_WOFF2_URLS: Record<number, string> = {
+  400: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+  600: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+  700: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+  800: "https://fonts.gstatic.com/s/cairo/v28/SLXgc1nY6HkvalIvTp2mxdt0UX8.woff2",
+};
+let CAIRO_EMBEDDED_CSS: string | null = null;
+let CAIRO_EMBED_PROMISE: Promise<string> | null = null;
+async function getCairoEmbeddedCSS(): Promise<string> {
+  if (CAIRO_EMBEDDED_CSS) return CAIRO_EMBEDDED_CSS;
+  if (CAIRO_EMBED_PROMISE) return CAIRO_EMBED_PROMISE;
+  CAIRO_EMBED_PROMISE = (async () => {
+    try {
+      const weights = [400, 600, 700, 800];
+      const fetched = await Promise.all(weights.map(async (w) => {
+        const res = await fetch(CAIRO_WOFF2_URLS[w]);
+        const buf = await res.arrayBuffer();
+        let bin = "";
+        const bytes = new Uint8Array(buf);
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const b64 = btoa(bin);
+        return `@font-face{font-family:'Cairo';font-style:normal;font-weight:${w};font-display:block;src:url(data:font/woff2;base64,${b64}) format('woff2');}`;
+      }));
+      CAIRO_EMBEDDED_CSS = fetched.join("\n");
+      return CAIRO_EMBEDDED_CSS;
+    } catch (e) {
+      console.warn("Cairo embed failed, falling back to @import", e);
+      CAIRO_EMBEDDED_CSS = "";
+      return "";
+    }
+  })();
+  return CAIRO_EMBED_PROMISE;
+}
+
+function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extraCSS = ""): Promise<Blob> {
   return new Promise((resolve, reject) => {
     // Clone and inject <style> with @import so fonts load inside the SVG sandbox
     const clone = svgEl.cloneNode(true) as SVGSVGElement;
     const styleEl = document.createElementNS("http://www.w3.org/2000/svg", "style");
     styleEl.setAttribute("type", "text/css");
-    styleEl.textContent = FONT_IMPORT_CSS;
+    // Inline base64 fonts FIRST so they are guaranteed to load in the Image() sandbox.
+    styleEl.textContent = (extraCSS ? extraCSS + "\n" : "") + FONT_IMPORT_CSS;
     clone.insertBefore(styleEl, clone.firstChild);
     const xml = new XMLSerializer().serializeToString(clone);
     const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
@@ -954,7 +992,7 @@ function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number): Prom
         ctx.drawImage(img, 0, 0, width, height);
         URL.revokeObjectURL(url);
         canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
-      }, 250);
+      }, 500);
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
     img.src = url;
