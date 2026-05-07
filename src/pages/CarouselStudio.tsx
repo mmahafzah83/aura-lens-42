@@ -350,7 +350,8 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   const bodyFont = isRTL ? arFont : style.bodyFont;
   const monoFont = isRTL ? arFont : style.monoFont;
   const bgIsGradient = !!style.bgGradient && style.key === "bold_statement";
-  const stripColor = STRIP_COLORS[slide.slide_type] || style.accent;
+  const stripColor = style.stripColor || STRIP_COLORS[slide.slide_type] || style.accent;
+  const stripPos = style.stripPosition ?? "left";
   const displayLabel = getDisplayLabel(slide);
   const isDarkStyle = style.key === "bold_statement" || style.key === "terminal" || style.key === "high_contrast";
   const dotOutline = isDarkStyle ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)";
@@ -377,10 +378,20 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   const swipeX = isRTL ? edgePad : w - edgePad;
   const swipeAnchor: "start" | "end" = isRTL ? "start" : "end";
   const swipeText = isRTL ? "← اسحب" : "SWIPE →";
-  const stripX = isRTL ? w - 4 : 0;
+  // Strip placement: in LTR strip is on left; in RTL it mirrors to right.
+  // stripPosition === "right" forces right edge regardless of language.
+  const stripX =
+    stripPos === "right" ? w - 4 :
+    stripPos === "left"  ? (isRTL ? w - 4 : 0) :
+    -10;
+  const showStrip = stripPos !== "none";
   // Author name fallback for Arabic
   const rawAuthor = carousel.author_name || "M. Mahafzah";
   const displayAuthor = isRTL && /^mohammad$/i.test(rawAuthor.trim()) ? "محمد" : rawAuthor;
+  const authorInitial = isRTL ? "م" : (displayAuthor.trim().charAt(0).toUpperCase() || "M");
+  const isCoverOrCta = slide.slide_type === "COVER" || slide.slide_type === "CTA";
+  const showWatermarkNumber = ["BOLD_CLAIM", "QUESTION", "REFRAME"].includes(slide.slide_type);
+  const patternId = `pat-${slide.slide_number}-${style.key}`;
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
@@ -401,8 +412,28 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Subtle texture overlay */}
       {textureOpacity > 0 && <NoiseTexture id={noiseId} opacity={textureOpacity} w={w} h={h} />}
 
-      {/* Accent strip — left in LTR, right in RTL */}
-      <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />
+      {/* Per-style decorative background pattern (behind content) */}
+      <BackgroundPattern kind={style.pattern || "none"} color={style.accent} w={w} h={h} id={patternId} />
+
+      {/* Faint slide-number watermark on text-heavy slides */}
+      {showWatermarkNumber && (
+        <text x={isRTL ? edgePad + 40 : w - edgePad - 40} y={h / 2 + 200}
+              textAnchor={isRTL ? "start" : "end"}
+              fontFamily={style.headingFont} fontSize={520}
+              fill={style.fg} fillOpacity={0.03} fontWeight={900}>
+          {slide.slide_number}
+        </text>
+      )}
+
+      {/* Accent strip */}
+      {showStrip && <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />}
+
+      {/* Top accent line under section_label (Executive Briefing only) */}
+      {style.topAccentLine && (
+        <line x1={isRTL ? w - edgePad - 200 : edgePad} y1={84}
+              x2={isRTL ? w - edgePad : edgePad + 200} y2={84}
+              stroke={style.accent} strokeWidth={2} />
+      )}
 
       {/* Section label + icon */}
       <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
@@ -466,9 +497,34 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         })()
       )}
 
+      {/* Cover swipe chevron — subtle vertical hint on right edge (left for RTL) */}
+      {slide.slide_type === "COVER" && (() => {
+        const cx2 = isRTL ? 28 : w - 28;
+        return (
+          <g opacity={0.35}>
+            <line x1={cx2} y1={h * 0.35} x2={cx2} y2={h * 0.65} stroke={style.accent} strokeWidth={1} />
+            <text x={cx2} y={h / 2 + 8} textAnchor="middle"
+                  fontFamily={style.bodyFont} fontSize={28} fill={style.accent} fontWeight={700}>
+              {isRTL ? "‹" : "›"}
+            </text>
+          </g>
+        );
+      })()}
+
       {/* Footer */}
       <g>
-        <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+        {isCoverOrCta ? (
+          <g transform={`translate(${authorEyeX},${h - 60})`}>
+            <circle cx={10} cy={10} r={11} fill={style.accent} />
+            <text x={10} y={14} textAnchor="middle"
+                  fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
+                  fontWeight={800} fill={style.bg}>
+              {authorInitial}
+            </text>
+          </g>
+        ) : (
+          <HorizonEye x={authorEyeX} y={h - 60} size={20} color={style.accent} />
+        )}
         <text x={authorTextX} y={h - 45} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
