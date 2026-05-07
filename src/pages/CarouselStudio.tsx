@@ -1202,13 +1202,30 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           ))}
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="text-xs opacity-60 mr-1">Language</span>
+          {(["en", "ar"] as const).map(l => (
+            <button key={l} onClick={() => setLang(l)}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border"
+                    style={{
+                      background: lang === l ? "#C5A55A" : "transparent",
+                      color: lang === l ? "#0A0908" : "inherit",
+                      borderColor: lang === l ? "#C5A55A" : "rgba(255,255,255,0.15)",
+                      fontFamily: l === "ar" ? "'Cairo', sans-serif" : undefined,
+                    }}>
+              {l === "ar" ? "العربية" : "English"}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={topic}
             onChange={e => setTopic(e.target.value)}
             placeholder="Topic — e.g. Why comprehensive transformations outperform incremental change"
+            dir={lang === "ar" ? "rtl" : "ltr"}
             className="flex-1 min-w-[260px] px-3 py-2 rounded-lg bg-white/5 border text-sm"
-            style={{ borderColor: "rgba(255,255,255,0.12)" }}
+            style={{ borderColor: "rgba(255,255,255,0.12)", fontFamily: lang === "ar" ? "'Cairo', sans-serif" : undefined }}
           />
           <button onClick={generate} disabled={generating}
                   className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
