@@ -23,44 +23,58 @@ interface StylePalette {
   bodyFont: string;
   headingFont: string;
   monoFont: string;
+  // New differentiation fields
+  headingWeight?: number;       // weight for headings (default 700)
+  stripPosition?: "left" | "right" | "none";
+  stripColor?: string;          // overrides per-slide STRIP_COLORS when set
+  topAccentLine?: boolean;      // executive briefing
+  pattern?: "none" | "dots" | "diagonal" | "circuit";
+  numberBadgeBg?: string;       // override for grid number circle / hi-contrast
+  numberBadgeFg?: string;
 }
 
 const STYLES: Record<StyleKey, StylePalette> = {
   clean_paper: {
     key: "clean_paper", name: "Clean Paper",
-    bg: "#F7F3E8", fg: "#2A2419", accent: "#B08D3A", emphasis: "#B08D3A", muted: "#888888", border: "#D3D1C7", codeBg: "#EFEAD9",
+    bg: "#FAFAF8", fg: "#2D2D2D", accent: "#2D2D2D", emphasis: "#2D2D2D", muted: "#888888", border: "#E5E5E5", codeBg: "#F0F0EE",
     bodyFont: "'DM Sans', system-ui, sans-serif",
-    headingFont: "'Cormorant Garamond', Georgia, serif",
+    headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "none", pattern: "none",
   },
   bold_statement: {
     key: "bold_statement", name: "Bold Statement",
-    bg: "#1C1812", bgGradient: "linear-gradient(135deg,#1C1812 0%,#2A1F14 100%)",
-    fg: "#F5F0E6", accent: "#D4B056", emphasis: "#F97316", muted: "#888888", border: "#3A3128", codeBg: "#0D0B08",
+    bg: "#1A1714", bgGradient: "linear-gradient(135deg,#1A1714 0%,#241D16 100%)",
+    fg: "#F5F0F0", accent: "#D4B056", emphasis: "#D4B056", muted: "#9A9388", border: "rgba(255,255,255,0.1)", codeBg: "#0D0B08",
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "left", stripColor: "#D4B056", pattern: "dots",
   },
   executive_briefing: {
     key: "executive_briefing", name: "Executive Briefing",
-    bg: "#F7F3E8", fg: "#2A2419", accent: "#B08D3A", emphasis: "#B08D3A", muted: "#5F5E5A", border: "#D3D1C7", codeBg: "#EFEAD9",
+    bg: "#F5F0E8", fg: "#2A2419", accent: "#6B4F1D", emphasis: "#6B4F1D", muted: "#6F6A60", border: "#D4C5A0", codeBg: "#EBE3D2",
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "none", topAccentLine: true, pattern: "diagonal",
   },
   terminal: {
     key: "terminal", name: "Terminal",
-    bg: "#0D0B08", fg: "#E8E3D8", accent: "#D4B056", emphasis: "#F97316", muted: "#666666", border: "#1F1B14", codeBg: "#0A0908",
+    bg: "#0D1117", fg: "#E6EDF3", accent: "#58A6FF", emphasis: "#58A6FF", muted: "#7D8590", border: "rgba(88,166,255,0.15)", codeBg: "#010409",
     bodyFont: "'JetBrains Mono', ui-monospace, monospace",
     headingFont: "'JetBrains Mono', ui-monospace, monospace",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 700, stripPosition: "left", stripColor: "#3FB950", pattern: "circuit",
   },
   high_contrast: {
     key: "high_contrast", name: "High Contrast",
-    bg: "#0A0908", fg: "#FFFFFF", accent: "#D4B056", emphasis: "#D4B056", muted: "#777777", border: "#1F1B14", codeBg: "#000000",
+    bg: "#000000", fg: "#FFFFFF", accent: "#FFFFFF", emphasis: "#FFFFFF", muted: "rgba(255,255,255,0.55)", border: "rgba(255,255,255,0.15)", codeBg: "#0A0A0A",
     bodyFont: "'DM Sans', system-ui, sans-serif",
-    headingFont: "'Cormorant Garamond', Georgia, serif",
+    headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
+    headingWeight: 900, stripPosition: "none", pattern: "none",
+    numberBadgeBg: "#FFFFFF", numberBadgeFg: "#000000",
   },
 };
 
