@@ -339,6 +339,27 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       {/* Progress dots — above footer */}
       <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 100} accent={style.accent} dotOutline={dotOutline} />
 
+      {/* Signal attribution badge — COVER only */}
+      {slide.slide_type === "COVER" && carousel.signal_attribution && (
+        <g>
+          <rect x={56} y={h - 148} rx={4} ry={4}
+                width={Math.min(w - 112, 18 + (carousel.signal_attribution.length * 7) + 16)}
+                height={22}
+                fill={style.accent} fillOpacity={0.1}
+                stroke={style.accent} strokeOpacity={0.25} strokeWidth={1} />
+          <g transform={`translate(${64}, ${h - 142})`}>
+            <path d="M3 3v10h10" fill="none" stroke={style.accent} strokeWidth={1.4}
+                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+            <path d="M5 9l2-2 2 2 3-3" fill="none" stroke={style.accent} strokeWidth={1.4}
+                  strokeLinecap="round" strokeLinejoin="round" transform="scale(0.7)" />
+          </g>
+          <text x={84} y={h - 132} fontFamily={style.monoFont} fontSize={11}
+                letterSpacing={0.5} fill={style.accent}>
+            {carousel.signal_attribution}
+          </text>
+        </g>
+      )}
+
       {/* Footer */}
       <g>
         <HorizonEye x={60} y={h - 60} size={20} color={style.accent} />
