@@ -839,6 +839,9 @@ export default function CarouselStudio() {
   const [contextText, setContextText] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(undefined);
   const [showSignals, setShowSignals] = useState(true);
+  const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [savedToLibrary, setSavedToLibrary] = useState(false);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
 
@@ -889,6 +892,7 @@ export default function CarouselStudio() {
       // Auto-collapse signals once a real carousel is loaded
       setShowSignals(false);
       setActiveIdx(0);
+      setSavedToLibrary(false);
       toast.success(`${numbered.length} slides generated`);
     } catch (e: any) {
       console.error("Carousel generation failed:", e);
@@ -936,6 +940,88 @@ export default function CarouselStudio() {
       return { ...c, slides: next.map((s, i) => ({ ...s, slide_number: i + 1 })) };
     });
     setActiveIdx(newIdx);
+  };
+
+  const regenerateSlide = async (slideIndex: number) => {
+    const target = slides[slideIndex];
+    if (!target) return;
+    setRegeneratingIndex(slideIndex);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
+      const prev = slideIndex > 0 ? slides[slideIndex - 1].headline : "none";
+      const next = slideIndex < slides.length - 1 ? slides[slideIndex + 1].headline : "none";
+      const ctx = `Regenerate ONLY slide ${slideIndex + 1} of ${slides.length}.
+It MUST be slide_type: ${target.slide_type}.
+Carousel topic: ${carousel.carousel_title || topic}.
+Previous slide headline: ${prev}.
+Next slide headline: ${next}.
+Make it sharper, more specific, more provocative than: "${target.headline || target.question_text || target.cta_main || ''}".`;
+      const { data, error } = await supabase.functions.invoke("generate-carousel-v2", {
+        body: {
+          topic: topic || carousel.carousel_title || "",
+          context: ctx,
+          lang: "en",
+          style: styleKey,
+          total_slides: 1,
+          user_id: sess.session.user.id,
+          signal_id: selectedSignalId,
+        },
+      });
+      if (error) throw error;
+      const newSlide = data?.slides?.[0];
+      if (!newSlide) { toast.error("No slide returned"); return; }
+      setCarousel(c => ({
+        ...c,
+        slides: c.slides.map((s, i) => i === slideIndex
+          ? { ...newSlide, slide_type: s.slide_type, slide_number: s.slide_number }
+          : s),
+      }));
+      toast.success(`Slide ${slideIndex + 1} regenerated`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Regenerate failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setRegeneratingIndex(null);
+    }
+  };
+
+  const saveToLibrary = async () => {
+    if (!slides.length) return;
+    setSaving(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session?.user?.id) { toast.error("Please sign in"); return; }
+      const { error } = await supabase.from('linkedin_posts').insert({
+        user_id: sess.session.user.id,
+        post_text: carousel.linkedin_caption || '',
+        hook: slides[0]?.headline || carousel.carousel_title || '',
+        title: carousel.carousel_title || topic || 'Carousel',
+        content_type: 'carousel',
+        source_type: 'carousel_studio',
+        source_metadata: {
+          slides,
+          style: styleKey,
+          carousel_title: carousel.carousel_title,
+          hashtags: carousel.hashtags,
+          signal_id: selectedSignalId,
+          signal_attribution: carousel.signal_attribution,
+          author_name: carousel.author_name,
+          author_title: carousel.author_title,
+          total_slides: slides.length,
+          lang: 'en',
+        },
+        tracking_status: 'draft',
+      });
+      if (error) throw error;
+      setSavedToLibrary(true);
+      toast.success("Carousel saved to Library");
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Save failed: " + (e?.message || "Unknown error"));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const renderSlideToBlob = async (s: Slide): Promise<Blob> => {
