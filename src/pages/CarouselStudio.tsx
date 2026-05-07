@@ -185,9 +185,123 @@ interface RenderProps {
   carousel: Carousel;
 }
 
+/* Per-type accent strip color (left edge) */
+const STRIP_COLORS: Record<SlideType, string> = {
+  COVER: "#D4B056",
+  BOLD_CLAIM: "#D4B056",
+  REFRAME: "#EF9F27",
+  BIG_NUMBER: "#EF9F27",
+  TERMINAL: "#5DCAA5",
+  GRID: "#5DCAA5",
+  COMPARE: "#5DCAA5",
+  QUESTION: "#85B7EB",
+  INSIGHT: "#85B7EB",
+  LIST: "#EF9F27",
+  CTA: "#D4B056",
+};
+
+const RAW_TYPE_NAMES = new Set([
+  "COVER","BOLD_CLAIM","REFRAME","BIG_NUMBER","TERMINAL",
+  "GRID","COMPARE","QUESTION","LIST","INSIGHT","CTA",
+]);
+
+const TYPE_FALLBACK_LABEL: Record<SlideType, string> = {
+  COVER: "OVERVIEW",
+  BOLD_CLAIM: "THE CLAIM",
+  REFRAME: "RETHINK",
+  BIG_NUMBER: "THE DATA",
+  TERMINAL: "THE PLAYBOOK",
+  GRID: "THE PILLARS",
+  COMPARE: "OLD VS NEW",
+  QUESTION: "REFLECT",
+  LIST: "DO / DONT",
+  INSIGHT: "KEY INSIGHT",
+  CTA: "ACTION",
+};
+
+function getDisplayLabel(slide: Slide): string {
+  const raw = (slide.section_label || "").trim();
+  const norm = raw.toUpperCase().replace(/\s+/g, "_");
+  if (!raw || RAW_TYPE_NAMES.has(norm)) return TYPE_FALLBACK_LABEL[slide.slide_type] || raw || "";
+  return raw.toUpperCase();
+}
+
+/* Tiny inline SVG icon paths per slide type (24x24 viewBox), single-stroke */
+const ICON_PATHS: Record<SlideType, string> = {
+  COVER:      "M13 2 L3 14 H12 L11 22 L21 10 H12 Z",                                   // zap
+  BOLD_CLAIM: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z",          // message
+  REFRAME:    "M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15", // refresh
+  BIG_NUMBER: "M3 3v18h18 M7 14l4-4 4 4 5-5",                                            // chart
+  TERMINAL:   "M4 17l6-6-6-6 M12 19h8",                                                  // terminal
+  GRID:       "M3 3h7v7H3z M14 3h7v7h-7z M14 14h7v7h-7z M3 14h7v7H3z",                  // grid
+  COMPARE:    "M8 3 4 7l4 4 M4 7h16 M16 21l4-4-4-4 M20 17H4",                            // arrows lr
+  QUESTION:   "M9 9a3 3 0 1 1 6 0c0 2-3 3-3 3 M12 17h.01",                              // help
+  LIST:       "M9 11l3 3 8-8 M3 12a9 9 0 1 0 9-9",                                       // check
+  INSIGHT:    "M9 18h6 M10 22h4 M12 2a7 7 0 0 1 4 12.7c-.6.5-1 1.2-1 2V17H9v-.3c0-.8-.4-1.5-1-2A7 7 0 0 1 12 2z", // bulb
+  CTA:        "M22 2 11 13 M22 2l-7 20-4-9-9-4z",                                        // send
+};
+
+function TypeIcon({ type, x, y, color, size = 18 }: { type: SlideType; x: number; y: number; color: string; size?: number }) {
+  const d = ICON_PATHS[type];
+  if (!d) return null;
+  return (
+    <g transform={`translate(${x},${y}) scale(${size / 24})`} fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </g>
+  );
+}
+
+function ProgressDots({ current, total, cx, y, accent, dotOutline }: { current: number; total: number; cx: number; y: number; accent: string; dotOutline: string }) {
+  const r = 3;
+  const gap = 11; // center-to-center
+  const startX = cx - ((total - 1) * gap) / 2;
+  return (
+    <g>
+      {Array.from({ length: total }, (_, i) => (
+        <circle
+          key={i}
+          cx={startX + i * gap}
+          cy={y}
+          r={r}
+          fill={i === current ? accent : "transparent"}
+          stroke={i === current ? accent : dotOutline}
+          strokeWidth={1}
+        />
+      ))}
+    </g>
+  );
+}
+
+/* Subtle SVG noise texture filter — embedded once per slide */
+function NoiseTexture({ id, opacity, w, h }: { id: string; opacity: number; w: number; h: number }) {
+  return (
+    <g pointerEvents="none">
+      <defs>
+        <filter id={id} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves={2} stitchTiles="stitch" />
+          <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0" />
+        </filter>
+      </defs>
+      <rect width={w} height={h} filter={`url(#${id})`} opacity={opacity} />
+    </g>
+  );
+}
+
 function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
   const { w, h } = DIM[dim];
   const bgIsGradient = !!style.bgGradient && style.key === "bold_statement";
+  const stripColor = STRIP_COLORS[slide.slide_type] || style.accent;
+  const displayLabel = getDisplayLabel(slide);
+  const isDarkStyle = style.key === "bold_statement" || style.key === "terminal" || style.key === "high_contrast";
+  const dotOutline = isDarkStyle ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.18)";
+  const textureOpacity = style.key === "bold_statement" || style.key === "terminal"
+    ? 0.025
+    : style.key === "executive_briefing"
+    ? 0.015
+    : 0;
+  const noiseId = `noise-${slide.slide_number}-${style.key}`;
+  // Approx label text width for icon placement
+  const labelTextX = 60 + 22; // 22 = icon width + gap
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "100%", display: "block" }}>
@@ -201,9 +315,16 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
       </defs>
       <rect width={w} height={h} fill={bgIsGradient ? "url(#bgGrad)" : style.bg} />
 
-      {/* Section label — always render (fallback to slide_type) */}
-      <text x={60} y={70} fontFamily={style.bodyFont} fontSize={20} letterSpacing={3} fill={style.accent} fontWeight={600}>
-        {(slide.section_label || slide.slide_type || "").toUpperCase()}
+      {/* Subtle texture overlay */}
+      {textureOpacity > 0 && <NoiseTexture id={noiseId} opacity={textureOpacity} w={w} h={h} />}
+
+      {/* Left accent strip */}
+      <rect x={0} y={0} width={4} height={h} fill={stripColor} rx={0} />
+
+      {/* Section label + icon */}
+      <TypeIcon type={slide.slide_type} x={60} y={56} color={style.accent} size={16} />
+      <text x={labelTextX} y={70} fontFamily={style.bodyFont} fontSize={18} letterSpacing={3} fill={style.accent} fontWeight={600}>
+        {displayLabel}
       </text>
 
       {/* Page number */}
@@ -213,6 +334,9 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
 
       {/* Slide-type body */}
       <SlideBody slide={slide} style={style} w={w} h={h} />
+
+      {/* Progress dots — above footer */}
+      <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 100} accent={style.accent} dotOutline={dotOutline} />
 
       {/* Footer */}
       <g>
@@ -241,7 +365,10 @@ function SlideSVG({ slide, total, style, dim, carousel }: RenderProps) {
 
 function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; w: number; h: number }) {
   const cx = w / 2;
-  const cy = h / 2;
+  // Vertical center of the *content zone* (between header ~100 and footer ~120)
+  const contentTop = 100;
+  const contentBottom = h - 120;
+  const cy = (contentTop + contentBottom) / 2;
   switch (slide.slide_type) {
     case "COVER": {
       const lines = wrapText(slide.headline || "", 20);
@@ -285,14 +412,15 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       // Truth can come from body OR headline_accent — fall back gracefully
       const truthRaw = slide.body || slide.headline_accent || "";
       const truthLines = wrapText(truthRaw, 24);
-      const beliefStartY = cy - 140;
+      const beliefStartY = cy - 160;
       return (
         <g>
           <text x={60} y={beliefStartY - 30} fontFamily={style.bodyFont} fontSize={14} letterSpacing={2} fill={style.muted}>
             MOST PEOPLE THINK
           </text>
           {beliefLines.map((ln, i) => (
-            <text key={i} x={60} y={beliefStartY + i * 50} fontFamily={style.bodyFont} fontSize={40} fill={style.muted} textDecoration="line-through">
+            <text key={i} x={60} y={beliefStartY + i * 36} fontFamily={style.bodyFont} fontSize={28} fill={style.muted} opacity={0.6}
+                  textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
               {ln}
             </text>
           ))}
@@ -301,7 +429,7 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
             THE TRUTH
           </text>
           {truthLines.length > 0 ? truthLines.map((ln, i) => (
-            <text key={i} x={60} y={cy + 110 + i * 56} fontFamily={style.headingFont} fontSize={48} fontWeight={600} fill={style.fg}>
+            <text key={i} x={60} y={cy + 120 + i * 64} fontFamily={style.headingFont} fontSize={56} fontWeight={700} fill={style.fg}>
               {ln}
             </text>
           )) : (
@@ -324,7 +452,7 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
             </text>
           )}
           {slide.number_source && (
-            <text x={cx} y={h - 130} textAnchor="middle" fontFamily={style.bodyFont} fontSize={18} fill={style.muted} fontStyle="italic">
+            <text x={cx} y={cy + 160} textAnchor="middle" fontFamily={style.bodyFont} fontSize={18} fill={style.muted} fontStyle="italic">
               {slide.number_source}
             </text>
           )}
@@ -383,15 +511,17 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       const items = slide.grid_items || [];
       const cols = items.length > 4 ? 2 : 2;
       const rows = Math.ceil(items.length / cols);
-      const gridX = 60, gridY = 220, gridW = w - 120;
       const gap = 20;
-      // Tighter, content-hugging cells (capped height)
+      const gridX = 60, gridW = w - 120;
       const cellW = (gridW - gap * (cols - 1)) / cols;
-      const cellH = Math.min(160, (h - 420 - gap * (rows - 1)) / Math.max(rows, 1));
+      const cellH = 120; // tight, content-hugging
+      const gridTotalH = rows * cellH + (rows - 1) * gap;
+      const headlineSpace = slide.headline ? 80 : 0;
+      const gridY = Math.max(180, cy - gridTotalH / 2 + headlineSpace / 2);
       return (
         <g>
           {slide.headline && (
-            <text x={60} y={150} fontFamily={style.headingFont} fontSize={42} fontWeight={500} fill={style.fg}>
+            <text x={60} y={gridY - 40} fontFamily={style.headingFont} fontSize={36} fontWeight={500} fill={style.fg}>
               {slide.headline}
             </text>
           )}
@@ -400,9 +530,10 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
             const c = i % cols;
             const x = gridX + c * (cellW + gap);
             const y = gridY + r * (cellH + gap);
-            const wrapped = wrapText(it, 30);
-            const textBlockH = wrapped.length * 28;
-            const textStartY = y + cellH / 2 - textBlockH / 2 + 20;
+            const wrapped = wrapText(it, 28);
+            const lineH = 26;
+            const textBlockH = wrapped.length * lineH;
+            const textStartY = y + cellH / 2 - textBlockH / 2 + 18;
             return (
               <g key={i}>
                 <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill="none" stroke={style.border} strokeWidth={1} />
@@ -411,7 +542,7 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
                   {i + 1}
                 </text>
                 {wrapped.map((ln, li) => (
-                  <text key={li} x={x + 72} y={textStartY + li * 28} fontFamily={style.bodyFont} fontSize={20} fill={style.fg}>
+                  <text key={li} x={x + 72} y={textStartY + li * lineH} fontFamily={style.bodyFont} fontSize={19} fill={style.fg}>
                     {ln}
                   </text>
                 ))}
@@ -424,35 +555,59 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     case "COMPARE": {
       const left = slide.compare_left_items || [];
       const right = slide.compare_right_items || [];
+      const itemH = 60;
+      const rowsCount = Math.max(left.length, right.length, 1);
+      const blockH = 80 + rowsCount * itemH; // header + rows
+      const headlineSpace = slide.headline ? 70 : 0;
+      const blockTop = Math.max(140, cy - blockH / 2 - headlineSpace / 2);
+      const headerY = blockTop + 30;
+      const rowsStartY = blockTop + 80;
+      const rightColX = cx + 30;
+      const rightColW = w - 60 - rightColX;
       return (
         <g>
           {slide.headline && (
-            <text x={60} y={150} fontFamily={style.headingFont} fontSize={40} fontWeight={500} fill={style.fg}>
+            <text x={60} y={blockTop - 30} fontFamily={style.headingFont} fontSize={36} fontWeight={500} fill={style.fg}>
               {slide.headline}
             </text>
           )}
-          <line x1={cx} y1={200} x2={cx} y2={h - 180} stroke={style.border} strokeWidth={1} />
-          <text x={80} y={230} fontFamily={style.bodyFont} fontSize={20} letterSpacing={2} fill={style.muted}>
+          <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
+          {/* Right column subtle gold tint */}
+          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.05} rx={6} />
+          {/* Headers */}
+          <text x={80} y={headerY} fontFamily={style.bodyFont} fontSize={18} letterSpacing={2} fill={style.muted} opacity={0.4}>
             {(slide.compare_left_title || "BEFORE").toUpperCase()}
           </text>
-          <text x={cx + 40} y={230} fontFamily={style.bodyFont} fontSize={20} letterSpacing={2} fill={style.accent} fontWeight={600}>
+          <text x={rightColX} y={headerY} fontFamily={style.bodyFont} fontSize={20} letterSpacing={2} fill={style.accent} fontWeight={700}>
             {(slide.compare_right_title || "AFTER").toUpperCase()}
           </text>
+          {/* Left items — faded, struck-through */}
           {left.map((it, i) => {
             const lns = wrapText(it, 24);
             return lns.map((ln, li) => (
-              <text key={`l${i}-${li}`} x={80} y={290 + i * 90 + li * 32} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
+              <text key={`l${i}-${li}`} x={80} y={rowsStartY + i * itemH + li * 28}
+                    fontFamily={style.bodyFont} fontSize={22} fill={style.muted} opacity={0.4}
+                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
                 {ln}
               </text>
             ));
           })}
+          {/* Right items — gold border-left, bold */}
           {right.map((it, i) => {
             const lns = wrapText(it, 24);
-            return lns.map((ln, li) => (
-              <text key={`r${i}-${li}`} x={cx + 40} y={290 + i * 90 + li * 32} fontFamily={style.bodyFont} fontSize={26} fill={style.fg} fontWeight={500}>
-                {ln}
-              </text>
-            ));
+            const rowY = rowsStartY + i * itemH;
+            return (
+              <g key={`rg${i}`}>
+                <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                      stroke={style.accent} strokeWidth={2} />
+                {lns.map((ln, li) => (
+                  <text key={`r${i}-${li}`} x={rightColX} y={rowY + li * 28}
+                        fontFamily={style.bodyFont} fontSize={24} fill={style.fg} fontWeight={600}>
+                    {ln}
+                  </text>
+                ))}
+              </g>
+            );
           })}
         </g>
       );
@@ -509,16 +664,23 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     case "INSIGHT": {
       const headlineLines = wrapText(slide.headline || "", 26);
       const bodyLines = wrapText(slide.body || "", 38);
+      const headLineH = 58;
+      const bodyLineH = 36;
+      const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
+      const startY = cy - blockH / 2 + 40;
       return (
         <g>
           {headlineLines.map((ln, i) => (
-            <text key={i} x={60} y={220 + i * 58} fontFamily={style.headingFont} fontSize={48} fontWeight={500}>
-              {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.emphasis)}
+            <text key={i} x={60} y={startY + i * headLineH} fontFamily={style.headingFont} fontSize={50} fontWeight={600}>
+              {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
-          <line x1={60} y1={220 + headlineLines.length * 58 + 20} x2={120} y2={220 + headlineLines.length * 58 + 20} stroke={style.accent} strokeWidth={2} opacity={0.4} />
+          <line x1={60} y1={startY + headlineLines.length * headLineH + 16}
+                x2={90} y2={startY + headlineLines.length * headLineH + 16}
+                stroke={style.accent} strokeWidth={2} opacity={0.5} />
           {bodyLines.map((ln, i) => (
-            <text key={i} x={60} y={220 + headlineLines.length * 58 + 70 + i * 36} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
+            <text key={i} x={60} y={startY + headlineLines.length * headLineH + 56 + i * bodyLineH}
+                  fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
               {ln}
             </text>
           ))}
@@ -529,34 +691,43 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       const headlineLines = wrapText(slide.headline || "", 22);
       const ctaMainLines = wrapText(slide.cta_main || "", 38);
       const ctaSubLines = wrapText(slide.cta_sub || "", 38);
+      const headLineH = 56;
+      const lineH = 32;
+      const btnH = slide.cta_button ? 80 : 0;
+      const totalH =
+        headlineLines.length * headLineH +
+        24 + ctaMainLines.length * lineH +
+        16 + ctaSubLines.length * lineH +
+        btnH;
+      const startY = cy - totalH / 2 + headLineH;
+      const mainY = startY + (headlineLines.length - 1) * headLineH + 60;
+      const subY = mainY + ctaMainLines.length * lineH + 16;
+      const btnY = subY + ctaSubLines.length * lineH + 24;
       return (
         <g>
           {headlineLines.map((ln, i) => (
-            <text key={i} x={60} y={250 + i * 56} fontFamily={style.headingFont} fontSize={48} fontWeight={500} fill={style.fg}>
-              {ln}
+            <text key={i} x={60} y={startY + i * headLineH} fontFamily={style.headingFont} fontSize={48} fontWeight={500} fill={style.fg}>
+              {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
           {ctaMainLines.map((ln, i) => (
-            <text key={`m${i}`} x={60} y={cy + 80 + i * 32} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
+            <text key={`m${i}`} x={60} y={mainY + i * lineH} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
               {ln}
             </text>
           ))}
           {ctaSubLines.map((ln, i) => (
-            <text key={`s${i}`} x={60} y={cy + 80 + ctaMainLines.length * 32 + 16 + i * 32} fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
+            <text key={`s${i}`} x={60} y={subY + i * lineH} fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
               {ln}
             </text>
           ))}
-          {slide.cta_button && (() => {
-            const btnY = Math.max(cy + 160, cy + 80 + ctaMainLines.length * 32 + 16 + ctaSubLines.length * 32 + 32);
-            return (
-              <g>
-                <rect x={60} y={btnY} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
-                <text x={270} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
-                  {slide.cta_button}
-                </text>
-              </g>
-            );
-          })()}
+          {slide.cta_button && (
+            <g>
+              <rect x={60} y={btnY} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
+              <text x={270} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
+                {slide.cta_button}
+              </text>
+            </g>
+          )}
         </g>
       );
     }
