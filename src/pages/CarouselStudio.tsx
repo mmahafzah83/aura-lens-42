@@ -463,6 +463,7 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
     case "TERMINAL": {
       const blockX = 60, blockY = 180, blockW = w - 120, blockH = h - 360;
       const lines = slide.terminal_lines || [];
+      const keywords = (slide.terminal_keywords || []).filter(Boolean);
       const renderLine = (line: string, idx: number) => {
         // Highlight [bracketed] text in accent color
         const parts: { text: string; color: string }[] = [];
@@ -482,9 +483,32 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
           }
           if (lastIdx < line.length) parts.push({ text: line.slice(lastIdx), color: baseColor });
         }
+        // Apply terminal_keywords highlighting on top of any base segments
+        let withKw = parts;
+        if (keywords.length) {
+          for (const kw of keywords) {
+            if (!kw) continue;
+            const next: { text: string; color: string }[] = [];
+            for (const seg of withKw) {
+              if (seg.color === style.accent) { next.push(seg); continue; }
+              const lower = seg.text.toLowerCase();
+              const ki = lower.indexOf(kw.toLowerCase());
+              if (ki === -1) { next.push(seg); continue; }
+              const before = seg.text.slice(0, ki);
+              const mid = seg.text.slice(ki, ki + kw.length);
+              const after = seg.text.slice(ki + kw.length);
+              if (before) next.push({ text: before, color: seg.color });
+              next.push({ text: mid, color: style.accent });
+              if (after) next.push({ text: after, color: seg.color });
+            }
+            withKw = next;
+          }
+        }
         return (
           <text key={idx} x={blockX + 40} y={blockY + 110 + idx * 36} fontFamily={style.monoFont} fontSize={22}>
-            {parts.map((p, i) => <tspan key={i} fill={p.color}>{p.text}</tspan>)}
+            {withKw.map((p, i) => (
+              <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
+            ))}
           </text>
         );
       };
