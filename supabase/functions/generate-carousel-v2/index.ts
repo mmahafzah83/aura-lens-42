@@ -179,7 +179,69 @@ WRAPPER:
   signal_attribution: string|null
 }
 
-${isArabic ? "Write ALL content in professional executive Arabic (فصحى معاصرة — not dialect, not bureaucratic MSA). Short lines creating tension→insight rhythm. One specific number mid-carousel. Closing with an uncomfortable question. Technical terms stay in English (AI, IoT, KPI, dashboard, smart meter). Use ◆ for main points, ↳ for sub-points. Arabic quote marks «»." : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
+${isArabic ? `Write ALL carousel content in Arabic. Follow these rules with ZERO exceptions:
+
+═══ ARABIC LANGUAGE REGISTER ═══
+Use فصحى معاصرة (contemporary professional Arabic) — NOT stiff bureaucratic MSA, NOT dialect. The register Arab C-suite executives use in boardrooms. Natural, direct, authoritative.
+GOOD: «المشكلة ليست في غياب البيانات. المشكلة في أن أحداً لا يثق فيها.»
+BAD: «إن التحديات التي تواجه المؤسسات في مجال إدارة البيانات تتطلب...» (too academic)
+BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
+
+═══ ARABIC CONTENT RULES ═══
+1. SHORT LINES creating rhythm and tension. One idea per line. Arabic on LinkedIn needs even MORE whitespace than English.
+2. Technical terms stay in English (Latin script): AI, IoT, KPI, dashboard, smart meter, SCADA, ERP, CRM, SaaS. Never translate these.
+3. ONE specific number mid-carousel (BIG_NUMBER slide). Use Western numerals (86%) for LinkedIn readability.
+4. Closing QUESTION slide: uncomfortable, sector-specific, painful — never generic.
+5. Arabic quote marks: use «» not "".
+6. Formatting markers: ◆ main points, ↳ sub-points (in GRID/LIST only).
+7. CTA in Arabic ("احفظ هذا المنشور") but @handle stays Latin ("@mmahafzah").
+8. section_label may be Arabic ("البيانات", "الاستراتيجية", "التحول", "نداء للعمل") or English if industry-standard ("ROI", "KPI"). Still must be unique and topic-specific (never the slide_type name).
+
+═══ ARABIC VOICE CALIBRATION ═══
+- Blunt truth-telling: open with what others avoid saying
+- Single-line rhythm, one thought per line
+- Contradictory pairs: "ليس ... بل ..." or "المشكلة ليست في ... بل في ..."
+- Specific numbers AFTER tension, not before
+- Uncomfortable closing question, sector-specific
+- GCC utilities, digital transformation, IT/OT convergence, Vision 2030
+
+═══ ARABIC WORD LIMITS (TIGHTER — Arabic renders WIDER) ═══
+- headline: 4-8 words MAX
+- headline_accent: 2-5 words MAX
+- body: 6-12 words MAX
+- terminal_lines: 4-5 lines, each 4-8 words
+- grid_items: 2-4 words each
+- compare items: 3-6 words each
+- question_text: 8-15 words MAX
+- cta_main: 6-10 words
+- cta_sub: 8-12 words
+
+═══ ARABIC BANNED PHRASES (AI-tells — NEVER use) ═══
+- "في عالم اليوم المتغير"
+- "لا يخفى على أحد"
+- "في ظل التحديات"
+- "يُعد من أهم"
+- "على صعيد آخر"
+- "من نافلة القول"
+- "في هذا السياق"
+- "تجدر الإشارة إلى"
+- "مما لا شك فيه"
+
+═══ ARABIC NARRATIVE RHYTHM ═══
+Same 8-slide structure, Arabic pacing:
+- COVER: provocative Arabic headline + Arabic body. Use "اسحب ←" (NOT "SWIPE →") if you include a swipe cue.
+- REFRAME: "يعتقد الأغلبية" (struck-through belief) vs "الحقيقة" (bold truth)
+- BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
+- TERMINAL: filename can be English (audit_v3.log); terminal_lines and terminal_punchline in Arabic
+- COMPARE: right column = the CORRECT answer (RTL — right is read first). Left = the mistake.
+- QUESTION: Arabic question ending with ؟
+- CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع @mmahafzah ←"
+
+═══ ARABIC HASHTAGS ═══
+5-7 mixing Arabic and English. Always include #التحول_الرقمي. Topic Arabic tags (#الذكاء_الاصطناعي, #حوكمة_البيانات, #البنية_التحتية). 1-2 English (#DigitalTransformation, #AI). Audience (#قادة_الأعمال or #رؤية_السعودية_2030).
+
+═══ ARABIC LINKEDIN CAPTION ═══
+Arabic. Professional-conversational. Short paragraphs. End with a question inviting comments. NO emojis (◆ ↳ allowed for structure).` : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
 
 BANNED WORDS: delve, tapestry, landscape, synergy, leverage (as verb), holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm
 
@@ -230,9 +292,15 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
     }
 
     // Backfill author info if model omitted
-    parsed.author_name = parsed.author_name || p.first_name || "Mohammad";
-    parsed.author_title = parsed.author_title || `${p.level}${p.firm ? ', ' + p.firm : ''}`;
+    if (isArabic) {
+      parsed.author_name = parsed.author_name || p.first_name || "محمد";
+      parsed.author_title = parsed.author_title || `${p.level ? 'مدير التحول الرقمي' : ''} في ${p.firm || 'EY'}`.trim();
+    } else {
+      parsed.author_name = parsed.author_name || p.first_name || "Mohammad";
+      parsed.author_title = parsed.author_title || `${p.level}${p.firm ? ', ' + p.firm : ''}`;
+    }
     parsed.author_handle = parsed.author_handle || "@mmahafzah";
+    parsed.lang = lang;
     if (signal && !parsed.signal_attribution) {
       parsed.signal_attribution = `${signal.signal_title} at ${Math.round((signal.confidence || 0) * 100)}%`;
     }
