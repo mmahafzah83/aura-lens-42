@@ -330,7 +330,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} xmlns="http://www.w3.org/2000/svg"
-         style={{ width: "100%", height: "100%", display: "block" }}>
+         style={{ width: "100%", height: "100%", display: "block", unicodeBidi: "plaintext" as any }}>
       <defs>
         {bgIsGradient && (
           <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
