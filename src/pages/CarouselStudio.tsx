@@ -1157,6 +1157,44 @@ export default function CarouselStudio() {
               <Field label="Signal attribution" value={carousel.signal_attribution || ""} onChange={v => setCarousel({ ...carousel, signal_attribution: v })} />
             </div>
           </div>
+
+          {/* LinkedIn caption + hashtags */}
+          {(carousel.linkedin_caption || (carousel.hashtags && carousel.hashtags.length > 0)) && (
+            <div className="space-y-3 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase tracking-wider opacity-60">LinkedIn caption</div>
+                <button
+                  onClick={() => {
+                    const tags = (carousel.hashtags || []).map(h => h.startsWith("#") ? h : "#" + h).join(" ");
+                    const text = `${carousel.linkedin_caption || ""}${tags ? "\n\n" + tags : ""}`;
+                    navigator.clipboard.writeText(text).then(
+                      () => toast.success("Caption copied to clipboard"),
+                      () => toast.error("Copy failed"),
+                    );
+                  }}
+                  className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-white/5 hover:bg-white/10"
+                >
+                  <Copy className="w-3 h-3" /> Copy
+                </button>
+              </div>
+              <textarea
+                value={carousel.linkedin_caption || ""}
+                onChange={e => setCarousel({ ...carousel, linkedin_caption: e.target.value })}
+                className="w-full px-2.5 py-1.5 text-sm rounded-lg bg-white/5 border focus:outline-none focus:border-amber-500"
+                style={{ borderColor: "rgba(255,255,255,0.1)", minHeight: 130, resize: "vertical" }}
+              />
+              {carousel.hashtags && carousel.hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {carousel.hashtags.map((h, i) => (
+                    <span key={i} className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: "rgba(197,165,90,0.12)", color: "#C5A55A", border: "1px solid rgba(197,165,90,0.25)" }}>
+                      {h.startsWith("#") ? h : "#" + h}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </aside>
       </div>
 
