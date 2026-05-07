@@ -743,36 +743,44 @@ function SlideBody({ slide, style, w, h }: { slide: Slide; style: StylePalette; 
       const headLineH = 56;
       const lineH = 32;
       const btnH = slide.cta_button ? 80 : 0;
-      const totalH =
-        headlineLines.length * headLineH +
-        24 + ctaMainLines.length * lineH +
-        16 + ctaSubLines.length * lineH +
-        btnH;
-      const startY = cy - totalH / 2 + headLineH;
-      const mainY = startY + (headlineLines.length - 1) * headLineH + 60;
-      const subY = mainY + ctaMainLines.length * lineH + 16;
-      const btnY = subY + ctaSubLines.length * lineH + 24;
+      const headBlockH = headlineLines.length * headLineH;
+      const mainBlockH = ctaMainLines.length * lineH;
+      const subBlockH = ctaSubLines.length * lineH;
+      const gap1 = headBlockH && mainBlockH ? 32 : 0;
+      const gap2 = mainBlockH && subBlockH ? 18 : 0;
+      const gap3 = (headBlockH || mainBlockH || subBlockH) && btnH ? 32 : 0;
+      const totalH = headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
+      const top = cy - totalH / 2;
+      const startY = top + headLineH;            // baseline of first headline line
+      const mainY = top + headBlockH + gap1 + lineH * 0.8;
+      const subY = mainY + (mainBlockH ? mainBlockH - lineH * 0.2 : 0) + gap2;
+      const btnY = top + headBlockH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
+      const btnW = 420;
+      const btnX = cx - btnW / 2;
       return (
         <g>
           {headlineLines.map((ln, i) => (
-            <text key={i} x={60} y={startY + i * headLineH} fontFamily={style.headingFont} fontSize={48} fontWeight={500} fill={style.fg}>
+            <text key={i} x={cx} y={startY + i * headLineH} textAnchor="middle"
+                  fontFamily={style.headingFont} fontSize={48} fontWeight={500} fill={style.fg}>
               {renderHeadlineWithAccent(ln, slide.headline_accent, style.fg, style.accent)}
             </text>
           ))}
           {ctaMainLines.map((ln, i) => (
-            <text key={`m${i}`} x={60} y={mainY + i * lineH} fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
+            <text key={`m${i}`} x={cx} y={mainY + i * lineH} textAnchor="middle"
+                  fontFamily={style.bodyFont} fontSize={26} fill={style.muted}>
               {ln}
             </text>
           ))}
           {ctaSubLines.map((ln, i) => (
-            <text key={`s${i}`} x={60} y={subY + i * lineH} fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
+            <text key={`s${i}`} x={cx} y={subY + i * lineH} textAnchor="middle"
+                  fontFamily={style.bodyFont} fontSize={26} fontStyle="italic" fill={style.accent}>
               {ln}
             </text>
           ))}
           {slide.cta_button && (
             <g>
-              <rect x={60} y={btnY} width={420} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
-              <text x={270} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
+              <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
+              <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={style.bodyFont} fontSize={22} fill={style.accent} fontWeight={600}>
                 {slide.cta_button}
               </text>
             </g>
