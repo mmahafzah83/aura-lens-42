@@ -598,6 +598,30 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
   }, [followerRows]);
 
+  /* ── Published-post markers snapped to follower chart x-axis ── */
+  const publishMarkers = useMemo(() => {
+    if (followerSeries.length === 0 || publishedPosts.length === 0) return [];
+    const seriesDates = followerSeries.map(s => ({ ts: new Date(s.date).getTime(), label: s.label }));
+    const grouped = new Map<string, { label: string; posts: { published_at: string; post_text: string | null }[] }>();
+    for (const p of publishedPosts) {
+      const ts = new Date(p.published_at).getTime();
+      if (!isFinite(ts)) continue;
+      // snap to nearest series date
+      let nearest = seriesDates[0];
+      let nearestDiff = Math.abs(ts - nearest.ts);
+      for (const sd of seriesDates) {
+        const d = Math.abs(ts - sd.ts);
+        if (d < nearestDiff) { nearest = sd; nearestDiff = d; }
+      }
+      // skip if more than ~7 days from any bucket
+      if (nearestDiff > 7 * 86400000) continue;
+      const entry = grouped.get(nearest.label) || { label: nearest.label, posts: [] };
+      entry.posts.push(p);
+      grouped.set(nearest.label, entry);
+    }
+    return Array.from(grouped.values());
+  }, [followerSeries, publishedPosts]);
+
   /* ── Authority Trajectory forecast ── */
   const trajectory = useMemo(() => {
     if (allSnapshots.length < 2) return null;
