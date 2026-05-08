@@ -359,9 +359,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
       {/* Market Mirror (O-3) — three audience perspectives + gaps */}
-      <div data-testid="story-market-mirror">
-        <MarketMirror userId={authUser?.id ?? null} />
-      </div>
+      {assessmentCompleted && (
+        <div data-testid="story-market-mirror">
+          <MarketMirror userId={authUser?.id ?? null} />
+        </div>
+      )}
       {/* Branded header */}
       <div style={{ marginBottom: 0 }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
