@@ -1649,7 +1649,26 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <div className="space-y-4">
               <div className="mx-auto" style={{ maxWidth: dim === "1200x628" ? 900 : 640, width: "100%" }}>
                 <div style={{ aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden" }}>
-                  {slide && <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />}
+                  {slide ? (
+                    <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-center px-8"
+                         style={{ background: style.bg, color: style.fg }}>
+                      {generating ? (
+                        <>
+                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: "#C5A55A" }} />
+                          <div className="text-base font-semibold mb-1">Generating your carousel…</div>
+                          {topic && <div className="text-sm opacity-70 max-w-md">Creating 8 slides on: {topic}</div>}
+                        </>
+                      ) : (
+                        <>
+                          <LayoutGrid className="w-10 h-10 mb-4 opacity-40" />
+                          <div className="text-base font-semibold mb-1">Enter a topic and click Generate</div>
+                          <div className="text-sm opacity-60 max-w-md">Or pick a signal from the sidebar — 8 slides · 5 styles · Arabic & English · PDF export</div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
