@@ -710,8 +710,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       </div>
       <FirstVisitHint page="impact" />
 
-      {/* Market Mirror (O-3) — replaces single Shadow Twin chip */}
-      <MarketMirror userId={userId} />
+      {/* Market Mirror moved to My Story page (was redundant here). Kept import for potential future use. */}
 
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
