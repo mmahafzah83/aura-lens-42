@@ -110,6 +110,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
+  const [latestSnapshotDate, setLatestSnapshotDate] = useState<string | null>(null);
+  const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
