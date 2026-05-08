@@ -631,6 +631,85 @@ const Admin = () => {
           )}
         </div>
 
+        {/* User management — delete users + their data */}
+        <div
+          className="rounded-2xl p-6 mt-8"
+          style={{ backgroundColor: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}
+        >
+          <h2 className="text-sm font-semibold mb-1" style={{ color: "var(--ink-7)" }}>
+            User management
+          </h2>
+          <p className="text-xs mb-4" style={{ color: "var(--ink-5)" }}>
+            Users: {rows.length} total · {rows.filter((r) => r.status === "active").length} active · {rows.filter((r) => r.status === "pending").length} pending. Deleting a user removes their auth account and all associated data permanently.
+          </p>
+          {rows.length === 0 ? (
+            <div className="text-xs" style={{ color: "var(--ink-5)" }}>No users yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {rows.map((r) => {
+                const profile = activeUsers.find((u) => u.email.toLowerCase() === r.email.toLowerCase());
+                const isAdmin = r.email.toLowerCase() === "fayiz@aura-intel.org" || r.email.toLowerCase().includes("9e0c6ee1");
+                const isDeleting = deletingEmail === r.email;
+                return (
+                  <div
+                    key={r.id}
+                    className="flex items-start justify-between gap-4 p-3 rounded-md"
+                    style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)" }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate" style={{ color: "var(--ink-7)" }}>
+                        {r.email}
+                      </div>
+                      <div className="text-xs mt-0.5" style={{ color: "var(--ink-5)" }}>
+                        {profile?.first_name
+                          ? `${profile.first_name}${profile.sector ? ` · ${profile.sector}` : ""}`
+                          : r.name || "(Profile not completed)"}
+                      </div>
+                      <div className="text-[10px] mt-1 uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
+                        <span className={`inline-block px-2 py-0.5 rounded border ${statusBadge(r.status)}`}>{r.status}</span>
+                        <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
+                      </div>
+                    </div>
+                    {isAdmin ? (
+                      <span className="text-[10px] px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Cannot delete your own account">
+                        Protected
+                      </span>
+                    ) : confirmEmail === r.email ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => setConfirmEmail(null)}
+                          disabled={isDeleting}
+                          className="px-3 py-1.5 text-xs rounded-md disabled:opacity-50"
+                          style={{ border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(r.email)}
+                          disabled={isDeleting}
+                          className="px-3 py-1.5 text-xs rounded-md font-medium inline-flex items-center gap-1.5 disabled:opacity-60"
+                          style={{ backgroundColor: "rgb(220,38,38)", color: "#fff" }}
+                        >
+                          {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                          Delete permanently
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmEmail(r.email)}
+                        className="px-3 py-1.5 text-xs rounded-md inline-flex items-center gap-1.5 shrink-0"
+                        style={{ border: "1px solid rgba(220,38,38,0.4)", color: "rgb(248,113,113)" }}
+                      >
+                        <Trash2 className="w-3 h-3" /> Delete user
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* NPS responses */}
         <div
           className="rounded-2xl p-6 mt-8"
