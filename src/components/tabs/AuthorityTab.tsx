@@ -391,9 +391,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       setContext(signalPrefill.context);
       // Determine content type from explicit contentFormat or sourceType
       if (signalPrefill.contentFormat === "carousel") {
-        setContentType("carousel");
-        // Auto-open carousel workflow
-        setTimeout(() => setShowCarousel(true), 100);
+        // Route directly to Carousel Studio with prefill
+        navigate("/carousel-studio", {
+          state: {
+            topic: signalPrefill.topic,
+            context: signalPrefill.context,
+            signalId: signalPrefill.signalId || undefined,
+            signalTitle: signalPrefill.signalTitle || undefined,
+            lang,
+          },
+        });
+        onSignalPrefillConsumed?.();
+        return;
       } else if (signalPrefill.contentFormat === "framework_summary" || signalPrefill.sourceType === "framework_build") {
         setContentType("framework_summary");
         setFramework("auto");
@@ -490,7 +499,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       toast.error("Add a topic before generating.");
       return;
     }
-    if (effContentType === "carousel") { setShowCarousel(true); return; }
+    if (effContentType === "carousel") {
+      navigate("/carousel-studio", {
+        state: {
+          topic: effTopic,
+          context: (overrides?.context ?? context),
+          signalId: selectedSignalId || undefined,
+          signalTitle: selectedSignalTitle || undefined,
+          lang: overrides?.language ?? lang,
+        },
+      });
+      return;
+    }
     setGenerating(true);
     setShowSlowHint(false);
     setOutput("");
