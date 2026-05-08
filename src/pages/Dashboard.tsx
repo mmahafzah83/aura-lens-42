@@ -595,6 +595,68 @@ const Dashboard = () => {
                   setActiveTab("identity");
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
+                onViewFullJourney={() => {
+                  setActiveTab("identity");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  // After navigation, scroll to milestones section
+                  setTimeout(() => {
+                    const el = document.querySelector('[data-testid="story-milestones"]');
+                    if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 250);
+                }}
+                onQuestAction={(questId) => {
+                  const goIdentity = () => {
+                    setActiveTab("identity");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  };
+                  switch (questId) {
+                    case "p1_profile":
+                      goIdentity();
+                      setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-profile-editor")), 250);
+                      break;
+                    case "p1_assessment":
+                    case "p2_strategist":
+                      goIdentity();
+                      setTimeout(() => window.dispatchEvent(new CustomEvent("aura:open-brand-assessment")), 250);
+                      break;
+                    case "p1_first_capture":
+                    case "p1_three_sources":
+                    case "p2_rhythm":
+                      setCaptureOpen(true);
+                      break;
+                    case "p1_voice":
+                      goIdentity();
+                      break;
+                    case "p1_first_post":
+                    case "p2_published":
+                    case "p3_five_signal_posts":
+                    case "p3_carousel":
+                      setActiveTab("authority");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      break;
+                    case "p2_first_signal":
+                    case "p2_three_signals":
+                    case "p3_themes":
+                      setActiveTab("intelligence");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      break;
+                    case "p2_analytics":
+                    case "p3_track":
+                    case "p3_authority":
+                      setActiveTab("impact");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      break;
+                    case "p3_mirror":
+                      goIdentity();
+                      setTimeout(() => {
+                        const el = document.querySelector('[data-testid="story-market-mirror"]');
+                        if (el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
+                      }, 250);
+                      break;
+                    default:
+                      goIdentity();
+                  }
+                }}
               />
             </div>
           </div>
