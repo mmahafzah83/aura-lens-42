@@ -911,6 +911,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           const maxV = Math.max(...bars, 1);
           // Color ramp: orange near-term → amber at 30d → red at 90d
           const barColor = (i: number, n: number) => {
+            if (scenario === "stop") return "var(--danger)";
             const t = n <= 1 ? 0 : i / (n - 1);
             if (t < 0.5) return "var(--brand)";
             if (t < 0.85) return "var(--warning)";
@@ -1006,8 +1007,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 style={{ fontSize: 9, color: "var(--ink-3)" }}
               >
                 <span>Now</span>
-                <span>30d · {trajectory.forecast30}</span>
-                <span>90d · {trajectory.forecast90}</span>
+                <span>30d · {trajectory.has30dHistory ? trajectory.forecast30 : "—"}</span>
+                <span>90d · {trajectory.has90dHistory ? trajectory.forecast90 : "—"}</span>
               </div>
             </div>
           );
