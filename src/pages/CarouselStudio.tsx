@@ -1763,7 +1763,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                     setTopic(t);
                     if (ctx) setContextText(ctx);
                     setSelectedSignalId(signalId);
-                    toast.success("Signal loaded — click Generate Carousel");
+                    toast.success("Signal loaded — generating carousel…");
+                    setTimeout(() => generate(), 250);
                   }}
                 />
               </div>
