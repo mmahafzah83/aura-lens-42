@@ -244,12 +244,16 @@ const Dashboard = () => {
           return;
         }
         
-        // Gate: onboarding must be completed first
+        // Gate: onboarding must be completed first.
+        // If a profile row exists but onboarding_completed is false (legacy
+        // half-finished state), reopen the new 3-step wizard instead of the
+        // old multi-step /onboarding page.
         if (profile && !(profile as any).onboarding_completed) {
-          navigate("/onboarding");
+          setWizardUserId(uid);
+          setShowWizard(true);
           return;
         }
-        
+
         if (profile && (profile as any).completed) {
           const onboardKey = `aura_onboarded_${uid}`;
           if (!localStorage.getItem(onboardKey)) {
@@ -258,8 +262,6 @@ const Dashboard = () => {
           checkStrategicNudge(session.access_token);
         } else if (profile && (profile as any).onboarding_completed) {
           checkStrategicNudge(session.access_token);
-        } else {
-          setShowDiagnostic(true);
         }
       }
     });
