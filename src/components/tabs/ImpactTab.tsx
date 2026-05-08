@@ -902,6 +902,112 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </div>
         )}
       </section>
+
+      {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
+      <section
+        className="p-6"
+        style={{
+          background: "var(--color-card)",
+          border: "0.5px solid var(--color-border)",
+          borderLeft: "4px solid var(--brand)",
+          borderRadius: "0 8px 8px 0",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        }}
+      >
+        <div>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
+              {narrative.map((p, i) => (
+                <span
+                  key={i}
+                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
+                >
+                  {p.text}
+                </span>
+              ))}
+            </p>
+
+            {captureScore < 80 && (
+              <div className="mt-4">
+                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
+                  Capture now →
+                </AuraButton>
+              </div>
+            )}
+          </div>
+      </section>
+
+      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Score breakdown
+        </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
+          Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
+        </p>
+        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {([
+            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
+            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
+          ]).map((c, idx) => {
+            const cfg = subScoreCard(c.kind, c.value);
+            const isContentCount = c.kind === "content";
+            return (
+              <div
+                key={c.label}
+                style={{
+                  background: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: "16px 18px",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
+                }}
+              >
+                <div className="flex items-baseline justify-between">
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "var(--ink-4)",
+                    }}
+                  >
+                    {c.label}
+                  </div>
+                  {!isContentCount && (
+                    <div
+                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
+                    >
+                      {cfg.tag}
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 36,
+                    color: c.color,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
+                </div>
+                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
+                  {isContentCount ? "Posts Analyzed" : c.desc}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
       <section
         data-impact-section="trajectory"
@@ -1084,113 +1190,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
       {/* ─────────── 3b. CAPTURE RHYTHM (12-week grid) ─────────── */}
       {auraData && <WeeklyRhythm userId={userId} data={auraData} />}
-
-      {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
-      <section
-        className="p-6"
-        style={{
-          background: "var(--color-card)",
-          border: "0.5px solid var(--color-border)",
-          borderLeft: "4px solid var(--brand)",
-          borderRadius: "0 8px 8px 0",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        }}
-      >
-        <div>
-            <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
-              {narrative.map((p, i) => (
-                <span
-                  key={i}
-                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
-                >
-                  {p.text}
-                </span>
-              ))}
-            </p>
-
-            {captureScore < 80 && (
-              <div className="mt-4">
-                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
-                  Capture now →
-                </AuraButton>
-              </div>
-            )}
-          </div>
-      </section>
-
-      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
-      <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Score breakdown
-        </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
-        </p>
-        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {([
-            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
-            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
-          ]).map((c, idx) => {
-            const cfg = subScoreCard(c.kind, c.value);
-            const isContentCount = c.kind === "content";
-            return (
-              <div
-                key={c.label}
-                style={{
-                  background: "#FFFFFF",
-                  borderRadius: 14,
-                  padding: "16px 18px",
-                  border: "0.5px solid rgba(0,0,0,0.07)",
-                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: "var(--ink-4)",
-                    }}
-                  >
-                    {c.label}
-                  </div>
-                  {!isContentCount && (
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
-                    >
-                      {cfg.tag}
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="tabular-nums mt-1"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 36,
-                    color: c.color,
-                    lineHeight: 1.05,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
-                </div>
-                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
-                  {isContentCount ? "Posts Analyzed" : c.desc}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* (Authority Trajectory now lives inside the dark score hero above.) */}
 
       {/* ─────────── 5. HEADLINE STATS ─────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
