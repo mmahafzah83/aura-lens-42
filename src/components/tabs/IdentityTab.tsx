@@ -1005,14 +1005,20 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             })()}
           </div>
 
-          {/* Full Profile Link */}
-          <button
-            onClick={() => setFullProfileOpen(true)}
-            className="flex items-center gap-1.5 transition-colors"
-            style={{ fontSize: 11, color: "var(--brand)" }}
-          >
-            Full profile <ChevronRight className="w-3 h-3" />
-          </button>
+          {/* Strategic Identity — inlined (was hidden behind "Full profile" modal) */}
+          <div data-testid="story-strategic-identity" className="space-y-6">
+            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
+            <div data-testid="story-brand-assessment">
+              <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
+            </div>
+            <div data-testid="story-evidence-audit">
+              <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
+            </div>
+            <div className="pt-4" style={{ borderTop: "1px solid var(--surface-subtle)" }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
+              <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1023,39 +1029,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div data-testid="story-milestones">
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
-
-      {/* Full Profile Modal */}
-      {fullProfileOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }} onClick={() => setFullProfileOpen(false)}>
-          <div
-            className="relative overflow-y-auto"
-            style={{ width: 680, maxWidth: "90vw", maxHeight: "88vh", background: "var(--ink)", border: "1px solid var(--ink-3)", borderRadius: 12, padding: 24 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button onClick={() => setFullProfileOpen(false)} className="absolute top-4 right-4 text-ink-5 hover:text-ink-7 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-7)", marginBottom: 20 }}>Strategic Identity</h2>
-
-            <div className="space-y-6">
-              <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
-              <VoiceEngineSection />
-              <div data-testid="story-brand-assessment">
-                <BrandArchetypeWidget onStartAssessment={() => { setFullProfileOpen(false); setBrandOpen(true); }} />
-              </div>
-              <div data-testid="story-evidence-audit">
-                <AuditRadarWidget onStartAudit={() => { setFullProfileOpen(false); setAuditOpen(true); }} />
-              </div>
-
-              <div className="pt-4 border-t border-ink-3">
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-7)", marginBottom: 12 }}>Profile Settings</h3>
-                <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Assessment Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
