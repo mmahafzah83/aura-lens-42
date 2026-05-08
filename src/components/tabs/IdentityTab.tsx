@@ -720,6 +720,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               </div>
             </div>
           </div>
+          )}
 
           {/* Active Focus Areas — pill chips */}
           <div
