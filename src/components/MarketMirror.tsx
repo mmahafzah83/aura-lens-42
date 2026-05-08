@@ -176,8 +176,9 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                     background: "transparent",
                     border: "none",
                     borderBottom: active ? "2px solid var(--brand, #C5A55A)" : "2px solid transparent",
-                    color: active ? "var(--brand, #C5A55A)" : "var(--ink-muted, rgba(245,239,225,0.6))",
-                    fontSize: 13, fontWeight: active ? 600 : 500,
+                    color: active ? "var(--brand, #C5A55A)" : "var(--ink, rgba(245,239,225,0.85))",
+                    fontSize: 13, fontWeight: active ? 600 : 600,
+                    opacity: active ? 1 : 0.85,
                     cursor: "pointer",
                   }}
                 >
