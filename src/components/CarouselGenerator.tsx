@@ -574,6 +574,36 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
   const [visualTotal, setVisualTotal] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Current user author info — fetched fresh per session, never falls back to another user's data.
+  const [author, setAuthor] = useState<AuthorInfo>(DEFAULT_AUTHOR);
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid) return;
+      const [pRes, lRes] = await Promise.all([
+        supabase.from("diagnostic_profiles")
+          .select("first_name, level, firm, sector_focus, core_practice")
+          .eq("user_id", uid).maybeSingle(),
+        supabase.from("linkedin_connections")
+          .select("handle, profile_url, display_name, profile_name")
+          .eq("user_id", uid).maybeSingle(),
+      ]);
+      const p: any = pRes.data || {};
+      const l: any = lRes.data || {};
+      const fullName = (l.display_name || l.profile_name || p.first_name || "").trim();
+      const titleParts = [p.level, p.firm].filter(Boolean);
+      const handle = (l.handle || "").replace(/^@/, "").trim();
+      setAuthor({
+        name: fullName || DEFAULT_AUTHOR.name,
+        title: titleParts.length ? titleParts.join(" · ") : (p.core_practice || DEFAULT_AUTHOR.title),
+        focus: p.sector_focus || p.core_practice || DEFAULT_AUTHOR.focus,
+        handle: handle || DEFAULT_AUTHOR.handle,
+        handleUrl: handle ? `linkedin.com/in/${handle}` : (l.profile_url ? String(l.profile_url).replace(/^https?:\/\//, "") : DEFAULT_AUTHOR.handleUrl),
+      });
+    })();
+  }, []);
+
   // Framework pipeline state
   const [topicAnalysis, setTopicAnalysis] = useState<TopicAnalysis | null>(null);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
@@ -1643,7 +1673,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                             currentSlide === idx ? "border-primary/40" : "border-transparent hover:border-primary/15"
                           }`}
                         >
-                          <SlidePreview slide={slide} style={style} lang={lang} width={160} />
+                          <SlidePreview slide={slide} style={style} lang={lang} width={160} author={author} />
                           {!slide.image_url && slide.image_prompt && (
                             <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
                               <ImageIcon className="w-3 h-3 text-amber-500/60" />
@@ -1661,7 +1691,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                     <div className="space-y-3">
                       <div className="flex justify-center">
                         <div className="rounded-xl overflow-hidden shadow-2xl border border-primary/[0.08]">
-                          <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} />
+                          <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} author={author} />
                         </div>
                       </div>
 
@@ -1770,7 +1800,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                               currentSlide === idx ? "border-primary/50" : "border-transparent opacity-60 hover:opacity-100"
                             }`}
                           >
-                            <SlidePreview slide={slide} style={style} lang={lang} width={48} />
+                            <SlidePreview slide={slide} style={style} lang={lang} width={48} author={author} />
                           </button>
                         ))}
                       </div>
