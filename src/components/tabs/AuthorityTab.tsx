@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
@@ -17,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import { isArabicText } from "@/lib/utils";
-import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
 import SchematicPreviewPanel from "@/components/visual-cards/SchematicPreviewPanel";
