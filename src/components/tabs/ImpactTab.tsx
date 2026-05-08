@@ -371,6 +371,26 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     })();
   }, []);
 
+  // Load top strategic signal (highest priority/confidence among active signals)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await (supabase as any)
+          .from("strategic_signals")
+          .select("signal_title, priority_score, confidence")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .order("priority_score", { ascending: false, nullsFirst: false })
+          .order("confidence", { ascending: false })
+          .limit(1);
+        const top = (data as any[])?.[0];
+        if (top?.signal_title) setTopSignal(top.signal_title);
+      } catch { /* silent */ }
+    })();
+  }, []);
+
   /* ── Score derivations ── */
   const latest = snapshots[snapshots.length - 1];
   const latestScore = latest?.score ?? 0;
