@@ -201,6 +201,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // queries fire without an Authorization header and fail (the original bug).
   const sessionConfirmed = authReady && !!authSession?.access_token && !!authUser?.id;
   const navigate = useNavigate();
+  const journey = useJourneyState(authUser?.id ?? null);
   const [now, setNow] = useState(new Date());
   const [userName, setUserName] = useState<string>("");
   const [welcomeDismissed, setWelcomeDismissed] = useState<boolean>(() => {
