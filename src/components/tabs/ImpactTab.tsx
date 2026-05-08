@@ -283,6 +283,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       .limit(1);
     setLatestFollowers((latestFolRes.data?.[0] as any)?.followers ?? null);
 
+    // Published LinkedIn posts (for follower-growth chart annotations)
+    const pubRes = await safeQuery(
+      () => supabase
+        .from("linkedin_posts")
+        .select("published_at, post_text, tracking_status")
+        .eq("user_id", user.id)
+        .not("published_at", "is", null)
+        .gte("published_at", `${sinceDateOnly}T00:00:00Z`)
+        .order("published_at", { ascending: true }),
+      { context: "Impact: published linkedin posts", silent: true }
+    );
+    setPublishedPosts(((pubRes.data as any[]) || [])
+      .filter(p => p.published_at)
+      .map(p => ({ published_at: p.published_at, post_text: p.post_text })));
+
     // Period impressions + avg engagement rate
     const totalImp = folRowsAll.reduce((s, r) => s + Number(r.impressions || 0), 0);
     setPeriodImpressions(folRowsAll.length ? totalImp : null);
