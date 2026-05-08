@@ -299,8 +299,8 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
 /* ── Slide Renderer (1080×1350 Portrait) ──────────────────── */
 const SlidePreview = ({
-  slide, style, lang, width = 320,
-}: { slide: Slide; style: Style; lang: Lang; width?: number }) => {
+  slide, style, lang, width = 320, author,
+}: { slide: Slide; style: Style; lang: Lang; width?: number; author: AuthorInfo }) => {
   const p = PALETTES[style];
   const isAr = lang === "ar";
   const scale = width / CANVAS_W;
