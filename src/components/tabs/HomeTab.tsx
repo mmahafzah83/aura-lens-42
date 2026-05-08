@@ -1017,7 +1017,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               margin: 0,
             }}
           >
-            {showWelcomeState ? "Welcome to Aura" : "Your intelligence is building"}
+            {showWelcomeState ? "Your intelligence OS is live" : "Your intelligence is building"}
           </h1>
           <p
             style={{
@@ -1029,9 +1029,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
           >
             {showWelcomeState
-              ? "Your strategic intelligence OS is ready. Here's how to activate it."
+              ? "You have years of expertise that's invisible to the market. Let's change that — starting with one article you read this week."
               : `You've captured ${captureCount} ${captureCount === 1 ? "article" : "articles"}. Aura is analyzing them for strategic patterns. Signals typically emerge after 3–5 captures from different sources.`}
           </p>
+          {showBuildingState && (
+            <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 8, opacity: 0.75 }}>
+              {Math.min(captureCount, 5)} of ~5 captures toward your first signal
+            </p>
+          )}
         </header>
 
         {showWelcomeState ? (
