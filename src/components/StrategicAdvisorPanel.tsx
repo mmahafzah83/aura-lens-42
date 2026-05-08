@@ -135,7 +135,7 @@ const StrategicAdvisorPanel = ({
     return (
       <div className="glass-card rounded-2xl card-pad text-center min-h-[100px] flex flex-col items-center justify-center gap-2 border border-border/8">
         <Lightbulb className="w-6 h-6 text-primary/20" />
-        <p className="text-meta">Capture more knowledge to activate the Strategic Advisor.</p>
+        <p className="text-meta">Your next strategic move will appear here once Aura detects patterns from your captures.</p>
       </div>
     );
   }
