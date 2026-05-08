@@ -299,6 +299,23 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         // a top-signal title that itself starts with "your".
         nudge = nudge.replace(/\bYour\s+your\b/gi, "Your");
         if (!nudge) return null;
+        // Detect the broken pattern "Your <title> signal (NN%) is ready to publish. <rest>"
+        // and reformat it across multiple lines so the title isn't embedded mid-sentence.
+        const m = nudge.match(/^Your\s+(.+?)\s+signal\s*\((\d+%)\)\s+is ready to publish\.?\s*(.*)$/i);
+        if (m) {
+          const [, title, pct, rest] = m;
+          return (
+            <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "hsl(var(--foreground))" }} className="font-sans">
+              <div style={{ color: "var(--ink-3)", marginBottom: 4 }}>
+                Your strongest signal is ready to publish:
+              </div>
+              <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>
+                "{title}" <span style={{ color: "var(--brand)", fontWeight: 500 }}>({pct})</span>
+              </div>
+              {rest && <div style={{ color: "var(--ink-2)" }}>{rest}</div>}
+            </div>
+          );
+        }
         return (
           <p
             className="font-sans"
