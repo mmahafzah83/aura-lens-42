@@ -110,6 +110,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
+  const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
 
@@ -281,6 +282,21 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       .order("snapshot_date", { ascending: false })
       .limit(1);
     setLatestFollowers((latestFolRes.data?.[0] as any)?.followers ?? null);
+
+    // Published LinkedIn posts (for follower-growth chart annotations)
+    const pubRes = await safeQuery(
+      () => supabase
+        .from("linkedin_posts")
+        .select("published_at, post_text, tracking_status")
+        .eq("user_id", user.id)
+        .not("published_at", "is", null)
+        .gte("published_at", `${sinceDateOnly}T00:00:00Z`)
+        .order("published_at", { ascending: true }),
+      { context: "Impact: published linkedin posts", silent: true }
+    );
+    setPublishedPosts(((pubRes.data as any[]) || [])
+      .filter(p => p.published_at)
+      .map(p => ({ published_at: p.published_at, post_text: p.post_text })));
 
     // Period impressions + avg engagement rate
     const totalImp = folRowsAll.reduce((s, r) => s + Number(r.impressions || 0), 0);
@@ -581,6 +597,30 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     if (followerRows.length === 0) return null;
     return followerRows.reduce((acc, r) => (r.follower_growth > (acc?.follower_growth ?? -1) ? r : acc), followerRows[0]);
   }, [followerRows]);
+
+  /* ── Published-post markers snapped to follower chart x-axis ── */
+  const publishMarkers = useMemo(() => {
+    if (followerSeries.length === 0 || publishedPosts.length === 0) return [];
+    const seriesDates = followerSeries.map(s => ({ ts: new Date(s.date).getTime(), label: s.label }));
+    const grouped = new Map<string, { label: string; posts: { published_at: string; post_text: string | null }[] }>();
+    for (const p of publishedPosts) {
+      const ts = new Date(p.published_at).getTime();
+      if (!isFinite(ts)) continue;
+      // snap to nearest series date
+      let nearest = seriesDates[0];
+      let nearestDiff = Math.abs(ts - nearest.ts);
+      for (const sd of seriesDates) {
+        const d = Math.abs(ts - sd.ts);
+        if (d < nearestDiff) { nearest = sd; nearestDiff = d; }
+      }
+      // skip if more than ~7 days from any bucket
+      if (nearestDiff > 7 * 86400000) continue;
+      const entry = grouped.get(nearest.label) || { label: nearest.label, posts: [] };
+      entry.posts.push(p);
+      grouped.set(nearest.label, entry);
+    }
+    return Array.from(grouped.values());
+  }, [followerSeries, publishedPosts]);
 
   /* ── Authority Trajectory forecast ── */
   const trajectory = useMemo(() => {
@@ -1649,6 +1689,40 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
                   <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
+                  {publishMarkers.map((m, idx) => {
+                    const first = m.posts[0];
+                    const preview = (first.post_text || "").replace(/\s+/g, " ").trim().slice(0, 40);
+                    const dateLabel = fmtDateShort(first.published_at);
+                    const tip = `Post published · ${dateLabel}${m.posts.length > 1 ? ` (+${m.posts.length - 1} more)` : ""}${preview ? ` — ${preview}${(first.post_text || "").length > 40 ? "…" : ""}` : ""}`;
+                    return (
+                      <ReferenceLine
+                        key={`pub-${idx}`}
+                        x={m.label}
+                        stroke="var(--brand)"
+                        strokeWidth={0.5}
+                        strokeDasharray="2 2"
+                        ifOverflow="extendDomain"
+                        label={(props: any) => {
+                          const { viewBox } = props;
+                          if (!viewBox) return null as any;
+                          const cx = viewBox.x;
+                          const cy = viewBox.y + 2;
+                          return (
+                            <g>
+                              <title>{tip}</title>
+                              <rect x={cx - 6} y={cy - 6} width={12} height={12} fill="transparent" />
+                              <polygon
+                                points={`${cx},${cy - 4} ${cx + 4},${cy} ${cx},${cy + 4} ${cx - 4},${cy}`}
+                                fill="var(--brand)"
+                                stroke="var(--brand)"
+                                strokeWidth={0.5}
+                              />
+                            </g>
+                          );
+                        }}
+                      />
+                    );
+                  })}
                 </BarChart>
               </ResponsiveContainer>
             </div>
