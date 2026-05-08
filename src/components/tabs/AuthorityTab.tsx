@@ -2616,6 +2616,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
+  const [signalTitleMap, setSignalTitleMap] = useState<Record<string, string>>({});
   const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
 
   useEffect(() => { loadPosts(); loadProfile(); }, []);
