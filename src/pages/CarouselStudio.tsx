@@ -1039,11 +1039,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const bodyLineH = 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
-      // Arabic: center horizontally (matches COVER/QUESTION feel)
-      const insightX = isRTL ? cx : startX;
-      const insightAnchor: "start" | "middle" | "end" = isRTL ? "middle" : sideAnchor;
-      const dividerX1 = isRTL ? cx - 30 : edgePad;
-      const dividerX2 = isRTL ? cx + 30 : edgePad + 30;
+      // Center INSIGHT for both LTR and RTL — matches COVER/QUESTION feel.
+      const insightX = cx;
+      const insightAnchor: "start" | "middle" | "end" = "middle";
+      const dividerX1 = cx - 30;
+      const dividerX2 = cx + 30;
       return (
         <g>
           {headlineLines.map((ln, i) => (
