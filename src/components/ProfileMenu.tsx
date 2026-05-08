@@ -18,6 +18,8 @@ interface ProfileMenuProps {
   onToggleTheme: () => void;
   onSignOut: () => void;
   onEditProfile?: () => void;
+  onQuestAction?: (questId: string) => void;
+  onViewFullJourney?: () => void;
 }
 
 export default function ProfileMenu({
@@ -29,6 +31,8 @@ export default function ProfileMenu({
   onToggleTheme,
   onSignOut,
   onEditProfile,
+  onQuestAction,
+  onViewFullJourney,
 }: ProfileMenuProps) {
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean>(() => {
@@ -223,7 +227,12 @@ export default function ProfileMenu({
 
         {/* QUEST LOG */}
         <div style={{ padding: "8px 4px 4px" }}>
-          <QuestLog userId={resolvedUserId} compact />
+          <QuestLog
+            userId={resolvedUserId}
+            compact
+            onQuestAction={onQuestAction}
+            onViewFullJourney={onViewFullJourney}
+          />
         </div>
 
         {/* DIVIDER */}

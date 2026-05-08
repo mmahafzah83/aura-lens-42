@@ -87,6 +87,23 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, authUser]);
 
+  useEffect(() => {
+    const openAssessment = () => setBrandOpen(true);
+    const openProfileEditor = () => {
+      // Scroll the inline ProfileManagement section into view
+      requestAnimationFrame(() => {
+        const el = document.querySelector('[data-testid="story-strategic-identity"]');
+        if (el && "scrollIntoView" in el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener("aura:open-brand-assessment", openAssessment);
+    window.addEventListener("aura:open-profile-editor", openProfileEditor);
+    return () => {
+      window.removeEventListener("aura:open-brand-assessment", openAssessment);
+      window.removeEventListener("aura:open-profile-editor", openProfileEditor);
+    };
+  }, []);
+
   const loadAll = async (uid: string) => {
     console.log("[IdentityTab] loadAll started");
     setLoadError(false);
@@ -105,7 +122,18 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           .order("confidence", { ascending: false }).limit(40),
       ]), 12000);
 
-      if (profileRes.data) setProfile(profileRes.data);
+      if (profileRes.data) {
+        setProfile(profileRes.data);
+      } else {
+        // Empty stub so the page renders an actionable shell (assessment CTA + ProfileManagement editor)
+        setProfile({
+          first_name: null, level: null, firm: null, sector_focus: null,
+          core_practice: null, north_star_goal: null, brand_pillars: [],
+          avatar_url: null, onboarding_completed: false, audit_completed_at: null,
+          brand_assessment_completed_at: null, brand_assessment_results: null,
+          identity_intelligence: null, primary_strength: null,
+        } as ProfileRow);
+      }
       if (scoreRes.data) setAuthorityScore(scoreRes.data.authority_score);
       // Stage counts — entries + tracked LinkedIn posts (lightweight head queries)
       try {
@@ -343,15 +371,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     );
   }
 
-  if (!loading && !profile) {
-    return (
-      <EmptyState
-        icon={UserIcon}
-        title="Tell your full story."
-        description="Set up your profile so Aura can shape signals and content around who you are."
-      />
-    );
-  }
+  // Note: empty profile is now stubbed in loadAll so the actionable shell always renders.
 
   return (
     <div className="space-y-6">

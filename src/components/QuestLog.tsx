@@ -4,9 +4,11 @@ import { Phase, useQuestProgress } from "@/hooks/useQuestProgress";
 interface Props {
   userId: string | null;
   compact?: boolean;
+  onQuestAction?: (questId: string) => void;
+  onViewFullJourney?: () => void;
 }
 
-const QuestLog = ({ userId, compact = true }: Props) => {
+const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: Props) => {
   const { phases, loading } = useQuestProgress(userId);
   const [expanded, setExpanded] = useState(!compact);
 
@@ -69,28 +71,46 @@ const QuestLog = ({ userId, compact = true }: Props) => {
 
       <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         {visibleQuests.map(q => (
-          <li
-            key={q.id}
-            style={{
-              fontSize: 11,
-              color: q.done ? "var(--muted-foreground)" : "var(--foreground)",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              opacity: q.done ? 0.7 : 1,
-            }}
-          >
-            <span style={{ width: 14, color: q.done ? "var(--brand)" : "var(--muted-foreground)", fontSize: 11 }}>
-              {q.done ? "✓" : "○"}
-            </span>
-            <span style={{ textDecoration: q.done ? "line-through" : "none" }}>{q.label}</span>
+          <li key={q.id} style={{ margin: 0 }}>
+            <button
+              type="button"
+              onClick={() => onQuestAction?.(q.id)}
+              disabled={!onQuestAction}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "4px 6px",
+                borderRadius: 6,
+                border: "none",
+                background: "transparent",
+                cursor: onQuestAction ? "pointer" : "default",
+                fontSize: 11,
+                color: q.done ? "var(--muted-foreground)" : "var(--foreground)",
+                opacity: q.done ? 0.7 : 1,
+                textAlign: "left",
+              }}
+              className={onQuestAction ? "hover:bg-[var(--brand-ghost,rgba(197,165,90,0.08))] transition-colors" : ""}
+            >
+              <span style={{ width: 14, color: q.done ? "var(--brand)" : "var(--muted-foreground)", fontSize: 11 }}>
+                {q.done ? "✓" : "○"}
+              </span>
+              <span style={{ textDecoration: q.done ? "line-through" : "none", flex: 1 }}>{q.label}</span>
+              {!q.done && onQuestAction && (
+                <span style={{ color: "var(--brand)", fontSize: 11, opacity: 0.7 }}>›</span>
+              )}
+            </button>
           </li>
         ))}
       </ul>
 
       <button
         type="button"
-        onClick={() => setExpanded(v => !v)}
+        onClick={() => {
+          if (onViewFullJourney && !expanded) onViewFullJourney();
+          else setExpanded(v => !v);
+        }}
         style={{
           marginTop: 10,
           background: "transparent",
