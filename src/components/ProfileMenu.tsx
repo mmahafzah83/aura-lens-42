@@ -59,6 +59,7 @@ export default function ProfileMenu({
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
