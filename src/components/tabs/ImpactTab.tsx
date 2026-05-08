@@ -592,9 +592,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const daysBetween = Math.max(1, (lastDate - firstDate) / 86400000);
     const avgDailyChange = (last.score - first.score) / daysBetween;
     const currentScore = last.score;
-    const mult = scenario === "current" ? 1 : scenario === "publish2x" ? 1.4 : -0.3;
-    const dailyChange = avgDailyChange * mult;
+    let dailyChange: number;
+    if (scenario === "stop") {
+      // Stop capturing: capture component (~20pts) collapses, signals decay.
+      // Force a decline regardless of historical trend.
+      dailyChange = -Math.max(0.2, currentScore * 0.004);
+    } else {
+      const mult = scenario === "publish2x" ? 1.4 : 1;
+      dailyChange = avgDailyChange * mult;
+    }
     const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
+    const spanDays = daysBetween;
+    const has30dHistory = spanDays >= 25;
+    const has90dHistory = spanDays >= 80;
     const forecast30 = clamp(currentScore + dailyChange * 30);
     const forecast60 = clamp(currentScore + dailyChange * 60);
     const forecast90 = clamp(currentScore + dailyChange * 90);
@@ -615,7 +625,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "stop" ? "this declining rate" : "current pace"}: not reachable.`;
       }
     }
-    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text };
+    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text, has30dHistory, has90dHistory };
   }, [allSnapshots, scenario]);
 
   /* ── XLSX Upload ── */
