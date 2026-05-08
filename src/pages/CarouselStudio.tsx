@@ -382,11 +382,14 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
     stripPos === "left"  ? (isRTL ? w - 4 : 0) :
     -10;
   const showStrip = stripPos !== "none";
-  // Author name fallback for Arabic
-  const rawAuthor = carousel.author_name || "M. Mahafzah";
-  const displayAuthor = isRTL && /^mohammad$/i.test(rawAuthor.trim()) ? "محمد" : rawAuthor;
+  // Author name — language-aware. Always show full "Mohammad Mahafzah" / "محمد محافظة"
+  // regardless of what the EF returned, so the brand stays consistent in both languages.
+  const rawAuthor = carousel.author_name || "";
+  const displayAuthor = isRTL
+    ? (/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "محمد محافظة")
+    : (/[A-Za-z]/.test(rawAuthor) && !/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "Mohammad Mahafzah");
   const authorInitial = isRTL ? "م" : (displayAuthor.trim().charAt(0).toUpperCase() || "M");
-  const isCoverOrCta = slide.slide_type === "COVER" || slide.slide_type === "CTA";
+  // Always use the branded initial circle on every slide (not just COVER/CTA).
   const showWatermarkNumber = ["BOLD_CLAIM", "QUESTION", "REFRAME"].includes(slide.slide_type);
   const patternId = `pat-${slide.slide_number}-${style.key}`;
 
@@ -458,12 +461,15 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
         (() => {
-          // For Arabic, prefer a localized short badge using extracted % when possible
+          // Extract the LAST percentage in the string (the confidence value, which the EF
+          // appends as "...at X%"). Clamp to 0-100 so we never render "180%".
           const raw = carousel.signal_attribution!;
-          const pct = raw.match(/(\d{1,3})\s*%/);
+          const pctMatches = Array.from(raw.matchAll(/(\d{1,3})\s*%/g));
+          const lastPct = pctMatches.length ? pctMatches[pctMatches.length - 1][1] : null;
+          const pctNum = lastPct ? Math.max(0, Math.min(100, parseInt(lastPct, 10))) : null;
           const badgeText = isRTL
-            ? (pct ? `إشارة بثقة ${pct[1]}%` : "مبني على إشارة")
-            : raw;
+            ? (pctNum != null ? `إشارة بثقة ${pctNum}%` : "مبني على إشارة")
+            : (pctNum != null ? `Signal at ${pctNum}%` : "Based on signal");
           const maxW = Math.floor(w * 0.6);
           const charW = isRTL ? 9 : 7;
           const estW = Math.min(maxW, 18 + badgeText.length * charW + 16);
@@ -510,18 +516,14 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
 
       {/* Footer */}
       <g>
-        {isCoverOrCta ? (
-          <g transform={`translate(${authorEyeX},${h - 79})`}>
-            <circle cx={10} cy={10} r={11} fill={style.accent} />
-            <text x={10} y={14} textAnchor="middle"
-                  fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
-                  fontWeight={800} fill={style.bg}>
-              {authorInitial}
-            </text>
-          </g>
-        ) : (
-          <HorizonEye x={authorEyeX} y={h - 79} size={20} color={style.accent} />
-        )}
+        <g transform={`translate(${authorEyeX},${h - 79})`}>
+          <circle cx={10} cy={10} r={11} fill={style.accent} />
+          <text x={10} y={14} textAnchor="middle"
+                fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
+                fontWeight={800} fill={style.bg}>
+            {authorInitial}
+          </text>
+        </g>
         <text x={authorTextX} y={h - 64} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
@@ -634,18 +636,12 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 fontWeight={isRTL ? 800 : 400}>
             {L.truth}
           </text>
-          {truthLines.length > 0 ? truthLines.map((ln, i) => (
+          {truthLines.length > 0 && truthLines.map((ln, i) => (
             <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
-          )) : (
-            <text x={startX} y={cy + 110} textAnchor={sideAnchor}
-                  fontFamily={bodyFont} fontSize={20} fill={style.muted}
-                  fontStyle={isRTL ? "normal" : "italic"}>
-              (Add the truth in the Body field)
-            </text>
-          )}
+          ))}
         </g>
       );
     }
@@ -742,6 +738,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         }
         return (
           <text key={idx} x={lineX} y={startLinesY + idx * lineGap} textAnchor={lineAnchor}
+                xmlSpace="preserve"
                 fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22}>
             {withKw.map((p, i) => (
               <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
@@ -785,7 +782,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {slide.headline && (
             <text x={startX} y={gridY - 40} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={36} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {slide.headline}
             </text>
           )}
@@ -912,7 +909,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
                 {ln}
@@ -941,7 +938,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.muted} opacity={0.4}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
                 {ln}
@@ -960,7 +957,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {slide.headline && (
             <text x={startX} y={150} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={42} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={42} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {slide.headline}
             </text>
           )}
@@ -1048,26 +1045,17 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     }
     case "CTA": {
       const headlineLines = wrapText(slide.headline || "", 22);
-      const ctaMainLines = wrapText(slide.cta_main || "", 38);
-      const ctaSubLines = wrapText(slide.cta_sub || "", 38);
       const headLineH = 56;
-      const lineH = 32;
       const btnH = slide.cta_button ? 80 : 0;
       const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
-      const mainBlockH = ctaMainLines.length * lineH;
-      const subBlockH = ctaSubLines.length * lineH;
-      const gap1 = headBlockH && mainBlockH ? 32 : 0;
-      const gap2 = mainBlockH && subBlockH ? 18 : 0;
-      const gapIcons = headBlockH ? 28 : 0;
-      const gap3 = (headBlockH || mainBlockH || subBlockH) && btnH ? 32 : 0;
-      const totalH = headBlockH + gapIcons + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
+      const gapIcons = headBlockH ? 48 : 0;
+      const gapBtn = btnH ? 56 : 0;
+      const totalH = headBlockH + gapIcons + iconRowH + gapBtn + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
       const iconRowY = top + headBlockH + gapIcons;
-      const mainY = iconRowY + iconRowH + gap1 + lineH * 0.8 - headLineH; // align with old layout
-      const subY = mainY + (mainBlockH ? mainBlockH - lineH * 0.2 : 0) + gap2;
-      const btnY = iconRowY + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
+      const btnY = iconRowY + iconRowH + gapBtn;
       const btnW = 420;
       const btnX = cx - btnW / 2;
       const actions = isRTL
@@ -1121,35 +1109,17 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               </g>
             );
           })}
-          {ctaMainLines.map((ln, i) => (
-            <text key={`m${i}`} x={cx} y={mainY + i * lineH} textAnchor="middle"
-                  fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
-              {ln}
-            </text>
-          ))}
-          {ctaSubLines.map((ln, i) => (
-            <text key={`s${i}`} x={cx} y={subY + i * lineH} textAnchor="middle"
-                  fontFamily={bodyFont} fontSize={26}
-                  fontStyle={isRTL ? "normal" : "italic"}
-                  fontWeight={isRTL ? 800 : 400}
-                  fill={style.accent}>
-              {ln}
-            </text>
-          ))}
           {slide.cta_button && (
             <g>
               <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
               <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
                 {(() => {
-                  let t = slide.cta_button || "";
+                  const t = slide.cta_button || "";
+                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
                   if (isRTL) {
-                    // Normalise: strip any arrows, ensure pattern "تابع @handle ←"
-                    const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
-                    // RLM ... LRM@handle LRM ... RLM← keeps handle LTR and arrow on visual left
                     return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
                   }
-                  if (!/[→←]/.test(t)) t = t.replace(/\s*$/, " →");
-                  return t;
+                  return `Follow \u202A${handle}\u202C →`;
                 })()}
               </text>
             </g>
