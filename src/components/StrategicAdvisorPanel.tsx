@@ -69,6 +69,19 @@ const StrategicAdvisorPanel = ({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setLoading(false); return; }
 
+      // Gate: don't ask the advisor for a recommendation when the user has
+      // no active signals yet — it would hallucinate from nothing.
+      const { count: signalCount } = await supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active");
+      if (!signalCount || signalCount === 0) {
+        setData(null);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-advisor`, {
         method: "POST",
         headers: {
@@ -122,7 +135,7 @@ const StrategicAdvisorPanel = ({
     return (
       <div className="glass-card rounded-2xl card-pad text-center min-h-[100px] flex flex-col items-center justify-center gap-2 border border-border/8">
         <Lightbulb className="w-6 h-6 text-primary/20" />
-        <p className="text-meta">Capture more knowledge to activate the Strategic Advisor.</p>
+        <p className="text-meta">Your next strategic move will appear here once Aura detects patterns from your captures.</p>
       </div>
     );
   }
