@@ -29,6 +29,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import { ChevronRight } from "lucide-react";
 import LinkedInFeedPreview from "@/components/LinkedInFeedPreview";
+import { useJourneyState } from "@/hooks/useJourneyState";
 
 /* ── Shared Types ── */
 type ContentType = "post" | "carousel" | "essay" | "framework_summary" | "flash";
