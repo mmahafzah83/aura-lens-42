@@ -900,15 +900,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             initialTitle={topic}
             initialDescription={context}
           />
-        ) : contentType === "carousel" && showCarousel ? (
-          /* Inline carousel workflow */
-          <CarouselGenerator
-            open={showCarousel}
-            onClose={() => setShowCarousel(false)}
-            title={topic}
-            context={context}
-            inline
-          />
         ) : (
           <>
             {/* Framework Selector */}
