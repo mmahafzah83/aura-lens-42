@@ -277,13 +277,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     // Latest follower count (most recent snapshot, any date)
     const latestFolRes = await supabase
       .from("influence_snapshots")
-      .select("followers")
+      .select("followers, snapshot_date")
       .eq("user_id", user.id)
       .eq("source_type", "linkedin_export")
       .gt("followers", 0)
       .order("snapshot_date", { ascending: false })
       .limit(1);
     setLatestFollowers((latestFolRes.data?.[0] as any)?.followers ?? null);
+    setLatestSnapshotDate((latestFolRes.data?.[0] as any)?.snapshot_date ?? null);
 
     // Published LinkedIn posts (for follower-growth chart annotations)
     const pubRes = await safeQuery(
