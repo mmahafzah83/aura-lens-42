@@ -630,10 +630,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         console.warn("[HomeTab] profile name fetch failed", e);
       }
       const raw = (name || "").toString().trim();
-      let chosen = raw ? raw.split(/\s+/)[0] : "";
-      if (!chosen && authUser.email) {
-        chosen = authUser.email.split("@")[0];
-      }
+      const chosen = raw ? raw.split(/\s+/)[0] : "";
       const pretty = chosen
         ? chosen.charAt(0).toUpperCase() + chosen.slice(1).toLowerCase()
         : "";
