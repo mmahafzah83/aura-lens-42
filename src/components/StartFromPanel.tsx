@@ -329,7 +329,11 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
           ) : groups.length === 0 ? (
             <div className="text-center py-8">
               <Lightbulb className="w-6 h-6 mx-auto mb-2" style={{ color: "var(--ink-3)" }} />
-              <p style={{ fontSize: 11, color: "var(--ink-5)" }}>Capture more insights to unlock suggestions</p>
+              <p style={{ fontSize: 12, color: "var(--ink-5)", lineHeight: 1.5 }}>
+                No signals yet. Capture 3-5 articles to build your signal map.
+                <br />
+                <span style={{ fontSize: 10, opacity: 0.7 }}>Signal-grounded posts perform far better than topic-only generation.</span>
+              </p>
             </div>
           ) : (
             curated.filter(i => i.sourceType === "signal").slice(0, 4).map((item, idx) => {
