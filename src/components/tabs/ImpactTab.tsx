@@ -863,7 +863,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     marginTop: 4,
                   }}
                 >
-                  {trajectory.forecast30}
+                  {trajectory.has30dHistory ? trajectory.forecast30 : "—"}
                 </div>
               </div>
               <div>
@@ -889,7 +889,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     marginTop: 4,
                   }}
                 >
-                  {trajectory.forecast90}
+                  {trajectory.has90dHistory ? trajectory.forecast90 : "—"}
                 </div>
               </div>
             </div>
