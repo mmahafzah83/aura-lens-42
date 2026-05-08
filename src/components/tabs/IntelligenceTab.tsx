@@ -119,7 +119,7 @@ type SubTab = "signals" | "sources";
    AUTOMATION STRIP
    ═══════════════════════════════════════════ */
 
-const AutomationStrip = () => {
+const AutomationStrip = ({ signalCount = 0 }: { signalCount?: number }) => {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("aura_automation_collapsed") === "true"; } catch { return false; }
   });
@@ -152,10 +152,13 @@ const AutomationStrip = () => {
     try { localStorage.setItem("aura_automation_collapsed", String(next)); } catch {}
   };
 
+  const movesUnlocked = signalCount >= 3;
   const cards = [
     { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success)" },
     { iconBg: "var(--paper-2)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "var(--info)" },
-    { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "var(--brand)" },
+    movesUnlocked
+      ? { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "var(--brand)" }
+      : { iconBg: "var(--paper-2)", iconBorder: "var(--brand-line)", iconColor: "var(--ink-3)", icon: "✦", title: "Move generation", desc: "Unlocks once you have 3 active signals", status: "Locked", statusColor: "var(--ink-3)" },
   ];
 
   return (
@@ -770,7 +773,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         }
       `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
-        <FirstVisitHint page="intelligence" />
+        {signals.length === 0 && <FirstVisitHint page="intelligence" />}
 
         {/* ── Header: title + inline counters ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
@@ -804,12 +807,39 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         </div>
 
         {/* ── Automation Strip ── */}
-        <AutomationStrip />
+        <AutomationStrip signalCount={signals.length} />
 
-        {/* ── Your Next Move ── */}
-        <div data-testid="intel-next-move" className="aura-hero-card" style={{ marginBottom: 14 }}>
-          <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
-        </div>
+        {/* ── Your Next Move (gated on 3+ signals) ── */}
+        {signals.length >= 3 ? (
+          <div data-testid="intel-next-move" className="aura-hero-card" style={{ marginBottom: 14 }}>
+            <StrategicAdvisorPanel context="strategy" compact onOpenChat={onOpenChat} onDraftToStudio={onDraftToStudio} />
+          </div>
+        ) : (
+          <div
+            data-testid="intel-growing"
+            className="aura-hero-card"
+            style={{
+              marginBottom: 14,
+              padding: "20px 22px",
+              background: "var(--surface-ink-raised)",
+              border: "0.5px solid var(--surface-ink-subtle)",
+              borderRadius: 10,
+            }}
+          >
+            <div style={{ fontSize: 10, letterSpacing: "0.14em", fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", marginBottom: 8 }}>
+              Your intelligence is growing
+            </div>
+            <p style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 12px" }}>
+              Aura needs a broader view of your expertise before recommending strategic moves. Keep capturing articles from different sources — each one adds a new dimension to your intelligence map.
+            </p>
+            <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
+              Capture another article →
+            </Button>
+            <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 10 }}>
+              {signals.length} of 3 signals · move generation unlocks at 3
+            </div>
+          </div>
+        )}
 
         {/* ── Tab Bar ── */}
         <div className="aura-tab-bar scrollbar-hide" style={{ display: "flex", gap: 0, borderBottom: "0.5px solid var(--ink-3)", marginBottom: 14, overflowX: "auto", flexWrap: "nowrap" }}>
