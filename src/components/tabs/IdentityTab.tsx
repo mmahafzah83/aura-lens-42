@@ -734,19 +734,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div className="space-y-3">
                 {signalStats.themeGroups.map((g) => {
                   const pct = Math.round(g.avgConfidence * 100);
-                  const isHigh = pct >= 80;
-                  const isMid = pct >= 50 && pct < 80;
-                  const fillBg = isHigh
-                    ? "var(--brand)"
-                    : isMid
-                      ? "rgba(176, 141, 58, 0.4)"
-                      : "var(--coverage-low, #D1CDBD)";
-                  const pctColor = isHigh
-                    ? "var(--brand)"
-                    : isMid
-                      ? "var(--ink-3)"
-                      : "var(--ink-3)";
-                  const pctOpacity = !isHigh && !isMid ? 0.6 : 1;
+                  const c = g.avgConfidence;
+                  let label: string;
+                  let labelColor: string;
+                  let fillBg: string;
+                  if (c < 0.20)      { label = "Emerging";    labelColor = "var(--ink-5)"; fillBg = "var(--coverage-low, #D1CDBD)"; }
+                  else if (c < 0.40) { label = "Developing";  labelColor = "var(--ink-3)"; fillBg = "var(--coverage-low, #D1CDBD)"; }
+                  else if (c < 0.60) { label = "Established"; labelColor = "var(--brand)"; fillBg = "rgba(176, 141, 58, 0.4)"; }
+                  else if (c < 0.80) { label = "Strong";      labelColor = "var(--brand)"; fillBg = "var(--brand)"; }
+                  else                { label = "Dominant";    labelColor = "var(--brand)"; fillBg = "var(--brand)"; }
                   return (
                     <div key={g.theme}>
                       <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
@@ -776,13 +772,24 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                             }}
                           />
                         </div>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: pctColor, opacity: pctOpacity, fontWeight: 500, minWidth: 32, textAlign: "right" }}>
-                          {pct}%
+                        <span style={{ fontSize: 11, color: labelColor, fontWeight: 600, minWidth: 76, textAlign: "right", letterSpacing: "0.02em" }}>
+                          {label}
                         </span>
                       </div>
                     </div>
                   );
                 })}
+                {signalStats.themeGroups.length > 1 && (() => {
+                  const first = signalStats.themeGroups[0].avgConfidence;
+                  const allSame = signalStats.themeGroups.every(
+                    g => Math.abs(g.avgConfidence - first) < 0.02
+                  );
+                  return allSame ? (
+                    <div style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-5)", paddingTop: 8 }}>
+                      Capture more sources to differentiate your signal strengths.
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
           )}
