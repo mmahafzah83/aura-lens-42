@@ -617,8 +617,13 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         s.replace(/^\s*(يعتقد الأغلبية|MOST PEOPLE THINK|Most people think)[:\s\-—]*/i, "").trim();
       const cleanedBelief = stripMythPrefix(slide.headline || "");
       const beliefLinesClean = wrapText(cleanedBelief || (slide.headline || ""), isRTL ? 22 : 28);
-      const truthRaw = slide.body || slide.headline_accent || "";
-      const truthLines = wrapText(truthRaw, isRTL ? 20 : 24);
+      // Truth headline = headline_accent (preferred) or first sentence of body as fallback.
+      // Truth body paragraph = slide.body (the explanation). If headline_accent is missing,
+      // body is promoted to headline and there's no explanation paragraph.
+      const truthHeadlineRaw = slide.headline_accent || slide.body || "";
+      const truthBodyRaw = slide.headline_accent ? (slide.body || "") : "";
+      const truthHeadlineLines = wrapText(truthHeadlineRaw, isRTL ? 20 : 24);
+      const truthBodyLines = truthBodyRaw ? wrapText(truthBodyRaw, isRTL ? 36 : 50) : [];
       const beliefStartY = cy - 160;
       return (
         <g>
@@ -641,12 +646,24 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 fontWeight={isRTL ? 800 : 400}>
             {L.truth}
           </text>
-          {truthLines.length > 0 && truthLines.map((ln, i) => (
-            <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
+          {truthHeadlineLines.map((ln, i) => (
+            <text key={`th${i}`} x={startX} y={cy + 120 + i * 56} textAnchor={sideAnchor}
+                  fontFamily={headingFont} fontSize={isRTL ? 38 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
           ))}
+          {truthBodyLines.map((ln, i) => {
+            const headBlockH = truthHeadlineLines.length * 56;
+            return (
+              <text key={`tb${i}`} x={startX}
+                    y={cy + 120 + headBlockH + 28 + i * 32}
+                    textAnchor={sideAnchor}
+                    fontFamily={bodyFont} fontSize={isRTL ? 22 : 22} fill={style.muted}
+                    fontWeight={isRTL ? 600 : 400}>
+                {ln}
+              </text>
+            );
+          })}
         </g>
       );
     }
