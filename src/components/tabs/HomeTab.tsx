@@ -1051,29 +1051,39 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
         {showWelcomeState ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {[
-              {
-                n: 1,
-                title: "Complete your brand assessment",
-                body: "Tell Aura who you are, what you're known for, and where you're heading. This shapes every signal Aura detects and every post it writes. (5 minutes)",
-                cta: assessmentDone ? null : "assessment" as const,
-                done: assessmentDone,
-              },
-              {
-                n: 2,
-                title: "Capture your first article",
-                body: "Paste a URL of something you read this week — an industry report, a LinkedIn post, a news article about your sector. Aura will extract the intelligence from it. (1 minute)",
-                cta: assessmentDone ? "capture-primary" as const : "capture-secondary" as const,
-                done: false,
-              },
-              {
-                n: 3,
-                title: "Watch your signals emerge",
-                body: "After 3–5 captures from different sources, Aura detects strategic patterns and builds your signal map.",
-                cta: null,
-                done: false,
-              },
-            ].map((step) => (
+            {(() => {
+              const gate = journey.currentGate;
+              const profileDone = journey.profileComplete;
+              const assessDone = journey.assessmentComplete;
+              const captureDone = (entries?.length ?? 0) > 0;
+              const steps = [
+                {
+                  n: 1,
+                  title: "Complete your professional profile",
+                  body: "This shapes every signal Aura detects. Tell us your firm, sector, and the expertise pillars you want to be known for. (5 minutes)",
+                  done: profileDone,
+                  locked: false,
+                  cta: profileDone ? null : "profile" as const,
+                },
+                {
+                  n: 2,
+                  title: "Complete your brand assessment",
+                  body: "Discover how the market sees you — your archetype, positioning, and authority territory. (5 minutes)",
+                  done: assessDone,
+                  locked: !profileDone,
+                  cta: assessDone || !profileDone ? null : "assessment" as const,
+                },
+                {
+                  n: 3,
+                  title: "Capture your first article",
+                  body: "Paste a URL of something you read this week. Aura extracts the intelligence from it. (1 minute)",
+                  done: captureDone,
+                  locked: !assessDone,
+                  cta: captureDone || !assessDone ? null : "capture-primary" as const,
+                },
+              ];
+              return steps;
+            })().map((step) => (
               <div
                 key={step.n}
                 style={{
@@ -1083,7 +1093,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   border: "1px solid hsl(var(--border) / 0.6)",
                   background: "hsl(var(--card))",
                   borderRadius: 10,
-                  opacity: step.done ? 0.7 : 1,
+                  opacity: step.done ? 0.65 : step.locked ? 0.5 : 1,
                 }}
               >
                 <div
@@ -1091,9 +1101,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    border: step.done ? "1px solid var(--brand)" : "1px solid var(--brand-line)",
+                    border: step.done ? "1px solid var(--brand)" : step.locked ? "1px solid var(--brand-line)" : "1px solid var(--brand)",
                     background: step.done ? "var(--brand)" : "transparent",
-                    color: step.done ? "var(--paper)" : "var(--brand)",
+                    color: step.done ? "var(--paper)" : step.locked ? "var(--ink-3)" : "var(--brand)",
                     fontSize: 13,
                     fontWeight: 600,
                     display: "flex",
@@ -1102,7 +1112,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     flexShrink: 0,
                   }}
                 >
-                  {step.done ? "✓" : step.n}
+                  {step.done ? "✓" : step.locked ? "🔒" : step.n}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
@@ -1113,6 +1123,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   </p>
                   {step.cta && (
                     <div style={{ marginTop: 12 }}>
+                      {step.cta === "profile" && (
+                        <AuraButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => onSwitchTab?.("identity")}
+                          style={{ borderRadius: 4, padding: "8px 18px" }}
+                        >
+                          Set up your profile →
+                        </AuraButton>
+                      )}
                       {step.cta === "assessment" && (
                         <AuraButton
                           variant="primary"
@@ -1133,16 +1153,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                           Capture your first article →
                         </AuraButton>
                       )}
-                      {step.cta === "capture-secondary" && (
-                        <AuraButton
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onOpenCapture?.()}
-                          style={{ borderRadius: 4, padding: "8px 18px" }}
-                        >
-                          Capture an article →
-                        </AuraButton>
-                      )}
+                    </div>
+                  )}
+                  {step.locked && (
+                    <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-3)" }}>
+                      Unlocks after Step {step.n - 1}
                     </div>
                   )}
                 </div>
