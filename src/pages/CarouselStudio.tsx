@@ -573,7 +573,12 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const lines = wrapText(slide.headline || "", 20);
       const lh = isRTL ? 96 : 84;
       const startY = cy - (lines.length * lh) / 2 + 30;
-      const bodyLines = wrapText(slide.body || "", 40);
+      // Strip any swipe cue the model accidentally appended — the chevron replaces it.
+      const cleanBody = (slide.body || "")
+        .replace(/\s*(اسحب|اسحبي)\s*[←]+\s*$/u, "")
+        .replace(/\s*(SWIPE|Swipe|swipe)\s*[→]+\s*$/u, "")
+        .trim();
+      const bodyLines = wrapText(cleanBody, 40);
       return (
         <g>
           {lines.map((ln, i) => (
