@@ -1119,10 +1119,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
             { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
-            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
+            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
             { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
           ]).map((c, idx) => {
             const cfg = subScoreCard(c.kind, c.value);
+            const isContentCount = c.kind === "content";
             return (
               <div
                 key={c.label}
@@ -1146,12 +1147,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   >
                     {c.label}
                   </div>
-                  <div
-                    className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                    style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
-                  >
-                    {cfg.tag}
-                  </div>
+                  {!isContentCount && (
+                    <div
+                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
+                    >
+                      {cfg.tag}
+                    </div>
+                  )}
                 </div>
                 <div
                   className="tabular-nums mt-1"
@@ -1166,7 +1169,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   <BreakdownNumber value={Math.round(c.value)} index={idx} />
                 </div>
                 <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
-                  {c.desc}
+                  {isContentCount ? "Posts Analyzed" : c.desc}
                 </div>
               </div>
             );
