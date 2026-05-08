@@ -558,7 +558,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
         {/* RIGHT COLUMN */}
         <div className="flex-1 space-y-4">
-          {/* Market Position Hero Card (dark) */}
+          {/* Market Position Hero Card (dark) — gated until brand assessment is complete */}
+          {assessmentCompleted && (
           <div
             className="aura-hero-card"
             style={{
