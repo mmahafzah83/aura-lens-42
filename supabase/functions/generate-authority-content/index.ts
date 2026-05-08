@@ -94,6 +94,26 @@ const ARABIC_VOICE_PROMPT = `أنت محرك توليد المحتوى لـ Aura
 - "ما رأيكم؟" / "شاركونا أفكاركم"
 - فقرات طويلة / تحفيز فارغ
 - ممكن / ربما / غالباً / leverage / optimize / cutting-edge / حلول مبتكرة
+- "لا يخفى على أحد" / "من نافلة القول" / "تجدر الإشارة إلى" / "مما لا شك فيه"
+- "في هذا السياق" / "من الضروري أن ندرك" / "على صعيد آخر" / "يُعد من أهم"
+- أي جملة أطول من 15 كلمة
+
+قواعد افتتاح البوست (إلزامية):
+- لا تبدأ البوست أبداً بكلمة "منشور" أو "منشور LinkedIn" أو أي تسمية للصيغة. ابدأ بالـ Hook مباشرة.
+- السطر الأول يجب أن يكون كسراً للنمط: ادعاء جريء، رقم محدد، سؤال استفزازي، أو مشهد قصير.
+- مثال خاطئ: "منشور LinkedIn معظم مشاريع العدادات الذكية..."
+- مثال صحيح: "معظم مشاريع العدادات الذكية في قطاع المياه تنتهي عند التركيب."
+
+قواعد التنسيق الصارمة:
+- لا تستخدم "---" كفاصل بين الأقسام. استخدم سطراً فارغاً.
+- لا تستخدم "#" كعنوان. LinkedIn لا يعرض markdown.
+- لا تستخدم "POST" أو "منشور LinkedIn" كعنوان داخل النص.
+- اجعل الجمل قصيرة (أقل من 12 كلمة)، كل جملة في سطر مستقل.
+
+تنويع الهيكل (لا تستخدم نفس الهيكل دائماً — إذا كان framework غير محدد، اختر عشوائياً):
+- البنية أ — سلسلة الرؤى: خطاف → إعادة إطار → 3 كتل رؤية → خاتمة حادة → سؤال
+- البنية ب — قائمة مرقمة: خطاف → لماذا الآن → 5 نقاط مرقمة → خلاصة → سؤال
+- البنية ج — قصة: مشهد قصير (2-3 أسطر) → الدرس → إطار مستخلص → تطبيق → سؤال
 
 الهاشتاقات — 3 فقط في نهاية البوست:
 - واحد للقطاع: #التحول_الرقمي أو #قطاع_المياه أو #البنية_التحتية
@@ -217,7 +237,14 @@ serve(async (req) => {
 1. Contrarian truth: Challenge what the industry believes in one sentence under 20 words.
 2. Specific tension: Name a contradiction the reader lives with daily. Be specific to ${sectorContextLabel}.
 
-Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.`;
+Never open with 'I am excited', 'In today's world', or a generic statistic. Structure: Hook (1-2 lines) → Re-hook (1 sentence deepening tension) → Insight (3-5 non-obvious points) → Close (specific question, not 'what do you think?'). Write in short paragraphs. One idea per line. No dense blocks.
+
+FORMATTING RULES (mandatory, both languages):
+- NEVER start the post with a format label like "POST", "LinkedIn Post", "منشور LinkedIn", or "BOOST". The very first line must be the hook content itself.
+- Do NOT use "---" or "***" as section separators. Use a single blank line.
+- Do NOT use "#" markdown headers. LinkedIn does not render markdown headers.
+- Bold via **text** is acceptable. Numbered lists "1. " are acceptable. Bullet glyphs ◆ ↳ are acceptable.
+- No code fences, no horizontal rules, no markdown links.`;
 
       const langLabel = effectiveLanguage === "ar"
         ? `اكتب المنشور بالكامل باللغة العربية. لا تستخدم أي كلمة إنجليزية.`
@@ -345,7 +372,15 @@ Write with conviction. No generic statements. Every line should demonstrate stra
       }
 
       const aiJson = await response.json();
-      const content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      let content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      // Safety net: strip any meta format-label the model may have prepended,
+      // and remove "---" horizontal rules / leading "# " headers that the
+      // model is instructed to avoid but sometimes still emits.
+      content = content
+        .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
+        .replace(/^\s*-{3,}\s*$/gm, '')
+        .replace(/^\s*#{1,6}\s+/gm, '')
+        .trim();
       return new Response(JSON.stringify({ content, success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

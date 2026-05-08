@@ -5,7 +5,18 @@ export default function InsightLayout({ style, props }: { style: CardStyleConfig
   const isAr = props.language === 'ar';
   const arHeadlineSize = isAr && style.name !== 'sand' ? 24 : style.headlineSize;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32, flex: 1 }}>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 32, flex: 1 }}>
+      <div aria-hidden style={{
+        position: 'absolute',
+        top: -40,
+        [isAr ? 'right' : 'left']: -10,
+        fontFamily: 'Georgia, serif',
+        fontSize: 240,
+        lineHeight: 1,
+        color: style.accent,
+        opacity: 0.12,
+        pointerEvents: 'none',
+      } as React.CSSProperties}>{isAr ? '”' : '“'}</div>
       <h1
         style={{
           fontFamily: style.headlineFont,
@@ -15,6 +26,7 @@ export default function InsightLayout({ style, props }: { style: CardStyleConfig
           color: style.headlineColor,
           margin: 0,
           letterSpacing: '-0.01em',
+          position: 'relative',
         }}
       >
         {props.content}
@@ -27,6 +39,7 @@ export default function InsightLayout({ style, props }: { style: CardStyleConfig
             lineHeight: isAr ? 1.9 : 1.6,
             color: style.bodyColor,
             margin: 0,
+            position: 'relative',
           }}
         >
           {props.bodyText}
