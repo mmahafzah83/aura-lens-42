@@ -386,6 +386,124 @@ Write with conviction. No generic statements. Every line should demonstrate stra
       });
     }
 
+    if (action === "extract_card_content") {
+      const { post_text, language, topic } = params;
+      const lang = language === "ar" ? "ar" : "en";
+      if (!post_text || typeof post_text !== "string") {
+        return new Response(JSON.stringify({ error: "post_text required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const langRule = lang === "ar"
+        ? `All output text MUST be in فصحى معاصرة (modern standard Arabic). Short, sharp sentences. Keep technical terms in English (AI, KPI, OT, IT, dashboard, smart meter, digital twin). No classical filler.`
+        : `All output text in English. Sharp, specific, executive register. No buzzwords (no "leverage", "synergy", "cutting-edge", "unlock"). No vague abstractions.`;
+
+      const systemPrompt = `You are a senior consulting content strategist restructuring a LinkedIn post into 8 different visual card formats.
+
+RULES (apply to every card):
+- Every point must be SPECIFIC and ACTIONABLE — no vague generalizations.
+- Items in a list must flow LOGICALLY (priority, sequence, or dependency). Order matters.
+- Use the exact domain terminology a senior CDO/CIO in ${topic || "the relevant sector"} would use.
+- Ground content in the actual post — do not invent statistics, frameworks, or claims that aren't supported.
+- Each card must be COHERENT AS A STANDALONE — someone seeing only the card (not the post) should understand the argument.
+- ${langRule}
+- Never include markdown symbols (**, #, ---, •), format labels ("POST", "منشور LinkedIn"), or emojis in card text.
+
+CARD-SPECIFIC INSTRUCTIONS:
+
+insight: ONE killer line — the most provocative, shareable statement. Not a summary, a provocation. Max 18 words.
+
+framework: 4–6 ordered pillars/steps that form a coherent model. Each has a short title (3–5 words) and one-sentence detail. Order by logic (foundation → structure → action).
+
+stat: The single most impactful number from the post (percent, multiplier, money, count). Pull the EXACT figure from the post — do not invent. Provide unit/label, source attribution, and a one-line headline insight.
+
+comparison: Strategic OLD vs NEW contrast. left = common mistake / old paradigm; right = correct approach / new paradigm. 3–4 paired rows. EACH PAIR must contrast the SAME dimension (row 1 left vs row 1 right address one topic, etc.).
+
+question: The most uncomfortable question a senior leader can't ignore. Max 25 words.
+
+principles: 4–6 imperative principles or hard truths, ordered most-foundational first. Each ≤ 12 words. Optional one-line elaboration.
+
+cycle: 4–6 steps forming a continuous loop where the last step feeds back into the first. Each step has a short label (2–4 words) and one-sentence detail.
+
+equation: A causal relationship — components combined = result. 2–4 specific components, an operator (+ or ×), one result, and a one-sentence footnote on why it matters.
+
+Return ONLY a JSON object matching this exact schema:
+{
+  "insight": { "headline": string, "attribution"?: string },
+  "framework": { "headline": string, "description"?: string, "items": [{ "title": string, "detail": string }] },
+  "stat": { "number": string, "label": string, "context"?: string, "source"?: string, "headline": string },
+  "comparison": { "headline": string, "left_label": string, "right_label": string, "pairs": [{ "wrong": string, "right": string }] },
+  "question": { "question": string, "context"?: string },
+  "principles": { "headline": string, "principles": [{ "title": string, "detail"?: string }] },
+  "cycle": { "headline": string, "steps": [{ "label": string, "detail"?: string }] },
+  "equation": { "headline": string, "components": [string], "operator": "+" | "×", "result": string, "footnote"?: string }
+}`;
+
+      const userMessage = `TOPIC: ${topic || "(unspecified)"}\nLANGUAGE: ${lang === "ar" ? "Arabic" : "English"}\n\nPOST TEXT:\n"""\n${post_text}\n"""\n\nReturn the JSON object now.`;
+
+      try {
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
+            ],
+            response_format: { type: "json_object" },
+          }),
+        });
+
+        if (!aiResp.ok) {
+          const t = await aiResp.text();
+          console.error("extract_card_content AI error:", aiResp.status, t);
+          if (aiResp.status === 429) {
+            return new Response(JSON.stringify({ error: "Rate limited, please try again." }), {
+              status: 429,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          if (aiResp.status === 402) {
+            return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
+              status: 402,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          return new Response(JSON.stringify({ error: "AI extraction failed" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const aiData = await aiResp.json();
+        const raw = aiData.choices?.[0]?.message?.content || "{}";
+        let parsed: any = {};
+        try {
+          parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        } catch (err) {
+          // Tolerate code-fence wrapping
+          const cleaned = String(raw).replace(/^```(?:json)?\s*|\s*```$/g, "").trim();
+          parsed = JSON.parse(cleaned);
+        }
+
+        return new Response(JSON.stringify({ success: true, cards: parsed }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } catch (e: any) {
+        console.error("extract_card_content error:", e);
+        return new Response(JSON.stringify({ error: e?.message || "extraction failed" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (action === "generate_narrative_plan") {
       const voiceContext = buildVoiceContext(voiceProfile);
 
