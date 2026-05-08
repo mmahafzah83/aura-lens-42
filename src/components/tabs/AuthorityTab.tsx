@@ -1663,6 +1663,19 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
     return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-primary/40" /></div>;
   }
 
+  // New-user empty state — show guidance, never fake plans.
+  if (signalCount === 0 && captureCount === 0 && suggestions.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-3 max-w-md mx-auto">
+        <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
+        <p className="text-foreground font-medium">Your content plan starts with intelligence</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Your plan will appear here after you've built some intelligence. Start by capturing 3-5 articles in your area of expertise — Aura needs material to recognise patterns and surface narrative angles.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
