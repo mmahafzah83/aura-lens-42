@@ -11,7 +11,6 @@ import { withTimeout } from "@/lib/safeQuery";
 import AurasRead from "@/components/AurasRead";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
-import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 import { addTrendToSignals as wireTrendToSignals } from "@/lib/addTrendToSignals";
 import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
@@ -1000,15 +999,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         transition={{ duration: 0.35 }}
         className="space-y-6 max-w-3xl"
       >
-        {showOnboarding && authUser?.id && (
-          <OnboardingWizardModal
-            open={showOnboarding}
-            userId={authUser.id}
-            onClose={() => setShowOnboarding(false)}
-            onOpenFullCapture={onOpenCapture}
-          />
-        )}
-
         <header className="pt-1">
           <div
             className="text-muted-foreground"
@@ -1178,15 +1168,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       transition={{ duration: 0.35 }}
       className="space-y-6 max-w-3xl"
     >
-      {showOnboarding && authUser?.id && (
-        <OnboardingWizardModal
-          open={showOnboarding}
-          userId={authUser.id}
-          onClose={() => setShowOnboarding(false)}
-          onOpenFullCapture={onOpenCapture}
-        />
-      )}
-
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
 
