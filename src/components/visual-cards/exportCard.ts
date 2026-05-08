@@ -132,6 +132,8 @@ export function stripMarkdown(s: string): string {
     .replace(/^\s*-{3,}\s*$/gm, '')           // horizontal rules ---
     .replace(/^\s*[-*•◆↳►▶➤]\s+/gm, '')      // bullet markers (incl. Arabic decorative)
     .replace(/^\s*\d+[.)]\s+/gm, '')          // numbered list markers
+    .replace(/^\s*\.?[\u0621-\u064A]\.\s+/gm, '') // Arabic single-letter prefix: "ا." or ".ا."
+    .replace(/^\s*[\u0660-\u0669]+[.)]\s+/gm, '') // Arabic-Indic numbered list markers
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // links
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -171,16 +173,26 @@ export function extractDataPoints(text: string): { items: { label: string; value
 export function extractStat(text: string): { value: string; label: string } | null {
   if (!text) return null;
   const clean = stripMarkdown(text);
-  const pct = clean.match(/(\d{1,3}(?:\.\d+)?)\s*%/);
+  const pct = clean.match(/(\d{1,3}(?:\.\d+)?)\s*[%٪]/);
   if (pct) {
     const idx = clean.indexOf(pct[0]);
     const ctx = clean.slice(Math.max(0, idx - 60), idx + pct[0].length + 60).trim();
     return { value: `${pct[1]}%`, label: trunc(ctx, 80) };
   }
+  // Arabic-Indic numerals with optional Arabic percent
+  const arPct = clean.match(/([\u0660-\u0669]{1,3}(?:[.,][\u0660-\u0669]+)?)\s*[٪%]/);
+  if (arPct) {
+    const idx = clean.indexOf(arPct[0]);
+    const ctx = clean.slice(Math.max(0, idx - 60), idx + arPct[0].length + 60).trim();
+    return { value: `${arPct[1]}٪`, label: trunc(ctx, 80) };
+  }
   const money = clean.match(/\$\s?\d+(?:[.,]\d+)?\s?(?:M|B|K|million|billion)?/i);
   if (money) return { value: money[0].replace(/\s+/g, ''), label: 'value' };
   const big = clean.match(/\b(\d{1,3}(?:[.,]\d{3})+|\d{2,}x|\d+\.\d+x)\b/i);
   if (big) return { value: big[1], label: 'metric' };
+  // Arabic-Indic large number
+  const arBig = clean.match(/([\u0660-\u0669]{2,}(?:[.,][\u0660-\u0669]{3})*)/);
+  if (arBig) return { value: arBig[1], label: 'metric' };
   return null;
 }
 
