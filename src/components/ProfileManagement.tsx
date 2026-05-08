@@ -99,6 +99,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Profile Updated", description: "Your executive profile has been saved." });
+      try { window.dispatchEvent(new CustomEvent("aura:journey-refresh")); } catch {}
     }
     setSaving(false);
   };
