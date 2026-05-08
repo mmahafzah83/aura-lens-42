@@ -61,6 +61,21 @@ ${CARD_FONT_LINKS.map((href) => `<link rel="stylesheet" href="${href}" crossorig
     clone.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
     if (language === 'ar') {
       clone.style.direction = 'rtl';
+      // Force Cairo on the clone root and EVERY descendant. The CSS rule in
+      // the iframe handles most cases, but inline style font-family declarations
+      // on nested spans/headings win over the stylesheet — so we override them
+      // directly here. This is what fixes Stat/Comparison column headers and
+      // the small top "tag" label rendering as garbled Arabic.
+      const FONT_STACK = "'Cairo','DM Sans',sans-serif";
+      clone.style.fontFamily = FONT_STACK;
+      const all = clone.querySelectorAll<HTMLElement>('*');
+      all.forEach((el) => {
+        try {
+          el.style.fontFamily = FONT_STACK;
+          // Also strip any letter-spacing that would break Arabic shaping.
+          if (el.style.letterSpacing) el.style.letterSpacing = 'normal';
+        } catch { /* ignore */ }
+      });
     }
     doc.body.appendChild(clone);
 
