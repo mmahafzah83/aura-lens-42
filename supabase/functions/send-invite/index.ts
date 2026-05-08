@@ -25,36 +25,84 @@ const horizonEye = (size = 40, color = "#B08D3A") => `
 const buildEmailHtml = (BRAND: string) => {
   const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
   const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
+  const CTA = "#F97316";
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Your Aura access is ready</title>
+<title>Your expertise deserves to be seen</title>
 </head>
-<body style="margin:0;padding:0;background:#f5f1e8;font-family:${BODY_FONT};color:#1c1812;-webkit-font-smoothing:antialiased;">
-<div style="display:none;max-height:0;overflow:hidden;">Your Aura access is ready. One capture starts your signal graph.</div>
-<div style="padding:32px 16px;background:#f5f1e8;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
-    <div style="padding:36px 40px 0;text-align:left;">
-      ${horizonEye(40, BRAND)}
-    </div>
-    <div style="padding:24px 40px 40px;">
-      <h1 style="font-family:${HEADING_FONT};font-size:30px;line-height:1.2;font-weight:500;color:#1c1812;margin:0 0 24px;">Your Aura access is ready, {{NAME}}</h1>
-      <p style="font-size:15px;line-height:1.7;color:#3a3530;margin:0 0 18px;">You've been selected for Aura's private beta — strategic intelligence for senior professionals who convert expertise into market authority.</p>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:${BODY_FONT};color:#ededed;-webkit-font-smoothing:antialiased;">
+<div style="display:none;max-height:0;overflow:hidden;">Aura is ready for you. Private beta — fewer than 50 people.</div>
+<div style="padding:32px 16px;background:#0d0d0d;">
+  <div style="max-width:580px;margin:0 auto;background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;overflow:hidden;">
+
+    <!-- HERO -->
+    <div style="padding:36px 40px 0;text-align:left;">${horizonEye(40, BRAND)}</div>
+    <div style="padding:24px 40px 8px;">
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Hi {{NAME_GREETING}}</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">I've been building something for people like you.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Senior professionals who've spent years becoming exceptional at what they do — but whose expertise is invisible outside their direct network.</p>
+      <p style="font-size:15px;line-height:1.9;color:#ededed;margin:0 0 18px;">You read more in a week than most people read in a month.<br>You see patterns others miss.<br>You hold opinions that executives pay to hear.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">But the market doesn't know that yet.</p>
+      <p style="font-family:${HEADING_FONT};font-size:24px;line-height:1.3;color:#ffffff;margin:8px 0 24px;">Aura changes that.</p>
       {{INVITER_NOTE_BLOCK}}
-      <p style="font-size:15px;line-height:1.7;color:#3a3530;margin:0 0 32px;">Your access is waiting. One capture starts your signal graph. One signal reshapes how the market sees you.</p>
-      <div style="margin:0 0 36px;">
-        <a href="{{CONFIRMATION_URL}}" style="display:inline-block;background:${BRAND};color:#ffffff;padding:0 28px;height:44px;line-height:44px;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;font-family:${BODY_FONT};">Accept your invitation →</a>
+    </div>
+
+    <hr style="border:0;border-top:1px solid #1f1f1f;margin:8px 40px;">
+
+    <!-- WHAT AURA DOES -->
+    <div style="padding:24px 40px 8px;">
+      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">WHAT AURA DOES</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Aura reads what you read — articles, reports, posts — and detects the strategic patterns hidden in your knowledge consumption.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Then it turns those patterns into authority.</p>
+      <p style="font-size:15px;line-height:1.9;color:#bdbdbd;margin:0 0 18px;">Content that sounds like you, not like AI.<br>Positioning that's backed by evidence, not self-declaration.<br>A score that compounds the more you use it.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 24px;">You don't need to learn a new skill or add hours to your week. You just keep doing what you already do — and Aura makes it visible.</p>
+    </div>
+
+    <hr style="border:0;border-top:1px solid #1f1f1f;margin:8px 40px;">
+
+    <!-- YOUR ACCESS -->
+    <div style="padding:24px 40px 8px;">
+      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">YOUR ACCESS</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">You're one of fewer than 50 people in the private beta. I reviewed your request personally.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 14px;">Two things before you click:</p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 12px;">⏱&nbsp;&nbsp;This link expires in <strong style="color:#ededed;">48 hours</strong>. Click when you have 10 quiet minutes — it's worth your full attention.</p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 28px;">🔐&nbsp;&nbsp;You'll be logged in automatically. Once inside, tap your avatar (top right) → <strong style="color:#ededed;">set a password</strong> so you can return anytime.</p>
+      <div style="margin:0 0 28px;">
+        <a href="{{CONFIRMATION_URL}}" style="display:inline-block;background:${CTA};color:#ffffff;padding:0 28px;height:48px;line-height:48px;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;font-family:${BODY_FONT};">Step into your intelligence OS →</a>
       </div>
-      <p style="font-size:12px;color:#8a8478;line-height:1.6;margin:0 0 8px;word-break:break-all;">If the button doesn't work, paste this link:<br><a href="{{CONFIRMATION_URL}}" style="color:${BRAND};">{{CONFIRMATION_URL}}</a></p>
     </div>
-    <div style="padding:24px 40px;border-top:1px solid #efeae0;display:flex;align-items:center;gap:12px;">
-      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-        <td style="vertical-align:middle;padding-right:12px;">${horizonEye(24, BRAND)}</td>
-        <td style="vertical-align:middle;font-size:12px;color:#6b665c;font-family:${BODY_FONT};">Aura · Strategic Intelligence · <a href="https://aura-intel.org" style="color:#6b665c;text-decoration:none;">aura-intel.org</a></td>
-      </tr></table>
+
+    <!-- FIRST 10 MINUTES (lighter section) -->
+    <div style="background:#1a1a1a;padding:28px 40px;border-top:1px solid #1f1f1f;border-bottom:1px solid #1f1f1f;">
+      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">YOUR FIRST 10 MINUTES</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 22px;">You'll feel the difference immediately.</p>
+
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>1 · Tell Aura who you are</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 4px;">Complete your profile. This shapes every signal Aura detects and every post it writes.</p>
+      <p style="font-size:12px;color:#8a8a8a;margin:0 0 18px;">(2 minutes)</p>
+
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>2 · Feed it one article</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 4px;">Paste a URL of something you read this week. An industry report. A competitor's post. Anything from your world.</p>
+      <p style="font-size:12px;color:#8a8a8a;margin:0 0 18px;">(1 minute)</p>
+
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>3 · Watch intelligence emerge</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Aura extracts strategic insights and starts building your signal map. After 3-5 articles, your first signal appears — and that's the moment everything clicks.</p>
+
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>4 · See yourself through the market's eyes</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 8px;">Complete the brand assessment and Aura generates your Market Mirror — three perspectives on how headhunters, clients, and conference curators would describe you today.</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;font-style:italic;margin:0;">This is usually the moment people message me to say "how does it know this?"</p>
     </div>
+
+    <!-- FOOTER -->
+    <div style="padding:24px 40px;">
+      <p style="font-size:12px;color:#8a8a8a;line-height:1.6;margin:0 0 16px;word-break:break-all;">If the button doesn't work, paste this link:<br><a href="{{CONFIRMATION_URL}}" style="color:${BRAND};">{{CONFIRMATION_URL}}</a></p>
+      <p style="font-size:13px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Questions or feedback — reply directly. This email reaches me, not a support queue.</p>
+      <p style="font-size:14px;line-height:1.6;color:#ededed;margin:0;">Mohammad Mahafzah<br><span style="color:#8a8a8a;">Building Aura · <a href="https://aura-intel.org" style="color:#8a8a8a;text-decoration:none;">aura-intel.org</a></span></p>
+    </div>
+
   </div>
 </div>
 </body>
@@ -118,7 +166,8 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : "there";
+    const rawName = typeof body.name === "string" ? body.name.trim() : "";
+    const firstName = rawName ? rawName.split(/\s+/)[0] : "";
     const inviterNote = typeof body.inviter_note === "string" ? body.inviter_note.trim() : "";
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -176,12 +225,13 @@ serve(async (req) => {
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     const inviterNoteBlock = inviterNote
-      ? `<div style="margin:0 0 24px;padding:16px 18px;background:#faf6ec;border-left:3px solid ${BRAND};border-radius:4px;font-size:14px;line-height:1.7;color:#3a3530;font-style:italic;">${escapeHtml(inviterNote)}</div>`
+      ? `<div style="margin:8px 0 18px;padding:14px 16px;background:#1a1a1a;border-left:3px solid ${BRAND};border-radius:4px;font-size:14px;line-height:1.7;color:#bdbdbd;font-style:italic;">${escapeHtml(inviterNote)}</div>`
       : "";
 
     // Build email HTML
+    const nameGreeting = firstName ? `${escapeHtml(firstName)},` : ",";
     const html = buildEmailHtml(BRAND)
-      .replace(/{{NAME}}/g, escapeHtml(name))
+      .replace(/{{NAME_GREETING}}/g, nameGreeting)
       .replace(/{{CONFIRMATION_URL}}/g, confirmationUrl)
       .replace(/{{INVITER_NOTE_BLOCK}}/g, inviterNoteBlock)
       .replace(/{{EMAIL}}/g, email);
@@ -196,7 +246,8 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Aura <invites@aura-intel.org>",
         to: [email],
-        subject: `Your Aura access is ready, ${name}`,
+        subject: "Your expertise deserves to be seen",
+        reply_to: "mohammad.mahafdhah@aura-intel.org",
         html,
       }),
     });
