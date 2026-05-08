@@ -181,6 +181,26 @@ const Admin = () => {
     return { count, avg, nps };
   }, [npsRows]);
 
+  const handleDeleteUser = async (email: string) => {
+    setDeletingEmail(email);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { target_email: email },
+      });
+      if (error || (data && (data as any).error)) {
+        throw new Error((data as any)?.error || error?.message || "Delete failed");
+      }
+      toast.success("User deleted permanently");
+      setRows((prev) => prev.filter((r) => r.email.toLowerCase() !== email.toLowerCase()));
+      setActiveUsers((prev) => prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()));
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete user");
+    } finally {
+      setDeletingEmail(null);
+      setConfirmEmail(null);
+    }
+  };
+
   const counts = useMemo(() => {
     const c = { pending: 0, approved: 0, active: 0 };
     for (const r of rows) {
