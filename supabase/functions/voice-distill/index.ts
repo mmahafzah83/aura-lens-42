@@ -48,16 +48,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id } = await req.json();
-    if (!user_id || typeof user_id !== "string") {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // Resolve user_id: prefer body, otherwise derive from Authorization header.
+    let user_id: string | null = null;
+    try {
+      const body = await req.json();
+      if (body && typeof body.user_id === "string") user_id = body.user_id;
+    } catch (_) { /* no body */ }
+
+    if (!user_id) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (authHeader.startsWith("Bearer ")) {
+        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const token = authHeader.replace("Bearer ", "");
+        const { data: { user } } = await userClient.auth.getUser(token);
+        if (user) user_id = user.id;
+      }
+    }
+
+    if (!user_id) {
       return new Response(
         JSON.stringify({ error: "user_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       console.error("voice-distill: missing LOVABLE_API_KEY");
