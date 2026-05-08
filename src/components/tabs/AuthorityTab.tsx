@@ -3037,6 +3037,18 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       {p.topic_label && (
                         <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
                       )}
+                      {(() => {
+                        const sid = (p as any).source_signal_id || (p.source_metadata as any)?.source_signal_id || (p.source_metadata as any)?.signal_ids?.[0];
+                        const titleFromMeta = (p.source_metadata as any)?.signal_titles?.[0];
+                        const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
+                        if (!title) return null;
+                        return (
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 11, color: "var(--color-muted)" }}>
+                            <Lightbulb className="w-3 h-3" style={{ color: "var(--brand)" }} />
+                            <span className="line-clamp-1">From signal: {title}</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
