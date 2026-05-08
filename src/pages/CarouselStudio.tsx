@@ -790,13 +790,14 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "GRID": {
-      const items = slide.grid_items || [];
+      const cleanItem = (s: string) => s.replace(/^\s*\d+[\.\)]\s*/, '').replace(/^\s*[◆◇►▸●○•\-–—]\s*/, '').trim();
+      const items = (slide.grid_items || []).map(cleanItem);
       const cols = items.length > 4 ? 2 : 2;
       const rows = Math.ceil(items.length / cols);
       const gap = 20;
       const gridX = edgePad, gridW = w - edgePad * 2;
       const cellW = (gridW - gap * (cols - 1)) / cols;
-      const cellH = isRTL ? 130 : 120;
+      const cellH = isRTL ? 140 : 134;
       const gridTotalH = rows * cellH + (rows - 1) * gap;
       const headlineSpace = slide.headline ? 80 : 0;
       const gridY = Math.max(180, cy - gridTotalH / 2 + headlineSpace / 2);
@@ -833,7 +834,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 </text>
                 {wrapped.map((ln, li) => (
                   <text key={li} x={textXi} y={textStartY + li * lineH} textAnchor={cellTextAnchor}
-                        fontFamily={bodyFont} fontSize={isRTL ? 17 : 19} fill={style.fg} fontWeight={isRTL ? 600 : 400}>
+                        fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 700 : 600}>
                     {ln}
                   </text>
                 ))}
@@ -881,12 +882,15 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             </text>
           ))}
           <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
-          {/* Gold tinted background lives on whichever side holds the CORRECT column */}
-          {correctOnLeft ? (
-            <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} fill={style.accent} fillOpacity={0.08} rx={8} />
-          ) : (
-            <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} fill={style.accent} fillOpacity={0.08} rx={8} />
-          )}
+          {/* Both columns get equal-weight containers; visual difference comes from opacity, weight, and accent border. */}
+          <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} rx={8}
+                fill={correctOnLeft ? style.accent : style.fg}
+                fillOpacity={correctOnLeft ? 0.08 : 0.04}
+                stroke={style.border} strokeWidth={1} />
+          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} rx={8}
+                fill={correctOnLeft ? style.fg : style.accent}
+                fillOpacity={correctOnLeft ? 0.04 : 0.08}
+                stroke={style.border} strokeWidth={1} />
           <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 20 : 18}
                 letterSpacing={isRTL ? 0 : 2}
                 fill={correctOnLeft ? style.accent : style.muted}
@@ -931,9 +935,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.6}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
-                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 2 }}>
+                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
                 {ln}
               </text>
             ));
@@ -960,9 +964,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.6}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
-                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 2 }}>
+                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
                 {ln}
               </text>
             ));

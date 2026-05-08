@@ -102,9 +102,29 @@ BIG_NUMBER: One stat dominates the slide. The number renders at 64-80px. Context
 
 TERMINAL: Code-block aesthetic. A filename label (e.g., "digital_utility_v2.sh" or "transformation_audit.log"). 4-6 arrow-prefix steps. One punchline closing line in italic. Steps should be concrete actions, not abstract concepts.
 
-GRID: 4-6 items in numbered cells. Each item: one bold phrase (3-5 words). NOT full sentences. Think: "1. Predictive pipe failure" not "1. Optimize asset lifespan."
+GRID: 4-6 items in numbered cells. Each item: one bold phrase (3-5 words). NOT full sentences. Think: "Predictive pipe failure" not "Optimize asset lifespan."
+CRITICAL: Do NOT prefix items with numbers (1., 2., 3.) or bullets (◆, •, -). The renderer adds a numbered badge automatically — any prefix you add will DUPLICATE the number. Items must be plain text only.
+BAD: ["1. Predictive pipe failure", "2. Smart leak detection"]
+GOOD: ["Predictive pipe failure", "Smart leak detection"]
 
 COMPARE: Two columns with genuine contrast. Left = the approach everyone uses (muted). Right = the approach that works (highlighted). Headers must be sharp labels, not just "Old Way" / "New Way" — try "What you're told" / "What actually works" or "The $2M mistake" / "The $200K fix".
+COMPARE wrong-column items must be SPECIFIC, recognizable bad practices the audience experiences daily — not vague phrases. Name the artifact, the cadence, or the failure mode.
+  BAD: "Approved dashboards" (vague — what's wrong?)
+  GOOD: "Monthly PDF reports arriving 2 weeks late"
+  BAD: "Update SCADA only"
+  GOOD: "Updating SCADA in isolation from GIS and CRM"
+
+CRITICAL — NO REPETITION BETWEEN SLIDES: Each slide must introduce NEW information. If GRID lists "6 pillars to build X", COMPARE must NOT restate those same pillars in different words. Split the angles:
+  - GRID = the WHAT (action steps, technical pillars)
+  - COMPARE = the mindset/budget/governance shift (WHY the old approach fails vs why the new wins)
+If your COMPARE items rephrase your GRID items, rewrite COMPARE entirely from a different lens (budget allocation, vendor model, org design, success metric).
+
+DOMAIN ACCURACY (water/utility/infrastructure topics):
+- Use "OT/ICS cybersecurity" — never just "OT cybersecurity". ICS (Industrial Control Systems) pairs with OT.
+- "Predictive maintenance" must name assets: pipes, pumps, valves, transformers — not generic "maintenance".
+- "SCADA integration" must name at least 2 systems being connected (GIS, AMI, CIS, billing).
+- "Data governance" must name the data domain: water-quality data, network-pressure data, AMI consumption, customer complaints.
+- Never write a pillar a CDO couldn't validate against their actual operational stack.
 
 QUESTION: One provocative question. No answer. No body text. The question should make the reader uncomfortable because it exposes a gap in their current approach. Think: "When was the last time your board asked about data infrastructure — not just dashboards?"
 
