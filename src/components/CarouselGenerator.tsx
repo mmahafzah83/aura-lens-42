@@ -79,6 +79,22 @@ type PipelineStep = "input" | "frameworks" | "visual_plan" | "carousel" | "visua
 type Lang = "en" | "ar";
 type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
 
+interface AuthorInfo {
+  name: string;
+  title: string;
+  focus: string;
+  handle: string;
+  handleUrl: string;
+}
+
+const DEFAULT_AUTHOR: AuthorInfo = {
+  name: "Your Name",
+  title: "Your Title",
+  focus: "Your Focus",
+  handle: "your-handle",
+  handleUrl: "linkedin.com/in/your-handle",
+};
+
 interface CarouselGeneratorProps {
   open: boolean;
   onClose: () => void;
