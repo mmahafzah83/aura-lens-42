@@ -246,6 +246,7 @@ interface PlanPrefill {
 }
 
 const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
+  const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
@@ -256,7 +257,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
