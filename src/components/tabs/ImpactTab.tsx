@@ -1254,6 +1254,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <div className="text-xs text-muted-foreground mt-1">Avg Engagement</div>
               </div>
             </div>
+            {/* Tone distribution and Content insight removed (V1P-2 reorder) — low decision value.
+                Restore from git history if quality data improves. */}
           </div>
         )}
       </section>
