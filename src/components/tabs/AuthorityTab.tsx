@@ -1597,8 +1597,20 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   const [suggestions, setSuggestions] = useState<NarrativeSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [signalCount, setSignalCount] = useState<number | null>(null);
+  const [captureCount, setCaptureCount] = useState<number | null>(null);
 
-  useEffect(() => { loadSuggestions(); }, []);
+  useEffect(() => {
+    loadSuggestions();
+    (async () => {
+      const [{ count: sc }, { count: cc }] = await Promise.all([
+        supabase.from("strategic_signals" as any).select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("entries").select("id", { count: "exact", head: true }),
+      ]);
+      setSignalCount(sc || 0);
+      setCaptureCount(cc || 0);
+    })();
+  }, []);
 
   const loadSuggestions = async () => {
     const { data } = await (supabase.from("narrative_suggestions" as any) as any).select("*").order("created_at", { ascending: false }).limit(20);
