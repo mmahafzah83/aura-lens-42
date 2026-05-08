@@ -30,7 +30,8 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
       if (snapsRes.data?.snapshot_date) dates.push(new Date(snapsRes.data.snapshot_date).getTime());
       if (cancelled) return;
       if (dates.length === 0) {
-        setDays(999); // never uploaded — show reminder
+        // Never uploaded LinkedIn data — do not nag. Card stays hidden.
+        setDays(-1);
         return;
       }
       const latest = Math.max(...dates);
@@ -42,6 +43,8 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
 
   if (dismissed) return null;
   if (days === null || days < 7) return null;
+  // Never-uploaded sentinel → hide entirely
+  if (days < 0) return null;
 
   const dismiss = () => {
     try { sessionStorage.setItem(SS_KEY, "1"); } catch {}
@@ -57,7 +60,7 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
     }, 250);
   };
 
-  const dayLabel = days >= 999 ? "a while" : `${days} day${days === 1 ? "" : "s"}`;
+  const dayLabel = `${days} day${days === 1 ? "" : "s"}`;
 
   return (
     <div

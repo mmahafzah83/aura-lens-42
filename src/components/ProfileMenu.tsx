@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { User, LogOut, UserCog, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SetPasswordModal from "@/components/SetPasswordModal";
+import QuestLog from "@/components/QuestLog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +13,7 @@ interface ProfileMenuProps {
   fullName?: string | null;
   email?: string;
   avatarUrl?: string | null;
+  userId?: string | null;
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onSignOut: () => void;
@@ -22,6 +24,7 @@ export default function ProfileMenu({
   fullName,
   email,
   avatarUrl,
+  userId,
   theme,
   onToggleTheme,
   onSignOut,
@@ -31,6 +34,7 @@ export default function ProfileMenu({
   const [hasPassword, setHasPassword] = useState<boolean>(() => {
     try { return localStorage.getItem("password_set") === "1"; } catch { return false; }
   });
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(userId ?? null);
 
   useEffect(() => {
     let active = true;
@@ -41,9 +45,10 @@ export default function ProfileMenu({
         setHasPassword(true);
         try { localStorage.setItem("password_set", "1"); } catch {}
       }
+      if (!userId && data.user?.id) setResolvedUserId(data.user.id);
     });
     return () => { active = false; };
-  }, []);
+  }, [userId]);
 
   const fn = (fullName || "").trim();
   const parts = fn.split(/\s+/).filter(Boolean);
@@ -213,6 +218,20 @@ export default function ProfileMenu({
             height: 0,
             borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
             margin: "0 4px",
+          }}
+        />
+
+        {/* QUEST LOG */}
+        <div style={{ padding: "8px 4px 4px" }}>
+          <QuestLog userId={resolvedUserId} compact />
+        </div>
+
+        {/* DIVIDER */}
+        <div
+          style={{
+            height: 0,
+            borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
+            margin: "8px 4px 0",
           }}
         />
 
