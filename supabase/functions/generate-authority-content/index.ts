@@ -372,7 +372,15 @@ Write with conviction. No generic statements. Every line should demonstrate stra
       }
 
       const aiJson = await response.json();
-      const content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      let content = (aiJson.content || []).map((c: any) => c.text || "").join("") || "";
+      // Safety net: strip any meta format-label the model may have prepended,
+      // and remove "---" horizontal rules / leading "# " headers that the
+      // model is instructed to avoid but sometimes still emits.
+      content = content
+        .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*\n?/i, '')
+        .replace(/^\s*-{3,}\s*$/gm, '')
+        .replace(/^\s*#{1,6}\s+/gm, '')
+        .trim();
       return new Response(JSON.stringify({ content, success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
