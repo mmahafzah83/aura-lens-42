@@ -573,7 +573,12 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const lines = wrapText(slide.headline || "", 20);
       const lh = isRTL ? 96 : 84;
       const startY = cy - (lines.length * lh) / 2 + 30;
-      const bodyLines = wrapText(slide.body || "", 40);
+      // Strip any swipe cue the model accidentally appended — the chevron replaces it.
+      const cleanBody = (slide.body || "")
+        .replace(/\s*(اسحب|اسحبي)\s*[←]+\s*$/u, "")
+        .replace(/\s*(SWIPE|Swipe|swipe)\s*[→]+\s*$/u, "")
+        .trim();
+      const bodyLines = wrapText(cleanBody, 40);
       return (
         <g>
           {lines.map((ln, i) => (
@@ -612,8 +617,13 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         s.replace(/^\s*(يعتقد الأغلبية|MOST PEOPLE THINK|Most people think)[:\s\-—]*/i, "").trim();
       const cleanedBelief = stripMythPrefix(slide.headline || "");
       const beliefLinesClean = wrapText(cleanedBelief || (slide.headline || ""), isRTL ? 22 : 28);
-      const truthRaw = slide.body || slide.headline_accent || "";
-      const truthLines = wrapText(truthRaw, isRTL ? 20 : 24);
+      // Truth headline = headline_accent (preferred) or first sentence of body as fallback.
+      // Truth body paragraph = slide.body (the explanation). If headline_accent is missing,
+      // body is promoted to headline and there's no explanation paragraph.
+      const truthHeadlineRaw = slide.headline_accent || slide.body || "";
+      const truthBodyRaw = slide.headline_accent ? (slide.body || "") : "";
+      const truthHeadlineLines = wrapText(truthHeadlineRaw, isRTL ? 20 : 24);
+      const truthBodyLines = truthBodyRaw ? wrapText(truthBodyRaw, isRTL ? 36 : 50) : [];
       const beliefStartY = cy - 160;
       return (
         <g>
@@ -636,12 +646,24 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 fontWeight={isRTL ? 800 : 400}>
             {L.truth}
           </text>
-          {truthLines.length > 0 && truthLines.map((ln, i) => (
-            <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
+          {truthHeadlineLines.map((ln, i) => (
+            <text key={`th${i}`} x={startX} y={cy + 120 + i * 56} textAnchor={sideAnchor}
+                  fontFamily={headingFont} fontSize={isRTL ? 38 : 48} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
           ))}
+          {truthBodyLines.map((ln, i) => {
+            const headBlockH = truthHeadlineLines.length * 56;
+            return (
+              <text key={`tb${i}`} x={startX}
+                    y={cy + 120 + headBlockH + 28 + i * 32}
+                    textAnchor={sideAnchor}
+                    fontFamily={bodyFont} fontSize={isRTL ? 22 : 22} fill={style.muted}
+                    fontWeight={isRTL ? 600 : 400}>
+                {ln}
+              </text>
+            );
+          })}
         </g>
       );
     }
@@ -909,9 +931,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.6}
                     fontWeight={isRTL ? 600 : 400}
-                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
+                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 2 }}>
                 {ln}
               </text>
             ));
@@ -938,9 +960,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.6}
                     fontWeight={isRTL ? 600 : 400}
-                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
+                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 2 }}>
                 {ln}
               </text>
             ));
@@ -1017,11 +1039,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const bodyLineH = 36;
       const blockH = headlineLines.length * headLineH + 40 + bodyLines.length * bodyLineH;
       const startY = cy - blockH / 2 + 40;
-      // Arabic: center horizontally (matches COVER/QUESTION feel)
-      const insightX = isRTL ? cx : startX;
-      const insightAnchor: "start" | "middle" | "end" = isRTL ? "middle" : sideAnchor;
-      const dividerX1 = isRTL ? cx - 30 : edgePad;
-      const dividerX2 = isRTL ? cx + 30 : edgePad + 30;
+      // Center INSIGHT for both LTR and RTL — matches COVER/QUESTION feel.
+      const insightX = cx;
+      const insightAnchor: "start" | "middle" | "end" = "middle";
+      const dividerX1 = cx - 30;
+      const dividerX2 = cx + 30;
       return (
         <g>
           {headlineLines.map((ln, i) => (
