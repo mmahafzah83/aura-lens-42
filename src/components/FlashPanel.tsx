@@ -459,6 +459,12 @@ export default function FlashPanel() {
       )}
 
       {/* Generate button */}
+      {signalCount === 0 && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-muted-foreground leading-relaxed">
+          <p className="font-medium text-foreground mb-1">Flash mode is locked</p>
+          <p>Flash creates content from your strongest signals. Capture a few articles first to unlock this — you'll see far better posts when Aura has signal territory to draw from.</p>
+        </div>
+      )}
       <button
         onClick={runGeneration}
         disabled={!canGenerate}
