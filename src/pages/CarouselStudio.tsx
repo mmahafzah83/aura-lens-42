@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -130,18 +130,14 @@ const DIM: Record<Dimension, { w: number; h: number; label: string }> = {
 
 /* ============================ SAMPLE FALLBACK ============================ */
 
-const sampleCarousel = (topic: string): Carousel => ({
-  carousel_title: topic || "Sample carousel",
-  total_slides: 3,
-  author_name: "M. Mahafzah", author_title: "Director", author_handle: "@mmahafzah",
+const emptyCarousel = (): Carousel => ({
+  carousel_title: "",
+  total_slides: 0,
+  author_name: "Mohammad Mahafzah", author_title: "Director", author_handle: "@mmahafzah",
   signal_attribution: null,
-  hashtags: ["#strategy", "#leadership"],
-  linkedin_caption: "Sample caption — generate to populate.",
-  slides: [
-    { slide_number: 1, slide_type: "COVER", section_label: "PREVIEW", headline: topic || "Edit this cover", headline_accent: "this", body: "A subtitle line", density: "light" },
-    { slide_number: 2, slide_type: "BIG_NUMBER", section_label: "THE NUMBER", number: "78%", number_context: "of transformations stall in year two", number_source: "McKinsey, 2024", density: "light" },
-    { slide_number: 3, slide_type: "CTA", section_label: "YOUR TURN.", headline: "What is your next move?", cta_main: "Save this.", cta_sub: "Share it with your CTO.", cta_button: "Follow @mmahafzah →", density: "light" },
-  ],
+  hashtags: [],
+  linkedin_caption: "",
+  slides: [],
 });
 
 /* ============================ SVG HELPERS ============================ */
