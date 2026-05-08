@@ -738,6 +738,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         }
         return (
           <text key={idx} x={lineX} y={startLinesY + idx * lineGap} textAnchor={lineAnchor}
+                xmlSpace="preserve"
                 fontFamily={isRTL ? arFont : style.monoFont} fontSize={isRTL ? 18 : 22}>
             {withKw.map((p, i) => (
               <tspan key={i} fill={p.color} fontWeight={p.color === style.accent ? 600 : 400}>{p.text}</tspan>
