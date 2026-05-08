@@ -1109,6 +1109,17 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 </div>
               </div>
             ))}
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--ink-3)",
+                lineHeight: 1.6,
+                margin: "4px 4px 0",
+                opacity: 0.85,
+              }}
+            >
+              What happens when you capture: Aura reads the article, extracts strategic insights, and starts detecting patterns across your captures. After 3–5 articles, your first signal emerges — and that's when the intelligence engine comes alive.
+            </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
