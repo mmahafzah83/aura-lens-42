@@ -103,6 +103,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // All snapshots (no range filter) for Authority Trajectory forecasting
   const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
   const [scenario, setScenario] = useState<"current" | "publish2x" | "stop">("current");
+  const [topSignal, setTopSignal] = useState<string | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
