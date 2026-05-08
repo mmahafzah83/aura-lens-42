@@ -710,8 +710,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       </div>
       <FirstVisitHint page="impact" />
 
-      {/* Market Mirror (O-3) — replaces single Shadow Twin chip */}
-      <MarketMirror userId={userId} />
+      {/* Market Mirror moved to My Story page (was redundant here). Kept import for potential future use. */}
 
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
@@ -902,6 +901,126 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <AuthorityJourney userId={userId} data={auraData} />
           </div>
         )}
+      </section>
+
+      {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
+      <section
+        className="p-6"
+        style={{
+          background: "var(--color-card)",
+          border: "0.5px solid var(--color-border)",
+          borderLeft: "4px solid var(--brand)",
+          borderRadius: "0 8px 8px 0",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        }}
+      >
+        <div>
+            <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
+              {narrative.map((p, i) => (
+                <span
+                  key={i}
+                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
+                >
+                  {p.text}
+                </span>
+              ))}
+            </p>
+
+            {captureScore < 80 && (
+              <div className="mt-4">
+                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
+                  Capture now →
+                </AuraButton>
+              </div>
+            )}
+          </div>
+      </section>
+
+      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Score breakdown
+        </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
+          Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
+        </p>
+        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {([
+            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
+            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
+            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
+          ]).map((c, idx) => {
+            const cfg = subScoreCard(c.kind, c.value);
+            const isContentCount = c.kind === "content";
+            return (
+              <div
+                key={c.label}
+                style={{
+                  background: "#FFFFFF",
+                  borderRadius: 14,
+                  padding: "16px 18px",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
+                }}
+              >
+                <div className="flex items-baseline justify-between">
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "var(--ink-4)",
+                    }}
+                  >
+                    {c.label}
+                  </div>
+                  {!isContentCount && (
+                    <div
+                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
+                    >
+                      {cfg.tag}
+                    </div>
+                  )}
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 36,
+                    color: c.color,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
+                </div>
+                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
+                  {isContentCount ? "Posts Analyzed" : c.desc}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
+      <section
+        data-impact-section="trajectory"
+        className="relative overflow-hidden"
+        style={{
+          background: "var(--surface-ink-raised)",
+          borderRadius: 14,
+          padding: "28px 28px 24px",
+          color: "var(--ink)",
+          border: "0.5px solid var(--brand-line)",
+          boxShadow: "var(--shadow-rest)",
+        }}
+      >
 
         {/* Trajectory bar chart */}
         {!isEmpty && trajectory && (() => {
@@ -1072,113 +1191,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── 3b. CAPTURE RHYTHM (12-week grid) ─────────── */}
       {auraData && <WeeklyRhythm userId={userId} data={auraData} />}
 
-      {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
-      <section
-        className="p-6"
-        style={{
-          background: "var(--color-card)",
-          border: "0.5px solid var(--color-border)",
-          borderLeft: "4px solid var(--brand)",
-          borderRadius: "0 8px 8px 0",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        }}
-      >
-        <div>
-            <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
-              {narrative.map((p, i) => (
-                <span
-                  key={i}
-                  style={{ color: partColor(p.type), fontWeight: partWeight(p.type) }}
-                >
-                  {p.text}
-                </span>
-              ))}
-            </p>
-
-            {captureScore < 80 && (
-              <div className="mt-4">
-                <AuraButton variant="signal" size="sm" onClick={() => onOpenCapture?.()}>
-                  Capture now →
-                </AuraButton>
-              </div>
-            )}
-          </div>
-      </section>
-
-      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
-      <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Score breakdown
-        </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
-        </p>
-        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {([
-            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
-            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
-          ]).map((c, idx) => {
-            const cfg = subScoreCard(c.kind, c.value);
-            const isContentCount = c.kind === "content";
-            return (
-              <div
-                key={c.label}
-                style={{
-                  background: "#FFFFFF",
-                  borderRadius: 14,
-                  padding: "16px 18px",
-                  border: "0.5px solid rgba(0,0,0,0.07)",
-                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: "var(--ink-4)",
-                    }}
-                  >
-                    {c.label}
-                  </div>
-                  {!isContentCount && (
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
-                    >
-                      {cfg.tag}
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="tabular-nums mt-1"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 36,
-                    color: c.color,
-                    lineHeight: 1.05,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
-                </div>
-                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
-                  {isContentCount ? "Posts Analyzed" : c.desc}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* (Authority Trajectory now lives inside the dark score hero above.) */}
-
       {/* ─────────── 5. HEADLINE STATS ─────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <HeroStat
@@ -1198,148 +1210,52 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         />
       </div>
 
-      {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
+      {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
       <section>
         <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          className="text-label uppercase tracking-wider text-xs font-semibold mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Follower growth — daily new followers
+          Content performance
         </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Your audience trajectory — upload your LinkedIn analytics to see the connection between signals and followers
-        </p>
-        {followerRows.length === 0 ? (
-          <div
-            className="rounded-lg p-6 text-center"
-            style={{
-              border: "1.5px dashed var(--color-border)",
-              color: "var(--color-text-secondary)",
-              background: "transparent",
-            }}
-          >
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
-              Import your LinkedIn analytics to see follower growth
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-              Upload your LinkedIn .xlsx export on this page
-            </p>
-            {postMetricsCount === 0 && (
-              <button
-                onClick={handleUploadClick}
-                data-testid="impact-linkedin-upload"
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
-                style={{ background: "var(--brand)", color: "#ffffff" }}
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Upload LinkedIn .xlsx
-              </button>
-            )}
-          </div>
-        ) : followerSeries.length <= 1 ? (
-          (() => {
-            const only = followerSeries[0];
-            const delta = only?.growth ?? 0;
-            return (
-              <div
-                className="rounded-lg p-5"
-                style={{
-                  background: "#FFFFFF",
-                  border: "0.5px solid rgba(0,0,0,0.07)",
-                  borderRadius: 14,
-                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: "var(--ink-4)",
-                  }}
-                >
-                  Best day
-                </div>
-                <div
-                  className="tabular-nums mt-1"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 28,
-                    color: "var(--success)",
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1.1,
-                  }}
-                >
-                  {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
-                </div>
-                <div className="text-[11px] mt-1" style={{ color: "var(--ink-5)" }}>
-                  Only one day of follower data so far. More data will appear after additional snapshots.
-                </div>
-              </div>
-            );
-          })()
-        ) : (
-          <div
-            className="rounded-lg p-4"
-            style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
-          >
-            <div style={{ height: 160, width: "100%" }}>
-              <ResponsiveContainer>
-                <BarChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
-                  <XAxis
-                    dataKey="label"
-                    tick={(p: any) => {
-                      const d = followerSeries[p.index];
-                      if (!d?.showLabel) return <g />;
-                      return (
-                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
-                          {d.label}
-                        </text>
-                      );
-                    }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval={0}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    domain={[0, "auto"]}
-                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={30}
-                  />
-                  <Tooltip
-                    cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
-                    contentStyle={{
-                      background: "var(--color-card)",
-                      border: "0.5px solid var(--color-border)",
-                      borderRadius: 6,
-                      fontSize: 11,
-                      color: "var(--color-text-primary)",
-                    }}
-                    formatter={(value: any) => [`+${value} new followers`, ""]}
-                  />
-                  <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
-              <Stat
-                label="New followers this period"
-                value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
-                valueColor="var(--success)"
-              />
-              <Stat
-                label="Best single day"
-                value={bestDay && bestDay.follower_growth > 0
-                  ? `+${bestDay.follower_growth} · ${fmtDateShort(bestDay.snapshot_date)}`
-                  : "—"}
-                valueColor="var(--success)"
-              />
+        {!contentPerf || contentPerf.postCount === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {/* Stat cards */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
+                <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
+              </div>
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                {topSignal ? (
+                  <>
+                    <div className="text-foreground font-bold text-lg leading-snug">{topSignal}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
+                  </>
+                ) : contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
+                  <>
+                    <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-foreground font-medium text-sm leading-snug">Build active signals to surface your strongest territory</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
+                  </>
+                )}
+              </div>
+              <div className="glass-card rounded-xl p-5 border border-border/8">
+                <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
+                <div className="text-xs text-muted-foreground mt-1">Avg Engagement</div>
+              </div>
             </div>
+            {/* Tone distribution and Content insight removed (V1P-2 reorder) — low decision value.
+                Restore from git history if quality data improves. */}
           </div>
         )}
       </section>
@@ -1609,6 +1525,152 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
+      {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
+      <section>
+        <h2
+          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Follower growth — daily new followers
+        </h2>
+        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
+          Your audience trajectory — upload your LinkedIn analytics to see the connection between signals and followers
+        </p>
+        {followerRows.length === 0 ? (
+          <div
+            className="rounded-lg p-6 text-center"
+            style={{
+              border: "1.5px dashed var(--color-border)",
+              color: "var(--color-text-secondary)",
+              background: "transparent",
+            }}
+          >
+            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
+              Import your LinkedIn analytics to see follower growth
+            </p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+              Upload your LinkedIn .xlsx export on this page
+            </p>
+            {postMetricsCount === 0 && (
+              <button
+                onClick={handleUploadClick}
+                data-testid="impact-linkedin-upload"
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
+                style={{ background: "var(--brand)", color: "#ffffff" }}
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Upload LinkedIn .xlsx
+              </button>
+            )}
+          </div>
+        ) : followerSeries.length <= 1 ? (
+          (() => {
+            const only = followerSeries[0];
+            const delta = only?.growth ?? 0;
+            return (
+              <div
+                className="rounded-lg p-5"
+                style={{
+                  background: "#FFFFFF",
+                  border: "0.5px solid rgba(0,0,0,0.07)",
+                  borderRadius: 14,
+                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "var(--ink-4)",
+                  }}
+                >
+                  Best day
+                </div>
+                <div
+                  className="tabular-nums mt-1"
+                  style={{
+                    fontFamily: "'DM Serif Display', Georgia, serif",
+                    fontSize: 28,
+                    color: "var(--success)",
+                    letterSpacing: "-0.02em",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
+                </div>
+                <div className="text-[11px] mt-1" style={{ color: "var(--ink-5)" }}>
+                  Only one day of follower data so far. More data will appear after additional snapshots.
+                </div>
+              </div>
+            );
+          })()
+        ) : (
+          <div
+            className="rounded-lg p-4"
+            style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
+          >
+            <div style={{ height: 160, width: "100%" }}>
+              <ResponsiveContainer>
+                <BarChart data={followerSeries} margin={{ top: 6, right: 8, bottom: 4, left: -8 }}>
+                  <XAxis
+                    dataKey="label"
+                    tick={(p: any) => {
+                      const d = followerSeries[p.index];
+                      if (!d?.showLabel) return <g />;
+                      return (
+                        <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
+                          {d.label}
+                        </text>
+                      );
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval={0}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    domain={[0, "auto"]}
+                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={30}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "var(--color-border)", opacity: 0.3 }}
+                    contentStyle={{
+                      background: "var(--color-card)",
+                      border: "0.5px solid var(--color-border)",
+                      borderRadius: 6,
+                      fontSize: 11,
+                      color: "var(--color-text-primary)",
+                    }}
+                    formatter={(value: any) => [`+${value} new followers`, ""]}
+                  />
+                  <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
+              <Stat
+                label="New followers this period"
+                value={newFollowersPeriod > 0 ? `+${formatNumber(newFollowersPeriod)}` : "0"}
+                valueColor="var(--success)"
+              />
+              <Stat
+                label="Best single day"
+                value={bestDay && bestDay.follower_growth > 0
+                  ? `+${bestDay.follower_growth} · ${fmtDateShort(bestDay.snapshot_date)}`
+                  : "—"}
+                valueColor="var(--success)"
+              />
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* ─────────── 8. CAPTURE ACTIVITY ─────────── */}
       <section>
         <h2
@@ -1715,115 +1777,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
       </section>
 
-      {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
-      <section>
-        <h2
-          className="text-label uppercase tracking-wider text-xs font-semibold mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Content performance
-        </h2>
-
-        {!contentPerf || contentPerf.postCount === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {/* Stat cards */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="glass-card rounded-xl p-5 border border-border/8">
-                <div className="text-foreground font-bold text-lg">{contentPerf.postCount}</div>
-                <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
-              </div>
-              <div className="glass-card rounded-xl p-5 border border-border/8">
-                {topSignal ? (
-                  <>
-                    <div className="text-foreground font-bold text-lg leading-snug">{topSignal}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
-                  </>
-                ) : contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
-                  <>
-                    <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-foreground font-medium text-sm leading-snug">Build active signals to surface your strongest territory</div>
-                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
-                  </>
-                )}
-              </div>
-              <div className="glass-card rounded-xl p-5 border border-border/8">
-                <div className="text-foreground font-bold text-lg">{contentPerf.avgEngagement}%</div>
-                <div className="text-xs text-muted-foreground mt-1">Avg Engagement</div>
-              </div>
-            </div>
-
-            {/* Tone distribution */}
-            {contentPerf.tones.length > 0 && (() => {
-              const maxToneCount = Math.max(...contentPerf.tones.map(t => t.count), 1);
-              return (
-                <div className="space-y-3">
-                  <div
-                    className="text-label uppercase tracking-wider text-xs font-semibold"
-                    style={{ color: "var(--color-text-secondary)" }}
-                  >
-                    Tone distribution
-                  </div>
-                  <div className="glass-card rounded-2xl p-6 border border-border/8 space-y-3">
-                    {contentPerf.tones.map(({ tone, count }) => {
-                      const pct = (count / maxToneCount) * 100;
-                      return (
-                        <div key={tone} className="flex items-center gap-3">
-                          <span className="text-sm capitalize w-28 shrink-0" style={{ color: "var(--ink)" }}>{tone}</span>
-                          <div
-                            className="flex-1 rounded-full h-2 overflow-hidden"
-                            style={{ background: "var(--paper-2)" }}
-                          >
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${pct}%` }}
-                              transition={{ duration: 0.6 }}
-                              className="h-full rounded-full"
-                              style={{ background: "var(--brand)" }}
-                            />
-                          </div>
-                          <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">
-                            {count}
-                          </span>
-                        </div>
-                      );
-                    })}
-                    {contentPerf.tones.length < 3 && (
-                      <div className="text-xs text-muted-foreground pt-1 italic">
-                        Publish more to build your full distribution
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* AI insight */}
-            <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-primary/60" />
-                <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">
-                  Content insight
-                </span>
-              </div>
-              <p className="text-sm text-foreground leading-relaxed">
-                {contentPerf.topTheme !== "—" && contentPerf.topFormat !== "—"
-                  ? `Your strongest content theme is "${contentPerf.topTheme}". ${contentPerf.topFormat} format drives your highest engagement. Double down on this combination to compound your authority.`
-                  : contentPerf.topTheme !== "—"
-                  ? `Your strongest content theme is "${contentPerf.topTheme}". Publish more consistently to unlock format performance insights.`
-                  : "Publish and mark content as published to unlock content performance insights."}
-              </p>
-            </div>
-          </div>
-        )}
-      </section>
     </motion.div>
   );
 };
