@@ -790,13 +790,14 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       );
     }
     case "GRID": {
-      const items = slide.grid_items || [];
+      const cleanItem = (s: string) => s.replace(/^\s*\d+[\.\)]\s*/, '').replace(/^\s*[◆◇►▸●○•\-–—]\s*/, '').trim();
+      const items = (slide.grid_items || []).map(cleanItem);
       const cols = items.length > 4 ? 2 : 2;
       const rows = Math.ceil(items.length / cols);
       const gap = 20;
       const gridX = edgePad, gridW = w - edgePad * 2;
       const cellW = (gridW - gap * (cols - 1)) / cols;
-      const cellH = isRTL ? 130 : 120;
+      const cellH = isRTL ? 140 : 134;
       const gridTotalH = rows * cellH + (rows - 1) * gap;
       const headlineSpace = slide.headline ? 80 : 0;
       const gridY = Math.max(180, cy - gridTotalH / 2 + headlineSpace / 2);
@@ -833,7 +834,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 </text>
                 {wrapped.map((ln, li) => (
                   <text key={li} x={textXi} y={textStartY + li * lineH} textAnchor={cellTextAnchor}
-                        fontFamily={bodyFont} fontSize={isRTL ? 17 : 19} fill={style.fg} fontWeight={isRTL ? 600 : 400}>
+                        fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 700 : 600}>
                     {ln}
                   </text>
                 ))}
