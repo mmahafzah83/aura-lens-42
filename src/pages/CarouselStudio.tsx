@@ -1135,7 +1135,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
                 {(() => {
                   const t = slide.cta_button || "";
-                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
+                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@your-handle"])[0];
                   if (isRTL) {
                     return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
                   }
