@@ -1301,7 +1301,7 @@ export default function CarouselStudio() {
   const [topic, setTopic] = useState(navState?.topic || "");
   const [lang, setLang] = useState<"en" | "ar">(navState?.lang || "en");
   const [generating, setGenerating] = useState(false);
-  const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
+  const [carousel, setCarousel] = useState<Carousel>(() => emptyCarousel());
   const [activeIdx, setActiveIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [contextText, setContextText] = useState(navState?.context || "");
