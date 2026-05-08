@@ -266,7 +266,7 @@ const FrameworkBuilder = ({
                     <Input
                       value={step.step_title}
                       onChange={(e) => updateStep(idx, "step_title", e.target.value)}
-                      placeholder="Step title"
+                      placeholder={idx === 0 ? "e.g., Assess current state" : idx === 1 ? "e.g., Define target architecture" : "Step title"}
                       className="text-xs h-8"
                     />
                     <Textarea
