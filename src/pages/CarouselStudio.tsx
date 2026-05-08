@@ -636,18 +636,12 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                 fontWeight={isRTL ? 800 : 400}>
             {L.truth}
           </text>
-          {truthLines.length > 0 ? truthLines.map((ln, i) => (
+          {truthLines.length > 0 && truthLines.map((ln, i) => (
             <text key={i} x={startX} y={cy + 120 + i * 64} textAnchor={sideAnchor}
                   fontFamily={headingFont} fontSize={isRTL ? 40 : 56} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {ln}
             </text>
-          )) : (
-            <text x={startX} y={cy + 110} textAnchor={sideAnchor}
-                  fontFamily={bodyFont} fontSize={20} fill={style.muted}
-                  fontStyle={isRTL ? "normal" : "italic"}>
-              (Add the truth in the Body field)
-            </text>
-          )}
+          ))}
         </g>
       );
     }
