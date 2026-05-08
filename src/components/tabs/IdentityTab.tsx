@@ -799,8 +799,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             const fn = profile?.first_name || "You";
             const sf = profile?.sector_focus || "your sector";
             const themes = signalStats.themeGroups;
-            const top = themes[0]?.theme;
-            const second = themes[1]?.theme;
+            // Sanitize raw column-style names like `market_trend` → `Market Trend`
+            const prettify = (s?: string) =>
+              (s || "")
+                .replace(/[_-]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .replace(/\b\w/g, (m) => m.toUpperCase());
+            const top = prettify(themes[0]?.theme);
+            const second = prettify(themes[1]?.theme);
             const orgs = signalStats.topOrgs;
             const topSig = signalStats.topSignal;
             if (!top || !topSig) return null;
@@ -839,7 +846,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   const sectorPart = sf && sf !== "your sector" ? ` in ${sf}` : "";
                   const shareText = `${fn} | ${lvl}${firmPart} | ${signalStats.count} strategic signal${signalStats.count === 1 ? "" : "s"}${sectorPart} | Powered by Aura — strategic intelligence for executives. aura-intel.org`;
                   // In-card preview keeps the richer internal phrasing.
-                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${topSig.title} at ${topSig.confidence}%.`;
+                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${prettify(topSig.title)} at ${topSig.confidence}%.`;
                   return (
                     <>
                       <p
