@@ -931,9 +931,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.6}
                     fontWeight={isRTL ? 600 : 400}
-                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
+                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 2 }}>
                 {ln}
               </text>
             ));
@@ -960,9 +960,9 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
             }
             return lns.map((ln, li) => (
               <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
+                    fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.6}
                     fontWeight={isRTL ? 600 : 400}
-                    textDecoration="line-through" style={{ textDecorationColor: `${style.muted}` }}>
+                    textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 2 }}>
                 {ln}
               </text>
             ));
