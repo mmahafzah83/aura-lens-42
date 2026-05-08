@@ -840,7 +840,22 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               return (
                 <button
                   key={key}
-                  onClick={() => setContentType(key)}
+                  onClick={() => {
+                    if (key === "carousel") {
+                      navigate("/carousel-studio", {
+                        state: {
+                          topic: topic || undefined,
+                          context: context || undefined,
+                          signalId: selectedSignalId || undefined,
+                          signalTitle: selectedSignalTitle || undefined,
+                          lang,
+                          autoGenerate: !!(topic && topic.trim()),
+                        },
+                      });
+                      return;
+                    }
+                    setContentType(key);
+                  }}
                   data-testid={key === "flash" ? "pub-flash-trigger" : undefined}
                   style={{
                     background: active ? "var(--vellum)" : "#fff",
@@ -886,6 +901,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   signalId: selectedSignalId || undefined,
                   signalTitle: selectedSignalTitle || undefined,
                   lang,
+                  autoGenerate: !!(topic && topic.trim()),
                 },
               })}
               style={{
