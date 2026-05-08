@@ -322,6 +322,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     trackedPostCount,
   });
 
+  const assessmentCompleted = !!profile?.brand_assessment_completed_at;
+
   if (loading && !profile) {
     if (!showSkeleton) {
       // Brief boot window — render nothing instead of flashing a skeleton
