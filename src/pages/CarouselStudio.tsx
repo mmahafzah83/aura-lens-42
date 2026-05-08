@@ -1044,26 +1044,17 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     }
     case "CTA": {
       const headlineLines = wrapText(slide.headline || "", 22);
-      const ctaMainLines = wrapText(slide.cta_main || "", 38);
-      const ctaSubLines = wrapText(slide.cta_sub || "", 38);
       const headLineH = 56;
-      const lineH = 32;
       const btnH = slide.cta_button ? 80 : 0;
       const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
-      const mainBlockH = ctaMainLines.length * lineH;
-      const subBlockH = ctaSubLines.length * lineH;
-      const gap1 = headBlockH && mainBlockH ? 32 : 0;
-      const gap2 = mainBlockH && subBlockH ? 18 : 0;
-      const gapIcons = headBlockH ? 28 : 0;
-      const gap3 = (headBlockH || mainBlockH || subBlockH) && btnH ? 32 : 0;
-      const totalH = headBlockH + gapIcons + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3 + btnH;
+      const gapIcons = headBlockH ? 48 : 0;
+      const gapBtn = btnH ? 56 : 0;
+      const totalH = headBlockH + gapIcons + iconRowH + gapBtn + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
       const iconRowY = top + headBlockH + gapIcons;
-      const mainY = iconRowY + iconRowH + gap1 + lineH * 0.8 - headLineH; // align with old layout
-      const subY = mainY + (mainBlockH ? mainBlockH - lineH * 0.2 : 0) + gap2;
-      const btnY = iconRowY + iconRowH + gap1 + mainBlockH + gap2 + subBlockH + gap3;
+      const btnY = iconRowY + iconRowH + gapBtn;
       const btnW = 420;
       const btnX = cx - btnW / 2;
       const actions = isRTL
@@ -1117,35 +1108,17 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               </g>
             );
           })}
-          {ctaMainLines.map((ln, i) => (
-            <text key={`m${i}`} x={cx} y={mainY + i * lineH} textAnchor="middle"
-                  fontFamily={bodyFont} fontSize={26} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
-              {ln}
-            </text>
-          ))}
-          {ctaSubLines.map((ln, i) => (
-            <text key={`s${i}`} x={cx} y={subY + i * lineH} textAnchor="middle"
-                  fontFamily={bodyFont} fontSize={26}
-                  fontStyle={isRTL ? "normal" : "italic"}
-                  fontWeight={isRTL ? 800 : 400}
-                  fill={style.accent}>
-              {ln}
-            </text>
-          ))}
           {slide.cta_button && (
             <g>
               <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
               <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
                 {(() => {
-                  let t = slide.cta_button || "";
+                  const t = slide.cta_button || "";
+                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
                   if (isRTL) {
-                    // Normalise: strip any arrows, ensure pattern "تابع @handle ←"
-                    const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
-                    // RLM ... LRM@handle LRM ... RLM← keeps handle LTR and arrow on visual left
                     return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
                   }
-                  if (!/[→←]/.test(t)) t = t.replace(/\s*$/, " →");
-                  return t;
+                  return `Follow \u202A${handle}\u202C →`;
                 })()}
               </text>
             </g>
