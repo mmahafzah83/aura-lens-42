@@ -872,7 +872,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           )}
 
           {/* Authority Statement */}
-          {(() => {
+          {assessmentCompleted && (() => {
             const fn = profile?.first_name || "You";
             const sf = profile?.sector_focus || "your sector";
             const themes = signalStats.themeGroups;
