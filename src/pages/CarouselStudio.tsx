@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -1292,16 +1292,24 @@ function slugify(s: string): string {
 
 export default function CarouselStudio() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navState = location.state as {
+    topic?: string;
+    context?: string;
+    signalId?: string;
+    signalTitle?: string;
+    lang?: "en" | "ar";
+  } | null;
   const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
   const [dim, setDim] = useState<Dimension>("1080x1350");
-  const [topic, setTopic] = useState("");
-  const [lang, setLang] = useState<"en" | "ar">("en");
+  const [topic, setTopic] = useState(navState?.topic || "");
+  const [lang, setLang] = useState<"en" | "ar">(navState?.lang || "en");
   const [generating, setGenerating] = useState(false);
   const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
   const [activeIdx, setActiveIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
-  const [contextText, setContextText] = useState("");
-  const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(undefined);
+  const [contextText, setContextText] = useState(navState?.context || "");
+  const [selectedSignalId, setSelectedSignalId] = useState<string | undefined>(navState?.signalId);
   const [showSignals, setShowSignals] = useState(true);
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
