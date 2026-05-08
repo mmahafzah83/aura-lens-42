@@ -48,6 +48,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
   const [loading, setLoading] = useState(!provided);
   const [sector, setSector] = useState<string | null>(null);
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [signalCount, setSignalCount] = useState<number | null>(null);
   const [shareData, setShareData] = useState<MilestoneShareData | null>(null);
 
   useEffect(() => {
@@ -79,6 +80,8 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         setSector((p as any)?.sector_focus || null);
         setFirstName((p as any)?.first_name || null);
       });
+    supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("status", "active")
+      .then(({ count }) => setSignalCount(count ?? 0));
   }, [userId]);
 
   if (loading) {
@@ -287,14 +290,24 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       </div>
 
       {/* Personalized nudge */}
-      {data.personalized_nudge && (
-        <p
-          className="font-sans"
-          style={{ fontSize: 13, color: "hsl(var(--foreground))", marginTop: 12, lineHeight: 1.6 }}
-        >
-          {data.personalized_nudge}
-        </p>
-      )}
+      {(() => {
+        const noSignals = signalCount === 0;
+        let nudge = noSignals
+          ? "You're starting your authority journey. Capture articles in your area of expertise to detect your first signals."
+          : (data.personalized_nudge || "");
+        // Defensive: strip accidental duplicate leading "Your your" coming from
+        // a top-signal title that itself starts with "your".
+        nudge = nudge.replace(/\bYour\s+your\b/gi, "Your");
+        if (!nudge) return null;
+        return (
+          <p
+            className="font-sans"
+            style={{ fontSize: 13, color: "hsl(var(--foreground))", marginTop: 12, lineHeight: 1.6 }}
+          >
+            {nudge}
+          </p>
+        );
+      })()}
 
       <style>{`
         @media (prefers-reduced-motion: no-preference) {
