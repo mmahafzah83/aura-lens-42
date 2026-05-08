@@ -1017,7 +1017,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               margin: 0,
             }}
           >
-            {showWelcomeState ? "Welcome to Aura" : "Your intelligence is building"}
+            {showWelcomeState ? "Your intelligence OS is live" : "Your intelligence is building"}
           </h1>
           <p
             style={{
@@ -1029,9 +1029,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
           >
             {showWelcomeState
-              ? "Your strategic intelligence OS is ready. Here's how to activate it."
+              ? "You have years of expertise that's invisible to the market. Let's change that — starting with one article you read this week."
               : `You've captured ${captureCount} ${captureCount === 1 ? "article" : "articles"}. Aura is analyzing them for strategic patterns. Signals typically emerge after 3–5 captures from different sources.`}
           </p>
+          {showBuildingState && (
+            <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 8, opacity: 0.75 }}>
+              {Math.min(captureCount, 5)} of ~5 captures toward your first signal
+            </p>
+          )}
         </header>
 
         {showWelcomeState ? (
@@ -1104,6 +1109,17 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 </div>
               </div>
             ))}
+            <p
+              style={{
+                fontSize: 12,
+                color: "var(--ink-3)",
+                lineHeight: 1.6,
+                margin: "4px 4px 0",
+                opacity: 0.85,
+              }}
+            >
+              What happens when you capture: Aura reads the article, extracts strategic insights, and starts detecting patterns across your captures. After 3–5 articles, your first signal emerges — and that's when the intelligence engine comes alive.
+            </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

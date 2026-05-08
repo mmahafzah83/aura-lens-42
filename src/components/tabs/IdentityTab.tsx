@@ -403,10 +403,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               Your professional identity
             </div>
             <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.25 }}>
-              Before Aura can build your intelligence portrait, we need to understand your professional positioning.
+              Before Aura can build your intelligence portrait, it needs to understand your professional positioning.
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, marginBottom: 20, maxWidth: 620 }}>
-              This 5-minute assessment shapes everything — from how we analyse your captures to how we write your content.
+              This 5-minute assessment shapes everything — from how Aura analyses your captures to how it writes your content.
             </p>
             <button
               onClick={() => setBrandOpen(true)}
@@ -424,7 +424,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 gap: 8,
               }}
             >
-              Start your brand assessment →
+              Discover your market position →
             </button>
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               <div style={{ fontSize: 10, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>

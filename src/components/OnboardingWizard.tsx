@@ -223,9 +223,9 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
     3: "Your voice",
   } as const;
   const stepIntros = {
-    1: "Let's set up your intelligence profile. This takes 2 minutes and shapes everything Aura does for you.",
-    2: "These shape the lens Aura uses to filter the noise from the signals that matter to you.",
-    3: "Aura writes in YOUR voice, not AI voice. Paste a few posts you're proud of and Aura learns your rhythm.",
+    1: "Let's calibrate your intelligence lens. What you tell Aura here shapes every signal it detects and every post it writes for you.",
+    2: "Now let's define where your expertise runs deepest. These choices shape the lens Aura uses to filter noise from the signals that actually matter to your career.",
+    3: "Every post Aura writes will mirror YOUR writing style — not generic AI. Paste 2–3 LinkedIn posts you've written before. Aura learns your rhythm, your word choices, your sentence patterns.",
   } as const;
 
   const content = (
