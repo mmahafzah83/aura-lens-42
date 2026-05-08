@@ -1045,19 +1045,24 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             {[
               {
                 n: 1,
-                title: "Capture your first article",
-                body: "Paste a URL of something you read this week — an industry report, a LinkedIn post, a news article about your sector. Aura will extract the intelligence from it.",
-                cta: true,
+                title: "Complete your brand assessment",
+                body: "Tell Aura who you are, what you're known for, and where you're heading. This shapes every signal Aura detects and every post it writes. (5 minutes)",
+                cta: assessmentDone ? null : "assessment" as const,
+                done: assessmentDone,
               },
               {
                 n: 2,
-                title: "Watch your signals emerge",
-                body: "After 3–5 captures, Aura detects strategic patterns and builds your signal map.",
+                title: "Capture your first article",
+                body: "Paste a URL of something you read this week — an industry report, a LinkedIn post, a news article about your sector. Aura will extract the intelligence from it. (1 minute)",
+                cta: assessmentDone ? "capture-primary" as const : "capture-secondary" as const,
+                done: false,
               },
               {
                 n: 3,
-                title: "Generate your first post",
-                body: "Once signals exist, Aura creates authority content in your voice, grounded in your real intelligence.",
+                title: "Watch your signals emerge",
+                body: "After 3–5 captures from different sources, Aura detects strategic patterns and builds your signal map.",
+                cta: null,
+                done: false,
               },
             ].map((step) => (
               <div
@@ -1069,6 +1074,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   border: "1px solid hsl(var(--border) / 0.6)",
                   background: "hsl(var(--card))",
                   borderRadius: 10,
+                  opacity: step.done ? 0.7 : 1,
                 }}
               >
                 <div
@@ -1076,8 +1082,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     width: 28,
                     height: 28,
                     borderRadius: "50%",
-                    border: "1px solid var(--brand-line)",
-                    color: "var(--brand)",
+                    border: step.done ? "1px solid var(--brand)" : "1px solid var(--brand-line)",
+                    background: step.done ? "var(--brand)" : "transparent",
+                    color: step.done ? "var(--paper)" : "var(--brand)",
                     fontSize: 13,
                     fontWeight: 600,
                     display: "flex",
@@ -1086,7 +1093,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     flexShrink: 0,
                   }}
                 >
-                  {step.n}
+                  {step.done ? "✓" : step.n}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
@@ -1097,14 +1104,36 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   </p>
                   {step.cta && (
                     <div style={{ marginTop: 12 }}>
-                      <AuraButton
-                        variant="primary"
-                        size="sm"
-                        onClick={() => onOpenCapture?.()}
-                        style={{ borderRadius: 4, padding: "8px 18px" }}
-                      >
-                        Capture your first article →
-                      </AuraButton>
+                      {step.cta === "assessment" && (
+                        <AuraButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => onSwitchTab?.("identity")}
+                          style={{ borderRadius: 4, padding: "8px 18px" }}
+                        >
+                          Start your assessment →
+                        </AuraButton>
+                      )}
+                      {step.cta === "capture-primary" && (
+                        <AuraButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => onOpenCapture?.()}
+                          style={{ borderRadius: 4, padding: "8px 18px" }}
+                        >
+                          Capture your first article →
+                        </AuraButton>
+                      )}
+                      {step.cta === "capture-secondary" && (
+                        <AuraButton
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOpenCapture?.()}
+                          style={{ borderRadius: 4, padding: "8px 18px" }}
+                        >
+                          Capture an article →
+                        </AuraButton>
+                      )}
                     </div>
                   )}
                 </div>
