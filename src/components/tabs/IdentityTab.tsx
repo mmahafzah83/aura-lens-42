@@ -786,7 +786,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           </div>
 
           {/* Signal Coverage Map */}
-          {signalStats.themeGroups.length > 0 && (
+          {assessmentCompleted && signalStats.themeGroups.length > 0 && (
             <div
               data-testid="story-signal-coverage"
               style={{
