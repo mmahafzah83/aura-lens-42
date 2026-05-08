@@ -1035,7 +1035,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
           >
             {showWelcomeState
-              ? "You have years of expertise that's invisible to the market. Let's change that — starting with one article you read this week."
+              ? (journey.currentGate === 0
+                  ? "You have years of expertise that's invisible to the market. Let's change that — starting with your profile."
+                  : journey.currentGate === 1
+                  ? "Your profile is set. Now let's understand your positioning."
+                  : "Aura knows who you are. Now feed it your intelligence.")
               : `You've captured ${captureCount} ${captureCount === 1 ? "article" : "articles"}. Aura is analyzing them for strategic patterns. Signals typically emerge after 3–5 captures from different sources.`}
           </p>
           {showBuildingState && (
