@@ -20,6 +20,7 @@ import { HelpCircle, ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import { useJourneyState } from "@/hooks/useJourneyState";
 import ShareLink from "@/components/ShareLink";
 import MilestoneShareModal, { type MilestoneShareData } from "@/components/MilestoneShareModal";
 import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard";
