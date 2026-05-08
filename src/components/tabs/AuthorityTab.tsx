@@ -1072,6 +1072,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             prompt_template_version: "v1",
                             signal_ids: selectedSignalId ? [selectedSignalId] : [],
                             signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+                            source_signal_id: selectedSignalId,
                             identity_snapshot: {
                               role: profile?.level ?? null,
                               sector: profile?.sector_focus ?? null,
@@ -2615,6 +2616,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [urlDrafts, setUrlDrafts] = useState<Record<string, string>>({});
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
+  const [signalTitleMap, setSignalTitleMap] = useState<Record<string, string>>({});
   const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
 
   useEffect(() => { loadPosts(); loadProfile(); }, []);
@@ -2634,7 +2636,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     const [liRes, ciRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, source_signal_id")
         .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
@@ -2673,6 +2675,24 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     const urls: Record<string, string> = {};
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
+
+    // Resolve signal titles for cards that reference a source signal id
+    const signalIds = new Set<string>();
+    (liRes.data || []).forEach((p: any) => { if (p.source_signal_id) signalIds.add(p.source_signal_id); });
+    (ciRes.data || []).forEach((ci: any) => {
+      const sid = ci.generation_params?.source_signal_id || ci.generation_params?.signal_ids?.[0];
+      if (sid) signalIds.add(sid);
+    });
+    if (signalIds.size > 0) {
+      const { data: sigRows } = await (supabase.from("strategic_signals" as any) as any)
+        .select("id, signal_title")
+        .in("id", Array.from(signalIds));
+      const map: Record<string, string> = {};
+      (sigRows || []).forEach((s: any) => { if (s?.id && s?.signal_title) map[s.id] = s.signal_title; });
+      setSignalTitleMap(map);
+    } else {
+      setSignalTitleMap({});
+    }
     setLoading(false);
   };
 
@@ -2711,7 +2731,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           engagement_score: 0,
           source_trust: 100,
           source_metadata: item.source_metadata || {},
-          source_signal_id: (item.source_metadata?.signal_ids?.[0]) || null,
+          source_signal_id: (item.source_metadata as any)?.source_signal_id
+            || (item.source_metadata?.signal_ids?.[0])
+            || null,
           enriched_by: [],
           synced_at: new Date().toISOString(),
         });
@@ -2881,6 +2903,20 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                     </button>
                   ) : null}
 
+                  {/* Source signal label */}
+                  {(() => {
+                    const sid = (p.source_metadata as any)?.source_signal_id || (p.source_metadata as any)?.signal_ids?.[0];
+                    const titleFromMeta = (p.source_metadata as any)?.signal_titles?.[0];
+                    const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
+                    if (!title) return null;
+                    return (
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 11, color: "var(--color-muted)" }}>
+                        <Lightbulb className="w-3 h-3" style={{ color: "var(--brand)" }} />
+                        <span className="line-clamp-1">From signal: {title}</span>
+                      </div>
+                    );
+                  })()}
+
                   {/* Badge row */}
                   <div className="flex items-center flex-wrap" style={{ gap: 8, marginTop: 10 }}>
                     <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", textTransform: "uppercase" }}>
@@ -3003,6 +3039,18 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       {p.topic_label && (
                         <p style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }} className="line-clamp-1">{p.topic_label}</p>
                       )}
+                      {(() => {
+                        const sid = (p as any).source_signal_id || (p.source_metadata as any)?.source_signal_id || (p.source_metadata as any)?.signal_ids?.[0];
+                        const titleFromMeta = (p.source_metadata as any)?.signal_titles?.[0];
+                        const title = titleFromMeta || (sid ? signalTitleMap[sid] : null);
+                        if (!title) return null;
+                        return (
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 11, color: "var(--color-muted)" }}>
+                            <Lightbulb className="w-3 h-3" style={{ color: "var(--brand)" }} />
+                            <span className="line-clamp-1">From signal: {title}</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)" }} className={badge.cls.includes("text-") ? badge.cls.split(" ").filter(c => c.startsWith("text-")).join(" ") : "text-muted-foreground"}>
