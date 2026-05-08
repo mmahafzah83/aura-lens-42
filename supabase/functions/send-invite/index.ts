@@ -41,7 +41,7 @@ const buildEmailHtml = (BRAND: string) => {
     <!-- HERO -->
     <div style="padding:36px 40px 0;text-align:left;">${horizonEye(40, BRAND)}</div>
     <div style="padding:24px 40px 8px;">
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Hi {{NAME_GREETING}}</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">{{GREETING}}</p>
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">I've been building something for people like you.</p>
       <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Senior professionals who've spent years becoming exceptional at what they do — but whose expertise is invisible outside their direct network.</p>
       <p style="font-size:15px;line-height:1.9;color:#ededed;margin:0 0 18px;">You read more in a week than most people read in a month.<br>You see patterns others miss.<br>You hold opinions that executives pay to hear.</p>
@@ -229,9 +229,9 @@ serve(async (req) => {
       : "";
 
     // Build email HTML
-    const nameGreeting = firstName ? `${escapeHtml(firstName)},` : ",";
+    const greeting = firstName ? `Hi ${escapeHtml(firstName)},` : "Hi there,";
     const html = buildEmailHtml(BRAND)
-      .replace(/{{NAME_GREETING}}/g, nameGreeting)
+      .replace(/{{GREETING}}/g, greeting)
       .replace(/{{CONFIRMATION_URL}}/g, confirmationUrl)
       .replace(/{{INVITER_NOTE_BLOCK}}/g, inviterNoteBlock)
       .replace(/{{EMAIL}}/g, email);
