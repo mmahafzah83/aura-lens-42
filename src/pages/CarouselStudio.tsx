@@ -382,11 +382,14 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
     stripPos === "left"  ? (isRTL ? w - 4 : 0) :
     -10;
   const showStrip = stripPos !== "none";
-  // Author name fallback for Arabic
-  const rawAuthor = carousel.author_name || "M. Mahafzah";
-  const displayAuthor = isRTL && /^mohammad$/i.test(rawAuthor.trim()) ? "محمد" : rawAuthor;
+  // Author name — language-aware. Always show full "Mohammad Mahafzah" / "محمد محافظة"
+  // regardless of what the EF returned, so the brand stays consistent in both languages.
+  const rawAuthor = carousel.author_name || "";
+  const displayAuthor = isRTL
+    ? (/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "محمد محافظة")
+    : (/[A-Za-z]/.test(rawAuthor) && !/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "Mohammad Mahafzah");
   const authorInitial = isRTL ? "م" : (displayAuthor.trim().charAt(0).toUpperCase() || "M");
-  const isCoverOrCta = slide.slide_type === "COVER" || slide.slide_type === "CTA";
+  // Always use the branded initial circle on every slide (not just COVER/CTA).
   const showWatermarkNumber = ["BOLD_CLAIM", "QUESTION", "REFRAME"].includes(slide.slide_type);
   const patternId = `pat-${slide.slide_number}-${style.key}`;
 
@@ -458,12 +461,15 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       {/* Signal attribution badge — COVER only */}
       {slide.slide_type === "COVER" && carousel.signal_attribution && (
         (() => {
-          // For Arabic, prefer a localized short badge using extracted % when possible
+          // Extract the LAST percentage in the string (the confidence value, which the EF
+          // appends as "...at X%"). Clamp to 0-100 so we never render "180%".
           const raw = carousel.signal_attribution!;
-          const pct = raw.match(/(\d{1,3})\s*%/);
+          const pctMatches = Array.from(raw.matchAll(/(\d{1,3})\s*%/g));
+          const lastPct = pctMatches.length ? pctMatches[pctMatches.length - 1][1] : null;
+          const pctNum = lastPct ? Math.max(0, Math.min(100, parseInt(lastPct, 10))) : null;
           const badgeText = isRTL
-            ? (pct ? `إشارة بثقة ${pct[1]}%` : "مبني على إشارة")
-            : raw;
+            ? (pctNum != null ? `إشارة بثقة ${pctNum}%` : "مبني على إشارة")
+            : (pctNum != null ? `Signal at ${pctNum}%` : "Based on signal");
           const maxW = Math.floor(w * 0.6);
           const charW = isRTL ? 9 : 7;
           const estW = Math.min(maxW, 18 + badgeText.length * charW + 16);
@@ -510,18 +516,14 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
 
       {/* Footer */}
       <g>
-        {isCoverOrCta ? (
-          <g transform={`translate(${authorEyeX},${h - 79})`}>
-            <circle cx={10} cy={10} r={11} fill={style.accent} />
-            <text x={10} y={14} textAnchor="middle"
-                  fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
-                  fontWeight={800} fill={style.bg}>
-              {authorInitial}
-            </text>
-          </g>
-        ) : (
-          <HorizonEye x={authorEyeX} y={h - 79} size={20} color={style.accent} />
-        )}
+        <g transform={`translate(${authorEyeX},${h - 79})`}>
+          <circle cx={10} cy={10} r={11} fill={style.accent} />
+          <text x={10} y={14} textAnchor="middle"
+                fontFamily={isRTL ? arFont : style.bodyFont} fontSize={12}
+                fontWeight={800} fill={style.bg}>
+            {authorInitial}
+          </text>
+        </g>
         <text x={authorTextX} y={h - 64} textAnchor={authorAnchor}
               fontFamily={bodyFont} fontSize={16} fill={style.fg}>
           {displayAuthor}
