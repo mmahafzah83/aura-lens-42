@@ -315,8 +315,8 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
 /* ── Slide Renderer (1080×1350 Portrait) ──────────────────── */
 const SlidePreview = ({
-  slide, style, lang, width = 320, author,
-}: { slide: Slide; style: Style; lang: Lang; width?: number; author: AuthorInfo }) => {
+  slide, style, lang, width = 320, author = DEFAULT_AUTHOR,
+}: { slide: Slide; style: Style; lang: Lang; width?: number; author?: AuthorInfo }) => {
   const p = PALETTES[style];
   const isAr = lang === "ar";
   const scale = width / CANVAS_W;
@@ -509,19 +509,19 @@ const SlidePreview = ({
                 fontSize: 18, color: p.accent,
               }}>👤</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: p.fg, textAlign: "center", letterSpacing: "0.02em" }}>
-                M. Mahafzah
+                {author.name}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, color: p.accent }}>💼</span>
               <div style={{ fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.4 }}>
-                Strategy | Digital & Business Transformation
+                {author.title}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, color: p.accent }}>⚡</span>
               <div style={{ fontSize: 15, color: p.accent, textAlign: "center", fontWeight: 700, letterSpacing: "0.05em" }}>
-                Focus on Utilities & Power
+                Focus on {author.focus}
               </div>
             </div>
             <div style={{ height: 6 }} />
@@ -531,7 +531,7 @@ const SlidePreview = ({
               backgroundColor: `${p.accent}12`, border: `1px solid ${p.accent}25`,
             }}>
               <span style={{ fontSize: 14, color: p.accent }}>🔗</span>
-              <span style={{ fontSize: 14, color: p.accent, fontWeight: 600 }}>linkedin.com/in/mmahafzah</span>
+              <span style={{ fontSize: 14, color: p.accent, fontWeight: 600 }}>{author.handleUrl}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 16, color: p.muted, opacity: 0.6 }}>↻</span>
@@ -547,7 +547,7 @@ const SlidePreview = ({
             alignItems: "center", fontSize: 14, color: p.muted, opacity: 0.3,
             borderTop: `1px solid ${p.muted}15`, zIndex: 3,
           }}>
-            <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafzah</span>
+            <span style={{ fontWeight: 700, letterSpacing: 1 }}>{author.name}</span>
             <span style={{ letterSpacing: 3, textTransform: "uppercase", fontSize: 11 }}>Save ↗</span>
           </div>
         )}
