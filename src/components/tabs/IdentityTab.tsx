@@ -384,7 +384,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <GuidedJourney journey={journey} onResetDiagnostic={onResetDiagnostic} />
         <BrandAssessmentModal
           open={brandOpen}
-          onClose={() => { setBrandOpen(false); if (authUser) loadAll(authUser.id); journey.refresh(); }}
+          onOpenChange={(o) => { setBrandOpen(o); if (!o) { if (authUser) loadAll(authUser.id); journey.refresh(); } }}
+          onComplete={() => { if (authUser) loadAll(authUser.id); journey.refresh(); }}
         />
       </div>
     );
