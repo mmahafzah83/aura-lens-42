@@ -1309,6 +1309,32 @@ export default function CarouselStudio() {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedToLibrary, setSavedToLibrary] = useState(false);
+  const [authorDefaults, setAuthorDefaults] = useState<{ name: string; title: string; handle: string }>({ name: "", title: "", handle: "" });
+
+  // Load current user's author info on mount — never falls back to another user's data.
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid) return;
+      const [pRes, lRes] = await Promise.all([
+        supabase.from("diagnostic_profiles").select("first_name, level, firm, core_practice").eq("user_id", uid).maybeSingle(),
+        supabase.from("linkedin_connections").select("handle, display_name, profile_name").eq("user_id", uid).maybeSingle(),
+      ]);
+      const p: any = pRes.data || {};
+      const l: any = lRes.data || {};
+      const name = (l.display_name || l.profile_name || p.first_name || "").trim();
+      const title = [p.level, p.firm].filter(Boolean).join(" · ") || (p.core_practice || "");
+      const handle = (l.handle || "").replace(/^@/, "").trim();
+      setAuthorDefaults({ name, title, handle: handle ? `@${handle}` : "" });
+      setCarousel(c => ({
+        ...c,
+        author_name: c.author_name || name,
+        author_title: c.author_title || title,
+        author_handle: c.author_handle || (handle ? `@${handle}` : ""),
+      }));
+    })();
+  }, []);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
   const autoGenTriggered = useRef(false);
