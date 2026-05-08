@@ -46,8 +46,8 @@ export default function CardPreviewPanel(props: CardPreviewPanelProps) {
       const remaining = (postText || '').replace(props.recommendedHighlight, '').trim();
       return { headline: trunc(props.recommendedHighlight, 140), body: trunc(remaining, 220) };
     }
-    return deriveContentForType(postText, cardType);
-  }, [postText, cardType, props.recommendedHighlight, props.recommendedType]);
+    return deriveContentForType(postText, cardType, language);
+  }, [postText, cardType, props.recommendedHighlight, props.recommendedType, language]);
 
   const dataPoints = useMemo(() => {
     if (cardType === 'stat') {
@@ -60,7 +60,24 @@ export default function CardPreviewPanel(props: CardPreviewPanelProps) {
     return undefined;
   }, [cardType, postText]);
 
-  const tag = topicLabel ?? (language === 'ar' ? 'فكرة استراتيجية' : 'Strategic Insight');
+  // Top label: keep topic if it matches the card language; otherwise fall back
+  // to a generic localized label so an English title never lands on an Arabic card.
+  const hasArabicChars = (s?: string) => !!s && /[\u0600-\u06FF]/.test(s);
+  const labelLanguageMatches =
+    !topicLabel ||
+    (language === 'ar' ? hasArabicChars(topicLabel) : !hasArabicChars(topicLabel));
+  const tag = labelLanguageMatches
+    ? (topicLabel ?? (language === 'ar' ? 'فكرة استراتيجية' : 'Strategic Insight'))
+    : (language === 'ar' ? 'فكرة استراتيجية' : 'Strategic Insight');
+
+  // Footer: name stays as-is (proper noun), but if the role is in the wrong
+  // script for the card language, swap to a generic localized role.
+  const displayedAuthorTitle = (() => {
+    if (language === 'ar' && authorTitle && !hasArabicChars(authorTitle)) {
+      return 'خبير استراتيجي';
+    }
+    return authorTitle;
+  })();
 
   const findInner = (): HTMLElement | null => {
     return cardWrapperRef.current?.querySelector<HTMLElement>('.card-preview-inner') ?? null;
@@ -71,7 +88,7 @@ export default function CardPreviewPanel(props: CardPreviewPanelProps) {
     if (!inner) return;
     setExporting('download');
     try {
-      const blob = await exportCardAsPng(inner);
+      const blob = await exportCardAsPng(inner, undefined, { language });
       if (!blob) throw new Error('Export failed');
       downloadBlob(blob, `aura-card-${style}-${cardType}.png`);
       toast.success('Card downloaded');
@@ -87,7 +104,7 @@ export default function CardPreviewPanel(props: CardPreviewPanelProps) {
     if (!inner) return;
     setExporting('copy');
     try {
-      const blob = await exportCardAsPng(inner);
+      const blob = await exportCardAsPng(inner, undefined, { language });
       if (!blob) throw new Error('Export failed');
       // @ts-ignore — ClipboardItem typing
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
@@ -159,7 +176,7 @@ export default function CardPreviewPanel(props: CardPreviewPanelProps) {
             cardType={cardType}
             language={language}
             authorName={authorName}
-            authorTitle={authorTitle}
+            authorTitle={displayedAuthorTitle}
             tag={tag}
             dataPoints={dataPoints}
           />
