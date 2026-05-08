@@ -981,6 +981,196 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   }, [trends, dismissedTrendIds, trendFilter]);
 
   // ─── Render ───
+  // ─── New-user empty states ───
+  // When the user has 0 captures AND 0 signals → show pure welcome.
+  // When they have captures but no signals yet → show "intelligence is building".
+  // Both replace the entire dashboard so we never show fake metrics.
+  const noEntries = entriesLoaded && entries!.length === 0;
+  const hasSignals = !!topSignal;
+  const dataReady = profileLoaded && !briefLoading && entriesLoaded;
+  const showWelcomeState = dataReady && noEntries && !hasSignals;
+  const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
+
+  if (showWelcomeState || showBuildingState) {
+    const captureCount = entries?.length ?? 0;
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="space-y-6 max-w-3xl"
+      >
+        {showOnboarding && authUser?.id && (
+          <OnboardingWizardModal
+            open={showOnboarding}
+            userId={authUser.id}
+            onClose={() => setShowOnboarding(false)}
+            onOpenFullCapture={onOpenCapture}
+          />
+        )}
+
+        <header className="pt-1">
+          <div
+            className="text-muted-foreground"
+            style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}
+          >
+            {getGreeting(now.getHours())}{userName ? `, ${userName}` : ""}
+          </div>
+          <h1
+            style={{
+              fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
+              fontSize: 34,
+              fontWeight: 500,
+              color: "var(--ink)",
+              letterSpacing: "-0.01em",
+              lineHeight: 1.15,
+              margin: 0,
+            }}
+          >
+            {showWelcomeState ? "Welcome to Aura" : "Your intelligence is building"}
+          </h1>
+          <p
+            style={{
+              fontSize: 14,
+              color: "var(--ink-3)",
+              marginTop: 10,
+              lineHeight: 1.6,
+              maxWidth: 560,
+            }}
+          >
+            {showWelcomeState
+              ? "Your strategic intelligence OS is ready. Here's how to activate it."
+              : `You've captured ${captureCount} ${captureCount === 1 ? "article" : "articles"}. Aura is analyzing them for strategic patterns. Signals typically emerge after 3–5 captures from different sources.`}
+          </p>
+        </header>
+
+        {showWelcomeState ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {[
+              {
+                n: 1,
+                title: "Capture your first article",
+                body: "Paste a URL of something you read this week — an industry report, a LinkedIn post, a news article about your sector. Aura will extract the intelligence from it.",
+                cta: true,
+              },
+              {
+                n: 2,
+                title: "Watch your signals emerge",
+                body: "After 3–5 captures, Aura detects strategic patterns and builds your signal map.",
+              },
+              {
+                n: 3,
+                title: "Generate your first post",
+                body: "Once signals exist, Aura creates authority content in your voice, grounded in your real intelligence.",
+              },
+            ].map((step) => (
+              <div
+                key={step.n}
+                style={{
+                  display: "flex",
+                  gap: 14,
+                  padding: "16px 18px",
+                  border: "1px solid hsl(var(--border) / 0.6)",
+                  background: "hsl(var(--card))",
+                  borderRadius: 10,
+                }}
+              >
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border: "1px solid var(--brand-line)",
+                    color: "var(--brand)",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {step.n}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+                    {step.title}
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.55 }}>
+                    {step.body}
+                  </p>
+                  {step.cta && (
+                    <div style={{ marginTop: 12 }}>
+                      <AuraButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => onOpenCapture?.()}
+                        style={{ borderRadius: 4, padding: "8px 18px" }}
+                      >
+                        Capture your first article →
+                      </AuraButton>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <AuraButton
+                variant="primary"
+                size="sm"
+                onClick={() => onOpenCapture?.()}
+                style={{ borderRadius: 4, padding: "8px 18px" }}
+              >
+                Capture another article →
+              </AuraButton>
+            </div>
+            <div
+              style={{
+                border: "1px solid hsl(var(--border) / 0.6)",
+                background: "hsl(var(--card))",
+                borderRadius: 10,
+                padding: "16px 18px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-3)",
+                  fontWeight: 600,
+                  marginBottom: 10,
+                }}
+              >
+                Your captures
+              </div>
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                {(entries || []).slice(0, 8).map((e: any) => (
+                  <li
+                    key={e.id}
+                    style={{
+                      fontSize: 13,
+                      color: "var(--ink-2, var(--ink))",
+                      lineHeight: 1.45,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    • {e.title || e.url || e.content?.slice(0, 80) || "Untitled capture"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
