@@ -1,99 +1,48 @@
+# V1 Final Cleanup + Quest Log
 
+7 frontend-only fixes. No EF or schema changes.
 
-## Plan: AI_JUDGE with controlled fail-open + bypass cap
+## Investigation summary
 
-### Critical scoping fix discovered during verification
+- **`WeeklyIntelligenceLoopCard`** (`src/components/WeeklyIntelligenceLoopCard.tsx`) currently shows when neither table has rows by setting `days = 999`. That's the bug — needs to hide instead.
+- **`StrategicAdvisorPanel`** is rendered inside `IntelligenceTab` and `HomeTab` / `StrategyTab`. We'll gate the Intelligence-page render on signal count.
+- **`AutomationStrip`** is in `IntelligenceTab.tsx` lines 122-192 — the "Move generation" card is `cards[2]`. Will gate on signal count.
+- **`AuthorityJourney.tsx`** lines 292-310 already strips "Your your" defensively. The broken sentence "Your [title] signal (70%) is ready to publish" comes from `data.personalized_nudge` (server-generated). Fix at render time by detecting the pattern and reformatting.
+- **`FirstVisitHint`** (`src/components/ui/FirstVisitHint.tsx`) — used somewhere on Intelligence; will check usage and gate on signal count.
+- **`HomeTab`** has the 3-step welcome — need to find and reorder.
+- **`ProfileMenu`** is the dropdown — Quest Log goes at the top.
+- **`user_milestones`** table exists per `useMilestones` hook with columns: `id, user_id, milestone_id, milestone_name, context, earned_at, acknowledged, shared`. Perfect for quests.
 
-In current code, the gate runs at line 1036 **before** `validation_score` and `content_quality_score` are computed (lines 1043 and 1049). The candidate variable in scope is `c` (loop var), not `src`. We must **reorder**: compute scores first, then run the judge, so the controlled fail-open branch can read live in-scope values.
+## Changes
 
-### Changes to `supabase/functions/fetch-industry-trends/index.ts`
+### Fix 1 — Intelligence: gate "Next Move" + Move-generation card on `signals.length >= 3`
+`IntelligenceTab.tsx`: pass signal count into `AutomationStrip`; conditionally swap `StrategicAdvisorPanel` for an "Intelligence is growing" empty card.
 
-**1. Rename `consultantGate` → `aiJudge` (lines ~357–433)**
-- Update prompt to exact AI_JUDGE spec wording.
-- Keep `gemini-2.5-flash-lite` + tool-calling.
-- New return type:
-  ```ts
-  type JudgeResult =
-    | { decision: "ACCEPT" | "REJECT"; reason: string; bypassed: false }
-    | { decision: "UNAVAILABLE"; reason: string; bypassed: true };
-  ```
-  Returns `UNAVAILABLE` (not fail-open ACCEPT) on: missing API key, gateway non-2xx, missing tool call, JSON parse failure, network exception.
-- Internal logs use `[judge]` prefix.
+### Fix 2 — Home: hide WeeklyIntelligenceLoop for users with 0 LinkedIn rows
+`WeeklyIntelligenceLoopCard.tsx`: change the `dates.length === 0` branch to set `days = -1` and return `null` instead of `999`.
 
-**2. Add per-run bypass counter (above the candidate loop, ~line 980)**
-```ts
-const MAX_JUDGE_BYPASSES = 2;
-let judgeBypassCount = 0;
-```
+### Fix 3 — Authority Journey nudge formatting
+`AuthorityJourney.tsx`: detect pattern `/Your (.+?) signal \((\d+%)\) is ready to publish/i` and re-render as a multi-line block (title in bold/quotes on its own line).
 
-**3. Reorder + replace branch site (lines ~1035–1049)**
+### Fix 4 — Auto-hide Intelligence first-visit hint when signals exist
+Locate `<FirstVisitHint>` usage on Intelligence; wrap with `{signals.length === 0 && ...}`.
 
-Compute scores BEFORE the judge so the fail-open branch has access to them:
+### Fix 5 — Reorder Home welcome to Assessment → Capture → Watch
+`HomeTab.tsx`: find the existing 3-step welcome block; swap order, make Assessment primary CTA, Capture secondary; mark Step 1 complete when `diagnostic_profiles.brand_assessment_completed_at` is set.
 
-```ts
-// Compute scores first so AI_JUDGE fail-open can use them
-const source = domainOf(canonical);
-const validation_score = computeValidationScore({ domain: source, markdown: clean_markdown, text });
-if (validation_score <= 0) {
-  console.log("[trends] reject zero_validation", c.url); continue;
-}
-const topic_relevance_score = computeTopicRelevance(text, profileTokens);
-const snapshot_quality = computeSnapshotQuality({ markdown: clean_markdown, text });
-const content_quality_score = computeContentQualityScore({ clean: clean_markdown, raw: raw_markdown });
+### Fix 6 — Quest Log in ProfileMenu
+- New `src/components/QuestLog.tsx` with three phases (6 quests Phase 1, 6 Phase 2, 6 Phase 3).
+- New hook `src/hooks/useQuestProgress.ts` that fetches counts from: `diagnostic_profiles`, `entries`, `authority_voice_profiles`, `linkedin_posts`, `strategic_signals`, `influence_snapshots`, `linkedin_post_metrics`, `market_mirror_cache`, `content_items`, `authority_scores`. Maps each to a milestone via `useMilestones.checkAndAwardMilestone`.
+- Render compact view in `ProfileMenu.tsx` above the Appearance section: phase header, progress bar, next 3 unchecked items, "View full journey →" (links to a future page; for now toggles expanded view in dropdown).
+- Phase-complete celebration: lightweight card on Home gated by sessionStorage flag set when a phase flips to complete.
 
-// Stage 5.5: AI_JUDGE — strict LLM final arbiter (controlled fail-open)
-const judge = await aiJudge(text);
+### Fix 7 — Typo sweep
+- ripgrep `"Your your"` and `"Your top signal is strong at 0%"` across `src/`; replace as specified.
 
-if (judge.decision === "REJECT") {
-  console.log(`[judge] rejected: ${c.url} — ${judge.reason}`);
-  continue;
-}
+## Out of scope
+- No EF edits. No schema migrations. No changes to score logic, signal detection, or assessment flow.
+- "View full journey →" link target is a placeholder in this PR (toggles expansion; no new route).
 
-if (judge.decision === "UNAVAILABLE") {
-  const highConfidence = validation_score >= 85 && content_quality_score >= 80;
-  // passesBusinessRelevance already enforced upstream — implicit pass
-
-  if (!highConfidence) {
-    console.log(`[judge] rejected: ${c.url} — judge_unavailable (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
-    continue;
-  }
-
-  if (judgeBypassCount >= MAX_JUDGE_BYPASSES) {
-    console.log(`[judge] rejected: ${c.url} — bypass_limit_exceeded (validation=${validation_score}, quality=${content_quality_score})`);
-    continue;
-  }
-
-  judgeBypassCount++;
-  console.log(`[judge] accepted: ${c.url} — judge_bypass_high_confidence (validation=${validation_score}, quality=${content_quality_score}, reason=${judge.reason})`);
-} else {
-  console.log(`[judge] accepted: ${c.url} — ${judge.reason}`);
-}
-
-scraped.push({
-  url: canonical,
-  title: result.title || c.title || canonical,
-  raw_markdown, clean_markdown, text, source,
-  validation_score, topic_relevance_score, snapshot_quality, content_quality_score,
-  discovery_reason: c.reason,
-});
-```
-
-### Why this is correct
-- `c` is the in-scope loop candidate (verified line 1036 context).
-- `validation_score` / `content_quality_score` are computed BEFORE the judge call → no stale or undefined references.
-- `passesBusinessRelevance` runs at Stage 5 upstream and `continue`s on failure, so any candidate reaching the judge has already passed it.
-- `MAX_JUDGE_BYPASSES = 2` caps low-governance passes per run; counter resets each invocation (function-scope let).
-- All bypass logs include actual scores per spec.
-
-### Files touched
-- `supabase/functions/fetch-industry-trends/index.ts` — rename, reorder, branch with bypass cap
-- `.lovable/memory/features/signals/decision-engine.md` — Stage 5.5 = AI_JUDGE, controlled fail-open thresholds (85/80), bypass cap (2/run), `[judge]` prefix
-
-### Verification (after deploy)
-1. ↻ Refresh signals on Home.
-2. Pull `fetch-industry-trends` logs filtered on `[judge]`. Report:
-   - one `[judge] accepted: <url> — <model reason>`
-   - one `[judge] rejected: <url> — <model reason>`
-   - any UNAVAILABLE-path lines (bypass with scores, judge_unavailable rejection, or bypass_limit_exceeded)
-3. Confirm rejected URLs are NOT in new `industry_trends` rows.
-
+## Risks
+- Quest condition queries add ~10 lightweight selects on profile dropdown open. Mitigated by running on mount + caching in `useQuestProgress`.
+- `personalized_nudge` reformat is a regex-based render-time patch; if server text changes wording, it falls back to the raw string.
