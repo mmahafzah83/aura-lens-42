@@ -133,7 +133,7 @@ const DIM: Record<Dimension, { w: number; h: number; label: string }> = {
 const emptyCarousel = (): Carousel => ({
   carousel_title: "",
   total_slides: 0,
-  author_name: "Mohammad Mahafzah", author_title: "Director", author_handle: "@mmahafzah",
+  author_name: "", author_title: "", author_handle: "",
   signal_attribution: null,
   hashtags: [],
   linkedin_caption: "",
@@ -378,13 +378,11 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
     stripPos === "left"  ? (isRTL ? w - 4 : 0) :
     -10;
   const showStrip = stripPos !== "none";
-  // Author name — language-aware. Always show full "Mohammad Mahafzah" / "محمد محافظة"
-  // regardless of what the EF returned, so the brand stays consistent in both languages.
-  const rawAuthor = carousel.author_name || "";
-  const displayAuthor = isRTL
-    ? (/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "محمد محافظة")
-    : (/[A-Za-z]/.test(rawAuthor) && !/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "Mohammad Mahafzah");
-  const authorInitial = isRTL ? "م" : (displayAuthor.trim().charAt(0).toUpperCase() || "M");
+  // Author name — language-aware. Falls back to a neutral placeholder so we never
+  // leak another user's brand. Real value comes from the current user's profile.
+  const rawAuthor = (carousel.author_name || "").trim();
+  const displayAuthor = rawAuthor || (isRTL ? "اسمك" : "Your Name");
+  const authorInitial = displayAuthor.charAt(0).toUpperCase() || (isRTL ? "؟" : "?");
   // Always use the branded initial circle on every slide (not just COVER/CTA).
   const showWatermarkNumber = ["BOLD_CLAIM", "QUESTION", "REFRAME"].includes(slide.slide_type);
   const patternId = `pat-${slide.slide_number}-${style.key}`;
