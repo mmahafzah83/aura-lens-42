@@ -1084,10 +1084,14 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
 
           {/* Strategic Identity — inlined (was hidden behind "Full profile" modal) */}
           <div data-testid="story-strategic-identity" className="space-y-6">
-            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
-            <div data-testid="story-brand-assessment">
-              <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
-            </div>
+            {assessmentCompleted && (
+              <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
+            )}
+            {assessmentCompleted && (
+              <div data-testid="story-brand-assessment">
+                <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
+              </div>
+            )}
             <div data-testid="story-evidence-audit">
               <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
             </div>
@@ -1095,6 +1099,16 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
               <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
             </div>
+            {assessmentCompleted && (
+              <div className="pt-2 text-center">
+                <button
+                  onClick={() => setBrandOpen(true)}
+                  className="text-xs text-ink-5 hover:text-brand transition-colors underline-offset-4 hover:underline"
+                >
+                  Retake brand assessment
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
