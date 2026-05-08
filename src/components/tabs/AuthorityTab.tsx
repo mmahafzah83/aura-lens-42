@@ -2636,7 +2636,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     const [liRes, ciRes] = await Promise.all([
       supabase
         .from("linkedin_posts")
-        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url")
+        .select("id, title, post_text, format_type, tracking_status, topic_label, created_at, source_metadata, source_type, published_at, linkedin_url, source_signal_id")
         .neq("source_type", "aura_generated")
         .order("created_at", { ascending: false })
         .limit(100),
@@ -2675,6 +2675,24 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     const urls: Record<string, string> = {};
     (liRes.data || []).forEach((p: any) => { if (p.linkedin_url) urls[p.id] = p.linkedin_url; });
     setSavedUrls(urls);
+
+    // Resolve signal titles for cards that reference a source signal id
+    const signalIds = new Set<string>();
+    (liRes.data || []).forEach((p: any) => { if (p.source_signal_id) signalIds.add(p.source_signal_id); });
+    (ciRes.data || []).forEach((ci: any) => {
+      const sid = ci.generation_params?.source_signal_id || ci.generation_params?.signal_ids?.[0];
+      if (sid) signalIds.add(sid);
+    });
+    if (signalIds.size > 0) {
+      const { data: sigRows } = await (supabase.from("strategic_signals" as any) as any)
+        .select("id, signal_title")
+        .in("id", Array.from(signalIds));
+      const map: Record<string, string> = {};
+      (sigRows || []).forEach((s: any) => { if (s?.id && s?.signal_title) map[s.id] = s.signal_title; });
+      setSignalTitleMap(map);
+    } else {
+      setSignalTitleMap({});
+    }
     setLoading(false);
   };
 
