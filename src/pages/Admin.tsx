@@ -231,10 +231,13 @@ const Admin = () => {
   }, [rows, statusFilter, seniorityFilter, sectorFilter]);
 
   const callSendInvite = async (email: string, name: string | null) => {
-    if (!accessToken) throw new Error("No session");
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("No session");
+    setAccessToken(token);
     const { error } = await supabase.functions.invoke("send-invite", {
       body: { email, name: name || "" },
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (error) throw error;
   };
