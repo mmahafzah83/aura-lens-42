@@ -160,7 +160,11 @@ const Admin = () => {
     (async () => {
       setActiveLoading(true);
       try {
-        const { data, error } = await supabase.functions.invoke("admin-active-users", { body: {} });
+        const { data: { session } } = await supabase.auth.getSession();
+        const { data, error } = await supabase.functions.invoke("admin-active-users", {
+          body: {},
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        });
         if (!error && data?.users) setActiveUsers(data.users);
       } catch (e) {
         console.warn("admin-active-users failed", e);
