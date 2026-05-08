@@ -1372,6 +1372,16 @@ export default function CarouselStudio() {
     }
   };
 
+  // Auto-generate when arriving from Publish with intent
+  useEffect(() => {
+    if (autoGenTriggered.current) return;
+    if (navState?.autoGenerate && navState?.topic && slides.length === 0 && !generating) {
+      autoGenTriggered.current = true;
+      const t = setTimeout(() => { generate(); }, 200);
+      return () => clearTimeout(t);
+    }
+  }, [navState, slides.length, generating]);
+
   const updateSlide = (patch: Partial<Slide>) => {
     setCarousel(c => ({
       ...c,
