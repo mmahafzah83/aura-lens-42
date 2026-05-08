@@ -734,19 +734,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div className="space-y-3">
                 {signalStats.themeGroups.map((g) => {
                   const pct = Math.round(g.avgConfidence * 100);
-                  const isHigh = pct >= 80;
-                  const isMid = pct >= 50 && pct < 80;
-                  const fillBg = isHigh
-                    ? "var(--brand)"
-                    : isMid
-                      ? "rgba(176, 141, 58, 0.4)"
-                      : "var(--coverage-low, #D1CDBD)";
-                  const pctColor = isHigh
-                    ? "var(--brand)"
-                    : isMid
-                      ? "var(--ink-3)"
-                      : "var(--ink-3)";
-                  const pctOpacity = !isHigh && !isMid ? 0.6 : 1;
+                  const c = g.avgConfidence;
+                  let label: string;
+                  let labelColor: string;
+                  let fillBg: string;
+                  if (c < 0.20)      { label = "Emerging";    labelColor = "var(--ink-5)"; fillBg = "var(--coverage-low, #D1CDBD)"; }
+                  else if (c < 0.40) { label = "Developing";  labelColor = "var(--ink-3)"; fillBg = "var(--coverage-low, #D1CDBD)"; }
+                  else if (c < 0.60) { label = "Established"; labelColor = "var(--brand)"; fillBg = "rgba(176, 141, 58, 0.4)"; }
+                  else if (c < 0.80) { label = "Strong";      labelColor = "var(--brand)"; fillBg = "var(--brand)"; }
+                  else                { label = "Dominant";    labelColor = "var(--brand)"; fillBg = "var(--brand)"; }
                   return (
                     <div key={g.theme}>
                       <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
@@ -776,13 +772,24 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                             }}
                           />
                         </div>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: pctColor, opacity: pctOpacity, fontWeight: 500, minWidth: 32, textAlign: "right" }}>
-                          {pct}%
+                        <span style={{ fontSize: 11, color: labelColor, fontWeight: 600, minWidth: 76, textAlign: "right", letterSpacing: "0.02em" }}>
+                          {label}
                         </span>
                       </div>
                     </div>
                   );
                 })}
+                {signalStats.themeGroups.length > 1 && (() => {
+                  const first = signalStats.themeGroups[0].avgConfidence;
+                  const allSame = signalStats.themeGroups.every(
+                    g => Math.abs(g.avgConfidence - first) < 0.02
+                  );
+                  return allSame ? (
+                    <div style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-5)", paddingTop: 8 }}>
+                      Capture more sources to differentiate your signal strengths.
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
           )}
@@ -792,8 +799,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             const fn = profile?.first_name || "You";
             const sf = profile?.sector_focus || "your sector";
             const themes = signalStats.themeGroups;
-            const top = themes[0]?.theme;
-            const second = themes[1]?.theme;
+            // Sanitize raw column-style names like `market_trend` → `Market Trend`
+            const prettify = (s?: string) =>
+              (s || "")
+                .replace(/[_-]+/g, " ")
+                .replace(/\s+/g, " ")
+                .trim()
+                .replace(/\b\w/g, (m) => m.toUpperCase());
+            const top = prettify(themes[0]?.theme);
+            const second = prettify(themes[1]?.theme);
             const orgs = signalStats.topOrgs;
             const topSig = signalStats.topSignal;
             if (!top || !topSig) return null;
@@ -832,7 +846,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   const sectorPart = sf && sf !== "your sector" ? ` in ${sf}` : "";
                   const shareText = `${fn} | ${lvl}${firmPart} | ${signalStats.count} strategic signal${signalStats.count === 1 ? "" : "s"}${sectorPart} | Powered by Aura — strategic intelligence for executives. aura-intel.org`;
                   // In-card preview keeps the richer internal phrasing.
-                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${topSig.title} at ${topSig.confidence}%.`;
+                  const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${prettify(topSig.title)} at ${topSig.confidence}%.`;
                   return (
                     <>
                       <p
@@ -991,14 +1005,20 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             })()}
           </div>
 
-          {/* Full Profile Link */}
-          <button
-            onClick={() => setFullProfileOpen(true)}
-            className="flex items-center gap-1.5 transition-colors"
-            style={{ fontSize: 11, color: "var(--brand)" }}
-          >
-            Full profile <ChevronRight className="w-3 h-3" />
-          </button>
+          {/* Strategic Identity — inlined (was hidden behind "Full profile" modal) */}
+          <div data-testid="story-strategic-identity" className="space-y-6">
+            <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
+            <div data-testid="story-brand-assessment">
+              <BrandArchetypeWidget onStartAssessment={() => setBrandOpen(true)} />
+            </div>
+            <div data-testid="story-evidence-audit">
+              <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
+            </div>
+            <div className="pt-4" style={{ borderTop: "1px solid var(--surface-subtle)" }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
+              <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1009,39 +1029,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div data-testid="story-milestones">
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
-
-      {/* Full Profile Modal */}
-      {fullProfileOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }} onClick={() => setFullProfileOpen(false)}>
-          <div
-            className="relative overflow-y-auto"
-            style={{ width: 680, maxWidth: "90vw", maxHeight: "88vh", background: "var(--ink)", border: "1px solid var(--ink-3)", borderRadius: 12, padding: 24 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <button onClick={() => setFullProfileOpen(false)} className="absolute top-4 right-4 text-ink-5 hover:text-ink-7 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-7)", marginBottom: 20 }}>Strategic Identity</h2>
-
-            <div className="space-y-6">
-              <ProfileIntelligence onGenerateContent={handleGenerateContent} intelligenceStage={intelligenceStage} />
-              <VoiceEngineSection />
-              <div data-testid="story-brand-assessment">
-                <BrandArchetypeWidget onStartAssessment={() => { setFullProfileOpen(false); setBrandOpen(true); }} />
-              </div>
-              <div data-testid="story-evidence-audit">
-                <AuditRadarWidget onStartAudit={() => { setFullProfileOpen(false); setAuditOpen(true); }} />
-              </div>
-
-              <div className="pt-4 border-t border-ink-3">
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-7)", marginBottom: 12 }}>Profile Settings</h3>
-                <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       {/* Assessment Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
