@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -110,6 +110,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
   const [followerRows, setFollowerRows] = useState<FollowerRow[]>([]);
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
+  const [latestSnapshotDate, setLatestSnapshotDate] = useState<string | null>(null);
+  const [showUpdateUpload, setShowUpdateUpload] = useState(false);
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
@@ -275,13 +277,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     // Latest follower count (most recent snapshot, any date)
     const latestFolRes = await supabase
       .from("influence_snapshots")
-      .select("followers")
+      .select("followers, snapshot_date")
       .eq("user_id", user.id)
       .eq("source_type", "linkedin_export")
       .gt("followers", 0)
       .order("snapshot_date", { ascending: false })
       .limit(1);
     setLatestFollowers((latestFolRes.data?.[0] as any)?.followers ?? null);
+    setLatestSnapshotDate((latestFolRes.data?.[0] as any)?.snapshot_date ?? null);
 
     // Published LinkedIn posts (for follower-growth chart annotations)
     const pubRes = await safeQuery(
@@ -1563,6 +1566,154 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             })}
           </div>
         )}
+      </section>
+
+      {/* ─────────── 5b. LINKEDIN ANALYTICS (always visible) ─────────── */}
+      <section data-section="linkedin-analytics">
+        {(() => {
+          const hasData = postMetricsCount > 0 || latestFollowers != null || followerRows.length > 0;
+          const lastUpdatedLabel = latestSnapshotDate ? fmtDateShort(latestSnapshotDate) : null;
+
+          const UploadZone = (
+            <div className="mt-4">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
+                How to export your LinkedIn data
+              </div>
+              <ol className="text-[12px] leading-relaxed space-y-1 pl-4 list-decimal" style={{ color: "var(--color-text-secondary)" }}>
+                <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
+                <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
+                <li>Select your date range (last 365 days recommended)</li>
+                <li>Download the .xlsx file and upload it below</li>
+              </ol>
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                {!selectedFile ? (
+                  <button
+                    onClick={handleUploadClick}
+                    disabled={uploading}
+                    data-testid="impact-linkedin-upload"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
+                    style={{ background: "var(--brand)", color: "#ffffff" }}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Upload LinkedIn .xlsx file
+                  </button>
+                ) : (
+                  <>
+                    <span className="text-[11px] px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
+                      {selectedFile.name}
+                    </span>
+                    <button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
+                      style={{ background: "var(--brand)", color: "#ffffff" }}
+                    >
+                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      {uploading ? "Importing..." : "Import"}
+                    </button>
+                    {!uploading && (
+                      <button
+                        onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                        className="text-[11px]"
+                        style={{ color: "var(--color-text-muted)" }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              <p className="mt-3 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                Takes ~30 seconds. Includes your posts, follower growth, and audience demographics.
+              </p>
+            </div>
+          );
+
+          return (
+            <div
+              className="rounded-lg p-5"
+              style={{ border: "0.5px solid var(--color-border)", background: "var(--color-card)" }}
+            >
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4" style={{ color: "var(--brand)" }} />
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
+                    LinkedIn analytics
+                  </h2>
+                </div>
+                {hasData && lastUpdatedLabel && (
+                  <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                    Last updated: {lastUpdatedLabel}
+                  </span>
+                )}
+              </div>
+
+              {hasData ? (
+                <div className="mt-3">
+                  <p className="text-[13px]" style={{ color: "var(--color-text-primary)" }}>
+                    <Check className="inline w-3.5 h-3.5 mr-1" style={{ color: "var(--brand)" }} />
+                    {postMetricsCount > 0 ? `${postMetricsCount} posts imported` : "Imported"}
+                    {latestFollowers != null ? ` · ${latestFollowers.toLocaleString()} followers tracked` : ""}
+                  </p>
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setShowUpdateUpload(v => !v)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
+                      style={{ border: "0.5px solid var(--color-border)", color: "var(--color-text-primary)", background: "transparent" }}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      {showUpdateUpload ? "Hide upload" : "Update LinkedIn data"}
+                    </button>
+                  </div>
+                  {showUpdateUpload && UploadZone}
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <p className="text-[13px]" style={{ color: "var(--color-text-secondary)" }}>
+                    Connect your LinkedIn data to close the intelligence loop — see which signals drive real engagement.
+                  </p>
+                  {UploadZone}
+                </div>
+              )}
+
+              {pipeline && (
+                <ul className="mt-4 space-y-2">
+                  {(["voice", "positioning", "score"] as const).map((k) => {
+                    const status = pipeline[k];
+                    return (
+                      <li key={k} className="flex items-center gap-3 text-[12px]">
+                        {status === "done" ? (
+                          <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
+                        ) : status === "running" ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
+                        ) : status === "error" ? (
+                          <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
+                        ) : (
+                          <span className="w-3.5 h-3.5 inline-block rounded-full border" style={{ borderColor: "var(--color-border)" }} />
+                        )}
+                        <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
+                          {PIPELINE_LABELS[k]}
+                          {status === "error" && (
+                            <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
+                              — Will retry automatically
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
