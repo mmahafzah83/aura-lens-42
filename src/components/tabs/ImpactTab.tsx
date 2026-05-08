@@ -901,6 +901,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <AuthorityJourney userId={userId} data={auraData} />
           </div>
         )}
+      </section>
+      {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
+      <section
+        data-impact-section="trajectory"
+        className="relative overflow-hidden"
+        style={{
+          background: "var(--surface-ink-raised)",
+          borderRadius: 14,
+          padding: "28px 28px 24px",
+          color: "var(--ink)",
+          border: "0.5px solid var(--brand-line)",
+          boxShadow: "var(--shadow-rest)",
+        }}
+      >
 
         {/* Trajectory bar chart */}
         {!isEmpty && trajectory && (() => {
