@@ -1295,6 +1295,7 @@ export default function CarouselStudio() {
     signalId?: string;
     signalTitle?: string;
     lang?: "en" | "ar";
+    autoGenerate?: boolean;
   } | null;
   const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
   const [dim, setDim] = useState<Dimension>("1080x1350");
@@ -1312,6 +1313,7 @@ export default function CarouselStudio() {
   const [savedToLibrary, setSavedToLibrary] = useState(false);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
+  const autoGenTriggered = useRef(false);
 
   const style = STYLES[styleKey];
   const slides = carousel.slides;
