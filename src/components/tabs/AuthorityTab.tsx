@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
@@ -17,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { formatSmartDate } from "@/lib/formatDate";
 import { isArabicText } from "@/lib/utils";
-import CarouselGenerator from "@/components/CarouselGenerator";
 import FrameworkBuilderInline from "@/components/FrameworkBuilderInline";
 import CardPreviewPanel from "@/components/visual-cards/CardPreviewPanel";
 import SchematicPreviewPanel from "@/components/visual-cards/SchematicPreviewPanel";
@@ -246,6 +246,7 @@ interface PlanPrefill {
 }
 
 const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { planPrefill?: PlanPrefill | null; signalPrefill?: SignalPrefill | null; onSignalPrefillConsumed?: () => void }) => {
+  const navigate = useNavigate();
   const [topic, setTopic] = useState("");
   const [context, setContext] = useState("");
   const [contentType, setContentType] = useState<ContentType>("post");
@@ -256,7 +257,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showCarousel, setShowCarousel] = useState(false);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
@@ -391,9 +391,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       setContext(signalPrefill.context);
       // Determine content type from explicit contentFormat or sourceType
       if (signalPrefill.contentFormat === "carousel") {
-        setContentType("carousel");
-        // Auto-open carousel workflow
-        setTimeout(() => setShowCarousel(true), 100);
+        // Route directly to Carousel Studio with prefill
+        navigate("/carousel-studio", {
+          state: {
+            topic: signalPrefill.topic,
+            context: signalPrefill.context,
+            signalId: signalPrefill.signalId || undefined,
+            signalTitle: signalPrefill.signalTitle || undefined,
+            lang,
+          },
+        });
+        onSignalPrefillConsumed?.();
+        return;
       } else if (signalPrefill.contentFormat === "framework_summary" || signalPrefill.sourceType === "framework_build") {
         setContentType("framework_summary");
         setFramework("auto");
@@ -490,7 +499,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       toast.error("Add a topic before generating.");
       return;
     }
-    if (effContentType === "carousel") { setShowCarousel(true); return; }
+    if (effContentType === "carousel") {
+      navigate("/carousel-studio", {
+        state: {
+          topic: effTopic,
+          context: (overrides?.context ?? context),
+          signalId: selectedSignalId || undefined,
+          signalTitle: selectedSignalTitle || undefined,
+          lang: overrides?.language ?? lang,
+        },
+      });
+      return;
+    }
     setGenerating(true);
     setShowSlowHint(false);
     setOutput("");
@@ -856,19 +876,27 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             })}
           </div>
           <div className="mt-3">
-            <a
-              href="/carousel-studio"
+            <button
+              onClick={() => navigate("/carousel-studio", {
+                state: {
+                  topic,
+                  context,
+                  signalId: selectedSignalId || undefined,
+                  signalTitle: selectedSignalTitle || undefined,
+                  lang,
+                },
+              })}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", borderRadius: 10,
                 background: "linear-gradient(135deg,#1C1812,#2A1F14)",
                 color: "#D4B056", fontSize: 12, fontWeight: 600,
-                border: "1px solid #D4B056", textDecoration: "none",
+                border: "1px solid #D4B056", cursor: "pointer",
               }}
             >
               ✨ Carousel Studio
               <span style={{ opacity: 0.7, fontWeight: 400 }}>— viral, multi-style</span>
-            </a>
+            </button>
           </div>
         </div>
 
@@ -879,15 +907,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <FrameworkBuilderInline
             initialTitle={topic}
             initialDescription={context}
-          />
-        ) : contentType === "carousel" && showCarousel ? (
-          /* Inline carousel workflow */
-          <CarouselGenerator
-            open={showCarousel}
-            onClose={() => setShowCarousel(false)}
-            title={topic}
-            context={context}
-            inline
           />
         ) : (
           <>
