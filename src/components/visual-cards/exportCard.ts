@@ -1,26 +1,99 @@
 import html2canvas from 'html2canvas';
 
+const CARD_W = 1080;
+const CARD_H = 1350;
+
+const CARD_FONT_LINKS = [
+  'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&display=swap',
+  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap',
+  'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap',
+  'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap',
+];
+
+function hasArabic(s: string | null | undefined): boolean {
+  return !!s && /[\u0600-\u06FF]/.test(s);
+}
+
+/**
+ * Export a Branded Card to PNG using a hidden iframe with isolated font loading.
+ * This is the proven pattern that fixes Arabic shaping in exported PNGs:
+ *   - clone the card into an iframe with its own document
+ *   - load Cairo + brand fonts there
+ *   - await iframeDoc.fonts.ready + a small settle delay
+ *   - rasterize via html2canvas in the iframe context
+ */
 export async function exportCardAsPng(
   cardElement: HTMLElement,
-  _filename: string = 'aura-card.png'
+  _filename: string = 'aura-card.png',
+  opts: { language?: 'en' | 'ar' } = {}
 ): Promise<Blob | null> {
+  const language: 'en' | 'ar' =
+    opts.language ?? ((cardElement.getAttribute('dir') === 'rtl' ? 'ar' : 'en'));
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText =
+    `position:fixed;left:-99999px;top:-99999px;width:${CARD_W}px;height:${CARD_H}px;border:0;visibility:hidden;`;
+  document.body.appendChild(iframe);
+
   try {
-    const canvas = await html2canvas(cardElement, {
-      width: 1080,
-      height: 1350,
+    // Some browsers need a tick before contentDocument is writable.
+    await new Promise((r) => setTimeout(r, 0));
+    const doc = iframe.contentDocument;
+    if (!doc) throw new Error('iframe document unavailable');
+
+    doc.open();
+    doc.write(`<!doctype html><html dir="${language === 'ar' ? 'rtl' : 'ltr'}" lang="${language}"><head>
+<meta charset="utf-8"/>
+${CARD_FONT_LINKS.map((href) => `<link rel="stylesheet" href="${href}" crossorigin="anonymous"/>`).join('\n')}
+<style>
+  html,body{margin:0;padding:0;background:transparent;}
+  body{width:${CARD_W}px;height:${CARD_H}px;overflow:hidden;}
+  /* Force Cairo on Arabic exports so RTL shaping is correct in the raster. */
+  body[dir="rtl"], body[dir="rtl"] *{font-family:'Cairo','DM Sans',sans-serif !important;}
+</style>
+</head><body dir="${language === 'ar' ? 'rtl' : 'ltr'}"></body></html>`);
+    doc.close();
+
+    // Clone the card into the iframe.
+    const clone = cardElement.cloneNode(true) as HTMLElement;
+    // Ensure cloned root carries the right direction.
+    clone.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+    if (language === 'ar') {
+      clone.style.direction = 'rtl';
+    }
+    doc.body.appendChild(clone);
+
+    // Wait for fonts.
+    try {
+      // @ts-ignore — FontFaceSet on iframe document
+      if (doc.fonts?.ready) await doc.fonts.ready;
+    } catch { /* ignore */ }
+    // Settle delay so freshly-loaded Arabic glyph runs are applied.
+    await new Promise((r) => setTimeout(r, language === 'ar' ? 600 : 250));
+
+    const canvas = await html2canvas(clone, {
+      width: CARD_W,
+      height: CARD_H,
+      windowWidth: CARD_W,
+      windowHeight: CARD_H,
       scale: 3,
       useCORS: true,
+      allowTaint: true,
       backgroundColor: null,
       logging: false,
       imageTimeout: 0,
       letterRendering: true,
     } as any);
-    return new Promise((resolve) => {
+
+    return await new Promise<Blob | null>((resolve) => {
       canvas.toBlob((blob) => resolve(blob), 'image/png', 1.0);
     });
   } catch (err) {
     console.error('Card export failed:', err);
     return null;
+  } finally {
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
   }
 }
 
@@ -236,8 +309,10 @@ export function extractComparison(text: string): { left: string; right: string }
 /** Pick content per card type from raw post text. */
 export function deriveContentForType(
   text: string,
-  cardType: string
+  cardType: string,
+  language: 'en' | 'ar' = 'en'
 ): { headline: string; body?: string } {
+  const arrow = language === 'ar' ? '←' : '→';
   const clean = stripMarkdown(text);
   switch (cardType) {
     case 'insight': {
@@ -257,12 +332,12 @@ export function deriveContentForType(
     }
     case 'comparison': {
       const c = extractComparison(text);
-      if (c) return { headline: `${trunc(c.left, 60)}  →  ${trunc(c.right, 60)}`, body: trunc(extractInsight(text), 200) };
+      if (c) return { headline: `${trunc(c.left, 60)}  ${arrow}  ${trunc(c.right, 60)}`, body: trunc(extractInsight(text), 200) };
       return { headline: trunc(extractInsight(text), 140), body: trunc(clean.slice(0, 200), 220) };
     }
     case 'equation': {
       const c = extractComparison(text);
-      if (c) return { headline: `${trunc(c.left, 40)} → ${trunc(c.right, 40)}`, body: undefined };
+      if (c) return { headline: `${trunc(c.left, 40)} ${arrow} ${trunc(c.right, 40)}`, body: undefined };
       return { headline: trunc(extractInsight(text), 120), body: undefined };
     }
     case 'framework':
