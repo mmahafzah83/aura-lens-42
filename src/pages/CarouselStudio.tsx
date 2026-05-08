@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import StartFromPanel from "@/components/StartFromPanel";
@@ -130,18 +130,14 @@ const DIM: Record<Dimension, { w: number; h: number; label: string }> = {
 
 /* ============================ SAMPLE FALLBACK ============================ */
 
-const sampleCarousel = (topic: string): Carousel => ({
-  carousel_title: topic || "Sample carousel",
-  total_slides: 3,
-  author_name: "M. Mahafzah", author_title: "Director", author_handle: "@mmahafzah",
+const emptyCarousel = (): Carousel => ({
+  carousel_title: "",
+  total_slides: 0,
+  author_name: "Mohammad Mahafzah", author_title: "Director", author_handle: "@mmahafzah",
   signal_attribution: null,
-  hashtags: ["#strategy", "#leadership"],
-  linkedin_caption: "Sample caption — generate to populate.",
-  slides: [
-    { slide_number: 1, slide_type: "COVER", section_label: "PREVIEW", headline: topic || "Edit this cover", headline_accent: "this", body: "A subtitle line", density: "light" },
-    { slide_number: 2, slide_type: "BIG_NUMBER", section_label: "THE NUMBER", number: "78%", number_context: "of transformations stall in year two", number_source: "McKinsey, 2024", density: "light" },
-    { slide_number: 3, slide_type: "CTA", section_label: "YOUR TURN.", headline: "What is your next move?", cta_main: "Save this.", cta_sub: "Share it with your CTO.", cta_button: "Follow @mmahafzah →", density: "light" },
-  ],
+  hashtags: [],
+  linkedin_caption: "",
+  slides: [],
 });
 
 /* ============================ SVG HELPERS ============================ */
@@ -1299,13 +1295,14 @@ export default function CarouselStudio() {
     signalId?: string;
     signalTitle?: string;
     lang?: "en" | "ar";
+    autoGenerate?: boolean;
   } | null;
   const [styleKey, setStyleKey] = useState<StyleKey>("clean_paper");
   const [dim, setDim] = useState<Dimension>("1080x1350");
   const [topic, setTopic] = useState(navState?.topic || "");
   const [lang, setLang] = useState<"en" | "ar">(navState?.lang || "en");
   const [generating, setGenerating] = useState(false);
-  const [carousel, setCarousel] = useState<Carousel>(() => sampleCarousel(""));
+  const [carousel, setCarousel] = useState<Carousel>(() => emptyCarousel());
   const [activeIdx, setActiveIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [contextText, setContextText] = useState(navState?.context || "");
@@ -1316,6 +1313,7 @@ export default function CarouselStudio() {
   const [savedToLibrary, setSavedToLibrary] = useState(false);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
+  const autoGenTriggered = useRef(false);
 
   const style = STYLES[styleKey];
   const slides = carousel.slides;
@@ -1373,6 +1371,16 @@ export default function CarouselStudio() {
       setGenerating(false);
     }
   };
+
+  // Auto-generate when arriving from Publish with intent
+  useEffect(() => {
+    if (autoGenTriggered.current) return;
+    if (navState?.autoGenerate && navState?.topic && slides.length === 0 && !generating) {
+      autoGenTriggered.current = true;
+      const t = setTimeout(() => { generate(); }, 200);
+      return () => clearTimeout(t);
+    }
+  }, [navState, slides.length, generating]);
 
   const updateSlide = (patch: Partial<Slide>) => {
     setCarousel(c => ({
@@ -1641,7 +1649,26 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <div className="space-y-4">
               <div className="mx-auto" style={{ maxWidth: dim === "1200x628" ? 900 : 640, width: "100%" }}>
                 <div style={{ aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`, boxShadow: "0 30px 80px rgba(0,0,0,0.5)", borderRadius: 16, overflow: "hidden" }}>
-                  {slide && <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />}
+                  {slide ? (
+                    <SlideSVG slide={slide} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-center px-8"
+                         style={{ background: style.bg, color: style.fg }}>
+                      {generating ? (
+                        <>
+                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: "#C5A55A" }} />
+                          <div className="text-base font-semibold mb-1">Generating your carousel…</div>
+                          {topic && <div className="text-sm opacity-70 max-w-md">Creating 8 slides on: {topic}</div>}
+                        </>
+                      ) : (
+                        <>
+                          <LayoutGrid className="w-10 h-10 mb-4 opacity-40" />
+                          <div className="text-base font-semibold mb-1">Enter a topic and click Generate</div>
+                          <div className="text-sm opacity-60 max-w-md">Or pick a signal from the sidebar — 8 slides · 5 styles · Arabic & English · PDF export</div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1736,7 +1763,8 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                     setTopic(t);
                     if (ctx) setContextText(ctx);
                     setSelectedSignalId(signalId);
-                    toast.success("Signal loaded — click Generate Carousel");
+                    toast.success("Signal loaded — generating carousel…");
+                    setTimeout(() => generate(), 250);
                   }}
                 />
               </div>
