@@ -184,8 +184,14 @@ const Admin = () => {
   const handleDeleteUser = async (email: string) => {
     setDeletingEmail(email);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("No active session");
+      }
+
       const { data, error } = await supabase.functions.invoke("admin-delete-user", {
         body: { target_email: email },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error || (data && (data as any).error)) {
         throw new Error((data as any)?.error || error?.message || "Delete failed");
