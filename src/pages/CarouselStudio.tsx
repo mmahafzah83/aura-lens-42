@@ -133,7 +133,7 @@ const DIM: Record<Dimension, { w: number; h: number; label: string }> = {
 const emptyCarousel = (): Carousel => ({
   carousel_title: "",
   total_slides: 0,
-  author_name: "Mohammad Mahafzah", author_title: "Director", author_handle: "@mmahafzah",
+  author_name: "", author_title: "", author_handle: "",
   signal_attribution: null,
   hashtags: [],
   linkedin_caption: "",
@@ -378,13 +378,11 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
     stripPos === "left"  ? (isRTL ? w - 4 : 0) :
     -10;
   const showStrip = stripPos !== "none";
-  // Author name — language-aware. Always show full "Mohammad Mahafzah" / "محمد محافظة"
-  // regardless of what the EF returned, so the brand stays consistent in both languages.
-  const rawAuthor = carousel.author_name || "";
-  const displayAuthor = isRTL
-    ? (/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "محمد محافظة")
-    : (/[A-Za-z]/.test(rawAuthor) && !/[\u0600-\u06FF]/.test(rawAuthor) ? rawAuthor : "Mohammad Mahafzah");
-  const authorInitial = isRTL ? "م" : (displayAuthor.trim().charAt(0).toUpperCase() || "M");
+  // Author name — language-aware. Falls back to a neutral placeholder so we never
+  // leak another user's brand. Real value comes from the current user's profile.
+  const rawAuthor = (carousel.author_name || "").trim();
+  const displayAuthor = rawAuthor || (isRTL ? "اسمك" : "Your Name");
+  const authorInitial = displayAuthor.charAt(0).toUpperCase() || (isRTL ? "؟" : "?");
   // Always use the branded initial circle on every slide (not just COVER/CTA).
   const showWatermarkNumber = ["BOLD_CLAIM", "QUESTION", "REFRAME"].includes(slide.slide_type);
   const patternId = `pat-${slide.slide_number}-${style.key}`;
@@ -1137,7 +1135,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
                 {(() => {
                   const t = slide.cta_button || "";
-                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@mmahafzah"])[0];
+                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@your-handle"])[0];
                   if (isRTL) {
                     return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
                   }
@@ -1311,6 +1309,32 @@ export default function CarouselStudio() {
   const [regeneratingIndex, setRegeneratingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedToLibrary, setSavedToLibrary] = useState(false);
+  const [authorDefaults, setAuthorDefaults] = useState<{ name: string; title: string; handle: string }>({ name: "", title: "", handle: "" });
+
+  // Load current user's author info on mount — never falls back to another user's data.
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid) return;
+      const [pRes, lRes] = await Promise.all([
+        supabase.from("diagnostic_profiles").select("first_name, level, firm, core_practice").eq("user_id", uid).maybeSingle(),
+        supabase.from("linkedin_connections").select("handle, display_name, profile_name").eq("user_id", uid).maybeSingle(),
+      ]);
+      const p: any = pRes.data || {};
+      const l: any = lRes.data || {};
+      const name = (l.display_name || l.profile_name || p.first_name || "").trim();
+      const title = [p.level, p.firm].filter(Boolean).join(" · ") || (p.core_practice || "");
+      const handle = (l.handle || "").replace(/^@/, "").trim();
+      setAuthorDefaults({ name, title, handle: handle ? `@${handle}` : "" });
+      setCarousel(c => ({
+        ...c,
+        author_name: c.author_name || name,
+        author_title: c.author_title || title,
+        author_handle: c.author_handle || (handle ? `@${handle}` : ""),
+      }));
+    })();
+  }, []);
 
   const offscreenRef = useRef<HTMLDivElement>(null);
   const autoGenTriggered = useRef(false);
@@ -1358,7 +1382,15 @@ export default function CarouselStudio() {
         return;
       }
       const numbered = data.slides.map((s: Slide, i: number) => ({ ...s, slide_number: i + 1 }));
-      setCarousel({ ...data, slides: numbered, total_slides: numbered.length });
+      setCarousel({
+        ...data,
+        slides: numbered,
+        total_slides: numbered.length,
+        // Always overwrite EF-returned author with the current user's profile to prevent leakage.
+        author_name: authorDefaults.name || data.author_name || "",
+        author_title: authorDefaults.title || data.author_title || "",
+        author_handle: authorDefaults.handle || data.author_handle || "",
+      });
       // Auto-collapse signals once a real carousel is loaded
       setShowSignals(false);
       setActiveIdx(0);

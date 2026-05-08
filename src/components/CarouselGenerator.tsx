@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Loader2, Globe, Download, RefreshCw, Pencil, Eye, ChevronLeft, ChevronRight,
   LayoutGrid, Check, Copy, Hash, ImageIcon, Sparkles, Layers, ArrowRight,
@@ -78,6 +78,22 @@ type PipelineStep = "input" | "frameworks" | "visual_plan" | "carousel" | "visua
 
 type Lang = "en" | "ar";
 type Style = "minimal_creator" | "dark_creator" | "corporate_gradient";
+
+interface AuthorInfo {
+  name: string;
+  title: string;
+  focus: string;
+  handle: string;
+  handleUrl: string;
+}
+
+const DEFAULT_AUTHOR: AuthorInfo = {
+  name: "Your Name",
+  title: "Your Title",
+  focus: "Your Focus",
+  handle: "your-handle",
+  handleUrl: "linkedin.com/in/your-handle",
+};
 
 interface CarouselGeneratorProps {
   open: boolean;
@@ -299,8 +315,8 @@ const DiagramOverlay = ({ data, palette, isAr }: { data: DiagramData; palette: t
 
 /* ── Slide Renderer (1080×1350 Portrait) ──────────────────── */
 const SlidePreview = ({
-  slide, style, lang, width = 320,
-}: { slide: Slide; style: Style; lang: Lang; width?: number }) => {
+  slide, style, lang, width = 320, author = DEFAULT_AUTHOR,
+}: { slide: Slide; style: Style; lang: Lang; width?: number; author?: AuthorInfo }) => {
   const p = PALETTES[style];
   const isAr = lang === "ar";
   const scale = width / CANVAS_W;
@@ -493,19 +509,19 @@ const SlidePreview = ({
                 fontSize: 18, color: p.accent,
               }}>👤</div>
               <div style={{ fontSize: 26, fontWeight: 800, color: p.fg, textAlign: "center", letterSpacing: "0.02em" }}>
-                M. Mahafzah
+                {author.name}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, color: p.accent }}>💼</span>
               <div style={{ fontSize: 16, color: p.muted, textAlign: "center", lineHeight: 1.4 }}>
-                Strategy | Digital & Business Transformation
+                {author.title}
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, color: p.accent }}>⚡</span>
               <div style={{ fontSize: 15, color: p.accent, textAlign: "center", fontWeight: 700, letterSpacing: "0.05em" }}>
-                Focus on Utilities & Power
+                Focus on {author.focus}
               </div>
             </div>
             <div style={{ height: 6 }} />
@@ -515,7 +531,7 @@ const SlidePreview = ({
               backgroundColor: `${p.accent}12`, border: `1px solid ${p.accent}25`,
             }}>
               <span style={{ fontSize: 14, color: p.accent }}>🔗</span>
-              <span style={{ fontSize: 14, color: p.accent, fontWeight: 600 }}>linkedin.com/in/mmahafzah</span>
+              <span style={{ fontSize: 14, color: p.accent, fontWeight: 600 }}>{author.handleUrl}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
               <span style={{ fontSize: 16, color: p.muted, opacity: 0.6 }}>↻</span>
@@ -531,7 +547,7 @@ const SlidePreview = ({
             alignItems: "center", fontSize: 14, color: p.muted, opacity: 0.3,
             borderTop: `1px solid ${p.muted}15`, zIndex: 3,
           }}>
-            <span style={{ fontWeight: 700, letterSpacing: 1 }}>M. Mahafzah</span>
+            <span style={{ fontWeight: 700, letterSpacing: 1 }}>{author.name}</span>
             <span style={{ letterSpacing: 3, textTransform: "uppercase", fontSize: 11 }}>Save ↗</span>
           </div>
         )}
@@ -557,6 +573,36 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
   const [visualProgress, setVisualProgress] = useState(0);
   const [visualTotal, setVisualTotal] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Current user author info — fetched fresh per session, never falls back to another user's data.
+  const [author, setAuthor] = useState<AuthorInfo>(DEFAULT_AUTHOR);
+  useEffect(() => {
+    (async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid) return;
+      const [pRes, lRes] = await Promise.all([
+        supabase.from("diagnostic_profiles")
+          .select("first_name, level, firm, sector_focus, core_practice")
+          .eq("user_id", uid).maybeSingle(),
+        supabase.from("linkedin_connections")
+          .select("handle, profile_url, display_name, profile_name")
+          .eq("user_id", uid).maybeSingle(),
+      ]);
+      const p: any = pRes.data || {};
+      const l: any = lRes.data || {};
+      const fullName = (l.display_name || l.profile_name || p.first_name || "").trim();
+      const titleParts = [p.level, p.firm].filter(Boolean);
+      const handle = (l.handle || "").replace(/^@/, "").trim();
+      setAuthor({
+        name: fullName || DEFAULT_AUTHOR.name,
+        title: titleParts.length ? titleParts.join(" · ") : (p.core_practice || DEFAULT_AUTHOR.title),
+        focus: p.sector_focus || p.core_practice || DEFAULT_AUTHOR.focus,
+        handle: handle || DEFAULT_AUTHOR.handle,
+        handleUrl: handle ? `linkedin.com/in/${handle}` : (l.profile_url ? String(l.profile_url).replace(/^https?:\/\//, "") : DEFAULT_AUTHOR.handleUrl),
+      });
+    })();
+  }, []);
 
   // Framework pipeline state
   const [topicAnalysis, setTopicAnalysis] = useState<TopicAnalysis | null>(null);
@@ -1091,16 +1137,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
           ctx.textAlign = "left";
           ctx.fillStyle = p.fg;
           ctx.font = "800 26px Inter, Arial, sans-serif";
-          ctx.fillText("M. Mahafzah", CANVAS_W / 2 - 50, ctaY + 46);
+          ctx.fillText(author.name, CANVAS_W / 2 - 50, ctaY + 46);
 
           ctx.fillStyle = p.muted;
           ctx.font = "400 16px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("💼  Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 86);
+          ctx.fillText(`💼  ${author.title}`, CANVAS_W / 2, ctaY + 86);
 
           ctx.fillStyle = p.accent;
           ctx.font = "700 15px Inter, Arial, sans-serif";
-          ctx.fillText("⚡  Focus on Utilities & Power", CANVAS_W / 2, ctaY + 120);
+          ctx.fillText(`⚡  Focus on ${author.focus}`, CANVAS_W / 2, ctaY + 120);
 
           roundRect(ctx, CANVAS_W / 2 - 130, ctaY + 148, 260, 36, 18);
           ctx.fillStyle = `${p.accent}12`;
@@ -1111,7 +1157,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
           ctx.fillStyle = p.accent;
           ctx.font = "600 14px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("🔗  linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 172);
+          ctx.fillText(`🔗  ${author.handleUrl}`, CANVAS_W / 2, ctaY + 172);
 
           ctx.fillStyle = p.muted;
           ctx.globalAlpha = 0.7;
@@ -1126,7 +1172,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
           ctx.fillStyle = p.muted;
           ctx.font = "700 13px Inter, Arial, sans-serif";
           ctx.textAlign = isAr ? "right" : "left";
-          ctx.fillText("M. Mahafzah", isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
+          ctx.fillText(author.name, isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
           ctx.textAlign = isAr ? "left" : "right";
           ctx.font = "400 11px Inter, Arial, sans-serif";
           ctx.fillText("SAVE ↗", isAr ? SAFE_M : CANVAS_W - SAFE_M, CANVAS_H - 28);
@@ -1627,7 +1673,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                             currentSlide === idx ? "border-primary/40" : "border-transparent hover:border-primary/15"
                           }`}
                         >
-                          <SlidePreview slide={slide} style={style} lang={lang} width={160} />
+                          <SlidePreview slide={slide} style={style} lang={lang} width={160} author={author} />
                           {!slide.image_url && slide.image_prompt && (
                             <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
                               <ImageIcon className="w-3 h-3 text-amber-500/60" />
@@ -1645,7 +1691,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                     <div className="space-y-3">
                       <div className="flex justify-center">
                         <div className="rounded-xl overflow-hidden shadow-2xl border border-primary/[0.08]">
-                          <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} />
+                          <SlidePreview slide={currentSlides[currentSlide]} style={style} lang={lang} width={Math.min(380, window.innerWidth - 48)} author={author} />
                         </div>
                       </div>
 
@@ -1754,7 +1800,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                               currentSlide === idx ? "border-primary/50" : "border-transparent opacity-60 hover:opacity-100"
                             }`}
                           >
-                            <SlidePreview slide={slide} style={style} lang={lang} width={48} />
+                            <SlidePreview slide={slide} style={style} lang={lang} width={48} author={author} />
                           </button>
                         ))}
                       </div>

@@ -1526,8 +1526,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       language={lang}
                       authorName={
                         lang === 'ar'
-                          ? 'محمد محافظة'
-                          : `${profileName || 'Mohammad'} Mahafzah`
+                          ? (profileName || 'اسمك')
+                          : (profileName || 'Your Name')
                       }
                       authorTitle={profileRole || 'Professional'}
                       recommendedStyle={cardRecommendation?.style}
@@ -1597,8 +1597,20 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   const [suggestions, setSuggestions] = useState<NarrativeSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [signalCount, setSignalCount] = useState<number | null>(null);
+  const [captureCount, setCaptureCount] = useState<number | null>(null);
 
-  useEffect(() => { loadSuggestions(); }, []);
+  useEffect(() => {
+    loadSuggestions();
+    (async () => {
+      const [{ count: sc }, { count: cc }] = await Promise.all([
+        supabase.from("strategic_signals" as any).select("id", { count: "exact", head: true }).eq("status", "active"),
+        supabase.from("entries").select("id", { count: "exact", head: true }),
+      ]);
+      setSignalCount(sc || 0);
+      setCaptureCount(cc || 0);
+    })();
+  }, []);
 
   const loadSuggestions = async () => {
     const { data } = await (supabase.from("narrative_suggestions" as any) as any).select("*").order("created_at", { ascending: false }).limit(20);
@@ -1649,6 +1661,19 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
 
   if (loading) {
     return <div className="flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-primary/40" /></div>;
+  }
+
+  // New-user empty state — show guidance, never fake plans.
+  if (signalCount === 0 && captureCount === 0 && suggestions.length === 0) {
+    return (
+      <div className="text-center py-16 space-y-3 max-w-md mx-auto">
+        <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
+        <p className="text-foreground font-medium">Your content plan starts with intelligence</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Your plan will appear here after you've built some intelligence. Start by capturing 3-5 articles in your area of expertise — Aura needs material to recognise patterns and surface narrative angles.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -2027,6 +2052,12 @@ const VoiceTrainer = () => {
       <div className="flex items-center gap-2 mb-4">
         <Mic className="w-4 h-4 text-primary" />
         <p className="text-sm font-semibold text-foreground">Train your voice</p>
+      </div>
+
+      <div className="mb-4 space-y-2 text-xs text-muted-foreground leading-relaxed">
+        <p className="text-foreground font-medium">Every post Aura writes will mirror YOUR writing style — not generic AI.</p>
+        <p>Paste 3-5 LinkedIn posts you've written. Aura analyses your rhythm, your word choices, your sentence patterns.</p>
+        <p>The more examples you give, the more authentically Aura writes as you.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
