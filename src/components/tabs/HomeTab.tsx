@@ -215,6 +215,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     }, 300);
   };
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [assessmentDone, setAssessmentDone] = useState(false);
   const entriesLoaded = Array.isArray(entries);
   const showWelcome =
     !welcomeDismissed && entriesLoaded && entries!.length < 3 && profileLoaded;
@@ -619,13 +620,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         const { data } = await withTimeout(
           supabase
             .from("diagnostic_profiles")
-            .select("first_name, sector_focus")
+            .select("first_name, sector_focus, brand_assessment_completed_at, brand_pillars")
             .eq("user_id", uid)
             .maybeSingle(),
           8000,
         );
         if (data?.first_name) name = data.first_name;
         if ((data as any)?.sector_focus) setSectorFocus((data as any).sector_focus);
+        const d: any = data || {};
+        const done = !!d.brand_assessment_completed_at || (Array.isArray(d.brand_pillars) && d.brand_pillars.length > 0);
+        setAssessmentDone(done);
       } catch (e) {
         console.warn("[HomeTab] profile name fetch failed", e);
       }
