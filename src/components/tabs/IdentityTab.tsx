@@ -377,6 +377,77 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </p>
       </div>
       <FirstVisitHint page="story" />
+
+      {/* Gated welcome — single CTA for users who haven't completed Brand Assessment */}
+      {!assessmentCompleted && (
+        <div
+          style={{
+            background: "var(--ink, #1a1a1a)",
+            borderRadius: 16,
+            padding: "28px 28px 24px",
+            position: "relative",
+            overflow: "hidden",
+            border: "1px solid var(--brand-line, rgba(197,165,90,0.2))",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute", top: -80, right: -80, width: 240, height: 240,
+              background: "radial-gradient(circle, hsl(43 50% 55% / 0.12) 0%, transparent 70%)",
+              pointerEvents: "none",
+            }}
+          />
+          <div className="relative">
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--brand)", marginBottom: 8, textTransform: "uppercase", fontWeight: 600 }}>
+              Your professional identity
+            </div>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.25 }}>
+              Before Aura can build your intelligence portrait, we need to understand your professional positioning.
+            </h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, marginBottom: 20, maxWidth: 620 }}>
+              This 5-minute assessment shapes everything — from how we analyse your captures to how we write your content.
+            </p>
+            <button
+              onClick={() => setBrandOpen(true)}
+              style={{
+                background: "var(--brand)",
+                color: "var(--ink, #1a1a1a)",
+                border: 0,
+                borderRadius: 10,
+                padding: "12px 20px",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              Start your brand assessment →
+            </button>
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: 10, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
+                What you'll discover
+              </div>
+              <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+                <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
+                  <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
+                  Your market archetype — how the market naturally categorises you
+                </li>
+                <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
+                  <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
+                  Your positioning statement — how a CIO in your sector would describe you
+                </li>
+                <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
+                  <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
+                  Your authority territory — where your expertise runs deepest
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Two-column layout */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* LEFT COLUMN */}
