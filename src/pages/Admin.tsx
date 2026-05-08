@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Trash2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
   Select,
@@ -74,6 +74,10 @@ const Admin = () => {
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
   const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number }>>([]);
   const [activeLoading, setActiveLoading] = useState(false);
+
+  // Delete-user state
+  const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
+  const [deletingEmail, setDeletingEmail] = useState<string | null>(null);
 
   // QA health check
   type QAResult = { step: number; action: string; passed: boolean; error: string | null; duration_ms: number };
