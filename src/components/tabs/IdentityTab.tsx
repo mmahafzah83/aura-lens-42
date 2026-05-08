@@ -354,15 +354,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     );
   }
 
-  if (!loading && !profile) {
-    return (
-      <EmptyState
-        icon={UserIcon}
-        title="Tell your full story."
-        description="Set up your profile so Aura can shape signals and content around who you are."
-      />
-    );
-  }
+  // Note: empty profile is now stubbed in loadAll so the actionable shell always renders.
 
   return (
     <div className="space-y-6">
