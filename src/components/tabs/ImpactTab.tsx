@@ -103,6 +103,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   // All snapshots (no range filter) for Authority Trajectory forecasting
   const [allSnapshots, setAllSnapshots] = useState<{ score: number; created_at: string }[]>([]);
   const [scenario, setScenario] = useState<"current" | "publish2x" | "stop">("current");
+  const [topSignal, setTopSignal] = useState<string | null>(null);
 
   const [postMetricsCount, setPostMetricsCount] = useState(0);
   const [topPosts, setTopPosts] = useState<PostMetricRow[]>([]);
@@ -370,6 +371,26 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     })();
   }, []);
 
+  // Load top strategic signal (highest priority/confidence among active signals)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await (supabase as any)
+          .from("strategic_signals")
+          .select("signal_title, priority_score, confidence")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .order("priority_score", { ascending: false, nullsFirst: false })
+          .order("confidence", { ascending: false })
+          .limit(1);
+        const top = (data as any[])?.[0];
+        if (top?.signal_title) setTopSignal(top.signal_title);
+      } catch { /* silent */ }
+    })();
+  }, []);
+
   /* ── Score derivations ── */
   const latest = snapshots[snapshots.length - 1];
   const latestScore = latest?.score ?? 0;
@@ -571,9 +592,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const daysBetween = Math.max(1, (lastDate - firstDate) / 86400000);
     const avgDailyChange = (last.score - first.score) / daysBetween;
     const currentScore = last.score;
-    const mult = scenario === "current" ? 1 : scenario === "publish2x" ? 1.4 : -0.3;
-    const dailyChange = avgDailyChange * mult;
+    let dailyChange: number;
+    if (scenario === "stop") {
+      // Stop capturing: capture component (~20pts) collapses, signals decay.
+      // Force a decline regardless of historical trend.
+      dailyChange = -Math.max(0.2, currentScore * 0.004);
+    } else {
+      const mult = scenario === "publish2x" ? 1.4 : 1;
+      dailyChange = avgDailyChange * mult;
+    }
     const clamp = (n: number) => Math.round(Math.min(100, Math.max(0, n)));
+    const spanDays = daysBetween;
+    const has30dHistory = spanDays >= 25;
+    const has90dHistory = spanDays >= 80;
     const forecast30 = clamp(currentScore + dailyChange * 30);
     const forecast60 = clamp(currentScore + dailyChange * 60);
     const forecast90 = clamp(currentScore + dailyChange * 90);
@@ -594,7 +625,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         to95Text = `To reach 95: you need approximately ${needed} more points. At ${scenario === "stop" ? "this declining rate" : "current pace"}: not reachable.`;
       }
     }
-    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text };
+    return { currentScore, forecast30, forecast60, forecast90, trendText, to95Text, has30dHistory, has90dHistory };
   }, [allSnapshots, scenario]);
 
   /* ── XLSX Upload ── */
@@ -832,7 +863,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     marginTop: 4,
                   }}
                 >
-                  {trajectory.forecast30}
+                  {trajectory.has30dHistory ? trajectory.forecast30 : "—"}
                 </div>
               </div>
               <div>
@@ -858,7 +889,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     marginTop: 4,
                   }}
                 >
-                  {trajectory.forecast90}
+                  {trajectory.has90dHistory ? trajectory.forecast90 : "—"}
                 </div>
               </div>
             </div>
@@ -880,6 +911,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           const maxV = Math.max(...bars, 1);
           // Color ramp: orange near-term → amber at 30d → red at 90d
           const barColor = (i: number, n: number) => {
+            if (scenario === "stop") return "var(--danger)";
             const t = n <= 1 ? 0 : i / (n - 1);
             if (t < 0.5) return "var(--brand)";
             if (t < 0.85) return "var(--warning)";
@@ -975,8 +1007,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 style={{ fontSize: 9, color: "var(--ink-3)" }}
               >
                 <span>Now</span>
-                <span>30d · {trajectory.forecast30}</span>
-                <span>90d · {trajectory.forecast90}</span>
+                <span>30d · {trajectory.has30dHistory ? trajectory.forecast30 : "—"}</span>
+                <span>90d · {trajectory.has90dHistory ? trajectory.forecast90 : "—"}</span>
               </div>
             </div>
           );
@@ -1087,10 +1119,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
             { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
-            { kind: "content" as const, label: "Content", value: contentScore, desc: "Publish via Aura to improve", color: "var(--success)" },
+            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
             { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
           ]).map((c, idx) => {
             const cfg = subScoreCard(c.kind, c.value);
+            const isContentCount = c.kind === "content";
             return (
               <div
                 key={c.label}
@@ -1114,12 +1147,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   >
                     {c.label}
                   </div>
-                  <div
-                    className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                    style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
-                  >
-                    {cfg.tag}
-                  </div>
+                  {!isContentCount && (
+                    <div
+                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
+                    >
+                      {cfg.tag}
+                    </div>
+                  )}
                 </div>
                 <div
                   className="tabular-nums mt-1"
@@ -1134,7 +1169,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   <BreakdownNumber value={Math.round(c.value)} index={idx} />
                 </div>
                 <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
-                  {c.desc}
+                  {isContentCount ? "Posts Analyzed" : c.desc}
                 </div>
               </div>
             );
@@ -1702,15 +1737,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
-                {contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
+                {topSignal ? (
+                  <>
+                    <div className="text-foreground font-bold text-lg leading-snug">{topSignal}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
+                  </>
+                ) : contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
                   <>
                     <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
                   </>
                 ) : (
                   <>
-                    <div className="text-foreground font-medium text-sm leading-snug">Post 3+ times to unlock theme analysis</div>
-                    <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                    <div className="text-foreground font-medium text-sm leading-snug">Build active signals to surface your strongest territory</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
                   </>
                 )}
               </div>
