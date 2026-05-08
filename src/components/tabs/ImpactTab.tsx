@@ -1737,15 +1737,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 <div className="text-xs text-muted-foreground mt-1">Posts Analyzed</div>
               </div>
               <div className="glass-card rounded-xl p-5 border border-border/8">
-                {contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
+                {topSignal ? (
+                  <>
+                    <div className="text-foreground font-bold text-lg leading-snug">{topSignal}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
+                  </>
+                ) : contentPerf.topTheme && contentPerf.topTheme !== "—" ? (
                   <>
                     <div className="text-foreground font-bold text-lg capitalize">{contentPerf.topTheme}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
                   </>
                 ) : (
                   <>
-                    <div className="text-foreground font-medium text-sm leading-snug">Post 3+ times to unlock theme analysis</div>
-                    <div className="text-xs text-muted-foreground mt-1">Top Theme</div>
+                    <div className="text-foreground font-medium text-sm leading-snug">Build active signals to surface your strongest territory</div>
+                    <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
                   </>
                 )}
               </div>
