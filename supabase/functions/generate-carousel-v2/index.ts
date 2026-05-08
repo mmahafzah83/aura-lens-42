@@ -88,11 +88,15 @@ serve(async (req) => {
 ═══ SLIDE TYPES ═══
 Use 8 slides per carousel. NEVER repeat the same type consecutively.
 
-COVER: The scroll-stopper. A bold claim that challenges conventional thinking. Structure: section_label (topic category in CAPS) + headline (6-8 words, provocative) + headline_accent (the emotional hook phrase in italic) + body (one sentence, max 12 words, sets the promise). Must include "SWIPE →".
+COVER: The scroll-stopper. A bold claim that challenges conventional thinking. Structure: section_label (topic category in CAPS) + headline (6-8 words, provocative) + headline_accent (the emotional hook phrase in italic) + body (one sentence of pure content, max 12 words, sets the promise). DO NOT append "SWIPE →" or any swipe instruction to the body — the renderer adds a chevron indicator automatically.
 
 BOLD_CLAIM: Pure impact. One sentence, 8-12 words. No body text. The kind of line someone screenshots and shares. Think: "The ROI of your last transformation was calculated wrong."
 
-REFRAME: Two contrasting statements that flip a belief. "What everyone says: [common wisdom]. What the data shows: [surprising truth]." Max 20 words total across both statements.
+REFRAME: A myth/truth flip with three required fields:
+  - headline: the WRONG belief most people hold (gets struck through). 6-12 words.
+  - headline_accent: the CORRECT reframe — the truth headline. 4-10 words.
+  - body: 2-3 sentences (40-60 words) explaining WHY the reframe matters with a concrete example, implication, or supporting evidence. NEVER leave body empty. NEVER use placeholder phrases like "What everyone says". Body is mandatory.
+  Example — headline: "More data means better decisions." headline_accent: "Trusted data beats big data." body: "GCC utilities collect 10x more meter data than they can process. The gap isn't volume — it's governance. Organizations with strong data quality frameworks outperform peers with bigger datasets by 3:1 on operational KPIs."
 
 BIG_NUMBER: One stat dominates the slide. The number renders at 64-80px. Context is tiny. Source must be a SPECIFIC, CREDIBLE attribution (company name + report/year, or "Based on [N] GCC utility assessments" — NEVER "Industry Research" or "The Signal"). If grounding in a signal, use the signal title as the source.
 
@@ -279,9 +283,11 @@ Arabic 8-slide rhythm (replaces the English one):
 - Slide 8: CTA
 
 Per-slide Arabic notes:
-- COVER: provocative Arabic headline + Arabic body. Use "اسحب ←" (NOT "SWIPE →") if you include a swipe cue.
-- REFRAME: "يعتقد الأغلبية" (struck-through belief) vs "الحقيقة" (bold truth)
-- REFRAME: SHORT phrases for impact. headline (myth) = 3-5 Arabic words — write ONLY the myth statement itself, do NOT prefix with "يعتقد الأغلبية:" (the renderer adds that label). headline_accent (truth) = 3-6 Arabic words. The truth must directly contradict the myth.
+- COVER: provocative Arabic headline + Arabic body. The body must be PURE CONTENT — do NOT append "اسحب ←" or any swipe cue. The renderer adds a chevron automatically.
+- REFRAME (Arabic): three required fields:
+  - headline (myth): 3-6 Arabic words. The myth itself only — do NOT prefix with "يعتقد الأغلبية:" (renderer adds the label).
+  - headline_accent (truth): 3-6 Arabic words. Must directly contradict the myth.
+  - body: 2-3 SHORT Arabic sentences (15-30 words total) explaining the truth. NEVER leave empty.
 - BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
 - GRID (used in place of TERMINAL): 4-6 short numbered Arabic action phrases, 2-4 words each. No English code syntax.
 - COMPARE: keep English convention — compare_left_* = the WRONG/mistake, compare_right_* = the CORRECT/fix. The renderer auto-swaps visual position for RTL so the wrong approach is read first on the right and the correct fix sits on the left.
@@ -399,7 +405,7 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
       parsed.author_name = "محمد محافظة";
       parsed.author_title = "مدير التحول الرقمي";
     } else {
-      parsed.author_name = parsed.author_name || p.first_name || "Mohammad";
+      parsed.author_name = "Mohammad Mahafzah";
       parsed.author_title = parsed.author_title || `${p.level}${p.firm ? ', ' + p.firm : ''}`;
     }
     parsed.author_handle = parsed.author_handle || "@mmahafzah";
