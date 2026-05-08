@@ -158,6 +158,9 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
 
       {row && (
         <>
+          <p style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))", lineHeight: 1.55, margin: "0 0 12px" }}>
+            Here's how three audiences would describe you today — based on your assessment. As your intelligence grows, this portrait sharpens.
+          </p>
           <div style={{ display: "flex", gap: 6, marginBottom: 14, borderBottom: "1px solid var(--brand-line, rgba(197,165,90,0.18))" }}>
             {TABS.map((t) => {
               const active = tab === t.key;
