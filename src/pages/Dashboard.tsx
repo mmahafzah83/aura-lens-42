@@ -643,7 +643,7 @@ const Dashboard = () => {
                     case "p2_analytics":
                     case "p3_track":
                     case "p3_authority":
-                      setActiveTab("impact");
+                      setActiveTab("influence");
                       window.scrollTo({ top: 0, behavior: "smooth" });
                       break;
                     case "p3_mirror":
