@@ -990,7 +990,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const noEntries = entriesLoaded && entries!.length === 0;
   const hasSignals = !!topSignal;
   const dataReady = profileLoaded && !briefLoading && entriesLoaded;
-  const showWelcomeState = dataReady && noEntries && !hasSignals;
+  // Welcome state appears for any user who hasn't cleared all foundation gates
+  // (profile + assessment + 1+ capture). It also covers the original "0 entries" case.
+  const preCapture = !journey.loading && journey.currentGate < 2;
+  const showWelcomeState = dataReady && (preCapture || (noEntries && !hasSignals));
   const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
 
   if (showWelcomeState || showBuildingState) {
