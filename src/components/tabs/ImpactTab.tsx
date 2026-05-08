@@ -723,6 +723,97 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const ranges: RangeDays[] = [7, 30, 90, 365];
   const isEmpty = totalCaptureCount === 0;
 
+  // ─── New-user empty state ───
+  // With no captures there is nothing meaningful to show in the trajectory,
+  // breakdown, follower-growth, or LinkedIn sections. Render only the header,
+  // a 0-state score, the Authority Journey starting at Observer, and a CTA.
+  if (isEmpty) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="space-y-7 max-w-5xl"
+      >
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
+            Your authority trajectory
+          </div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+            Impact
+          </h1>
+        </div>
+
+        <section
+          className="relative overflow-hidden"
+          style={{
+            background: "var(--surface-ink-raised)",
+            borderRadius: 14,
+            padding: "32px 28px",
+            color: "var(--ink)",
+            border: "0.5px solid var(--brand-line)",
+            boxShadow: "var(--shadow-rest)",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 160,
+              height: 160,
+              margin: "0 auto",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid var(--brand-line)",
+              borderRadius: "50%",
+              fontFamily: "'DM Serif Display', Georgia, serif",
+              fontSize: 72,
+              color: "var(--ink-3)",
+              letterSpacing: "-0.04em",
+            }}
+          >
+            0
+          </div>
+          <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 420, marginInline: "auto" }}>
+            Your authority score will appear after you start capturing and publishing.
+          </p>
+
+          {auraData && (
+            <div className="relative mt-8 text-left">
+              <AuthorityJourney userId={userId} data={auraData} />
+            </div>
+          )}
+        </section>
+
+        <section
+          style={{
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border) / 0.6)",
+            borderRadius: 10,
+            padding: "20px 22px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+              Start building your intelligence
+            </div>
+            <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
+              Capture an article and Aura will start tracking your trajectory here.
+            </p>
+          </div>
+          <AuraButton variant="primary" size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4, padding: "8px 18px" }}>
+            Capture your first article →
+          </AuraButton>
+        </section>
+      </motion.div>
+    );
+  }
+
   // Max engagement rate in topPosts (for inline bars)
   const maxErPct = topPosts.reduce((m, p) => {
     const raw = Number(p.engagement_rate || 0);
