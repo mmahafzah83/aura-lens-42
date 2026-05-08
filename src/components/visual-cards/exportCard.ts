@@ -120,6 +120,8 @@ export function trunc(s: string, max: number): string {
 export function stripMarkdown(s: string): string {
   if (!s) return '';
   return s
+    // Strip format-label prefixes the model sometimes emits as the first line
+    .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST|بوست)\s*[:：\-—]?\s*/i, '')
     .replace(/```[\s\S]*?```/g, ' ')          // code fences
     .replace(/`([^`]+)`/g, '$1')              // inline code
     .replace(/^#{1,6}\s+/gm, '')              // headings
@@ -127,7 +129,8 @@ export function stripMarkdown(s: string): string {
     .replace(/\*(.+?)\*/g, '$1')              // italic
     .replace(/__(.+?)__/g, '$1')
     .replace(/_(.+?)_/g, '$1')
-    .replace(/^\s*[-*•]\s+/gm, '')            // bullet markers
+    .replace(/^\s*-{3,}\s*$/gm, '')           // horizontal rules ---
+    .replace(/^\s*[-*•◆↳►▶➤]\s+/gm, '')      // bullet markers (incl. Arabic decorative)
     .replace(/^\s*\d+[.)]\s+/gm, '')          // numbered list markers
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')  // links
     .replace(/\n{3,}/g, '\n\n')
@@ -137,17 +140,26 @@ export function stripMarkdown(s: string): string {
 /** Heuristic data-point extraction from raw post text. */
 export function extractDataPoints(text: string): { items: { label: string; value?: string }[] } | undefined {
   if (!text) return undefined;
+  // Operate on the raw text first so we can detect bullet/numbered markers
+  // BEFORE stripMarkdown removes them.
+  const rawLines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const bulletItems: string[] = [];
+  for (const line of rawLines) {
+    const cleanLine = line
+      .replace(/^\s*(?:منشور\s*LinkedIn|LinkedIn\s*Post|POST)\s*[:：\-—]?\s*/i, '')
+      .trim();
+    if (!cleanLine) continue;
+    // Numbered (Arabic-Indic or Latin) or bullet markers (◆ ↳ • - * ►)
+    const m = cleanLine.match(/^(?:[\d]+|[١٢٣٤٥٦٧٨٩])[.)\-]\s*(.+)/)
+      || cleanLine.match(/^[◆↳►▶➤•\-*]\s+(.+)/);
+    if (m && m[1] && m[1].length > 5) {
+      bulletItems.push(m[1]);
+    }
+  }
+  if (bulletItems.length >= 2) {
+    return { items: bulletItems.slice(0, 6).map(s => ({ label: trunc(stripMarkdown(s), 80) })) };
+  }
   text = stripMarkdown(text);
-  // Numbered lists: "1. foo" / "1) foo" / Arabic-Indic ١. ٢.
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  const numbered: string[] = [];
-  for (const line of lines) {
-    const m = line.match(/^(?:\d+|[١٢٣٤٥٦٧٨٩])[.)\-]\s*(.+)/);
-    if (m) numbered.push(m[1]);
-  }
-  if (numbered.length >= 2) {
-    return { items: numbered.slice(0, 6).map(s => ({ label: trunc(s, 80) })) };
-  }
   // Fallback: pick the first 3-5 short standalone sentences/lines
   const sentences = text.split(/(?<=[.!?؟])\s+/).map(s => s.trim()).filter(s => s.length > 20 && s.length < 140);
   if (sentences.length >= 3) {
@@ -177,8 +189,14 @@ export function extractInsight(text: string): string {
   const clean = stripMarkdown(text);
   // Prefer a sentence that was originally bolded
   const bold = text.match(/\*\*([^*]{20,160})\*\*/);
-  if (bold) return bold[1].trim();
-  const sentences = clean.split(/(?<=[.!?؟])\s+/).map(s => s.trim()).filter(s => s.length > 20 && s.length < 200);
+  if (bold) return stripMarkdown(bold[1]).trim();
+  // Skip lines that are obviously meta-labels or hashtags
+  const sentences = clean
+    .split(/(?<=[.!?؟])\s+|\n+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 20 && s.length < 220)
+    .filter(s => !/^#/.test(s))
+    .filter(s => !/^(منشور\s*LinkedIn|LinkedIn\s*Post|POST)/i.test(s));
   return sentences[0] || clean.slice(0, 140);
 }
 
@@ -212,8 +230,8 @@ export function deriveContentForType(
   switch (cardType) {
     case 'insight': {
       const insight = extractInsight(text);
-      const remaining = clean.replace(insight, '').trim();
-      return { headline: trunc(insight, 140), body: remaining ? trunc(remaining, 220) : undefined };
+      // Insight card: ONE strong statement only — no body dump.
+      return { headline: trunc(insight, 160) };
     }
     case 'stat': {
       const s = extractStat(text);
