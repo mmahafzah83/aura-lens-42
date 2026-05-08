@@ -155,45 +155,55 @@ export default function VisualCardRenderer(props: VisualCardProps) {
           <Layout style={style} props={{ ...props, language }} />
         </div>
 
-        {/* Footer */}
-        <div style={{
-          position: 'relative',
-          marginTop: 40,
-          paddingTop: 28,
-          borderTop: style.footerBorder,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          direction: dir,
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{
-              fontFamily: style.bodyFont, fontSize: 22, fontWeight: 600,
-              color: style.headlineColor,
-            }}>{props.authorName}</div>
-            <div style={{
-              fontFamily: FONTS.MONO, fontSize: 14, color: style.footerColor,
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-            }}>{props.authorTitle}</div>
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            color: style.footerAccentColor,
-          }}>
-            {/* Horizon Eye watermark — bronze, scales with card */}
-            <svg width="28" height="28" viewBox="0 0 80 80" fill="none" aria-hidden>
-              <path d="M8 40 C 22 22, 58 22, 72 40 C 58 58, 22 58, 8 40 Z" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-              <circle cx="40" cy="40" r="11" stroke="currentColor" strokeWidth="2" fill="none"/>
-              <circle cx="40" cy="40" r="4" fill="currentColor"/>
-            </svg>
-            <div style={{
-              fontFamily: FONTS.MONO, fontSize: 13, letterSpacing: '0.08em',
-              textTransform: 'uppercase', fontWeight: 500,
-            }}>
-              Powered by Aura · aura-intel.org
+        {/* Footer — mirrors Carousel slide footer */}
+        {(() => {
+          const initial = isAr
+            ? 'م'
+            : (props.authorName?.trim().charAt(0).toUpperCase() || 'M');
+          return (
+            <div style={{ position: 'relative', marginTop: 40 }}>
+              {/* Thin separator — full width, 10% opacity */}
+              <div style={{
+                height: 1,
+                background: 'currentColor',
+                opacity: 0.1,
+                marginBottom: 24,
+              }} />
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                direction: dir,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: '50%',
+                    background: style.footerAccentColor,
+                    color: style.background,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,
+                    fontSize: 14, fontWeight: 800, lineHeight: 1,
+                  }}>
+                    {initial}
+                  </div>
+                  <div style={{
+                    fontFamily: isAr ? "'Cairo','DM Sans',sans-serif" : style.bodyFont,
+                    fontSize: 18, fontWeight: 600,
+                    color: style.headlineColor,
+                  }}>
+                    {props.authorName}
+                  </div>
+                </div>
+                <div style={{
+                  fontFamily: FONTS.MONO, fontSize: 14,
+                  color: style.footerColor, letterSpacing: '0.04em',
+                }}>
+                  aura-intel.org
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </div>
     </div>
   );
