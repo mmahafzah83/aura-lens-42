@@ -13,6 +13,8 @@ import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectionError from "@/components/ui/section-error";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import { useJourneyState } from "@/hooks/useJourneyState";
+import { useAuthReady } from "@/hooks/useAuthReady";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
@@ -585,6 +587,8 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
 
 const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user: authUser } = useAuthReady();
+  const journey = useJourneyState(authUser?.id ?? null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
@@ -773,6 +777,45 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         }
       `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
+        {/* GATE: hide everything below until 3 distinct capture sources exist */}
+        {!journey.loading && !journey.capturesReady ? (
+          <div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase", fontFamily: "var(--font-body)" }}>
+                Your strategic radar
+              </div>
+              <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+                Intelligence
+              </h1>
+              <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+                Patterns emerging from everything you capture — the sharper this gets, the more valuable your content becomes
+              </p>
+            </div>
+            <div
+              data-testid="intel-locked"
+              style={{
+                background: "var(--surface-ink-raised)",
+                border: "0.5px solid var(--surface-ink-subtle)",
+                borderRadius: 12,
+                padding: "28px 28px",
+              }}
+            >
+              <div style={{ fontSize: 10, letterSpacing: "0.14em", fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", marginBottom: 10 }}>
+                Your strategic radar
+              </div>
+              <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 600 }}>
+                Intelligence emerges from patterns across your captures. Aura needs at least 3 articles from different sources to start detecting meaningful signals. Aura reads what you read — every article you capture adds a layer of intelligence.
+              </p>
+              <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 16 }}>
+                Current: {journey.distinctSources} of 3 sources
+              </div>
+              <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
+                Capture an article →
+              </Button>
+            </div>
+          </div>
+        ) : (
+        <>
         {signals.length === 0 && <FirstVisitHint page="intelligence" />}
 
         {/* ── Header: title + inline counters ── */}
@@ -1082,6 +1125,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               setSelectedSignalId(signalId);
             }}
           />
+        )}
+        </>
         )}
       </div>
 

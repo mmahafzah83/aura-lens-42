@@ -1,48 +1,95 @@
-# V1 Final Cleanup + Quest Log
+## The Connected Journey Rebuild
 
-7 frontend-only fixes. No EF or schema changes.
+The new user experience today is a set of disconnected pages. This plan unifies Home, My Story, Quest Log, Intelligence, and Publish around **one shared journey state** so every surface tells the user the same story: where you are, what's next, and why it matters.
 
-## Investigation summary
+### Single source of truth
 
-- **`WeeklyIntelligenceLoopCard`** (`src/components/WeeklyIntelligenceLoopCard.tsx`) currently shows when neither table has rows by setting `days = 999`. That's the bug — needs to hide instead.
-- **`StrategicAdvisorPanel`** is rendered inside `IntelligenceTab` and `HomeTab` / `StrategyTab`. We'll gate the Intelligence-page render on signal count.
-- **`AutomationStrip`** is in `IntelligenceTab.tsx` lines 122-192 — the "Move generation" card is `cards[2]`. Will gate on signal count.
-- **`AuthorityJourney.tsx`** lines 292-310 already strips "Your your" defensively. The broken sentence "Your [title] signal (70%) is ready to publish" comes from `data.personalized_nudge` (server-generated). Fix at render time by detecting the pattern and reformatting.
-- **`FirstVisitHint`** (`src/components/ui/FirstVisitHint.tsx`) — used somewhere on Intelligence; will check usage and gate on signal count.
-- **`HomeTab`** has the 3-step welcome — need to find and reorder.
-- **`ProfileMenu`** is the dropdown — Quest Log goes at the top.
-- **`user_milestones`** table exists per `useMilestones` hook with columns: `id, user_id, milestone_id, milestone_name, context, earned_at, acknowledged, shared`. Perfect for quests.
+Create `src/hooks/useJourneyState.ts` that returns:
 
-## Changes
+```text
+profileComplete      first_name + firm + level + sector_focus all set
+assessmentComplete   brand_assessment_completed_at OR brand_pillars.length > 0
+distinctSources      count of distinct entries.account_name
+capturesReady        distinctSources >= 3
+voiceTrained         authority_voice_profiles row exists
+hasSignals           active strategic_signals >= 1
+hasThreeSignals      active strategic_signals >= 3
+hasPublished         linkedin_posts has self_reported_published
+hasLinkedInData      influence_snapshots OR linkedin_post_metrics rows
+currentGate          0 | 1 | 2 | 3   (next gate user must clear)
+```
 
-### Fix 1 — Intelligence: gate "Next Move" + Move-generation card on `signals.length >= 3`
-`IntelligenceTab.tsx`: pass signal count into `AutomationStrip`; conditionally swap `StrategicAdvisorPanel` for an "Intelligence is growing" empty card.
+Cached per-user with a small in-memory store + window event `aura:journey-refresh` so any save (profile, assessment, voice, capture) refreshes all consumers. `useQuestProgress` will be refactored to consume this hook so quest log, Home, and My Story can never disagree.
 
-### Fix 2 — Home: hide WeeklyIntelligenceLoop for users with 0 LinkedIn rows
-`WeeklyIntelligenceLoopCard.tsx`: change the `dates.length === 0` branch to set `days = -1` and return `null` instead of `999`.
+### My Story — guided journey for pre-journey users
 
-### Fix 3 — Authority Journey nudge formatting
-`AuthorityJourney.tsx`: detect pattern `/Your (.+?) signal \((\d+%)\) is ready to publish/i` and re-render as a multi-line block (title in bold/quotes on its own line).
+When `currentGate < 3`, `IdentityTab` renders a new `<GuidedJourney />` component INSTEAD of the normal identity layout. The component shows three numbered steps with the emotional copy from the spec:
 
-### Fix 4 — Auto-hide Intelligence first-visit hint when signals exist
-Locate `<FirstVisitHint>` usage on Intelligence; wrap with `{signals.length === 0 && ...}`.
+```text
+STEP 1 — Your professional profile     [active | ✅ completed | 🔒 locked]
+STEP 2 — Brand assessment               [locked until 1]
+STEP 3 — Train your voice (optional)   [locked until 2, skippable]
+```
 
-### Fix 5 — Reorder Home welcome to Assessment → Capture → Watch
-`HomeTab.tsx`: find the existing 3-step welcome block; swap order, make Assessment primary CTA, Capture secondary; mark Step 1 complete when `diagnostic_profiles.brand_assessment_completed_at` is set.
+- Active step: full opacity, bronze border, expanded with inline form.
+- Completed: collapsed, ✅ badge, click to re-expand (read-only summary).
+- Locked: 50% opacity, grayed CTA, "Unlocks after Step X".
+- Step 1 expanded reveals existing `<ProfileManagement />` form (reused, no rewrite).
+- Step 2 CTA dispatches the existing `aura:open-brand-assessment` event.
+- Step 3 CTA scrolls to `<VoiceEngineSection />` rendered inline below; "Skip for now" sets `localStorage.aura_voice_skipped=1` and marks step done-as-skipped.
 
-### Fix 6 — Quest Log in ProfileMenu
-- New `src/components/QuestLog.tsx` with three phases (6 quests Phase 1, 6 Phase 2, 6 Phase 3).
-- New hook `src/hooks/useQuestProgress.ts` that fetches counts from: `diagnostic_profiles`, `entries`, `authority_voice_profiles`, `linkedin_posts`, `strategic_signals`, `influence_snapshots`, `linkedin_post_metrics`, `market_mirror_cache`, `content_items`, `authority_scores`. Maps each to a milestone via `useMilestones.checkAndAwardMilestone`.
-- Render compact view in `ProfileMenu.tsx` above the Appearance section: phase header, progress bar, next 3 unchecked items, "View full journey →" (links to a future page; for now toggles expanded view in dropdown).
-- Phase-complete celebration: lightweight card on Home gated by sessionStorage flag set when a phase flips to complete.
+After all gates clear (or 1+2 done with voice skipped), the normal IdentityTab content renders. The Objective Audit button and "Reset Assessment" button only render when `assessmentComplete === true`.
 
-### Fix 7 — Typo sweep
-- ripgrep `"Your your"` and `"Your top signal is strong at 0%"` across `src/`; replace as specified.
+### Home — welcome state mirrors the gates
 
-## Out of scope
-- No EF edits. No schema migrations. No changes to score logic, signal detection, or assessment flow.
-- "View full journey →" link target is a placeholder in this PR (toggles expansion; no new route).
+Replace the current 3-step welcome block in `HomeTab` with a renderer driven by `useJourneyState`:
 
-## Risks
-- Quest condition queries add ~10 lightweight selects on profile dropdown open. Mitigated by running on mount + caching in `useQuestProgress`.
-- `personalized_nudge` reformat is a regex-based render-time patch; if server text changes wording, it falls back to the raw string.
+- Gate 0 active: Step 1 ACTIVE → "Set up your profile" navigates to Identity tab. Steps 2 & 3 locked.
+- Gate 1 active: Step 1 ✅, Step 2 ACTIVE → "Start your assessment" dispatches `aura:open-brand-assessment`. Step 3 locked.
+- Gate 2 active: Steps 1 & 2 ✅, Step 3 ACTIVE → "Capture your first article" opens capture sidebar.
+- 1–2 captures: existing "intelligence is building" state (kept).
+- 3+ captures + signals: existing normal Home (kept).
+
+### Quest Log — locked states and same data
+
+`QuestLog.tsx` gets a `lockedAfter?: string` field per quest. When locked, item shows 🔒, muted, and tooltip "Unlocks after: …". Click on locked items shows tooltip instead of navigating. The hook now derives quests from `useJourneyState` so checkmarks always match Home and My Story.
+
+### Intelligence — gate behind 3 distinct captures
+
+In `IntelligenceTab`, when `!capturesReady`, render only the radar shell with copy:
+
+```text
+YOUR STRATEGIC RADAR
+Intelligence emerges from patterns across your captures. Aura needs at
+least 3 articles from different sources to start detecting meaningful
+signals.
+
+[Current: X of 3 captures needed]   [Capture an article →]
+```
+
+Hide signals list, "Your Next Move", automation cards, market coverage. Existing 3+ behaviour unchanged.
+
+### Publish — soft banner before assessment
+
+If `!assessmentComplete`, render a dismissible banner at the top of the Publish/Strategy tab linking to the assessment. Tools remain accessible (no hard block).
+
+### Out of scope
+
+- No edge function, schema, score, or signal-detection changes.
+- Brand assessment questionnaire itself untouched — only its entry point moves.
+- Existing users where all gates already cleared see no change.
+
+### Risks & mitigations
+
+- Two flows could compute "complete" differently → mitigated by the single hook.
+- IdentityTab is 1158 lines with deep conditional sections → we wrap the existing return in `if (showGuidedJourney) return <GuidedJourney/>` early, leaving normal-path code untouched.
+- Quest Log refactor could break for existing power users → keep current quest IDs and labels; only add `locked` flag.
+
+### Verification after build
+
+1. Brand-new user: Home shows Step 1 active, Steps 2-3 locked; My Story shows guided journey; Quest log shows 0/6 with locks.
+2. Save profile → all three surfaces flip Step 1 to ✅ within one render (event-driven refresh).
+3. Complete assessment → Step 2 ✅ everywhere; Voice unlocks.
+4. Skip voice → guided journey closes; normal My Story renders.
+5. Capture 3 distinct sources → Intelligence unlocks signals.
+6. Existing account with all data: no guided journey, no banners, no regressions.

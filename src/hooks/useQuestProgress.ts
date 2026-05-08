@@ -5,6 +5,8 @@ export interface Quest {
   id: string;
   label: string;
   done: boolean;
+  locked?: boolean;
+  unlockHint?: string;
 }
 export interface Phase {
   id: string;

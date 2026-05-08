@@ -23,6 +23,8 @@ import MilestoneShareModal, { type MilestoneShareData } from "@/components/Miles
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStage } from "@/components/ui/IntelligenceStageBadge";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import GuidedJourney from "@/components/GuidedJourney";
+import { useJourneyState } from "@/hooks/useJourneyState";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -49,6 +51,7 @@ interface ProfileRow {
 
 const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: IdentityTabProps) => {
   const { user: authUser, isReady: authReady } = useAuthReady();
+  const journey = useJourneyState(authUser?.id ?? null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorityScore, setAuthorityScore] = useState<number | null>(null);
@@ -372,6 +375,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   }
 
   // Note: empty profile is now stubbed in loadAll so the actionable shell always renders.
+
+  // GUIDED JOURNEY — replaces the normal My Story view until profile + assessment are done.
+  // Voice training is optional (skippable). Once cleared, the normal layout below renders.
+  if (!journey.loading && !journey.guidedJourneyDone) {
+    return (
+      <div className="space-y-6">
+        <GuidedJourney journey={journey} onResetDiagnostic={onResetDiagnostic} />
+        <BrandAssessmentModal
+          open={brandOpen}
+          onOpenChange={(o) => { setBrandOpen(o); if (!o) { if (authUser) loadAll(authUser.id); journey.refresh(); } }}
+          onComplete={() => { if (authUser) loadAll(authUser.id); journey.refresh(); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
