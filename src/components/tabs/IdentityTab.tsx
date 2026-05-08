@@ -87,6 +87,23 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authReady, authUser]);
 
+  useEffect(() => {
+    const openAssessment = () => setBrandOpen(true);
+    const openProfileEditor = () => {
+      // Scroll the inline ProfileManagement section into view
+      requestAnimationFrame(() => {
+        const el = document.querySelector('[data-testid="story-strategic-identity"]');
+        if (el && "scrollIntoView" in el) (el as HTMLElement).scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener("aura:open-brand-assessment", openAssessment);
+    window.addEventListener("aura:open-profile-editor", openProfileEditor);
+    return () => {
+      window.removeEventListener("aura:open-brand-assessment", openAssessment);
+      window.removeEventListener("aura:open-profile-editor", openProfileEditor);
+    };
+  }, []);
+
   const loadAll = async (uid: string) => {
     console.log("[IdentityTab] loadAll started");
     setLoadError(false);
