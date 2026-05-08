@@ -782,7 +782,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {slide.headline && (
             <text x={startX} y={gridY - 40} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={36} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={36} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {slide.headline}
             </text>
           )}
@@ -957,7 +957,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
         <g>
           {slide.headline && (
             <text x={startX} y={150} textAnchor={sideAnchor}
-                  fontFamily={headingFont} fontSize={42} fontWeight={isRTL ? 800 : 500} fill={style.fg}>
+                  fontFamily={headingFont} fontSize={42} fontWeight={style.headingWeight ?? 700} fill={style.fg}>
               {slide.headline}
             </text>
           )}
