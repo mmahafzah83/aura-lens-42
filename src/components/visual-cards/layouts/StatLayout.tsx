@@ -1,10 +1,15 @@
 import type { CardStyleConfig } from "../styles/cardStyles";
 import type { VisualCardProps } from "../types";
 import { FONTS } from "../styles/cardStyles";
+import InsightLayout from "./InsightLayout";
 
 export default function StatLayout({ style, props }: { style: CardStyleConfig; props: VisualCardProps }) {
   const item = props.dataPoints?.items?.[0];
-  const value = item?.value ?? '—';
+  if (!item || !item.value) {
+    // Graceful fallback: no number could be extracted (common in Arabic posts)
+    return <InsightLayout style={style} props={props} />;
+  }
+  const value = item.value;
   const unit = item?.label ?? '';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', flex: 1, gap: 24 }}>
