@@ -116,6 +116,18 @@ export default function FlashPanel() {
     setSelectedTheme(null);
   }, [lang]);
 
+  // Signal count — Flash mode is most useful once the user has signal territory.
+  const [signalCount, setSignalCount] = useState<number | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { count } = await supabase
+        .from("strategic_signals" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active");
+      setSignalCount(count || 0);
+    })();
+  }, []);
+
   // Load user's sector_focus from diagnostic_profiles and pre-select
   useEffect(() => {
     (async () => {
@@ -165,9 +177,10 @@ export default function FlashPanel() {
     versionWord: lang === "ar" ? "النسخة" : "Version",
   }), [lang]);
 
-  const canGenerate = mode === "theme"
+  const hasSignals = (signalCount ?? 0) > 0;
+  const canGenerate = hasSignals && (mode === "theme"
     ? !!postType && !!selectedTheme && !generating
-    : spark.trim().length >= 3 && !generating;
+    : spark.trim().length >= 3 && !generating);
 
   const buildTopic = (): string => {
     if (mode === "theme") return selectedTheme || "";
