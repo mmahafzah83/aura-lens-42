@@ -18,19 +18,35 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
   const [spec, setSpec] = useState<SchematicSpec | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [diagramType, setDiagramType] = useState<string>('auto');
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const generate = async () => {
+  const DIAGRAM_TYPES: { key: string; label: string }[] = [
+    { key: 'auto', label: 'Auto' },
+    { key: 'cycle', label: 'Cycle' },
+    { key: 'flow', label: 'Flow' },
+    { key: 'timeline', label: 'Timeline' },
+    { key: 'pyramid', label: 'Hierarchy' },
+    { key: 'matrix', label: 'Matrix' },
+    { key: 'funnel', label: 'Funnel' },
+    { key: 'bridge', label: 'Bridge' },
+    { key: 'ecosystem', label: 'Ecosystem' },
+  ];
+
+  const generate = async (typeOverride?: string) => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
+      const t = typeOverride ?? diagramType;
       const { data, error } = await supabase.functions.invoke("generate-schematic-spec", {
         body: {
           post_text: postText,
           language,
           author_name: authorName,
           author_title: authorTitle,
+          diagram_type: t === 'auto' ? '' : t,
+          variation: `seed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         },
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -71,7 +87,7 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
         </p>
         <button
           type="button"
-          onClick={generate}
+          onClick={() => generate()}
           className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[11px] font-medium border"
           style={{ borderColor: "var(--brand)", color: "var(--brand)" }}
         >
@@ -92,6 +108,22 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
 
   return (
     <div>
+      <div className="px-4 pt-3 pb-2 flex flex-wrap gap-1.5">
+        {DIAGRAM_TYPES.map(d => {
+          const active = diagramType === d.key;
+          return (
+            <button
+              key={d.key}
+              onClick={() => { setDiagramType(d.key); generate(d.key); }}
+              className={`px-2.5 py-1 rounded-full text-[11px] transition-colors ${
+                active ? 'bg-primary text-primary-foreground' : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'
+              }`}
+            >
+              {d.label}
+            </button>
+          );
+        })}
+      </div>
       <div className="w-full overflow-y-auto bg-surface-ink p-4" style={{ maxHeight: "60vh" }}>
         <div
           ref={wrapperRef}
@@ -110,11 +142,11 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
       <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-t border-border/8 bg-secondary/10">
         <button
           type="button"
-          onClick={generate}
+          onClick={() => generate()}
           disabled={loading}
           className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] border border-border/15 hover:border-primary/40"
         >
-          <RefreshCw className="w-3 h-3" /> Regenerate
+          <RefreshCw className="w-3 h-3" /> Regenerate Schematic
         </button>
         <button
           type="button"

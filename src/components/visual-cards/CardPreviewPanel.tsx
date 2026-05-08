@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import VisualCardRenderer from "./VisualCardRenderer";
 import type { CardStyleName } from "./styles/cardStyles";
 import type { CardType } from "./types";
-import { exportCardAsPng, downloadBlob, extractDataPoints, extractStat, trunc } from "./exportCard";
+import { exportCardAsPng, downloadBlob, extractDataPoints, extractStat, trunc, deriveContentForType } from "./exportCard";
 
 interface CardPreviewPanelProps {
   postText: string;
@@ -33,24 +33,6 @@ function defaultStyleFor(language: 'en' | 'ar', recommended?: CardStyleName): Ca
   return language === 'ar' ? 'sand' : 'blackboard';
 }
 
-function deriveHeadlineAndBody(text: string, highlight?: string) {
-  const trimmed = (text || '').trim();
-  if (highlight) {
-    const body = trimmed.replace(highlight, '').trim();
-    return { headline: trunc(highlight, 140), body: trunc(body, 240) };
-  }
-  // First sentence/line as headline, rest as body
-  const firstLine = trimmed.split(/\r?\n/).find(Boolean) ?? trimmed;
-  const splitMatch = firstLine.match(/^(.{20,160}?[.!?؟])\s+(.+)?$/);
-  if (splitMatch) {
-    return {
-      headline: trunc(splitMatch[1], 140),
-      body: trunc((splitMatch[2] ?? trimmed.slice(firstLine.length)).trim(), 240),
-    };
-  }
-  return { headline: trunc(firstLine, 140), body: trunc(trimmed.slice(firstLine.length).trim(), 240) };
-}
-
 export default function CardPreviewPanel(props: CardPreviewPanelProps) {
   const { postText, topicLabel, language, authorName, authorTitle } = props;
   const [style, setStyle] = useState<CardStyleName>(defaultStyleFor(language, props.recommendedStyle));
@@ -59,10 +41,13 @@ export default function CardPreviewPanel(props: CardPreviewPanelProps) {
   const [copied, setCopied] = useState(false);
   const cardWrapperRef = useRef<HTMLDivElement>(null);
 
-  const { headline, body } = useMemo(
-    () => deriveHeadlineAndBody(postText, props.recommendedHighlight),
-    [postText, props.recommendedHighlight]
-  );
+  const { headline, body } = useMemo(() => {
+    if (props.recommendedHighlight && cardType === (props.recommendedType ?? 'insight')) {
+      const remaining = (postText || '').replace(props.recommendedHighlight, '').trim();
+      return { headline: trunc(props.recommendedHighlight, 140), body: trunc(remaining, 220) };
+    }
+    return deriveContentForType(postText, cardType);
+  }, [postText, cardType, props.recommendedHighlight, props.recommendedType]);
 
   const dataPoints = useMemo(() => {
     if (cardType === 'stat') {

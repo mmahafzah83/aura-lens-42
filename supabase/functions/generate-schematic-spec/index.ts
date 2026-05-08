@@ -159,6 +159,8 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const postText: string = String(body.post_text ?? '').slice(0, 8000);
     const language: string = body.language === 'ar' ? 'ar' : 'en';
+    const requestedType: string = typeof body.diagram_type === 'string' ? body.diagram_type : '';
+    const variation: string = typeof body.variation === 'string' ? body.variation : '';
     const author = {
       name: String(body.author_name ?? 'Author'),
       title: String(body.author_title ?? ''),
@@ -177,7 +179,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userPrompt = `Language: ${language}\n\nPost text:\n"""\n${postText}\n"""\n\nDesign the optimal diagram. Return ONLY the JSON spec.`;
+    const layoutHints = [
+      'Use a horizontal timeline layout with milestone nodes.',
+      'Use a circular/cycle layout with feedback arrows.',
+      'Use a hierarchical pyramid (3 layers).',
+      'Use a 2x2 matrix comparing two dimensions.',
+      'Use a funnel narrowing from top to bottom.',
+      'Use a bridge/equation showing transformation from left to right.',
+      'Use a radar/ecosystem with a central node and satellites.',
+      'Use a layered architecture (top-down stack).',
+    ];
+    const seed = variation || layoutHints[Math.floor(Math.random() * layoutHints.length)];
+    const typeDirective = requestedType && VALID_TYPES.has(requestedType)
+      ? `\nMUST use diagram type: "${requestedType}".`
+      : '';
+    const userPrompt = `Language: ${language}\n\nPost text:\n"""\n${postText}\n"""\n\nLayout suggestion: ${seed}${typeDirective}\n\nDesign the optimal diagram. Return ONLY the JSON spec.`;
 
     const aiResp = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -191,6 +207,7 @@ Deno.serve(async (req) => {
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt },
         ],
+        temperature: 0.9,
         response_format: { type: 'json_object' },
       }),
     });
