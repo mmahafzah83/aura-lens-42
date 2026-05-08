@@ -2721,13 +2721,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         .update({ status: "published" })
         .eq("id", id);
       setDrafts(prev => prev.filter(p => p.id !== id));
-      const sigTitle = item.source_metadata?.signal_titles?.[0];
-      toast.success(
-        sigTitle
-          ? `Authority compounding. Your ${sigTitle} territory just got stronger.`
-          : "Authority compounding. Your territory just got stronger.",
-        { duration: 4000 },
-      );
+      toast.success("Published — this post now contributes to your authority score", { duration: 4000 });
       loadPosts();
     } catch (e: any) {
       toast.error(e.message || "Failed to mark as published");
@@ -2747,7 +2741,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     if (error) { toast.error("Could not save URL"); return; }
     setSavedUrls(prev => ({ ...prev, [postId]: trimmed }));
     setUrlDrafts(prev => { const n = { ...prev }; delete n[postId]; return n; });
-    toast.success("URL linked — engagement data from this post will strengthen your signals");
+    toast.success("URL linked — engagement data will connect to this post");
   };
 
   const deletePost = async (id: string) => {
