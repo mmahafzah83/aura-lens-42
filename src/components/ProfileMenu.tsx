@@ -1,4 +1,7 @@
-import { User, LogOut, UserCog } from "lucide-react";
+import { useEffect, useState } from "react";
+import { User, LogOut, UserCog, KeyRound } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import SetPasswordModal from "@/components/SetPasswordModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +27,24 @@ export default function ProfileMenu({
   onSignOut,
   onEditProfile,
 }: ProfileMenuProps) {
+  const [pwModalOpen, setPwModalOpen] = useState(false);
+  const [hasPassword, setHasPassword] = useState<boolean>(() => {
+    try { return localStorage.getItem("password_set") === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      const meta = (data.user?.user_metadata || {}) as Record<string, unknown>;
+      if (meta.password_set === true) {
+        setHasPassword(true);
+        try { localStorage.setItem("password_set", "1"); } catch {}
+      }
+    });
+    return () => { active = false; };
+  }, []);
+
   const fn = (fullName || "").trim();
   const parts = fn.split(/\s+/).filter(Boolean);
   const initials =
@@ -222,6 +243,32 @@ export default function ProfileMenu({
           </button>
         )}
 
+        {/* SET / CHANGE PASSWORD */}
+        <button
+          type="button"
+          onClick={() => setPwModalOpen(true)}
+          style={{
+            width: "100%",
+            minHeight: 44,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 12px",
+            marginTop: 4,
+            background: "transparent",
+            border: "none",
+            borderRadius: 8,
+            cursor: "pointer",
+            color: "var(--foreground)",
+            fontSize: 13,
+            fontWeight: 500,
+          }}
+          className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
+        >
+          <KeyRound className="w-4 h-4" />
+          {hasPassword ? "Change password" : "Set password"}
+        </button>
+
         {/* SIGN OUT */}
         <button
           type="button"
@@ -249,5 +296,11 @@ export default function ProfileMenu({
         </button>
       </DropdownMenuContent>
     </DropdownMenu>
+    <SetPasswordModal
+      open={pwModalOpen}
+      onClose={() => { setPwModalOpen(false); setHasPassword(true); }}
+      isFirstTime={!hasPassword}
+    />
+    </>
   );
 }
