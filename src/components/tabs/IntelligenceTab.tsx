@@ -587,8 +587,8 @@ const FrameworksSubTab = ({ onOpenChat, onDraftToStudio }: { onOpenChat?: (msg?:
 
 const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraftToStudio }: IntelligenceTabProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const journey = useJourneyState((typeof window !== "undefined" ? null : null));
-  // useJourneyState resolves user via supabase calls keyed off userId; use auth user instead.
+  const { user: authUser } = useAuthReady();
+  const journey = useJourneyState(authUser?.id ?? null);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
