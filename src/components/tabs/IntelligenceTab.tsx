@@ -13,6 +13,7 @@ import StrategicAdvisorPanel from "@/components/StrategicAdvisorPanel";
 import SourcesSubTab from "@/components/tabs/SourcesSubTab";
 import SectionError from "@/components/ui/section-error";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
+import { useJourneyState } from "@/hooks/useJourneyState";
 import { showQueryErrorToast } from "@/lib/safeQuery";
 import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
