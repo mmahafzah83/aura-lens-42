@@ -1526,8 +1526,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       language={lang}
                       authorName={
                         lang === 'ar'
-                          ? 'محمد محافظة'
-                          : `${profileName || 'Mohammad'} Mahafzah`
+                          ? (profileName || 'اسمك')
+                          : (profileName || 'Your Name')
                       }
                       authorTitle={profileRole || 'Professional'}
                       recommendedStyle={cardRecommendation?.style}
