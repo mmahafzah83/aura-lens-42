@@ -1689,6 +1689,40 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
                   <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
+                  {publishMarkers.map((m, idx) => {
+                    const first = m.posts[0];
+                    const preview = (first.post_text || "").replace(/\s+/g, " ").trim().slice(0, 40);
+                    const dateLabel = fmtDateShort(first.published_at);
+                    const tip = `Post published · ${dateLabel}${m.posts.length > 1 ? ` (+${m.posts.length - 1} more)` : ""}${preview ? ` — ${preview}${(first.post_text || "").length > 40 ? "…" : ""}` : ""}`;
+                    return (
+                      <ReferenceLine
+                        key={`pub-${idx}`}
+                        x={m.label}
+                        stroke="var(--brand)"
+                        strokeWidth={0.5}
+                        strokeDasharray="2 2"
+                        ifOverflow="extendDomain"
+                        label={(props: any) => {
+                          const { viewBox } = props;
+                          if (!viewBox) return null as any;
+                          const cx = viewBox.x;
+                          const cy = viewBox.y + 2;
+                          return (
+                            <g>
+                              <title>{tip}</title>
+                              <rect x={cx - 6} y={cy - 6} width={12} height={12} fill="transparent" />
+                              <polygon
+                                points={`${cx},${cy - 4} ${cx + 4},${cy} ${cx},${cy + 4} ${cx - 4},${cy}`}
+                                fill="var(--brand)"
+                                stroke="var(--brand)"
+                                strokeWidth={0.5}
+                              />
+                            </g>
+                          );
+                        }}
+                      />
+                    );
+                  })}
                 </BarChart>
               </ResponsiveContainer>
             </div>
