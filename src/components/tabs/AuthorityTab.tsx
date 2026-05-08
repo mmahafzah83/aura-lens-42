@@ -1072,6 +1072,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             prompt_template_version: "v1",
                             signal_ids: selectedSignalId ? [selectedSignalId] : [],
                             signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+                            source_signal_id: selectedSignalId,
                             identity_snapshot: {
                               role: profile?.level ?? null,
                               sector: profile?.sector_focus ?? null,
