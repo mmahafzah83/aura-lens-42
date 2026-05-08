@@ -399,6 +399,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             signalId: signalPrefill.signalId || undefined,
             signalTitle: signalPrefill.signalTitle || undefined,
             lang,
+            autoGenerate: true,
           },
         });
         onSignalPrefillConsumed?.();
@@ -507,6 +508,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           signalId: selectedSignalId || undefined,
           signalTitle: selectedSignalTitle || undefined,
           lang: overrides?.language ?? lang,
+          autoGenerate: true,
         },
       });
       return;
