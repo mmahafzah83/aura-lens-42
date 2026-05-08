@@ -1137,16 +1137,16 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
           ctx.textAlign = "left";
           ctx.fillStyle = p.fg;
           ctx.font = "800 26px Inter, Arial, sans-serif";
-          ctx.fillText("M. Mahafzah", CANVAS_W / 2 - 50, ctaY + 46);
+          ctx.fillText(author.name, CANVAS_W / 2 - 50, ctaY + 46);
 
           ctx.fillStyle = p.muted;
           ctx.font = "400 16px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("💼  Strategy | Digital & Business Transformation", CANVAS_W / 2, ctaY + 86);
+          ctx.fillText(`💼  ${author.title}`, CANVAS_W / 2, ctaY + 86);
 
           ctx.fillStyle = p.accent;
           ctx.font = "700 15px Inter, Arial, sans-serif";
-          ctx.fillText("⚡  Focus on Utilities & Power", CANVAS_W / 2, ctaY + 120);
+          ctx.fillText(`⚡  Focus on ${author.focus}`, CANVAS_W / 2, ctaY + 120);
 
           roundRect(ctx, CANVAS_W / 2 - 130, ctaY + 148, 260, 36, 18);
           ctx.fillStyle = `${p.accent}12`;
@@ -1157,7 +1157,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
           ctx.fillStyle = p.accent;
           ctx.font = "600 14px Inter, Arial, sans-serif";
           ctx.textAlign = "center";
-          ctx.fillText("🔗  linkedin.com/in/mmahafzah", CANVAS_W / 2, ctaY + 172);
+          ctx.fillText(`🔗  ${author.handleUrl}`, CANVAS_W / 2, ctaY + 172);
 
           ctx.fillStyle = p.muted;
           ctx.globalAlpha = 0.7;
@@ -1172,7 +1172,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
           ctx.fillStyle = p.muted;
           ctx.font = "700 13px Inter, Arial, sans-serif";
           ctx.textAlign = isAr ? "right" : "left";
-          ctx.fillText("M. Mahafzah", isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
+          ctx.fillText(author.name, isAr ? CANVAS_W - SAFE_M : SAFE_M, CANVAS_H - 28);
           ctx.textAlign = isAr ? "left" : "right";
           ctx.font = "400 11px Inter, Arial, sans-serif";
           ctx.fillText("SAVE ↗", isAr ? SAFE_M : CANVAS_W - SAFE_M, CANVAS_H - 28);
