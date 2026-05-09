@@ -76,7 +76,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
-        setAuditCompleted(!!profile.audit_completed_at);
         setHasSavedBefore(!!(profile.first_name && profile.firm && profile.level && profile.sector_focus));
       }
       setLoading(false);
