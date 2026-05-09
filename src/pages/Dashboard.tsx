@@ -10,7 +10,7 @@ import CaptureModal from "@/components/CaptureModal";
 import AuraChatSidebar, { type ChatContext } from "@/components/AuraChatSidebar";
 import AskAuraPresence from "@/components/AskAuraPresence";
 import AuraLogo from "@/components/brand/AuraLogo";
-import OnboardingSequence from "@/components/OnboardingSequence";
+// OnboardingSequence removed — replaced by /onboarding flow
 import ExecutiveDiagnostic from "@/components/ExecutiveDiagnostic";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import WhatsAppOptInModal from "@/components/WhatsAppOptInModal";
@@ -57,7 +57,7 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardUserId, setWizardUserId] = useState("");
@@ -266,13 +266,7 @@ const Dashboard = () => {
           return;
         }
 
-        if (profile && (profile as any).completed) {
-          const onboardKey = `aura_onboarded_${uid}`;
-          if (!localStorage.getItem(onboardKey)) {
-            setShowOnboarding(true);
-          }
-          checkStrategicNudge(session.access_token);
-        } else if (profile && (profile as any).onboarding_completed) {
+        if (profile && ((profile as any).completed || (profile as any).onboarding_completed)) {
           checkStrategicNudge(session.access_token);
         }
       }
@@ -334,11 +328,6 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background flex relative safe-area-container">
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
-      {showOnboarding && <OnboardingSequence onComplete={async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) localStorage.setItem(`aura_onboarded_${session.user.id}`, "1");
-        setShowOnboarding(false);
-      }} />}
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
       {showWizard && <OnboardingWizard userId={wizardUserId} onComplete={() => setShowWizard(false)} />}
       <WhatsAppOptInModal />
