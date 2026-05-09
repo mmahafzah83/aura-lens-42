@@ -127,6 +127,37 @@ ${themeLines}
 RECENT INDUSTRY TRENDS (last 30 days)
 ${trendLines}`;
 
+    // Fetch real competitor content from Perplexity for grounded analysis
+    let competitorContext = "";
+    const PERPLEXITY_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+    if (PERPLEXITY_KEY && p.sector_focus) {
+      try {
+        const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${PERPLEXITY_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "sonar",
+            messages: [{
+              role: "user",
+              content: `What have McKinsey, PwC, BCG, Deloitte, and EY published about ${p.sector_focus} in the last 30 days? List specific article titles, dates, and key arguments. Focus on thought leadership and LinkedIn content, not press releases.`,
+            }],
+          }),
+        });
+        if (perpRes.ok) {
+          const perpData = await perpRes.json();
+          const content = perpData?.choices?.[0]?.message?.content || "No recent competitor content found.";
+          competitorContext = `\n\nREAL COMPETITOR CONTENT (from the last 30 days — use this for grounded analysis, cite specific articles):\n${content}`;
+        } else {
+          console.warn("[market-mirror] Perplexity non-OK status:", perpRes.status);
+        }
+      } catch (e) {
+        console.warn("[market-mirror] Perplexity search failed:", (e as Error).message);
+      }
+    }
+
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -139,7 +170,7 @@ ${trendLines}`;
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 4096,
-        system: systemPrompt + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
+        system: systemPrompt + competitorContext + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
