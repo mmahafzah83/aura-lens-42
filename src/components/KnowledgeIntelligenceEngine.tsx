@@ -190,7 +190,7 @@ const KnowledgeIntelligenceEngine = () => {
           </p>
           <Button onClick={analyze} disabled={loading} variant="outline" className="min-w-[220px] mt-4">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {loading ? "Analyzing…" : "Run Authority Intelligence"}
+            {loading ? "Looking…" : "Run Authority Intelligence"}
           </Button>
         </div>
       </section>

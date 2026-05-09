@@ -289,7 +289,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
     uploading: "Uploading…",
     processing: "AI is reading & chunking…",
     done: `${fileName} indexed successfully`,
-    error: "Something went wrong",
+    error: "Didn't connect. Try once more.",
   };
 
   return (

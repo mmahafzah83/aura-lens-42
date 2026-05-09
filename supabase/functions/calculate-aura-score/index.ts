@@ -77,7 +77,7 @@ serve(async (req) => {
     let scoreStatus: string;
     if (auraScore >= 85) scoreStatus = "Authority";
     else if (auraScore >= 65) scoreStatus = "Gaining momentum";
-    else if (auraScore >= 40) scoreStatus = "Building";
+    else if (auraScore >= 40) scoreStatus = "Rising";
     else scoreStatus = "Dormant";
 
     // --- score_description ---

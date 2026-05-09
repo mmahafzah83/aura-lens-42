@@ -429,7 +429,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
           </p>
           <Button onClick={generate} disabled={loading} variant="outline" className="min-w-[220px]">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {loading ? "Analyzing…" : "Generate Strategic Advisory"}
+            {loading ? "Looking…" : "Generate Strategic Advisory"}
           </Button>
         </div>
       )}

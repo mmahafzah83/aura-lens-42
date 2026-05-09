@@ -151,7 +151,7 @@ const MyFrameworks = () => {
     setFrameworks(prev =>
       prev.map(f => (f.id === fw.id ? { ...f, tags: newTags } : f))
     );
-    toast({ title: "Framework Approved", description: "Generating activation outputs…" });
+    toast({ title: "Framework approved", description: "Writing activation outputs…" });
 
     // Then activate
     setActivatingId(fw.id);

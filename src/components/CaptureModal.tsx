@@ -130,7 +130,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     reader.readAsDataURL(file);
 
     setAnalyzing(true);
-    toast({ title: "Analyzing", description: "AI is reading your screenshot…" });
+    toast({ title: "Looking", description: "Aura is reading your screenshot…" });
 
     try {
       const base64Reader = new FileReader();
@@ -469,8 +469,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       // Processing failure returned in body
       if (data?.processing_status === "failed") {
         toast({
-          title: "Processing Failed",
-          description: data.error_message || "An error occurred during processing.",
+          title: "Couldn't read that one",
+          description: data.error_message || "Something didn't go through. Try again.",
           variant: "destructive",
         });
         setSaving(false);
@@ -1256,7 +1256,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                               color: isProcessed ? "var(--success)" : "var(--warning)",
                             }}
                           >
-                            {isProcessed ? "Processed" : "Processing"}
+                            {isProcessed ? "Read" : "Reading"}
                           </span>
                         </div>
                       );

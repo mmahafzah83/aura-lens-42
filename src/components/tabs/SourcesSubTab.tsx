@@ -806,7 +806,7 @@ const SourcesSubTab = ({
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--warning)" }} />
                             <p style={{ color: "var(--warning)", fontSize: 12, lineHeight: 1.5, margin: 0, fontWeight: 500 }}>
-                              {docStatus === "pending" ? "Queued for processing…" : "Processing…"}
+                              {docStatus === "pending" ? "Queued…" : "Reading…"}
                             </p>
                             <span style={{ color: "var(--ink-5)", fontSize: 11 }}>· Started {relativeTime(entry.created_at)}</span>
                           </div>

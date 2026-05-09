@@ -152,7 +152,7 @@ const LinkedInProfileAnalyzer = () => {
             className="gap-2 px-6"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            {loading ? "Analyzing…" : "Analyze Profile"}
+            {loading ? "Looking…" : "Analyze Profile"}
           </Button>
         </div>
         <button

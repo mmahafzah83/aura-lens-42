@@ -1542,7 +1542,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                 ? `${visualPlan.length} slides planned`
                 : pipelineStep === "frameworks"
                 ? `${frameworks.length} frameworks generated`
-                : "Analyzing topic…"
+                : "Looking at the topic…"
               }
             </p>
           </div>
@@ -1573,7 +1573,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
               <p className="text-xs text-muted-foreground/60">
-                {lang === "ar" ? "جارٍ تحليل الموضوع وإنشاء الأطر..." : "Analyzing topic & generating frameworks…"}
+                {lang === "ar" ? "جارٍ قراءة الموضوع وكتابة الأطر..." : "Reading the topic & writing frameworks…"}
               </p>
             </div>
           )}
@@ -1602,7 +1602,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
               <p className="text-xs text-muted-foreground/60">
-                {lang === "ar" ? "جارٍ إنشاء الخطة المرئية..." : "Generating visual plan…"}
+                {lang === "ar" ? "جارٍ كتابة الخطة المرئية..." : "Writing visual plan…"}
               </p>
             </div>
           )}
@@ -1658,7 +1658,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                   <Loader2 className="w-5 h-5 text-primary/60 animate-spin" />
                   <p className="text-xs text-muted-foreground/60">
-                    {lang === "ar" ? "جارٍ إنشاء الشرائح..." : "Generating carousel slides…"}
+                    {lang === "ar" ? "جارٍ كتابة الشرائح..." : "Writing carousel slides…"}
                   </p>
                 </div>
               ) : currentSlides.length > 0 ? (
@@ -1987,7 +1987,7 @@ const CarouselGenerator = ({ open, onClose, title, description, context, inline 
                   ? `${visualPlan.length} slides planned`
                   : pipelineStep === "frameworks"
                   ? `${frameworks.length} frameworks generated`
-                  : "Analyzing topic…"
+                  : "Looking at the topic…"
                 }
               </SheetDescription>
             </div>
