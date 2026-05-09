@@ -50,7 +50,7 @@ const Onboarding = () => {
         localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
       }
     } catch { /* ignore */ }
-    navigate("/home", { replace: true });
+    goHome();
   };
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState(1);
@@ -101,7 +101,7 @@ const Onboarding = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (profile && (profile as any).onboarding_completed && (profile as any).first_name) {
-        navigate("/home", { replace: true });
+        goHome();
         return;
       }
       setChecking(false);
@@ -635,7 +635,7 @@ const Onboarding = () => {
             It shapes how Aura writes your content and positions your expertise.
           </p>
           {primaryBtn(<>Discover my market position <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
-          <div className="mt-3">{ghostLink("I'll do this later", () => navigate("/home", { replace: true }))}</div>
+          <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
         </>,
       )}
       <BrandAssessmentModal
@@ -646,7 +646,7 @@ const Onboarding = () => {
             // closed — assessment may or may not be complete; either way, hand off to home.
           }
         }}
-        onComplete={() => navigate("/home", { replace: true })}
+        onComplete={() => goHome()}
       />
     </>
   );
