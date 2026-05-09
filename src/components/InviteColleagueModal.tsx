@@ -109,7 +109,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
         </button>
 
         <SectionHeader
-          label="Invite a colleague to Aura"
+          label="Bring someone in to Aura"
           subtitle="They'll receive an invitation email and join the beta"
         />
 
