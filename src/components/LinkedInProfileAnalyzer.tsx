@@ -105,7 +105,7 @@ const LinkedInProfileAnalyzer = () => {
   const handleAnalyze = async () => {
     if (!url.trim()) return;
     if (!url.includes("linkedin.com/in/")) {
-      toast({ title: "Invalid URL", description: "Please paste a LinkedIn profile URL (e.g. linkedin.com/in/username)", variant: "destructive" });
+      toast({ title: "That link didn't work. Double-check it?", description: "Paste a LinkedIn profile URL (e.g. linkedin.com/in/username)", variant: "destructive" });
       return;
     }
 

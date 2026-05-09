@@ -391,7 +391,7 @@ const Dashboard = () => {
                 textTransform: "uppercase",
               }}
             >
-              Workspace
+              Your space
             </div>
           )}
           {NAV_ITEMS.map((item) => {
@@ -466,15 +466,15 @@ const Dashboard = () => {
 
           <button
             onClick={() => setInviteOpen(true)}
-            aria-label="Invite a colleague"
+            aria-label="Bring someone in"
             className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
             style={{ color: "var(--ink-3)", borderRadius: "var(--r-md)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--brand)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-3)"; }}
-            title="Invite a colleague"
+            title="Bring someone in"
           >
             <UserPlus className="w-4 h-4 shrink-0" />
-            {!sidebarCollapsed && <span className="text-[11px]">Invite a colleague</span>}
+            {!sidebarCollapsed && <span className="text-[11px]">Bring someone in</span>}
           </button>
         </div>
       </aside>
@@ -520,7 +520,7 @@ const Dashboard = () => {
                   textTransform: "uppercase",
                 }}
               >
-                Workspace
+                Your space
               </div>
               {NAV_ITEMS.map((item) => {
                 const isActive = activeTab === item.value;

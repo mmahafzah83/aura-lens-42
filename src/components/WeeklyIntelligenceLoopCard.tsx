@@ -84,7 +84,7 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
           textTransform: "uppercase",
         }}
       >
-        Your weekly intelligence loop
+        Your week at a glance
       </p>
       <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink-1)", margin: 0 }}>
         Your LinkedIn data hasn't been updated in {dayLabel}. Close the loop in 30 seconds: export your analytics, upload here, and watch which signals are driving real engagement.
@@ -103,7 +103,7 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
             cursor: "pointer",
           }}
         >
-          Upload LinkedIn analytics →
+          Upload my numbers →
         </button>
         <button
           onClick={dismiss}

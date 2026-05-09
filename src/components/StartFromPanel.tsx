@@ -452,7 +452,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               Voice match
             </p>
             <p style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 8, lineHeight: 1.4 }}>
-              Every post mirrors your writing DNA — trained from your real LinkedIn history
+              Aura learned how you write from your real posts. This is your voice — not AI's.
             </p>
             <div className="flex items-start gap-2.5">
               <span

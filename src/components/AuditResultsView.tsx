@@ -285,7 +285,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
             color: "var(--ink)",
           }}
         >
-          Continue to Brand Assessment →
+          Show me who I am →
         </button>
 
         {/* Secondary ghost buttons */}
@@ -299,7 +299,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
               color: "var(--ink-5)",
             }}
           >
-            View Strategic Identity
+            See my positioning →
           </button>
           <button
             onClick={() => { onClose?.(); onNavigate?.("intelligence"); }}
@@ -310,7 +310,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
               color: "var(--ink-5)",
             }}
           >
-            Start capturing
+            Paste a link →
           </button>
         </div>
       </div>

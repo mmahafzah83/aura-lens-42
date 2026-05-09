@@ -411,7 +411,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           My Story
         </h1>
         <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-          The intelligence portrait that evolves with every capture, signal, and published post
+          Everything you know — finally visible to the people who need to see it.
         </p>
       </div>
       <FirstVisitHint page="story" />
@@ -441,10 +441,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               Your professional identity
             </div>
             <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.25 }}>
-              Before Aura can build your intelligence portrait, it needs to understand your professional positioning.
+              Your expertise deserves a frame. Not a CV — a market position. Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, marginBottom: 20, maxWidth: 620 }}>
-              This 5-minute assessment shapes everything — from how Aura analyses your captures to how it writes your content.
+              This shapes everything Aura does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.
             </p>
             <button
               onClick={() => setBrandOpen(true)}
@@ -462,7 +462,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 gap: 8,
               }}
             >
-              Discover your market position →
+              Show me who I am in this market →
             </button>
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
               <div style={{ fontSize: 10, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
@@ -471,7 +471,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
                 <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
-                  Your market archetype — how the market naturally categorises you
+                  Your market archetype — the space you naturally own
                 </li>
                 <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
@@ -779,10 +779,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   fontWeight: 600,
                 }}
               >
-                Active focus areas
+                Where your mind keeps going
               </div>
               <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-                The themes your captures concentrate on — this shapes what Aura recommends you publish
+                You keep coming back to these themes. There's a reason — and Aura knows what it is.
               </div>
             </div>
             {signalStats.topTags.length > 0 ? (

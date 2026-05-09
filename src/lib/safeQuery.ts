@@ -30,7 +30,7 @@ const SESSION_TOAST_STYLE = {
 };
 
 const DEFAULT_TIMEOUT_MS = 15_000;
-const GENERIC_MSG = "Something went wrong. Please try again.";
+const GENERIC_MSG = "Didn't connect. Try once more.";
 const SESSION_MSG = "Your session expired. Please sign in again.";
 
 let sessionRedirectScheduled = false;

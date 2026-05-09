@@ -268,7 +268,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
         })
         .eq("user_id", user.id);
 
-      toast({ title: "Brand Assessment Saved", description: "Your brand positioning is now part of your identity." });
+      toast({ title: "Done. Aura sees who you are now — and everything it creates will reflect it." });
       onComplete?.();
       onOpenChange(false);
       onNavigate?.("identity");

@@ -31,7 +31,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
         >
           <div style={{ fontSize: "32px", marginBottom: "16px" }}>⚠️</div>
           <h3 style={{ color: "var(--ink-7)", marginBottom: "8px" }}>
-            Something went wrong
+            Didn't connect. Try once more.
           </h3>
           <p style={{ color: "var(--ink-5)", fontSize: "14px", marginBottom: "24px" }}>
             This section failed to load. Your data is safe.

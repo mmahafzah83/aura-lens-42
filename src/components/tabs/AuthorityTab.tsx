@@ -739,13 +739,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       {/* Branded header */}
       <div style={{ marginBottom: 0 }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
-          Your content engine
+          Your voice
         </div>
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Publish
         </h1>
         <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-          Create from your intelligence, not from templates — every post is grounded in your real signals
+          You already know things most people in your sector don't. This is where that knowledge becomes content that opens doors.
         </p>
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
@@ -852,7 +852,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <CollapsibleContent className="space-y-5 pt-4">
         {/* Format Selector */}
         <div>
-          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Content Format</p>
+          <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Format</p>
           <p className="text-[12px] text-muted-foreground mb-3">Choose your format — each one is tuned to your voice and sector</p>
           <div data-testid="pub-format-selector" className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {(Object.entries(FORMAT_LABELS) as [ContentType, { label: string; icon: any; subtitle?: string }][]).map(([key, { label, icon: Icon, subtitle }]) => {
@@ -950,7 +950,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
           <>
             {/* Framework Selector */}
             <div>
-              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Framework</p>
+              <p className="text-label uppercase tracking-wider text-xs font-semibold mb-1">Structure</p>
               <p className="text-[12px] text-muted-foreground mb-2">Structural patterns that shape how your argument unfolds</p>
               <div className="flex flex-wrap gap-1.5">
                 {FRAMEWORK_OPTIONS.map(fw => {
@@ -1398,7 +1398,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     className="h-8 text-xs gap-1.5 border-border/15"
                     onClick={generateShort}
                   >
-                    <Zap className="w-3 h-3" /> Generate shorter version →
+                    <Zap className="w-3 h-3" /> Shorter →
                   </Button>
                 )}
 
@@ -2187,7 +2187,7 @@ const VoiceTrainer = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast.success("Voice profile updated — Aura learned from your posts");
+      toast.success("Voice locked in. From now on, every post sounds like the best version of you.");
     } catch (e: any) {
       console.error("Voice distill error:", e);
       toast.error(e.message || "Failed to distill voice");
@@ -3029,7 +3029,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               Your Drafts
             </h3>
             <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
-              Posts waiting to become authority — each one is already signal-grounded and voice-matched
+              These are ready to go. One click, and your expertise is out there working for you — even while you sleep.
             </span>
           </div>
           <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--brand)" }}>
@@ -3128,7 +3128,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       style={{ fontSize: 13, color: "var(--color-muted)", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                       className="hover:text-foreground transition-colors"
                     >
-                      <Check className="w-3.5 h-3.5" /> Mark as Published
+                      <Check className="w-3.5 h-3.5" /> Published ✓
                     </button>
                     <button
                       onClick={() => setPendingDeleteId(p.id)}

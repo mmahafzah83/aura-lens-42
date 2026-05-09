@@ -96,11 +96,11 @@ const StrategicAdvisorPanel = ({
       });
 
       if (resp.status === 429) {
-        toast.error("Rate limited — please try again shortly.");
+        toast.error("Give it a second. Aura's catching up.");
         return;
       }
       if (resp.status === 402) {
-        toast.error("AI credits exhausted. Please add funds.");
+        toast.error("Taking a breather. Back in a moment.");
         return;
       }
       if (!resp.ok) throw new Error("Advisor failed");

@@ -788,7 +788,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 Intelligence
               </h1>
               <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-                Patterns emerging from everything you capture — the sharper this gets, the more valuable your content becomes
+                You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.
               </p>
             </div>
             <div
@@ -828,7 +828,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               Intelligence
             </h1>
             <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-              Patterns emerging from everything you capture — the sharper this gets, the more valuable your content becomes
+              You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.
             </p>
           </div>
           <div data-testid="intel-stats" style={{ display: "flex", gap: 24, alignItems: "baseline" }}>

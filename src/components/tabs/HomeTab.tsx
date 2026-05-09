@@ -1455,7 +1455,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </span>
             </div>
             <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
-              Starting
+              Scout
             </div>
             {sectorFocus && (
               <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
