@@ -142,11 +142,12 @@ const Onboarding = () => {
       clearTimeout(timeout);
       if (timedOut) return;
 
-      if (error || !data || data.fallback || !data.success) {
+      const p: Prefill = (data && (data.profile || (data.success ? data : null))) || {};
+      const hasAnyField = !!(p.first_name || p.firm || p.level || p.core_practice || p.sector_focus);
+      if (error || !data || (!data.success && !hasAnyField)) {
         toast.message("Couldn't read that profile — it might be private. No problem.");
         setShowForm(true);
       } else {
-        const p: Prefill = data.profile || data;
         setFirstName(p.first_name || "");
         setFirm(p.firm || "");
         setLevel(p.level || "");
@@ -155,6 +156,7 @@ const Onboarding = () => {
         setSectorFocus(SECTORS.includes(s) ? s : (s ? "Other" : ""));
         setUsedLinkedIn(true);
         setShowForm(true);
+        if (data.success) toast.success("Profile read successfully");
       }
     } catch (e) {
       clearTimeout(timeout);
