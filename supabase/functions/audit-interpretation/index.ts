@@ -52,18 +52,20 @@ serve(async (req) => {
 
     const prompt = `Here are the user's 10 dimension scores (each 0-100):\n${JSON.stringify(scores, null, 2)}\n\nAnalyse this profile using all four frameworks and provide the structured output.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: prompt },
-        ],
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: prompt }],
       }),
     });
 
@@ -85,7 +87,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const interpretation = data.choices?.[0]?.message?.content || "";
+    const interpretation = (data.content || []).map((c: any) => c.text || "").join("") || "";
 
     return new Response(JSON.stringify({ interpretation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
