@@ -164,7 +164,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
 
           <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4 }}>
             {remaining === null
-              ? "Loading invitations..."
+              ? "One moment…"
               : `You have ${remaining}/3 invitations left`}
           </div>
         </div>

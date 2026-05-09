@@ -99,7 +99,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
           className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press"
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
-          {loading ? "Analyzing…" : "Generate Brief"}
+          {loading ? "Looking…" : "Generate Brief"}
         </button>
       </div>
     );

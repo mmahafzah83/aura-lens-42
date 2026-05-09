@@ -10,8 +10,8 @@ export interface PipelineState {
 }
 
 export const PIPELINE_LABELS = {
-  voice: "Analyzing your voice...",
-  positioning: "Building your positioning...",
+  voice: "Looking at your voice...",
+  positioning: "Writing your positioning...",
   score: "Calculating your score...",
 } as const;
 

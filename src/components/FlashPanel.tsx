@@ -168,7 +168,7 @@ export default function FlashPanel() {
       ? "اكتب 3-10 كلمات... مثال: اجتماعات كثيرة ونتائج قليلة"
       : "Write 3-10 words... e.g. too many meetings, no results",
     generate: lang === "ar" ? "⚡ توليد 3 نسخ" : "⚡ Generate 3 versions",
-    generating: lang === "ar" ? "⚡ جاري التوليد..." : "⚡ Generating...",
+    generating: lang === "ar" ? "⚡ جاري الكتابة..." : "⚡ Writing...",
     copy: lang === "ar" ? "نسخ" : "Copy",
     saveDraft: lang === "ar" ? "حفظ مسودة" : "Save Draft",
     saved: lang === "ar" ? "تم الحفظ" : "Saved",

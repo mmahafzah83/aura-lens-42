@@ -86,7 +86,7 @@ export default function WhatsAppOptInModal() {
       setSubmitting(false);
       setTimeout(() => setOpen(false), 2000);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : "Didn't connect. Try once more.");
       setSubmitting(false);
     }
   };

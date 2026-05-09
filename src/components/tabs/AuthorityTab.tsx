@@ -1050,7 +1050,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
               }}
             >
               {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-              {generating ? "Generating…" : `Generate ${FORMAT_LABELS[contentType]?.label || "Content"}`}
+              {generating ? "Writing…" : `Generate ${FORMAT_LABELS[contentType]?.label || "Content"}`}
             </button>
             {isGeneratingAny && showSlowHint && (
               <p style={{ fontSize: 12, color: "var(--ink-4)", textAlign: "center", marginTop: 8 }}>
@@ -2227,7 +2227,7 @@ const VoiceTrainer = () => {
             disabled={uploading}
           >
             {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-            {uploading ? "Processing…" : "Upload PDF or TXT"}
+            {uploading ? "Reading…" : "Upload PDF or TXT"}
           </Button>
         </div>
 
@@ -2260,7 +2260,7 @@ const VoiceTrainer = () => {
           disabled={distilling}
         >
           {distilling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-          {distilling ? "Analyzing your posts..." : "Distill voice from my posts"}
+          {distilling ? "Looking at your posts..." : "Distill voice from my posts"}
         </Button>
       </div>
     </div>
