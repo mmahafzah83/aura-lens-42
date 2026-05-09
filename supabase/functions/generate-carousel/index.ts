@@ -110,20 +110,20 @@ ABSOLUTE RULES — VIOLATION = TOTAL FAILURE:
 7. Double-check: after generating, mentally scan every framework_step slide and confirm each stage name appears word-for-word.`;
       }
 
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "claude-sonnet-4-20250514",
           max_tokens: 16384,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt + retryAddendum },
-          ],
-          response_format: { type: "json_object" },
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt + retryAddendum }],
         }),
       });
 
@@ -134,7 +134,7 @@ ABSOLUTE RULES — VIOLATION = TOTAL FAILURE:
       }
 
       const data = await res.json();
-      const raw = data.choices?.[0]?.message?.content || "{}";
+      const raw = (data.content || []).map((c: any) => c.text || "").join("") || "{}";
 
       let parsed: any;
       try {

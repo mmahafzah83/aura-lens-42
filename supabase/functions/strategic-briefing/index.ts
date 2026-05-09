@@ -122,19 +122,20 @@ Output valid JSON with this structure:
 
 Be bold, specific, and Director-level. No generic advice.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate today's strategic briefing from:\n\n${contextParts.join("\n\n")}` },
-        ],
-        response_format: { type: "json_object" },
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: systemPrompt + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
+        messages: [{ role: "user", content: `Generate today's strategic briefing from:\n\n${contextParts.join("\n\n")}` }],
       }),
     });
 
@@ -154,7 +155,8 @@ Be bold, specific, and Director-level. No generic advice.`;
     }
 
     const aiData = await aiRes.json();
-    const briefing = parseAiJson(aiData.choices?.[0]?.message?.content || "{}");
+    const aiText = (aiData.content || []).map((c: any) => c.text || "").join("") || "{}";
+    const briefing = parseAiJson(aiText);
 
     return new Response(JSON.stringify({ briefing }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

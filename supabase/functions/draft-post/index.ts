@@ -39,11 +39,22 @@ async function fetchFrameworks(token: string | null): Promise<string> {
   }
 }
 
-async function callAI(apiKey: string, system: string, user: string, model = "google/gemini-3-flash-preview"): Promise<string> {
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+async function callAI(_apiKey: string, system: string, user: string, _model = "claude-sonnet-4-20250514"): Promise<string> {
+  const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
+    headers: {
+      "x-api-key": ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
+      system,
+      messages: [{ role: "user", content: user }],
+    }),
   });
   if (!res.ok) {
     if (res.status === 429) throw { status: 429, message: "Rate limit exceeded. Try again shortly." };
@@ -51,7 +62,7 @@ async function callAI(apiKey: string, system: string, user: string, model = "goo
     throw new Error("AI gateway error: " + res.status);
   }
   const data = await res.json();
-  return data.choices?.[0]?.message?.content || "";
+  return (data.content || []).map((c: any) => c.text || "").join("") || "";
 }
 
 serve(async (req) => {
