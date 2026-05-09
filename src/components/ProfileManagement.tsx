@@ -21,6 +21,9 @@ interface ProfileManagementProps {
   onResetDiagnostic?: () => void;
   onNavigate?: (tab: string) => void;
   startExpanded?: boolean;
+  /** When true, hides Audit/Brand/Reset triggers — used inside the GuidedJourney flow
+   *  where those steps live as separate cards. */
+  compact?: boolean;
 }
 
 const SECTOR_OPTIONS = [
@@ -28,7 +31,7 @@ const SECTOR_OPTIONS = [
   "Healthcare", "Telecom", "Real Estate", "Manufacturing", "Other",
 ];
 
-const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: ProfileManagementProps) => {
+const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compact }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -113,20 +116,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profile saved", description: "Aura has what it needs." });
+      toast({ title: "Profile saved." });
       if (mandatoryComplete) {
         try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
         setHasSavedBefore(true);
-        // First successful save with all mandatory fields → nudge user toward Step 2
-        if (wasFirstSave) {
-          try {
-            window.dispatchEvent(new CustomEvent("aura:journey-refresh"));
-            setTimeout(() => {
-              const step2 = document.querySelector('[data-guided-journey-step="1"]')?.parentElement?.parentElement?.nextElementSibling as HTMLElement | null;
-              step2?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 300);
-          } catch {}
-        }
       }
       try { window.dispatchEvent(new CustomEvent("aura:journey-refresh")); } catch {}
     }
