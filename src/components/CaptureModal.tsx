@@ -6,6 +6,7 @@ import { toast as sonnerToast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import DocumentUpload from "@/components/DocumentUpload";
 import { bumpCaptureAndCheckDrift } from "@/lib/identityDriftCheck";
+import { TOAST, ERROR } from "@/constants/language";
 
 type CaptureType = "link" | "voice" | "text" | "image" | "document";
 
@@ -343,7 +344,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
           return;
         }
 
-        sonnerToast.success("Voice capture saved");
+        sonnerToast.success(TOAST.captureSaved);
 
         setContent("");
         setVoiceAudioUrl(null);

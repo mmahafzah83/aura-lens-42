@@ -20,6 +20,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { Button } from "@/components/ui/button";
 import { TabSlider } from "@/components/ui/TabSlider";
 import EmptyState from "@/components/ui/EmptyState";
+import { EMPTY_STATE } from "@/constants/language";
 import InfoTooltip from "@/components/ui/InfoTooltip";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { CollapsibleList } from "@/components/ui/CollapsibleList";
@@ -1006,9 +1007,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               entryCount === 0 ? (
                 <EmptyState
                   icon={Brain}
-                  title="Every article you've ever read left a pattern in your thinking."
-                  description="You see connections others miss — but only you know they're there. Save a few articles and watch the signals appear — each one is something you can publish that nobody else is writing about."
-                  ctaLabel="Start with one article →"
+                  title={EMPTY_STATE.intelligence.text.split(".")[0] + "."}
+                  description={EMPTY_STATE.intelligence.text.split(".").slice(1).join(".").trim()}
+                  ctaLabel={EMPTY_STATE.intelligence.cta}
                   ctaAction={() => onOpenCapture?.()}
                 />
               ) : entryCount < 3 ? (

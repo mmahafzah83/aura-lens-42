@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
+import { ERROR, EMPTY_STATE } from "@/constants/language";
 
 /* ── Always-on Context Strip (signals + identity pills) ── */
 interface TopSignal { id: string; signal_title: string; }
@@ -1298,15 +1299,15 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <AuraLogo size={40} variant="auto" />
                   </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1">Strategic Intelligence</h3>
-                  <p className="text-xs text-muted-foreground max-w-[260px] leading-relaxed">
-                    Cross-referencing your Skill Radar, Learned Intelligence, and saved frameworks. Every response grounded in your vault.
+                  <h3 className="text-base font-semibold text-foreground mb-1">Your Chief of Staff</h3>
+                  <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
+                    {EMPTY_STATE.askAura.text}
                   </p>
                   <div className="mt-5 space-y-2 w-full max-w-[280px]">
                     {[
-                      "What are the macro-drivers in my sector this quarter?",
-                      "Where is my biggest gap to Partner level?",
-                      "Draft a strategic position on my latest capture",
+                      "What should I write about?",
+                      "What did my competitors publish?",
+                      "Where am I invisible?",
                     ].map(q => (
                       <button
                         key={q}

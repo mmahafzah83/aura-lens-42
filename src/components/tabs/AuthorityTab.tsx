@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import { EMPTY_STATE } from "@/constants/language";
 import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
@@ -2983,8 +2984,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         <EmptyState
           icon={PenTool}
           title="Your voice is ready. Pick a signal and start writing."
-          description="The gap between expert and recognized expert isn't knowledge — it's visibility. You already know enough to lead conversations in your sector. Build your first signals and watch Aura turn them into posts that put your name in the right rooms."
-          ctaLabel="Build signals first →"
+          description={EMPTY_STATE.publishNoSignals.text}
+          ctaLabel={EMPTY_STATE.publishNoSignals.cta}
           ctaAction={onSwitchToCreate}
         />
       </div>
