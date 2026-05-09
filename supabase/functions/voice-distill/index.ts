@@ -132,25 +132,24 @@ Deno.serve(async (req) => {
 
     const userMessage = `Here are the posts to analyze:\n\n${formatted}`;
 
-    // Step 3 — Call AI gateway
-    const aiResp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: userMessage },
-          ],
-          temperature: 0.3,
-        }),
+    // Step 3 — Call Anthropic (Claude Sonnet)
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        temperature: 0.3,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userMessage }],
+      }),
+    });
 
     if (!aiResp.ok) {
       const t = await aiResp.text();
@@ -162,7 +161,7 @@ Deno.serve(async (req) => {
     }
 
     const aiJson = await aiResp.json();
-    const raw = aiJson?.choices?.[0]?.message?.content ?? "";
+    const raw = (aiJson?.content || []).map((c: any) => c.text || "").join("") || "";
 
     // Step 4 — Parse
     let distillation: any;
