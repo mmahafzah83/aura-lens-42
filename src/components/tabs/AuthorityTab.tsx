@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import { EMPTY_STATE } from "@/constants/language";
 import {
   Loader2, Save, Plus, X, Send, Copy, Check, Trash2, Search,
   PenTool, LayoutGrid, FileText, BookOpen, Lightbulb,
