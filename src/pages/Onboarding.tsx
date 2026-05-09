@@ -39,6 +39,19 @@ interface FoundArticle {
 
 const Onboarding = () => {
   const navigate = useNavigate();
+
+  // Suppress the home first-visit hint for users who just completed onboarding.
+  const goHome = () => {
+    try {
+      const raw = localStorage.getItem("aura_visited_pages");
+      const arr: string[] = raw ? JSON.parse(raw) : [];
+      if (!arr.includes("home")) {
+        arr.push("home");
+        localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
+      }
+    } catch { /* ignore */ }
+    navigate("/home", { replace: true });
+  };
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState(1);
   const [userId, setUserId] = useState<string | null>(null);
@@ -88,7 +101,7 @@ const Onboarding = () => {
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (profile && (profile as any).onboarding_completed && (profile as any).first_name) {
-        navigate("/home", { replace: true });
+        goHome();
         return;
       }
       setChecking(false);
@@ -143,8 +156,8 @@ const Onboarding = () => {
       if (timedOut) return;
 
       const p: Prefill = (data && (data.profile || (data.success ? data : null))) || {};
-      const hasAnyField = !!(p.first_name || p.firm || p.level || p.core_practice || p.sector_focus);
-      if (error || !data || (!data.success && !hasAnyField)) {
+      const hasData = !!(p && (p.first_name || p.firm || p.level || p.core_practice));
+      if (!hasData) {
         toast.message("Couldn't read that profile — it might be private. No problem.");
         setShowForm(true);
       } else {
@@ -156,7 +169,7 @@ const Onboarding = () => {
         setSectorFocus(SECTORS.includes(s) ? s : (s ? "Other" : ""));
         setUsedLinkedIn(true);
         setShowForm(true);
-        if (data.success) toast.success("Profile read successfully");
+        // Successful extraction — show inline confirmation only, no error toast.
       }
     } catch (e) {
       clearTimeout(timeout);
@@ -622,7 +635,7 @@ const Onboarding = () => {
             It shapes how Aura writes your content and positions your expertise.
           </p>
           {primaryBtn(<>Discover my market position <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
-          <div className="mt-3">{ghostLink("I'll do this later", () => navigate("/home", { replace: true }))}</div>
+          <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
         </>,
       )}
       <BrandAssessmentModal
@@ -633,7 +646,7 @@ const Onboarding = () => {
             // closed — assessment may or may not be complete; either way, hand off to home.
           }
         }}
-        onComplete={() => navigate("/home", { replace: true })}
+        onComplete={() => goHome()}
       />
     </>
   );
