@@ -621,17 +621,32 @@ Deno.serve(async (req) => {
     }
 
     if (discovered.length === 0) {
+      // Distinguish "Firecrawl gave us nothing" from "we filtered everything out"
+      const allQueriesBlocked = blockedQueries > 0 && blockedQueries >= pagesVisited;
+      const firecrawlEmpty = rawLinksFound === 0 && blockedQueries === 0;
+      let userMessage: string;
+      if (allQueriesBlocked) {
+        userMessage = `LinkedIn search is rate-limited right now (${blockedQueries} queries blocked). We'll retry automatically in 6 hours.`;
+      } else if (firecrawlEmpty) {
+        userMessage = mode === "retry"
+          ? `Retry scan: no recent posts indexed yet. We'll retry again in 6h.`
+          : `Search returned no LinkedIn results for "${profileName || handle}". This is normal if you've posted only via the LinkedIn extension or haven't posted publicly. We'll keep checking.`;
+      } else {
+        userMessage = mode === "retry"
+          ? `Retry scan: ${rawLinksFound} scanned, 0 new posts. Will retry again in 6h.`
+          : `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`;
+      }
+
       await adminClient.from("sync_runs").insert({
         user_id: userId,
         sync_type: syncType,
-        status: uncertainCandidates.length > 0 ? "completed" : (mode === "retry" ? "completed" : "failed"),
+        // Empty results are not failures — only mark failed when *all* queries were blocked.
+        status: allQueriesBlocked ? "failed" : "completed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: rawLinksFound,
         records_stored: 0,
-        error_message: mode === "retry"
-          ? `Retry scan: ${rawLinksFound} scanned, 0 new posts. Will retry again in 6h.`
-          : `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`,
+        error_message: userMessage,
       });
 
       return new Response(JSON.stringify({
@@ -651,6 +666,7 @@ Deno.serve(async (req) => {
         rejection_reasons: rejectionCounts,
         blocked_queries: blockedQueries,
         candidates_confirmed: candidatesConfirmed,
+        message: userMessage,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
