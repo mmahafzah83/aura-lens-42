@@ -558,10 +558,29 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         // ignore — fall through to default toast
       }
       if (!didCelebrate) {
-        toast({
-          title: "Source saved",
-          description: "Your source has been saved.",
-        });
+        sonnerToast.custom(
+          () => (
+            <div
+              style={{
+                background: "var(--ink, #1C1812)",
+                color: "var(--ink-on-brand, #f5efe1)",
+                border: "1px solid var(--brand-muted, rgba(197,165,90,0.4))",
+                borderRadius: 12,
+                padding: "14px 18px",
+                boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
+                maxWidth: 380,
+              }}
+            >
+              <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #C5A55A)", fontWeight: 600, marginBottom: 6 }}>
+                ✦ Captured
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.9 }}>
+                Aura is analyzing this. Patterns emerge as you capture more — your next source might connect the dots.
+              </div>
+            </div>
+          ),
+          { duration: 4500, position: "bottom-right" },
+        );
       }
 
       setContent("");
