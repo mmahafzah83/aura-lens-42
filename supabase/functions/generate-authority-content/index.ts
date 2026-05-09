@@ -381,7 +381,43 @@ Write with conviction. No generic statements. Every line should demonstrate stra
         .replace(/^\s*-{3,}\s*$/gm, '')
         .replace(/^\s*#{1,6}\s+/gm, '')
         .trim();
-      return new Response(JSON.stringify({ content, success: true }), {
+
+      // Quality gate — challenge the output before returning
+      let gateResult: any = null;
+      try {
+        const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
+          body: {
+            post_text: content,
+            language: effectiveLanguage,
+            signal_title: topic || null,
+            voice_tone: voiceProfile?.tone || null,
+            user_sector: profile?.sector_focus || null,
+          },
+        });
+        const timeout = new Promise((resolve) => setTimeout(() => resolve({ data: null, error: "timeout" }), 8000));
+        const gateRes: any = await Promise.race([gatePromise, timeout]);
+        if (gateRes?.data && !gateRes?.error) {
+          gateResult = gateRes.data;
+          if (gateResult?.scores?.hook < 7 && gateResult?.improved_hook) {
+            const firstLine = content.split("\n")[0];
+            if (firstLine) content = content.replace(firstLine, gateResult.improved_hook);
+          }
+        }
+      } catch (e) {
+        console.warn("[generate-authority-content] quality gate skipped:", (e as Error).message);
+      }
+
+      return new Response(JSON.stringify({
+        content,
+        success: true,
+        quality_gate: gateResult ? {
+          overall_score: gateResult.overall,
+          pass: gateResult.pass,
+          scores: gateResult.scores,
+          verdict: gateResult.verdict,
+          skipped: gateResult.skipped || false,
+        } : null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
