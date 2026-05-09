@@ -154,7 +154,7 @@ serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: `Context data:\n${JSON.stringify(context, null, 2)}\n\nReturn the 3-item JSON now.` },

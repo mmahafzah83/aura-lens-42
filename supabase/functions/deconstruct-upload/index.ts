@@ -125,7 +125,7 @@ Extract 2-6 pieces of intelligence. Focus on ACTIONABLE, STRATEGIC content, not 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Deconstruct this content:\n\n${sourceContent.slice(0, 12000)}` },
