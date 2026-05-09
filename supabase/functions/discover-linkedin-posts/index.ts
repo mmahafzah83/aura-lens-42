@@ -740,15 +740,10 @@ Deno.serve(async (req) => {
         if (!existing.media_type && post.mediaType) updates.media_type = post.mediaType;
         if (!existing.published_at && post.publishedAt) updates.published_at = post.publishedAt;
 
-        // Add search_discovery to enriched_by array
-        updates.enriched_by = adminClient.rpc ? undefined : undefined; // handled via raw SQL below
-
         if (Object.keys(updates).length > 0) {
           await adminClient.from("linkedin_posts")
             .update(updates)
             .eq("id", existing.id);
-          // Append to enriched_by
-          await adminClient.rpc("array_append_unique", undefined).catch(() => {});
         }
 
         // Use direct SQL-style update for enriched_by via update
