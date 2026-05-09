@@ -328,12 +328,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       try {
         const alreadyDone = localStorage.getItem("aura_onboarding_complete");
         if (alreadyDone === "true") return;
+        // Show at most once per browser session — prevents the modal from
+        // re-appearing on every page refresh for users mid-onboarding.
+        const shownThisSession = sessionStorage.getItem("aura_onboarding_shown");
+        if (shownThisSession === "true") return;
         const { data } = await supabase
           .from("diagnostic_profiles")
           .select("id")
           .eq("user_id", authUser.id)
           .maybeSingle();
-        if (!cancelled && !data) setShowOnboarding(true);
+        if (!cancelled && !data) {
+          sessionStorage.setItem("aura_onboarding_shown", "true");
+          setShowOnboarding(true);
+        }
       } catch (e) {
         // Non-fatal: never block Home if this check fails.
         console.warn("[HomeTab] onboarding check failed", e);
