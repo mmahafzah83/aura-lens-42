@@ -1621,12 +1621,77 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
-              Welcome to Aura{userName ? `, ${userName}` : ""}
-            </div>
-            <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
-              Paste your first article — one link is all it takes to see your first signal. Need help? Tap the ? in the top-right.
-            </p>
+            {welcomeVariant === "first-signal" && (
+              <>
+                <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                  Your first signal
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 6px", lineHeight: 1.5 }}>
+                  Aura detected a pattern in what you captured:
+                </p>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ink)", margin: "0 0 8px", lineHeight: 1.4 }}>
+                  &ldquo;{topSignal?.signal_title}&rdquo;
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                  This is part of your intelligence now. Every article you capture strengthens it — or surfaces new ones.
+                </p>
+                <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchTab?.("intelligence")}
+                    style={{
+                      background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
+                      border: "none", borderRadius: 8, padding: "8px 14px",
+                      fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    See your signals →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenCapture?.()}
+                    style={{
+                      background: "transparent", color: "var(--ink-2, var(--ink))",
+                      border: "none", padding: "4px 0",
+                      fontSize: 13, fontWeight: 500, cursor: "pointer",
+                    }}
+                  >
+                    Capture another →
+                  </button>
+                </div>
+              </>
+            )}
+            {welcomeVariant === "building" && (
+              <>
+                <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                  Building your radar
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                  Aura is reading what you captured and looking for patterns. Signals emerge after a few articles from different angles.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onOpenCapture?.()}
+                  style={{
+                    background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
+                    border: "none", borderRadius: 8, padding: "8px 14px",
+                    fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  Capture another article →
+                </button>
+              </>
+            )}
+            {welcomeVariant === "intro" && (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+                  Welcome to Aura{userName ? `, ${userName}` : ""}
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
+                  Paste your first article — one link is all it takes to see your first signal. Need help? Tap the ? in the top-right.
+                </p>
+              </>
+            )}
           </div>
           <button
             type="button"
