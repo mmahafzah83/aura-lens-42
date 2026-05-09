@@ -74,6 +74,32 @@ serve(async (req) => {
 
     const contextStr = contextParts.join("\n\n");
 
+    // Guard: return structured welcome when no data exists — never hallucinate from nothing
+    const hasData = signals.length > 0 || insights.length > 0 || frameworks.length > 0 || content.length > 0 || snapshot;
+    if (!hasData) {
+      const sectorHint = profile?.sector_focus || "your industry";
+      return new Response(JSON.stringify({
+        priority_signal: {
+          title: "Your radar is ready",
+          confidence: 0,
+          evidence_count: 0,
+          explanation: "Drop in the first article that caught your eye this week — and watch what your market is telling you that others are missing."
+        },
+        strategic_insight: {
+          title: "The market is moving. Your perspective matters.",
+          interpretation: "Every senior professional sees patterns others miss. Start with one article from " + sectorHint + " and watch what emerges.",
+          linked_framework: null
+        },
+        recommended_move: {
+          action: "Paste a link to one article about " + sectorHint + " that made you think this week. That's all it takes.",
+          reason: "One capture is enough to activate your first signal. You'll see it in under 30 seconds.",
+          action_type: "explore_signal"
+        }
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let systemPrompt: string;
 
     if (context === "strategy") {
