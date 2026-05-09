@@ -50,6 +50,21 @@ export default function TierCeremonyModal({ userId }: Props) {
     [unacknowledgedMilestones]
   );
 
+  // Show only once per browser session — prevents the ceremony from re-firing
+  // on every page refresh until the user explicitly acknowledges it.
+  const [sessionGate, setSessionGate] = useState(false);
+  useEffect(() => {
+    if (!tierMilestone) return;
+    try {
+      const key = `aura_tier_ceremony_seen_${tierMilestone.id}`;
+      if (sessionStorage.getItem(key) === "1") {
+        setSessionGate(true);
+      } else {
+        sessionStorage.setItem(key, "1");
+      }
+    } catch {}
+  }, [tierMilestone]);
+
   const [stats, setStats] = useState<{ signals: number; posts: number; weeks: number } | null>(null);
   const [topSignal, setTopSignal] = useState<{ title: string; confidence: number } | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -96,7 +111,7 @@ export default function TierCeremonyModal({ userId }: Props) {
     };
   }, [tierMilestone, userId]);
 
-  if (!tierMilestone) return null;
+  if (!tierMilestone || sessionGate) return null;
 
   const copy = TIER_COPY[tierMilestone.milestone_id] || {
     name: tierMilestone.milestone_id.replace("tier_", ""),
