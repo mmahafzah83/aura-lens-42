@@ -220,15 +220,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [assessmentDone, setAssessmentDone] = useState(false);
   const entriesLoaded = Array.isArray(entries);
-  const showWelcome =
-    !welcomeDismissed && entriesLoaded && entries!.length < 3 && profileLoaded;
+  const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
+  // showWelcome / welcomeState computed below, after topSignal is declared.
   // The welcome card MAY appear once profile + entries are both loaded. Until
   // we know that for sure, we must NOT render the first-visit hint, otherwise
   // a slow profile load would let the hint render first and then both would
   // appear together when the welcome card pops in. This is the regression
   // guard for the "both visible at the same time" bug.
   const welcomeMayAppear = !welcomeDismissed && (!entriesLoaded || !profileLoaded);
-  const suppressHint = showWelcome || welcomeLeaving || welcomeMayAppear;
 
   // section-level loading + error
   const [briefLoading, setBriefLoading] = useState(true);
@@ -1004,6 +1003,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const showWelcomeState = dataReady && (preCapture || (noEntries && !hasSignals));
   const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
 
+  // Context-aware persistent welcome card (rendered later in the tree).
+  // Hide entirely once the user has 5+ captures AND at least one signal —
+  // the dashboard sections carry their own value at that point.
+  const welcomeVariant: "first-signal" | "building" | "intro" | null = (() => {
+    if (welcomeDismissed || !entriesLoaded || !profileLoaded) return null;
+    if (entryCountForWelcome >= 5 && hasSignals) return null;
+    if (hasSignals) return "first-signal";
+    if (entryCountForWelcome > 0) return "building";
+    return "intro";
+  })();
+  const showWelcome = welcomeVariant !== null;
+  const suppressHint = showWelcome || welcomeLeaving || welcomeMayAppear;
+
   if (showWelcomeState || showBuildingState) {
     const captureCount = entries?.length ?? 0;
     return (
@@ -1609,12 +1621,77 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           }}
         >
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
-              Welcome to Aura{userName ? `, ${userName}` : ""}
-            </div>
-            <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
-              Paste your first article — one link is all it takes to see your first signal. Need help? Tap the ? in the top-right.
-            </p>
+            {welcomeVariant === "first-signal" && (
+              <>
+                <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                  Your first signal
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 6px", lineHeight: 1.5 }}>
+                  Aura detected a pattern in what you captured:
+                </p>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ink)", margin: "0 0 8px", lineHeight: 1.4 }}>
+                  &ldquo;{topSignal?.signal_title}&rdquo;
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                  This is part of your intelligence now. Every article you capture strengthens it — or surfaces new ones.
+                </p>
+                <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    onClick={() => onSwitchTab?.("intelligence")}
+                    style={{
+                      background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
+                      border: "none", borderRadius: 8, padding: "8px 14px",
+                      fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    }}
+                  >
+                    See your signals →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onOpenCapture?.()}
+                    style={{
+                      background: "transparent", color: "var(--ink-2, var(--ink))",
+                      border: "none", padding: "4px 0",
+                      fontSize: 13, fontWeight: 500, cursor: "pointer",
+                    }}
+                  >
+                    Capture another →
+                  </button>
+                </div>
+              </>
+            )}
+            {welcomeVariant === "building" && (
+              <>
+                <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                  Building your radar
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                  Aura is reading what you captured and looking for patterns. Signals emerge after a few articles from different angles.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onOpenCapture?.()}
+                  style={{
+                    background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
+                    border: "none", borderRadius: 8, padding: "8px 14px",
+                    fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  }}
+                >
+                  Capture another article →
+                </button>
+              </>
+            )}
+            {welcomeVariant === "intro" && (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
+                  Welcome to Aura{userName ? `, ${userName}` : ""}
+                </div>
+                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
+                  Paste your first article — one link is all it takes to see your first signal. Need help? Tap the ? in the top-right.
+                </p>
+              </>
+            )}
           </div>
           <button
             type="button"
