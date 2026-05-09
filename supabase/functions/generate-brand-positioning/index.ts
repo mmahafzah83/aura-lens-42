@@ -47,18 +47,20 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Here is the professional's complete profile:\n${profileContext}` },
-        ],
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: `Here is the professional's complete profile:\n${profileContext}` }],
       }),
     });
 
@@ -69,7 +71,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const positioning = data.choices?.[0]?.message?.content?.trim() || "";
+    const positioning = ((data.content || []).map((c: any) => c.text || "").join("") || "").trim();
 
     return new Response(JSON.stringify({ positioning }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
