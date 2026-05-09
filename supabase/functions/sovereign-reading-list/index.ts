@@ -109,19 +109,20 @@ Output valid JSON:
 
     const userPrompt = `Generate 3 reading recommendations for these skill gaps:\n\n${skillGaps.map((g: any, i: number) => `${i + 1}. ${g.name} (current: ${g.currentRating}%, gap: ${g.gap}%) — ${g.description}`).join("\n")}`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: systemPrompt + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
+        messages: [{ role: "user", content: userPrompt }],
       }),
     });
 
@@ -131,7 +132,9 @@ Output valid JSON:
     }
 
     const aiData = await aiRes.json();
-    const parsed = JSON.parse(aiData.choices?.[0]?.message?.content || "{}");
+    const aiText = (aiData.content || []).map((c: any) => c.text || "").join("") || "{}";
+    const cleaned = aiText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const parsed = JSON.parse(cleaned || "{}");
 
     return new Response(JSON.stringify({
       skill_gaps: skillGaps,

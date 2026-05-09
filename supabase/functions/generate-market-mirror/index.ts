@@ -127,16 +127,20 @@ ${themeLines}
 RECENT INDUSTRY TRENDS (last 30 days)
 ${trendLines}`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}` },
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: systemPrompt + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
+        messages: [{ role: "user", content: userPrompt }],
       }),
     });
 
@@ -148,7 +152,7 @@ ${trendLines}`;
       });
     }
     const aiJson = await aiRes.json();
-    const raw = aiJson?.choices?.[0]?.message?.content || "{}";
+    const raw = (aiJson?.content || []).map((c: any) => c.text || "").join("") || "{}";
     let parsed: any;
     try { parsed = JSON.parse(raw); } catch {
       const m = raw.match(/\{[\s\S]*\}/);
