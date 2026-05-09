@@ -246,6 +246,21 @@ Extract 3-8 fragments. Focus on ACTIONABLE, STRATEGIC content.`;
       })
       .eq("id", registryId);
 
+    // Chain: trigger signal detection on the newly created fragments
+    if (inserted.length > 0) {
+      const fragmentIds = inserted.map((f: any) => f.id);
+      adminClient.functions.invoke("detect-signals-v2", {
+        body: {
+          fragment_ids: fragmentIds,
+          source_registry_id: registryId,
+          user_id: registry.user_id,
+        },
+      }).catch((e: any) =>
+        console.warn("[extract-evidence] detect-signals-v2 chain failed:", e?.message)
+      );
+      console.log("[extract-evidence] chained detect-signals-v2 with", fragmentIds.length, "fragments");
+    }
+
     return new Response(JSON.stringify({
       success: true,
       source_registry_id: registryId,
