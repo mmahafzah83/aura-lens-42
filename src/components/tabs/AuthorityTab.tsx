@@ -1134,6 +1134,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           toastMessage: "Post copied to clipboard — paste it in LinkedIn.",
                         });
                       }}
+                      disabled={!!(qualityGate && !qualityGate.skipped && qualityGate.overall_score < 70)}
+                      title={qualityGate && !qualityGate.skipped && qualityGate.overall_score < 70 ? "Strengthen this post before publishing" : undefined}
                     >
                       <Linkedin className="w-3 h-3" /> Post on LinkedIn →
                     </Button>
