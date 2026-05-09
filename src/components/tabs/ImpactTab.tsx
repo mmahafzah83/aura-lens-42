@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { EMPTY_STATE } from "@/constants/language";
 import {
   ResponsiveContainer,
   BarChart, Bar,
@@ -775,7 +776,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             0
           </div>
           <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 480, marginInline: "auto" }}>
-            Visibility is credibility. If you're an expert but nobody sees your work — to the market, you don't exist. Every recognized authority started exactly where you are now: one publish away from being found. This is where you'll watch that change.
+            {EMPTY_STATE.impact.text}
           </p>
 
           {auraData && (

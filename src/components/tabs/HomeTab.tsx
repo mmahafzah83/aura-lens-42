@@ -8,6 +8,7 @@ import { formatSmartDate } from "@/lib/formatDate";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
 import { withTimeout } from "@/lib/safeQuery";
+import { EMPTY_STATE } from "@/constants/language";
 import AurasRead from "@/components/AurasRead";
 import MilestoneNotification from "@/components/MilestoneNotification";
 import OnboardingChecklist from "@/components/OnboardingChecklist";
@@ -1043,7 +1044,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           >
             {showWelcomeState
               ? (journey.currentGate === 0
-                  ? "You have the expertise. The certificates. The years. But does your market know? Right now, to anyone who hasn't met you in person — you're invisible. One article is all it takes to change that. Paste a link and watch Aura turn what you already know into something the market can finally see."
+                  ? EMPTY_STATE.home.text
                   : journey.currentGate === 1
                   ? "Your profile is set. Now let's understand your positioning."
                   : "Aura knows who you are. Now feed it your intelligence.")
