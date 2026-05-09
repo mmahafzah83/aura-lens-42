@@ -84,19 +84,6 @@ const StrategicAdvisorPanel = ({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setLoading(false); return; }
 
-      // Gate: don't ask the advisor for a recommendation when the user has
-      // no active signals yet — it would hallucinate from nothing.
-      const { count: signalCount } = await supabase
-        .from("strategic_signals")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "active");
-      if (!signalCount || signalCount === 0) {
-        setData(null);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-advisor`, {
         method: "POST",
         headers: {
