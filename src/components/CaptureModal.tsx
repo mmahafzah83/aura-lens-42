@@ -478,27 +478,24 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         return;
       }
 
-      // Also insert into entries table so Knowledge tab picks it up
-      // For links, use the extracted article text from ingest-capture instead of the raw URL
-      const entryContent = captureType === "link" && data?.extracted_content
-        ? data.extracted_content
-        : captureContent;
-      const entryTitle = captureType === "link"
-        ? (data?.extracted_title || (() => { try { return new URL(content.trim()).hostname; } catch { return content.trim().slice(0, 60); } })())
-        : (captureContent || "").slice(0, 60) || "Untitled";
-
-      const { data: entryRow, error: entryError } = await supabase.from("entries").insert({
-        user_id: session.user.id,
-        type: captureType,
-        title: entryTitle,
-        content: entryContent,
-        summary: entryContent.slice(0, 300),
-        ...(selectedPillar && { skill_pillar: selectedPillar }),
-        ...(captureType === "link" && { image_url: data?.original_url || content.trim() }),
-      }).select("id").single();
-
-      if (entryError) {
-        console.error("Failed to insert entry:", entryError.message, entryError);
+      // Note: ingest-capture already creates the entries row server-side.
+      // Client-side insert was causing duplicates — removed.
+      // If a skill pillar was selected, patch it onto the most recent entry for this URL.
+      const entryRow: { id?: string } = {};
+      if (selectedPillar && captureType === "link") {
+        const targetUrl = data?.original_url || content.trim();
+        const { data: latest } = await supabase
+          .from("entries")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .eq("image_url", targetUrl)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latest?.id) {
+          entryRow.id = latest.id;
+          await supabase.from("entries").update({ skill_pillar: selectedPillar }).eq("id", latest.id);
+        }
       }
 
       // Capture link preview (UI only) so we can render the preview card
@@ -592,6 +589,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       setUrlError(null);
       setDuplicateInfo(null);
       onCaptured();
+      // Notify any listening pages (Intelligence, etc.) that a capture completed
+      window.dispatchEvent(new Event("capture-complete"));
       onOpenChange(false);
 
       // M3-4 identity drift check (frontend only, fire-and-forget)
