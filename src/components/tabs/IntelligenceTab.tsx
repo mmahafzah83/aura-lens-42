@@ -778,8 +778,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         }
       `}</style>
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "0 16px" }}>
-        {/* GATE: hide everything below until 3 distinct capture sources exist */}
-        {!journey.loading && !journey.capturesReady ? (
+        {/* GATE: only block when we genuinely have nothing to show.
+            If any active signal exists, show the page regardless of source count. */}
+        {!journey.loading && signals.length === 0 && !journey.capturesReady ? (
           <div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase", fontFamily: "var(--font-body)" }}>
@@ -804,15 +805,23 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               <div style={{ fontSize: 10, letterSpacing: "0.14em", fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", marginBottom: 10 }}>
                 Your strategic radar
               </div>
-              <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 600 }}>
-                Intelligence emerges from patterns across your captures. Aura needs at least 3 articles from different sources to start detecting meaningful signals. Aura reads what you read — every article you capture adds a layer of intelligence.
-              </p>
-              <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 16 }}>
-                Current: {journey.distinctSources} of 3 sources
-              </div>
-              <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
-                Capture an article →
-              </Button>
+              {entryCount >= 3 ? (
+                <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 600 }}>
+                  Aura is analyzing your captures. Signals typically appear within a few minutes after capture.
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 600 }}>
+                    Intelligence emerges from patterns across your captures. Aura needs at least 3 articles from different sources to start detecting meaningful signals. Aura reads what you read — every article you capture adds a layer of intelligence.
+                  </p>
+                  <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 16 }}>
+                    Current: {journey.distinctSources} of 3 sources
+                  </div>
+                  <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
+                    Capture an article →
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -917,6 +926,19 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 text="Patterns from your captures. Higher confidence = more evidence from diverse sources."
               />
             </p>
+
+            {signals.length > 0 && (
+              <p
+                style={{
+                  color: "var(--ink-3)",
+                  fontSize: 13,
+                  margin: "0 0 14px",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                {signals.length} signal{signals.length === 1 ? "" : "s"} detected from {entryCount} capture{entryCount === 1 ? "" : "s"} — more articles reveal more patterns
+              </p>
+            )}
 
             {/* Fading-signal urgency alert */}
             {fadingSignals.length > 0 && topFading && (
