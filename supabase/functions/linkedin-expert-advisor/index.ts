@@ -164,15 +164,19 @@ Deno.serve(async (req) => {
       } : null,
     });
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are an elite LinkedIn Expert Agent and Strategic Authority Advisor. You analyze the user's complete knowledge ecosystem — LinkedIn analytics, captures, documents, frameworks, and learned intelligence — to produce a continuous strategic advisory.
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8192,
+        system: `You are an elite LinkedIn Expert Agent and Strategic Authority Advisor. You analyze the user's complete knowledge ecosystem — LinkedIn analytics, captures, documents, frameworks, and learned intelligence — to produce a continuous strategic advisory.
 
 Your role is to:
 1. Detect authority evolution trends across all sources
@@ -181,18 +185,16 @@ Your role is to:
 4. Track influence trajectory and momentum
 
 Be specific, cite actual data points, and write in a confident advisory tone. Every insight must be grounded in real data — never fabricate. If LinkedIn snapshots are unavailable, focus on cross-source authority signals from captures, documents, and frameworks.`,
-          },
+        messages: [
           {
             role: "user",
             content: `Analyze this complete knowledge ecosystem and produce a strategic advisory:\n\n${dataContext}`,
           },
         ],
         tools: [{
-          type: "function",
-          function: {
-            name: "generate_expert_advisory",
-            description: "Generate a comprehensive strategic advisory from cross-source authority analysis",
-            parameters: {
+          name: "generate_expert_advisory",
+          description: "Generate a comprehensive strategic advisory from cross-source authority analysis",
+          input_schema: {
               type: "object",
               properties: {
                 becomingKnownFor: {
@@ -329,10 +331,9 @@ Be specific, cite actual data points, and write in a confident advisory tone. Ev
               },
               required: ["becomingKnownFor", "strongestThemes", "tonePerformance", "bestFormats", "authorityEvolution", "strategicOpportunities", "priorityMove", "writeNext", "weeklyBrief"],
               additionalProperties: false,
-            },
           },
         }],
-        tool_choice: { type: "function", function: { name: "generate_expert_advisory" } },
+        tool_choice: { type: "tool", name: "generate_expert_advisory" },
       }),
     });
 
@@ -345,12 +346,11 @@ Be specific, cite actual data points, and write in a confident advisory tone. Ev
     }
 
     const data = await res.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
+    const toolUse = (data.content || []).find((c: any) => c.type === "tool_use");
+    if (!toolUse?.input) {
       return new Response(JSON.stringify({ error: "AI returned no advisory" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    const advisory = JSON.parse(toolCall.function.arguments);
+    const advisory = toolUse.input;
 
     return new Response(JSON.stringify({
       success: true,
