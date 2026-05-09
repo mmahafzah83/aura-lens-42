@@ -215,3 +215,35 @@ export const ONBOARDING = {
   assessmentIntro: "Your expertise deserves a frame. Not a CV — a market position. Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.",
   assessmentSubtitle: "This shapes everything Aura does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.",
 } as const;
+
+// ════════════════════════════════════
+// EMAIL TEMPLATES
+// ════════════════════════════════════
+export const EMAIL = {
+  invite: {
+    subject: "Your expertise deserves to be seen",
+    preheader: "Your Aura beta access is approved. Here's everything you need to get started — and why it matters.",
+    heroHeadline: "You're in. Welcome to Aura.",
+    heroTagline: "Your expertise has always been there. Now it starts working for you.",
+    ctaButton: "Open my Aura →",
+    ctaLabel: "YOUR ACCESS",
+    ctaSubtext: "Click below to give your expertise the visibility it deserves. Your first briefing is waiting.",
+    sectionWhat: "WHAT HAPPENS INSIDE",
+    sectionSteps: "YOUR FIRST 10 MINUTES",
+    step1: "Set your password",
+    step2: "Tell Aura who you are — 5 minutes",
+    step3: "Save one article",
+    step4: "Watch your first signal appear",
+    defaultNote: "I built Aura because I kept meeting brilliant professionals whose market didn't know they existed. Not because they lacked expertise — but because no one had built them a system to make it visible. Aura is that system. I hope it changes the way your work is seen.",
+    footer: "Strategic Intelligence · Private Beta",
+  },
+  weeklyBrief: {
+    subject: "What moved in your sector this week",
+  },
+  silenceReminder: {
+    subject: "Your radar is cooling — 2 minutes to warm it up",
+  },
+  passwordReset: {
+    subject: "Reset your Aura password",
+  },
+} as const;
