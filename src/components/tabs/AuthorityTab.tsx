@@ -504,6 +504,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     const json = await resp.json();
     const accumulated: string = json?.content || "";
     if (accumulated) setOutput(accumulated);
+    if (json?.quality_gate) {
+      setQualityGate(json.quality_gate);
+    } else {
+      setQualityGate(null);
+    }
     return accumulated;
   };
 
@@ -535,6 +540,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     setFullVersion("");
     setShortVersion("");
     setShowingShort(false);
+    setQualityGate(null);
     setGenerationTimestamp(new Date().toISOString());
     const slowTimer = setTimeout(() => setShowSlowHint(true), 5000);
     const controller = new AbortController();
