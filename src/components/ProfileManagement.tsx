@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, ClipboardCheck, Compass, Camera } from "lucide-react";
+import { UserCog, Save, Plus, X, Loader2, ShieldCheck, RefreshCw, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -9,8 +9,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EVIDENCE_MATRIX } from "@/components/diagnostic/EvidenceMatrix";
-import ObjectiveAuditModal from "@/components/ObjectiveAuditModal";
-import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
 interface Skill {
   name: string;
@@ -21,6 +19,9 @@ interface ProfileManagementProps {
   onResetDiagnostic?: () => void;
   onNavigate?: (tab: string) => void;
   startExpanded?: boolean;
+  /** When true, hides Audit/Brand/Reset triggers — used inside the GuidedJourney flow
+   *  where those steps live as separate cards. */
+  compact?: boolean;
 }
 
 const SECTOR_OPTIONS = [
@@ -28,7 +29,7 @@ const SECTOR_OPTIONS = [
   "Healthcare", "Telecom", "Real Estate", "Manufacturing", "Other",
 ];
 
-const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: ProfileManagementProps) => {
+const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compact }: ProfileManagementProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -48,9 +49,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [newSkillName, setNewSkillName] = useState("");
   const [expanded, setExpanded] = useState(!!startExpanded);
-  const [auditOpen, setAuditOpen] = useState(false);
-  const [brandOpen, setBrandOpen] = useState(false);
-  const [auditCompleted, setAuditCompleted] = useState(false);
   const [radarKey, setRadarKey] = useState(0);
   const { toast } = useToast();
 
@@ -78,7 +76,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
-        setAuditCompleted(!!profile.audit_completed_at);
         setHasSavedBefore(!!(profile.first_name && profile.firm && profile.level && profile.sector_focus));
       }
       setLoading(false);
@@ -113,20 +110,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profile saved", description: "Aura has what it needs." });
+      toast({ title: "Profile saved." });
       if (mandatoryComplete) {
         try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
         setHasSavedBefore(true);
-        // First successful save with all mandatory fields → nudge user toward Step 2
-        if (wasFirstSave) {
-          try {
-            window.dispatchEvent(new CustomEvent("aura:journey-refresh"));
-            setTimeout(() => {
-              const step2 = document.querySelector('[data-guided-journey-step="1"]')?.parentElement?.parentElement?.nextElementSibling as HTMLElement | null;
-              step2?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }, 300);
-          } catch {}
-        }
       }
       try { window.dispatchEvent(new CustomEvent("aura:journey-refresh")); } catch {}
     }
@@ -219,33 +206,6 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
             ))}
           </div>
 
-          {/* Start Objective Audit button */}
-          <Button
-            variant="outline"
-            onClick={() => setAuditOpen(true)}
-            className="w-full mt-2 border-primary/30 text-primary hover:bg-primary/10 gap-2"
-          >
-            <ClipboardCheck className="w-4 h-4" />
-            Start Objective Audit
-          </Button>
-
-          {/* Brand Assessment button */}
-          <div className="relative group">
-            <Button
-              variant="outline"
-              onClick={() => auditCompleted && setBrandOpen(true)}
-              disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
-            >
-              <Compass className="w-4 h-4" />
-              Start Brand Assessment
-            </Button>
-            {!auditCompleted && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-surface-ink-subtle border border-ink-3 rounded-lg text-[10px] text-ink-5 w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
-              </div>
-            )}
-          </div>
         </div>
       ) : (
         <div className="space-y-5">
@@ -287,9 +247,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., EY, McKinsey, ACWA Power" },
-              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., Director of Digital Transformation" },
-              { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Digital Transformation, Strategy" },
+              { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., Deloitte, Saudi Aramco, your organization" },
+              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., VP of Strategy, CIO, your current role" },
+              { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Strategy, Technology, Finance — the area you work in" },
             ].map(item => (
               <div key={item.label}>
                 <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
@@ -322,7 +282,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
             <Input
-              placeholder="e.g., Become the go-to voice for water utility modernization in the GCC"
+              placeholder="What do you want to be known for in 3 years?"
               value={northStar}
               onChange={(e) => setNorthStar(e.target.value)}
               className="h-9 bg-secondary border-border/30 text-sm"
@@ -343,7 +303,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
               ))}
             </div>
             <div className="flex gap-2">
-              <Input placeholder="e.g., IT/OT Convergence, SCADA Modernization" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
+              <Input placeholder="The 2–3 topics you want to own — e.g., Digital Government, AI in Banking" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
               <Button size="sm" variant="outline" onClick={addPillar} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
@@ -398,31 +358,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
             );
           })()}
 
-          {/* Start Objective Audit */}
-          <Button variant="outline" onClick={() => setAuditOpen(true)} className="w-full border-primary/30 text-primary hover:bg-primary/10 gap-2">
-            <ClipboardCheck className="w-4 h-4" />
-            Start Objective Audit
-          </Button>
-
-          {/* Brand Assessment button */}
-          <div className="relative group">
-            <Button
-              variant="outline"
-              onClick={() => auditCompleted && setBrandOpen(true)}
-              disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
-            >
-              <Compass className="w-4 h-4" />
-              Start Brand Assessment
-            </Button>
-            {!auditCompleted && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-surface-ink-subtle border border-ink-3 rounded-lg text-[10px] text-ink-5 w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
-              </div>
-            )}
-          </div>
-
-          {onResetDiagnostic && (
+          {onResetDiagnostic && hasSavedBefore && (
             <Button
               variant="outline"
               onClick={async () => {
@@ -436,14 +372,12 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
               className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Reset Assessment & Re-Diagnose
+              Reset assessment
             </Button>
           )}
         </div>
       )}
 
-      <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onComplete={() => { setRadarKey(k => k + 1); setAuditCompleted(true); }} onNavigate={onNavigate} />
-      <BrandAssessmentModal open={brandOpen} onOpenChange={setBrandOpen} onComplete={() => setRadarKey(k => k + 1)} onNavigate={onNavigate} />
     </div>
     </>
   );
