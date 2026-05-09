@@ -80,20 +80,58 @@ Analyse this professional using all six frameworks and provide the complete bran
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
+
+    const callAnthropic = async () => {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 110000);
+      try {
+        return await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 4096,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: "user", content: userPrompt }],
+          }),
+          signal: ctrl.signal,
+        });
+      } finally {
+        clearTimeout(t);
+      }
+    };
+
+    let response: Response | null = null;
+    let lastErr: unknown = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        response = await callAnthropic();
+        if (response.ok) break;
+        if (response.status === 429 || response.status === 402) break;
+        const t = await response.text();
+        console.error(`AI gateway error attempt ${attempt + 1}:`, response.status, t);
+        response = null;
+      } catch (e) {
+        lastErr = e;
+        console.error(`AI gateway fetch failed attempt ${attempt + 1}:`, e);
+      }
+    }
+
+    if (!response) {
+      console.error("brand-assessment: returning graceful fallback", lastErr);
+      return new Response(
+        JSON.stringify({
+          interpretation: "",
+          pending: true,
+          message: "Assessment saved. Your positioning will be generated shortly — you can regenerate it from My Story.",
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -108,9 +146,6 @@ Analyse this professional using all six frameworks and provide the complete bran
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error("AI gateway error");
     }
 
     const data = await response.json();
@@ -122,8 +157,12 @@ Analyse this professional using all six frameworks and provide the complete bran
   } catch (e) {
     console.error("brand-assessment error:", e);
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({
+        interpretation: "",
+        pending: true,
+        message: "Assessment saved. Your positioning will be generated shortly — you can regenerate it from My Story.",
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
