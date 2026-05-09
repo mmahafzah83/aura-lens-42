@@ -217,7 +217,9 @@ serve(async (req) => {
     const topConf = topSignal ? Math.round(Number(topSignal.confidence) * 100) : 0;
 
     let personalized_nudge: string;
-    if (weakest === "capture") {
+    if ((signalsFull?.length || 0) === 0) {
+      personalized_nudge = `Your sector is moving. Paste one link about ${sectorFocus} and see what Aura finds that you didn't notice.`;
+    } else if (weakest === "capture") {
       personalized_nudge = `Your ${topTitle} signal is strong at ${topConf}%. Reinforce it with a new capture from a different source.`;
     } else if (weakest === "signal") {
       const themes = new Set<string>();
