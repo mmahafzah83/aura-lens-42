@@ -54,7 +54,7 @@ const StepCard = ({
         opacity: isLocked ? 0.55 : 1,
         transition: "opacity 200ms ease, border-color 200ms ease",
         boxShadow: status === "active" && index === 2 ? "0 0 0 3px hsl(var(--primary) / 0.15)" : undefined,
-        animation: status === "active" && index === 2 ? "auraPulse 2s ease-in-out infinite" : undefined,
+        animation: status === "active" && index === 2 ? "aura-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite" : undefined,
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
