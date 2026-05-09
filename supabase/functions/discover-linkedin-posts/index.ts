@@ -206,6 +206,33 @@ interface RejectedLink {
 const MAX_POSTS = 50;
 const RATE_LIMIT_DELAY_MS = 1500;
 const RETRY_WINDOW_DAYS = 7;
+const FIRECRAWL_MAX_RETRIES = 3;
+
+/** Retry Firecrawl search with exponential backoff on 429/5xx. */
+async function firecrawlSearchWithRetry(
+  apiKey: string,
+  payload: Record<string, unknown>,
+): Promise<{ ok: boolean; status: number; body: string }> {
+  let lastStatus = 0;
+  let lastBody = "";
+  for (let attempt = 0; attempt < FIRECRAWL_MAX_RETRIES; attempt++) {
+    const res = await fetch("https://api.firecrawl.dev/v1/search", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      return { ok: true, status: res.status, body: await res.text() };
+    }
+    lastStatus = res.status;
+    lastBody = await res.text();
+    // Only retry on transient failures
+    if (res.status !== 429 && res.status < 500) break;
+    const backoff = Math.min(8000, 1000 * Math.pow(2, attempt)); // 1s, 2s, 4s
+    await new Promise((r) => setTimeout(r, backoff));
+  }
+  return { ok: false, status: lastStatus, body: lastBody };
+}
 
 /* ── main ── */
 
