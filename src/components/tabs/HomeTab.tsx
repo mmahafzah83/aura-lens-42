@@ -220,8 +220,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [assessmentDone, setAssessmentDone] = useState(false);
   const entriesLoaded = Array.isArray(entries);
-  const showWelcome =
-    !welcomeDismissed && entriesLoaded && entries!.length < 3 && profileLoaded;
+  const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
   // The welcome card MAY appear once profile + entries are both loaded. Until
   // we know that for sure, we must NOT render the first-visit hint, otherwise
   // a slow profile load would let the hint render first and then both would
