@@ -927,6 +927,19 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               />
             </p>
 
+            {signals.length > 0 && (
+              <p
+                style={{
+                  color: "var(--ink-3)",
+                  fontSize: 13,
+                  margin: "0 0 14px",
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                {signals.length} signal{signals.length === 1 ? "" : "s"} detected from {entryCount} capture{entryCount === 1 ? "" : "s"} — more articles reveal more patterns
+              </p>
+            )}
+
             {/* Fading-signal urgency alert */}
             {fadingSignals.length > 0 && topFading && (
               <div
