@@ -75,6 +75,7 @@ const StrategicAdvisorPanel = ({
   const [builderData, setBuilderData] = useState<{ title: string; description: string; steps: string[] } | null>(null);
   const [draftData, setDraftData] = useState<{ title: string; hook?: string; context?: string } | null>(null);
   const [explorerSignal, setExplorerSignal] = useState<any>(null);
+  const [signalStats, setSignalStats] = useState<{ total: number; fading: number }>({ total: 0, fading: 0 });
 
   const fetchAdvisor = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -118,6 +119,24 @@ const StrategicAdvisorPanel = ({
 
   useEffect(() => { fetchAdvisor(); }, [fetchAdvisor]);
   useEffect(() => { if (refreshTrigger > 0) fetchAdvisor(true); }, [refreshTrigger]);
+
+  // Compute header tone based on active signal counts
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: rows } = await supabase
+        .from("strategic_signals")
+        .select("velocity_status")
+        .eq("status", "active");
+      if (cancelled) return;
+      const total = rows?.length || 0;
+      const fading = (rows || []).filter((r: any) =>
+        ["fading", "decaying", "cooling", "stale"].includes((r.velocity_status || "").toLowerCase())
+      ).length;
+      setSignalStats({ total, fading });
+    })();
+    return () => { cancelled = true; };
+  }, [data]);
 
   if (loading) {
     return (
@@ -252,7 +271,13 @@ const StrategicAdvisorPanel = ({
             <Zap className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h3 className="text-card-title text-foreground">Strategic Advisor</h3>
+            <h3 className="text-card-title text-foreground uppercase tracking-wide text-sm">
+              {signalStats.total === 0
+                ? "Your strategic radar"
+                : signalStats.total >= 5 && signalStats.fading > signalStats.total / 2
+                ? "Your intelligence is cooling"
+                : "Your intelligence brief"}
+            </h3>
             <p className="text-meta">What should you focus on next?</p>
           </div>
         </div>

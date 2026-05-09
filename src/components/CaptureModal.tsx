@@ -558,10 +558,29 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         // ignore — fall through to default toast
       }
       if (!didCelebrate) {
-        toast({
-          title: "Source saved",
-          description: "Your source has been saved.",
-        });
+        sonnerToast.custom(
+          () => (
+            <div
+              style={{
+                background: "var(--ink, #1C1812)",
+                color: "var(--ink-on-brand, #f5efe1)",
+                border: "1px solid var(--brand-muted, rgba(197,165,90,0.4))",
+                borderRadius: 12,
+                padding: "14px 18px",
+                boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
+                maxWidth: 380,
+              }}
+            >
+              <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #C5A55A)", fontWeight: 600, marginBottom: 6 }}>
+                ✦ Captured
+              </div>
+              <div style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.9 }}>
+                Aura is analyzing this. Patterns emerge as you capture more — your next source might connect the dots.
+              </div>
+            </div>
+          ),
+          { duration: 4500, position: "bottom-right" },
+        );
       }
 
       setContent("");
@@ -595,35 +614,78 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               body: { source_registry_id: registryId, user_id: session.user.id },
             });
           })
-          .then((res) => {
+          .then(async (res) => {
             if (!res) return;
             const { data: result, error } = res;
             if (error) {
               console.error("detect-signals-v2 error:", error);
               return;
             }
-            // Capture signal title for the UI banner
-            const matchedTitle =
-              result?.signal?.title ||
-              result?.signal_title ||
-              result?.matched_signal?.title ||
-              null;
-            if (matchedTitle) setSignalMatch({ title: matchedTitle });
-            if (result?.is_new) {
-              setTimeout(() => {
-                sonnerToast("New pattern detected ✦", {
-                  position: "bottom-right",
-                  duration: 3000,
-                  style: {
-                    background: "var(--surface-ink-subtle)",
-                    color: "var(--brand)",
-                    border: "1px solid var(--brand-muted)",
-                  },
-                });
-              }, 3000);
-            }
             queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
             queryClient.invalidateQueries({ queryKey: ["signals"] });
+
+            // Fetch the signal so we can show a rich reveal toast
+            const signalId = result?.signal_id;
+            if (!signalId) return;
+            const { data: sig } = await supabase
+              .from("strategic_signals")
+              .select("signal_title, confidence")
+              .eq("id", signalId)
+              .maybeSingle();
+            const title = sig?.signal_title;
+            if (!title) return;
+            setSignalMatch({ title });
+            const confPct = Math.round(((sig?.confidence as number) || 0) * 100);
+            const isNew = !!result?.is_new;
+            setTimeout(() => {
+              sonnerToast.custom(
+                () => (
+                  <div
+                    style={{
+                      background: "var(--ink, #1C1812)",
+                      color: "var(--ink-on-brand, #f5efe1)",
+                      border: "1px solid var(--brand, #C5A55A)",
+                      borderRadius: 12,
+                      padding: "16px 18px",
+                      boxShadow: "0 12px 36px -10px rgba(0,0,0,0.5)",
+                      maxWidth: 400,
+                    }}
+                  >
+                    <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #C5A55A)", fontWeight: 700, marginBottom: 8 }}>
+                      ✦ {isNew ? "Signal detected" : "Signal reinforced"}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.35, marginBottom: 6 }}>
+                      {title}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${confPct}%`, height: "100%", background: "var(--brand, #C5A55A)" }} />
+                      </div>
+                      <span style={{ fontSize: 11, opacity: 0.7, fontVariantNumeric: "tabular-nums" }}>{confPct}%</span>
+                    </div>
+                    <div style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.78, marginBottom: 10 }}>
+                      This is now part of your strategic intelligence. Capture another source on this topic to strengthen this signal.
+                    </div>
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent("aura:open-capture"))}
+                      style={{
+                        background: "transparent",
+                        color: "var(--brand, #C5A55A)",
+                        border: "1px solid var(--brand, #C5A55A)",
+                        borderRadius: 6,
+                        padding: "6px 12px",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Capture another →
+                    </button>
+                  </div>
+                ),
+                { duration: 7000, position: "bottom-right" },
+              );
+            }, 1500);
           })
           .catch((err) => console.error("pipeline background error:", err));
       }
