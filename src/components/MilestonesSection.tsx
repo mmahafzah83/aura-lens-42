@@ -255,23 +255,33 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
             Next
           </div>
           <ul className="space-y-2" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {unearned.map(m => (
-              <li
-                key={m.id}
-                style={{
-                  border: "1px solid hsl(var(--border) / 0.5)",
-                  borderRadius: 8,
-                  padding: "10px 14px",
-                }}
-              >
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
-                  {m.name}
-                </div>
-                <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
-                  {NEXT_DESCRIPTIONS[m.id] || "Keep going to unlock this milestone."}
-                </div>
-              </li>
-            ))}
+            {unearned.map((m, idx) => {
+              const isNext = idx === 0; // first unearned = next achievable
+              return (
+                <li
+                  key={m.id}
+                  style={{
+                    border: isNext
+                      ? "1px solid hsl(var(--primary) / 0.45)"
+                      : "1px solid hsl(var(--border) / 0.5)",
+                    borderRadius: 8,
+                    padding: "10px 14px",
+                    background: isNext ? "hsl(var(--primary) / 0.04)" : "transparent",
+                    boxShadow: isNext ? "0 0 0 3px hsl(var(--primary) / 0.08)" : "none",
+                    opacity: isNext ? 1 : 0.75,
+                    transition: "all 200ms ease",
+                  }}
+                >
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: isNext ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", fontWeight: isNext ? 500 : 400 }}>
+                    {isNext && <span style={{ color: "hsl(var(--primary))", marginRight: 6 }}>›</span>}
+                    {m.name}
+                  </div>
+                  <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                    {NEXT_DESCRIPTIONS[m.id] || "Keep going to unlock this milestone."}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

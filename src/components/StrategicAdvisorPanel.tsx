@@ -12,6 +12,21 @@ import FrameworkBuilder from "@/components/FrameworkBuilder";
 import LinkedInDraftPanel from "@/components/LinkedInDraftPanel";
 import SignalExplorer from "@/components/SignalExplorer";
 
+/** Strip raw markdown syntax (###, **bold**, * lists) from AI output so we never
+ *  display syntax tokens to the user. Keeps inner text. */
+const stripMd = (s?: string): string => {
+  if (!s) return "";
+  return s
+    .replace(/^#{1,6}\s+/gm, "")          // headings
+    .replace(/\*\*(.*?)\*\*/g, "$1")     // bold
+    .replace(/\*(.*?)\*/g, "$1")         // italic
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")          // inline code
+    .replace(/^\s*[-*+]\s+/gm, "• ")      // bullets
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links
+    .trim();
+};
+
 interface AdvisorData {
   priority_signal: {
     title: string;
@@ -68,19 +83,6 @@ const StrategicAdvisorPanel = ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setLoading(false); return; }
-
-      // Gate: don't ask the advisor for a recommendation when the user has
-      // no active signals yet — it would hallucinate from nothing.
-      const { count: signalCount } = await supabase
-        .from("strategic_signals")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "active");
-      if (!signalCount || signalCount === 0) {
-        setData(null);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
 
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/strategic-advisor`, {
         method: "POST",
@@ -140,6 +142,42 @@ const StrategicAdvisorPanel = ({
     );
   }
 
+  // Welcome state — backend returned the structured zero-data response.
+  // Render an identity-affirming welcome card instead of the AI output.
+  const isWelcomeState =
+    (data.priority_signal?.confidence ?? 0) === 0 &&
+    (data.priority_signal?.evidence_count ?? 0) === 0;
+  if (isWelcomeState) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card rounded-2xl p-6 border border-primary/15 bg-gradient-to-br from-primary/[0.05] to-transparent"
+      >
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-4 h-4 text-primary" />
+          <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/70">
+            Your strategic radar
+          </span>
+        </div>
+        <p className="text-sm text-foreground leading-relaxed mb-4">
+          Your sector is moving — and you already see patterns others miss. Drop in
+          your first article to let Aura turn those instincts into strategic signals.
+        </p>
+        <Button
+          size="sm"
+          className="text-xs gap-1.5 bg-brand text-black hover:bg-[#b89548]"
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent("aura:open-capture"));
+            onOpenChat?.();
+          }}
+        >
+          Paste your first link →
+        </Button>
+      </motion.div>
+    );
+  }
+
   const MoveIcon = ACTION_ICONS[data.recommended_move.action_type] || ArrowRight;
   const moveLabel = ACTION_LABELS[data.recommended_move.action_type] || "Take Action";
   const confPct = Math.round((data.priority_signal.confidence || 0.7) * 100);
@@ -159,8 +197,8 @@ const StrategicAdvisorPanel = ({
           </div>
           <span className="text-label uppercase tracking-wider text-xs font-semibold text-primary/60">Your Next Move</span>
         </div>
-        <p className="text-sm font-semibold text-foreground leading-snug mb-1.5">{data.recommended_move.action}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-3">{data.recommended_move.reason}</p>
+        <p className="text-sm font-semibold text-foreground leading-snug mb-1.5">{stripMd(data.recommended_move.action)}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed mb-3">{stripMd(data.recommended_move.reason)}</p>
         <Button
           size="sm"
           className="text-xs gap-1.5 bg-brand text-black hover:bg-[#b89548]"
@@ -238,8 +276,8 @@ const StrategicAdvisorPanel = ({
             confPct >= 80 ? "text-emerald-400 bg-emerald-500/10" : confPct >= 60 ? "text-amber-400 bg-amber-500/10" : "text-muted-foreground bg-secondary/30"
           }`}>{confPct}%</span>
         </div>
-        <p className="text-sm font-semibold text-foreground leading-snug">{data.priority_signal.title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{data.priority_signal.explanation}</p>
+        <p className="text-sm font-semibold text-foreground leading-snug">{stripMd(data.priority_signal.title)}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{stripMd(data.priority_signal.explanation)}</p>
         {data.priority_signal.evidence_count != null && data.priority_signal.evidence_count > 0 && (
           <p className="text-meta">{data.priority_signal.evidence_count} findings</p>
         )}
@@ -274,8 +312,8 @@ const StrategicAdvisorPanel = ({
           <Lightbulb className="w-4 h-4 text-blue-400" />
           <span className="text-label uppercase tracking-wider text-xs font-semibold text-blue-400/70">Strategic Insight</span>
         </div>
-        <p className="text-sm font-semibold text-foreground leading-snug">{data.strategic_insight.title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{data.strategic_insight.interpretation}</p>
+        <p className="text-sm font-semibold text-foreground leading-snug">{stripMd(data.strategic_insight.title)}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{stripMd(data.strategic_insight.interpretation)}</p>
         {data.strategic_insight.linked_framework && (
           <div className="flex items-center gap-1.5 pt-1">
             <Layers className="w-3 h-3 text-emerald-400" />
@@ -315,8 +353,8 @@ const StrategicAdvisorPanel = ({
           <MoveIcon className="w-4 h-4" style={{ color: "var(--signal)" }} />
           <span className="text-label uppercase tracking-wider text-xs font-semibold" style={{ color: "var(--signal)", opacity: 0.85 }}>Your Next Move</span>
         </div>
-        <p className="text-sm font-semibold text-foreground leading-snug">{data.recommended_move.action}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{data.recommended_move.reason}</p>
+        <p className="text-sm font-semibold text-foreground leading-snug">{stripMd(data.recommended_move.action)}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{stripMd(data.recommended_move.reason)}</p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button
             size="sm"
