@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, ArrowRight, Check, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import BrandAssessmentModal from "@/components/BrandAssessmentModal";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, X } from "lucide-react";
 
 interface Props {
   userId: string;
@@ -12,349 +11,169 @@ interface Props {
 }
 
 const SECTORS = [
-  "Energy & Utilities",
+  "Technology & IT",
   "Financial Services",
-  "Government",
-  "Healthcare",
-  "Technology",
-  "Consulting",
-  "Manufacturing",
-  "Real Estate",
+  "Energy & Utilities",
+  "Healthcare & Pharma",
+  "Government & Public Sector",
+  "Education & Academia",
+  "Real Estate & Construction",
   "Telecommunications",
-  "Education",
+  "Oil & Gas",
+  "Retail & E-commerce",
+  "Manufacturing",
+  "Professional Services & Consulting",
+  "Transportation & Logistics",
+  "Media & Entertainment",
+  "Hospitality & Tourism",
+  "Agriculture & Food",
+  "Defense & Security",
+  "Non-profit & Development",
   "Other",
 ];
 
-type Step = 0 | 1 | 2 | 3; // 0=unboxing, 1=profile, 2=article, 3=assessment
-
-type Profile = {
-  first_name: string;
-  firm: string;
-  level: string;
-  core_practice: string;
-  sector_focus: string;
-  north_star_goal: string;
-  linkedin_url?: string;
-};
-
-const emptyProfile: Profile = {
-  first_name: "",
-  firm: "",
-  level: "",
-  core_practice: "",
-  sector_focus: "",
-  north_star_goal: "",
-};
-
-const inputCls =
-  "w-full rounded-lg bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40 transition-colors border";
-const inputStyle: React.CSSProperties = { borderColor: "hsl(var(--border))", height: 48 };
-
-const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-  <p
-    className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.05em]"
-    style={{ color: "hsl(var(--muted-foreground))" }}
-  >
-    {children}
-  </p>
-);
-
-const ProgressDots = ({ step }: { step: Step }) => {
-  if (step === 0) return null;
-  return (
-    <div className="flex justify-center gap-2 mb-5">
-      {[1, 2, 3].map((n) => {
-        const done = step > n;
-        const active = step === n;
-        return (
-          <div
-            key={n}
-            className="rounded-full transition-all"
-            style={{
-              width: active ? 24 : 8,
-              height: 8,
-              background: done
-                ? "#22c55e"
-                : active
-                  ? "var(--brand)"
-                  : "hsl(var(--muted))",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-};
-
-const PrimaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
-  children,
-  style,
-  ...rest
-}) => (
-  <button
-    {...rest}
-    className="w-full py-3.5 rounded-[10px] text-sm font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2 hover:brightness-95"
-    style={{
-      background: "var(--brand)",
-      color: "var(--brand-foreground, #1A1916)",
-      height: 48,
-      ...style,
-    }}
-  >
-    {children}
-  </button>
-);
-
-const SecondaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>> = ({
-  children,
-  ...rest
-}) => (
-  <button
-    {...rest}
-    className="w-full text-center text-xs py-2 transition-colors hover:underline"
-    style={{ color: "var(--brand)", background: "transparent" }}
-  >
-    {children}
-  </button>
-);
-
-const cleanLinkedInUrl = (raw: string) => {
-  let u = raw.trim();
-  if (!/^https?:\/\//i.test(u)) u = "https://" + u;
-  try {
-    const parsed = new URL(u);
-    return `${parsed.origin}${parsed.pathname.replace(/\/$/, "")}`;
-  } catch {
-    return u;
-  }
-};
-
-const isValidLinkedInUrl = (u: string) => /linkedin\.com\/in\/[a-zA-Z0-9_\-%]+/i.test(u);
+const PILLARS = [
+  "Digital Transformation",
+  "Strategy & Planning",
+  "Operations Excellence",
+  "Innovation & R&D",
+  "Data & Analytics",
+  "Cybersecurity & Risk",
+  "Finance & Investment",
+  "People & Culture",
+  "Governance & Compliance",
+  "Supply Chain & Procurement",
+  "Customer Experience",
+  "Sustainability & ESG",
+  "AI & Automation",
+  "Business Development",
+  "Project & Program Management",
+  "Change Management",
+  "Other",
+];
 
 const OnboardingWizard = ({ userId, onComplete }: Props) => {
-  const [step, setStep] = useState<Step>(0);
-  const [direction, setDirection] = useState(1);
-  const goTo = (s: Step) => {
-    setDirection(s > step ? 1 : -1);
-    setStep(s);
-  };
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [saving, setSaving] = useState(false);
 
-  // ── Step 1 state ──
-  const [linkedinInput, setLinkedinInput] = useState("");
-  const [linkedinError, setLinkedinError] = useState<string | null>(null);
-  const [prefilling, setPrefilling] = useState(false);
-  const [prefillStatus, setPrefillStatus] = useState("Reading your profile…");
-  const [prefillSucceeded, setPrefillSucceeded] = useState(false);
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [profile, setProfile] = useState<Profile>(emptyProfile);
-  const [savingProfile, setSavingProfile] = useState(false);
+  // Step 1
+  const [name, setName] = useState("");
+  const [role, setRole] = useState("");
+  const [firm, setFirm] = useState("");
+  const [sector, setSector] = useState("");
+  const [sectorOther, setSectorOther] = useState("");
 
-  // ── Step 2 state ──
-  const [articleLoading, setArticleLoading] = useState(false);
-  const [article, setArticle] = useState<null | {
-    url: string;
-    title: string;
-    summary: string | null;
-    source: string;
-  }>(null);
-  const [articleAttempted, setArticleAttempted] = useState(false);
-  const [manualUrl, setManualUrl] = useState("");
-  const [capturing, setCapturing] = useState(false);
-  const [captureCelebrate, setCaptureCelebrate] = useState(false);
+  // Step 2
+  const [pillars, setPillars] = useState<string[]>([]);
+  const [pillarOther, setPillarOther] = useState("");
+  const [northStar, setNorthStar] = useState("");
+  const [audience, setAudience] = useState("");
 
-  // ── Step 3 state ──
-  const [brandOpen, setBrandOpen] = useState(false);
+  // Step 3
+  const [post1, setPost1] = useState("");
+  const [post2, setPost2] = useState("");
+  const [post3, setPost3] = useState("");
 
-  const finishedRef = useRef(false);
-
-  // staggered prefill status messages
-  useEffect(() => {
-    if (!prefilling) return;
-    setPrefillStatus("Reading your profile…");
-    const t1 = setTimeout(() => setPrefillStatus("Extracting your expertise…"), 2000);
-    const t2 = setTimeout(() => setPrefillStatus("Almost there…"), 4000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [prefilling]);
-
-  const handleReadLinkedIn = async () => {
-    setLinkedinError(null);
-    const cleaned = cleanLinkedInUrl(linkedinInput);
-    if (!isValidLinkedInUrl(cleaned)) {
-      setLinkedinError("That doesn't look like a LinkedIn profile URL. It should look like linkedin.com/in/yourname");
-      return;
-    }
-    setPrefilling(true);
-    setPrefillSucceeded(false);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-linkedin-prefill`,
-        {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({ linkedin_url: cleaned }),
-        },
-      );
-      const data = await resp.json().catch(() => null);
-      clearTimeout(timeout);
-
-      if (data?.success && data.profile) {
-        const p = data.profile;
-        setProfile({
-          first_name: p.first_name || "",
-          firm: p.firm || "",
-          level: p.level || "",
-          core_practice: p.core_practice || "",
-          sector_focus: SECTORS.includes(p.sector_focus) ? p.sector_focus : (p.sector_focus ? "Other" : ""),
-          north_star_goal: "",
-          linkedin_url: cleaned,
-        });
-        setPrefillSucceeded(true);
-        setShowProfileForm(true);
-      } else {
-        toast.message("Couldn't read that profile — it might be private. No problem.");
-        setProfile({ ...emptyProfile, linkedin_url: cleaned });
-        setShowProfileForm(true);
+  const togglePillar = (p: string) => {
+    setPillars((prev) => {
+      if (prev.includes(p)) return prev.filter((x) => x !== p);
+      if (prev.length >= 4) {
+        toast.message("Pick up to 4 pillars");
+        return prev;
       }
-    } catch (e: any) {
-      clearTimeout(timeout);
-      const aborted = e?.name === "AbortError";
-      toast.message(aborted ? "Taking too long — let's fill this manually." : "Couldn't read that profile. Let's fill it manually.");
-      setProfile({ ...emptyProfile, linkedin_url: cleaned });
-      setShowProfileForm(true);
-    } finally {
-      setPrefilling(false);
-    }
+      return [...prev, p];
+    });
   };
 
-  const handleManualInstead = () => {
-    setProfile(emptyProfile);
-    setPrefillSucceeded(false);
-    setShowProfileForm(true);
-  };
+  const resolvedSector = sector === "Other" ? sectorOther.trim() : sector;
+  const resolvedPillars = pillars
+    .map((p) => (p === "Other" ? pillarOther.trim() : p))
+    .filter(Boolean);
 
-  const profileValid =
-    profile.first_name.trim() &&
-    profile.firm.trim() &&
-    profile.level.trim() &&
-    profile.sector_focus.trim() &&
-    profile.core_practice.trim() &&
-    profile.north_star_goal.trim();
+  const step1Valid =
+    name.trim().length > 0 &&
+    role.trim().length > 0 &&
+    firm.trim().length > 0 &&
+    resolvedSector.length > 0;
 
-  const saveProfile = async () => {
-    if (!profileValid) return;
-    setSavingProfile(true);
+  const step2Valid =
+    resolvedPillars.length >= 2 &&
+    northStar.trim().length > 0 &&
+    audience.trim().length > 0;
+
+  const saveStep1 = async () => {
+    if (!step1Valid) return;
+    setSaving(true);
     try {
       const { error } = await supabase.from("diagnostic_profiles").upsert(
         {
           user_id: userId,
-          first_name: profile.first_name.trim(),
-          firm: profile.firm.trim(),
-          level: profile.level.trim(),
-          core_practice: profile.core_practice.trim(),
-          sector_focus: profile.sector_focus,
-          north_star_goal: profile.north_star_goal.trim(),
-          linkedin_url: profile.linkedin_url || null,
+          first_name: name.trim(),
+          level: role.trim(),
+          firm: firm.trim(),
+          sector_focus: resolvedSector,
         } as any,
         { onConflict: "user_id" },
       );
       if (error) throw error;
-
-      // Background-fetch article
-      setArticleLoading(true);
-      setArticleAttempted(false);
-      goTo(2);
-      void fetchArticle();
+      setStep(2);
     } catch (e: any) {
-      toast.error("Couldn't save your profile. " + (e.message || "Try again."));
+      toast.error("Could not save: " + (e.message || "try again"));
     } finally {
-      setSavingProfile(false);
+      setSaving(false);
     }
   };
 
-  const fetchArticle = async () => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+  const saveStep2 = async () => {
+    if (!step2Valid) return;
+    setSaving(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/onboarding-find-article`,
-        {
-          method: "POST",
-          signal: controller.signal,
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-          },
-          body: JSON.stringify({
-            sector_focus: profile.sector_focus,
-            core_practice: profile.core_practice,
-            firm: profile.firm,
-            level: profile.level,
-          }),
-        },
-      );
-      const data = await resp.json().catch(() => null);
-      clearTimeout(timeout);
-      if (data?.found && data.article?.url) {
-        setArticle(data.article);
-      }
-    } catch {
-      // silent fallback
-    } finally {
-      clearTimeout(timeout);
-      setArticleLoading(false);
-      setArticleAttempted(true);
-    }
-  };
+      // Read existing identity_intelligence so we don't clobber other fields
+      const { data: existing } = await supabase
+        .from("diagnostic_profiles")
+        .select("identity_intelligence")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const identity = (existing as any)?.identity_intelligence || {};
+      identity.target_audience = audience.trim();
 
-  const captureUrl = async (url: string) => {
-    setCapturing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Session expired");
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingest-capture`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            type: "link",
-            content: url,
-            source_url: url,
-            metadata: { source: "onboarding" },
-          }),
-        },
-      );
-      const data = await resp.json().catch(() => null);
-      if (!resp.ok && data?.error !== "duplicate_url") {
-        throw new Error(data?.error_message || data?.error || "Capture failed");
-      }
-      setCaptureCelebrate(true);
-      setTimeout(() => goTo(3), 2500);
+      const { error } = await supabase
+        .from("diagnostic_profiles")
+        .update({
+          brand_pillars: resolvedPillars,
+          north_star_goal: northStar.trim(),
+          identity_intelligence: identity,
+        } as any)
+        .eq("user_id", userId);
+      if (error) throw error;
+      setStep(3);
     } catch (e: any) {
-      toast.error(e.message || "Couldn't capture that one.");
+      toast.error("Could not save: " + (e.message || "try again"));
     } finally {
-      setCapturing(false);
+      setSaving(false);
     }
   };
 
-  const finishOnboarding = async () => {
-    if (finishedRef.current) return;
-    finishedRef.current = true;
+  const finish = async (skipPosts: boolean) => {
+    setSaving(true);
     try {
-      await supabase
+      const posts = skipPosts
+        ? []
+        : [post1, post2, post3].map((p) => p.trim()).filter((p) => p.length > 30);
+
+      if (posts.length > 0) {
+        await (supabase as any)
+          .from("authority_voice_profiles")
+          .upsert(
+            {
+              user_id: userId,
+              example_posts: posts.map((content) => ({ content, source: "onboarding" })),
+            },
+            { onConflict: "user_id" },
+          );
+      }
+
+      const { error } = await supabase
         .from("diagnostic_profiles")
         .update({
           onboarding_completed: true,
@@ -362,407 +181,320 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
           last_visit_at: new Date().toISOString(),
         } as any)
         .eq("user_id", userId);
+      if (error) throw error;
+
+      // Welcome email (best-effort)
       try {
         supabase.functions.invoke("send-lifecycle-email", {
           body: { user_id: userId, email_type: "welcome" },
         });
       } catch {}
+
       localStorage.setItem("aura_onboarding_complete", "true");
-    } catch (e) {
-      console.error("finishOnboarding error", e);
+      onComplete();
+    } catch (e: any) {
+      toast.error("Could not finish: " + (e.message || "try again"));
+    } finally {
+      setSaving(false);
     }
-    onComplete();
   };
 
-  // ── Render helpers ──
-  const Card = ({ children }: { children: React.ReactNode }) => (
-    <div
-      className="relative w-full overflow-hidden"
-      style={{
-        maxWidth: 560,
-        background: "hsl(var(--card))",
-        color: "hsl(var(--card-foreground))",
-        borderRadius: 16,
-        border: "1px solid hsl(var(--border))",
-        padding: "clamp(28px, 5vw, 48px)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-      }}
-    >
-      {children}
+  const inputCls =
+    "w-full rounded-lg border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/40 transition-colors";
+  const inputStyle: React.CSSProperties = { borderColor: "hsl(var(--border))" };
+
+  const Label = ({ children, hint }: { children: React.ReactNode; hint?: string }) => (
+    <div className="mb-1.5">
+      <p className="text-xs font-medium text-foreground">{children}</p>
+      {hint && (
+        <p className="text-[11px] mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 
-  const StepLabel = ({ children }: { children: React.ReactNode }) => (
-    <p
-      className="text-[11px] tracking-[0.1em] uppercase mb-3 font-semibold"
-      style={{ color: "var(--brand)" }}
-    >
-      {children}
-    </p>
-  );
+  const progressPct = (step / 3) * 100;
 
-  const Heading = ({ children }: { children: React.ReactNode }) => (
-    <h2
-      style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontSize: "clamp(20px, 3.5vw, 26px)",
-        lineHeight: 1.25,
-        color: "hsl(var(--foreground))",
-        marginBottom: 12,
-      }}
-    >
-      {children}
-    </h2>
-  );
-
-  const Body = ({ children }: { children: React.ReactNode }) => (
-    <p className="text-sm" style={{ color: "hsl(var(--muted-foreground))", lineHeight: 1.7, marginBottom: 16 }}>
-      {children}
-    </p>
-  );
-
-  const variants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
-  };
+  const stepLabels = { 1: "Who you are", 2: "What drives you", 3: "Your voice" } as const;
+  const stepTitles = {
+    1: "Who are you?",
+    2: "What drives you?",
+    3: "Your voice",
+  } as const;
+  const stepIntros = {
+    1: "Let's calibrate your intelligence lens. What you tell Aura here shapes every signal it detects and every post it writes for you.",
+    2: "Now let's define where your expertise runs deepest. These choices shape the lens Aura uses to filter noise from the signals that actually matter to your career.",
+    3: "Every post Aura writes will mirror YOUR writing style — not generic AI. Paste 2–3 LinkedIn posts you've written before. Aura learns your rhythm, your word choices, your sentence patterns.",
+  } as const;
 
   const content = (
-    <>
-      <style>{`
-        @keyframes auraShimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .aura-shimmer {
-          background: linear-gradient(90deg, transparent, rgba(176,141,58,0.10), transparent);
-          background-size: 200% 100%;
-          animation: auraShimmer 1.6s linear infinite;
-        }
-      `}</style>
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center px-4 py-8 overflow-y-auto"
+      style={{
+        background: "hsl(var(--background) / 0.78)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
+    >
       <div
-        className="fixed inset-0 z-[200] flex items-center justify-center px-5 py-8 overflow-y-auto"
+        className="relative w-full overflow-hidden my-auto"
         style={{
-          background: "hsl(var(--background) / 0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
+          maxWidth: 620,
+          background: "hsl(var(--card))",
+          color: "hsl(var(--card-foreground))",
+          borderRadius: 16,
+          border: "1px solid hsl(var(--border))",
+          padding: "44px 40px 32px",
+          boxShadow: "0 20px 60px -10px rgba(0,0,0,0.4)",
         }}
       >
-        <AnimatePresence custom={direction} mode="wait" initial={false}>
+        {/* Progress bar */}
+        <div
+          className="absolute top-0 left-0 right-0"
+          style={{ height: 3, background: "hsl(var(--muted))" }}
+        >
+          <div
+            className="h-full transition-all duration-500"
+            style={{ width: `${progressPct}%`, background: "var(--brand)" }}
+          />
+        </div>
+
+        <p
+          className="text-[11px] tracking-[0.18em] uppercase mb-2 font-medium"
+          style={{ color: "var(--brand)" }}
+        >
+          Step {step} of 3 — {stepLabels[step]}
+        </p>
+
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={step}
-            custom={direction}
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full flex justify-center"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
           >
-            <Card>
-              <ProgressDots step={step} />
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 26,
+                lineHeight: 1.2,
+                color: "hsl(var(--foreground))",
+              }}
+            >
+              {stepTitles[step]}
+            </h2>
+            <p
+              className="mt-2 text-sm"
+              style={{ color: "hsl(var(--muted-foreground))" }}
+            >
+              {stepIntros[step]}
+            </p>
 
-              {/* ───── STEP 0 — UNBOXING ───── */}
-              {step === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
-                >
-                  <p
-                    className="text-[11px] tracking-[0.18em] uppercase font-semibold text-center mb-6"
-                    style={{ color: "var(--brand)" }}
+            {/* === STEP 1 === */}
+            {step === 1 && (
+              <div className="mt-6 space-y-4">
+                <div>
+                  <Label hint="How Aura will address you in your briefings.">Your name</Label>
+                  <input
+                    className={inputCls}
+                    style={inputStyle}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="First name"
+                  />
+                </div>
+                <div>
+                  <Label hint="Your current role — e.g. Director of Digital Transformation.">
+                    Title
+                  </Label>
+                  <input
+                    className={inputCls}
+                    style={inputStyle}
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    placeholder="Director of Digital Transformation"
+                  />
+                </div>
+                <div>
+                  <Label hint="Where you work today — company, firm, or organisation.">Firm</Label>
+                  <input
+                    className={inputCls}
+                    style={inputStyle}
+                    value={firm}
+                    onChange={(e) => setFirm(e.target.value)}
+                    placeholder="EY, Aramco, Ministry of Energy…"
+                  />
+                </div>
+                <div>
+                  <Label hint="The sector your work focuses on. Aura uses this to filter signals.">
+                    Sector
+                  </Label>
+                  <select
+                    className={inputCls}
+                    style={inputStyle}
+                    value={sector}
+                    onChange={(e) => setSector(e.target.value)}
                   >
-                    Your Intelligence OS Is Live
-                  </p>
-                  <h1
-                    style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      fontSize: "clamp(26px, 5vw, 34px)",
-                      lineHeight: 1.2,
-                      color: "hsl(var(--foreground))",
-                      marginBottom: 18,
-                      textAlign: "center",
-                    }}
-                  >
-                    Welcome to Aura.
-                  </h1>
-                  <Body>
-                    You have the expertise. The certificates. The years.
-                    But right now, to anyone who hasn't met you in person — you're invisible.
-                    That changes today.
-                  </Body>
-                  <p className="text-sm font-medium mb-3" style={{ color: "hsl(var(--foreground))" }}>
-                    In the next 3 minutes, Aura will:
-                  </p>
-                  <div className="space-y-3 mb-7">
-                    {[
-                      "Read your LinkedIn and understand who you are professionally",
-                      "Find a relevant article from your sector — your first intelligence capture",
-                      "Begin building your strategic positioning",
-                    ].map((line, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 1.0 + i * 0.3, duration: 0.5 }}
-                        className="flex gap-3 text-sm"
-                        style={{ color: "hsl(var(--foreground))", lineHeight: 1.6 }}
-                      >
-                        <span style={{ color: "var(--brand)", flexShrink: 0 }}>◆</span>
-                        <span>{line}</span>
-                      </motion.div>
+                    <option value="">Select your sector…</option>
+                    {SECTORS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
                     ))}
+                  </select>
+                  {sector === "Other" && (
+                    <input
+                      className={inputCls + " mt-2"}
+                      style={inputStyle}
+                      value={sectorOther}
+                      onChange={(e) => setSectorOther(e.target.value)}
+                      placeholder="Type your sector"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* === STEP 2 === */}
+            {step === 2 && (
+              <div className="mt-6 space-y-5">
+                <div>
+                  <Label hint="The 3–4 themes you want to be known for. Pick what matches your professional ambitions.">
+                    What do you know that most people don't? (pick 2-4)
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {PILLARS.map((p) => {
+                      const active = pillars.includes(p);
+                      return (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => togglePillar(p)}
+                          className="px-3 py-1.5 rounded-full text-xs transition-all"
+                          style={{
+                            background: active ? "var(--brand)" : "hsl(var(--muted) / 0.4)",
+                            color: active ? "var(--brand-foreground, #1A1916)" : "hsl(var(--foreground))",
+                            border: `1px solid ${active ? "var(--brand)" : "hsl(var(--border))"}`,
+                          }}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2.2, duration: 0.6 }}
-                  >
-                    <PrimaryButton onClick={() => goTo(1)}>
-                      Let's begin <ArrowRight className="w-4 h-4" />
-                    </PrimaryButton>
-                  </motion.div>
-                </motion.div>
-              )}
-
-              {/* ───── STEP 1 — LINKEDIN ───── */}
-              {step === 1 && (
-                <div>
-                  <StepLabel>Step 1 of 3 — Tell Aura who you are</StepLabel>
-
-                  {!showProfileForm && (
-                    <>
-                      <Heading>Paste your LinkedIn profile URL</Heading>
-                      <Body>Aura reads it and fills your profile in seconds. No typing.</Body>
-
-                      <div className={prefilling ? "aura-shimmer rounded-lg" : ""} style={{ padding: prefilling ? 1 : 0 }}>
-                        <div className="flex gap-2">
-                          <input
-                            className={inputCls}
-                            style={{ ...inputStyle, flex: 1 }}
-                            placeholder="https://linkedin.com/in/..."
-                            value={linkedinInput}
-                            onChange={(e) => setLinkedinInput(e.target.value)}
-                            disabled={prefilling}
-                            onKeyDown={(e) => { if (e.key === "Enter") handleReadLinkedIn(); }}
-                          />
-                          <button
-                            onClick={handleReadLinkedIn}
-                            disabled={prefilling || !linkedinInput.trim()}
-                            className="px-5 rounded-lg text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
-                            style={{
-                              background: "var(--brand)",
-                              color: "var(--brand-foreground, #1A1916)",
-                              height: 48,
-                            }}
-                          >
-                            {prefilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Read <ArrowRight className="w-4 h-4" /></>}
-                          </button>
-                        </div>
-                      </div>
-
-                      {linkedinError && (
-                        <p className="mt-2 text-xs" style={{ color: "hsl(var(--destructive))" }}>{linkedinError}</p>
-                      )}
-                      {prefilling && (
-                        <p className="mt-3 text-xs" style={{ color: "hsl(var(--muted-foreground))" }}>{prefillStatus}</p>
-                      )}
-
-                      <div className="my-6 flex items-center gap-3" style={{ color: "hsl(var(--muted-foreground))" }}>
-                        <div className="flex-1 h-px" style={{ background: "hsl(var(--border))" }} />
-                        <span className="text-[11px] uppercase tracking-wider">or</span>
-                        <div className="flex-1 h-px" style={{ background: "hsl(var(--border))" }} />
-                      </div>
-                      <SecondaryButton onClick={handleManualInstead}>Fill manually instead</SecondaryButton>
-                    </>
-                  )}
-
-                  {showProfileForm && (
-                    <>
-                      {prefillSucceeded && (
-                        <div className="mb-5 flex items-center gap-2 text-sm" style={{ color: "#22c55e" }}>
-                          <Check className="w-4 h-4" /> Profile read successfully
-                        </div>
-                      )}
-                      <Heading>{prefillSucceeded ? "Confirm what we found" : "Tell us about yourself"}</Heading>
-
-                      <div className="space-y-4">
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          <div>
-                            <FieldLabel>First name</FieldLabel>
-                            <input className={inputCls} style={inputStyle} value={profile.first_name}
-                              onChange={(e) => setProfile({ ...profile, first_name: e.target.value })} />
-                          </div>
-                          <div>
-                            <FieldLabel>Firm</FieldLabel>
-                            <input className={inputCls} style={inputStyle} value={profile.firm}
-                              onChange={(e) => setProfile({ ...profile, firm: e.target.value })} />
-                          </div>
-                        </div>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                          <div>
-                            <FieldLabel>Level / Title</FieldLabel>
-                            <input className={inputCls} style={inputStyle} value={profile.level}
-                              onChange={(e) => setProfile({ ...profile, level: e.target.value })} />
-                          </div>
-                          <div>
-                            <FieldLabel>Sector</FieldLabel>
-                            <select className={inputCls} style={inputStyle} value={profile.sector_focus}
-                              onChange={(e) => setProfile({ ...profile, sector_focus: e.target.value })}>
-                              <option value="">Select…</option>
-                              {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                          </div>
-                        </div>
-                        <div>
-                          <FieldLabel>Core practice</FieldLabel>
-                          <input className={inputCls} style={inputStyle} value={profile.core_practice}
-                            onChange={(e) => setProfile({ ...profile, core_practice: e.target.value })}
-                            placeholder="e.g. Digital Transformation" />
-                        </div>
-                        <div>
-                          <FieldLabel>My 3-year ambition</FieldLabel>
-                          <input className={inputCls} style={inputStyle} value={profile.north_star_goal}
-                            onChange={(e) => setProfile({ ...profile, north_star_goal: e.target.value })}
-                            placeholder="This one's yours — what are you building toward?" />
-                        </div>
-                      </div>
-
-                      <div className="mt-6">
-                        <PrimaryButton onClick={saveProfile} disabled={!profileValid || savingProfile}>
-                          {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />}
-                          Confirm & continue <ArrowRight className="w-4 h-4" />
-                        </PrimaryButton>
-                      </div>
-                    </>
+                  {pillars.includes("Other") && (
+                    <input
+                      className={inputCls + " mt-2"}
+                      style={inputStyle}
+                      value={pillarOther}
+                      onChange={(e) => setPillarOther(e.target.value)}
+                      placeholder="Type your pillar"
+                    />
                   )}
                 </div>
-              )}
-
-              {/* ───── STEP 2 — ARTICLE ───── */}
-              {step === 2 && (
                 <div>
-                  <StepLabel>Step 2 of 3 — Your first intelligence capture</StepLabel>
-
-                  {captureCelebrate ? (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                      <div className="flex items-center gap-2 text-sm mb-3" style={{ color: "#22c55e" }}>
-                        <Check className="w-5 h-5" /> First capture complete.
-                      </div>
-                      <Body>
-                        Aura is already detecting strategic patterns. After 3–5 more articles, your first signal will emerge.
-                      </Body>
-                    </motion.div>
-                  ) : (
-                    <>
-                      {articleLoading && (
-                        <div className="flex items-center gap-2 mb-4 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
-                          <Loader2 className="w-4 h-4 animate-spin" /> Aura is searching your sector…
-                        </div>
-                      )}
-
-                      {!articleLoading && article && (
-                        <>
-                          <Heading>Aura found something in your sector.</Heading>
-                          <div
-                            className="rounded-xl p-5 mb-4"
-                            style={{ background: "hsl(var(--muted) / 0.4)", border: "1px solid hsl(var(--border))" }}
-                          >
-                            <div className="flex items-start gap-2 mb-2">
-                              <Sparkles className="w-4 h-4 mt-0.5" style={{ color: "var(--brand)" }} />
-                              <div className="flex-1">
-                                <p className="font-semibold text-sm leading-snug" style={{ color: "hsl(var(--foreground))" }}>
-                                  {article.title}
-                                </p>
-                                <p className="text-[11px] mt-1" style={{ color: "hsl(var(--muted-foreground))" }}>
-                                  {article.source}
-                                </p>
-                              </div>
-                            </div>
-                            {article.summary && (
-                              <p className="text-xs mt-3 italic" style={{ color: "hsl(var(--muted-foreground))", lineHeight: 1.6 }}>
-                                "{article.summary}"
-                              </p>
-                            )}
-                          </div>
-                          <PrimaryButton onClick={() => captureUrl(article.url)} disabled={capturing}>
-                            {capturing ? <><Loader2 className="w-4 h-4 animate-spin" /> Aura is reading…</> : <>Capture this article <ArrowRight className="w-4 h-4" /></>}
-                          </PrimaryButton>
-                        </>
-                      )}
-
-                      {!articleLoading && !article && articleAttempted && (
-                        <>
-                          <Heading>Paste one article you read this week.</Heading>
-                          <Body>Aura will find the strategic pattern inside it.</Body>
-                          <div className="flex gap-2">
-                            <input
-                              className={inputCls}
-                              style={{ ...inputStyle, flex: 1 }}
-                              placeholder="https://..."
-                              value={manualUrl}
-                              onChange={(e) => setManualUrl(e.target.value)}
-                            />
-                            <button
-                              onClick={() => captureUrl(manualUrl.trim())}
-                              disabled={capturing || !manualUrl.trim()}
-                              className="px-5 rounded-lg text-sm font-semibold disabled:opacity-50"
-                              style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)", height: 48 }}
-                            >
-                              {capturing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
-                            </button>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="mt-4">
-                        <SecondaryButton onClick={() => goTo(3)}>Skip for now</SecondaryButton>
-                      </div>
-                    </>
-                  )}
+                  <Label hint="The single outcome you're working toward. Example: 'Lead the region's first fully digital water utility'.">
+                    North star goal
+                  </Label>
+                  <input
+                    className={inputCls}
+                    style={inputStyle}
+                    value={northStar}
+                    onChange={(e) => setNorthStar(e.target.value)}
+                    placeholder="Lead the region's first fully digital water utility"
+                  />
                 </div>
-              )}
-
-              {/* ───── STEP 3 — ASSESSMENT ───── */}
-              {step === 3 && (
                 <div>
-                  <StepLabel>Step 3 of 3 — How the market sees you</StepLabel>
-                  <Heading>Discover your market archetype</Heading>
-                  <Body>
-                    This 5-minute assessment reveals the way a CIO in your sector would describe you to a colleague.
-                    It shapes how Aura writes your content and positions your expertise.
-                  </Body>
-                  <div className="space-y-3 mt-2">
-                    <PrimaryButton onClick={() => setBrandOpen(true)}>
-                      Discover my market position <ArrowRight className="w-4 h-4" />
-                    </PrimaryButton>
-                    <SecondaryButton onClick={finishOnboarding}>I'll do this later</SecondaryButton>
-                  </div>
+                  <Label hint="Who needs to see your expertise? CIOs? Board members? Industry regulators?">
+                    Target audience
+                  </Label>
+                  <input
+                    className={inputCls}
+                    style={inputStyle}
+                    value={audience}
+                    onChange={(e) => setAudience(e.target.value)}
+                    placeholder="CIOs in regulated industries across the GCC"
+                  />
                 </div>
-              )}
-            </Card>
+              </div>
+            )}
+
+            {/* === STEP 3 === */}
+            {step === 3 && (
+              <div className="mt-6 space-y-3">
+                <Label hint="Paste 2–3 posts you've written. Optional — you can add these later from My Story.">
+                  Your LinkedIn posts
+                </Label>
+                {[post1, post2, post3].map((val, i) => (
+                  <textarea
+                    key={i}
+                    className={inputCls}
+                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" } as React.CSSProperties}
+                    value={val}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (i === 0) setPost1(v);
+                      if (i === 1) setPost2(v);
+                      if (i === 2) setPost3(v);
+                    }}
+                    placeholder={`Paste post ${i + 1}…`}
+                  />
+                ))}
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
-      </div>
 
-      {brandOpen && (
-        <BrandAssessmentModal
-          open={brandOpen}
-          onOpenChange={(o) => {
-            setBrandOpen(o);
-            if (!o) {
-              // Whether user completes or closes, we treat onboarding as done
-              finishOnboarding();
-            }
-          }}
-          onComplete={() => {
-            setBrandOpen(false);
-            finishOnboarding();
-          }}
-        />
-      )}
-    </>
+        {/* CTA */}
+        <div className="mt-7 flex flex-col gap-3">
+          {step === 1 && (
+            <button
+              onClick={saveStep1}
+              disabled={!step1Valid || saving}
+              className="w-full py-3.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)" }}
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Continue
+            </button>
+          )}
+          {step === 2 && (
+            <button
+              onClick={saveStep2}
+              disabled={!step2Valid || saving}
+              className="w-full py-3.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)" }}
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Continue
+            </button>
+          )}
+          {step === 3 && (
+            <>
+              <button
+                onClick={() => finish(false)}
+                disabled={saving}
+                className="w-full py-3.5 rounded-full text-sm font-medium transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ background: "var(--brand)", color: "var(--brand-foreground, #1A1916)" }}
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                Finish setup
+              </button>
+              <button
+                onClick={() => finish(true)}
+                disabled={saving}
+                className="w-full text-center text-xs py-2 transition-colors"
+                style={{ color: "hsl(var(--muted-foreground))", background: "transparent" }}
+              >
+                I'll do this later →
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 
   return createPortal(content, document.body);

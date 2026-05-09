@@ -1,77 +1,95 @@
-# F3 World-Class Onboarding
+## The Connected Journey Rebuild
 
-Replaces the current 3-step form wizard with a value-first, 4-step flow inspired by Apple/Duolingo/Canva. The user sees value before doing any work.
+The new user experience today is a set of disconnected pages. This plan unifies Home, My Story, Quest Log, Intelligence, and Publish around **one shared journey state** so every surface tells the user the same story: where you are, what's next, and why it matters.
 
-## Snapshots
-- Before: `pre-F3-world-class-onboarding`
-- After: `post-F3-world-class-onboarding`
+### Single source of truth
 
-## Database
+Create `src/hooks/useJourneyState.ts` that returns:
 
-Add nullable column to `diagnostic_profiles`:
-```sql
-ALTER TABLE diagnostic_profiles ADD COLUMN IF NOT EXISTS linkedin_url TEXT;
+```text
+profileComplete      first_name + firm + level + sector_focus all set
+assessmentComplete   brand_assessment_completed_at OR brand_pillars.length > 0
+distinctSources      count of distinct entries.account_name
+capturesReady        distinctSources >= 3
+voiceTrained         authority_voice_profiles row exists
+hasSignals           active strategic_signals >= 1
+hasThreeSignals      active strategic_signals >= 3
+hasPublished         linkedin_posts has self_reported_published
+hasLinkedInData      influence_snapshots OR linkedin_post_metrics rows
+currentGate          0 | 1 | 2 | 3   (next gate user must clear)
 ```
 
-## New Edge Functions
+Cached per-user with a small in-memory store + window event `aura:journey-refresh` so any save (profile, assessment, voice, capture) refreshes all consumers. `useQuestProgress` will be refactored to consume this hook so quest log, Home, and My Story can never disagree.
 
-1. **`onboarding-linkedin-prefill`** — accepts `{ linkedin_url }`, scrapes via Firecrawl, extracts structured fields (first_name, firm, level, core_practice, sector_focus, headline, about_summary, experience_years, skills, etc.) via Lovable AI Gateway (`google/gemini-3-flash-preview`). Always returns 200 with either `{ success, profile }` or `{ fallback: true, error }`. Adds CORS, validates URL pattern, truncates markdown to 8000 chars, strips ```json fences.
+### My Story — guided journey for pre-journey users
 
-2. **`onboarding-find-article`** — accepts `{ sector_focus, core_practice, firm, level }`. Calls Exa neural search restricted to a trusted-domain allowlist (McKinsey, HBR, BCG, Bain, Deloitte, PwC, EY, Accenture, Gartner, WEF, Reuters, Bloomberg, FT, MIT Sloan, GCC press, etc.) with a 30-day lookback. Falls back to broader search without domain restriction. Returns `{ found: true, article: { url, title, summary, source } }` or `{ found: false }`. Never blocks onboarding on failure.
+When `currentGate < 3`, `IdentityTab` renders a new `<GuidedJourney />` component INSTEAD of the normal identity layout. The component shows three numbered steps with the emotional copy from the spec:
 
-Both functions use `verify_jwt = false` (default for Lovable functions). Add config blocks to `supabase/config.toml`.
+```text
+STEP 1 — Your professional profile     [active | ✅ completed | 🔒 locked]
+STEP 2 — Brand assessment               [locked until 1]
+STEP 3 — Train your voice (optional)   [locked until 2, skippable]
+```
 
-## New Frontend Component
+- Active step: full opacity, bronze border, expanded with inline form.
+- Completed: collapsed, ✅ badge, click to re-expand (read-only summary).
+- Locked: 50% opacity, grayed CTA, "Unlocks after Step X".
+- Step 1 expanded reveals existing `<ProfileManagement />` form (reused, no rewrite).
+- Step 2 CTA dispatches the existing `aura:open-brand-assessment` event.
+- Step 3 CTA scrolls to `<VoiceEngineSection />` rendered inline below; "Skip for now" sets `localStorage.aura_voice_skipped=1` and marks step done-as-skipped.
 
-Replace `src/components/OnboardingWizard.tsx` with a 4-step flow (rename internal logic; keep the file path so existing import in `Dashboard.tsx` still works).
+After all gates clear (or 1+2 done with voice skipped), the normal IdentityTab content renders. The Objective Audit button and "Reset Assessment" button only render when `assessmentComplete === true`.
 
-### Step 1 — Unboxing Card (no form)
-- Full-screen, centered card (max 560px)
-- Cormorant Garamond heading "YOUR INTELLIGENCE OS IS LIVE"
-- Body copy with 3 staggered ◆ items (0.3s delay each)
-- Single CTA: "Let's begin →"
-- Card fades in + slides up 20px on mount
+### Home — welcome state mirrors the gates
 
-### Step 2 — LinkedIn Pre-fill
-- LinkedIn URL input + "Read →" button
-- "or" divider + "Fill manually instead"
-- On submit: validate `linkedin.com/in/`, strip query/hash, call `onboarding-linkedin-prefill` with 15s `AbortController` timeout
-- During load: shimmer animation on input + staggered status messages ("Reading your profile…" / "Extracting your expertise…" / "Almost there…")
-- On success: render editable pre-filled profile form (first_name, firm, level, sector_focus dropdown, core_practice, north_star_goal blank with warm placeholder)
-- On fallback: gentle message + show same form blank
-- "Confirm & continue →" upserts to `diagnostic_profiles` with `linkedin_url`
-- **Brand pillars / skills sliders removed from this step**
+Replace the current 3-step welcome block in `HomeTab` with a renderer driven by `useJourneyState`:
 
-### Step 3 — Pre-found Article
-- Background-fetch `onboarding-find-article` (10s timeout) right after profile save
-- If found: render article card with title, source · age, summary, "Capture this article →"
-- On capture: invoke existing `ingest-capture` EF, show progress + celebration, auto-advance after 2.5s
-- If not found or skipped: fall back to URL paste field
-- "Skip for now" advances to Step 4
+- Gate 0 active: Step 1 ACTIVE → "Set up your profile" navigates to Identity tab. Steps 2 & 3 locked.
+- Gate 1 active: Step 1 ✅, Step 2 ACTIVE → "Start your assessment" dispatches `aura:open-brand-assessment`. Step 3 locked.
+- Gate 2 active: Steps 1 & 2 ✅, Step 3 ACTIVE → "Capture your first article" opens capture sidebar.
+- 1–2 captures: existing "intelligence is building" state (kept).
+- 3+ captures + signals: existing normal Home (kept).
 
-### Step 4 — Brand Assessment intro
-- Updated framing copy: "How the market sees you"
-- "Discover my market position →" opens existing `BrandAssessmentModal`
-- "I'll do this later" closes onboarding, sets `localStorage.aura_onboarding_complete = true` and marks `onboarding_completed = true, completed = true` on profile
+### Quest Log — locked states and same data
 
-### Shared shell
-- Centered card via `createPortal` to `document.body`
-- 3-dot progress indicator at top (steps 2/3/4 — Step 1 is the unboxing intro)
-- Slide transitions via framer-motion (left exit / right enter, 400ms ease-out)
-- Uses CSS tokens (`var(--surface)`, `var(--ink)`, `var(--brand)`) — works in light + dark
-- Mobile: full-width minus 20px, stacked inputs
+`QuestLog.tsx` gets a `lockedAfter?: string` field per quest. When locked, item shows 🔒, muted, and tooltip "Unlocks after: …". Click on locked items shows tooltip instead of navigating. The hook now derives quests from `useJourneyState` so checkmarks always match Home and My Story.
 
-## Edge cases
-- LinkedIn URL validation with friendly error
-- Firecrawl/AI/Exa failures → silent fallback, never block
-- Profile save error → retry button, do not advance
-- Timeouts via `AbortController`
+### Intelligence — gate behind 3 distinct captures
 
-## Untouched
-- Brand Assessment questions/logic
-- `ingest-capture` / `summarize-link` pipelines
-- Sidebar nav, admin pages, Home for existing users
-- Existing capture pipeline downstream
+In `IntelligenceTab`, when `!capturesReady`, render only the radar shell with copy:
 
-## Verification
-After deploy: confirm new file exists, edge functions deploy, ALTER ran, light/dark + mobile look right, happy path + fallback path both work.
+```text
+YOUR STRATEGIC RADAR
+Intelligence emerges from patterns across your captures. Aura needs at
+least 3 articles from different sources to start detecting meaningful
+signals.
+
+[Current: X of 3 captures needed]   [Capture an article →]
+```
+
+Hide signals list, "Your Next Move", automation cards, market coverage. Existing 3+ behaviour unchanged.
+
+### Publish — soft banner before assessment
+
+If `!assessmentComplete`, render a dismissible banner at the top of the Publish/Strategy tab linking to the assessment. Tools remain accessible (no hard block).
+
+### Out of scope
+
+- No edge function, schema, score, or signal-detection changes.
+- Brand assessment questionnaire itself untouched — only its entry point moves.
+- Existing users where all gates already cleared see no change.
+
+### Risks & mitigations
+
+- Two flows could compute "complete" differently → mitigated by the single hook.
+- IdentityTab is 1158 lines with deep conditional sections → we wrap the existing return in `if (showGuidedJourney) return <GuidedJourney/>` early, leaving normal-path code untouched.
+- Quest Log refactor could break for existing power users → keep current quest IDs and labels; only add `locked` flag.
+
+### Verification after build
+
+1. Brand-new user: Home shows Step 1 active, Steps 2-3 locked; My Story shows guided journey; Quest log shows 0/6 with locks.
+2. Save profile → all three surfaces flip Step 1 to ✅ within one render (event-driven refresh).
+3. Complete assessment → Step 2 ✅ everywhere; Voice unlocks.
+4. Skip voice → guided journey closes; normal My Story renders.
+5. Capture 3 distinct sources → Intelligence unlocks signals.
+6. Existing account with all data: no guided journey, no banners, no regressions.
