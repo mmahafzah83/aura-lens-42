@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     // Fetch user's diagnostic profile for skill context
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("generated_skills, skill_ratings")
+      .select("generated_skills, skill_ratings, sector_focus")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -80,6 +80,44 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Discover REAL articles via Exa semantic search to ground recommendations
+    const sectorFocus = (profile as any)?.sector_focus || "";
+    const EXA_KEY = Deno.env.get("EXA_API_KEY");
+    let discoveredArticles = "";
+    if (EXA_KEY) {
+      try {
+        const gapTopics = skillGaps.map((g: any) => g.name).join(", ");
+        const query = `${gapTopics}${sectorFocus ? ` in ${sectorFocus}` : ""} executive analysis thought leadership`;
+        const exaRes = await fetch("https://api.exa.ai/search", {
+          method: "POST",
+          headers: {
+            "x-api-key": EXA_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query,
+            num_results: 10,
+            use_autoprompt: true,
+            start_published_date: new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0],
+            type: "auto",
+          }),
+        });
+        if (exaRes.ok) {
+          const exaData = await exaRes.json();
+          const results = (exaData.results || []).map((r: any) =>
+            `- "${r.title}" (${r.url}) — ${r.published_date || "recent"}`
+          ).join("\n");
+          if (results) {
+            discoveredArticles = `\n\nREAL ARTICLES DISCOVERED (recommend FROM THESE — they are semantically relevant to the user's skill gaps. Include the URL so the user can read them. Explain WHY each fills a specific gap):\n${results}`;
+          }
+        } else {
+          console.warn("[sovereign-reading-list] Exa non-OK:", exaRes.status);
+        }
+      } catch (e) {
+        console.warn("[sovereign-reading-list] Exa search failed:", (e as Error).message);
+      }
+    }
+
     const systemPrompt = `You are a Sovereign Learning Advisor for an elite executive coaching platform. You recommend precise, high-authority reading material.
 
 Given the user's top skill gaps, recommend exactly 3 resources — a mix of:
@@ -91,6 +129,8 @@ Each recommendation must:
 1. Directly address one of the skill gaps
 2. Be a REAL, verifiable resource (real title, real author/publisher)
 3. Include a 1-sentence "Intelligence Value" explaining what the user will extract
+
+When real discovered articles are provided below, recommend FROM THOSE ARTICLES. Include the URL so the user can read them. Explain WHY each article fills a specific gap in their skill coverage.
 
 Output valid JSON:
 {
@@ -121,7 +161,7 @@ Output valid JSON:
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 4096,
-        system: systemPrompt + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
+        system: systemPrompt + discoveredArticles + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
         messages: [{ role: "user", content: userPrompt }],
       }),
     });
