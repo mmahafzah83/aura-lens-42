@@ -20,12 +20,12 @@ const COPY = {
   step2: {
     title: "Brand assessment",
     why: "This assessment is built on the same frameworks used by the world's top leadership firms — Gallup CliftonStrengths for strengths mapping, McKinsey archetypes for market positioning, and Blue Ocean strategy for finding uncontested space. 10 questions. 5 minutes. It shapes everything Aura does for you from this point forward.",
-    cta: "Start brand assessment",
+    cta: "Discover your market position",
   },
   step3: {
-    title: "Teach Aura your voice (optional)",
-    why: "Without voice training, Aura writes in a professional but generic tone. With 3 examples of your writing, it mirrors your rhythm — your sentence length, your word choices, your way of building an argument. Your colleagues won't believe AI helped.",
-    cta: "Teach Aura your voice",
+    title: "Save a few articles (optional)",
+    why: "Save a few articles from your sector. Your first signal could appear after just one — and it gets stronger with each one you add. You can also teach Aura your writing voice from My Story later.",
+    cta: "Save your first article",
   },
 };
 
@@ -53,6 +53,8 @@ const StepCard = ({
         padding: "20px 22px",
         opacity: isLocked ? 0.55 : 1,
         transition: "opacity 200ms ease, border-color 200ms ease",
+        boxShadow: status === "active" && index === 2 ? "0 0 0 3px hsl(var(--primary) / 0.15)" : undefined,
+        animation: status === "active" && index === 2 ? "auraPulse 2s ease-in-out infinite" : undefined,
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
