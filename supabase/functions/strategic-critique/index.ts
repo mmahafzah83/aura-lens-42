@@ -91,25 +91,80 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const critiqueSchema = {
+      type: "object",
+      properties: {
+        observation: {
+          type: "object",
+          properties: {
+            summary: { type: "string", description: "Pattern summary across signals and knowledge (2-3 sentences)" },
+            key_themes: { type: "array", items: { type: "string" }, description: "Top 2-3 themes detected" },
+            signal_count: { type: "integer" },
+          },
+          required: ["summary", "key_themes"],
+        },
+        synthesis: {
+          type: "object",
+          properties: {
+            insight: { type: "string", description: "Deeper strategic meaning behind the patterns (2-3 sentences)" },
+            emerging_thesis: { type: "string", description: "One-sentence thesis statement emerging from the data" },
+          },
+          required: ["insight", "emerging_thesis"],
+        },
+        challenge: {
+          type: "object",
+          properties: {
+            assumption_gap: { type: "string", description: "What assumption might the user be missing or overweighting (1-2 sentences)" },
+            question: { type: "string", description: "A thought-provoking strategic question for the user" },
+          },
+          required: ["assumption_gap", "question"],
+        },
+        recommendation: {
+          type: "object",
+          properties: {
+            action: { type: "string", description: "The single highest leverage next step" },
+            reason: { type: "string", description: "Why this is the highest leverage action" },
+            action_type: { type: "string", enum: ["develop_insight", "build_framework", "draft_content", "refine_positioning", "explore_signal"] },
+          },
+          required: ["action", "reason", "action_type"],
+        },
+        alerts: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              type: { type: "string", enum: ["strategic_opportunity", "idea_maturity", "pattern_detection", "authority_momentum", "strategic_drift"] },
+              title: { type: "string" },
+              message: { type: "string", description: "Short alert message (1-2 sentences)" },
+              urgency: { type: "string", enum: ["low", "medium", "high"] },
+            },
+            required: ["type", "title", "message", "urgency"],
+          },
+          description: "0-3 strategic alerts. Only generate when genuinely meaningful.",
+        },
+      },
+      required: ["observation", "synthesis", "challenge", "recommendation", "alerts"],
+    };
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are Aura, a senior strategic advisor and thinking companion for an executive building thought leadership authority. You observe patterns across signals, insights, frameworks, content, and audience data.
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: `You are Aura, a senior strategic advisor and thinking companion for an executive building thought leadership authority. You observe patterns across signals, insights, frameworks, content, and audience data.
 
 Your role is to provide a Strategic Critique — a thoughtful, analytical review of the user's strategic positioning and thinking.
 
 You should behave like a trusted consulting partner reviewing ideas — analytical, curious, challenging but respectful, strategically thoughtful. Avoid generic AI language. Be specific, referencing actual signals and data.
 
-NEVER use exclamation marks. Sound measured and authoritative.`
-          },
+NEVER use exclamation marks. Sound measured and authoritative.`,
+        messages: [
           {
             role: "user",
             content: `Analyze the following intelligence data and produce a Strategic Critique with exactly 4 components, plus detect any alerts.
@@ -117,74 +172,17 @@ NEVER use exclamation marks. Sound measured and authoritative.`
 Intelligence data:
 ${contextStr}
 
-Return structured output using the tool provided.`
+Return structured output using the tool provided.`,
           },
         ],
         tools: [
           {
-            type: "function",
-            function: {
-              name: "strategic_critique_output",
-              description: "Return a structured strategic critique with observation, synthesis, challenge, recommendation, and alerts",
-              parameters: {
-                type: "object",
-                properties: {
-                  observation: {
-                    type: "object",
-                    properties: {
-                      summary: { type: "string", description: "Pattern summary across signals and knowledge (2-3 sentences)" },
-                      key_themes: { type: "array", items: { type: "string" }, description: "Top 2-3 themes detected" },
-                      signal_count: { type: "integer" },
-                    },
-                    required: ["summary", "key_themes"],
-                  },
-                  synthesis: {
-                    type: "object",
-                    properties: {
-                      insight: { type: "string", description: "Deeper strategic meaning behind the patterns (2-3 sentences)" },
-                      emerging_thesis: { type: "string", description: "One-sentence thesis statement emerging from the data" },
-                    },
-                    required: ["insight", "emerging_thesis"],
-                  },
-                  challenge: {
-                    type: "object",
-                    properties: {
-                      assumption_gap: { type: "string", description: "What assumption might the user be missing or overweighting (1-2 sentences)" },
-                      question: { type: "string", description: "A thought-provoking strategic question for the user" },
-                    },
-                    required: ["assumption_gap", "question"],
-                  },
-                  recommendation: {
-                    type: "object",
-                    properties: {
-                      action: { type: "string", description: "The single highest leverage next step" },
-                      reason: { type: "string", description: "Why this is the highest leverage action" },
-                      action_type: { type: "string", enum: ["develop_insight", "build_framework", "draft_content", "refine_positioning", "explore_signal"] },
-                    },
-                    required: ["action", "reason", "action_type"],
-                  },
-                  alerts: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        type: { type: "string", enum: ["strategic_opportunity", "idea_maturity", "pattern_detection", "authority_momentum", "strategic_drift"] },
-                        title: { type: "string" },
-                        message: { type: "string", description: "Short alert message (1-2 sentences)" },
-                        urgency: { type: "string", enum: ["low", "medium", "high"] },
-                      },
-                      required: ["type", "title", "message", "urgency"],
-                    },
-                    description: "0-3 strategic alerts. Only generate when genuinely meaningful.",
-                  },
-                },
-                required: ["observation", "synthesis", "challenge", "recommendation", "alerts"],
-                additionalProperties: false,
-              },
-            },
+            name: "strategic_critique_output",
+            description: "Return a structured strategic critique with observation, synthesis, challenge, recommendation, and alerts",
+            input_schema: critiqueSchema,
           },
         ],
-        tool_choice: { type: "function", function: { name: "strategic_critique_output" } },
+        tool_choice: { type: "tool", name: "strategic_critique_output" },
       }),
     });
 
@@ -205,13 +203,12 @@ Return structured output using the tool provided.`
     }
 
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-
+    const toolUse = (aiData.content || []).find((c: any) => c.type === "tool_use");
     let critique;
-    if (toolCall?.function?.arguments) {
-      critique = JSON.parse(toolCall.function.arguments);
+    if (toolUse?.input) {
+      critique = toolUse.input;
     } else {
-      const raw = aiData.choices?.[0]?.message?.content || "";
+      const raw = (aiData.content || []).map((c: any) => c.text || "").join("") || "";
       const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
       critique = JSON.parse(cleaned);
     }
