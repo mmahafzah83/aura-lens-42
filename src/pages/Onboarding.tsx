@@ -143,8 +143,8 @@ const Onboarding = () => {
       if (timedOut) return;
 
       const p: Prefill = (data && (data.profile || (data.success ? data : null))) || {};
-      const hasAnyField = !!(p.first_name || p.firm || p.level || p.core_practice || p.sector_focus);
-      if (error || !data || (!data.success && !hasAnyField)) {
+      const hasData = !!(p && (p.first_name || p.firm || p.level || p.core_practice));
+      if (!hasData) {
         toast.message("Couldn't read that profile — it might be private. No problem.");
         setShowForm(true);
       } else {
@@ -156,7 +156,7 @@ const Onboarding = () => {
         setSectorFocus(SECTORS.includes(s) ? s : (s ? "Other" : ""));
         setUsedLinkedIn(true);
         setShowForm(true);
-        if (data.success) toast.success("Profile read successfully");
+        // Successful extraction — show inline confirmation only, no error toast.
       }
     } catch (e) {
       clearTimeout(timeout);
