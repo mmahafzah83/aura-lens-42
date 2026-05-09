@@ -284,9 +284,9 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., EY, McKinsey, ACWA Power" },
-              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., Director of Digital Transformation" },
-              { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Digital Transformation, Strategy" },
+              { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., Deloitte, Saudi Aramco, your organization" },
+              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., VP of Strategy, CIO, your current role" },
+              { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Strategy, Technology, Finance — the area you work in" },
             ].map(item => (
               <div key={item.label}>
                 <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
@@ -319,7 +319,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
             <Input
-              placeholder="e.g., Become the go-to voice for water utility modernization in the GCC"
+              placeholder="What do you want to be known for in 3 years?"
               value={northStar}
               onChange={(e) => setNorthStar(e.target.value)}
               className="h-9 bg-secondary border-border/30 text-sm"
@@ -340,7 +340,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               ))}
             </div>
             <div className="flex gap-2">
-              <Input placeholder="e.g., IT/OT Convergence, SCADA Modernization" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
+              <Input placeholder="The 2–3 topics you want to own — e.g., Digital Government, AI in Banking" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
               <Button size="sm" variant="outline" onClick={addPillar} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
