@@ -1085,8 +1085,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 },
                 {
                   n: 3,
-                  title: "Capture your first article",
-                  body: "Paste a URL of something you read this week. Aura extracts the intelligence from it. (1 minute)",
+                  title: "Save your first article",
+                  body: "Paste a link to something you read this week — an industry report, a competitor's post, anything from your world. Aura reads it and finds the patterns. One minute.",
                   done: captureDone,
                   locked: !assessDone,
                   cta: captureDone || !assessDone ? null : "capture-primary" as const,
@@ -1160,7 +1160,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                           onClick={() => onOpenCapture?.()}
                           style={{ borderRadius: 4, padding: "8px 18px" }}
                         >
-                          Capture your first article →
+                          Paste a link →
                         </AuraButton>
                       )}
                     </div>
