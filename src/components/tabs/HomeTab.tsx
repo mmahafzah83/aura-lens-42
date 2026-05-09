@@ -221,13 +221,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [assessmentDone, setAssessmentDone] = useState(false);
   const entriesLoaded = Array.isArray(entries);
   const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
+  // showWelcome / welcomeState computed below, after topSignal is declared.
   // The welcome card MAY appear once profile + entries are both loaded. Until
   // we know that for sure, we must NOT render the first-visit hint, otherwise
   // a slow profile load would let the hint render first and then both would
   // appear together when the welcome card pops in. This is the regression
   // guard for the "both visible at the same time" bug.
   const welcomeMayAppear = !welcomeDismissed && (!entriesLoaded || !profileLoaded);
-  const suppressHint = showWelcome || welcomeLeaving || welcomeMayAppear;
 
   // section-level loading + error
   const [briefLoading, setBriefLoading] = useState(true);
