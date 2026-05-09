@@ -246,13 +246,21 @@ const Dashboard = () => {
           }));
         }
 
-        // Gate: redirect to fullscreen /onboarding if profile is missing or
-        // onboarding has not been completed.
-        const wizardDone = localStorage.getItem("aura_onboarding_complete") === "true";
-        const needsOnboarding =
-          (!profile && !wizardDone) ||
-          (profile && !(profile as any).onboarding_completed) ||
-          (profile && !(profile as any).first_name);
+        // Gate: redirect to fullscreen /onboarding if no profile row exists
+        // OR if first_name is missing (user hasn't completed Step 1 of the
+        // onboarding flow). Once first_name is set, the user can land on /home
+        // and finish remaining steps via the inline checklist (GuidedJourney).
+        const hasProfile = !!profile;
+        const hasFirstName = !!(profile && (profile as any).first_name && String((profile as any).first_name).trim());
+        const needsOnboarding = !hasProfile || !hasFirstName;
+        console.log("[Dashboard] onboarding gate", {
+          uid: uid.slice(0, 8),
+          hasProfile,
+          hasFirstName,
+          first_name: profile ? (profile as any).first_name : null,
+          onboarding_completed: profile ? (profile as any).onboarding_completed : null,
+          needsOnboarding,
+        });
         if (needsOnboarding) {
           navigate("/onboarding", { replace: true });
           return;
