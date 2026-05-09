@@ -415,6 +415,7 @@ Write with conviction. No generic statements. Every line should demonstrate stra
           pass: gateResult.pass,
           scores: gateResult.scores,
           verdict: gateResult.verdict,
+          weaknesses: Array.isArray(gateResult.weaknesses) ? gateResult.weaknesses : [],
           skipped: gateResult.skipped || false,
         } : null,
       }), {

@@ -303,6 +303,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [critique, setCritique] = useState<any>(null);
   const [critiqueError, setCritiqueError] = useState<string | null>(null);
 
+  // Quality gate from generate-authority-content response
+  const [qualityGate, setQualityGate] = useState<{
+    overall_score: number;
+    pass: boolean;
+    scores: { hook?: number; voice?: number; specificity?: number; structure?: number; signal_depth?: number; language_quality?: number };
+    verdict?: string;
+    weaknesses?: string[];
+    skipped?: boolean;
+  } | null>(null);
+  const [provenanceOpen, setProvenanceOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia?.("(min-width: 768px)").matches ?? true;
+  });
+
   // Load monthly generation count
   useEffect(() => {
     (async () => {
@@ -490,6 +504,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     const json = await resp.json();
     const accumulated: string = json?.content || "";
     if (accumulated) setOutput(accumulated);
+    if (json?.quality_gate) {
+      setQualityGate(json.quality_gate);
+    } else {
+      setQualityGate(null);
+    }
     return accumulated;
   };
 
@@ -521,6 +540,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     setFullVersion("");
     setShortVersion("");
     setShowingShort(false);
+    setQualityGate(null);
     setGenerationTimestamp(new Date().toISOString());
     const slowTimer = setTimeout(() => setShowSlowHint(true), 5000);
     const controller = new AbortController();
@@ -1114,6 +1134,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           toastMessage: "Post copied to clipboard — paste it in LinkedIn.",
                         });
                       }}
+                      disabled={!!(qualityGate && !qualityGate.skipped && qualityGate.overall_score < 70)}
+                      title={qualityGate && !qualityGate.skipped && qualityGate.overall_score < 70 ? "Strengthen this post before publishing" : undefined}
                     >
                       <Linkedin className="w-3 h-3" /> Post on LinkedIn →
                     </Button>
@@ -1163,6 +1185,133 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       style={{ color: "var(--ink-3)", fontStyle: "italic", paddingLeft: 2 }}
                     >
                       Based on your voice profile
+                    </div>
+                  );
+                })()}
+
+                {/* Provenance trail + Publish Confidence */}
+                {!isGeneratingAny && (() => {
+                  const sig = (selectedSignalId && _signals.find(s => s.id === selectedSignalId)) || _signals[0];
+                  const sigTitle = selectedSignalTitle || sig?.signal_title || null;
+                  const sigConf = sig ? Math.round((sig.confidence ?? 0) * 100) : null;
+                  const evidenceCount = sig?.fragment_count ?? 0;
+                  const gate = qualityGate;
+                  const gateActive = !!gate && !gate.skipped;
+                  const dims: { key: string; label: string; raw: number }[] = gateActive ? [
+                    { key: "voice", label: "Voice", raw: gate!.scores?.voice ?? 0 },
+                    { key: "hook", label: "Hook", raw: gate!.scores?.hook ?? 0 },
+                    { key: "specificity", label: "Specificity", raw: gate!.scores?.specificity ?? 0 },
+                    { key: "structure", label: "Structure", raw: gate!.scores?.structure ?? 0 },
+                    { key: "signal_depth", label: "Signal depth", raw: gate!.scores?.signal_depth ?? 0 },
+                  ] : [];
+                  return (
+                    <div className="rounded-xl border border-border/10 bg-secondary/10 overflow-hidden">
+                      {/* HOW THIS WAS BUILT — collapsible */}
+                      <button
+                        type="button"
+                        onClick={() => setProvenanceOpen(o => !o)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-secondary/20 transition-colors"
+                      >
+                        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                          How this was built
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/70">{provenanceOpen ? "−" : "+"}</span>
+                      </button>
+                      {provenanceOpen && (
+                        <div className="px-4 pb-3 space-y-1.5 text-[11px] text-muted-foreground/90 leading-relaxed">
+                          {sigTitle ? (
+                            <div>
+                              <span style={{ color: "var(--brand)" }}>✦</span> Signal:{" "}
+                              <span className="text-foreground/90">"{sigTitle}"</span>
+                              {sigConf != null && <> — {sigConf}% confidence</>}
+                              {evidenceCount > 0 && <> · {evidenceCount} sources</>}
+                            </div>
+                          ) : (
+                            <div>
+                              <span style={{ color: "var(--brand)" }}>✦</span> Signal: drafted from your topic input
+                            </div>
+                          )}
+                          <div>
+                            <span style={{ color: "var(--brand)" }}>✦</span> Voice: matched against your LinkedIn voice profile
+                          </div>
+                          {gateActive && (
+                            <div>
+                              <span style={{ color: "var(--brand)" }}>✦</span> Quality: reviewed{gate!.verdict ? <> — <span className="text-foreground/90">{gate!.verdict}</span></> : null}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* PUBLISH CONFIDENCE — only when gate ran */}
+                      {gateActive && (
+                        <div className="border-t border-border/10 px-4 py-3 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                              Publish confidence
+                            </span>
+                            <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-amber-500" : "text-muted-foreground"}`}>
+                              {gate!.overall_score}%
+                            </span>
+                          </div>
+                          <div className="bg-secondary/30 rounded-full h-1.5 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.max(0, Math.min(100, gate!.overall_score))}%` }}
+                              transition={{ duration: 0.6 }}
+                              className={`h-full rounded-full ${gate!.overall_score >= 70 ? "bg-amber-500" : "bg-muted-foreground/40"}`}
+                            />
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 pt-1">
+                            {dims.map(d => {
+                              const pct = Math.max(0, Math.min(100, Math.round(d.raw * 10)));
+                              return (
+                                <div key={d.key} className="flex items-center gap-2">
+                                  <span className="text-[10px] text-muted-foreground w-20 shrink-0">{d.label}</span>
+                                  <div className="flex-1 bg-secondary/30 rounded-full h-1 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full ${d.raw >= 7 ? "bg-amber-500" : "bg-muted-foreground/30"}`}
+                                      style={{ width: `${pct}%` }}
+                                    />
+                                  </div>
+                                  <span className={`text-[10px] tabular-nums w-8 text-right ${d.raw >= 7 ? "text-amber-500" : "text-muted-foreground/60"}`}>{pct}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {gate!.overall_score < 70 ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isGeneratingAny || !!actionLoading}
+                              className="h-8 w-full text-xs gap-1.5 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+                              onClick={async () => {
+                                const weak = (gate!.weaknesses || []).filter(Boolean);
+                                const instruction = weak.length
+                                  ? `Strengthen this post by addressing these specific weaknesses identified by quality review:\n- ${weak.join("\n- ")}\n\nKeep the same topic, signal grounding, and voice. Return only the rewritten post.`
+                                  : `Strengthen the hook, specificity, and signal depth of this post. Keep the same topic and voice. Return only the rewritten post.`;
+                                setActionLoading("strengthen");
+                                try {
+                                  const accumulated = await streamGeneration(instruction);
+                                  if (accumulated.trim()) {
+                                    setFullVersion(accumulated);
+                                    setShowingShort(false);
+                                  }
+                                } catch (e: any) {
+                                  toast.error(e?.message || "Strengthen failed");
+                                } finally {
+                                  setActionLoading(null);
+                                }
+                              }}
+                            >
+                              {actionLoading === "strengthen" ? "Strengthening…" : "Strengthen before publishing →"}
+                            </Button>
+                          ) : (
+                            <div className="text-[10px] text-amber-600/80 dark:text-amber-400/80">
+                              Ready to publish — quality threshold met.
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
