@@ -213,6 +213,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           </div>
 
           {/* Start Objective Audit button */}
+          {!compact && (
           <Button
             variant="outline"
             onClick={() => setAuditOpen(true)}
@@ -221,8 +222,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
             <ClipboardCheck className="w-4 h-4" />
             Start Objective Audit
           </Button>
+          )}
 
           {/* Brand Assessment button */}
+          {!compact && (
           <div className="relative group">
             <Button
               variant="outline"
@@ -239,6 +242,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               </div>
             )}
           </div>
+          )}
         </div>
       ) : (
         <div className="space-y-5">
