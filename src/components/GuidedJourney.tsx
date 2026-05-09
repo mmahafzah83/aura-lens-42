@@ -168,7 +168,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
 
       <StepCard index={1} title={COPY.step1.title} why={COPY.step1.why} status={step1Status}>
         <div data-guided-journey-step="1">
-          <ProfileManagement onResetDiagnostic={onResetDiagnostic} startExpanded />
+          <ProfileManagement startExpanded compact />
         </div>
       </StepCard>
 
