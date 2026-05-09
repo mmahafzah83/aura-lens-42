@@ -39,6 +39,19 @@ interface FoundArticle {
 
 const Onboarding = () => {
   const navigate = useNavigate();
+
+  // Suppress the home first-visit hint for users who just completed onboarding.
+  const goHome = () => {
+    try {
+      const raw = localStorage.getItem("aura_visited_pages");
+      const arr: string[] = raw ? JSON.parse(raw) : [];
+      if (!arr.includes("home")) {
+        arr.push("home");
+        localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
+      }
+    } catch { /* ignore */ }
+    navigate("/home", { replace: true });
+  };
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState(1);
   const [userId, setUserId] = useState<string | null>(null);
