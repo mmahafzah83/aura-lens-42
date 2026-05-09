@@ -39,6 +39,8 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
   const [level, setLevel] = useState("");
   const [corePractice, setCorePractice] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
+  const [sectorOther, setSectorOther] = useState("");
+  const [hasSavedBefore, setHasSavedBefore] = useState(false);
   const [northStar, setNorthStar] = useState("");
   const [brandPillars, setBrandPillars] = useState<string[]>([]);
   const [newPillar, setNewPillar] = useState("");
@@ -65,12 +67,19 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
         setFirm(profile.firm || "");
         setLevel(profile.level || "");
         setCorePractice(profile.core_practice || "");
-        setSectorFocus(profile.sector_focus || "");
+        const sf = profile.sector_focus || "";
+        if (sf && !SECTOR_OPTIONS.includes(sf)) {
+          setSectorFocus("Other");
+          setSectorOther(sf);
+        } else {
+          setSectorFocus(sf);
+        }
         setNorthStar(profile.north_star_goal || "");
         setBrandPillars(profile.brand_pillars || []);
         setSkills(profile.generated_skills || []);
         setRatings(profile.skill_ratings || {});
         setAuditCompleted(!!profile.audit_completed_at);
+        setHasSavedBefore(!!(profile.first_name && profile.firm && profile.level && profile.sector_focus));
       }
       setLoading(false);
     };
@@ -81,6 +90,11 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setSaving(false); return; }
+    const resolvedSector = sectorFocus === "Other" ? sectorOther.trim() : sectorFocus;
+    const mandatoryComplete = !!(
+      firstName?.trim() && firm?.trim() && level?.trim() && resolvedSector
+    );
+    const wasFirstSave = !hasSavedBefore;
     const { error } = await (supabase.from("diagnostic_profiles" as any) as any)
       .upsert({
         user_id: user.id,
@@ -89,16 +103,31 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
         firm,
         level,
         core_practice: corePractice,
-        sector_focus: sectorFocus,
+        sector_focus: resolvedSector,
         north_star_goal: northStar,
         brand_pillars: brandPillars,
         generated_skills: skills,
         skill_ratings: ratings,
+        ...(mandatoryComplete ? { onboarding_completed: true, completed: true } : {}),
       }, { onConflict: "user_id" });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Profile Updated", description: "Your executive profile has been saved." });
+      toast({ title: "Profile saved", description: "Aura has what it needs." });
+      if (mandatoryComplete) {
+        try { localStorage.setItem("aura_onboarding_complete", "true"); } catch {}
+        setHasSavedBefore(true);
+        // First successful save with all mandatory fields → nudge user toward Step 2
+        if (wasFirstSave) {
+          try {
+            window.dispatchEvent(new CustomEvent("aura:journey-refresh"));
+            setTimeout(() => {
+              const step2 = document.querySelector('[data-guided-journey-step="1"]')?.parentElement?.parentElement?.nextElementSibling as HTMLElement | null;
+              step2?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }, 300);
+          } catch {}
+        }
+      }
       try { window.dispatchEvent(new CustomEvent("aura:journey-refresh")); } catch {}
     }
     setSaving(false);
@@ -252,15 +281,19 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
             </div>
             <div className="flex-1">
               <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">First name</label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+              <Input placeholder="e.g., Mohammad" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {[{ label: "Firm", value: firm, set: setFirm }, { label: "Level / Title", value: level, set: setLevel }, { label: "Core Practice", value: corePractice, set: setCorePractice }].map(item => (
+            {[
+              { label: "Firm", value: firm, set: setFirm, placeholder: "e.g., EY, McKinsey, ACWA Power" },
+              { label: "Level / Title", value: level, set: setLevel, placeholder: "e.g., Director of Digital Transformation" },
+              { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Digital Transformation, Strategy" },
+            ].map(item => (
               <div key={item.label}>
                 <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
-                <Input value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+                <Input placeholder={item.placeholder} value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
             <div>
@@ -275,12 +308,28 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
                   ))}
                 </SelectContent>
               </Select>
+              {sectorFocus === "Other" && (
+                <Input
+                  placeholder="Type your sector"
+                  value={sectorOther}
+                  onChange={(e) => setSectorOther(e.target.value)}
+                  className="h-9 bg-secondary border-border/30 text-sm mt-2"
+                />
+              )}
             </div>
           </div>
 
           <div>
             <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
-            <Input value={northStar} onChange={(e) => setNorthStar(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+            <Input
+              placeholder="e.g., Become the go-to voice for water utility modernization in the GCC"
+              value={northStar}
+              onChange={(e) => setNorthStar(e.target.value)}
+              className="h-9 bg-secondary border-border/30 text-sm"
+            />
+            <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">
+              Where do you want your career to be? Be specific — Aura uses this to shape your content.
+            </p>
           </div>
 
           <div>
@@ -294,7 +343,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
               ))}
             </div>
             <div className="flex gap-2">
-              <Input placeholder="Add pillar…" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
+              <Input placeholder="e.g., IT/OT Convergence, SCADA Modernization" value={newPillar} onChange={(e) => setNewPillar(e.target.value)} className="h-8 bg-secondary border-border/30 text-sm flex-1" onKeyDown={(e) => e.key === "Enter" && addPillar()} />
               <Button size="sm" variant="outline" onClick={addPillar} className="h-8"><Plus className="w-3.5 h-3.5" /></Button>
             </div>
           </div>
@@ -327,10 +376,27 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded }: Pro
             </div>
           </div>
 
-          <Button onClick={handleSave} disabled={saving} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-            Save Profile
-          </Button>
+          {(() => {
+            const resolvedSector = sectorFocus === "Other" ? sectorOther.trim() : sectorFocus;
+            const canSave = !!(firstName?.trim() && firm?.trim() && level?.trim() && resolvedSector);
+            return (
+              <div>
+                <Button
+                  onClick={handleSave}
+                  disabled={saving || !canSave}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  Save my profile
+                </Button>
+                {!canSave && (
+                  <p className="text-[11px] text-muted-foreground/70 mt-2 text-center">
+                    Fill in the required fields to continue.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Start Objective Audit */}
           <Button variant="outline" onClick={() => setAuditOpen(true)} className="w-full border-primary/30 text-primary hover:bg-primary/10 gap-2">
