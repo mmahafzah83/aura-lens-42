@@ -62,6 +62,7 @@ const Onboarding = () => {
 
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [linkedinText, setLinkedinText] = useState("");
   const [linkedinError, setLinkedinError] = useState("");
   const [readingLi, setReadingLi] = useState(false);
   const [liStatusIdx, setLiStatusIdx] = useState(0);
@@ -135,8 +136,8 @@ const Onboarding = () => {
   // ─── Step 1: LinkedIn pre-fill ───
   const handleReadLinkedIn = async () => {
     setLinkedinError("");
-    if (!linkedinUrl.includes("linkedin.com/in/")) {
-      setLinkedinError("That doesn't look like a LinkedIn profile URL");
+    if (linkedinText.trim().length < 10) {
+      setLinkedinError("Tell us a bit more — paste your headline or describe your role");
       return;
     }
     setReadingLi(true);
@@ -150,15 +151,16 @@ const Onboarding = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("onboarding-linkedin-prefill", {
-        body: { linkedin_url: linkedinUrl.trim() },
+        body: { linkedin_text: linkedinText.trim() },
       });
       clearTimeout(timeout);
       if (timedOut) return;
 
+      if (error) throw error;
       const p: Prefill = (data && (data.profile || (data.success ? data : null))) || {};
       const hasData = !!(p && (p.first_name || p.firm || p.level || p.core_practice));
       if (!hasData) {
-        toast.message("Couldn't read that profile — it might be private. No problem.");
+        toast.message("Couldn't extract from that text. No problem — fill it in manually.");
         setShowForm(true);
       } else {
         setFirstName(p.first_name || "");
@@ -174,7 +176,7 @@ const Onboarding = () => {
     } catch (e) {
       clearTimeout(timeout);
       if (timedOut) return;
-      toast.message("Couldn't read that profile. No problem — fill it in manually.");
+      toast.message("Couldn't read that. No problem — fill it in manually.");
       setShowForm(true);
     } finally {
       setReadingLi(false);
