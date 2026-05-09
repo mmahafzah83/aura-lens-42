@@ -2983,8 +2983,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         <EmptyState
           icon={PenTool}
           title="Your voice is ready. Pick a signal and start writing."
-          description="The gap between expert and recognized expert isn't knowledge — it's visibility. You already know enough to lead conversations in your sector. Build your first signals and watch Aura turn them into posts that put your name in the right rooms."
-          ctaLabel="Build signals first →"
+          description={EMPTY_STATE.publishNoSignals.text}
+          ctaLabel={EMPTY_STATE.publishNoSignals.cta}
           ctaAction={onSwitchToCreate}
         />
       </div>
