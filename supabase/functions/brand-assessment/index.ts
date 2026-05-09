@@ -93,7 +93,7 @@ Analyse this professional using all six frameworks and provide the complete bran
             "content-type": "application/json",
           },
           body: JSON.stringify({
-            model: "claude-sonnet-4-20250514",
+            model: "claude-sonnet-4-6",
             max_tokens: 4096,
             system: SYSTEM_PROMPT,
             messages: [{ role: "user", content: userPrompt }],
