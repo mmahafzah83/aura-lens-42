@@ -141,6 +141,13 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
   const earned = milestones.filter(m => m.earned);
   const unearned = milestones.filter(m => !m.earned);
 
+  const isNewlyEarned = (iso: string | null) => {
+    if (!iso) return false;
+    const t = new Date(iso).getTime();
+    if (isNaN(t)) return false;
+    return Date.now() - t < 2 * 60 * 1000; // <2 minutes ago
+  };
+
   return (
     <section aria-label="Milestones" className="space-y-4">
       <div>
@@ -183,8 +190,10 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
           label="milestones"
           renderItem={(m) => {
             const summary = summarizeContext(m.id, m.context);
+            const isNew = isNewlyEarned(m.earned_at);
             return (
               <div
+                className={isNew ? "aura-milestone-pulse" : undefined}
                 style={{
                   background: "hsl(var(--card))",
                   border: "1px solid hsl(var(--border) / 0.5)",

@@ -1542,3 +1542,14 @@ button[aria-label="Notifications"]:focus-visible {
   .aura-orb-2 { width: 230px; height: 230px; filter: blur(70px); }
   .aura-orb-3 { width: 300px; height: 300px; filter: blur(80px); }
 }
+
+/* Bronze glow pulse for newly earned milestones */
+@keyframes aura-milestone-pulse-kf {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.45); transform: scale(1); }
+  50%  { box-shadow: 0 0 0 10px hsl(var(--primary) / 0); transform: scale(1.012); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); transform: scale(1); }
+}
+.aura-milestone-pulse {
+  animation: aura-milestone-pulse-kf 1.8s ease-out 3;
+  background: linear-gradient(180deg, hsl(var(--primary) / 0.10), hsl(var(--card))) !important;
+}

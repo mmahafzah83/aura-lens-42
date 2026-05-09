@@ -800,14 +800,19 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         >
           <div style={{ flex: 1, minWidth: 220 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
-              Start building your intelligence
+              Your authority trajectory starts with your first publish
             </div>
             <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
-              Capture an article and Aura will start tracking your trajectory here.
+              Generate a post from your signals, publish it on LinkedIn, and upload your analytics to close the loop.
             </p>
           </div>
-          <AuraButton variant="primary" size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4, padding: "8px 18px" }}>
-            Capture your first article →
+          <AuraButton
+            variant="primary"
+            size="sm"
+            onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+            style={{ borderRadius: 4, padding: "8px 18px" }}
+          >
+            Go to Publish →
           </AuraButton>
         </section>
       </motion.div>

@@ -2982,9 +2982,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         <VoiceTrainer />
         <EmptyState
           icon={PenTool}
-          title="No content yet."
-          description="Start by creating a post, carousel, or essay on the Create tab."
-          ctaLabel="Go to Create"
+          title="Your content engine is ready."
+          description="Once you have signals, Aura will generate posts that sound like you — grounded in your real intelligence, not templates."
+          ctaLabel="Build signals first →"
           ctaAction={onSwitchToCreate}
         />
       </div>

@@ -120,13 +120,23 @@ const Dashboard = () => {
       const el = document.querySelector('[data-section="linkedin-upload"]') as HTMLElement | null;
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     };
+    const switchTab = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { tab?: string } | undefined;
+      const target = detail?.tab;
+      if (target && NAV_ITEMS.some(n => n.value === target)) {
+        setActiveTab(target as TabValue);
+        setSearchParams({ tab: target });
+      }
+    };
     window.addEventListener("aura:open-capture", openCap);
     window.addEventListener("aura:open-flash", openFlash);
     window.addEventListener("aura:scroll-linkedin-upload", scrollLi);
+    window.addEventListener("aura:switch-tab", switchTab);
     return () => {
       window.removeEventListener("aura:open-capture", openCap);
       window.removeEventListener("aura:open-flash", openFlash);
       window.removeEventListener("aura:scroll-linkedin-upload", scrollLi);
+      window.removeEventListener("aura:switch-tab", switchTab);
     };
   }, [setSearchParams]);
 
