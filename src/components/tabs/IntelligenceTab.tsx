@@ -1006,9 +1006,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               entryCount === 0 ? (
                 <EmptyState
                   icon={Brain}
-                  title="No signals yet"
-                  description={`Aura needs at least 3 captures to detect strategic patterns. You have ${entryCount}/3.`}
-                  ctaLabel="Capture your first"
+                  title="Your strategic radar is warming up."
+                  description="Every article you capture teaches Aura about your sector. Start with one link — signals emerge automatically."
+                  ctaLabel="Paste your first link →"
                   ctaAction={() => onOpenCapture?.()}
                 />
               ) : entryCount < 3 ? (
