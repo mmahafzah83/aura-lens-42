@@ -206,7 +206,7 @@ const RequestAccess = () => {
                     color: "#fca5a5",
                   }}
                 >
-                  Something went wrong. Please try again.
+                  Didn't connect. Try once more.
                 </div>
               )}
 

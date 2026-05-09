@@ -843,7 +843,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             Impact
           </h1>
           <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-            How your authority compounds over time — the score reflects real intelligence depth, not vanity metrics
+            Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.
           </p>
         </div>
       </div>
@@ -1081,10 +1081,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Score breakdown
+          The three forces
         </h2>
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Signal strength, content output, and capture rhythm — the system tells you which lever moves the needle most
+          Signals. Content. Consistency. The people who build reputations aren't smarter — they're more visible. This shows you how.
         </p>
         <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {([
@@ -1998,10 +1998,10 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Capture activity — last {selectedDays} days
+          Your rhythm — last {selectedDays} days
         </h2>
         <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Your intelligence rhythm — consistency matters more than volume
+          You don't need to post every day. You just need to not disappear. Consistency beats volume — every time.
         </p>
         <div
           data-testid="impact-capture-chart"

@@ -386,10 +386,10 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
         <div style={{ padding: 36, overflowY: "auto", fontFamily: fontSans }}>
           {step === 1 && (
             <>
-              <div style={stepLabelStyle}>Step 1 of 3 — Calibrate</div>
-              <h2 style={stepTitleStyle}>Let's calibrate your intelligence</h2>
+              <div style={stepLabelStyle}>Step 1 of 3 — Let's see what you've got</div>
+              <h2 style={stepTitleStyle}>Who are you in this market?</h2>
               <p style={stepSubStyle}>
-                Aura adapts to your level, sector, and ambition. This takes 60 seconds.
+                You're not starting from zero — you have years of expertise the market hasn't seen yet. Tell Aura what you know. 60 seconds.
               </p>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -438,7 +438,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                 {FIRM_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
 
-              <label style={labelStyle}>Your expertise pillars (pick 3–5)</label>
+              <label style={labelStyle}>What do you know that most people in your sector don't? (pick 3–5)</label>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
                 {PILLARS.map((p) => (
                   <Chip key={p} label={p} selected={selectedPillars.includes(p)} onClick={() => togglePillar(p)} />
@@ -453,7 +453,7 @@ export default function OnboardingWizardModal({ open, userId, onClose, onOpenFul
                   disabled={savingStep1}
                   onClick={handleStep1Save}
                 >
-                  {savingStep1 ? "Saving…" : "Save & continue →"}
+                  {savingStep1 ? "Saving…" : "Next →"}
                 </button>
               </div>
             </>

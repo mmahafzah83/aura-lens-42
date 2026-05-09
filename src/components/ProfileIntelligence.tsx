@@ -44,8 +44,8 @@ const EMPTY_IDENTITY: IdentityModel = {
 const SECTION_CONFIG = [
   { key: "expertise_areas", label: "Expertise Areas", icon: Layers, color: "text-primary", subtitle: "Where your captured intelligence shows real depth" },
   { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400", subtitle: "The sectors your signals consistently track" },
-  { key: "knowledge_domains", label: "Knowledge Domains", icon: Lightbulb, color: "text-amber-400", subtitle: "The fields where your captured intelligence runs deepest" },
-  { key: "capabilities", label: "Capabilities", icon: Star, color: "text-violet-400", subtitle: "Skills your intelligence and assessment reveal — gaps here are publishing opportunities" },
+  { key: "knowledge_domains", label: "Your deep expertise", icon: Lightbulb, color: "text-amber-400", subtitle: "The fields where your captured intelligence runs deepest" },
+  { key: "capabilities", label: "What sets you apart", icon: Star, color: "text-violet-400", subtitle: "The things you do that most people in your space can't. These show up in everything you write." },
   { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400", subtitle: "The decision-makers your expertise serves" },
   { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400", subtitle: "What drives your approach — these shape your voice and content tone" },
   { key: "authority_ambitions", label: "Authority Ambitions", icon: Target, color: "text-primary", subtitle: "Where you are heading — Aura measures every action against these targets" },

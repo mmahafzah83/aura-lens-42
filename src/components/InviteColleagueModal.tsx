@@ -61,7 +61,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Invitation sent to ${email.trim()}`);
+      toast.success(`Sent. They're about to discover what you already know.`);
       setRemaining(typeof data?.remaining === "number" ? data.remaining : (remaining ?? 1) - 1);
       setEmail("");
       setNote("");
