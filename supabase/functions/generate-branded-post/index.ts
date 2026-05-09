@@ -157,22 +157,25 @@ OUTPUT FORMAT - valid JSON only:
   "brand_pillar_alignment": "Which brand pillars this aligns to"
 }`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        system: systemPrompt + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
         messages: [
-          { role: "system", content: systemPrompt },
           {
             role: "user",
             content: `Transform this intelligence signal into bilingual LinkedIn posts:\n\nTitle: ${news_item.title}\nSIGNAL: ${news_item.summary}\nSource: ${news_item.source}\nAngle: ${news_item.post_angle || ""}\nVALUE: ${news_item.relevance_tag || ""}`,
           },
         ],
-        response_format: { type: "json_object" },
       }),
     });
 
@@ -183,7 +186,8 @@ OUTPUT FORMAT - valid JSON only:
     }
 
     const aiData = await aiRes.json();
-    const parsed = parseAiJsonObject(aiData.choices?.[0]?.message?.content);
+    const aiText = (aiData.content || []).map((c: any) => c.text || "").join("") || "";
+    const parsed = parseAiJsonObject(aiText);
 
     let imageBase64: string | null = null;
     if (parsed.image_prompt) {
