@@ -465,25 +465,20 @@ Deno.serve(async (req) => {
           searchPayload.tbs = "qdr:w"; // last week
         }
 
-        const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify(searchPayload),
-        });
-
-        if (!searchRes.ok) {
-          const errBody = await searchRes.text();
-          if (searchRes.status === 429 || searchRes.status === 403) {
+        const fc = await firecrawlSearchWithRetry(FIRECRAWL_API_KEY, searchPayload);
+        if (!fc.ok) {
+          if (fc.status === 429 || fc.status === 403 || fc.status >= 500) {
             blockedQueries++;
-            errors.push(`Query blocked (${searchRes.status}): ${searchQuery}`);
-            log("search_blocked", `Status ${searchRes.status} for "${searchQuery}"`);
+            errors.push(`Query blocked (${fc.status}) after retries: ${searchQuery}`);
+            log("search_blocked", `Status ${fc.status} for "${searchQuery}" — ${fc.body.slice(0, 160)}`);
             continue;
           }
-          errors.push(`Search failed (${searchRes.status}): ${errBody.slice(0, 200)}`);
+          errors.push(`Search failed (${fc.status}): ${fc.body.slice(0, 200)}`);
           continue;
         }
 
-        const searchData = await searchRes.json();
+        let searchData: any = {};
+        try { searchData = JSON.parse(fc.body); } catch { searchData = {}; }
         const searchResults = searchData?.data || [];
         log("search_result", `${searchResults.length} results for "${searchQuery}"`);
 
