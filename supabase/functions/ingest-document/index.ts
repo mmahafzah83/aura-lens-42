@@ -167,7 +167,7 @@ async function extractFromImage(adminClient: any, doc: any, lovableApiKey: strin
     method: "POST",
     headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-3-flash-preview",
       messages: [{
         role: "user",
         content: [
@@ -206,7 +206,7 @@ async function extractFromPdf(adminClient: any, doc: any, lovableApiKey: string)
     method: "POST",
     headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "google/gemini-3-flash-preview",
       messages: [{
         role: "user",
         content: [
@@ -313,7 +313,7 @@ async function processDocument(
         method: "POST",
         headers: { Authorization: `Bearer ${lovableApiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: "You are a senior executive summarizer. Produce a 2-3 sentence strategic summary. Focus on key themes, frameworks, and actionable insights." },
             { role: "user", content: extractedText.slice(0, 4000) },

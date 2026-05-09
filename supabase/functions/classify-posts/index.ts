@@ -96,7 +96,7 @@ Return ONLY a JSON array with objects: {"index": number, "topic_label": string, 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Classify these ${posts.length} LinkedIn posts:\n\n${postSummaries}` },

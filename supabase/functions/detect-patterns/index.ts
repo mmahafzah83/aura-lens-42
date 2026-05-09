@@ -183,7 +183,7 @@ Detect 2-5 signals maximum. Quality over quantity.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Analyze these ${fragments.length} evidence fragments for strategic patterns:\n\n${fragmentSummaries}` },

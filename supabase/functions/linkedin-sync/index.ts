@@ -170,7 +170,7 @@ async function classifyWithAI(
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: `You are a LinkedIn content analyst for a senior professional. Analyze their posts and provide strategic intelligence. Context: ${contextInfo}. Format breakdown: ${JSON.stringify(formatBreakdown)}.` },
           { role: "user", content: `Analyze these ${postTexts.length} LinkedIn posts and classify each one:\n\n${samplePosts}` },
