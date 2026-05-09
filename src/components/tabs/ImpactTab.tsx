@@ -806,7 +806,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               Generate a post from your signals, publish it on LinkedIn, and upload your analytics to close the loop.
             </p>
           </div>
-          <AuraButton variant="primary" size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4, padding: "8px 18px" }}>
+          <AuraButton
+            variant="primary"
+            size="sm"
+            onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+            style={{ borderRadius: 4, padding: "8px 18px" }}
+          >
             Go to Publish →
           </AuraButton>
         </section>
