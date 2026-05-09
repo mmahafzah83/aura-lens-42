@@ -1003,6 +1003,19 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const showWelcomeState = dataReady && (preCapture || (noEntries && !hasSignals));
   const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
 
+  // Context-aware persistent welcome card (rendered later in the tree).
+  // Hide entirely once the user has 5+ captures AND at least one signal —
+  // the dashboard sections carry their own value at that point.
+  const welcomeVariant: "first-signal" | "building" | "intro" | null = (() => {
+    if (welcomeDismissed || !entriesLoaded || !profileLoaded) return null;
+    if (entryCountForWelcome >= 5 && hasSignals) return null;
+    if (hasSignals) return "first-signal";
+    if (entryCountForWelcome > 0) return "building";
+    return "intro";
+  })();
+  const showWelcome = welcomeVariant !== null;
+  const suppressHint = showWelcome || welcomeLeaving || welcomeMayAppear;
+
   if (showWelcomeState || showBuildingState) {
     const captureCount = entries?.length ?? 0;
     return (
