@@ -30,7 +30,7 @@ const CONTEXT_COPY: Record<ContextKey, { title: string; body: string }> = {
     body: "Every article, document, or insight you capture gets analyzed for strategic patterns. When multiple captures point to the same theme, a signal emerges. Signals grow stronger with more evidence and fade when no new evidence arrives. The stronger your signals, the more targeted your content recommendations become.",
   },
   authority: {
-    title: "Your Content Engine",
+    title: "Your Voice",
     body: "Create content grounded in your real intelligence — not generic templates. The sidebar shows your strongest signals. Publishing from these builds authority fastest because the content is backed by evidence. Flash mode gives you 3 variations in 60 seconds. Every post is voice-matched to sound like you, not like AI.",
   },
   influence: {

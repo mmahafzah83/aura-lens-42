@@ -774,8 +774,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           >
             0
           </div>
-          <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 420, marginInline: "auto" }}>
-            Your authority score will appear after you start capturing and publishing.
+          <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 480, marginInline: "auto" }}>
+            Visibility is credibility. If you're an expert but nobody sees your work — to the market, you don't exist. Every recognized authority started exactly where you are now: one publish away from being found. This is where you'll watch that change.
           </p>
 
           {auraData && (
@@ -953,7 +953,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             )}
             {isEmpty && (
               <div style={{ marginTop: 14, fontSize: 13, color: "var(--ink-3)", maxWidth: 360 }}>
-                Start capturing to build your authority trajectory.
+                Paste a link → and start your authority trajectory.
                 <div style={{ marginTop: 10 }}>
                   <button
                     onClick={() => onOpenCapture?.()}

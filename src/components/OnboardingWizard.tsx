@@ -362,7 +362,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
               <div className="mt-6 space-y-5">
                 <div>
                   <Label hint="The 3–4 themes you want to be known for. Pick what matches your professional ambitions.">
-                    Expertise pillars (pick 2–4)
+                    What do you know that most people don't? (pick 2-4)
                   </Label>
                   <div className="flex flex-wrap gap-2">
                     {PILLARS.map((p) => {
