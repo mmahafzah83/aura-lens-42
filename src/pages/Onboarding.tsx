@@ -265,19 +265,7 @@ const Onboarding = () => {
       if (!resp.ok && data?.error !== "duplicate_url") {
         throw new Error(data?.error_message || data?.message || "Capture failed");
       }
-      // Also insert into entries (mirrors CaptureModal behaviour)
-      const entryContent = data?.extracted_content || url.trim();
-      const entryTitle = data?.extracted_title ||
-        (() => { try { return new URL(url.trim()).hostname; } catch { return url.trim().slice(0, 60); } })();
-      await supabase.from("entries").insert({
-        user_id: session.user.id,
-        type: "link",
-        title: entryTitle,
-        content: entryContent,
-        summary: entryContent.slice(0, 300),
-        image_url: data?.original_url || url.trim(),
-      });
-
+      // ingest-capture creates the entry server-side — no client-side insert needed.
       setCaptureSuccess(true);
       window.setTimeout(() => goStep(3), 2500);
     } catch (e: any) {

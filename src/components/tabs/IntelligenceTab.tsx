@@ -662,6 +662,13 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
 
   useEffect(() => { loadSignals(); }, [loadSignals]);
 
+  // Refresh when a capture completes elsewhere in the app
+  useEffect(() => {
+    const handler = () => { loadSignals(); };
+    window.addEventListener("capture-complete", handler);
+    return () => window.removeEventListener("capture-complete", handler);
+  }, [loadSignals]);
+
   const sortedByConfidence = useMemo(() => {
     const order: Record<string, number> = { fading: 0, accelerating: 1, stable: 2, dormant: 3 };
     return [...signals].sort((a, b) => {

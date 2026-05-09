@@ -255,6 +255,22 @@ ${identityCtx}`;
     const aiBaseConfidence = Math.min(1, Math.max(0, signal.ai_base_confidence ?? 0.5));
     const whatItMeans = signal.what_it_means_for_you || "";
 
+    // Quality gate: only accept signals with a real title and explanation
+    const cleanTitle = (newTitle || "").trim();
+    const cleanSummary = (newSummary || "").trim();
+    if (
+      !cleanTitle ||
+      cleanTitle === "Untitled Signal" ||
+      cleanTitle.length < 10 ||
+      !cleanSummary
+    ) {
+      console.warn("Skipping low-quality signal:", JSON.stringify({ title: cleanTitle, summary: cleanSummary }));
+      return new Response(JSON.stringify({
+        skipped: true,
+        reason: "low_quality_signal",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     /* ── Dedup check against existing signals ── */
     const { data: existingSignals } = await admin
       .from("strategic_signals")
