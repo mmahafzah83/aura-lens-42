@@ -2200,7 +2200,7 @@ const VoiceTrainer = () => {
     <div className="glass-card rounded-xl p-5 border border-border/8">
       <div className="flex items-center gap-2 mb-4">
         <Mic className="w-4 h-4 text-primary" />
-        <p className="text-sm font-semibold text-foreground">Train your voice</p>
+        <p className="text-sm font-semibold text-foreground">Teach Aura your voice</p>
       </div>
 
       <div className="mb-4 space-y-2 text-xs text-muted-foreground leading-relaxed">
@@ -2982,8 +2982,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         <VoiceTrainer />
         <EmptyState
           icon={PenTool}
-          title="Your content engine is ready."
-          description="Once you have signals, Aura will generate posts that sound like you — grounded in your real intelligence, not templates."
+          title="Your voice is ready. Pick a signal and start writing."
+          description="The gap between expert and recognized expert isn't knowledge — it's visibility. You already know enough to lead conversations in your sector. Build your first signals and watch Aura turn them into posts that put your name in the right rooms."
           ctaLabel="Build signals first →"
           ctaAction={onSwitchToCreate}
         />
