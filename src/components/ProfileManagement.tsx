@@ -395,31 +395,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
             );
           })()}
 
-          {/* Start Objective Audit */}
-          <Button variant="outline" onClick={() => setAuditOpen(true)} className="w-full border-primary/30 text-primary hover:bg-primary/10 gap-2">
-            <ClipboardCheck className="w-4 h-4" />
-            Start Objective Audit
-          </Button>
-
-          {/* Brand Assessment button */}
-          <div className="relative group">
-            <Button
-              variant="outline"
-              onClick={() => auditCompleted && setBrandOpen(true)}
-              disabled={!auditCompleted}
-              className={`w-full gap-2 ${auditCompleted ? "border-primary/30 text-primary hover:bg-primary/10" : "border-ink-3 text-ink-4 cursor-not-allowed"}`}
-            >
-              <Compass className="w-4 h-4" />
-              Start Brand Assessment
-            </Button>
-            {!auditCompleted && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-surface-ink-subtle border border-ink-3 rounded-lg text-[10px] text-ink-5 w-64 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                Complete your Evidence Audit first — your brand positioning is more accurate when grounded in evidence.
-              </div>
-            )}
-          </div>
-
-          {onResetDiagnostic && (
+          {onResetDiagnostic && !compact && hasSavedBefore && (
             <Button
               variant="outline"
               onClick={async () => {
