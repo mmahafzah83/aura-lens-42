@@ -59,10 +59,8 @@ export function useQuestProgress(userId: string | null) {
 
     const entriesRows: any[] = entriesAll.data || [];
     const entryCount = entriesRows.length;
-
-    // Distinct sources: pull source_url separately
-    const { data: srcRows } = await supabase.from("entries").select("account_name, type").eq("user_id", userId).limit(500);
-    const distinctSources = new Set((srcRows || []).map((r: any) => (r.account_name || r.type || "").toString().trim().toLowerCase()).filter(Boolean)).size;
+    // "3+ sources" = 3+ entries captured (each capture is a source)
+    const distinctSources = entryCount;
 
     const voiceCount = voice as number;
     const postRows: any[] = posts.data || [];
@@ -86,7 +84,7 @@ export function useQuestProgress(userId: string | null) {
       { id: "p1_profile", label: "Complete your profile", done: profileFilled },
       { id: "p1_assessment", label: "Complete brand assessment", done: assessmentDone },
       { id: "p1_first_capture", label: "Capture your first article", done: entryCount >= 1 },
-      { id: "p1_three_sources", label: "Capture from 3+ sources", done: distinctSources >= 3 },
+      { id: "p1_three_sources", label: "Capture from 3+ sources", done: entryCount >= 3 },
       { id: "p1_voice", label: "Teach Aura your voice", done: voiceCount >= 1 },
       { id: "p1_first_post", label: "Generate your first post", done: postCount >= 1 },
     ];
