@@ -52,13 +52,11 @@ const buildEmailHtml = (BRAND: string) => {
 
     <hr style="border:0;border-top:1px solid #1f1f1f;margin:8px 40px;">
 
-    <!-- WHAT AURA DOES -->
+    <!-- WHAT HAPPENS INSIDE -->
     <div style="padding:24px 40px 8px;">
-      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">WHAT AURA DOES</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Aura reads what you read — articles, reports, posts — and detects the strategic patterns hidden in your knowledge consumption.</p>
-      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Then it turns those patterns into authority.</p>
-      <p style="font-size:15px;line-height:1.9;color:#bdbdbd;margin:0 0 18px;">Content that sounds like you, not like AI.<br>Positioning that's backed by evidence, not self-declaration.<br>A score that compounds the more you use it.</p>
-      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 24px;">You don't need to learn a new skill or add hours to your week. You just keep doing what you already do — and Aura makes it visible.</p>
+      <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">WHAT HAPPENS INSIDE</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">You keep doing what you already do — reading articles, following your sector, forming opinions. Aura watches what you read and finds the patterns you haven't noticed yet. Then it turns those patterns into content that sounds like you wrote it at your best.</p>
+      <p style="font-size:15px;line-height:1.7;color:#bdbdbd;margin:0 0 24px;">Not templates. Not generic AI. Your real voice. Your real expertise. Finally visible.</p>
     </div>
 
     <hr style="border:0;border-top:1px solid #1f1f1f;margin:8px 40px;">
@@ -81,27 +79,25 @@ const buildEmailHtml = (BRAND: string) => {
       <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">YOUR FIRST 10 MINUTES</p>
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 22px;">You'll feel the difference immediately.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>1 · Tell Aura who you are</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 4px;">Complete your profile. This shapes every signal Aura detects and every post it writes.</p>
-      <p style="font-size:12px;color:#8a8a8a;margin:0 0 18px;">(2 minutes)</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>1 · Set your password</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Click the button above. You're in — takes under a minute.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>2 · Feed it one article</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 4px;">Paste a URL of something you read this week. An industry report. A competitor's post. Anything from your world.</p>
-      <p style="font-size:12px;color:#8a8a8a;margin:0 0 18px;">(1 minute)</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>2 · Tell Aura who you are — 5 minutes</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Answer 5 questions about your expertise and sector. This teaches Aura how you think — so every post it writes carries your voice, not generic AI.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>3 · Watch intelligence emerge</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Aura extracts strategic insights and starts building your signal map. After 3-5 articles, your first signal appears — and that's the moment everything clicks.</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>3 · Save one article</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Paste a link to something you read this week. An industry report. A competitor's post. Anything from your world. Aura reads it and starts finding patterns — no effort on your end.</p>
 
-      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>4 · See yourself through the market's eyes</strong></p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 8px;">Complete the brand assessment and Aura generates your Market Mirror — three perspectives on how headhunters, clients, and conference curators would describe you today.</p>
-      <p style="font-size:14px;line-height:1.7;color:#ededed;font-style:italic;margin:0;">This is usually the moment people message me to say "how does it know this?"</p>
+      <p style="font-size:14px;line-height:1.7;color:#ededed;margin:0 0 4px;"><strong>4 · Watch your first signal appear</strong></p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 8px;">After 3-5 articles, your first signal appears — a strategic pattern Aura found in what you read. From there, one click turns it into a post in your voice. That's the moment everything clicks.</p>
     </div>
 
     <!-- FOOTER -->
     <div style="padding:24px 40px;">
       <p style="font-size:12px;color:#8a8a8a;line-height:1.6;margin:0 0 16px;word-break:break-all;">If the button doesn't work, paste this link:<br><a href="{{CONFIRMATION_URL}}" style="color:${BRAND};">{{CONFIRMATION_URL}}</a></p>
       <p style="font-size:13px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Questions or feedback — reply directly. This email reaches me, not a support queue.</p>
-      <p style="font-size:14px;line-height:1.6;color:#ededed;margin:0;">Mohammad Mahafzah<br><span style="color:#8a8a8a;">Building Aura · <a href="https://aura-intel.org" style="color:#8a8a8a;text-decoration:none;">aura-intel.org</a></span></p>
+      <p style="font-size:14px;line-height:1.6;color:#ededed;margin:0 0 14px;">Mohammad Mahafzah<br><span style="color:#8a8a8a;">Building Aura · <a href="https://aura-intel.org" style="color:#8a8a8a;text-decoration:none;">aura-intel.org</a></span></p>
+      <p style="font-size:11px;letter-spacing:1.5px;color:#8a8a8a;margin:0;">Strategic Intelligence · Private Beta</p>
     </div>
 
   </div>
