@@ -303,6 +303,20 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [critique, setCritique] = useState<any>(null);
   const [critiqueError, setCritiqueError] = useState<string | null>(null);
 
+  // Quality gate from generate-authority-content response
+  const [qualityGate, setQualityGate] = useState<{
+    overall_score: number;
+    pass: boolean;
+    scores: { hook?: number; voice?: number; specificity?: number; structure?: number; signal_depth?: number; language_quality?: number };
+    verdict?: string;
+    weaknesses?: string[];
+    skipped?: boolean;
+  } | null>(null);
+  const [provenanceOpen, setProvenanceOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia?.("(min-width: 768px)").matches ?? true;
+  });
+
   // Load monthly generation count
   useEffect(() => {
     (async () => {
