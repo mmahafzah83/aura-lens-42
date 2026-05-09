@@ -119,3 +119,6 @@ verify_jwt = false
 
 [functions.onboarding-linkedin-prefill]
 verify_jwt = false
+
+[functions.onboarding-find-article]
+verify_jwt = false

@@ -480,6 +480,7 @@ export type Database = {
           last_visit_at: string | null
           leadership_style: string | null
           level: string | null
+          linkedin_url: string | null
           north_star_goal: string | null
           notification_prefs: Json | null
           onboarding_completed: boolean
@@ -512,6 +513,7 @@ export type Database = {
           last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
+          linkedin_url?: string | null
           north_star_goal?: string | null
           notification_prefs?: Json | null
           onboarding_completed?: boolean
@@ -544,6 +546,7 @@ export type Database = {
           last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
+          linkedin_url?: string | null
           north_star_goal?: string | null
           notification_prefs?: Json | null
           onboarding_completed?: boolean
