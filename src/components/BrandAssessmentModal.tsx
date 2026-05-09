@@ -121,7 +121,7 @@ const QUESTIONS: Question[] = [
     ],
   },
   {
-    title: "What stops you from building your brand today?",
+    title: "What's held you back from being more visible in your sector?",
     sub: "Pick all that are true.",
     type: "multi",
     options: [
