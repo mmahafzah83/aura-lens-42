@@ -206,6 +206,33 @@ interface RejectedLink {
 const MAX_POSTS = 50;
 const RATE_LIMIT_DELAY_MS = 1500;
 const RETRY_WINDOW_DAYS = 7;
+const FIRECRAWL_MAX_RETRIES = 3;
+
+/** Retry Firecrawl search with exponential backoff on 429/5xx. */
+async function firecrawlSearchWithRetry(
+  apiKey: string,
+  payload: Record<string, unknown>,
+): Promise<{ ok: boolean; status: number; body: string }> {
+  let lastStatus = 0;
+  let lastBody = "";
+  for (let attempt = 0; attempt < FIRECRAWL_MAX_RETRIES; attempt++) {
+    const res = await fetch("https://api.firecrawl.dev/v1/search", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      return { ok: true, status: res.status, body: await res.text() };
+    }
+    lastStatus = res.status;
+    lastBody = await res.text();
+    // Only retry on transient failures
+    if (res.status !== 429 && res.status < 500) break;
+    const backoff = Math.min(8000, 1000 * Math.pow(2, attempt)); // 1s, 2s, 4s
+    await new Promise((r) => setTimeout(r, backoff));
+  }
+  return { ok: false, status: lastStatus, body: lastBody };
+}
 
 /* ── main ── */
 
@@ -438,25 +465,20 @@ Deno.serve(async (req) => {
           searchPayload.tbs = "qdr:w"; // last week
         }
 
-        const searchRes = await fetch("https://api.firecrawl.dev/v1/search", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify(searchPayload),
-        });
-
-        if (!searchRes.ok) {
-          const errBody = await searchRes.text();
-          if (searchRes.status === 429 || searchRes.status === 403) {
+        const fc = await firecrawlSearchWithRetry(FIRECRAWL_API_KEY, searchPayload);
+        if (!fc.ok) {
+          if (fc.status === 429 || fc.status === 403 || fc.status >= 500) {
             blockedQueries++;
-            errors.push(`Query blocked (${searchRes.status}): ${searchQuery}`);
-            log("search_blocked", `Status ${searchRes.status} for "${searchQuery}"`);
+            errors.push(`Query blocked (${fc.status}) after retries: ${searchQuery}`);
+            log("search_blocked", `Status ${fc.status} for "${searchQuery}" — ${fc.body.slice(0, 160)}`);
             continue;
           }
-          errors.push(`Search failed (${searchRes.status}): ${errBody.slice(0, 200)}`);
+          errors.push(`Search failed (${fc.status}): ${fc.body.slice(0, 200)}`);
           continue;
         }
 
-        const searchData = await searchRes.json();
+        let searchData: any = {};
+        try { searchData = JSON.parse(fc.body); } catch { searchData = {}; }
         const searchResults = searchData?.data || [];
         log("search_result", `${searchResults.length} results for "${searchQuery}"`);
 
@@ -599,17 +621,32 @@ Deno.serve(async (req) => {
     }
 
     if (discovered.length === 0) {
+      // Distinguish "Firecrawl gave us nothing" from "we filtered everything out"
+      const allQueriesBlocked = blockedQueries > 0 && blockedQueries >= pagesVisited;
+      const firecrawlEmpty = rawLinksFound === 0 && blockedQueries === 0;
+      let userMessage: string;
+      if (allQueriesBlocked) {
+        userMessage = `LinkedIn search is rate-limited right now (${blockedQueries} queries blocked). We'll retry automatically in 6 hours.`;
+      } else if (firecrawlEmpty) {
+        userMessage = mode === "retry"
+          ? `Retry scan: no recent posts indexed yet. We'll retry again in 6h.`
+          : `Search returned no LinkedIn results for "${profileName || handle}". This is normal if you've posted only via the LinkedIn extension or haven't posted publicly. We'll keep checking.`;
+      } else {
+        userMessage = mode === "retry"
+          ? `Retry scan: ${rawLinksFound} scanned, 0 new posts. Will retry again in 6h.`
+          : `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`;
+      }
+
       await adminClient.from("sync_runs").insert({
         user_id: userId,
         sync_type: syncType,
-        status: uncertainCandidates.length > 0 ? "completed" : (mode === "retry" ? "completed" : "failed"),
+        // Empty results are not failures — only mark failed when *all* queries were blocked.
+        status: allQueriesBlocked ? "failed" : "completed",
         started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         records_fetched: rawLinksFound,
         records_stored: 0,
-        error_message: mode === "retry"
-          ? `Retry scan: ${rawLinksFound} scanned, 0 new posts. Will retry again in 6h.`
-          : `No authored posts found (2+ signals required). ${rawLinksFound} scanned, ${uncertainCandidates.length} uncertain, ${rejected.length} rejected.`,
+        error_message: userMessage,
       });
 
       return new Response(JSON.stringify({
@@ -629,6 +666,7 @@ Deno.serve(async (req) => {
         rejection_reasons: rejectionCounts,
         blocked_queries: blockedQueries,
         candidates_confirmed: candidatesConfirmed,
+        message: userMessage,
         errors,
         logs,
       }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -702,15 +740,10 @@ Deno.serve(async (req) => {
         if (!existing.media_type && post.mediaType) updates.media_type = post.mediaType;
         if (!existing.published_at && post.publishedAt) updates.published_at = post.publishedAt;
 
-        // Add search_discovery to enriched_by array
-        updates.enriched_by = adminClient.rpc ? undefined : undefined; // handled via raw SQL below
-
         if (Object.keys(updates).length > 0) {
           await adminClient.from("linkedin_posts")
             .update(updates)
             .eq("id", existing.id);
-          // Append to enriched_by
-          await adminClient.rpc("array_append_unique", undefined).catch(() => {});
         }
 
         // Use direct SQL-style update for enriched_by via update
