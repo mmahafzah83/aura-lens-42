@@ -87,7 +87,7 @@ export function useQuestProgress(userId: string | null) {
       { id: "p1_assessment", label: "Complete brand assessment", done: assessmentDone },
       { id: "p1_first_capture", label: "Capture your first article", done: entryCount >= 1 },
       { id: "p1_three_sources", label: "Capture from 3+ sources", done: distinctSources >= 3 },
-      { id: "p1_voice", label: "Train your voice", done: voiceCount >= 1 },
+      { id: "p1_voice", label: "Teach Aura your voice", done: voiceCount >= 1 },
       { id: "p1_first_post", label: "Generate your first post", done: postCount >= 1 },
     ];
     const p1Done = phase1.every(q => q.done);

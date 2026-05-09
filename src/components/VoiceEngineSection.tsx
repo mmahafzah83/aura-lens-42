@@ -176,7 +176,7 @@ const VoiceEngineSection = () => {
           lineHeight: 1.55,
         }}
       >
-        Train Aura on your writing style. Paste examples of your best posts below — Aura will learn your tone, structure, and vocabulary.
+        Teach Aura your voice. Paste examples of your best posts below — Aura will learn your tone, structure, and vocabulary.
       </p>
       <button
         onClick={() => setOpen(!open)}
@@ -208,7 +208,7 @@ const VoiceEngineSection = () => {
               </span>
             )}
           </p>
-          <p className="text-xs text-muted-foreground/60">Train Aura on your writing style so every post sounds like you — not like AI</p>
+          <p className="text-xs text-muted-foreground/60">Teach Aura your voice so every post sounds like you — not like AI</p>
         </div>
         {open ? <ChevronDown className="w-4 h-4 text-muted-foreground/40" /> : <ChevronRight className="w-4 h-4 text-muted-foreground/40" />}
       </button>

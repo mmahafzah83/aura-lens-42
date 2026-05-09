@@ -482,7 +482,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
                   {voice?.fullName || "Your voice"}
                 </p>
                 <p style={{ fontSize: 10, color: "var(--ink-3)", lineHeight: 1.35, marginTop: 2 }}>
-                  {voice?.tone || "Train your voice from past posts"}
+                  {voice?.tone || "Teach Aura your voice from past posts"}
                 </p>
               </div>
             </div>

@@ -144,7 +144,7 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
               fontWeight: 600,
             }}
           >
-            Your intelligence is decaying
+            While you were busy
           </div>
 
           <p style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)", fontSize: 14, color: "var(--ink)", lineHeight: 1.55, margin: 0 }}>

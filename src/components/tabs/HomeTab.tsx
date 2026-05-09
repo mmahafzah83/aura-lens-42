@@ -1043,7 +1043,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           >
             {showWelcomeState
               ? (journey.currentGate === 0
-                  ? "You have years of expertise that's invisible to the market. Let's change that — starting with your profile."
+                  ? "You have the expertise. The certificates. The years. But does your market know? Right now, to anyone who hasn't met you in person — you're invisible. One article is all it takes to change that. Paste a link and watch Aura turn what you already know into something the market can finally see."
                   : journey.currentGate === 1
                   ? "Your profile is set. Now let's understand your positioning."
                   : "Aura knows who you are. Now feed it your intelligence.")

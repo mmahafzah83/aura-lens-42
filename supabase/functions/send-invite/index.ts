@@ -70,6 +70,7 @@ const buildEmailHtml = (BRAND: string) => {
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 14px;">Two things before you click:</p>
       <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 12px;">⏱&nbsp;&nbsp;This link expires in <strong style="color:#ededed;">48 hours</strong>. Click when you have 10 quiet minutes — it's worth your full attention.</p>
       <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 28px;">🔐&nbsp;&nbsp;You'll be logged in automatically. Once inside, tap your avatar (top right) → <strong style="color:#ededed;">set a password</strong> so you can return anytime.</p>
+      <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Click below to give your expertise the visibility it deserves.</p>
       <div style="margin:0 0 28px;">
         <a href="{{CONFIRMATION_URL}}" style="display:inline-block;background:${CTA};color:#ffffff;padding:0 28px;height:48px;line-height:48px;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;font-family:${BODY_FONT};">Open my Aura →</a>
       </div>

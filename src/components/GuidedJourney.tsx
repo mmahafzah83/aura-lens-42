@@ -23,9 +23,9 @@ const COPY = {
     cta: "Start brand assessment",
   },
   step3: {
-    title: "Train your voice (optional)",
+    title: "Teach Aura your voice (optional)",
     why: "Without voice training, Aura writes in a professional but generic tone. With 3 examples of your writing, it mirrors your rhythm — your sentence length, your word choices, your way of building an argument. Your colleagues won't believe AI helped.",
-    cta: "Train your voice",
+    cta: "Teach Aura your voice",
   },
 };
 

@@ -277,7 +277,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
             ) : (
               <div className="text-center py-6">
                 <Icon className="w-6 h-6 text-muted-foreground/20 mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground/40">No {stage.label.toLowerCase()} yet. Start capturing knowledge to build your pipeline.</p>
+                <p className="text-xs text-muted-foreground/40">No {stage.label.toLowerCase()} yet. Paste a link → to start building your pipeline.</p>
               </div>
             )}
           </div>

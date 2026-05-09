@@ -42,7 +42,7 @@ const translations: Record<string, string> = {
   "entries.subtitle": "Latest intelligence entries",
   "entries.search": "Search captures…",
   "entries.archive": "Archive",
-  "entries.noEntries": "No entries yet. Start capturing.",
+  "entries.noEntries": "Paste a link to start building your signals.",
   "entries.noResults": "No results found.",
   "entries.noArchive": "No archived entries.",
   "entries.linkedinPost": "Generate EN Post",

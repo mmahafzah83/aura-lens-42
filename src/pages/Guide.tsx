@@ -31,7 +31,7 @@ const STEPS = [
 const PAGES = [
   { Icon: HomeIcon, t: "Home", d: "Your daily command center" },
   { Icon: Compass, t: "Intelligence", d: "Your strategic radar" },
-  { Icon: Sparkles, t: "Publish", d: "Your content engine" },
+  { Icon: Sparkles, t: "Publish", d: "Your voice" },
   { Icon: BarChart3, t: "Impact", d: "Your authority trajectory" },
   { Icon: User, t: "My Story", d: "Your market position" },
 ];
