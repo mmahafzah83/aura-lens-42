@@ -246,21 +246,15 @@ const Dashboard = () => {
           }));
         }
 
-        // New wizard trigger: no profile row AND localStorage not set
+        // Gate: redirect to fullscreen /onboarding if profile is missing or
+        // onboarding has not been completed.
         const wizardDone = localStorage.getItem("aura_onboarding_complete") === "true";
-        if (!profile && !wizardDone) {
-          setWizardUserId(uid);
-          setShowWizard(true);
-          return;
-        }
-        
-        // Gate: onboarding must be completed first.
-        // If a profile row exists but onboarding_completed is false (legacy
-        // half-finished state), reopen the new 3-step wizard instead of the
-        // old multi-step /onboarding page.
-        if (profile && !(profile as any).onboarding_completed) {
-          setWizardUserId(uid);
-          setShowWizard(true);
+        const needsOnboarding =
+          (!profile && !wizardDone) ||
+          (profile && !(profile as any).onboarding_completed) ||
+          (profile && !(profile as any).first_name);
+        if (needsOnboarding) {
+          navigate("/onboarding", { replace: true });
           return;
         }
 
