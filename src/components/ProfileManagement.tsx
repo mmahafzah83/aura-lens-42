@@ -395,7 +395,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
             );
           })()}
 
-          {onResetDiagnostic && !compact && hasSavedBefore && (
+          {onResetDiagnostic && hasSavedBefore && (
             <Button
               variant="outline"
               onClick={async () => {
