@@ -47,6 +47,16 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
           if (!cancelled) { setErrored(true); setLoading(false); }
           return;
         }
+        // Gate: "Decaying" alarm only makes sense once the user has built
+        // something to decay. Suppress entirely for users with < 5 active signals.
+        const { count: activeSignalCount } = await supabase
+          .from("strategic_signals")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "active");
+        if ((activeSignalCount || 0) < 5) {
+          if (!cancelled) { setData({ alarm: false }); setLoading(false); }
+          return;
+        }
         const { data: resp, error } = await supabase.functions.invoke("generate-silence-alarm", { body: {} });
         if (cancelled) return;
         if (error) {
