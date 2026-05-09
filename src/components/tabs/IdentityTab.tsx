@@ -1135,7 +1135,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             </div>
             <div className="pt-4" style={{ borderTop: "1px solid var(--surface-subtle)" }}>
               <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
-              <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} />
+              <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} compact />
             </div>
             {assessmentCompleted && (
               <div className="pt-2 text-center">
