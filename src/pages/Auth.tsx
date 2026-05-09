@@ -303,7 +303,7 @@ const Auth = () => {
             Welcome <em>back</em>
           </h1>
           <p className="auth-sublabel">
-            Sign in to your intelligence OS. Every session builds your authority.
+            Sign in. Every session builds your authority.
           </p>
 
           {/* Form */}

@@ -597,98 +597,30 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       // M3-4 identity drift check (frontend only, fire-and-forget)
       bumpCaptureAndCheckDrift(session.user.id);
 
-      // Fire-and-forget: extract evidence then detect signals (unified pipeline)
+      // Server-side pipeline (ingest-capture → extract-evidence → detect-signals-v2) is
+      // fire-and-forget. Verify it ran by checking for fragments after a short delay.
+      // Refresh signals UI optimistically; the safety net catches silent server failures.
+      queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
+      queryClient.invalidateQueries({ queryKey: ["signals"] });
       if (entryRow?.id) {
-        supabase.functions.invoke('extract-evidence', {
-          body: { source_type: 'entry', source_id: entryRow.id, user_id: session.user.id },
-        })
-          .then(({ data: extractResult, error: extractError }) => {
-            if (extractError) {
-              console.error("extract-evidence error:", extractError);
-              return;
+        const checkAt = new Date(Date.now() - 60000).toISOString();
+        setTimeout(async () => {
+          try {
+            const { count } = await supabase
+              .from("evidence_fragments")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", session.user.id)
+              .gte("created_at", checkAt);
+            if (!count) {
+              console.warn("[CaptureModal] Pipeline verification: no fragments after 15s");
+            } else {
+              queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
+              queryClient.invalidateQueries({ queryKey: ["signals"] });
             }
-            const registryId = extractResult?.source_registry_id;
-            if (!registryId) return;
-
-            // Now run signal detection on the new fragments
-            return supabase.functions.invoke('detect-signals-v2', {
-              body: { source_registry_id: registryId, user_id: session.user.id },
-            });
-          })
-          .then(async (res) => {
-            if (!res) return;
-            const { data: result, error } = res;
-            if (error) {
-              console.error("detect-signals-v2 error:", error);
-              return;
-            }
-            queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
-            queryClient.invalidateQueries({ queryKey: ["signals"] });
-
-            // Fetch the signal so we can show a rich reveal toast
-            const signalId = result?.signal_id;
-            if (!signalId) return;
-            const { data: sig } = await supabase
-              .from("strategic_signals")
-              .select("signal_title, confidence")
-              .eq("id", signalId)
-              .maybeSingle();
-            const title = sig?.signal_title;
-            if (!title) return;
-            setSignalMatch({ title });
-            const confPct = Math.round(((sig?.confidence as number) || 0) * 100);
-            const isNew = !!result?.is_new;
-            setTimeout(() => {
-              sonnerToast.custom(
-                () => (
-                  <div
-                    style={{
-                      background: "var(--ink, #1C1812)",
-                      color: "var(--ink-on-brand, #f5efe1)",
-                      border: "1px solid var(--brand, #C5A55A)",
-                      borderRadius: 12,
-                      padding: "16px 18px",
-                      boxShadow: "0 12px 36px -10px rgba(0,0,0,0.5)",
-                      maxWidth: 400,
-                    }}
-                  >
-                    <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #C5A55A)", fontWeight: 700, marginBottom: 8 }}>
-                      ✦ {isNew ? "Signal detected" : "Signal reinforced"}
-                    </div>
-                    <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.35, marginBottom: 6 }}>
-                      {title}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ width: `${confPct}%`, height: "100%", background: "var(--brand, #C5A55A)" }} />
-                      </div>
-                      <span style={{ fontSize: 11, opacity: 0.7, fontVariantNumeric: "tabular-nums" }}>{confPct}%</span>
-                    </div>
-                    <div style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.78, marginBottom: 10 }}>
-                      This is now part of your strategic intelligence. Capture another source on this topic to strengthen this signal.
-                    </div>
-                    <button
-                      onClick={() => window.dispatchEvent(new CustomEvent("aura:open-capture"))}
-                      style={{
-                        background: "transparent",
-                        color: "var(--brand, #C5A55A)",
-                        border: "1px solid var(--brand, #C5A55A)",
-                        borderRadius: 6,
-                        padding: "6px 12px",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Capture another →
-                    </button>
-                  </div>
-                ),
-                { duration: 7000, position: "bottom-right" },
-              );
-            }, 1500);
-          })
-          .catch((err) => console.error("pipeline background error:", err));
+          } catch {
+            // Silent — don't bother the user
+          }
+        }, 15000);
       }
     } catch (err: any) {
       toast({

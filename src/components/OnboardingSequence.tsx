@@ -1,28 +1,29 @@
 import { useState } from "react";
-import { Zap, ArrowRight, Radio, Lightbulb, Crown, TrendingUp, FileText } from "lucide-react";
+import { ArrowRight, Radio, Crown, TrendingUp, FileText, Mic, Eye } from "lucide-react";
 
 const STEPS = [
   {
-    headline: "Capture the signals shaping your field.",
+    headline: "You read. Aura listens.",
+    subtitle: "Every article you save becomes a pattern only you can see.",
     nodes: [
-      { label: "Capture", icon: FileText },
-      { label: "Signals", icon: Radio },
+      { label: "Read", icon: FileText },
+      { label: "Patterns", icon: Radio },
     ],
   },
   {
-    headline: "Turn knowledge into strategic insight.",
+    headline: "You publish. The market notices.",
+    subtitle: "Posts built from your real expertise — in your voice.",
     nodes: [
-      { label: "Signals", icon: Radio },
-      { label: "Insights", icon: Lightbulb },
-      { label: "Frameworks", icon: Zap },
+      { label: "Voice", icon: Mic },
+      { label: "Publish", icon: TrendingUp },
     ],
   },
   {
-    headline: "Transform thinking into influence.",
+    headline: "Your reputation compounds.",
+    subtitle: "Every week you show up, your name reaches new rooms.",
     nodes: [
-      { label: "Frameworks", icon: Zap },
       { label: "Authority", icon: Crown },
-      { label: "Influence", icon: TrendingUp },
+      { label: "Reach", icon: Eye },
     ],
   },
 ];
@@ -79,6 +80,9 @@ const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
         >
           {current.headline}
         </h1>
+        <p className="text-base sm:text-lg text-muted-foreground/70 leading-relaxed -mt-4 max-w-md">
+          {current.subtitle}
+        </p>
 
         {/* Pipeline visual */}
         <div className="flex items-center gap-3 sm:gap-5">
@@ -112,7 +116,7 @@ const OnboardingSequence = ({ onComplete }: { onComplete: () => void }) => {
           onClick={handleNext}
           className="px-10 py-3.5 rounded-xl bg-gradient-to-b from-[hsl(43_80%_55%)] to-primary text-primary-foreground text-sm font-medium tracking-wide hover:brightness-110 hover:shadow-[0_0_20px_hsl(43_80%_45%/0.25)] transition-all duration-[250ms] ease-[ease-in-out] active:scale-[0.97] border border-primary/30"
         >
-          {step < STEPS.length - 1 ? "Next" : "Start Using Aura"}
+          {step < STEPS.length - 1 ? "Next" : "Let's go →"}
         </button>
       </div>
     </div>

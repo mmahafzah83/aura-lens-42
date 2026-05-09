@@ -250,7 +250,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                 No strategic opportunities detected yet.
               </p>
               <p className="text-muted-foreground/60 text-sm">
-                Capture knowledge and insights to activate Aura's intelligence engine.
+                Paste a link to start. Aura turns what you read into the patterns the market can finally see.
               </p>
             </div>
           )}

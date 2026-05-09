@@ -372,7 +372,7 @@ const Dashboard = () => {
                   textOverflow: "ellipsis",
                 }}
               >
-                Strategic Intelligence OS
+                Strategic Intelligence
               </p>
             </div>
           )}

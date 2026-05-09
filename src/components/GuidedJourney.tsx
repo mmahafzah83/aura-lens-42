@@ -19,7 +19,7 @@ const COPY = {
   },
   step2: {
     title: "Brand assessment",
-    why: "The brand assessment is how Aura learns your professional DNA. In 5 minutes, it generates your market archetype — the way a headhunter would pitch you, the way a CIO would evaluate you, the way a conference curator would position you on stage.",
+    why: "This assessment is built on the same frameworks used by the world's top leadership firms — Gallup CliftonStrengths for strengths mapping, McKinsey archetypes for market positioning, and Blue Ocean strategy for finding uncontested space. 10 questions. 5 minutes. It shapes everything Aura does for you from this point forward.",
     cta: "Start brand assessment",
   },
   step3: {
@@ -151,10 +151,10 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
           Your professional identity
         </div>
         <h1 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-          Set up your intelligence engine
+          Tell Aura who you are
         </h1>
         <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 10, lineHeight: 1.55, maxWidth: 640 }}>
-          Before Aura can detect your signals, generate your content, or map your market position — it needs to understand who you are. About 8 minutes. Each step shapes everything Aura does for you.
+          You've spent years building expertise. This is where Aura learns what makes you different — so everything it does reflects your knowledge, your voice, your sector.
         </p>
         <div style={{ marginTop: 12, height: 4, background: "var(--brand-line, rgba(197,165,90,0.15))", borderRadius: 999, overflow: "hidden", maxWidth: 320 }}>
           <div style={{ width: `${pct}%`, height: "100%", background: "var(--brand)", transition: "width 300ms ease" }} />

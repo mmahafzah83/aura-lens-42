@@ -1031,7 +1031,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               margin: 0,
             }}
           >
-            {showWelcomeState ? "Your intelligence OS is live" : "Your intelligence is building"}
+            {showWelcomeState
+              ? `Good ${(() => { const h = now.getHours(); return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening"; })()}${userName ? `, ${userName}` : ""}. Your radar is ready.`
+              : "Your intelligence is building"}
           </h1>
           <p
             style={{
@@ -1083,8 +1085,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 },
                 {
                   n: 3,
-                  title: "Capture your first article",
-                  body: "Paste a URL of something you read this week. Aura extracts the intelligence from it. (1 minute)",
+                  title: "Save your first article",
+                  body: "Paste a link to something you read this week — an industry report, a competitor's post, anything from your world. Aura reads it and finds the patterns. One minute.",
                   done: captureDone,
                   locked: !assessDone,
                   cta: captureDone || !assessDone ? null : "capture-primary" as const,
@@ -1158,7 +1160,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                           onClick={() => onOpenCapture?.()}
                           style={{ borderRadius: 4, padding: "8px 18px" }}
                         >
-                          Capture your first article →
+                          Paste a link →
                         </AuraButton>
                       )}
                     </div>
@@ -1180,7 +1182,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 opacity: 0.85,
               }}
             >
-              What happens when you capture: Aura reads the article, extracts strategic insights, and starts detecting patterns across your captures. After 3–5 articles, your first signal emerges — and that's when the intelligence engine comes alive.
+              After 3–5 articles, your first signal appears — a pattern in your sector that nobody else is talking about yet. That's when everything clicks.
             </p>
           </div>
         ) : (
@@ -1611,7 +1613,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               Welcome to Aura{userName ? `, ${userName}` : ""}
             </div>
             <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
-              Capture your first article to see your intelligence engine at work. Need help? Click the ? icon in the top-right corner.
+              Paste your first article — one link is all it takes to see your first signal. Need help? Tap the ? in the top-right.
             </p>
           </div>
           <button
