@@ -1817,10 +1817,10 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
     return (
       <div className="text-center py-16 space-y-3 max-w-md mx-auto">
         <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
-        <p className="text-foreground font-medium">Your content plan starts with intelligence</p>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Your plan will appear here after you've built some intelligence. Start by capturing 3-5 articles in your area of expertise — Aura needs material to recognise patterns and surface narrative angles.
-        </p>
+          <p className="text-foreground font-medium">You have signals — that's insights you understand that most people in your market haven't figured out yet.</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            The only difference between you and the person getting the speaking invitation? They published. Pick your strongest signal and change that.
+          </p>
       </div>
     );
   }

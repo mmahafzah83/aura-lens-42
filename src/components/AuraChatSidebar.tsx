@@ -754,7 +754,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
     } catch (e: any) {
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${e.message || "Something went wrong."}` },
+        { role: "assistant", content: `⚠️ ${e.message || "Didn't connect. Try once more."}` },
       ]);
     }
     setIsLoading(false);
