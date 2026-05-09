@@ -50,7 +50,7 @@ const Onboarding = () => {
         localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
       }
     } catch { /* ignore */ }
-    goHome();
+    navigate("/home", { replace: true });
   };
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState(1);
