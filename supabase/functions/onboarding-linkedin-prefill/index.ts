@@ -18,63 +18,21 @@ serve(async (req) => {
   }
 
   try {
-    const { linkedin_url } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const linkedin_text: string = (body?.linkedin_text || body?.linkedin_url || "").toString();
 
-    if (!linkedin_url || typeof linkedin_url !== "string" || !linkedin_url.includes("linkedin.com/in/")) {
-      return json({ error: "Valid LinkedIn profile URL required" }, 400);
+    if (!linkedin_text || linkedin_text.trim().length < 10) {
+      return json({ error: "Tell us a bit more — paste your headline or describe your role" }, 400);
     }
 
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-
-    if (!FIRECRAWL_API_KEY || !LOVABLE_API_KEY) {
-      console.error("Missing FIRECRAWL_API_KEY or LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      console.error("Missing LOVABLE_API_KEY");
       return json({ error: "Service not configured", fallback: true }, 200);
     }
 
-    // 1) Scrape with Firecrawl
-    let markdown = "";
-    try {
-      const fcRes = await fetch("https://api.firecrawl.dev/v1/scrape", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: linkedin_url,
-          formats: ["markdown"],
-          onlyMainContent: true,
-        }),
-      });
-
-      if (!fcRes.ok) {
-        const errText = await fcRes.text();
-        console.error("Firecrawl error:", fcRes.status, errText);
-        return json(
-          { error: "Could not read this LinkedIn profile. It may be private.", fallback: true },
-          200
-        );
-      }
-
-      const fcData = await fcRes.json();
-      markdown = fcData?.data?.markdown || fcData?.markdown || "";
-      if (!markdown.trim()) {
-        return json(
-          { error: "Could not read this LinkedIn profile. It may be private.", fallback: true },
-          200
-        );
-      }
-    } catch (e) {
-      console.error("Firecrawl fetch failed:", e);
-      return json(
-        { error: "Could not read this LinkedIn profile. It may be private.", fallback: true },
-        200
-      );
-    }
-
-    // Truncate to keep prompt reasonable
-    if (markdown.length > 12000) markdown = markdown.substring(0, 12000);
+    let pasted = linkedin_text.trim();
+    if (pasted.length > 12000) pasted = pasted.substring(0, 12000);
 
     // 2) AI structured extraction
     try {
@@ -91,11 +49,11 @@ serve(async (req) => {
             {
               role: "system",
               content:
-                "Extract structured profile data from this LinkedIn page. Return ONLY valid JSON with fields: first_name, firm, level, core_practice, sector_focus, headline, about_summary, location, skills (array of up to 5). For sector_focus, map to one of: Energy & Utilities, Financial Services, Government, Healthcare, Technology, Consulting, Manufacturing, Real Estate, Telecommunications, Education, Other. If a field is not found, return null. No markdown backticks.",
+                "The text below is pasted by the user from their LinkedIn profile. It may include their headline, about section, or a free-text description of their role. Extract what you can. Return ONLY valid JSON with fields: first_name, firm, level, core_practice, sector_focus, headline, about_summary, location, skills (array of up to 5). For sector_focus, map to one of: Energy & Utilities, Financial Services, Government, Healthcare, Technology, Consulting, Manufacturing, Real Estate, Telecommunications, Education, Other. If a field is not found, return null. No markdown backticks.",
             },
             {
               role: "user",
-              content: `LinkedIn URL: ${linkedin_url}\n\nProfile content:\n${markdown}`,
+              content: `User-pasted profile text:\n${pasted}`,
             },
           ],
         }),

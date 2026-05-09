@@ -62,6 +62,7 @@ const Onboarding = () => {
 
   // Step 1
   const [linkedinUrl, setLinkedinUrl] = useState("");
+  const [linkedinText, setLinkedinText] = useState("");
   const [linkedinError, setLinkedinError] = useState("");
   const [readingLi, setReadingLi] = useState(false);
   const [liStatusIdx, setLiStatusIdx] = useState(0);
@@ -135,8 +136,8 @@ const Onboarding = () => {
   // ─── Step 1: LinkedIn pre-fill ───
   const handleReadLinkedIn = async () => {
     setLinkedinError("");
-    if (!linkedinUrl.includes("linkedin.com/in/")) {
-      setLinkedinError("That doesn't look like a LinkedIn profile URL");
+    if (linkedinText.trim().length < 10) {
+      setLinkedinError("Tell us a bit more — paste your headline or describe your role");
       return;
     }
     setReadingLi(true);
@@ -150,15 +151,16 @@ const Onboarding = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke("onboarding-linkedin-prefill", {
-        body: { linkedin_url: linkedinUrl.trim() },
+        body: { linkedin_text: linkedinText.trim() },
       });
       clearTimeout(timeout);
       if (timedOut) return;
 
+      if (error) throw error;
       const p: Prefill = (data && (data.profile || (data.success ? data : null))) || {};
       const hasData = !!(p && (p.first_name || p.firm || p.level || p.core_practice));
       if (!hasData) {
-        toast.message("Couldn't read that profile — it might be private. No problem.");
+        toast.message("Couldn't extract from that text. No problem — fill it in manually.");
         setShowForm(true);
       } else {
         setFirstName(p.first_name || "");
@@ -174,7 +176,7 @@ const Onboarding = () => {
     } catch (e) {
       clearTimeout(timeout);
       if (timedOut) return;
-      toast.message("Couldn't read that profile. No problem — fill it in manually.");
+      toast.message("Couldn't read that. No problem — fill it in manually.");
       setShowForm(true);
     } finally {
       setReadingLi(false);
@@ -471,20 +473,26 @@ const Onboarding = () => {
         {eyebrow("Step 1 of 3 — Tell Aura who you are")}
         {!showForm ? (
           <>
-            {heading("Read your LinkedIn in seconds")}
-            <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
-              Paste your LinkedIn profile URL. Aura reads it and fills your profile in seconds. No typing.
+            {heading("Paste your LinkedIn headline and About section")}
+            <p className="mb-4" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
+              Aura extracts your profile in seconds.
             </p>
+            <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>
+              Paste your LinkedIn headline and About section
+            </label>
             <div className="relative mb-2">
-              <input
+              <textarea
+                rows={5}
                 className={inputCls}
                 style={{
                   ...inputStyle,
+                  resize: "vertical",
+                  minHeight: 120,
                   ...(readingLi ? { backgroundImage: "linear-gradient(90deg, transparent, rgba(176,141,58,0.08), transparent)", backgroundSize: "200% 100%", animation: "auraShimmer 1.6s linear infinite" } : {}),
-                }}
-                placeholder="https://linkedin.com/in/..."
-                value={linkedinUrl}
-                onChange={(e) => setLinkedinUrl(e.target.value)}
+                } as React.CSSProperties}
+                placeholder="Copy your headline and About section from LinkedIn — or just describe what you do and your sector in a few sentences"
+                value={linkedinText}
+                onChange={(e) => setLinkedinText(e.target.value)}
                 disabled={readingLi}
               />
               <style>{`@keyframes auraShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
@@ -492,13 +500,13 @@ const Onboarding = () => {
             {linkedinError && <p className="text-xs mb-3" style={{ color: "hsl(0 70% 55%)" }}>{linkedinError}</p>}
             {readingLi && (
               <div className="mb-4 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
-                {liStatusIdx === 0 && "Reading your profile..."}
+                {liStatusIdx === 0 && "Reading what you pasted..."}
                 {liStatusIdx === 1 && "Extracting your expertise..."}
                 {liStatusIdx === 2 && "Almost there..."}
               </div>
             )}
             <div className="mt-4 mb-4">
-              {primaryBtn(<>Read <ArrowRight className="w-4 h-4" /></>, handleReadLinkedIn, { loading: readingLi, disabled: !linkedinUrl })}
+              {primaryBtn(<>Read my profile <ArrowRight className="w-4 h-4" /></>, handleReadLinkedIn, { loading: readingLi, disabled: linkedinText.trim().length < 10 })}
             </div>
             <div className="flex items-center gap-3 my-4" style={{ color: "hsl(var(--muted-foreground))", fontSize: 12 }}>
               <div className="flex-1 h-px" style={{ background: "hsl(var(--border))" }} />
