@@ -1641,14 +1641,18 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   }
 
   // New-user empty state — show guidance, never fake plans.
-  if (signalCount === 0 && captureCount === 0 && suggestions.length === 0) {
+  // Smart empty state — gated on signal count.
+  if (suggestions.length === 0 && signalCount !== null && signalCount < 3) {
     return (
-      <div className="text-center py-16 space-y-3 max-w-md mx-auto">
-        <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
-          <p className="text-foreground font-medium">You have signals — that's insights you understand that most people in your market haven't figured out yet.</p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            The only difference between you and the person getting the speaking invitation? They published. Pick your strongest signal and change that.
-          </p>
+      <div className="flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto space-y-3">
+        <Calendar className="w-10 h-10 text-primary/40" strokeWidth={1.5} />
+        <p className="text-foreground font-medium">Not enough signals yet.</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Aura needs at least 3 active signals to suggest a content plan. You have {signalCount} so far.
+        </p>
+        <Button onClick={() => navigate("/home")} className="mt-2 gap-2">
+          Keep capturing →
+        </Button>
       </div>
     );
   }
