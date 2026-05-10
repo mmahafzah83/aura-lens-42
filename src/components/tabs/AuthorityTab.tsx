@@ -664,6 +664,60 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Reset "Saved" state whenever the post text changes (user edited or regenerated)
+  useEffect(() => {
+    setDraftSaved(false);
+  }, [output]);
+
+  const handleSaveDraft = async () => {
+    if (savingDraft || draftSaved) return;
+    setSavingDraft(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const body = stripMarkdown(output || fullVersion || shortVersion || "");
+      if (!body.trim()) { toast.error("Nothing to save"); return; }
+
+      const { data: profile } = await supabase.from("diagnostic_profiles")
+        .select("level, sector_focus, firm")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      const generationParams = {
+        model: "google/gemini-3-flash-preview",
+        prompt_template_version: "v1",
+        signal_ids: selectedSignalId ? [selectedSignalId] : [],
+        signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+        source_signal_id: selectedSignalId,
+        identity_snapshot: {
+          role: profile?.level ?? null,
+          sector: profile?.sector_focus ?? null,
+          firm: profile?.firm ?? null,
+        },
+        topic: topic || null,
+        language: lang,
+        timestamp: generationTimestamp || new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from("content_items").insert({
+        user_id: session.user.id,
+        type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
+        body,
+        language: lang,
+        status: "draft",
+        generation_params: generationParams,
+      });
+      if (error) throw error;
+      setMonthlyGenerationCount(prev => prev + 1);
+      setDraftSaved(true);
+      toast.success("Draft saved to Library");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
+  };
+
   const displayedOutput = output;
   const isGeneratingAny = generating || generatingShort;
 
