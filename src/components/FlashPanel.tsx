@@ -537,7 +537,7 @@ export default function FlashPanel() {
                   ? { fontFamily: "Cairo, sans-serif", textAlign: "right", direction: "rtl" }
                   : { fontFamily: "Inter, sans-serif" }}
               >
-                {r.text}
+                {displayText(r.text)}
               </div>
 
               <div
