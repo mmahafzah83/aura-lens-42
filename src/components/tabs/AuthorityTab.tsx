@@ -1575,6 +1575,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   const [generating, setGenerating] = useState(false);
   const [signalCount, setSignalCount] = useState<number | null>(null);
   const [captureCount, setCaptureCount] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadSuggestions();
