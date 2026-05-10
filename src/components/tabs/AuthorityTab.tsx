@@ -1305,154 +1305,25 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                               Ready to publish — quality threshold met.
                             </div>
                           )}
+                          {/* Character count + reading time — table-stakes per AuthoredUp/Taplio/Buffer */}
+                          {(() => {
+                            const plain = stripMarkdown(displayedOutput || "");
+                            const chars = plain.length;
+                            const words = plain.split(/\s+/).filter(Boolean).length;
+                            const minutes = Math.max(1, Math.ceil(words / 200));
+                            const over = chars > 3000;
+                            return (
+                              <div className={`text-[11px] tabular-nums pt-1 ${over ? "text-orange-500 font-medium" : "text-muted-foreground/60"}`}>
+                                {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
                   );
                 })()}
 
-                {/* LinkedIn-style preview (collapsed by default) */}
-                {!isGeneratingAny && (
-                  <LinkedInFeedPreview text={stripMarkdown(displayedOutput || "")} language={lang} />
-                )}
-
-                {/* Aura's Strategic Review */}
-                {(fullVersion || shortVersion) && (
-                  <div className="mt-4 border border-border/20 rounded-lg overflow-hidden">
-                    <button
-                      onClick={fetchCritique}
-                      disabled={critiqueLoading}
-                      className="w-full flex items-center justify-between px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-50"
-                    >
-                      <span>Aura's Strategic Review</span>
-                      {critiqueLoading ? (
-                        <span className="text-[10px] normal-case font-normal animate-pulse">Analysing...</span>
-                      ) : critique ? (
-                        <span className="text-[10px] normal-case font-normal text-primary">Refresh</span>
-                      ) : (
-                        <span className="text-[10px] normal-case font-normal">Tap to review</span>
-                      )}
-                    </button>
-                    {critiqueError && (
-                      <div className="px-4 py-3 text-xs text-destructive border-t border-border/20">
-                        {critiqueError}
-                      </div>
-                    )}
-                    {critique && !critiqueLoading && (
-                      <div className="px-4 py-4 space-y-4 border-t border-border/20 text-xs">
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Pattern Detected</p>
-                          <p className="text-foreground/90 leading-relaxed">{critique.observation?.summary}</p>
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {(critique.observation?.key_themes || []).map((t: string) => (
-                              <span key={t} className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px]">{t}</span>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Strategic Insight</p>
-                          <p className="text-foreground/90 leading-relaxed">{critique.synthesis?.insight}</p>
-                          <p className="mt-1.5 text-primary/80 italic">{critique.synthesis?.emerging_thesis}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Challenge</p>
-                          <p className="text-foreground/90 leading-relaxed">{critique.challenge?.assumption_gap}</p>
-                          <p className="mt-1.5 text-primary font-medium">{critique.challenge?.question}</p>
-                        </div>
-                        <div className="bg-primary/5 border border-primary/15 rounded-md px-3 py-2.5">
-                          <p className="text-[10px] uppercase tracking-wider text-primary font-semibold mb-1">Highest Leverage Move</p>
-                          <p className="text-foreground/90 leading-relaxed">{critique.recommendation?.action}</p>
-                          <p className="text-muted-foreground mt-1 leading-relaxed">{critique.recommendation?.reason}</p>
-                        </div>
-                        {(critique.alerts || []).length > 0 && (
-                          <div className="space-y-2">
-                            {critique.alerts.map((alert: any, i: number) => (
-                              <div key={i} className={`px-3 py-2 rounded-md border text-[11px] ${
-                                alert.urgency === "high"
-                                  ? "border-destructive/30 bg-destructive/5 text-destructive"
-                                  : alert.urgency === "medium"
-                                  ? "border-amber-500/30 bg-amber-500/5 text-amber-600"
-                                  : "border-border/20 bg-muted/20 text-muted-foreground"
-                              }`}>
-                                <span className="font-semibold">{alert.title}: </span>
-                                {alert.message}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Generate shorter version button */}
-                {!isGeneratingAny && !showingShort && fullVersion && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs gap-1.5 border-border/15"
-                    onClick={generateShort}
-                  >
-                    <Zap className="w-3 h-3" /> Shorter →
-                  </Button>
-                )}
-
-                {/* Quality Rubric */}
-                {!isGeneratingAny && (
-                  <div className="p-3 rounded-xl bg-secondary/10 space-y-3">
-                    {(() => {
-                      const { dimensions, total } = scoreContent(displayedOutput, lang, voiceWords, preferredStructures, selectedSignalTitle, selectedSignalInsight);
-                      const pct = Math.round((total / 80) * 100);
-                      return (
-                        <>
-                          {/* Total score */}
-                          <div className="flex items-center gap-3">
-                            <span className={`text-lg font-bold tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
-                              {total}/80
-                            </span>
-                            <div className="flex-1 bg-secondary/30 rounded-full h-2 overflow-hidden">
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${pct}%` }}
-                                transition={{ duration: 0.6 }}
-                                className={`h-full rounded-full ${pct >= 80 ? "bg-amber-500" : "bg-muted-foreground/40"}`}
-                              />
-                            </div>
-                            <span className={`text-xs font-medium tabular-nums ${pct >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>
-                              {pct}%
-                            </span>
-                          </div>
-                          {/* Dimension rows */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                            {dimensions.map(d => (
-                              <div key={d.key} className="flex items-center gap-1.5" title={d.suggestion || ""}>
-                                <span className={`text-[10px] font-bold w-4 shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/50"}`}>
-                                  {d.key}
-                                </span>
-                                <span className={`text-[10px] truncate ${d.score >= 7 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/50"}`}>
-                                  {d.label}
-                                </span>
-                                <span className={`text-[10px] font-semibold tabular-nums ml-auto shrink-0 ${d.score >= 7 ? "text-amber-500" : "text-muted-foreground/40"}`}>
-                                  {d.score}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          {/* Show first suggestion for low-scoring dimension */}
-                          {(() => {
-                            const lowDim = dimensions.find(d => d.score < 7 && d.suggestion);
-                            if (!lowDim) return null;
-                            return (
-                              <p className="text-[10px] text-muted-foreground/50 leading-tight">
-                                💡 {lowDim.key}: {lowDim.suggestion}
-                              </p>
-                            );
-                          })()}
-                        </>
-                      );
-                    })()}
-                  </div>
-                )}
               </motion.div>
             )}
             {/* Voice Feedback Buttons */}
