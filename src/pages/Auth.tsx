@@ -356,13 +356,63 @@ const Auth = () => {
 
           {/* Headline */}
           <h1 className="auth-headline mb-2">
-            Welcome <em>back</em>
+            {showNewPasswordForm ? <>Reset your <em>password</em></> : <>Welcome <em>back</em></>}
           </h1>
           <p className="auth-sublabel">
-            Sign in. Every session builds your authority.
+            {showNewPasswordForm
+              ? "Enter your new password below."
+              : "Sign in. Every session builds your authority."}
           </p>
 
-          {/* Form */}
+          {showNewPasswordForm ? (
+            <div className="space-y-4">
+              <div>
+                <label className="auth-label">NEW PASSWORD</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="auth-input"
+                    style={{ paddingRight: 38 }}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button" onClick={() => setShowPwd((s) => !s)}
+                    aria-label={showPwd ? "Hide password" : "Show password"}
+                    style={{
+                      position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                      background: "transparent", border: 0, cursor: "pointer",
+                      color: "var(--ink-4)", padding: 4,
+                    }}
+                  >{showPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                </div>
+              </div>
+              <div>
+                <label className="auth-label">CONFIRM PASSWORD</label>
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={newPasswordConfirm}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                  placeholder="••••••••"
+                  className="auth-input"
+                  autoComplete="new-password"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
+                />
+              </div>
+              <p className="text-xs" style={{ color: "var(--ink-4)" }}>Must be at least 8 characters.</p>
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={updatingPwd || newPassword.length < 8 || newPassword !== newPasswordConfirm}
+                className="auth-submit"
+              >
+                {updatingPwd && <Loader2 className="w-4 h-4 animate-spin" />}
+                Update password →
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div
               style={{
@@ -464,6 +514,7 @@ const Auth = () => {
               </button>
             </div>
           </form>
+          )}
 
           {/* Bottom link */}
           <p className="mt-8 auth-link">
