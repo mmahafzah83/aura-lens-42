@@ -2625,8 +2625,29 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
   const [signalTitleMap, setSignalTitleMap] = useState<Record<string, string>>({});
   const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
+  const [topSignal, setTopSignal] = useState<{ id: string; signal_title: string } | null>(null);
+  const [signalCount, setSignalCount] = useState<number>(0);
+  const navigate = useNavigate();
 
-  useEffect(() => { loadPosts(); loadProfile(); }, []);
+  useEffect(() => { loadPosts(); loadProfile(); loadSignalContext(); }, []);
+
+  const loadSignalContext = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { count } = await (supabase.from("strategic_signals" as any) as any)
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "active");
+    setSignalCount(count || 0);
+    const { data } = await (supabase.from("strategic_signals" as any) as any)
+      .select("id, signal_title")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("priority_score", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) setTopSignal({ id: data.id, signal_title: data.signal_title });
+  };
 
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
