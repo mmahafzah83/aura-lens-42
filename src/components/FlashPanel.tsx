@@ -178,6 +178,16 @@ export default function FlashPanel() {
   }), [lang]);
 
   const hasSignals = (signalCount ?? 0) > 0;
+
+  // Flip directional arrows for RTL display + copy in Arabic mode.
+  const displayText = (text: string): string => {
+    if (lang !== "ar" || !text) return text;
+    return text
+      .replace(/→/g, "←")
+      .replace(/↳/g, "↲")
+      .replace(/->/g, "<-")
+      .replace(/⟶/g, "⟵");
+  };
   const canGenerate = hasSignals && (mode === "theme"
     ? !!postType && !!selectedTheme && !generating
     : spark.trim().length >= 3 && !generating);
@@ -265,7 +275,7 @@ export default function FlashPanel() {
   const onCopy = async (idx: number) => {
     const r = results[idx];
     if (!r) return;
-    await navigator.clipboard.writeText(r.text);
+    await navigator.clipboard.writeText(displayText(r.text));
     setResults(prev => prev.map((x, i) => i === idx ? { ...x, copied: true } : x));
     setTimeout(() => {
       setResults(prev => prev.map((x, i) => i === idx ? { ...x, copied: false } : x));
@@ -527,7 +537,7 @@ export default function FlashPanel() {
                   ? { fontFamily: "Cairo, sans-serif", textAlign: "right", direction: "rtl" }
                   : { fontFamily: "Inter, sans-serif" }}
               >
-                {r.text}
+                {displayText(r.text)}
               </div>
 
               <div
@@ -553,7 +563,7 @@ export default function FlashPanel() {
                   variant="outline"
                   className="h-8 gap-1.5 text-xs"
                   onClick={() => shareToLinkedIn({
-                    text: r.text,
+                    text: displayText(r.text),
                     mode: "feed",
                     toastMessage: lang === "ar"
                       ? "تم نسخ المنشور — الصقه في لينكدإن."

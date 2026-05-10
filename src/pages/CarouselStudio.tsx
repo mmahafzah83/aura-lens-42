@@ -1370,15 +1370,22 @@ export default function CarouselStudio() {
       console.log("EF raw response:", { data, error, hasSlides: !!data?.slides });
       if (error) {
         console.error("EF invoke error:", error);
-        toast.error("Generation failed: " + (error.message || JSON.stringify(error)));
+        const msg = error.message || "";
+        if (msg.includes("timeout") || msg.includes("504")) {
+          toast.error("Generation timed out — try a shorter topic.");
+        } else if (msg.includes("rate") || msg.includes("429")) {
+          toast.error("Too many requests — wait a moment and try again.");
+        } else {
+          toast.error("Carousel generation failed. Please try again.");
+        }
         return;
       }
       if (data?.error) {
-        toast.error("Generation failed: " + data.error);
+        toast.error("Carousel generation failed. Please try again.");
         return;
       }
       if (!data?.slides?.length) {
-        toast.error("No slides returned — check edge function logs");
+        toast.error("No slides generated. Try a different topic.");
         return;
       }
       const numbered = data.slides.map((s: Slide, i: number) => ({ ...s, slide_number: i + 1 }));
@@ -1398,7 +1405,14 @@ export default function CarouselStudio() {
       toast.success(`${numbered.length} slides generated`);
     } catch (e: any) {
       console.error("Carousel generation failed:", e);
-      toast.error("Generation failed: " + (e?.message || JSON.stringify(e)));
+      const msg = e?.message || "";
+      if (msg.includes("timeout") || msg.includes("504")) {
+        toast.error("Generation timed out — try a shorter topic.");
+      } else if (msg.includes("rate") || msg.includes("429")) {
+        toast.error("Too many requests — wait a moment and try again.");
+      } else {
+        toast.error("Carousel generation failed. Please try again.");
+      }
     } finally {
       setGenerating(false);
     }

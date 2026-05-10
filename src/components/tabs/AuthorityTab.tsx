@@ -258,6 +258,8 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   const [generating, setGenerating] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
   const [selectedSignalId, setSelectedSignalId] = useState<string | null>(null);
   const [selectedSignalTitle, setSelectedSignalTitle] = useState<string | null>(null);
   const [selectedSignalInsight, setSelectedSignalInsight] = useState<string | null>(null);
@@ -646,9 +648,74 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(fixArabicDirectionalSymbols(stripMarkdown(output)));
+    const text = fixArabicDirectionalSymbols(stripMarkdown(output));
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* ignore */ }
+      document.body.removeChild(ta);
+    }
     setCopied(true);
+    toast.success("Copied to clipboard — paste it on LinkedIn to publish");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Reset "Saved" state whenever the post text changes (user edited or regenerated)
+  useEffect(() => {
+    setDraftSaved(false);
+  }, [output]);
+
+  const handleSaveDraft = async () => {
+    if (savingDraft || draftSaved) return;
+    setSavingDraft(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.id) throw new Error("Not authenticated");
+      const body = stripMarkdown(output || fullVersion || shortVersion || "");
+      if (!body.trim()) { toast.error("Nothing to save"); return; }
+
+      const { data: profile } = await supabase.from("diagnostic_profiles")
+        .select("level, sector_focus, firm")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+
+      const generationParams = {
+        model: "google/gemini-3-flash-preview",
+        prompt_template_version: "v1",
+        signal_ids: selectedSignalId ? [selectedSignalId] : [],
+        signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
+        source_signal_id: selectedSignalId,
+        identity_snapshot: {
+          role: profile?.level ?? null,
+          sector: profile?.sector_focus ?? null,
+          firm: profile?.firm ?? null,
+        },
+        topic: topic || null,
+        language: lang,
+        timestamp: generationTimestamp || new Date().toISOString(),
+      };
+
+      const { error } = await supabase.from("content_items").insert({
+        user_id: session.user.id,
+        type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
+        body,
+        language: lang,
+        status: "draft",
+        generation_params: generationParams,
+      });
+      if (error) throw error;
+      setMonthlyGenerationCount(prev => prev + 1);
+      setDraftSaved(true);
+      toast.success("Draft saved to Library");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save. Please try again.");
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
   const displayedOutput = output;
@@ -1086,53 +1153,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 gap-1.5 text-xs border-border/15"
-                      onClick={async () => {
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session?.user?.id) throw new Error("Not authenticated");
-                          const body = stripMarkdown(output || fullVersion || shortVersion || "");
-                          if (!body.trim()) { toast.error("Nothing to save"); return; }
-
-                          // Fetch diagnostic profile for identity_snapshot
-                          const { data: profile } = await supabase.from("diagnostic_profiles")
-                            .select("level, sector_focus, firm")
-                            .eq("user_id", session.user.id)
-                            .maybeSingle();
-
-                          const generationParams = {
-                            model: "google/gemini-3-flash-preview",
-                            prompt_template_version: "v1",
-                            signal_ids: selectedSignalId ? [selectedSignalId] : [],
-                            signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
-                            source_signal_id: selectedSignalId,
-                            identity_snapshot: {
-                              role: profile?.level ?? null,
-                              sector: profile?.sector_focus ?? null,
-                              firm: profile?.firm ?? null,
-                            },
-                            topic: topic || null,
-                            language: lang,
-                            timestamp: generationTimestamp || new Date().toISOString(),
-                          };
-
-                          const { error } = await supabase.from("content_items").insert({
-                            user_id: session.user.id,
-                            type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
-                            body,
-                            language: lang,
-                            status: "draft",
-                            generation_params: generationParams,
-                          });
-                          if (error) throw error;
-                          setMonthlyGenerationCount(prev => prev + 1);
-                          toast.success("Draft saved to your library.");
-                        } catch (e: any) {
-                          toast.error(e.message || "Failed to save");
-                        }
-                      }}
+                      onClick={handleSaveDraft}
+                      disabled={savingDraft || draftSaved || !output.trim()}
+                      className={`h-7 gap-1.5 text-xs ${draftSaved ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
                     >
-                      <Save className="w-3 h-3" /> Save Draft
+                      {savingDraft ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>
+                      ) : draftSaved ? (
+                        <><Check className="w-3 h-3" /> Saved</>
+                      ) : (
+                        <><Save className="w-3 h-3" /> Save Draft</>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -1544,6 +1575,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   const [generating, setGenerating] = useState(false);
   const [signalCount, setSignalCount] = useState<number | null>(null);
   const [captureCount, setCaptureCount] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadSuggestions();
@@ -1609,14 +1641,18 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   }
 
   // New-user empty state — show guidance, never fake plans.
-  if (signalCount === 0 && captureCount === 0 && suggestions.length === 0) {
+  // Smart empty state — gated on signal count.
+  if (suggestions.length === 0 && signalCount !== null && signalCount < 3) {
     return (
-      <div className="text-center py-16 space-y-3 max-w-md mx-auto">
-        <Calendar className="w-8 h-8 text-primary/30 mx-auto" />
-          <p className="text-foreground font-medium">You have signals — that's insights you understand that most people in your market haven't figured out yet.</p>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            The only difference between you and the person getting the speaking invitation? They published. Pick your strongest signal and change that.
-          </p>
+      <div className="flex flex-col items-center justify-center text-center py-16 px-6 max-w-md mx-auto space-y-3">
+        <Calendar className="w-10 h-10 text-primary/40" strokeWidth={1.5} />
+        <p className="text-foreground font-medium">Not enough signals yet.</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Aura needs at least 3 active signals to suggest a content plan. You have {signalCount} so far.
+        </p>
+        <Button onClick={() => navigate("/home")} className="mt-2 gap-2">
+          Keep capturing →
+        </Button>
       </div>
     );
   }
@@ -2594,8 +2630,29 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
   const [savedUrls, setSavedUrls] = useState<Record<string, string>>({});
   const [signalTitleMap, setSignalTitleMap] = useState<Record<string, string>>({});
   const [profile, setProfile] = useState<{ first_name?: string | null; level?: string | null; avatar_url?: string | null } | null>(null);
+  const [topSignal, setTopSignal] = useState<{ id: string; signal_title: string } | null>(null);
+  const [signalCount, setSignalCount] = useState<number>(0);
+  const navigate = useNavigate();
 
-  useEffect(() => { loadPosts(); loadProfile(); }, []);
+  useEffect(() => { loadPosts(); loadProfile(); loadSignalContext(); }, []);
+
+  const loadSignalContext = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { count } = await (supabase.from("strategic_signals" as any) as any)
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "active");
+    setSignalCount(count || 0);
+    const { data } = await (supabase.from("strategic_signals" as any) as any)
+      .select("id, signal_title")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("priority_score", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data?.id) setTopSignal({ id: data.id, signal_title: data.signal_title });
+  };
 
   const loadProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -2776,13 +2833,23 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     return (
       <div className="space-y-6">
         <VoiceTrainer />
-        <EmptyState
-          icon={PenTool}
-          title="Your voice is ready. Pick a signal and start writing."
-          description={EMPTY_STATE.publishNoSignals.text}
-          ctaLabel={EMPTY_STATE.publishNoSignals.cta}
-          ctaAction={onSwitchToCreate}
-        />
+        {topSignal ? (
+          <EmptyState
+            icon={PenTool}
+            title="No posts yet."
+            description="Your signals are ready — your first post is one click away."
+            ctaLabel={`Write about: "${topSignal.signal_title}" →`}
+            ctaAction={onSwitchToCreate}
+          />
+        ) : (
+          <EmptyState
+            icon={PenTool}
+            title="No posts yet."
+            description="Capture a few articles first. Once Aura detects patterns, you can turn them into posts in your voice."
+            ctaLabel="Capture something →"
+            ctaAction={() => navigate("/home")}
+          />
+        )}
       </div>
     );
   }
@@ -3123,9 +3190,9 @@ interface AuthorityTabProps {
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
-  { key: "plan", label: "Plan", icon: Calendar },
   { key: "create", label: "Create", icon: PenTool },
   { key: "library", label: "Library", icon: BookOpen },
+  { key: "plan", label: "Plan", icon: Calendar },
 ];
 
 const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed }: AuthorityTabProps) => {
