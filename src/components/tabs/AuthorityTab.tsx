@@ -619,6 +619,18 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
   const stripMarkdown = (text: string) => text.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/`(.+?)`/g, "$1");
 
+  // Fix C: For Arabic text, flip directional arrow symbols so they read RTL.
+  // Applied only at display/copy time — the stored DB text remains untouched.
+  const fixArabicDirectionalSymbols = (text: string) => {
+    if (!text) return text;
+    if (!(lang === "ar" || isArabicText(text))) return text;
+    return text
+      .replace(/→/g, "←")
+      .replace(/↳/g, "↲")
+      .replace(/->/g, "<-")
+      .replace(/⟶/g, "⟵");
+  };
+
   const renderMarkdown = (text: string) => {
     return text.split(/\n/).map((line, i) => {
       const escapeHtml = (s: string) =>
