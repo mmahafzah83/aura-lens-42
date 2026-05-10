@@ -87,11 +87,22 @@ export default function VisualCardRenderer(props: VisualCardProps) {
   const isAr = language === 'ar';
   const dir = isAr ? 'rtl' : 'ltr';
   const textAlign: React.CSSProperties['textAlign'] = isAr ? 'right' : 'left';
+  // Fix A: Force Cairo across the entire card subtree when content is Arabic.
+  // Inline styles in layouts override style objects, so we cascade via class + !important.
+  const arabicFontClass = isAr ? 'aura-card-arabic' : '';
 
   return (
     <div className="card-preview-wrapper" style={{ width: '100%', maxWidth: 380, aspectRatio: `${CARD_W} / ${CARD_H}`, overflow: 'hidden' }}>
+      {isAr && (
+        <style>{`
+          .aura-card-arabic, .aura-card-arabic * {
+            font-family: 'Cairo', 'DM Sans', sans-serif !important;
+            line-height: 1.9;
+          }
+        `}</style>
+      )}
       <div
-        className="card-preview-inner"
+        className={`card-preview-inner ${arabicFontClass}`}
         style={{
           width: CARD_W,
           height: CARD_H,
