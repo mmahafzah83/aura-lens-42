@@ -1150,7 +1150,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                      lang === "ar" || isArabicText(displayedOutput) ? "arabic-text" : ""
                    }`}
                  >
-                  {renderMarkdown(displayedOutput)}
+                  {renderMarkdown(fixArabicDirectionalSymbols(displayedOutput))}
                   {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
                 </div>
 
