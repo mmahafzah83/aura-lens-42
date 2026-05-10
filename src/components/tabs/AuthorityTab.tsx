@@ -1134,24 +1134,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     >
                       <Save className="w-3 h-3" /> Save Draft
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 gap-1.5 text-xs border-border/15"
-                      onClick={() => {
-                        const text = stripMarkdown(displayedOutput || output || fullVersion || shortVersion || "");
-                        if (!text.trim()) { toast.error("Nothing to share"); return; }
-                        shareToLinkedIn({
-                          text,
-                          mode: "feed",
-                          toastMessage: "Post copied to clipboard — paste it in LinkedIn.",
-                        });
-                      }}
-                      disabled={!!(qualityGate && !qualityGate.skipped && qualityGate.overall_score < 70)}
-                      title={qualityGate && !qualityGate.skipped && qualityGate.overall_score < 70 ? "Strengthen this post before publishing" : undefined}
-                    >
-                      <Linkedin className="w-3 h-3" /> Post on LinkedIn →
-                    </Button>
                   </div>
                 </div>
 
