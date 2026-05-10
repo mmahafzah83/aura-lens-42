@@ -563,7 +563,7 @@ export default function FlashPanel() {
                   variant="outline"
                   className="h-8 gap-1.5 text-xs"
                   onClick={() => shareToLinkedIn({
-                    text: r.text,
+                    text: displayText(r.text),
                     mode: "feed",
                     toastMessage: lang === "ar"
                       ? "تم نسخ المنشور — الصقه في لينكدإن."
