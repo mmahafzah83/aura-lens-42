@@ -178,6 +178,16 @@ export default function FlashPanel() {
   }), [lang]);
 
   const hasSignals = (signalCount ?? 0) > 0;
+
+  // Flip directional arrows for RTL display + copy in Arabic mode.
+  const displayText = (text: string): string => {
+    if (lang !== "ar" || !text) return text;
+    return text
+      .replace(/→/g, "←")
+      .replace(/↳/g, "↲")
+      .replace(/->/g, "<-")
+      .replace(/⟶/g, "⟵");
+  };
   const canGenerate = hasSignals && (mode === "theme"
     ? !!postType && !!selectedTheme && !generating
     : spark.trim().length >= 3 && !generating);
