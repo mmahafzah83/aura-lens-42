@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, FileText, Check } from "lucide-react";
+import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -55,7 +55,15 @@ const Onboarding = () => {
   const [step, setStep] = useState<Step>(0);
   const [direction, setDirection] = useState(1);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+
+  // Step -1: password setup gate
+  const [needsPassword, setNeedsPassword] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdShow, setPwdShow] = useState(false);
+  const [settingPwd, setSettingPwd] = useState(false);
 
   // Step 0
   const [revealCount, setRevealCount] = useState(0);
@@ -96,6 +104,9 @@ const Onboarding = () => {
         return;
       }
       setUserId(session.user.id);
+      setUserEmail(session.user.email ?? null);
+      const passwordAlreadySet = Boolean((session.user.user_metadata as any)?.password_set);
+      if (!passwordAlreadySet) setNeedsPassword(true);
       const { data: profile } = await supabase
         .from("diagnostic_profiles" as any)
         .select("first_name, onboarding_completed")
@@ -412,6 +423,101 @@ const Onboarding = () => {
     );
   }
 
+  // ───── STEP -1: Password gate ─────
+  const handleSetPassword = async () => {
+    if (pwd.length < 8) {
+      toast.error("Password must be at least 8 characters");
+      return;
+    }
+    if (pwd !== pwdConfirm) {
+      toast.error("Passwords don't match");
+      return;
+    }
+    setSettingPwd(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: pwd,
+        data: { password_set: true },
+      });
+      if (error) throw error;
+      try {
+        if (userEmail) {
+          await supabase.functions.invoke("send-account-notification", {
+            body: { type: "password_set", email: userEmail, first_name: null },
+          });
+        }
+      } catch (e) {
+        console.warn("password_set notification failed:", e);
+      }
+      setNeedsPassword(false);
+      setPwd(""); setPwdConfirm("");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to set password. Please try again.");
+    } finally {
+      setSettingPwd(false);
+    }
+  };
+
+  if (needsPassword) {
+    const pwdInputStyle: React.CSSProperties = {
+      width: "100%",
+      padding: "12px 40px 12px 14px",
+      fontSize: 14,
+      background: "hsl(var(--muted) / 0.4)",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: 10,
+      color: "hsl(var(--foreground))",
+      outline: "none",
+    };
+    return cardShell(
+      <>
+        {eyebrow("Secure your account")}
+        {heading("Set your password.")}
+        <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
+          Set a password so you can always come back to Aura from any device.
+        </p>
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input
+            type={pwdShow ? "text" : "password"}
+            value={pwd}
+            onChange={(e) => setPwd(e.target.value)}
+            placeholder="Create a password"
+            style={pwdInputStyle}
+            autoComplete="new-password"
+          />
+          <button
+            type="button" onClick={() => setPwdShow((s) => !s)}
+            aria-label={pwdShow ? "Hide password" : "Show password"}
+            style={{
+              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+              background: "transparent", border: 0, cursor: "pointer",
+              color: "hsl(var(--muted-foreground))", padding: 4,
+            }}
+          >{pwdShow ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+        </div>
+        <div style={{ position: "relative", marginBottom: 8 }}>
+          <input
+            type={pwdShow ? "text" : "password"}
+            value={pwdConfirm}
+            onChange={(e) => setPwdConfirm(e.target.value)}
+            placeholder="Confirm password"
+            style={pwdInputStyle}
+            autoComplete="new-password"
+            onKeyDown={(e) => { if (e.key === "Enter") handleSetPassword(); }}
+          />
+        </div>
+        <p className="text-xs mb-5" style={{ color: "hsl(var(--muted-foreground))" }}>
+          Must be at least 8 characters.
+        </p>
+        {primaryBtn(
+          <>Set password & continue <ArrowRight className="w-4 h-4" /></>,
+          handleSetPassword,
+          { loading: settingPwd, disabled: pwd.length < 8 || pwd !== pwdConfirm },
+        )}
+      </>,
+    );
+  }
+
   // ───── STEP 0 ─────
   if (step === 0) {
     const items = [
@@ -642,7 +748,18 @@ const Onboarding = () => {
             // closed — assessment may or may not be complete; either way, hand off to home.
           }
         }}
-        onComplete={() => goHome()}
+        onComplete={async () => {
+          try {
+            if (userId) {
+              await supabase.functions.invoke("send-lifecycle-email", {
+                body: { user_id: userId, email_type: "welcome" },
+              });
+            }
+          } catch (e) {
+            console.warn("welcome email failed:", e);
+          }
+          goHome();
+        }}
       />
     </>
   );

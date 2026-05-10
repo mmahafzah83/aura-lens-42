@@ -122,3 +122,9 @@ verify_jwt = false
 
 [functions.onboarding-find-article]
 verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.send-account-notification]
+verify_jwt = false

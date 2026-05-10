@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
-import { Loader2, Radio, PenLine, TrendingUp } from "lucide-react";
+import { Loader2, Radio, PenLine, TrendingUp, Eye, EyeOff } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,14 @@ const Auth = () => {
   const [emailError, setEmailError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Password recovery state
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [updatingPwd, setUpdatingPwd] = useState(false);
+  const inRecoveryRef = useRef(false);
 
   const checkOnboardingAndRedirect = async (session: any) => {
     const { data: profile } = await supabase
@@ -33,10 +41,17 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        inRecoveryRef.current = true;
+        setShowNewPasswordForm(true);
+        return;
+      }
+      if (inRecoveryRef.current) return;
       if (session) checkOnboardingAndRedirect(session);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (inRecoveryRef.current) return;
       if (session) checkOnboardingAndRedirect(session);
     });
     return () => subscription.unsubscribe();
@@ -69,19 +84,60 @@ const Auth = () => {
 
   const handleForgotPassword = async () => {
     setEmailError(null);
-    if (!email) {
+    if (!email || !email.includes("@")) {
       setEmailError("Enter your email first");
       return;
     }
     setResetting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
-    });
-    setResetting(false);
-    if (error) {
-      toast({ title: "Couldn't send reset", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Check your email", description: `Reset link sent to ${email}.` });
+    try {
+      await supabase.functions.invoke("send-password-reset", {
+        body: { email: email.trim().toLowerCase() },
+      });
+      toast({
+        title: "Check your email",
+        description: "If this email has an account, you'll receive a reset link shortly.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't send reset", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword.length < 8) {
+      toast({ title: "Password too short", description: "Must be at least 8 characters", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    setUpdatingPwd(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { password_set: true },
+      });
+      if (error) throw error;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          await supabase.functions.invoke("send-account-notification", {
+            body: { type: "password_changed", email: user.email, first_name: null },
+          });
+        }
+      } catch (e) {
+        console.warn("password_changed notification failed:", e);
+      }
+      toast({ title: "Password updated", description: "Welcome back." });
+      inRecoveryRef.current = false;
+      setShowNewPasswordForm(false);
+      navigate("/home");
+    } catch (e: any) {
+      toast({ title: "Couldn't update password", description: e?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setUpdatingPwd(false);
     }
   };
 
@@ -300,13 +356,63 @@ const Auth = () => {
 
           {/* Headline */}
           <h1 className="auth-headline mb-2">
-            Welcome <em>back</em>
+            {showNewPasswordForm ? <>Reset your <em>password</em></> : <>Welcome <em>back</em></>}
           </h1>
           <p className="auth-sublabel">
-            Sign in. Every session builds your authority.
+            {showNewPasswordForm
+              ? "Enter your new password below."
+              : "Sign in. Every session builds your authority."}
           </p>
 
-          {/* Form */}
+          {showNewPasswordForm ? (
+            <div className="space-y-4">
+              <div>
+                <label className="auth-label">NEW PASSWORD</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="auth-input"
+                    style={{ paddingRight: 38 }}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button" onClick={() => setShowPwd((s) => !s)}
+                    aria-label={showPwd ? "Hide password" : "Show password"}
+                    style={{
+                      position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                      background: "transparent", border: 0, cursor: "pointer",
+                      color: "var(--ink-4)", padding: 4,
+                    }}
+                  >{showPwd ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                </div>
+              </div>
+              <div>
+                <label className="auth-label">CONFIRM PASSWORD</label>
+                <input
+                  type={showPwd ? "text" : "password"}
+                  value={newPasswordConfirm}
+                  onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                  placeholder="••••••••"
+                  className="auth-input"
+                  autoComplete="new-password"
+                  onKeyDown={(e) => { if (e.key === "Enter") handleResetPassword(); }}
+                />
+              </div>
+              <p className="text-xs" style={{ color: "var(--ink-4)" }}>Must be at least 8 characters.</p>
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={updatingPwd || newPassword.length < 8 || newPassword !== newPasswordConfirm}
+                className="auth-submit"
+              >
+                {updatingPwd && <Loader2 className="w-4 h-4 animate-spin" />}
+                Update password →
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div
               style={{
@@ -408,6 +514,7 @@ const Auth = () => {
               </button>
             </div>
           </form>
+          )}
 
           {/* Bottom link */}
           <p className="mt-8 auth-link">

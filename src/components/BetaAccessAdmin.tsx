@@ -285,6 +285,24 @@ const BetaAccessAdmin = ({ userId }: Props) => {
     }
   };
 
+  const resendInvite = async (row: Row) => {
+    setSendingId(row.id);
+    try {
+      const { error } = await supabase.functions.invoke("send-invite", {
+        body: { email: row.email, name: row.name, personal_note: null },
+      });
+      if (error) throw error;
+      toast.success(`Re-sent invite to ${row.email}`);
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, invited_at: new Date().toISOString() } : r))
+      );
+    } catch (err: any) {
+      toast.error(err?.message || `Failed to re-send invite to ${row.email}`);
+    } finally {
+      setSendingId(null);
+    }
+  };
+
   const sendDirectInvite = async () => {
     const email = directEmail.trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -582,10 +600,32 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                           </Button>
                         )}
                         {r.status === "approved" && (
-                          <span className="text-xs text-green-400">Invited ✓</span>
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-green-400">Invited ✓</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => resendInvite(r)}
+                              disabled={sendingId === r.id}
+                              className="h-7 text-xs"
+                            >
+                              {sendingId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Re-invite"}
+                            </Button>
+                          </div>
                         )}
                         {r.status === "active" && (
-                          <span className="text-xs text-blue-400">Active ✓</span>
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-blue-400">Active ✓</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => resendInvite(r)}
+                              disabled={sendingId === r.id}
+                              className="h-7 text-xs"
+                            >
+                              {sendingId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Re-invite"}
+                            </Button>
+                          </div>
                         )}
                       </td>
                     </tr>
