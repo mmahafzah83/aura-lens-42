@@ -20,6 +20,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import CarouselStudio from "./pages/CarouselStudio";
+import PasswordGate from "./components/PasswordGate";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,22 +43,22 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/home" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
+            <Route path="/dashboard" element={<PasswordGate><Dashboard /></PasswordGate>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/request-access" element={<RequestAccess />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/design-system" element={<AdminDesignSystem />} />
-            <Route path="/admin/experience" element={<AdminExperience />} />
-            <Route path="/admin/qa" element={<AdminQA />} />
-            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/admin" element={<PasswordGate><Admin /></PasswordGate>} />
+            <Route path="/admin/design-system" element={<PasswordGate><AdminDesignSystem /></PasswordGate>} />
+            <Route path="/admin/experience" element={<PasswordGate><AdminExperience /></PasswordGate>} />
+            <Route path="/admin/qa" element={<PasswordGate><AdminQA /></PasswordGate>} />
+            <Route path="/onboarding" element={<PasswordGate><Onboarding /></PasswordGate>} />
             <Route path="/api/auth/linkedin/callback" element={<LinkedInCallback />} />
-            <Route path="/trends/:id" element={<TrendDetail />} />
+            <Route path="/trends/:id" element={<PasswordGate><TrendDetail /></PasswordGate>} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/guide" element={<Guide />} />
-            <Route path="/carousel-studio" element={<CarouselStudio />} />
+            <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
