@@ -646,8 +646,19 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(fixArabicDirectionalSymbols(stripMarkdown(output)));
+    const text = fixArabicDirectionalSymbols(stripMarkdown(output));
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* ignore */ }
+      document.body.removeChild(ta);
+    }
     setCopied(true);
+    toast.success("Copied to clipboard — paste it on LinkedIn to publish");
     setTimeout(() => setCopied(false), 2000);
   };
 
