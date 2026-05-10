@@ -59,6 +59,17 @@ ${CARD_FONT_LINKS.map((href) => `<link rel="stylesheet" href="${href}" crossorig
     const clone = cardElement.cloneNode(true) as HTMLElement;
     // Ensure cloned root carries the right direction.
     clone.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+    // CRITICAL: the live preview applies `transform: scale(380/1080)` with
+    // `transform-origin: top left` so the 1080×1350 card fits in a 380px
+    // wrapper. If we don't strip that transform on the clone, html2canvas
+    // rasterises a 1080×1350 box with the content rendered into only the
+    // top-left ~35%, producing huge black/empty padding in the PNG.
+    clone.style.transform = 'none';
+    clone.style.transformOrigin = 'top left';
+    clone.style.width = `${CARD_W}px`;
+    clone.style.height = `${CARD_H}px`;
+    clone.style.maxWidth = 'none';
+    clone.style.maxHeight = 'none';
     if (language === 'ar') {
       clone.style.direction = 'rtl';
       // Force Cairo on the clone root and EVERY descendant. The CSS rule in
