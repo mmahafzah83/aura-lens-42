@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom";
-import { Loader2, Radio, PenLine, TrendingUp } from "lucide-react";
+import { Loader2, Radio, PenLine, TrendingUp, Eye, EyeOff } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,14 @@ const Auth = () => {
   const [emailError, setEmailError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Password recovery state
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [updatingPwd, setUpdatingPwd] = useState(false);
+  const inRecoveryRef = useRef(false);
 
   const checkOnboardingAndRedirect = async (session: any) => {
     const { data: profile } = await supabase
@@ -33,10 +41,17 @@ const Auth = () => {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        inRecoveryRef.current = true;
+        setShowNewPasswordForm(true);
+        return;
+      }
+      if (inRecoveryRef.current) return;
       if (session) checkOnboardingAndRedirect(session);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (inRecoveryRef.current) return;
       if (session) checkOnboardingAndRedirect(session);
     });
     return () => subscription.unsubscribe();
@@ -69,19 +84,60 @@ const Auth = () => {
 
   const handleForgotPassword = async () => {
     setEmailError(null);
-    if (!email) {
+    if (!email || !email.includes("@")) {
       setEmailError("Enter your email first");
       return;
     }
     setResetting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
-    });
-    setResetting(false);
-    if (error) {
-      toast({ title: "Couldn't send reset", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Check your email", description: `Reset link sent to ${email}.` });
+    try {
+      await supabase.functions.invoke("send-password-reset", {
+        body: { email: email.trim().toLowerCase() },
+      });
+      toast({
+        title: "Check your email",
+        description: "If this email has an account, you'll receive a reset link shortly.",
+      });
+    } catch (e: any) {
+      toast({ title: "Couldn't send reset", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (newPassword.length < 8) {
+      toast({ title: "Password too short", description: "Must be at least 8 characters", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
+    }
+    setUpdatingPwd(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { password_set: true },
+      });
+      if (error) throw error;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          await supabase.functions.invoke("send-account-notification", {
+            body: { type: "password_changed", email: user.email, first_name: null },
+          });
+        }
+      } catch (e) {
+        console.warn("password_changed notification failed:", e);
+      }
+      toast({ title: "Password updated", description: "Welcome back." });
+      inRecoveryRef.current = false;
+      setShowNewPasswordForm(false);
+      navigate("/home");
+    } catch (e: any) {
+      toast({ title: "Couldn't update password", description: e?.message || "Please try again.", variant: "destructive" });
+    } finally {
+      setUpdatingPwd(false);
     }
   };
 
