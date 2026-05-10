@@ -1153,53 +1153,17 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-7 gap-1.5 text-xs border-border/15"
-                      onClick={async () => {
-                        try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session?.user?.id) throw new Error("Not authenticated");
-                          const body = stripMarkdown(output || fullVersion || shortVersion || "");
-                          if (!body.trim()) { toast.error("Nothing to save"); return; }
-
-                          // Fetch diagnostic profile for identity_snapshot
-                          const { data: profile } = await supabase.from("diagnostic_profiles")
-                            .select("level, sector_focus, firm")
-                            .eq("user_id", session.user.id)
-                            .maybeSingle();
-
-                          const generationParams = {
-                            model: "google/gemini-3-flash-preview",
-                            prompt_template_version: "v1",
-                            signal_ids: selectedSignalId ? [selectedSignalId] : [],
-                            signal_titles: selectedSignalTitle ? [selectedSignalTitle] : [],
-                            source_signal_id: selectedSignalId,
-                            identity_snapshot: {
-                              role: profile?.level ?? null,
-                              sector: profile?.sector_focus ?? null,
-                              firm: profile?.firm ?? null,
-                            },
-                            topic: topic || null,
-                            language: lang,
-                            timestamp: generationTimestamp || new Date().toISOString(),
-                          };
-
-                          const { error } = await supabase.from("content_items").insert({
-                            user_id: session.user.id,
-                            type: (contentType as string) === "carousel" ? "carousel" : (contentType as string) === "framework_summary" ? "framework" : "post",
-                            body,
-                            language: lang,
-                            status: "draft",
-                            generation_params: generationParams,
-                          });
-                          if (error) throw error;
-                          setMonthlyGenerationCount(prev => prev + 1);
-                          toast.success("Draft saved to your library.");
-                        } catch (e: any) {
-                          toast.error(e.message || "Failed to save");
-                        }
-                      }}
+                      onClick={handleSaveDraft}
+                      disabled={savingDraft || draftSaved || !output.trim()}
+                      className={`h-7 gap-1.5 text-xs ${draftSaved ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
                     >
-                      <Save className="w-3 h-3" /> Save Draft
+                      {savingDraft ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>
+                      ) : draftSaved ? (
+                        <><Check className="w-3 h-3" /> Saved</>
+                      ) : (
+                        <><Save className="w-3 h-3" /> Save Draft</>
+                      )}
                     </Button>
                   </div>
                 </div>
