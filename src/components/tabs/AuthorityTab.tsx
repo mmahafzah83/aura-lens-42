@@ -646,7 +646,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
   };
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(stripMarkdown(output));
+    await navigator.clipboard.writeText(fixArabicDirectionalSymbols(stripMarkdown(output)));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
