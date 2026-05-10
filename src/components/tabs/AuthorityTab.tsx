@@ -3123,9 +3123,9 @@ interface AuthorityTabProps {
 }
 
 const TABS: { key: AuthoritySubTab; label: string; icon: typeof PenTool }[] = [
-  { key: "plan", label: "Plan", icon: Calendar },
   { key: "create", label: "Create", icon: PenTool },
   { key: "library", label: "Library", icon: BookOpen },
+  { key: "plan", label: "Plan", icon: Calendar },
 ];
 
 const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsumed }: AuthorityTabProps) => {
