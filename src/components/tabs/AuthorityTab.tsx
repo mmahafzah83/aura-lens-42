@@ -2828,13 +2828,23 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     return (
       <div className="space-y-6">
         <VoiceTrainer />
-        <EmptyState
-          icon={PenTool}
-          title="Your voice is ready. Pick a signal and start writing."
-          description={EMPTY_STATE.publishNoSignals.text}
-          ctaLabel={EMPTY_STATE.publishNoSignals.cta}
-          ctaAction={onSwitchToCreate}
-        />
+        {topSignal ? (
+          <EmptyState
+            icon={PenTool}
+            title="No posts yet."
+            description="Your signals are ready — your first post is one click away."
+            ctaLabel={`Write about: "${topSignal.signal_title}" →`}
+            ctaAction={onSwitchToCreate}
+          />
+        ) : (
+          <EmptyState
+            icon={PenTool}
+            title="No posts yet."
+            description="Capture a few articles first. Once Aura detects patterns, you can turn them into posts in your voice."
+            ctaLabel="Capture something →"
+            ctaAction={() => navigate("/home")}
+          />
+        )}
       </div>
     );
   }
