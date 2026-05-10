@@ -265,7 +265,7 @@ export default function FlashPanel() {
   const onCopy = async (idx: number) => {
     const r = results[idx];
     if (!r) return;
-    await navigator.clipboard.writeText(r.text);
+    await navigator.clipboard.writeText(displayText(r.text));
     setResults(prev => prev.map((x, i) => i === idx ? { ...x, copied: true } : x));
     setTimeout(() => {
       setResults(prev => prev.map((x, i) => i === idx ? { ...x, copied: false } : x));
