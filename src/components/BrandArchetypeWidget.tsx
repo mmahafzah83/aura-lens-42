@@ -52,7 +52,7 @@ const BrandArchetypeWidget = ({ onStartAssessment }: BrandArchetypeWidgetProps) 
     if (directStatement) return directStatement;
 
     const interpretation = typeof results?.interpretation === "string" ? results.interpretation : "";
-    const match = interpretation.match(/YOUR POSITIONING STATEMENT\s*\n\*\*(.*?)\*\*/s);
+    const match = interpretation.match(/(?:YOUR ONE-LINER|YOUR POSITIONING STATEMENT)\s*\n\*\*(.*?)\*\*/s);
     return match?.[1]?.trim() || "";
   })();
 
