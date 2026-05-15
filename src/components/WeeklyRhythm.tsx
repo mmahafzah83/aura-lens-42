@@ -22,6 +22,7 @@ interface Props {
 const WeeklyRhythm = ({ userId, data: provided }: Props) => {
   const [data, setData] = useState<AuraScoreResponse | null>(provided ?? null);
   const [loading, setLoading] = useState(!provided);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (provided) { setData(provided); setLoading(false); }
@@ -61,12 +62,15 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
   const total = rhythm.total_weeks ?? 12;
   // Ensure exactly `total` cells, most recent on right.
   const raw = Array.isArray(rhythm.weekly_data) ? rhythm.weekly_data.slice(-total) : [];
-  const cells: boolean[] = Array.from({ length: total }, (_, i) => {
+  const allCells: boolean[] = Array.from({ length: total }, (_, i) => {
     const idx = i - (total - raw.length);
     return idx >= 0 ? !!raw[idx] : false;
   });
-  const todayIdx = total - 1;
-  const active = rhythm.active_weeks ?? cells.filter(Boolean).length;
+  // Default: show the last 4 weeks (current + 3 prior). Expand to show all 12.
+  const visibleCount = expanded ? total : Math.min(4, total);
+  const cells = allCells.slice(-visibleCount);
+  const todayIdx = cells.length - 1;
+  const active = rhythm.active_weeks ?? allCells.filter(Boolean).length;
   const milestone = active >= 4;
 
   return (
@@ -93,16 +97,16 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
         Capture rhythm
         <InfoTooltip
           label="Capture Rhythm"
-          text="Weeks with at least one meaningful capture in the last 12 weeks."
+          text={`Weeks with at least one meaningful capture in the last ${visibleCount} weeks.`}
         />
       </div>
       <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-        Your weekly capture consistency over the last 12 weeks
+        {`Your weekly capture consistency over the last ${visibleCount} weeks`}
       </div>
 
       <div
         role="list"
-        aria-label={`${active} of ${total} weeks active`}
+        aria-label={`${active} of ${visibleCount} weeks active`}
         style={{ display: "flex", gap: 4, marginTop: 10 }}
       >
         {cells.map((filled, i) => {
@@ -140,7 +144,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           color: "hsl(var(--muted-foreground))",
         }}
       >
-        <span>{active} of {total} weeks active</span>
+        <span>{Math.min(active, visibleCount)} of {visibleCount} weeks active</span>
         {milestone && (
           <Check
             size={14}
@@ -150,6 +154,27 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           />
         )}
       </div>
+
+      {total > 4 && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            marginTop: 8,
+            background: "transparent",
+            border: 0,
+            padding: 0,
+            cursor: "pointer",
+            color: "hsl(var(--primary))",
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+          className="hover:underline"
+        >
+          {expanded ? "Show recent weeks ←" : "Show full history →"}
+        </button>
+      )}
 
       {active === 0 && (
         <div
