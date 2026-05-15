@@ -377,7 +377,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       <div
         className="fixed inset-0"
         style={{ background: "rgba(0,0,0,0.8)", zIndex: 999, pointerEvents: "all" }}
-        onClick={() => onOpenChange(false)}
+        onClick={handleCloseRequest}
       />
 
       {/* Centered modal */}
@@ -442,7 +442,22 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="w-3 h-3 rounded-full bg-brand animate-pulse" />
-                  <p className="text-[13px] text-ink-5">Building your brand positioning across 6 frameworks...</p>
+                  <p className="text-[13px] text-ink-5 transition-opacity duration-300">{LOADING_STAGES[loadingStage]}</p>
+                </div>
+              ) : genError ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
+                  <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
+                    We couldn't build your analysis right now
+                  </h3>
+                  <p className="text-[13px] text-ink-5 leading-relaxed">
+                    Your answers are saved. You can try again from My Story whenever you're ready.
+                  </p>
+                  <button
+                    onClick={() => { onOpenChange(false); onNavigate?.("identity"); }}
+                    className="mt-2 px-5 py-2.5 rounded-xl text-[13px] font-medium bg-brand text-white hover:brightness-110 transition"
+                  >
+                    Go to My Story →
+                  </button>
                 </div>
               ) : (
                 <ResultsView
