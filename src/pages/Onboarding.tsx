@@ -24,6 +24,7 @@ type Step = 0 | 1 | 2 | 3;
 
 interface Prefill {
   first_name?: string;
+  last_name?: string;
   firm?: string;
   level?: string;
   core_practice?: string;
@@ -79,6 +80,7 @@ const Onboarding = () => {
   const [describeMode, setDescribeMode] = useState(false);
   const [helperOpen, setHelperOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
   const [sectorFocus, setSectorFocus] = useState("");
@@ -177,6 +179,7 @@ const Onboarding = () => {
         setShowForm(true);
       } else {
         setFirstName(p.first_name || "");
+        setLastName(p.last_name || "");
         setFirm(p.firm || "");
         setLevel(p.level || "");
         setCorePractice(p.core_practice || "");
@@ -205,6 +208,7 @@ const Onboarding = () => {
       const payload: any = {
         user_id: userId,
         first_name: firstName.trim(),
+        last_name: lastName.trim() || null,
         firm: firm.trim(),
         level: level.trim(),
         sector_focus: sectorFocus,
@@ -733,6 +737,10 @@ const Onboarding = () => {
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>First name</label>
                 <input className={inputCls} style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Mohammad" />
+              </div>
+              <div>
+                <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>Last name</label>
+                <input className={inputCls} style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Mahafzah" />
               </div>
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>Firm</label>
