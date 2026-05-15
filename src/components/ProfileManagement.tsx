@@ -34,6 +34,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [firm, setFirm] = useState("");
@@ -61,6 +62,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
         .select("*").eq("user_id", user.id).maybeSingle();
       if (profile) {
         setFirstName(profile.first_name || "");
+        setLastName(profile.last_name || "");
         setAvatarUrl(profile.avatar_url || null);
         setFirm(profile.firm || "");
         setLevel(profile.level || "");
@@ -96,6 +98,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
       .upsert({
         user_id: user.id,
         first_name: firstName,
+        last_name: lastName || null,
         avatar_url: avatarUrl,
         firm,
         level,
@@ -242,6 +245,10 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
             <div className="flex-1">
               <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">First name</label>
               <Input placeholder="e.g., Mohammad" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
+            </div>
+            <div className="flex-1">
+              <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">Last name</label>
+              <Input placeholder="e.g., Mahafzah" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
           </div>
 

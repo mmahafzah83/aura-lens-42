@@ -49,7 +49,7 @@ serve(async (req) => {
             {
               role: "system",
               content:
-                "The text below is pasted by the user from their LinkedIn profile. It may include their headline, about section, or a free-text description of their role. Extract what you can. Return ONLY valid JSON with fields: first_name, firm, level, core_practice, sector_focus, headline, about_summary, location, skills (array of up to 5). For sector_focus, map to one of: Energy & Utilities, Financial Services, Government, Healthcare, Technology, Consulting, Manufacturing, Real Estate, Telecommunications, Education, Other. If a field is not found, return null. No markdown backticks.",
+                "The text below is pasted by the user from their LinkedIn profile. It may include their headline, about section, or a free-text description of their role. Extract what you can. Return ONLY valid JSON with fields: first_name, last_name, firm, level, core_practice, sector_focus, headline, about_summary, location, skills (array of up to 5). For sector_focus, map to one of: Energy & Utilities, Financial Services, Government, Healthcare, Technology, Consulting, Manufacturing, Real Estate, Telecommunications, Education, Other. If a field is not found, return null. No markdown backticks.",
             },
             {
               role: "user",

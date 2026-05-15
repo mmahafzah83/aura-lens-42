@@ -477,6 +477,7 @@ export type Database = {
           id: string
           identity_intelligence: Json
           last_active_at: string | null
+          last_name: string | null
           last_visit_at: string | null
           leadership_style: string | null
           level: string | null
@@ -510,6 +511,7 @@ export type Database = {
           id?: string
           identity_intelligence?: Json
           last_active_at?: string | null
+          last_name?: string | null
           last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null
@@ -543,6 +545,7 @@ export type Database = {
           id?: string
           identity_intelligence?: Json
           last_active_at?: string | null
+          last_name?: string | null
           last_visit_at?: string | null
           leadership_style?: string | null
           level?: string | null

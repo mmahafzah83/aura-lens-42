@@ -143,16 +143,16 @@ function buildIdentityContext(profile: any): string {
   const auditInterp = profile.audit_interpretation as any;
 
   if (brandResults && brandResults.primary_archetype) {
-    const zoneOfGenius = typeof auditInterp === "string"
-      ? (auditInterp.match(/zone of genius[:\s]*([^\n]+)/i)?.[1] || "")
-      : (auditInterp?.zone_of_genius || "");
+    const distinctiveExpertise = typeof auditInterp === "string"
+      ? (auditInterp.match(/(?:zone of genius|distinctive expertise|what only you can do)[:\s]*([^\n]+)/i)?.[1] || "")
+      : (auditInterp?.zone_of_genius || auditInterp?.distinctive_expertise || "");
     const pillars = brandResults.content_pillars
       ? (Array.isArray(brandResults.content_pillars) ? brandResults.content_pillars.join(", ") : brandResults.content_pillars)
       : "";
 
     return `
 IDENTITY CONTEXT — always apply this to every piece of content you generate:
-The user's brand archetype is ${brandResults.primary_archetype}. Their positioning statement is ${brandResults.positioning_statement || "not yet defined"}. Their Zone of Genius is ${zoneOfGenius || "not yet identified"}. Their top content pillars are ${pillars || "not yet defined"}. Their role is ${profile.level || "strategy professional"} in ${profile.sector_focus || "their field"} targeting ${profile.north_star_goal || "thought leadership"}.
+The user's brand archetype is ${brandResults.primary_archetype}. Their positioning statement is ${brandResults.positioning_statement || "not yet defined"}. Their distinctive expertise is ${distinctiveExpertise || "not yet identified"}. Their top content pillars are ${pillars || "not yet defined"}. Their role is ${profile.level || "strategy professional"} in ${profile.sector_focus || "their field"} targeting ${profile.north_star_goal || "thought leadership"}.
 Every piece of content must: (1) Sound like their archetype — if they are The Expert, write with rigour and depth. If they are The Challenger, write with a contrarian edge. If they are The Visionary, write with forward-looking perspective. (2) Reinforce their positioning statement — content should always move the reader toward seeing the user through the lens of their positioning. (3) Stay within or adjacent to their content pillars — do not generate content on topics unrelated to their pillars without explicit user request.
 - Practice: ${profile.core_practice || "strategy"}
 - Brand Pillars: ${(profile.brand_pillars || []).join(", ")}
@@ -383,6 +383,7 @@ Write with conviction. No generic statements. Every line should demonstrate stra
         .trim();
 
       // Quality gate — challenge the output before returning
+      // Quality gate intentionally uses a different model (GPT-4o) for independent evaluation
       let gateResult: any = null;
       try {
         const gatePromise = supabase.functions.invoke("evaluate-content-quality", {
@@ -394,7 +395,12 @@ Write with conviction. No generic statements. Every line should demonstrate stra
             user_sector: profile?.sector_focus || null,
           },
         });
-        const timeout = new Promise((resolve) => setTimeout(() => resolve({ data: null, error: "timeout" }), 8000));
+        const timeout = new Promise((resolve) => {
+          setTimeout(() => {
+            console.warn("[generate-authority-content] quality gate timed out after 15s — skipped");
+            resolve({ data: null, error: "timeout" });
+          }, 15000);
+        });
         const gateRes: any = await Promise.race([gatePromise, timeout]);
         if (gateRes?.data && !gateRes?.error) {
           gateResult = gateRes.data;
