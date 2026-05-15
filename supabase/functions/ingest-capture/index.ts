@@ -33,7 +33,18 @@ function fallbackTitleFromUrl(targetUrl: string): string {
     const hostname = new URL(targetUrl).hostname.replace(/^www\./, '');
     const parts = hostname.split('.');
     const domain = parts[parts.length - 2] || hostname;
-    return domain.charAt(0).toUpperCase() + domain.slice(1) + ' article';
+
+    // Proper noun corrections for known domains
+    const properNouns: Record<string, string> = {
+      'mckinsey': 'McKinsey', 'linkedin': 'LinkedIn', 'youtube': 'YouTube',
+      'github': 'GitHub', 'stackoverflow': 'StackOverflow', 'techcrunch': 'TechCrunch',
+      'bloomberg': 'Bloomberg', 'reuters': 'Reuters', 'pwc': 'PwC',
+      'deloitte': 'Deloitte', 'accenture': 'Accenture', 'gartner': 'Gartner',
+      'forrester': 'Forrester', 'hbr': 'HBR', 'weforum': 'WEF',
+    };
+
+    const proper = properNouns[domain.toLowerCase()];
+    return (proper || domain.charAt(0).toUpperCase() + domain.slice(1)) + ' article';
   } catch {
     return 'Captured article';
   }
