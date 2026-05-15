@@ -1085,7 +1085,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               const gate = journey.currentGate;
               const profileDone = journey.profileComplete;
               const assessDone = journey.assessmentComplete;
-              const captureDone = (entries?.length ?? 0) > 0;
+              const captureDone = captureStepDone;
               const steps = [
                 {
                   n: 1,
