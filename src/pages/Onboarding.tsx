@@ -764,7 +764,15 @@ const Onboarding = () => {
                   "{foundArticle.summary}"
                 </p>
               )}
-              {primaryBtn(<>Capture this article <ArrowRight className="w-4 h-4" /></>, () => captureArticle(foundArticle.url), { loading: capturing })}
+              {primaryBtn(
+                <>Capture this article <ArrowRight className="w-4 h-4" /></>,
+                () => captureArticle(foundArticle.url, {
+                  title: foundArticle.title,
+                  summary: foundArticle.summary,
+                  source: "onboarding_exa",
+                }),
+                { loading: capturing }
+              )}
             </div>
             <div className="my-4 text-xs text-center" style={{ color: "hsl(var(--muted-foreground))" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
