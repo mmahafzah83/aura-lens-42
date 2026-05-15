@@ -999,8 +999,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const dataReady = profileLoaded && !briefLoading && entriesLoaded;
   // Welcome state appears for any user who hasn't cleared all foundation gates
   // (profile + assessment + 1+ capture). It also covers the original "0 entries" case.
+  // Use the journey hook's entry count (queried directly with limit 500) as the
+  // source of truth — the `entries` prop can be empty mid-load and lie about
+  // capture state. Step 3 = at least one row in the entries table.
+  const captureStepDone = (journey.entryCount > 0) || (entriesLoaded && entries!.length > 0);
+  const allFoundationDone = journey.profileComplete && journey.assessmentComplete && captureStepDone;
   const preCapture = !journey.loading && journey.currentGate < 2;
-  const showWelcomeState = dataReady && (preCapture || (noEntries && !hasSignals));
+  const showWelcomeState = dataReady
+    && !journey.loading
+    && !allFoundationDone
+    && (preCapture || (noEntries && !hasSignals));
   const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
 
   // Context-aware persistent welcome card (rendered later in the tree).
