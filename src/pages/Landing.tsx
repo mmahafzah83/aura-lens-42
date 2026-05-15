@@ -176,6 +176,13 @@ const Landing = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
+  usePageMeta({
+    title: "Aura — Strategic Intelligence OS",
+    description: "Capture what you read. Detect strategic patterns. Publish with authority on LinkedIn — in English and Arabic. Built for senior professionals.",
+    path: "/",
+    ogImage: "https://www.aura-intel.org/og-image.png",
+  });
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) navigate("/home", { replace: true });
