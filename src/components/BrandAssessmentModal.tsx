@@ -289,19 +289,25 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
         formattedAnswers[`Q${i + 1}`] = answers[i];
       });
 
-      const archetypeMatch = interpretation.match(/PRIMARY BRAND ARCHETYPE\s*\n+(.+?)(?:\.|Three|\n)/i);
-      const primaryArchetype = archetypeMatch?.[1]?.trim() || "";
-      const secondaryMatch = interpretation.match(/secondary archetype[^.]*?(?:is|:)\s*(?:the\s+)?(.+?)(?:\.|$)/i);
-      const secondaryArchetype = secondaryMatch?.[1]?.trim() || "";
+      const { prose, json } = splitInterpretation(interpretation);
+
+      // Build the persisted brand_assessment_results object.
+      // Prefer structured JSON from new prompt; fall back to legacy header parsing.
+      let resultsObj: Record<string, any> = { interpretation: prose || interpretation };
+      if (json && typeof json === "object") {
+        resultsObj = { ...json, ...resultsObj };
+      } else {
+        // Legacy fallback — try to extract the old keys from prose.
+        const archMatch = interpretation.match(/(?:PRIMARY BRAND ARCHETYPE|HOW (?:THE MARKET SEES YOU|I AM POSITIONED))\s*\n+(.+?)(?:\.|Three|\n)/i);
+        const secMatch = interpretation.match(/secondary (?:archetype|positioning)[^.]*?(?:is|:)\s*(?:the\s+)?(.+?)(?:\.|$)/i);
+        resultsObj.primary_archetype = archMatch?.[1]?.trim() || "";
+        resultsObj.secondary_archetype = secMatch?.[1]?.trim() || "";
+      }
 
       await (supabase.from("diagnostic_profiles" as any) as any)
         .update({
           brand_assessment_answers: formattedAnswers,
-          brand_assessment_results: {
-            interpretation,
-            primary_archetype: primaryArchetype,
-            secondary_archetype: secondaryArchetype,
-          },
+          brand_assessment_results: resultsObj,
           brand_assessment_completed_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
