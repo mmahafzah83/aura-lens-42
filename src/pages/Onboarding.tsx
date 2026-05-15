@@ -247,7 +247,7 @@ const Onboarding = () => {
   };
 
   // ─── Step 2: capture article ───
-  const captureArticle = async (url: string) => {
+  const captureArticle = async (url: string, articleMeta?: { title?: string; summary?: string; source?: string }) => {
     if (!url.trim()) return;
     try {
       new URL(url.trim());
@@ -269,7 +269,13 @@ const Onboarding = () => {
           type: "link",
           content: url.trim(),
           source_url: url.trim(),
-          metadata: {},
+          metadata: articleMeta
+            ? {
+                title: articleMeta.title,
+                summary: articleMeta.summary,
+                source: "onboarding_exa",
+              }
+            : {},
         }),
       });
       const data = await resp.json().catch(() => null);
@@ -758,7 +764,15 @@ const Onboarding = () => {
                   "{foundArticle.summary}"
                 </p>
               )}
-              {primaryBtn(<>Capture this article <ArrowRight className="w-4 h-4" /></>, () => captureArticle(foundArticle.url), { loading: capturing })}
+              {primaryBtn(
+                <>Capture this article <ArrowRight className="w-4 h-4" /></>,
+                () => captureArticle(foundArticle.url, {
+                  title: foundArticle.title,
+                  summary: foundArticle.summary,
+                  source: "onboarding_exa",
+                }),
+                { loading: capturing }
+              )}
             </div>
             <div className="my-4 text-xs text-center" style={{ color: "hsl(var(--muted-foreground))" }}>Or paste your own URL:</div>
             <ArticleManualPaste url={manualUrl} setUrl={setManualUrl} onSave={() => captureArticle(manualUrl)} loading={capturing} inputCls={inputCls} inputStyle={inputStyle} compact />
