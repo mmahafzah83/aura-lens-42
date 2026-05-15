@@ -247,7 +247,7 @@ const Onboarding = () => {
   };
 
   // ─── Step 2: capture article ───
-  const captureArticle = async (url: string) => {
+  const captureArticle = async (url: string, articleMeta?: { title?: string; summary?: string; source?: string }) => {
     if (!url.trim()) return;
     try {
       new URL(url.trim());
@@ -269,7 +269,13 @@ const Onboarding = () => {
           type: "link",
           content: url.trim(),
           source_url: url.trim(),
-          metadata: {},
+          metadata: articleMeta
+            ? {
+                title: articleMeta.title,
+                summary: articleMeta.summary,
+                source: "onboarding_exa",
+              }
+            : {},
         }),
       });
       const data = await resp.json().catch(() => null);
