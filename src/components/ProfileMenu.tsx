@@ -41,7 +41,6 @@ export default function ProfileMenu({
   const [hasPassword, setHasPassword] = useState<boolean>(() => {
     try { return localStorage.getItem("password_set") === "1"; } catch { return false; }
   });
-  const [resolvedUserId, setResolvedUserId] = useState<string | null>(userId ?? null);
 
   useEffect(() => {
     let active = true;
@@ -52,7 +51,6 @@ export default function ProfileMenu({
         setHasPassword(true);
         try { localStorage.setItem("password_set", "1"); } catch {}
       }
-      if (!userId && data.user?.id) setResolvedUserId(data.user.id);
     });
     return () => { active = false; };
   }, [userId]);
