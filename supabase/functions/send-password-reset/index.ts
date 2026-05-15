@@ -110,15 +110,21 @@ serve(async (req) => {
       }),
     });
     if (!resendRes.ok) {
-      console.error("Resend:", await resendRes.text());
+      const errorBody = await resendRes.text();
+      console.error("send-password-reset Resend FAILED:", resendRes.status, errorBody);
     }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    console.error("send-password-reset:", err);
-    return new Response(JSON.stringify({ success: true }), {
+    console.error("send-password-reset CRITICAL:", err);
+    // Still return success to user (don't reveal if email exists)
+    // But log the actual error so admin can debug
+    return new Response(JSON.stringify({
+      success: true,
+      _debug: Deno.env.get("DEBUG_MODE") === "true" ? (err as Error).message : undefined,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
