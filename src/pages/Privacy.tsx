@@ -1,6 +1,13 @@
 import LegalPage from "./LegalPage";
+import usePageMeta from "@/hooks/usePageMeta";
 
-const Privacy = () => (
+const Privacy = () => {
+  usePageMeta({
+    title: "Privacy Policy — Aura",
+    description: "How Aura collects, stores, and protects your data. We never sell your data and never train AI models on your content.",
+    path: "/privacy",
+  });
+  return (
   <LegalPage
     title="Privacy Policy"
     updated="May 2026"
@@ -15,5 +22,6 @@ const Privacy = () => (
     ]}
   />
 );
+};
 
 export default Privacy;
