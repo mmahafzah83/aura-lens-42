@@ -131,7 +131,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       } else {
         // Empty stub so the page renders an actionable shell (assessment CTA + ProfileManagement editor)
         setProfile({
-          first_name: null, level: null, firm: null, sector_focus: null,
+          first_name: null, last_name: null, level: null, firm: null, sector_focus: null,
           core_practice: null, north_star_goal: null, brand_pillars: [],
           avatar_url: null, onboarding_completed: false, audit_completed_at: null,
           brand_assessment_completed_at: null, brand_assessment_results: null,
