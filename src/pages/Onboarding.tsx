@@ -425,7 +425,7 @@ const Onboarding = () => {
 
   // ───── STEP -1: Password gate ─────
   const handleSetPassword = async () => {
-    if (pwd.length < 8) {
+    if (!pwd || pwd.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
@@ -435,25 +435,51 @@ const Onboarding = () => {
     }
     setSettingPwd(true);
     try {
-      const { error } = await supabase.auth.updateUser({
+      // Step 1: Update the password
+      const { data: updateData, error: updateError } = await supabase.auth.updateUser({
         password: pwd,
+      });
+      if (updateError) {
+        console.error("Password update failed:", updateError);
+        toast.error("Failed to set password: " + (updateError.message || "Unknown error"));
+        setSettingPwd(false);
+        return;
+      }
+      console.log("Password update succeeded:", updateData);
+
+      // Step 2: Verify session is still valid after password change
+      const { data: { user: verifiedUser }, error: verifyError } = await supabase.auth.getUser();
+      if (verifyError || !verifiedUser) {
+        console.error("User verification after password set failed:", verifyError);
+        toast.error("Password may not have saved. Please try again.");
+        setSettingPwd(false);
+        return;
+      }
+
+      // Step 3: Mark password_set in metadata (non-critical)
+      const { error: metaError } = await supabase.auth.updateUser({
         data: { password_set: true },
       });
-      if (error) throw error;
+      if (metaError) {
+        console.warn("Metadata update failed (non-critical):", metaError);
+      }
+
+      toast.success(`Password set for ${verifiedUser.email}. You can now log in anytime.`);
+
+      // Step 5: Notify (non-blocking)
       try {
-        if (userEmail) {
-          await supabase.functions.invoke("send-account-notification", {
-            body: { type: "password_set", email: userEmail, first_name: null },
-          });
-        }
+        await supabase.functions.invoke("send-account-notification", {
+          body: { type: "password_set", email: verifiedUser.email, first_name: null },
+        });
       } catch (e) {
         console.warn("password_set notification failed:", e);
       }
+
       setNeedsPassword(false);
       setPwd(""); setPwdConfirm("");
     } catch (e: any) {
-      toast.error(e?.message || "Failed to set password. Please try again.");
-    } finally {
+      console.error("Unexpected error in password setup:", e);
+      toast.error(e?.message || "Something went wrong. Please try again.");
       setSettingPwd(false);
     }
   };
@@ -469,6 +495,23 @@ const Onboarding = () => {
       color: "hsl(var(--foreground))",
       outline: "none",
     };
+    const checks = {
+      length: pwd.length >= 8,
+      uppercase: /[A-Z]/.test(pwd),
+      lowercase: /[a-z]/.test(pwd),
+      number: /[0-9]/.test(pwd),
+      special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pwd),
+      match: pwd.length > 0 && pwdConfirm.length > 0 && pwd === pwdConfirm,
+    };
+    const allValid = Object.values(checks).every(Boolean);
+    const checklist: { key: keyof typeof checks; label: string }[] = [
+      { key: "length", label: "At least 8 characters" },
+      { key: "uppercase", label: "One uppercase letter (A–Z)" },
+      { key: "lowercase", label: "One lowercase letter (a–z)" },
+      { key: "number", label: "One number (0–9)" },
+      { key: "special", label: "One special character (!@#$%)" },
+      { key: "match", label: "Passwords match" },
+    ];
     return cardShell(
       <>
         {eyebrow("Secure your account")}
@@ -506,13 +549,25 @@ const Onboarding = () => {
             onKeyDown={(e) => { if (e.key === "Enter") handleSetPassword(); }}
           />
         </div>
-        <p className="text-xs mb-5" style={{ color: "hsl(var(--muted-foreground))" }}>
-          Must be at least 8 characters.
-        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "10px 0 18px" }}>
+          {checklist.map(({ key, label }) => {
+            const ok = checks[key];
+            return (
+              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                {ok ? (
+                  <Check size={14} style={{ color: "hsl(142 70% 45%)" }} />
+                ) : (
+                  <span style={{ width: 14, height: 14, borderRadius: 999, border: "1.5px solid hsl(var(--border))", display: "inline-block" }} />
+                )}
+                <span style={{ color: ok ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))" }}>{label}</span>
+              </div>
+            );
+          })}
+        </div>
         {primaryBtn(
           <>Set password & continue <ArrowRight className="w-4 h-4" /></>,
           handleSetPassword,
-          { loading: settingPwd, disabled: pwd.length < 8 || pwd !== pwdConfirm },
+          { loading: settingPwd, disabled: !allValid },
         )}
       </>,
     );
