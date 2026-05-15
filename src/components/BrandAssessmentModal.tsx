@@ -1,9 +1,47 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, ArrowLeft, Compass } from "lucide-react";
+import { X, ArrowLeft, Compass, ChevronDown, Copy, Download, ArrowUpRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+
+// New section headers (must match brand-assessment EF SYSTEM_PROMPT)
+const SECTION_DEFS: { key: string; label: string; hint: string }[] = [
+  { key: "HOW THE MARKET SEES YOU", label: "How the market sees you", hint: "The way a CIO in your sector would describe you to a colleague" },
+  { key: "HOW YOU BUILD TRUST", label: "How you build trust", hint: "Your natural way of earning credibility" },
+  { key: "YOUR NATURAL TONE", label: "Your natural tone", hint: "How your communication style lands with senior decision makers" },
+  { key: "WHAT ONLY YOU CAN DO", label: "What only you can do", hint: "Where your expertise meets an unmet market need" },
+  { key: "THE SPACE NOBODY ELSE OWNS", label: "The space nobody else owns", hint: "The gap in the market that's yours to claim" },
+  { key: "YOUR 3 TOPICS", label: "Your 3 topics", hint: "The subjects where you have the most to say and the market needs to hear it" },
+  { key: "WHERE TO INVEST NEXT", label: "Where to invest next", hint: "Honest assessment of what's missing and what building it would unlock" },
+  { key: "THE HONEST TRUTH", label: "The honest truth", hint: "Why the thing that's holding you back is actually solvable" },
+];
+
+function splitInterpretation(raw: string): { prose: string; json: any | null } {
+  if (!raw) return { prose: "", json: null };
+  const idx = raw.indexOf("---JSON---");
+  if (idx === -1) return { prose: raw, json: null };
+  const prose = raw.slice(0, idx).trim();
+  const jsonText = raw.slice(idx + "---JSON---".length).trim();
+  try {
+    // Strip code fences if present
+    const cleaned = jsonText.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
+    return { prose, json: JSON.parse(cleaned) };
+  } catch (e) {
+    console.warn("Failed to parse brand-assessment JSON tail", e);
+    return { prose, json: null };
+  }
+}
+
+function extractSection(prose: string, header: string): string {
+  if (!prose) return "";
+  const headers = SECTION_DEFS.map(s => s.key);
+  const escapedAll = headers.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  const escThis = header.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?:^|\\n)\\s*(?:#{1,6}\\s*)?\\*{0,2}${escThis}\\*{0,2}\\s*\\n+([\\s\\S]*?)(?=\\n\\s*(?:#{1,6}\\s*)?\\*{0,2}(?:${escapedAll})\\*{0,2}\\s*\\n|$)`, "i");
+  const m = prose.match(re);
+  return (m?.[1] || "").trim();
+}
 
 interface BrandAssessmentModalProps {
   open: boolean;
