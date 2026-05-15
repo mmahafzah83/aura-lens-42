@@ -5,10 +5,7 @@ import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap, ChevronDown } 
 import AuraLogo from "@/components/brand/AuraLogo";
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
-
-if (typeof document !== "undefined") {
-  document.title = "Aura — Strategic Intelligence OS";
-}
+import usePageMeta from "@/hooks/usePageMeta";
 
 /* ── Scroll-based reveal hook (works in iframes) ── */
 const useReveal = () => {
