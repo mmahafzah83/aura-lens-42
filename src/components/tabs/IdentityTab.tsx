@@ -404,12 +404,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {loadError && (
         <SectionError onRetry={() => authUser && loadAll(authUser.id)} message="Couldn't load your story. " />
       )}
-      {/* Market Mirror (O-3) — three audience perspectives + gaps */}
-      {assessmentCompleted && (
-        <div data-testid="story-market-mirror">
-          <MarketMirror userId={authUser?.id ?? null} />
-        </div>
-      )}
       {/* Branded header */}
       <div style={{ marginBottom: 0 }}>
         <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
@@ -1166,6 +1160,13 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       <div data-testid="story-milestones">
         <MilestonesSection userId={authUser?.id ?? null} />
       </div>
+
+      {/* Market Mirror (O-3) — moved to bottom: shown after all earned content */}
+      {assessmentCompleted && (
+        <div data-testid="story-market-mirror">
+          <MarketMirror userId={authUser?.id ?? null} />
+        </div>
+      )}
 
       {/* Assessment Modals */}
       <ObjectiveAuditModal open={auditOpen} onOpenChange={setAuditOpen} onNavigate={handleNavigate} />
