@@ -114,7 +114,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     try {
       const [profileRes, scoreRes, signalsRes] = await withTimeout(Promise.all([
         (supabase.from("diagnostic_profiles" as any) as any)
-          .select("first_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
+          .select("first_name, last_name, level, firm, sector_focus, core_practice, north_star_goal, brand_pillars, avatar_url, onboarding_completed, audit_completed_at, brand_assessment_completed_at, brand_assessment_results, identity_intelligence, primary_strength")
           .eq("user_id", uid).maybeSingle(),
         (supabase.from("authority_scores") as any)
           .select("authority_score").eq("user_id", uid)
@@ -322,8 +322,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
     }
   };
 
-  const userName = profile?.first_name || "You";
-  const initials = userName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const fullName = [profile?.first_name, (profile as any)?.last_name].filter(Boolean).join(" ").trim();
+  const userName = fullName || "You";
+  const initials = (() => {
+    const fn = (profile?.first_name || "").trim();
+    const ln = ((profile as any)?.last_name || "").trim();
+    if (fn && ln) return (fn[0] + ln[0]).toUpperCase();
+    if (fn) return fn[0].toUpperCase();
+    return "Y";
+  })();
 
   // Extract positioning data from brand_assessment_results or identity_intelligence
   const brandResults = profile?.brand_assessment_results || {};
