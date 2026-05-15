@@ -5,10 +5,7 @@ import {
   ChevronDown, Inbox, Radar, PenTool, TrendingUp,
   Home as HomeIcon, Compass, Sparkles, BarChart3, User,
 } from "lucide-react";
-
-if (typeof document !== "undefined") {
-  document.title = "Guide — How Aura Works";
-}
+import usePageMeta from "@/hooks/usePageMeta";
 
 const FAQ_ITEMS: { q: string; a: string }[] = [
   { q: "What does Aura actually do?", a: "Aura reads what you read. It detects the strategic patterns in your daily reading and turns them into signals — topics you're tracking more deeply than you realized. Then it generates LinkedIn content in your voice, grounded in your signals. The result: you build authority from intelligence you already have." },
@@ -46,6 +43,21 @@ const Guide = () => {
   const navigate = useNavigate();
   const [authed, setAuthed] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  usePageMeta({
+    title: "Guide — How Aura Works",
+    description: "How Aura turns your daily reading into market authority: capture, detect signals, generate content, and track your authority score.",
+    path: "/guide",
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+        "@type": "Question",
+        name: q,
+        acceptedAnswer: { "@type": "Answer", text: a },
+      })),
+    },
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));

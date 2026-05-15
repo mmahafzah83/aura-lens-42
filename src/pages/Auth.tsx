@@ -4,8 +4,14 @@ import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Radio, PenLine, TrendingUp, Eye, EyeOff } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import { useToast } from "@/hooks/use-toast";
+import usePageMeta from "@/hooks/usePageMeta";
 
 const Auth = () => {
+  usePageMeta({
+    title: "Sign in — Aura",
+    description: "Sign in to Aura to access your strategic intelligence dashboard, signals, and content tools.",
+    path: "/auth",
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);

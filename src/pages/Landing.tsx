@@ -5,10 +5,7 @@ import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap, ChevronDown } 
 import AuraLogo from "@/components/brand/AuraLogo";
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
-
-if (typeof document !== "undefined") {
-  document.title = "Aura — Strategic Intelligence OS";
-}
+import usePageMeta from "@/hooks/usePageMeta";
 
 /* ── Scroll-based reveal hook (works in iframes) ── */
 const useReveal = () => {
@@ -178,6 +175,13 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
 const Landing = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+
+  usePageMeta({
+    title: "Aura — Strategic Intelligence OS",
+    description: "Capture what you read. Detect strategic patterns. Publish with authority on LinkedIn — in English and Arabic. Built for senior professionals.",
+    path: "/",
+    ogImage: "https://www.aura-intel.org/og-image.png",
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
