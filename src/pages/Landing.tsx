@@ -321,6 +321,7 @@ const Landing = () => {
         </button>
       </nav>
 
+      <main>
       {/* Section 2 — Hero */}
       <section className="landing-hero relative overflow-hidden px-5 sm:px-10 pt-16 pb-20 text-center">
         <div className="absolute inset-0 pointer-events-none" style={{
@@ -604,6 +605,7 @@ const Landing = () => {
 
       {/* Section 9.5 — FAQ */}
       <LandingFAQ />
+      </main>
 
       {/* Section 10 — Footer */}
       <footer
@@ -612,7 +614,7 @@ const Landing = () => {
           background: "#0D0D0D",
           borderTop: "1px solid rgba(255,255,255,0.08)",
           padding: "48px 40px",
-          color: "rgba(255,255,255,0.4)",
+          color: "rgba(255,255,255,0.62)",
         }}
       >
         <style>{`
@@ -627,10 +629,10 @@ const Landing = () => {
           .landing-footer-col-center { text-align: center; }
           .landing-footer-col-right { text-align: right; }
           .landing-footer a {
-            color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.62);
             transition: color 0.15s ease;
           }
-          .landing-footer a:hover { color: rgba(255,255,255,0.7); }
+          .landing-footer a:hover { color: rgba(255,255,255,0.9); }
           .landing-footer-links {
             display: inline-flex;
             flex-wrap: wrap;
@@ -638,7 +640,7 @@ const Landing = () => {
             gap: 10px;
             font-size: 12px;
           }
-          .landing-footer-dot { color: rgba(255,255,255,0.25); }
+          .landing-footer-dot { color: rgba(255,255,255,0.45); }
           @media (max-width: 768px) {
             .landing-footer { padding: 32px 20px !important; }
             .landing-footer-grid {
@@ -658,7 +660,7 @@ const Landing = () => {
                 Aura · Strategic Intelligence · aura-intel.org
               </span>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.62)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
               © 2026 Aura Intelligence. All rights reserved.
             </p>
           </div>
@@ -674,10 +676,10 @@ const Landing = () => {
             </div>
           </div>
           <div className="landing-footer-col-right">
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)" }}>
               Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
             </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.62)", marginTop: 6 }}>
               Built in Riyadh for the world
             </p>
           </div>
