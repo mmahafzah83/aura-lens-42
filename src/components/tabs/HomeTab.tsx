@@ -1052,7 +1052,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
           >
             {showWelcomeState
-              ? `Good ${(() => { const h = now.getHours(); return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening"; })()}${userName ? `, ${userName}` : ""}. Your radar is ready.`
+              ? `Good ${(() => { const h = now.getHours(); return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening"; })()}${userName ? `, ${userName}` : ""}. ${allFoundationDone ? "Your radar is ready." : "Almost there — one more step."}`
               : "Your intelligence is building"}
           </h1>
           <p

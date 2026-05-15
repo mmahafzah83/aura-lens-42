@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { User, LogOut, UserCog, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SetPasswordModal from "@/components/SetPasswordModal";
-import QuestLog from "@/components/QuestLog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,14 +30,17 @@ export default function ProfileMenu({
   onToggleTheme,
   onSignOut,
   onEditProfile,
-  onQuestAction,
-  onViewFullJourney,
+  // onQuestAction and onViewFullJourney are accepted for backwards
+  // compatibility but no longer rendered — the dropdown no longer
+  // hosts its own progress tracker. Home checklist + My Story
+  // milestones are the single sources of truth.
+  onQuestAction: _onQuestAction,
+  onViewFullJourney: _onViewFullJourney,
 }: ProfileMenuProps) {
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [hasPassword, setHasPassword] = useState<boolean>(() => {
     try { return localStorage.getItem("password_set") === "1"; } catch { return false; }
   });
-  const [resolvedUserId, setResolvedUserId] = useState<string | null>(userId ?? null);
 
   useEffect(() => {
     let active = true;
@@ -49,7 +51,6 @@ export default function ProfileMenu({
         setHasPassword(true);
         try { localStorage.setItem("password_set", "1"); } catch {}
       }
-      if (!userId && data.user?.id) setResolvedUserId(data.user.id);
     });
     return () => { active = false; };
   }, [userId]);
@@ -214,25 +215,6 @@ export default function ProfileMenu({
               );
             })}
           </div>
-        </div>
-
-        {/* DIVIDER */}
-        <div
-          style={{
-            height: 0,
-            borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-            margin: "0 4px",
-          }}
-        />
-
-        {/* QUEST LOG */}
-        <div style={{ padding: "8px 4px 4px" }}>
-          <QuestLog
-            userId={resolvedUserId}
-            compact
-            onQuestAction={onQuestAction}
-            onViewFullJourney={onViewFullJourney}
-          />
         </div>
 
         {/* DIVIDER */}
