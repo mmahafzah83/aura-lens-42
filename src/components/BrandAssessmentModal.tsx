@@ -179,6 +179,9 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [interpretation, setInterpretation] = useState("");
+  const [loadingStage, setLoadingStage] = useState(0);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [genError, setGenError] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -188,8 +191,47 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       setShowResults(false);
       setLoading(false);
       setInterpretation("");
+      setLoadingStage(0);
+      setConfirmClose(false);
+      setGenError(false);
     }
   }, [open]);
+
+  // Staged loading messages — rotate every 4 seconds while generating
+  useEffect(() => {
+    if (!loading) { setLoadingStage(0); return; }
+    const id = setInterval(() => {
+      setLoadingStage((s) => Math.min(s + 1, 4));
+    }, 4000);
+    return () => clearInterval(id);
+  }, [loading]);
+
+  const LOADING_STAGES = [
+    "Reading your answers...",
+    "Mapping your market position...",
+    "Identifying your topics...",
+    "Finding the space only you can own...",
+    "Finalizing your positioning...",
+  ];
+
+  const persistAnswersOnly = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const formattedAnswers: Record<string, any> = {};
+      QUESTIONS.forEach((qq, i) => { formattedAnswers[`Q${i + 1}`] = answers[i]; });
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ brand_assessment_answers: formattedAnswers })
+        .eq("user_id", user.id);
+    } catch (e) {
+      console.warn("Failed to persist answers on close:", e);
+    }
+  };
+
+  const handleCloseRequest = () => {
+    if (loading) { setConfirmClose(true); return; }
+    onOpenChange(false);
+  };
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -269,11 +311,17 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       });
 
       if (error) throw error;
-      setInterpretation(data.interpretation || "No analysis returned.");
+      if (!data || (data as any).pending || !(data as any).interpretation) {
+        await persistAnswersOnly();
+        setGenError(true);
+        return;
+      }
+      setInterpretation((data as any).interpretation);
     } catch (e: any) {
+      // Suppress technical error toast — show a friendly in-modal message instead
       console.error("Brand assessment error:", e);
-      toast({ title: "Error", description: e.message || "Failed to generate brand analysis", variant: "destructive" });
-      setInterpretation("Analysis could not be generated. Please try again.");
+      await persistAnswersOnly();
+      setGenError(true);
     } finally {
       setLoading(false);
     }
@@ -329,7 +377,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       <div
         className="fixed inset-0"
         style={{ background: "rgba(0,0,0,0.8)", zIndex: 999, pointerEvents: "all" }}
-        onClick={() => onOpenChange(false)}
+        onClick={handleCloseRequest}
       />
 
       {/* Centered modal */}
@@ -367,7 +415,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                 <span className="text-[13px] text-ink-7 font-medium">Brand Assessment</span>
               </div>
             </div>
-            <button onClick={() => onOpenChange(false)} className="text-ink-4 hover:text-ink-5 p-1">
+            <button onClick={handleCloseRequest} className="text-ink-4 hover:text-ink-5 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -394,7 +442,22 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="w-3 h-3 rounded-full bg-brand animate-pulse" />
-                  <p className="text-[13px] text-ink-5">Building your brand positioning across 6 frameworks...</p>
+                  <p className="text-[13px] text-ink-5 transition-opacity duration-300">{LOADING_STAGES[loadingStage]}</p>
+                </div>
+              ) : genError ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
+                  <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
+                    We couldn't build your analysis right now
+                  </h3>
+                  <p className="text-[13px] text-ink-5 leading-relaxed">
+                    Your answers are saved. You can try again from My Story whenever you're ready.
+                  </p>
+                  <button
+                    onClick={() => { onOpenChange(false); onNavigate?.("identity"); }}
+                    className="mt-2 px-5 py-2.5 rounded-xl text-[13px] font-medium bg-brand text-white hover:brightness-110 transition"
+                  >
+                    Go to My Story →
+                  </button>
                 </div>
               ) : (
                 <ResultsView
@@ -470,6 +533,49 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           </div>
         )}
       </div>
+
+      {confirmClose && (
+        <div
+          className="fixed inset-0 flex items-center justify-center px-4"
+          style={{ background: "rgba(0,0,0,0.6)", zIndex: 1100 }}
+          onClick={() => setConfirmClose(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--ink)",
+              border: "1px solid var(--ink-3)",
+              borderRadius: 14,
+              padding: 20,
+              width: 400,
+              maxWidth: "92vw",
+            }}
+          >
+            <h3 className="text-[15px] text-ink-7 font-medium mb-2">Your analysis is being built</h3>
+            <p className="text-[13px] text-ink-5 leading-relaxed mb-5">
+              If you close now, your answers are saved and you can regenerate from My Story.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setConfirmClose(false)}
+                className="w-full py-2.5 rounded-xl text-[13px] font-medium bg-brand text-white hover:brightness-110 transition"
+              >
+                Wait for results
+              </button>
+              <button
+                onClick={async () => {
+                  await persistAnswersOnly();
+                  setConfirmClose(false);
+                  onOpenChange(false);
+                }}
+                className="w-full py-2.5 rounded-xl text-[13px] text-ink-5 hover:text-ink-7 transition"
+              >
+                Close anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>,
     document.body
   );
