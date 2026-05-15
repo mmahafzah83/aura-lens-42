@@ -179,6 +179,9 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [interpretation, setInterpretation] = useState("");
+  const [loadingStage, setLoadingStage] = useState(0);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [genError, setGenError] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -188,8 +191,47 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       setShowResults(false);
       setLoading(false);
       setInterpretation("");
+      setLoadingStage(0);
+      setConfirmClose(false);
+      setGenError(false);
     }
   }, [open]);
+
+  // Staged loading messages — rotate every 4 seconds while generating
+  useEffect(() => {
+    if (!loading) { setLoadingStage(0); return; }
+    const id = setInterval(() => {
+      setLoadingStage((s) => Math.min(s + 1, 4));
+    }, 4000);
+    return () => clearInterval(id);
+  }, [loading]);
+
+  const LOADING_STAGES = [
+    "Reading your answers...",
+    "Mapping your market position...",
+    "Identifying your topics...",
+    "Finding the space only you can own...",
+    "Finalizing your positioning...",
+  ];
+
+  const persistAnswersOnly = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const formattedAnswers: Record<string, any> = {};
+      QUESTIONS.forEach((qq, i) => { formattedAnswers[`Q${i + 1}`] = answers[i]; });
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ brand_assessment_answers: formattedAnswers })
+        .eq("user_id", user.id);
+    } catch (e) {
+      console.warn("Failed to persist answers on close:", e);
+    }
+  };
+
+  const handleCloseRequest = () => {
+    if (loading) { setConfirmClose(true); return; }
+    onOpenChange(false);
+  };
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -269,11 +311,17 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
       });
 
       if (error) throw error;
-      setInterpretation(data.interpretation || "No analysis returned.");
+      if (!data || (data as any).pending || !(data as any).interpretation) {
+        await persistAnswersOnly();
+        setGenError(true);
+        return;
+      }
+      setInterpretation((data as any).interpretation);
     } catch (e: any) {
+      // Suppress technical error toast — show a friendly in-modal message instead
       console.error("Brand assessment error:", e);
-      toast({ title: "Error", description: e.message || "Failed to generate brand analysis", variant: "destructive" });
-      setInterpretation("Analysis could not be generated. Please try again.");
+      await persistAnswersOnly();
+      setGenError(true);
     } finally {
       setLoading(false);
     }
@@ -367,7 +415,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                 <span className="text-[13px] text-ink-7 font-medium">Brand Assessment</span>
               </div>
             </div>
-            <button onClick={() => onOpenChange(false)} className="text-ink-4 hover:text-ink-5 p-1">
+            <button onClick={handleCloseRequest} className="text-ink-4 hover:text-ink-5 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
