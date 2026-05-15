@@ -476,3 +476,318 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
 };
 
 export default BrandAssessmentModal;
+
+// ============================================================
+// ResultsView — Card 1 (Verdict) + Card 2 (Full Picture) + Card 3 (Actions)
+// ============================================================
+function ResultsView({
+  interpretation,
+  onSaveAndContinue,
+  onCopyToast,
+}: {
+  interpretation: string;
+  onSaveAndContinue: () => void;
+  onCopyToast: (msg: string) => void;
+}) {
+  const { prose, json } = useMemo(() => splitInterpretation(interpretation), [interpretation]);
+  const [showFull, setShowFull] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<number, boolean>>({ 0: true });
+
+  // Resolve display fields with fallback to prose extraction.
+  const archetype: string = json?.primary_archetype
+    || (extractSection(prose, "HOW THE MARKET SEES YOU").split(/[.\n]/)[0] || "").trim()
+    || "Your Positioning";
+
+  const oneLineDesc = (() => {
+    const sec = extractSection(prose, "HOW THE MARKET SEES YOU");
+    const firstSentence = sec.split(/(?<=\.)\s+/)[0] || "";
+    return firstSentence.replace(/^\*+|\*+$/g, "").trim();
+  })();
+
+  const positioning: string = (json?.positioning_statement
+    || extractSection(prose, "YOUR ONE-LINER")
+    || extractSection(prose, "YOUR POSITIONING STATEMENT")
+    || "").replace(/\*\*/g, "").trim();
+
+  const topics: string[] = Array.isArray(json?.content_pillars) && json.content_pillars.length
+    ? json.content_pillars.slice(0, 3)
+    : (() => {
+        const sec = extractSection(prose, "YOUR 3 TOPICS") || extractSection(prose, "MY 3 AUTHORITY THEMES");
+        const lines = sec.split(/\n+/).filter(Boolean).slice(0, 6);
+        // Heuristic: take lines that look like titles (no full stop, short)
+        const titles = lines.map(l => l.replace(/^[\-\*\d\.\)\s]+/, "").replace(/\*\*/g, "").trim())
+          .filter(l => l && l.length < 80 && !/[.!?]$/.test(l));
+        return titles.slice(0, 3);
+      })();
+
+  // If no structured signal at all, fall back to the legacy markdown wall.
+  const hasAnyStructure = !!positioning || !!archetype || topics.length > 0;
+  if (!hasAnyStructure) {
+    return (
+      <div className="space-y-0">
+        <div className="prose prose-sm max-w-none
+          [&_h1]:text-brand [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-3
+          [&_h2]:text-brand [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
+          [&_h3]:text-brand [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
+          [&_p]:text-ink-5 [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
+          [&_strong]:text-brand [&_strong]:font-semibold
+        ">
+          <ReactMarkdown>{interpretation}</ReactMarkdown>
+        </div>
+        <div className="pt-6 mt-6 border-t border-brand/20">
+          <button
+            onClick={onSaveAndContinue}
+            className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
+            style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)" }}
+          >
+            View my complete Strategic Identity →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const copyOneLiner = async () => {
+    if (!positioning) return;
+    try {
+      await navigator.clipboard.writeText(positioning);
+      onCopyToast("Copied — use it on your LinkedIn headline, bio, or speaking submissions.");
+    } catch {
+      onCopyToast("Copy failed");
+    }
+  };
+
+  const downloadReport = () => {
+    const sectionsHtml = SECTION_DEFS.map(s => {
+      const content = extractSection(prose, s.key) || "";
+      if (!content) return "";
+      return `<section><h2>${s.label}</h2><p>${content.replace(/\n/g, "<br/>")}</p></section>`;
+    }).join("");
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Aura — ${archetype}</title>
+      <style>
+        body{font-family:Georgia,serif;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a;line-height:1.6}
+        .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6f2a}
+        h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;color:#8b6f2a;margin:8px 0 4px;font-weight:500}
+        .desc{color:#666;font-size:14px;margin:0 0 16px}
+        .oneliner{font-size:17px;font-weight:600;border-left:3px solid #c5a55a;padding:8px 14px;margin:18px 0;background:#fbf7ec}
+        h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#8b6f2a;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;border-bottom:1px solid #e6dcc4;padding-bottom:4px}
+        section p{font-size:14px}
+        footer{margin-top:40px;font-size:11px;color:#999;text-align:center}
+      </style></head><body>
+      <div class="label">Aura sees you as</div>
+      <h1>${archetype}</h1>
+      ${oneLineDesc ? `<p class="desc">${oneLineDesc}</p>` : ""}
+      ${positioning ? `<div class="oneliner">${positioning}</div>` : ""}
+      ${sectionsHtml}
+      <footer>Aura — Strategic Positioning Report</footer>
+      </body></html>`;
+    const w = window.open("", "_blank", "width=820,height=900");
+    if (!w) { onCopyToast("Pop-up blocked — allow pop-ups to download"); return; }
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch { /* noop */ } }, 300);
+  };
+
+  const goToStory = () => {
+    onSaveAndContinue();
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* === CARD 1 — The Verdict === */}
+      <div
+        style={{
+          background: "var(--surface-ink-raised, #1d1d1d)",
+          border: "1px solid var(--brand)",
+          borderRadius: 14,
+          padding: "22px 22px 20px",
+        }}
+      >
+        <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600 }}>
+          Aura sees you as
+        </div>
+        <h2
+          style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: 28,
+            color: "var(--brand)",
+            lineHeight: 1.15,
+            margin: "8px 0 10px",
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {archetype}
+        </h2>
+        {oneLineDesc && (
+          <p style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.55, margin: 0 }}>
+            {oneLineDesc}
+          </p>
+        )}
+
+        <div style={{ height: 1, background: "var(--brand)", opacity: 0.2, margin: "18px 0" }} />
+
+        {positioning && (
+          <p
+            style={{
+              fontSize: 16,
+              color: "var(--ink-7, #fff)",
+              fontWeight: 600,
+              lineHeight: 1.55,
+              margin: 0,
+            }}
+          >
+            {positioning}
+          </p>
+        )}
+
+        {topics.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {topics.map((t, i) => (
+              <span
+                key={i}
+                style={{
+                  border: "1px solid var(--brand)",
+                  color: "var(--brand)",
+                  borderRadius: 999,
+                  fontSize: 12,
+                  padding: "4px 11px",
+                }}
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <p style={{ fontSize: 12, color: "var(--ink-4)", textAlign: "center", margin: "4px 0 0" }}>
+        This is based on your answers today. The more you use Aura, the sharper this gets.
+      </p>
+
+      <div className="flex flex-wrap gap-4 justify-center pt-1">
+        <button
+          type="button"
+          onClick={() => setShowFull(v => !v)}
+          style={{ background: "transparent", border: 0, color: "var(--brand)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+        >
+          {showFull ? "Hide the full picture ↑" : "See the full picture →"}
+        </button>
+        {positioning && (
+          <button
+            type="button"
+            onClick={copyOneLiner}
+            style={{ background: "transparent", border: 0, color: "var(--ink-5)", fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            <Copy className="w-3.5 h-3.5" /> Copy my one-liner
+          </button>
+        )}
+      </div>
+
+      {/* === CARD 2 — The Full Picture === */}
+      {showFull && (
+        <div
+          style={{
+            background: "var(--surface-ink-raised, #1a1a1a)",
+            border: "1px solid var(--ink-3)",
+            borderRadius: 14,
+            padding: "8px 4px",
+          }}
+        >
+          {SECTION_DEFS.map((s, idx) => {
+            const isOpen = !!openSections[idx];
+            const content = extractSection(prose, s.key);
+            return (
+              <div key={s.key} style={{ borderBottom: idx < SECTION_DEFS.length - 1 ? "1px solid var(--ink-3)" : "none" }}>
+                <button
+                  type="button"
+                  onClick={() => setOpenSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                  className="w-full text-left px-4 py-3 flex items-start justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                  style={{ background: "transparent", border: 0, cursor: "pointer" }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontSize: 13,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.1em",
+                        color: "var(--brand)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {s.label}
+                    </div>
+                    <div style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-4)", marginTop: 2 }}>
+                      {s.hint}
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className="w-4 h-4 text-ink-4 shrink-0 mt-1"
+                    style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 200ms ease" }}
+                  />
+                </button>
+                <div
+                  style={{
+                    maxHeight: isOpen ? 800 : 0,
+                    overflow: "hidden",
+                    transition: "max-height 200ms ease",
+                  }}
+                >
+                  <div className="prose prose-sm max-w-none px-4 pb-4
+                    [&_p]:text-ink-6 [&_p]:text-[14px] [&_p]:leading-relaxed [&_p]:mb-2
+                    [&_strong]:text-brand
+                    [&_li]:text-ink-6 [&_li]:text-[14px]
+                  ">
+                    {content
+                      ? <ReactMarkdown>{content}</ReactMarkdown>
+                      : <p className="text-[13px] text-ink-4 italic">Not enough signal yet — keep using Aura and this will sharpen.</p>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* === CARD 3 — Actions === */}
+      <div
+        style={{
+          background: "var(--surface-ink-raised, #181818)",
+          border: "1px solid var(--ink-3)",
+          borderRadius: 14,
+          padding: 14,
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
+        <button
+          type="button"
+          onClick={downloadReport}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
+          style={{ background: "transparent", border: "1px solid var(--ink-3)", color: "var(--ink-6)", fontSize: 12.5, cursor: "pointer" }}
+        >
+          <Download className="w-3.5 h-3.5" /> Download full report
+        </button>
+        <button
+          type="button"
+          onClick={copyOneLiner}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
+          style={{ background: "transparent", border: "1px solid var(--ink-3)", color: "var(--ink-6)", fontSize: 12.5, cursor: "pointer" }}
+        >
+          <Copy className="w-3.5 h-3.5" /> Copy my one-liner
+        </button>
+        <button
+          type="button"
+          onClick={goToStory}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
+          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)", fontSize: 12.5, cursor: "pointer", border: 0, fontWeight: 600 }}
+        >
+          Go to My Story <ArrowUpRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
