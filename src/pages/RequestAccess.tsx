@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
+import usePageMeta from "@/hooks/usePageMeta";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
@@ -18,6 +19,11 @@ const inputStyle: React.CSSProperties = {
 };
 
 const RequestAccess = () => {
+  usePageMeta({
+    title: "Request Early Access — Aura",
+    description: "Closed beta for senior transformation leaders. Strategic intelligence that compounds your authority.",
+    path: "/request-access",
+  });
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [seniority, setSeniority] = useState("");
@@ -26,32 +32,6 @@ const RequestAccess = () => {
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string }>({});
 
-  useEffect(() => {
-    const prevTitle = document.title;
-    document.title = "Request Early Access — Aura";
-    const tags: Array<{ sel: string; attr: string; key: string; val: string; content: string }> = [
-      { sel: 'meta[property="og:title"]', attr: "property", key: "og:title", val: "og:title", content: "Request Early Access — Aura" },
-      { sel: 'meta[property="og:description"]', attr: "property", key: "og:description", val: "og:description", content: "Closed beta for senior transformation leaders. Strategic intelligence that compounds your authority." },
-      { sel: 'meta[name="twitter:title"]', attr: "name", key: "twitter:title", val: "twitter:title", content: "Request Early Access — Aura" },
-      { sel: 'meta[name="twitter:description"]', attr: "name", key: "twitter:description", val: "twitter:description", content: "Closed beta for senior transformation leaders. Strategic intelligence that compounds your authority." },
-      { sel: 'meta[name="description"]', attr: "name", key: "description", val: "description", content: "Closed beta for senior transformation leaders. Strategic intelligence that compounds your authority." },
-    ];
-    const previous: Array<{ el: HTMLMetaElement; prev: string }> = [];
-    tags.forEach(t => {
-      let el = document.querySelector<HTMLMetaElement>(t.sel);
-      if (!el) {
-        el = document.createElement("meta");
-        el.setAttribute(t.attr, t.key);
-        document.head.appendChild(el);
-      }
-      previous.push({ el, prev: el.getAttribute("content") || "" });
-      el.setAttribute("content", t.content);
-    });
-    return () => {
-      document.title = prevTitle;
-      previous.forEach(({ el, prev }) => el.setAttribute("content", prev));
-    };
-  }, []);
 
   const validate = () => {
     const next: typeof errors = {};
