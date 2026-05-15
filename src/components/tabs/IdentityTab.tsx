@@ -34,6 +34,7 @@ interface IdentityTabProps {
 
 interface ProfileRow {
   first_name: string | null;
+  last_name: string | null;
   level: string | null;
   firm: string | null;
   sector_focus: string | null;
