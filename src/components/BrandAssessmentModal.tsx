@@ -533,6 +533,49 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           </div>
         )}
       </div>
+
+      {confirmClose && (
+        <div
+          className="fixed inset-0 flex items-center justify-center px-4"
+          style={{ background: "rgba(0,0,0,0.6)", zIndex: 1100 }}
+          onClick={() => setConfirmClose(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--ink)",
+              border: "1px solid var(--ink-3)",
+              borderRadius: 14,
+              padding: 20,
+              width: 400,
+              maxWidth: "92vw",
+            }}
+          >
+            <h3 className="text-[15px] text-ink-7 font-medium mb-2">Your analysis is being built</h3>
+            <p className="text-[13px] text-ink-5 leading-relaxed mb-5">
+              If you close now, your answers are saved and you can regenerate from My Story.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setConfirmClose(false)}
+                className="w-full py-2.5 rounded-xl text-[13px] font-medium bg-brand text-white hover:brightness-110 transition"
+              >
+                Wait for results
+              </button>
+              <button
+                onClick={async () => {
+                  await persistAnswersOnly();
+                  setConfirmClose(false);
+                  onOpenChange(false);
+                }}
+                className="w-full py-2.5 rounded-xl text-[13px] text-ink-5 hover:text-ink-7 transition"
+              >
+                Close anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>,
     document.body
   );
