@@ -17,6 +17,11 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [showLoginPwd, setShowLoginPwd] = useState(false);
+  const [loginFailed, setLoginFailed] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetSentEmail, setResetSentEmail] = useState<string>("");
+  const [resending, setResending] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -68,6 +73,7 @@ const Auth = () => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      setLoginFailed(true);
       toast({
         title: "Sign in failed",
         description:
@@ -78,14 +84,14 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handleGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/home` },
+  // Google SSO temporarily disabled during closed beta — re-enable after closed beta.
+  // (Allowlist enforcement happens server-side; hiding the button avoids creating
+  // accounts for non-allowlisted users via OAuth before that check runs.)
+
+  const sendReset = async (target: string) => {
+    await supabase.functions.invoke("send-password-reset", {
+      body: { email: target.trim().toLowerCase() },
     });
-    if (error) {
-      toast({ title: "Google sign-in unavailable", description: error.message, variant: "destructive" });
-    }
   };
 
   const handleForgotPassword = async () => {
@@ -96,17 +102,27 @@ const Auth = () => {
     }
     setResetting(true);
     try {
-      await supabase.functions.invoke("send-password-reset", {
-        body: { email: email.trim().toLowerCase() },
-      });
-      toast({
-        title: "Check your email",
-        description: "If this email has an account, you'll receive a reset link shortly.",
-      });
+      const target = email.trim().toLowerCase();
+      await sendReset(target);
+      setResetSentEmail(target);
+      setResetSent(true);
     } catch (e: any) {
       toast({ title: "Couldn't send reset", description: "Please try again.", variant: "destructive" });
     } finally {
       setResetting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!resetSentEmail) return;
+    setResending(true);
+    try {
+      await sendReset(resetSentEmail);
+      toast({ title: "Reset link resent", description: `Sent again to ${resetSentEmail}` });
+    } catch {
+      toast({ title: "Couldn't resend", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setResending(false);
     }
   };
 
