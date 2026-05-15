@@ -71,7 +71,16 @@ const formatDate = (iso: string | null) => {
 const summarizeContext = (id: string, ctx: any): string | null => {
   if (!ctx) return null;
   if (id === "sector_depth" && Array.isArray(ctx.themes) && ctx.themes.length) {
-    return `${ctx.themes.length} themes: ${ctx.themes.slice(0, 3).join(", ")}${ctx.themes.length > 3 ? "..." : ""}`;
+    const humanize = (t: string) =>
+      t.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    // Filter out internal identifiers (all-lowercase snake_case slugs like "market_trend")
+    const meaningful = ctx.themes.filter(
+      (t: string) => typeof t === "string" && !/^[a-z]+(_[a-z]+)+$/.test(t)
+    );
+    const named = meaningful.slice(0, 2).map(humanize);
+    if (!named.length) return `${ctx.themes.length} themes detected`;
+    const joined = named.length === 2 ? `${named[0]} and ${named[1]}` : named[0];
+    return `${ctx.themes.length} themes detected including ${joined}`;
   }
   if (id === "first_signal" && ctx.signal_title) return ctx.signal_title;
   if (id === "five_signals" && ctx.count) return `${ctx.count} active signals`;
