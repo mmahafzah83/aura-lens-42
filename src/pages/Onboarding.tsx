@@ -76,6 +76,8 @@ const Onboarding = () => {
   const [liStatusIdx, setLiStatusIdx] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [usedLinkedIn, setUsedLinkedIn] = useState(false);
+  const [describeMode, setDescribeMode] = useState(false);
+  const [helperOpen, setHelperOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
