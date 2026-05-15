@@ -397,33 +397,11 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   <p className="text-[13px] text-ink-5">Building your brand positioning across 6 frameworks...</p>
                 </div>
               ) : (
-                <div className="space-y-0">
-                  <div className="prose prose-sm max-w-none
-                    [&_h1]:text-brand [&_h1]:text-base [&_h1]:font-bold [&_h1]:border-b [&_h1]:border-brand/20 [&_h1]:pb-2 [&_h1]:mb-3
-                    [&_h2]:text-brand [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:border-b [&_h2]:border-brand/20 [&_h2]:pb-2 [&_h2]:mb-3 [&_h2]:mt-6
-                    [&_h3]:text-brand [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mb-2 [&_h3]:mt-5
-                    [&_p]:text-ink-5 [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
-                    [&_strong]:text-brand [&_strong]:font-semibold
-                    [&_li]:text-ink-5 [&_li]:text-[12px]
-                    [&_ul]:mb-3 [&_ol]:mb-3
-                  ">
-                    <ReactMarkdown>{interpretation}</ReactMarkdown>
-                  </div>
-
-                  {/* Fix 6: Guided primary action */}
-                  <div className="flex flex-col gap-2 pt-6 border-t border-brand/20 mt-6">
-                    <button
-                      onClick={handleSaveToIdentity}
-                      className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
-                      style={{
-                        background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
-                        color: "var(--ink)",
-                      }}
-                    >
-                      View my complete Strategic Identity →
-                    </button>
-                  </div>
-                </div>
+                <ResultsView
+                  interpretation={interpretation}
+                  onSaveAndContinue={handleSaveToIdentity}
+                  onCopyToast={(msg) => toast({ title: msg })}
+                />
               )}
             </div>
           ) : (
