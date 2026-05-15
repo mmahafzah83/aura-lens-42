@@ -76,6 +76,8 @@ const Onboarding = () => {
   const [liStatusIdx, setLiStatusIdx] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [usedLinkedIn, setUsedLinkedIn] = useState(false);
+  const [describeMode, setDescribeMode] = useState(false);
+  const [helperOpen, setHelperOpen] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [firm, setFirm] = useState("");
   const [level, setLevel] = useState("");
@@ -645,13 +647,56 @@ const Onboarding = () => {
                   minHeight: 120,
                   ...(readingLi ? { backgroundImage: "linear-gradient(90deg, transparent, rgba(176,141,58,0.08), transparent)", backgroundSize: "200% 100%", animation: "auraShimmer 1.6s linear infinite" } : {}),
                 } as React.CSSProperties}
-                placeholder="Copy your headline and About section from LinkedIn — or just describe what you do and your sector in a few sentences"
+                placeholder={describeMode
+                  ? `e.g., "I'm a Director at EY in Riyadh, focused on digital transformation for water utilities. 10+ years in GCC consulting."`
+                  : `e.g., "Director of Digital Transformation | EY GCC\n\nI help organisations make transformation stick — not by fixing technology, but by fixing how teams think, lead, and move together..."`}
                 value={linkedinText}
                 onChange={(e) => setLinkedinText(e.target.value)}
                 disabled={readingLi}
               />
               <style>{`@keyframes auraShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
             </div>
+            {!describeMode && (
+              <div className="mb-3">
+                <button
+                  type="button"
+                  onClick={() => setHelperOpen((v) => !v)}
+                  className="text-xs hover:opacity-80 transition-opacity"
+                  style={{ color: "hsl(var(--muted-foreground))" }}
+                >
+                  💡 What should I paste? {helperOpen ? "▾" : "▸"}
+                </button>
+                {helperOpen && (
+                  <div
+                    className="mt-2 p-3 rounded-md"
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                      color: "hsl(var(--muted-foreground))",
+                      background: "hsl(var(--muted) / 0.4)",
+                      borderLeft: "3px solid var(--brand)",
+                    }}
+                  >
+                    <p className="mb-2" style={{ color: "hsl(var(--foreground))" }}>
+                      Go to your LinkedIn profile and copy two things:
+                    </p>
+                    <p className="mb-1">
+                      <strong>1. Your Headline</strong> — the line right below your name<br />
+                      <span style={{ opacity: 0.85 }}>(example: "VP Digital Transformation | Accenture ME")</span>
+                    </p>
+                    <p className="mb-2">
+                      <strong>2. Your About section</strong> — click "see more" first, then select all and copy
+                    </p>
+                    <p className="mb-2">
+                      Paste both into the box above. Aura reads it and fills your profile automatically.
+                    </p>
+                    <p style={{ opacity: 0.85 }}>
+                      Don't have your LinkedIn updated? No problem — just describe your role and expertise in your own words. That works too.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             {linkedinError && <p className="text-xs mb-3" style={{ color: "hsl(0 70% 55%)" }}>{linkedinError}</p>}
             {readingLi && (
               <div className="mb-4 text-sm" style={{ color: "hsl(var(--muted-foreground))" }}>
@@ -669,6 +714,12 @@ const Onboarding = () => {
               <div className="flex-1 h-px" style={{ background: "hsl(var(--border))" }} />
             </div>
             {ghostLink("Fill manually instead", () => { setShowForm(true); setUsedLinkedIn(false); })}
+            <div className="mt-2">
+              {ghostLink(
+                describeMode ? "Paste from LinkedIn instead →" : "Or just describe your role in a few sentences →",
+                () => { setDescribeMode((v) => !v); setHelperOpen(false); },
+              )}
+            </div>
           </>
         ) : (
           <>
