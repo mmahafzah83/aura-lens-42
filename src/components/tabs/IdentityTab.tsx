@@ -25,6 +25,9 @@ import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStag
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import ArchetypeHeroCard from "@/components/identity/ArchetypeHeroCard";
+import AuthorityRadar from "@/components/identity/AuthorityRadar";
+import TerritoryMap from "@/components/identity/TerritoryMap";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -79,6 +82,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
+  const [radarInputs, setRadarInputs] = useState({
+    avgEngagement: 0,
+    totalPosts: 0,
+    voiceTrained: false,
+    weeksActive: 0,
+  });
 
   useEffect(() => {
     if (!authReady) return;
@@ -154,6 +163,35 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         setTrackedPostCount(postsCountRes.count || 0);
       } catch (e) {
         console.warn("[IdentityTab] stage counts failed", e);
+      }
+      // Radar inputs — voice profile, posts engagement, capture rhythm
+      try {
+        const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+        const [voiceRes, postsRes, recentEntriesRes] = await Promise.all([
+          (supabase.from("authority_voice_profiles") as any)
+            .select("tone, example_posts").eq("user_id", uid).maybeSingle(),
+          (supabase.from("linkedin_posts") as any)
+            .select("engagement_score").eq("user_id", uid).limit(200),
+          (supabase.from("entries") as any)
+            .select("created_at").eq("user_id", uid)
+            .gte("created_at", fourWeeksAgo.toISOString()).limit(500),
+        ]);
+        const posts = (postsRes.data || []) as any[];
+        const totalPosts = posts.length;
+        const avgEngagement = totalPosts > 0
+          ? posts.reduce((s, p) => s + (Number(p.engagement_score) || 0), 0) / totalPosts
+          : 0;
+        const voice = voiceRes.data || {};
+        const voiceTrained = !!(voice?.tone || (Array.isArray(voice?.example_posts) && voice.example_posts.length > 0));
+        const weeks = new Set<number>();
+        ((recentEntriesRes.data || []) as any[]).forEach((e) => {
+          const d = new Date(e.created_at);
+          const week = Math.floor((Date.now() - d.getTime()) / (7 * 86400000));
+          if (week >= 0 && week < 4) weeks.add(week);
+        });
+        setRadarInputs({ avgEngagement, totalPosts, voiceTrained, weeksActive: weeks.size });
+      } catch (e) {
+        console.warn("[IdentityTab] radar inputs failed", e);
       }
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
@@ -339,6 +377,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const positioningTitle = brandResults?.positioning_title || brandResults?.primary_archetype || identityIntel?.primary_role || profile?.primary_strength || "";
   const positioningStatement = brandResults?.positioning_statement || identityIntel?.identity_summary || brandResults?.interpretation || "";
 
+  // Radar metrics (0-100 each)
+  const radar = {
+    signals: Math.min(100, Math.round(signalStats.count * 20 + (signalStats.topConfidence || 0) * 0.5)),
+    content: Math.min(100, Math.round((radarInputs.totalPosts || 0) * 2)),
+    engagement: Math.min(100, Math.round((radarInputs.avgEngagement || 0) * 40)),
+    voice: radarInputs.voiceTrained ? 80 : 20,
+    rhythm: Math.min(100, Math.round((radarInputs.weeksActive / 4) * 100)),
+  };
+
   const assessments = [
     { name: "Onboarding", done: profile?.onboarding_completed, date: null },
     { name: "Evidence Audit", done: !!profile?.audit_completed_at, date: profile?.audit_completed_at },
@@ -489,279 +536,42 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         </div>
       )}
       {/* Two-column layout */}
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* LEFT COLUMN */}
-        <div className="w-full md:w-[200px] md:shrink-0 space-y-3">
-          {/* Profile Sidebar Card (light) */}
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 16,
-              padding: 20,
-              boxShadow: "var(--shadow-sm)",
-              textAlign: "center",
-            }}
-          >
-            {/* Avatar with orange ring + green status dot */}
-            <div className="mx-auto relative" style={{ width: 80, height: 80 }}>
-              <div
-                className="w-full h-full rounded-full overflow-hidden flex items-center justify-center cursor-pointer group"
-                style={{ border: "3px solid var(--brand)", background: "var(--surface-subtle)" }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploadingAvatar ? (
-                  <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
-                ) : profile?.avatar_url ? (
-                  <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span style={{ color: "var(--brand)", fontSize: 24, fontWeight: 600 }}>{initials}</span>
-                )}
-                <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Upload className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
-                  <span style={{ color: "var(--brand)", fontSize: 10 }}>Upload</span>
-                </div>
-              </div>
-              {/* Green status dot */}
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  bottom: 2,
-                  right: 2,
-                  width: 14,
-                  height: 14,
-                  borderRadius: "50%",
-                  background: "var(--success)",
-                  border: "2px solid #fff",
-                }}
-              />
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            </div>
-
-            {/* Name & role */}
-            <p
-              data-testid="story-name"
-              style={{
-                fontFamily: "'DM Serif Display', serif",
-                fontSize: 16,
-                color: "var(--surface-ink-subtle)",
-                marginTop: 12,
-                lineHeight: 1.2,
-              }}
-            >
-              {userName}
-            </p>
-
-            {/* Professional identity: role · industry · region */}
-            <div style={{ fontSize: 13, color: "var(--ink-3)", textAlign: "center", marginTop: 8, lineHeight: 1.6 }}>
-              {profile?.level || "Executive"}
-              <br />
-              {(profile?.sector_focus || "Industry")} · GCC
-            </div>
-          </div>
-
-          {/* Identity Facts */}
-          <div style={{ background: "var(--vellum)", border: "1px solid var(--brand-line)", borderRadius: 10, padding: 12 }}>
-            {identityFacts.map(fact => (
-              <div
-                key={fact.key}
-                className="mb-2 last:mb-0"
-                data-testid={fact.key === "firm" ? "story-firm" : fact.key === "sector_focus" ? "story-sector" : undefined}
-              >
-                <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-2)", letterSpacing: "0.05em" }}>{fact.label}</div>
-                {editingField === fact.key ? (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <input
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onKeyDown={e => e.key === "Enter" && saveEdit(fact.key)}
-                      onBlur={() => saveEdit(fact.key)}
-                      autoFocus
-                      className="flex-1 bg-transparent border-b border-brand text-[11px] text-ink-7 outline-none py-0.5"
-                    />
-                    {saving ? <Loader2 className="w-3 h-3 animate-spin text-brand" /> : <Check className="w-3 h-3 text-green-500" />}
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between group mt-0.5">
-                    <span style={{ fontSize: 11, color: "var(--ink)", wordBreak: "break-word", lineHeight: 1.4 }} className="flex-1">{fact.value || "—"}</span>
-                    <button onClick={() => startEdit(fact.key, fact.value)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                      <Pencil className="w-2.5 h-2.5 text-ink-5 hover:text-brand" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Assessments */}
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className="flex-1 space-y-4">
-          {/* Market Position Hero Card (dark) — gated until brand assessment is complete */}
-          {assessmentCompleted && (
-          <div
-            className="aura-hero-card"
-            style={{
-              background: "var(--ink)",
-              borderRadius: 16,
-              padding: 22,
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Radial glow top-right */}
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: -60,
-                right: -60,
-                width: 200,
-                height: 200,
-                background:
-                  "radial-gradient(circle, hsl(43 50% 55% / 0.10) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }}
+      {/* Identity Portrait — Archetype hero + Authority radar + Territory map */}
+      {assessmentCompleted && (
+        <div className="space-y-4">
+          <ArchetypeHeroCard
+            firstName={profile?.first_name}
+            lastName={profile?.last_name}
+            avatarUrl={profile?.avatar_url}
+            level={profile?.level}
+            firm={profile?.firm}
+            sectorFocus={profile?.sector_focus}
+            archetypeName={
+              brandResults?.primary_archetype ||
+              positioningTitle ||
+              undefined
+            }
+            positioningStatement={positioningStatement}
+            brandPillars={profile?.brand_pillars || []}
+            tierLabel={intelligenceStage ? `Stage ${intelligenceStage}` : null}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AuthorityRadar
+              signals={radar.signals}
+              content={radar.content}
+              engagement={radar.engagement}
+              voice={radar.voice}
+              rhythm={radar.rhythm}
             />
-            <div className="relative flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div
-                  style={{
-                    fontSize: 9,
-                    textTransform: "uppercase",
-                    color: "var(--brand)",
-                    letterSpacing: "0.12em",
-                    marginBottom: 8,
-                    fontWeight: 600,
-                  }}
-                >
-                  Your market position
-                </div>
-                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "rgba(255,255,255,0.55)", marginBottom: 10, lineHeight: 1.5 }}>
-                  How a CIO in your sector would see you — based on your intelligence, not your résumé
-                </div>
-                <h3
-                  style={{
-                    fontFamily: "'DM Serif Display', serif",
-                    fontSize: 20,
-                    color: "#ffffff",
-                    marginBottom: 12,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {positioningTitle || "Complete your profile to unlock positioning"}
-                </h3>
-                {profile?.brand_pillars && profile.brand_pillars.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {profile.brand_pillars.map((p, i) => {
-                      const primary = i < 3;
-                      return (
-                        <span
-                          key={i}
-                          style={{
-                            background: primary
-                              ? "var(--bronze-pale)"
-                              : "var(--paper-3)",
-                            color: primary ? "var(--bronze-glow)" : "var(--ink)",
-                            border: `0.5px solid ${
-                              primary ? "var(--bronze-line)" : "rgba(255,255,255,0.1)"
-                            }`,
-                            borderRadius: 20,
-                            fontSize: 10,
-                            padding: "3px 10px",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {p}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-                {positioningStatement && (
-                  <div>
-                    <p
-                      style={{
-                        fontSize: 13,
-                        color: "var(--ink-6)",
-                        lineHeight: 1.6,
-                        fontWeight: 300,
-                      }}
-                      className={showFullPositioning ? "" : "line-clamp-4"}
-                    >
-                      {positioningStatement}
-                    </p>
-                    {positioningStatement.length > 200 && (
-                      <button
-                        onClick={() => setShowFullPositioning(!showFullPositioning)}
-                        style={{ fontSize: 11, color: "var(--brand)", marginTop: 6, fontWeight: 500 }}
-                      >
-                        {showFullPositioning ? "Show less" : "Show more"}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-              <div className="shrink-0 ml-3 flex flex-col items-end gap-2">
-                {intelligenceStage && (
-                  <IntelligenceStageBadge stage={intelligenceStage} />
-                )}
-                <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  aria-label="Share market position on LinkedIn"
-                  title="Share on LinkedIn"
-                  onClick={() => {
-                    const archetype = brandResults?.primary_archetype || positioningTitle || "Strategic Voice";
-                    const tags = (profile?.brand_pillars || []).slice(0, 3);
-                    setMarketShareData({
-                      name: positioningTitle || "Market Position",
-                      context: [
-                        profile?.level,
-                        profile?.sector_focus,
-                        archetype,
-                        tags.length ? tags.join(" · ") : null,
-                      ].filter(Boolean).join(" — "),
-                      icon: "◆",
-                      firstName: profile?.first_name,
-                      level: profile?.level,
-                      sectorFocus: profile?.sector_focus,
-                    });
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: 0,
-                    padding: 4,
-                    cursor: "pointer",
-                    color: "rgba(255,255,255,0.55)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "var(--brand)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={regeneratePositioning}
-                  disabled={regenerating}
-                  style={{
-                    fontSize: 11,
-                    color: "var(--brand)",
-                    background: "transparent",
-                    cursor: regenerating ? "default" : "pointer",
-                  }}
-                  className="hover:opacity-80 transition-opacity"
-                >
-                  {regenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Regenerate →"}
-                </button>
-                </div>
-              </div>
-            </div>
+            <TerritoryMap
+              themes={signalStats.themeGroups.map((g) => ({ theme: g.theme, count: g.count }))}
+            />
           </div>
-          )}
+        </div>
+      )}
 
+      {/* Sections below the Identity Portrait */}
+      <div className="space-y-4">
           {/* Active Focus Areas — pill chips */}
           <div
             style={{
@@ -946,7 +756,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               >
                 <div style={{ marginBottom: 8 }}>
                   <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
-                    AUTHORITY STATEMENT
+                    How the market sees you
                   </div>
                   <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                     {intelligenceStage === 3
@@ -964,20 +774,27 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   const shareText = `${fn} | ${lvl}${firmPart} | ${signalStats.count} strategic signal${signalStats.count === 1 ? "" : "s"}${sectorPart} | Powered by Aura — strategic intelligence for executives. aura-intel.org`;
                   // In-card preview keeps the richer internal phrasing.
                   const statementText = `${fn} tracks ${themes.length} strategic ${themes.length === 1 ? "theme" : "themes"} in ${sf} — ${themesPart}${orgsPart} Deepest expertise: ${prettify(topSig.title)} at ${topSig.confidence}%.`;
+                  const isThirdPerson = statementText.toLowerCase().startsWith(fn.toLowerCase());
                   return (
                     <>
                       <p
                         style={{
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: 13,
+                          fontFamily: "'Cormorant Garamond', serif",
+                          fontSize: 15,
+                          fontStyle: "italic",
                           lineHeight: 1.55,
                           color: "var(--ink)",
                           margin: 0,
                         }}
                       >
-                        {statementText}
+                        “{statementText}”
                       </p>
-                      <div style={{ marginTop: 10 }}>
+                      {isThirdPerson && (
+                        <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, fontStyle: "italic" }}>
+                          Based on your assessment — regenerate for a first-person version.
+                        </p>
+                      )}
+                      <div style={{ marginTop: 10, display: "flex", gap: 14, alignItems: "center" }}>
                         <ShareLink
                           label="Share your positioning →"
                           ariaLabel="Share your positioning on LinkedIn"
@@ -986,6 +803,21 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                             toastMessage: "Positioning copied — paste it in LinkedIn.",
                           })}
                         />
+                        <button
+                          type="button"
+                          onClick={regeneratePositioning}
+                          disabled={regenerating}
+                          style={{
+                            fontSize: 11,
+                            color: "var(--brand)",
+                            background: "transparent",
+                            border: 0,
+                            cursor: regenerating ? "default" : "pointer",
+                            padding: 0,
+                          }}
+                        >
+                          {regenerating ? "Regenerating…" : "Regenerate"}
+                        </button>
                       </div>
                     </>
                   );
@@ -1151,7 +983,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             )}
           </div>
         </div>
-      </div>
 
       {/* Milestones (G7) — reads milestones array from calculate-aura-score */}
       {/* My writing voice — moved out of the modal so users land directly on it */}
