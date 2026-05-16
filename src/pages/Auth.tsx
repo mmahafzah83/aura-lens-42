@@ -32,6 +32,7 @@ const Auth = () => {
   const [showPwd, setShowPwd] = useState(false);
   const [updatingPwd, setUpdatingPwd] = useState(false);
   const inRecoveryRef = useRef(false);
+  const [linkExpired, setLinkExpired] = useState(false);
 
   const checkOnboardingAndRedirect = async (session: any) => {
     const { data: profile } = await supabase
@@ -52,10 +53,27 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    // Detect expired/invalid recovery links arriving in the URL hash
+    // (e.g. #error=access_denied&error_code=otp_expired&error_description=...)
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const params = new URLSearchParams(hash);
+      const err = params.get("error");
+      const errCode = params.get("error_code");
+      if (err === "access_denied" || errCode === "otp_expired" || params.get("error_description")) {
+        setLinkExpired(true);
+        // Clear the hash so refreshing doesn't keep showing the error
+        try { window.history.replaceState(null, "", window.location.pathname + window.location.search); } catch {}
+      }
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         inRecoveryRef.current = true;
         setShowNewPasswordForm(true);
+        setLinkExpired(false);
         return;
       }
       if (inRecoveryRef.current) return;
@@ -493,21 +511,38 @@ const Auth = () => {
             </div>
           ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 12.5,
-                lineHeight: 1.55,
-                color: "var(--ink-5)",
-                background: "var(--brand-muted)",
-                border: "0.5px solid var(--bronze-line)",
-                borderRadius: 10,
-                padding: "10px 12px",
-              }}
-            >
-              Use the email and password from your invitation. First time?
-              Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Set Password</span> below to create your password.
-            </div>
+            {linkExpired ? (
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12.5,
+                  lineHeight: 1.55,
+                  color: "var(--ink-6)",
+                  background: "rgba(220, 80, 60, 0.08)",
+                  border: "0.5px solid rgba(220, 80, 60, 0.35)",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                }}
+              >
+                This reset link has expired. Enter your email below and request a new one.
+              </div>
+            ) : (
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12.5,
+                  lineHeight: 1.55,
+                  color: "var(--ink-5)",
+                  background: "var(--brand-muted)",
+                  border: "0.5px solid var(--bronze-line)",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                }}
+              >
+                Use the email and password from your invitation. First time?
+                Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Set Password</span> below to create your password.
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="auth-label">
                 EMAIL
@@ -586,9 +621,11 @@ const Auth = () => {
               >
                 {resetting
                   ? "Sending…"
-                  : loginFailed
-                    ? "Forgot your password? →"
-                    : "Set or reset your password →"}
+                  : linkExpired
+                    ? "Request a new reset link →"
+                    : loginFailed
+                      ? "Forgot your password? →"
+                      : "Set or reset your password →"}
               </button>
             </div>
           </form>
