@@ -1488,32 +1488,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Your audience trajectory — upload your LinkedIn analytics to see the connection between signals and followers
         </p>
         {followerRows.length === 0 ? (
-          <div
-            className="rounded-lg p-6 text-center"
-            style={{
-              border: "1.5px dashed var(--color-border)",
-              color: "var(--color-text-secondary)",
-              background: "transparent",
-            }}
-          >
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
-              Import your LinkedIn analytics to see follower growth
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-              Upload your LinkedIn .xlsx export on this page
-            </p>
-            {postMetricsCount === 0 && (
-              <button
-                onClick={handleUploadClick}
-                data-testid="impact-linkedin-upload"
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
-                style={{ background: "var(--brand)", color: "#ffffff" }}
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Upload LinkedIn .xlsx
-              </button>
-            )}
-          </div>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            Only one day of data so far. More data will appear after additional snapshots.
+          </p>
         ) : followerSeries.length <= 1 ? (
           (() => {
             const only = followerSeries[0];
