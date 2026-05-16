@@ -1109,6 +1109,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         const confPct = Math.round(s.confidence * 100);
                         const isSelected = selectedSignal?.id === s.id;
                         const themeGroup = getThemeGroup(s);
+                        const confColor = confPct >= 80 ? "#1D9E75" : confPct >= 60 ? "#B08D3A" : "#C24A4A";
+                        const velocity = s.velocity_status;
+                        const trendLabel = velocity === "accelerating" ? "Rising" : velocity === "fading" ? "Fading" : velocity === "dormant" ? "Dormant" : "Stable";
+                        const trendIcon = velocity === "accelerating" ? "↗" : velocity === "fading" ? "↘" : velocity === "dormant" ? "◌" : "→";
+                        const whyNow = s.strategic_implications || s.explanation || "";
+                        const yourMove = s.what_it_means_for_you || (s.theme_tags || [])[0] || "";
                         return (
                         <div
                           key={s.id}
@@ -1116,36 +1122,79 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           className="intel-signal-row"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
-                            display: "flex", alignItems: "center", gap: 0, padding: "12px 16px",
-                            borderBottom: "0.5px solid var(--surface-ink-subtle)",
+                            display: "block", padding: "12px",
+                            margin: "8px 12px",
+                            border: "0.5px solid var(--surface-ink-subtle)",
+                            borderLeft: `3px solid ${confColor}`,
+                            borderRadius: 8,
                             cursor: "pointer", transition: "background 0.1s",
-                            background: isSelected ? "var(--surface-ink-raised)" : "transparent",
-                            borderLeft: isSelected ? "2px solid var(--brand)" : "2px solid transparent",
+                            background: isSelected ? "var(--surface-ink-subtle)" : "transparent",
                           }}
                           onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--surface-ink-subtle)"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                         >
-                          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--ink-3)", minWidth: 22, textAlign: "center" }}>{idx + 1}</span>
-                          {/* Vertical strength bar */}
-                          <div style={{ width: 3, height: 32, borderRadius: 2, position: "relative", overflow: "hidden", flexShrink: 0, marginRight: 10, background: "var(--surface-ink-subtle)" }}>
-                            <div style={{ position: "absolute", top: 0, width: "100%", height: `${confPct}%`, background: "var(--brand)", opacity: confPct / 100, borderRadius: 2 }} />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-                            <p style={{ fontSize: 11, fontWeight: 500, color: isSelected ? "var(--ink-7)" : "var(--ink-6)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {s.signal_title}
-                            </p>
-                            <p style={{ fontSize: 9, color: "var(--ink-3)", margin: "2px 0 0" }}>
-                              {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
-                            </p>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-                              <VelocityPill status={s.velocity_status} compact />
-                              <VelocityTrend velocity={s.signal_velocity} />
-                              <ValidationBadge score={s.commercial_validation_score} />
+                          {/* Top row: title + confidence */}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-6)", margin: 0, lineHeight: 1.3 }}>
+                                {s.signal_title}
+                              </p>
+                              <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "2px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {s.fragment_count} findings · {s.unique_orgs} orgs{themeGroup ? ` · ${themeGroup}` : ""}
+                              </p>
+                            </div>
+                            <div style={{ textAlign: "right", flexShrink: 0 }}>
+                              <div style={{ fontSize: 18, fontWeight: 500, color: confColor, fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                                {confPct}%
+                              </div>
+                              <div style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                                {trendIcon} {trendLabel}
+                              </div>
                             </div>
                           </div>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: isSelected ? "var(--brand)" : "var(--ink-5)", flexShrink: 0 }}>
-                            {confPct}%
-                          </span>
+
+                          {/* Confidence bar */}
+                          <div style={{ height: 4, background: "var(--surface-ink-subtle)", borderRadius: 2, overflow: "hidden", margin: "8px 0" }}>
+                            <div style={{ height: "100%", width: `${confPct}%`, background: confColor, borderRadius: 2 }} />
+                          </div>
+
+                          {/* What / Why / Act */}
+                          {(whyNow || yourMove) && (
+                            <div style={{ fontSize: 11, color: "var(--ink-4)", lineHeight: 1.4, margin: "6px 0 8px" }}>
+                              {whyNow && (
+                                <div style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                                  <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Why now: </span>{whyNow}
+                                </div>
+                              )}
+                              {yourMove && (
+                                <div style={{ marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical" }}>
+                                  <span style={{ color: "var(--ink-3)", fontWeight: 600 }}>Your move: </span>{yourMove}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Action buttons */}
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); draftFromSignal(s); }}
+                              style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--brand)", background: "var(--brand)", color: "var(--ink-on-brand, #fff)", cursor: "pointer" }}
+                            >
+                              Draft post →
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setSelectedSignalId(s.id); }}
+                              style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
+                            >
+                              View evidence
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onOpenChat?.(`Show competitor intel on: ${s.signal_title}`); }}
+                              style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, border: "0.5px solid var(--surface-ink-subtle)", background: "transparent", color: "var(--ink-4)", cursor: "pointer" }}
+                            >
+                              Competitor intel
+                            </button>
+                          </div>
                         </div>
                         );
                       }}
