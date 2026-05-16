@@ -1378,6 +1378,26 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
+      {/* P4 — Authority pulse strip + Journey cycle + Mission control */}
+      {authUser?.id && (
+        <div className="flex flex-col" style={{ gap: 10 }}>
+          <AuthorityPulseStrip
+            userId={authUser.id}
+            authorityScore={auraData?.aura_score ?? null}
+            onGoToImpact={() => onSwitchTab?.("influence")}
+          />
+          <JourneyCycle
+            hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
+            hasSignals={!!topSignal}
+            publishedThisWeek={false}
+            hasLinkedInData={!!auraData?.content_score && auraData.content_score > 0}
+            scoreGrowing={(auraData?.score_trend ?? 0) > 0}
+            authorityScore={auraData?.aura_score ?? 0}
+          />
+          <MissionControl userId={authUser.id} />
+        </div>
+      )}
+
       {/* H2b — STATUS STRIP */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
           weekly rhythm grid so users never see partial flashes (e.g. tier
