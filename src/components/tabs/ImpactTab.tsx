@@ -1168,19 +1168,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
       {/* ─────────── 7. POST PERFORMANCE ─────────── */}
       <section>
-        <div className="flex items-baseline justify-between mb-3">
-          <h2
-            className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            Post performance
-          </h2>
-          <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-            vs 2.5% LinkedIn avg
-          </span>
-        </div>
-
-        {postMetricsCount === 0 ? (
+        <SectionToggle
+          title="Post performance"
+          right={<span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>vs 2.5% LinkedIn avg</span>}
+          open={openSections.posts}
+          onToggle={() => toggleSection("posts")}
+        />
+        {openSections.posts && (postMetricsCount === 0 ? (
           <div
             className="rounded-lg p-6 text-sm text-center"
             style={{ border: "1.5px dashed var(--color-border)", color: "var(--color-text-secondary)", background: "transparent" }}
