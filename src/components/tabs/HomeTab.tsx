@@ -28,6 +28,10 @@ import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard"
 import SilenceAlarm from "@/components/SilenceAlarm";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
+import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
+import JourneyCycle from "@/components/home/JourneyCycle";
+import MissionControl from "@/components/home/MissionControl";
+import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
