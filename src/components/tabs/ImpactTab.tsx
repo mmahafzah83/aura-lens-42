@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3 } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -17,7 +17,6 @@ import { AuraButton } from "@/components/ui/AuraButton";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
 import AuthorityJourney from "@/components/AuthorityJourney";
-import WeeklyRhythm from "@/components/WeeklyRhythm";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import MarketMirror from "@/components/MarketMirror";
 
@@ -113,6 +112,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
   const [latestSnapshotDate, setLatestSnapshotDate] = useState<string | null>(null);
   const [showUpdateUpload, setShowUpdateUpload] = useState(false);
+  const [sectorFocus, setSectorFocus] = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    narrative: true, forces: true, trajectory: true, content: true, posts: true, linkedin: true, followers: true,
+  });
+  const toggleSection = (k: string) => setOpenSections(s => ({ ...s, [k]: !s[k] }));
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
@@ -330,6 +334,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         await supabase.auth.getSession();
         const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
         if (!cancelled && !error && res) setAuraData(res);
+        const { data: prof } = await supabase
+          .from("diagnostic_profiles")
+          .select("sector_focus")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled) setSectorFocus((prof as any)?.sector_focus || null);
       } catch (e) {
         console.error("ImpactTab: aura score load failed", e);
       }
@@ -848,200 +858,20 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </p>
         </div>
       </div>
-      <FirstVisitHint page="impact" />
+      {/* FirstVisitHint and Market Mirror removed — Impact is now a focused dashboard. */}
 
-      {/* Market Mirror moved to My Story page (was redundant here). Kept import for potential future use. */}
-
-      {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
-      <section
-        className="relative overflow-hidden"
-        style={{
-          background: "var(--surface-ink-raised)",
-          borderRadius: 14,
-          padding: "28px 28px 24px",
-          color: "var(--ink)",
-          border: "0.5px solid var(--brand-line)",
-          boxShadow: "var(--shadow-rest)",
-        }}
-      >
-        {/* Decorative radial glow */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: -80,
-            right: -80,
-            width: 300,
-            height: 300,
-            background: "radial-gradient(circle, hsl(43 50% 55% / 0.10) 0%, transparent 65%)",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Top row: score (left) · forecasts (right) */}
-        <div className="relative flex items-start justify-between gap-6 flex-wrap">
-          <div>
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--ink-3)",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
-              Authority score
-              <InfoTooltip
-                label="Aura Score"
-                text="Signal intelligence (40%) — depth and diversity of your strategic signals. Content authority (40%) — posts published from your intelligence. Capture consistency (20%) — how regularly you feed the system."
-              />
-            </div>
-            <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
-              Your composite authority metric — always reflects your current standing
-            </div>
-            <div data-testid="impact-score" style={{ marginTop: 6 }}>
-              {isEmpty ? (
-                <div
-                  style={{
-                    width: 160,
-                    height: 160,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "1px solid var(--brand-line)",
-                    borderRadius: "50%",
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 64,
-                    color: "var(--ink-3)",
-                    letterSpacing: "-0.04em",
-                  }}
-                >
-                  —
-                </div>
-              ) : (
-                <ScoreRing
-                  value={latestScore}
-                  size={160}
-                  stroke={5}
-                  numberStyle={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 64,
-                    color: "var(--brand)",
-                    letterSpacing: "-0.04em",
-                    lineHeight: 1,
-                  }}
-                />
-              )}
-            </div>
-            {!isEmpty && (
-            <div className="mt-3 inline-flex">
-              <span
-                style={{
-                  background: "var(--brand-ghost)",
-                  color: "var(--brand)",
-                  borderRadius: 20,
-                  padding: "5px 14px",
-                  fontSize: 11,
-                  fontWeight: 500,
-                  display: "inline-block",
-                }}
-              >
-                {trendLabel}
-              </span>
-            </div>
-            )}
-            {isEmpty && (
-              <div style={{ marginTop: 14, fontSize: 13, color: "var(--ink-3)", maxWidth: 360 }}>
-                Paste a link → and start your authority trajectory.
-                <div style={{ marginTop: 10 }}>
-                  <button
-                    onClick={() => onOpenCapture?.()}
-                    style={{
-                      background: "var(--brand)",
-                      color: "#1A1916",
-                      border: 0,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      padding: "8px 16px",
-                      borderRadius: 4,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Capture your first
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Forecasts top-right */}
-          {!isEmpty && trajectory && (
-            <div className="flex gap-7 sm:text-right">
-              <div>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: "var(--ink-3)",
-                  }}
-                >
-                  30d
-                </div>
-                <div
-                  className="tabular-nums"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 26,
-                    color: "var(--warning)",
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1,
-                    marginTop: 4,
-                  }}
-                >
-                  {trajectory.has30dHistory ? trajectory.forecast30 : "—"}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    color: "var(--ink-3)",
-                  }}
-                >
-                  90d
-                </div>
-                <div
-                  className="tabular-nums"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 26,
-                    color: "var(--danger)",
-                    letterSpacing: "-0.02em",
-                    lineHeight: 1,
-                    marginTop: 4,
-                  }}
-                >
-                  {trajectory.has90dHistory ? trajectory.forecast90 : "—"}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Authority Journey (Observer → Strategist → Authority) */}
-        {auraData && (
-          <div data-testid="impact-tier" className="relative mt-6" style={isEmpty ? { opacity: 0.45, filter: "grayscale(1)", pointerEvents: "none" } : undefined}>
-            <AuthorityJourney userId={userId} data={auraData} />
-          </div>
-        )}
-      </section>
+      {/* ─────────── SCORE HERO (compact: ring + tier card + KPIs) ─────────── */}
+      <ScoreHero
+        score={latestScore}
+        tierName={auraData?.tier_name}
+        nextTierName={auraData?.next_tier_name}
+        pointsToNext={auraData?.points_to_next}
+        sector={sectorFocus}
+        followers={latestFollowers}
+        impressions={periodImpressions}
+        engagementRate={periodEngagementRate}
+        trendLabel={trendLabel}
+      />
 
       {/* ─────────── 3. AI NARRATIVE BRIEFING ─────────── */}
       <section
@@ -1076,76 +906,32 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </div>
       </section>
 
-      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
+      {/* ─────────── THREE FORCES (color-coded cards) ─────────── */}
       <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          The three forces
-        </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Signals. Content. Consistency. The people who build reputations aren't smarter — they're more visible. This shows you how.
-        </p>
-        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {([
-            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
-            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
-          ]).map((c, idx) => {
-            const cfg = subScoreCard(c.kind, c.value);
-            const isContentCount = c.kind === "content";
-            return (
-              <div
-                key={c.label}
-                style={{
-                  background: "#FFFFFF",
-                  borderRadius: 14,
-                  padding: "16px 18px",
-                  border: "0.5px solid rgba(0,0,0,0.07)",
-                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: "var(--ink-4)",
-                    }}
-                  >
-                    {c.label}
-                  </div>
-                  {!isContentCount && (
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
-                    >
-                      {cfg.tag}
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="tabular-nums mt-1"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 36,
-                    color: c.color,
-                    lineHeight: 1.05,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
-                </div>
-                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
-                  {isContentCount ? "Posts Analyzed" : c.desc}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <SectionToggle
+          title="The three forces"
+          open={openSections.forces}
+          onToggle={() => toggleSection("forces")}
+        />
+        {openSections.forces && (
+          <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            {([
+              { key: "signal", label: "Signal", value: signalScore, color: "#B08D3A",
+                hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
+                status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
+              { key: "content", label: "Content", value: contentScore, color: "#378ADD",
+                hint: `${contentPerf?.postCount ?? 0} posts analysed`,
+                status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
+              { key: "consistency", label: "Consistency", value: captureScore, color: "#1D9E75",
+                hint: daysSinceLastAll === null ? "No captures yet"
+                  : daysSinceLastAll === 0 ? "Captured today"
+                  : `${daysSinceLastAll}d since last capture`,
+                status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action" },
+            ]).map(c => (
+              <ForceCard key={c.key} {...c} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
@@ -1328,38 +1114,16 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
-      {/* ─────────── 3b. CAPTURE RHYTHM (12-week grid) ─────────── */}
-      {auraData && <WeeklyRhythm userId={userId} data={auraData} />}
-
-      {/* ─────────── 5. HEADLINE STATS ─────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <HeroStat
-          value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
-          label={latestFollowers !== null ? "LinkedIn followers" : "No data yet"}
-          color="var(--brand)"
-        />
-        <HeroStat
-          value={periodImpressions !== null ? formatCompact(periodImpressions) : "—"}
-          label={periodImpressions !== null ? "Impressions" : "No data yet"}
-          color="var(--color-text-primary)"
-        />
-        <HeroStat
-          value={periodEngagementRate !== null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
-          label={periodEngagementRate !== null ? "Avg engagement rate" : "No data yet"}
-          color="var(--success)"
-        />
-      </div>
+      {/* Capture Rhythm + Headline Stats removed — duplicated elsewhere. Mini KPIs now live in the Score Hero. */}
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
       <section>
-        <h2
-          className="text-label uppercase tracking-wider text-xs font-semibold mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Content performance
-        </h2>
-
-        {!contentPerf || contentPerf.postCount === 0 ? (
+        <SectionToggle
+          title="Content performance"
+          open={openSections.content}
+          onToggle={() => toggleSection("content")}
+        />
+        {openSections.content && (!contentPerf || contentPerf.postCount === 0 ? (
           <p className="text-sm text-muted-foreground">
             No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
           </p>
@@ -1397,129 +1161,26 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             {/* Tone distribution and Content insight removed (V1P-2 reorder) — low decision value.
                 Restore from git history if quality data improves. */}
           </div>
-        )}
+        ))}
       </section>
 
       {/* ─────────── 7. POST PERFORMANCE ─────────── */}
       <section>
-        <div className="flex items-baseline justify-between mb-3">
-          <h2
-            className="text-[11px] font-semibold uppercase tracking-[0.14em]"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
-            Post performance
-          </h2>
-          <span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>
-            vs 2.5% LinkedIn avg
-          </span>
-        </div>
-
-        {postMetricsCount === 0 ? (
+        <SectionToggle
+          title="Post performance"
+          right={<span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>vs 2.5% LinkedIn avg</span>}
+          open={openSections.posts}
+          onToggle={() => toggleSection("posts")}
+        />
+        {openSections.posts && (postMetricsCount === 0 ? (
           <div
-            className="rounded-lg p-6"
-            style={{ border: "1.5px dashed var(--color-border)", background: "transparent" }}
+            className="rounded-lg p-6 text-sm text-center"
+            style={{ border: "1.5px dashed var(--color-border)", color: "var(--color-text-secondary)", background: "transparent" }}
           >
-            <div className="flex items-start gap-4">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: "var(--brand-muted)", border: "0.5px solid var(--color-border)" }}
-              >
-                <Upload className="w-5 h-5" style={{ color: "var(--brand)" }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                  No post data for this period
-                </h3>
-                <p className="text-xs mt-1" style={{ color: "var(--color-text-secondary)" }}>
-                  Import your LinkedIn analytics to see post performance.
-                </p>
-                <ol
-                  className="mt-3 text-[11px] leading-relaxed space-y-1 pl-4 list-decimal"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
-                  <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
-                  <li>Select date range → Download</li>
-                  <li>Upload the .xlsx file below</li>
-                </ol>
-
-                <div className="mt-4 flex items-center gap-3 flex-wrap">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  {!selectedFile ? (
-                    <button
-                      onClick={handleUploadClick}
-                      disabled={uploading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                      style={{ background: "var(--brand)", color: "#ffffff" }}
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      Upload LinkedIn .xlsx file
-                    </button>
-                  ) : (
-                    <>
-                      <span className="text-[11px] px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
-                        {selectedFile.name}
-                      </span>
-                      <button
-                        onClick={handleUpload}
-                        disabled={uploading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                        style={{ background: "var(--brand)", color: "#ffffff" }}
-                      >
-                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                        {uploading ? "Importing..." : "Import"}
-                      </button>
-                      {!uploading && (
-                        <button
-                          onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                          className="text-[11px]"
-                          style={{ color: "var(--color-text-muted)" }}
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-                {pipeline && (
-                  <ul className="mt-4 space-y-2">
-                    {(["voice", "positioning", "score"] as const).map((k) => {
-                      const status = pipeline[k];
-                      return (
-                        <li key={k} className="flex items-center gap-3 text-[12px]">
-                          {status === "done" ? (
-                            <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
-                          ) : status === "running" ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
-                          ) : status === "error" ? (
-                            <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
-                          ) : (
-                            <span
-                              className="w-3.5 h-3.5 inline-block rounded-full border"
-                              style={{ borderColor: "var(--color-border)" }}
-                            />
-                          )}
-                          <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
-                            {PIPELINE_LABELS[k]}
-                            {status === "error" && (
-                              <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
-                                — Will retry automatically
-                              </span>
-                            )}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
+            <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>No post data yet</p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+              Import your LinkedIn analytics below to see post performance.
+            </p>
           </div>
         ) : topPosts.length === 0 ? (
           <div
@@ -1662,7 +1323,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               );
             })}
           </div>
-        )}
+        ))}
       </section>
 
       {/* ─────────── 5b. LINKEDIN ANALYTICS (always visible) ─────────── */}
@@ -1825,32 +1486,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           Your audience trajectory — upload your LinkedIn analytics to see the connection between signals and followers
         </p>
         {followerRows.length === 0 ? (
-          <div
-            className="rounded-lg p-6 text-center"
-            style={{
-              border: "1.5px dashed var(--color-border)",
-              color: "var(--color-text-secondary)",
-              background: "transparent",
-            }}
-          >
-            <p className="text-sm font-medium" style={{ color: "var(--color-text-primary)" }}>
-              Import your LinkedIn analytics to see follower growth
-            </p>
-            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-              Upload your LinkedIn .xlsx export on this page
-            </p>
-            {postMetricsCount === 0 && (
-              <button
-                onClick={handleUploadClick}
-                data-testid="impact-linkedin-upload"
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium"
-                style={{ background: "var(--brand)", color: "#ffffff" }}
-              >
-                <Upload className="w-3.5 h-3.5" />
-                Upload LinkedIn .xlsx
-              </button>
-            )}
-          </div>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+            Only one day of data so far. More data will appear after additional snapshots.
+          </p>
         ) : followerSeries.length <= 1 ? (
           (() => {
             const only = followerSeries[0];
@@ -1994,110 +1632,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       </section>
 
       {/* ─────────── 8. CAPTURE ACTIVITY ─────────── */}
-      <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Your rhythm — last {selectedDays} days
-        </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          You don't need to post every day. You just need to not disappear. Consistency beats volume — every time.
-        </p>
-        <div
-          data-testid="impact-capture-chart"
-          className="rounded-lg p-4"
-          style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
-        >
-          <div style={{ height: 120, width: "100%" }}>
-            <ResponsiveContainer>
-              <BarChart data={captureSeries} margin={{ top: 6, right: 8, bottom: 4, left: -16 }}>
-                <XAxis
-                  dataKey="label"
-                  tick={(p: any) => {
-                    const d = captureSeries[p.index];
-                    if (!d?.showLabel) return <g />;
-                    return (
-                      <text x={p.x} y={p.y + 10} textAnchor="middle" fontSize={9} fill="var(--color-text-muted)">
-                        {d.label}
-                      </text>
-                    );
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  interval={0}
-                />
-                <YAxis
-                  allowDecimals={false}
-                  domain={[0, "auto"]}
-                  allowDataOverflow={false}
-                  tickCount={5}
-                  tickFormatter={(v) => Math.round(Number(v)).toString()}
-                  tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={28}
-                />
-                <ReferenceLine
-                  y={5}
-                  stroke="var(--color-text-muted)"
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.45}
-                  label={{ value: "5", position: "right", fontSize: 9, fill: "var(--color-text-muted)" }}
-                />
-                <Tooltip
-                  cursor={{ fill: "var(--brand-ghost)", opacity: 0.3 }}
-                  contentStyle={{
-                    background: "var(--vellum)",
-                    border: "0.5px solid var(--brand-line)",
-                    borderRadius: 6,
-                    fontSize: 11,
-                    color: "var(--ink)",
-                  }}
-                  formatter={(value: any) => [`${value} captures`, ""]}
-                />
-                <Bar dataKey="captures" fill="var(--brand)" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Insight line */}
-          {daysSinceLastAll !== null && (
-            <div
-              className="mt-3 text-xs"
-              style={{
-                color:
-                  daysSinceLastAll >= 4 ? "var(--danger)"
-                    : daysSinceLastAll === 0 ? "var(--success)"
-                      : "var(--warning)",
-                fontWeight: 500,
-              }}
-            >
-              {daysSinceLastAll >= 4
-                ? `No captures in ${daysSinceLastAll} days — this is why your score dropped.`
-                : daysSinceLastAll === 0
-                  ? "You captured today — keep the streak going."
-                  : "Capture today to maintain your score."}
-            </div>
-          )}
-
-          <div className="grid grid-cols-3 gap-4 mt-4 pt-4" style={{ borderTop: "0.5px solid var(--color-border)" }}>
-            <Stat label="Captures this month" value={String(capturesThisMonth)} />
-            <Stat label="Most active day" value={mostActive.captures > 0 ? mostActive.label : "—"} />
-            <Stat
-              label="Days since last capture"
-              value={
-                daysSinceLastAll === null
-                  ? "—"
-                  : daysSinceLastAll === 0
-                    ? "Today"
-                    : String(daysSinceLastAll)
-              }
-              valueColor={daysColor}
-            />
-          </div>
-        </div>
-      </section>
+      {/* "Your rhythm — last X days" chart removed — duplicated from Home/Intelligence. */}
 
     </motion.div>
   );
@@ -2154,5 +1689,273 @@ const BreakdownNumber = ({ value, index }: { value: number; index: number }) => 
   const display = useCountUp(value, { duration: 1200, delay: index * 200, gate: enabled });
   return <>{display}</>;
 };
+
+/* ─── SectionToggle ─────────────────────────────────────────── */
+const SectionToggle = ({
+  title, open, onToggle, right,
+}: { title: string; open: boolean; onToggle: () => void; right?: React.ReactNode }) => (
+  <div
+    onClick={onToggle}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+    className="flex items-center justify-between cursor-pointer select-none"
+    style={{ padding: "4px 0" }}
+  >
+    <h2
+      style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: 18,
+        fontWeight: 500,
+        color: "var(--color-text-primary)",
+        letterSpacing: "-0.01em",
+        margin: 0,
+      }}
+    >
+      {title}
+    </h2>
+    <div className="flex items-center gap-3">
+      {right}
+      <ChevronDown
+        className="w-4 h-4 transition-transform"
+        style={{
+          color: "var(--color-text-muted)",
+          transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+        }}
+      />
+    </div>
+  </div>
+);
+
+/* ─── ForceCard ─────────────────────────────────────────────── */
+const ForceCard = ({
+  label, value, color, hint, status,
+}: { label: string; value: number; color: string; hint: string; status: string }) => {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div
+      style={{
+        background: "var(--color-card)",
+        borderRadius: 12,
+        border: "0.5px solid var(--color-border)",
+        borderTop: `3px solid ${color}`,
+        padding: "14px 16px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
+      <div className="flex items-baseline justify-between">
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          {label}
+        </div>
+        <div
+          className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+          style={{ background: `${color}1F`, color, fontWeight: 600 }}
+        >
+          {status}
+        </div>
+      </div>
+      <div
+        className="tabular-nums mt-1"
+        style={{
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 22,
+          fontWeight: 700,
+          color,
+          lineHeight: 1.1,
+        }}
+      >
+        {pct}
+      </div>
+      <div
+        className="mt-2"
+        style={{ height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden" }}
+      >
+        <div
+          style={{
+            width: `${pct}%`,
+            height: "100%",
+            background: `linear-gradient(90deg, ${color}AA, ${color})`,
+            borderRadius: 2,
+            transition: "width 700ms ease",
+          }}
+        />
+      </div>
+      <div className="text-[11px] mt-2" style={{ color: "var(--color-text-muted)" }}>
+        {hint}
+      </div>
+    </div>
+  );
+};
+
+/* ─── ScoreHero ─────────────────────────────────────────────── */
+const ScoreHero = ({
+  score, tierName, nextTierName, pointsToNext, sector,
+  followers, impressions, engagementRate, trendLabel,
+}: {
+  score: number;
+  tierName?: "Observer" | "Strategist" | "Authority" | null;
+  nextTierName?: string | null;
+  pointsToNext?: number | null;
+  sector?: string | null;
+  followers: number | null;
+  impressions: number | null;
+  engagementRate: number | null;
+  trendLabel: string;
+}) => {
+  const pct = Math.max(0, Math.min(100, Math.round(score)));
+  const r = 64;
+  const c = 2 * Math.PI * r;
+  const dash = (pct / 100) * c;
+  const tierProgressPct = pointsToNext != null && nextTierName
+    ? Math.max(0, Math.min(100, 100 - (pointsToNext / 100) * 100))
+    : 100;
+  const fmt = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`
+      : n >= 1_000 ? `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`
+      : String(Math.round(n));
+  return (
+    <section
+      className="relative overflow-hidden"
+      style={{
+        background: "var(--color-card)",
+        border: "0.5px solid var(--color-border)",
+        borderRadius: 14,
+        padding: "22px 22px",
+        boxShadow: "var(--shadow-rest, 0 1px 3px rgba(0,0,0,0.05))",
+      }}
+    >
+      <div className="flex items-start gap-5 flex-wrap">
+        {/* Score ring */}
+        <div data-testid="impact-score" style={{ width: 140, height: 140, position: "relative", flexShrink: 0 }}>
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-border)" strokeWidth="6" />
+            <circle
+              cx="70" cy="70" r={r} fill="none"
+              stroke="#B08D3A" strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={`${dash} ${c}`}
+              transform="rotate(-90 70 70)"
+              style={{ transition: "stroke-dasharray 800ms ease" }}
+            />
+          </svg>
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <div
+              className="tabular-nums"
+              style={{
+                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                fontSize: 28, fontWeight: 700, color: "#B08D3A", lineHeight: 1,
+              }}
+            >
+              {pct}
+            </div>
+            <div
+              style={{
+                fontSize: 10, color: "var(--color-text-muted)", marginTop: 4,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
+            >
+              of 100
+            </div>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="flex-1 min-w-[220px] flex flex-col gap-3">
+          {/* Tier card */}
+          <div
+            data-testid="impact-tier"
+            style={{
+              background: "linear-gradient(135deg, #2C2418, #3D3226)",
+              borderRadius: 12,
+              padding: "14px 16px",
+              color: "#F0E8D8",
+            }}
+          >
+            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C5A55A", opacity: 0.7 }}>
+              Current tier
+            </div>
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 18, color: "#D4B056", marginTop: 2, lineHeight: 1.2,
+              }}
+            >
+              {tierName || "Observer"}
+            </div>
+            {sector && (
+              <div style={{ fontSize: 12, color: "#A89980", marginTop: 2 }}>
+                {sector}
+              </div>
+            )}
+            {nextTierName && pointsToNext != null && pointsToNext > 0 && (
+              <>
+                <div className="mt-2.5" style={{ height: 3, background: "rgba(197,165,90,0.15)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "#C5A55A" }} />
+                </div>
+                <div style={{ fontSize: 10, color: "#A89980", marginTop: 4 }}>
+                  {pointsToNext} to {nextTierName}
+                </div>
+              </>
+            )}
+            {trendLabel && (
+              <div style={{ fontSize: 10, color: "#C5A55A", marginTop: 6 }}>
+                {trendLabel}
+              </div>
+            )}
+          </div>
+
+          {/* Mini KPIs */}
+          <div className="grid grid-cols-3 gap-2">
+            <MiniKPI label="Followers" value={followers != null ? fmt(followers) : "—"} />
+            <MiniKPI label="Impressions" value={impressions != null ? fmt(impressions) : "—"} />
+            <MiniKPI label="Avg Engagement" value={engagementRate != null ? `${engagementRate.toFixed(1)}%` : "—"} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const MiniKPI = ({ label, value }: { label: string; value: string }) => (
+  <div
+    style={{
+      background: "var(--color-card)",
+      border: "0.5px solid var(--color-border)",
+      borderRadius: 8,
+      padding: "10px 12px",
+    }}
+  >
+    <div
+      className="tabular-nums"
+      style={{
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontSize: 16, fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1.1,
+      }}
+    >
+      {value}
+    </div>
+    <div
+      style={{
+        fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase",
+        color: "var(--color-text-muted)", marginTop: 4,
+      }}
+    >
+      {label}
+    </div>
+  </div>
+);
 
 export default ImpactTab;
