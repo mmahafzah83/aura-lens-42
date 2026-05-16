@@ -1118,14 +1118,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
       <section>
-        <h2
-          className="text-label uppercase tracking-wider text-xs font-semibold mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          Content performance
-        </h2>
-
-        {!contentPerf || contentPerf.postCount === 0 ? (
+        <SectionToggle
+          title="Content performance"
+          open={openSections.content}
+          onToggle={() => toggleSection("content")}
+        />
+        {openSections.content && (!contentPerf || contentPerf.postCount === 0 ? (
           <p className="text-sm text-muted-foreground">
             No published content data yet. Posts published via Aura or imported from LinkedIn will appear here.
           </p>
@@ -1163,7 +1161,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             {/* Tone distribution and Content insight removed (V1P-2 reorder) — low decision value.
                 Restore from git history if quality data improves. */}
           </div>
-        )}
+        ))}
       </section>
 
       {/* ─────────── 7. POST PERFORMANCE ─────────── */}
