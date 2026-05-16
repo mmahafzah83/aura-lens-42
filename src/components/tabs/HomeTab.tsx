@@ -1883,7 +1883,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
               {/* Zone 3 */}
               <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
-                <AuraButton variant="signal" size="sm" onClick={() => navigate("/publish")}>
+                <AuraButton variant="signal" size="sm" onClick={() => onSwitchTab?.("authority")}>
                   Publish now →
                 </AuraButton>
                 {competitorAlert!.url && (
@@ -1986,7 +1986,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           const weakest = subs[0].key;
           const ctaLabel = weakest === "content" ? "Draft post →" : weakest === "capture" ? "Capture now →" : "See your signals →";
           const ctaAction = weakest === "content"
-            ? () => navigate("/publish")
+            ? () => onSwitchTab?.("authority")
             : weakest === "capture"
             ? () => onOpenCapture?.()
             : () => onSwitchTab?.("intelligence");
