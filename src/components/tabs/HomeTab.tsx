@@ -28,6 +28,10 @@ import WeeklyIntelligenceLoopCard from "@/components/WeeklyIntelligenceLoopCard"
 import SilenceAlarm from "@/components/SilenceAlarm";
 import TierCeremonyModal from "@/components/TierCeremonyModal";
 import IdentityDriftBanner from "@/components/IdentityDriftBanner";
+import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
+import JourneyCycle from "@/components/home/JourneyCycle";
+import MissionControl from "@/components/home/MissionControl";
+import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -1374,6 +1378,26 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
+      {/* P4 — Authority pulse strip + Journey cycle + Mission control */}
+      {authUser?.id && (
+        <div className="flex flex-col" style={{ gap: 10 }}>
+          <AuthorityPulseStrip
+            userId={authUser.id}
+            authorityScore={auraData?.aura_score ?? null}
+            onGoToImpact={() => onSwitchTab?.("influence")}
+          />
+          <JourneyCycle
+            hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
+            hasSignals={!!topSignal}
+            publishedThisWeek={false}
+            hasLinkedInData={!!auraData?.content_score && auraData.content_score > 0}
+            scoreGrowing={(auraData?.score_trend ?? 0) > 0}
+            authorityScore={auraData?.aura_score ?? 0}
+          />
+          <MissionControl userId={authUser.id} />
+        </div>
+      )}
+
       {/* H2b — STATUS STRIP */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
           weekly rhythm grid so users never see partial flashes (e.g. tier
@@ -1883,7 +1907,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
               {/* Zone 3 */}
               <div className="flex items-center" style={{ marginTop: 14, gap: 8, flexWrap: "wrap" }}>
-                <AuraButton variant="signal" size="sm" onClick={() => navigate("/publish")}>
+                <AuraButton variant="signal" size="sm" onClick={() => onSwitchTab?.("authority")}>
                   Publish now →
                 </AuraButton>
                 {competitorAlert!.url && (
@@ -1986,7 +2010,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           const weakest = subs[0].key;
           const ctaLabel = weakest === "content" ? "Draft post →" : weakest === "capture" ? "Capture now →" : "See your signals →";
           const ctaAction = weakest === "content"
-            ? () => navigate("/publish")
+            ? () => onSwitchTab?.("authority")
             : weakest === "capture"
             ? () => onOpenCapture?.()
             : () => onSwitchTab?.("intelligence");
@@ -2025,28 +2049,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         // Priority 3 — promote top recommended move
         if (topMove) {
           return (
-            <div
-              style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border) / 0.6)",
-                borderRadius: 8,
-                padding: "16px 18px",
-              }}
-            >
-              <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
-                  Recommended move
-                </span>
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>{topMove.title}</div>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--muted-foreground))", margin: 0 }}>{topMove.rationale}</p>
-              <div className="flex items-center" style={{ marginTop: 14 }}>
-                <AuraButton variant="primary" size="sm" onClick={() => onSwitchTab?.("authority")} style={{ borderRadius: 4, padding: "7px 18px" }}>
-                  Open this move →
-                </AuraButton>
-              </div>
-            </div>
+            <RecommendedMoveCard
+              signalTitle={topMove.title}
+              confidencePct={topSignal ? Math.round((topSignal.confidence || 0) * 100) : null}
+              actionText={topMove.rationale}
+              publishWindow="Wed 8:30 AM"
+              onDraft={() => onSwitchTab?.("authority")}
+              onFullBrief={() => onSwitchTab?.("intelligence")}
+            />
           );
         }
         return null;
