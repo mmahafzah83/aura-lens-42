@@ -906,76 +906,32 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </div>
       </section>
 
-      {/* ─────────── 4. SCORE BREAKDOWN (cards only) ─────────── */}
+      {/* ─────────── THREE FORCES (color-coded cards) ─────────── */}
       <section>
-        <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          The three forces
-        </h2>
-        <p className="text-[12px] mb-3" style={{ color: "var(--color-text-muted)", marginTop: -8 }}>
-          Signals. Content. Consistency. The people who build reputations aren't smarter — they're more visible. This shows you how.
-        </p>
-        <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {([
-            { kind: "capture" as const, label: "Consistency", value: captureScore, desc: "Capture weekly to maintain score", color: "var(--brand)" },
-            { kind: "content" as const, label: "Content", value: contentPerf?.postCount ?? 0, desc: "Posts analyzed across LinkedIn and Aura", color: "var(--ink)" },
-            { kind: "signal" as const, label: "Signal", value: signalScore, desc: "Strengthen signals with diverse sources", color: "var(--brand)" },
-          ]).map((c, idx) => {
-            const cfg = subScoreCard(c.kind, c.value);
-            const isContentCount = c.kind === "content";
-            return (
-              <div
-                key={c.label}
-                style={{
-                  background: "#FFFFFF",
-                  borderRadius: 14,
-                  padding: "16px 18px",
-                  border: "0.5px solid rgba(0,0,0,0.07)",
-                  boxShadow: "var(--aura-shadow-sm, 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05))",
-                }}
-              >
-                <div className="flex items-baseline justify-between">
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: "var(--ink-4)",
-                    }}
-                  >
-                    {c.label}
-                  </div>
-                  {!isContentCount && (
-                    <div
-                      className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
-                      style={{ background: `${c.color}18`, color: c.color, fontWeight: 600 }}
-                    >
-                      {cfg.tag}
-                    </div>
-                  )}
-                </div>
-                <div
-                  className="tabular-nums mt-1"
-                  style={{
-                    fontFamily: "'DM Serif Display', Georgia, serif",
-                    fontSize: 36,
-                    color: c.color,
-                    lineHeight: 1.05,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  <BreakdownNumber value={Math.round(c.value)} index={idx} />
-                </div>
-                <div className="text-[11px] mt-1.5" style={{ color: "var(--ink-4)" }}>
-                  {isContentCount ? "Posts Analyzed" : c.desc}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <SectionToggle
+          title="The three forces"
+          open={openSections.forces}
+          onToggle={() => toggleSection("forces")}
+        />
+        {openSections.forces && (
+          <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+            {([
+              { key: "signal", label: "Signal", value: signalScore, color: "#B08D3A",
+                hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
+                status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
+              { key: "content", label: "Content", value: contentScore, color: "#378ADD",
+                hint: `${contentPerf?.postCount ?? 0} posts analysed`,
+                status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
+              { key: "consistency", label: "Consistency", value: captureScore, color: "#1D9E75",
+                hint: daysSinceLastAll === null ? "No captures yet"
+                  : daysSinceLastAll === 0 ? "Captured today"
+                  : `${daysSinceLastAll}d since last capture`,
+                status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action" },
+            ]).map(c => (
+              <ForceCard key={c.key} {...c} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
