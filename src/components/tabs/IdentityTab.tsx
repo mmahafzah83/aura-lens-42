@@ -25,6 +25,9 @@ import IntelligenceStageBadge, { computeIntelligenceStage, type IntelligenceStag
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
+import ArchetypeHeroCard from "@/components/identity/ArchetypeHeroCard";
+import AuthorityRadar from "@/components/identity/AuthorityRadar";
+import TerritoryMap from "@/components/identity/TerritoryMap";
 
 interface IdentityTabProps {
   onResetDiagnostic: () => void;
@@ -79,6 +82,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const [marketShareData, setMarketShareData] = useState<MilestoneShareData | null>(null);
   const [entryCount, setEntryCount] = useState<number>(0);
   const [trackedPostCount, setTrackedPostCount] = useState<number>(0);
+  const [radarInputs, setRadarInputs] = useState({
+    avgEngagement: 0,
+    totalPosts: 0,
+    voiceTrained: false,
+    weeksActive: 0,
+  });
 
   useEffect(() => {
     if (!authReady) return;
@@ -154,6 +163,35 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         setTrackedPostCount(postsCountRes.count || 0);
       } catch (e) {
         console.warn("[IdentityTab] stage counts failed", e);
+      }
+      // Radar inputs — voice profile, posts engagement, capture rhythm
+      try {
+        const fourWeeksAgo = new Date(); fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+        const [voiceRes, postsRes, recentEntriesRes] = await Promise.all([
+          (supabase.from("authority_voice_profiles") as any)
+            .select("tone, example_posts").eq("user_id", uid).maybeSingle(),
+          (supabase.from("linkedin_posts") as any)
+            .select("engagement_score").eq("user_id", uid).limit(200),
+          (supabase.from("entries") as any)
+            .select("created_at").eq("user_id", uid)
+            .gte("created_at", fourWeeksAgo.toISOString()).limit(500),
+        ]);
+        const posts = (postsRes.data || []) as any[];
+        const totalPosts = posts.length;
+        const avgEngagement = totalPosts > 0
+          ? posts.reduce((s, p) => s + (Number(p.engagement_score) || 0), 0) / totalPosts
+          : 0;
+        const voice = voiceRes.data || {};
+        const voiceTrained = !!(voice?.tone || (Array.isArray(voice?.example_posts) && voice.example_posts.length > 0));
+        const weeks = new Set<number>();
+        ((recentEntriesRes.data || []) as any[]).forEach((e) => {
+          const d = new Date(e.created_at);
+          const week = Math.floor((Date.now() - d.getTime()) / (7 * 86400000));
+          if (week >= 0 && week < 4) weeks.add(week);
+        });
+        setRadarInputs({ avgEngagement, totalPosts, voiceTrained, weeksActive: weeks.size });
+      } catch (e) {
+        console.warn("[IdentityTab] radar inputs failed", e);
       }
       if (signalsRes.data) {
         const signals = signalsRes.data as any[];
@@ -338,6 +376,15 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
   const identityIntel = profile?.identity_intelligence || {};
   const positioningTitle = brandResults?.positioning_title || brandResults?.primary_archetype || identityIntel?.primary_role || profile?.primary_strength || "";
   const positioningStatement = brandResults?.positioning_statement || identityIntel?.identity_summary || brandResults?.interpretation || "";
+
+  // Radar metrics (0-100 each)
+  const radar = {
+    signals: Math.min(100, Math.round(signalStats.count * 20 + (signalStats.topConfidence || 0) * 0.5)),
+    content: Math.min(100, Math.round((radarInputs.totalPosts || 0) * 2)),
+    engagement: Math.min(100, Math.round((radarInputs.avgEngagement || 0) * 40)),
+    voice: radarInputs.voiceTrained ? 80 : 20,
+    rhythm: Math.min(100, Math.round((radarInputs.weeksActive / 4) * 100)),
+  };
 
   const assessments = [
     { name: "Onboarding", done: profile?.onboarding_completed, date: null },
