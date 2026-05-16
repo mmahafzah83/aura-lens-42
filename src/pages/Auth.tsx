@@ -511,21 +511,38 @@ const Auth = () => {
             </div>
           ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div
-              style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 12.5,
-                lineHeight: 1.55,
-                color: "var(--ink-5)",
-                background: "var(--brand-muted)",
-                border: "0.5px solid var(--bronze-line)",
-                borderRadius: 10,
-                padding: "10px 12px",
-              }}
-            >
-              Use the email and password from your invitation. First time?
-              Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Set Password</span> below to create your password.
-            </div>
+            {linkExpired ? (
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12.5,
+                  lineHeight: 1.55,
+                  color: "var(--ink-6)",
+                  background: "rgba(220, 80, 60, 0.08)",
+                  border: "0.5px solid rgba(220, 80, 60, 0.35)",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                }}
+              >
+                This reset link has expired. Enter your email below and request a new one.
+              </div>
+            ) : (
+              <div
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 12.5,
+                  lineHeight: 1.55,
+                  color: "var(--ink-5)",
+                  background: "var(--brand-muted)",
+                  border: "0.5px solid var(--bronze-line)",
+                  borderRadius: 10,
+                  padding: "10px 12px",
+                }}
+              >
+                Use the email and password from your invitation. First time?
+                Use <span style={{ color: "var(--brand)", fontWeight: 600 }}>Set Password</span> below to create your password.
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="auth-label">
                 EMAIL
@@ -604,9 +621,11 @@ const Auth = () => {
               >
                 {resetting
                   ? "Sending…"
-                  : loginFailed
-                    ? "Forgot your password? →"
-                    : "Set or reset your password →"}
+                  : linkExpired
+                    ? "Request a new reset link →"
+                    : loginFailed
+                      ? "Forgot your password? →"
+                      : "Set or reset your password →"}
               </button>
             </div>
           </form>
