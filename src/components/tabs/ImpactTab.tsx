@@ -112,6 +112,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [latestFollowers, setLatestFollowers] = useState<number | null>(null);
   const [latestSnapshotDate, setLatestSnapshotDate] = useState<string | null>(null);
   const [showUpdateUpload, setShowUpdateUpload] = useState(false);
+  const [sectorFocus, setSectorFocus] = useState<string | null>(null);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    narrative: true, forces: true, trajectory: true, content: true, posts: true, linkedin: true, followers: true,
+  });
+  const toggleSection = (k: string) => setOpenSections(s => ({ ...s, [k]: !s[k] }));
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
