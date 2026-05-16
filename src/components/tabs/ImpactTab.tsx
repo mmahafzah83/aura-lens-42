@@ -1182,110 +1182,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
         {postMetricsCount === 0 ? (
           <div
-            className="rounded-lg p-6"
-            style={{ border: "1.5px dashed var(--color-border)", background: "transparent" }}
+            className="rounded-lg p-6 text-sm text-center"
+            style={{ border: "1.5px dashed var(--color-border)", color: "var(--color-text-secondary)", background: "transparent" }}
           >
-            <div className="flex items-start gap-4">
-              <div
-                className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: "var(--brand-muted)", border: "0.5px solid var(--color-border)" }}
-              >
-                <Upload className="w-5 h-5" style={{ color: "var(--brand)" }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
-                  No post data for this period
-                </h3>
-                <p className="text-xs mt-1" style={{ color: "var(--color-text-secondary)" }}>
-                  Import your LinkedIn analytics to see post performance.
-                </p>
-                <ol
-                  className="mt-3 text-[11px] leading-relaxed space-y-1 pl-4 list-decimal"
-                  style={{ color: "var(--color-text-secondary)" }}
-                >
-                  <li>Go to <span style={{ color: "var(--color-text-primary)" }}>linkedin.com/analytics/creator</span></li>
-                  <li>Click <span style={{ color: "var(--color-text-primary)" }}>Export</span> (top right)</li>
-                  <li>Select date range → Download</li>
-                  <li>Upload the .xlsx file below</li>
-                </ol>
-
-                <div className="mt-4 flex items-center gap-3 flex-wrap">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  {!selectedFile ? (
-                    <button
-                      onClick={handleUploadClick}
-                      disabled={uploading}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                      style={{ background: "var(--brand)", color: "#ffffff" }}
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      Upload LinkedIn .xlsx file
-                    </button>
-                  ) : (
-                    <>
-                      <span className="text-[11px] px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
-                        {selectedFile.name}
-                      </span>
-                      <button
-                        onClick={handleUpload}
-                        disabled={uploading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                        style={{ background: "var(--brand)", color: "#ffffff" }}
-                      >
-                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                        {uploading ? "Importing..." : "Import"}
-                      </button>
-                      {!uploading && (
-                        <button
-                          onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                          className="text-[11px]"
-                          style={{ color: "var(--color-text-muted)" }}
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-                {pipeline && (
-                  <ul className="mt-4 space-y-2">
-                    {(["voice", "positioning", "score"] as const).map((k) => {
-                      const status = pipeline[k];
-                      return (
-                        <li key={k} className="flex items-center gap-3 text-[12px]">
-                          {status === "done" ? (
-                            <Check className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
-                          ) : status === "running" ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />
-                          ) : status === "error" ? (
-                            <span className="w-3.5 h-3.5 inline-block text-center text-destructive">!</span>
-                          ) : (
-                            <span
-                              className="w-3.5 h-3.5 inline-block rounded-full border"
-                              style={{ borderColor: "var(--color-border)" }}
-                            />
-                          )}
-                          <span style={{ color: status === "done" ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}>
-                            {PIPELINE_LABELS[k]}
-                            {status === "error" && (
-                              <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>
-                                — Will retry automatically
-                              </span>
-                            )}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
+            <p className="font-medium" style={{ color: "var(--color-text-primary)" }}>No post data yet</p>
+            <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+              Import your LinkedIn analytics below to see post performance.
+            </p>
           </div>
         ) : topPosts.length === 0 ? (
           <div
