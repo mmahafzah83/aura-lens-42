@@ -334,6 +334,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         await supabase.auth.getSession();
         const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
         if (!cancelled && !error && res) setAuraData(res);
+        const { data: prof } = await supabase
+          .from("diagnostic_profiles")
+          .select("sector_focus")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!cancelled) setSectorFocus((prof as any)?.sector_focus || null);
       } catch (e) {
         console.error("ImpactTab: aura score load failed", e);
       }
