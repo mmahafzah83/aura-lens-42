@@ -858,9 +858,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </p>
         </div>
       </div>
-      <FirstVisitHint page="impact" />
-
-      {/* Market Mirror moved to My Story page (was redundant here). Kept import for potential future use. */}
+      {/* FirstVisitHint and Market Mirror removed — Impact is now a focused dashboard. */}
 
       {/* ─────────── 3a. DARK SCORE HERO + TRAJECTORY ─────────── */}
       <section
