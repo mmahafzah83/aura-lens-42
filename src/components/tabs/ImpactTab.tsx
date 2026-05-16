@@ -1325,7 +1325,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               );
             })}
           </div>
-        )}
+        ))}
       </section>
 
       {/* ─────────── 5b. LINKEDIN ANALYTICS (always visible) ─────────── */}
