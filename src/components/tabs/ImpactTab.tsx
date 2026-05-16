@@ -1692,4 +1692,272 @@ const BreakdownNumber = ({ value, index }: { value: number; index: number }) => 
   return <>{display}</>;
 };
 
+/* ─── SectionToggle ─────────────────────────────────────────── */
+const SectionToggle = ({
+  title, open, onToggle, right,
+}: { title: string; open: boolean; onToggle: () => void; right?: React.ReactNode }) => (
+  <div
+    onClick={onToggle}
+    role="button"
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+    className="flex items-center justify-between cursor-pointer select-none"
+    style={{ padding: "4px 0" }}
+  >
+    <h2
+      style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: 18,
+        fontWeight: 500,
+        color: "var(--color-text-primary)",
+        letterSpacing: "-0.01em",
+        margin: 0,
+      }}
+    >
+      {title}
+    </h2>
+    <div className="flex items-center gap-3">
+      {right}
+      <ChevronDown
+        className="w-4 h-4 transition-transform"
+        style={{
+          color: "var(--color-text-muted)",
+          transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+        }}
+      />
+    </div>
+  </div>
+);
+
+/* ─── ForceCard ─────────────────────────────────────────────── */
+const ForceCard = ({
+  label, value, color, hint, status,
+}: { label: string; value: number; color: string; hint: string; status: string }) => {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div
+      style={{
+        background: "var(--color-card)",
+        borderRadius: 12,
+        border: "0.5px solid var(--color-border)",
+        borderTop: `3px solid ${color}`,
+        padding: "14px 16px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      }}
+    >
+      <div className="flex items-baseline justify-between">
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          {label}
+        </div>
+        <div
+          className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+          style={{ background: `${color}1F`, color, fontWeight: 600 }}
+        >
+          {status}
+        </div>
+      </div>
+      <div
+        className="tabular-nums mt-1"
+        style={{
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 22,
+          fontWeight: 700,
+          color,
+          lineHeight: 1.1,
+        }}
+      >
+        {pct}
+      </div>
+      <div
+        className="mt-2"
+        style={{ height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden" }}
+      >
+        <div
+          style={{
+            width: `${pct}%`,
+            height: "100%",
+            background: `linear-gradient(90deg, ${color}AA, ${color})`,
+            borderRadius: 2,
+            transition: "width 700ms ease",
+          }}
+        />
+      </div>
+      <div className="text-[11px] mt-2" style={{ color: "var(--color-text-muted)" }}>
+        {hint}
+      </div>
+    </div>
+  );
+};
+
+/* ─── ScoreHero ─────────────────────────────────────────────── */
+const ScoreHero = ({
+  score, tierName, nextTierName, pointsToNext, sector,
+  followers, impressions, engagementRate, trendLabel,
+}: {
+  score: number;
+  tierName?: "Observer" | "Strategist" | "Authority" | null;
+  nextTierName?: string | null;
+  pointsToNext?: number | null;
+  sector?: string | null;
+  followers: number | null;
+  impressions: number | null;
+  engagementRate: number | null;
+  trendLabel: string;
+}) => {
+  const pct = Math.max(0, Math.min(100, Math.round(score)));
+  const r = 64;
+  const c = 2 * Math.PI * r;
+  const dash = (pct / 100) * c;
+  const tierProgressPct = pointsToNext != null && nextTierName
+    ? Math.max(0, Math.min(100, 100 - (pointsToNext / 100) * 100))
+    : 100;
+  const fmt = (n: number) =>
+    n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`
+      : n >= 1_000 ? `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`
+      : String(Math.round(n));
+  return (
+    <section
+      className="relative overflow-hidden"
+      style={{
+        background: "var(--color-card)",
+        border: "0.5px solid var(--color-border)",
+        borderRadius: 14,
+        padding: "22px 22px",
+        boxShadow: "var(--shadow-rest, 0 1px 3px rgba(0,0,0,0.05))",
+      }}
+    >
+      <div className="flex items-start gap-5 flex-wrap">
+        {/* Score ring */}
+        <div data-testid="impact-score" style={{ width: 140, height: 140, position: "relative", flexShrink: 0 }}>
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-border)" strokeWidth="6" />
+            <circle
+              cx="70" cy="70" r={r} fill="none"
+              stroke="#B08D3A" strokeWidth="6" strokeLinecap="round"
+              strokeDasharray={`${dash} ${c}`}
+              transform="rotate(-90 70 70)"
+              style={{ transition: "stroke-dasharray 800ms ease" }}
+            />
+          </svg>
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <div
+              className="tabular-nums"
+              style={{
+                fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                fontSize: 28, fontWeight: 700, color: "#B08D3A", lineHeight: 1,
+              }}
+            >
+              {pct}
+            </div>
+            <div
+              style={{
+                fontSize: 10, color: "var(--color-text-muted)", marginTop: 4,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+              }}
+            >
+              of 100
+            </div>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="flex-1 min-w-[220px] flex flex-col gap-3">
+          {/* Tier card */}
+          <div
+            data-testid="impact-tier"
+            style={{
+              background: "linear-gradient(135deg, #2C2418, #3D3226)",
+              borderRadius: 12,
+              padding: "14px 16px",
+              color: "#F0E8D8",
+            }}
+          >
+            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C5A55A", opacity: 0.7 }}>
+              Current tier
+            </div>
+            <div
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 18, color: "#D4B056", marginTop: 2, lineHeight: 1.2,
+              }}
+            >
+              {tierName || "Observer"}
+            </div>
+            {sector && (
+              <div style={{ fontSize: 12, color: "#A89980", marginTop: 2 }}>
+                {sector}
+              </div>
+            )}
+            {nextTierName && pointsToNext != null && pointsToNext > 0 && (
+              <>
+                <div className="mt-2.5" style={{ height: 3, background: "rgba(197,165,90,0.15)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "#C5A55A" }} />
+                </div>
+                <div style={{ fontSize: 10, color: "#A89980", marginTop: 4 }}>
+                  {pointsToNext} to {nextTierName}
+                </div>
+              </>
+            )}
+            {trendLabel && (
+              <div style={{ fontSize: 10, color: "#C5A55A", marginTop: 6 }}>
+                {trendLabel}
+              </div>
+            )}
+          </div>
+
+          {/* Mini KPIs */}
+          <div className="grid grid-cols-3 gap-2">
+            <MiniKPI label="Followers" value={followers != null ? fmt(followers) : "—"} />
+            <MiniKPI label="Impressions" value={impressions != null ? fmt(impressions) : "—"} />
+            <MiniKPI label="Avg Engagement" value={engagementRate != null ? `${engagementRate.toFixed(1)}%` : "—"} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const MiniKPI = ({ label, value }: { label: string; value: string }) => (
+  <div
+    style={{
+      background: "var(--color-card)",
+      border: "0.5px solid var(--color-border)",
+      borderRadius: 8,
+      padding: "10px 12px",
+    }}
+  >
+    <div
+      className="tabular-nums"
+      style={{
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontSize: 16, fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1.1,
+      }}
+    >
+      {value}
+    </div>
+    <div
+      style={{
+        fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase",
+        color: "var(--color-text-muted)", marginTop: 4,
+      }}
+    >
+      {label}
+    </div>
+  </div>
+);
+
 export default ImpactTab;
