@@ -669,6 +669,19 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
     return () => window.removeEventListener("capture-complete", handler);
   }, [loadSignals]);
 
+  // Realtime: refetch counters when entries / signals / moves change
+  useEffect(() => {
+    if (!authUser?.id) return;
+    const channel = supabase
+      .channel(`intelligence-live-${authUser.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "entries", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
+      .on("postgres_changes", { event: "*", schema: "public", table: "documents", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
+      .on("postgres_changes", { event: "*", schema: "public", table: "strategic_signals", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
+      .on("postgres_changes", { event: "*", schema: "public", table: "recommended_moves", filter: `user_id=eq.${authUser.id}` }, () => loadSignals())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [authUser?.id, loadSignals]);
+
   const sortedByConfidence = useMemo(() => {
     const order: Record<string, number> = { fading: 0, accelerating: 1, stable: 2, dormant: 3 };
     return [...signals].sort((a, b) => {
