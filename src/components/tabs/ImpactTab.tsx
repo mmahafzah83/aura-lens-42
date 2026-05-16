@@ -1336,27 +1336,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
-      {/* ─────────── 3b. CAPTURE RHYTHM (12-week grid) ─────────── */}
-      {auraData && <WeeklyRhythm userId={userId} data={auraData} />}
-
-      {/* ─────────── 5. HEADLINE STATS ─────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <HeroStat
-          value={latestFollowers !== null ? formatNumber(latestFollowers) : "—"}
-          label={latestFollowers !== null ? "LinkedIn followers" : "No data yet"}
-          color="var(--brand)"
-        />
-        <HeroStat
-          value={periodImpressions !== null ? formatCompact(periodImpressions) : "—"}
-          label={periodImpressions !== null ? "Impressions" : "No data yet"}
-          color="var(--color-text-primary)"
-        />
-        <HeroStat
-          value={periodEngagementRate !== null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
-          label={periodEngagementRate !== null ? "Avg engagement rate" : "No data yet"}
-          color="var(--success)"
-        />
-      </div>
+      {/* Capture Rhythm + Headline Stats removed — duplicated elsewhere. Mini KPIs now live in the Score Hero. */}
 
       {/* ─────────── 9. CONTENT PERFORMANCE ─────────── */}
       <section>
