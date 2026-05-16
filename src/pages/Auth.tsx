@@ -32,6 +32,7 @@ const Auth = () => {
   const [showPwd, setShowPwd] = useState(false);
   const [updatingPwd, setUpdatingPwd] = useState(false);
   const inRecoveryRef = useRef(false);
+  const [linkExpired, setLinkExpired] = useState(false);
 
   const checkOnboardingAndRedirect = async (session: any) => {
     const { data: profile } = await supabase
@@ -52,10 +53,27 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    // Detect expired/invalid recovery links arriving in the URL hash
+    // (e.g. #error=access_denied&error_code=otp_expired&error_description=...)
+    if (typeof window !== "undefined" && window.location.hash) {
+      const hash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const params = new URLSearchParams(hash);
+      const err = params.get("error");
+      const errCode = params.get("error_code");
+      if (err === "access_denied" || errCode === "otp_expired" || params.get("error_description")) {
+        setLinkExpired(true);
+        // Clear the hash so refreshing doesn't keep showing the error
+        try { window.history.replaceState(null, "", window.location.pathname + window.location.search); } catch {}
+      }
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") {
         inRecoveryRef.current = true;
         setShowNewPasswordForm(true);
+        setLinkExpired(false);
         return;
       }
       if (inRecoveryRef.current) return;
