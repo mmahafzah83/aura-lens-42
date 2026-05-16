@@ -2153,6 +2153,48 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_missions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          mission_type: string
+          points: number | null
+          status: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          mission_type: string
+          points?: number | null
+          status?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          mission_type?: string
+          points?: number | null
+          status?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       influence_dashboard_view: {

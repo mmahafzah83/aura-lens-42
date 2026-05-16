@@ -112,10 +112,12 @@ Deno.serve(async (req) => {
     ).slice(0, 40);
 
     if (filtered.length === 0) {
-      console.error("voice-distill: no posts found for user", user_id);
+      // Imported analytics rows can lack post_text. Treat as a graceful skip
+      // (not an error) so the post-import pipeline doesn't show red ❗.
+      console.warn("voice-distill: no posts with text — skipping distillation for", user_id);
       return new Response(
-        JSON.stringify({ error: "no_posts_found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({ success: true, skipped: true, reason: "no_posts_with_text", posts_analyzed: 0 }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -135,6 +137,8 @@ Deno.serve(async (req) => {
     // Step 3 — Call Anthropic (Claude Sonnet)
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiAbort = new AbortController();
+    const aiTimer = setTimeout(() => aiAbort.abort(), 25000);
     const aiResp = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -149,7 +153,8 @@ Deno.serve(async (req) => {
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
       }),
-    });
+      signal: aiAbort.signal,
+    }).finally(() => clearTimeout(aiTimer));
 
     if (!aiResp.ok) {
       const t = await aiResp.text();

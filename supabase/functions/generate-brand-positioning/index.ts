@@ -37,18 +37,56 @@ serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const supa = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: userData, error: claimsErr } = await supa.auth.getUser(authHeader.replace("Bearer ", ""));
     if (claimsErr || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const userId = userData.user.id;
+    const admin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { profileContext } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    let profileContext: string | undefined;
+    try {
+      const body = await req.json();
+      profileContext = body?.profileContext;
+    } catch (_) { /* empty body is allowed */ }
+
+    // Fallback: build profileContext from the user's diagnostic profile if not provided
+    if (!profileContext || typeof profileContext !== "string" || profileContext.trim().length === 0) {
+      const { data: prof } = await admin
+        .from("diagnostic_profiles")
+        .select("first_name,last_name,firm,level,core_practice,sector_focus,north_star_goal,years_experience,brand_pillars,primary_strength,leadership_style,brand_assessment_answers")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!prof) {
+        console.warn("generate-brand-positioning: no profile found, skipping for", userId);
+        return new Response(JSON.stringify({ success: true, skipped: true, reason: "no_profile" }), {
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const p: any = prof;
+      profileContext = [
+        `Name: ${p.first_name ?? ""} ${p.last_name ?? ""}`.trim(),
+        p.firm ? `Firm: ${p.firm}` : null,
+        p.level ? `Level: ${p.level}` : null,
+        p.core_practice ? `Core practice: ${p.core_practice}` : null,
+        p.sector_focus ? `Sector focus: ${p.sector_focus}` : null,
+        p.years_experience ? `Years experience: ${p.years_experience}` : null,
+        p.north_star_goal ? `North star goal: ${p.north_star_goal}` : null,
+        p.primary_strength ? `Primary strength: ${p.primary_strength}` : null,
+        p.leadership_style ? `Leadership style: ${p.leadership_style}` : null,
+        p.brand_pillars?.length ? `Brand pillars: ${(p.brand_pillars as string[]).join(", ")}` : null,
+        p.brand_assessment_answers && Object.keys(p.brand_assessment_answers).length
+          ? `Assessment answers: ${JSON.stringify(p.brand_assessment_answers)}`
+          : null,
+      ].filter(Boolean).join("\n");
+    }
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const aiAbort = new AbortController();
+    const aiTimer = setTimeout(() => aiAbort.abort(), 25000);
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -62,22 +100,39 @@ serve(async (req) => {
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: `Here is the professional's complete profile:\n${profileContext}` }],
       }),
-    });
+      signal: aiAbort.signal,
+    }).finally(() => clearTimeout(aiTimer));
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      throw new Error("AI gateway error");
+      console.error("generate-brand-positioning AI error:", response.status, t);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
     const data = await response.json();
     const positioning = ((data.content || []).map((c: any) => c.text || "").join("") || "").trim();
 
+    // Persist positioning into diagnostic_profiles.brand_assessment_results.positioning_statement
+    if (positioning) {
+      const { data: existing } = await admin
+        .from("diagnostic_profiles")
+        .select("brand_assessment_results")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const prev = (existing as any)?.brand_assessment_results ?? {};
+      const merged = { ...prev, positioning_statement: positioning, positioning_generated_at: new Date().toISOString() };
+      const { error: updErr } = await admin
+        .from("diagnostic_profiles")
+        .update({ brand_assessment_results: merged })
+        .eq("user_id", userId);
+      if (updErr) console.error("generate-brand-positioning: persist failed", updErr);
+    }
+
     return new Response(JSON.stringify({ positioning }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("generate-brand-positioning error:", e);
+    console.error("generate-brand-positioning error:", e instanceof Error ? e.stack || e.message : e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
