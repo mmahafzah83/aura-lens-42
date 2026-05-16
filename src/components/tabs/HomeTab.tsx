@@ -2049,28 +2049,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         // Priority 3 — promote top recommended move
         if (topMove) {
           return (
-            <div
-              style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border) / 0.6)",
-                borderRadius: 8,
-                padding: "16px 18px",
-              }}
-            >
-              <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
-                  Recommended move
-                </span>
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 4 }}>{topMove.title}</div>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: "hsl(var(--muted-foreground))", margin: 0 }}>{topMove.rationale}</p>
-              <div className="flex items-center" style={{ marginTop: 14 }}>
-                <AuraButton variant="primary" size="sm" onClick={() => onSwitchTab?.("authority")} style={{ borderRadius: 4, padding: "7px 18px" }}>
-                  Open this move →
-                </AuraButton>
-              </div>
-            </div>
+            <RecommendedMoveCard
+              signalTitle={topMove.title}
+              confidencePct={topSignal ? Math.round((topSignal.confidence || 0) * 100) : null}
+              actionText={topMove.rationale}
+              publishWindow="Wed 8:30 AM"
+              onDraft={() => onSwitchTab?.("authority")}
+              onFullBrief={() => onSwitchTab?.("intelligence")}
+            />
           );
         }
         return null;
