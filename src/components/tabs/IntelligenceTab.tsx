@@ -402,13 +402,20 @@ const SignalDetailPanel = ({
 
           {/* Built from these sources */}
           <div style={{ marginBottom: 20 }}>
-            <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>Built from these sources</p>
+            <p style={{ fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-3)", marginBottom: 8 }}>
+              Built from {uniqueEvidence.length} source{uniqueEvidence.length === 1 ? "" : "s"}
+            </p>
             {uniqueEvidence.length > 0 ? (
               <div>
                 {visibleEvidence.map(frag => (
                   <div key={frag.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0" }}>
                     <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--brand)", flexShrink: 0 }} />
                     <span style={{ fontSize: 11, color: "var(--ink-5)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{frag.title}</span>
+                    {frag.source_label && (
+                      <span style={{ fontSize: 9, color: "var(--ink-3)", textTransform: "uppercase", letterSpacing: 0.5, flexShrink: 0 }}>
+                        {frag.source_label}
+                      </span>
+                    )}
                     <span style={{ fontSize: 10, color: "var(--ink-3)", marginLeft: "auto", flexShrink: 0 }}>{relativeTime(frag.created_at)}</span>
                   </div>
                 ))}
