@@ -31,44 +31,56 @@ serve(async (req) => {
     const userId = user.id;
     const now = new Date();
 
-    // --- capture_score: consistency — active weeks in the last 12 calendar weeks ---
+    // --- capture_score: consistency — active weeks in the last 4 calendar weeks ---
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const twelveWeeksAgoForCapture = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
+    const fourWeeksAgoForCapture = new Date(now.getTime() - 4 * 7 * 24 * 60 * 60 * 1000);
     const { data: captureEntries } = await admin
       .from("entries")
       .select("created_at")
       .eq("user_id", userId)
-      .gte("created_at", twelveWeeksAgoForCapture.toISOString());
-    let activeWeeksInLast12 = 0;
-    for (let i = 0; i < 12; i++) {
+      .gte("created_at", fourWeeksAgoForCapture.toISOString());
+    let activeWeeksInLast4 = 0;
+    for (let i = 0; i < 4; i++) {
       const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
       const active = (captureEntries || []).some((e: any) => {
         const t = new Date(e.created_at).getTime();
         return t >= wkStart.getTime() && t < wkEnd.getTime();
       });
-      if (active) activeWeeksInLast12++;
+      if (active) activeWeeksInLast4++;
     }
-    const captureScore = Math.round((activeWeeksInLast12 / 12) * 100);
+    const captureScore = Math.round((activeWeeksInLast4 / 4) * 100);
 
-    // --- signal_score: active signal count / 10 × 100, cap 100 ---
+    // --- signal_score: count × 20 + avg confidence × 50 + theme breadth × 6 ---
     const { data: signals } = await admin
       .from("strategic_signals")
-      .select("confidence")
+      .select("confidence, theme_tags")
       .eq("user_id", userId)
       .eq("status", "active");
     const activeSignalCount = signals?.length ?? 0;
-    const signalScore = Math.min(Math.round((activeSignalCount / 10) * 100), 100);
+    const avgConf = signals && signals.length > 0
+      ? signals.reduce((s: number, x: any) => s + Number(x.confidence || 0), 0) / signals.length
+      : 0;
+    const allTags = new Set<string>();
+    (signals || []).forEach((s: any) => (s.theme_tags || []).forEach((t: string) => allTags.add(t)));
+    const signalScore = Math.min(Math.round(
+      activeSignalCount * 20 + avgConf * 100 * 0.5 + Math.min(allTags.size, 5) * 6
+    ), 100);
 
-    // --- content_score: linkedin_posts in last 30 days / 10 × 100, cap 100 ---
+    // --- content_score: split imported (≤30) vs active last-30d (≤70) ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const { count: contentCount } = await admin
+    const { count: importedCount } = await admin
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
+      .in("source_type", ["linkedin_export", "browser_capture"]);
+    const { count: activeCount } = await admin
+      .from("linkedin_posts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .not("source_type", "in", "(linkedin_export,browser_capture)")
       .gte("created_at", thirtyDaysAgo);
-
-    const contentScore = Math.min(Math.round(((contentCount ?? 0) / 10) * 100), 100);
+    const contentScore = Math.min((importedCount ?? 0) * 2, 30) + Math.min((activeCount ?? 0) * 10, 70);
 
     // --- aura_score: weights 40/40/20 (signal/content/capture) ---
     const auraScore = Math.round(signalScore * 0.40 + contentScore * 0.40 + captureScore * 0.20);
