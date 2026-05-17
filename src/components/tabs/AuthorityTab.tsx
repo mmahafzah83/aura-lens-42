@@ -2735,8 +2735,12 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
-      window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
-      toast.success("Copied. LinkedIn opened in a new tab.");
+      window.open(
+        `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      toast.success("Opening LinkedIn with your post pre-filled.");
     } catch (err) {
       console.error("[Library] copy failed", err);
       toast.error("Could not copy — please select and copy manually");
