@@ -160,6 +160,8 @@ ${trendLines}`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const mirrorAbort = new AbortController();
+    const mirrorTimer = setTimeout(() => mirrorAbort.abort(), 30000);
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -173,7 +175,8 @@ ${trendLines}`;
         system: systemPrompt + competitorContext + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
         messages: [{ role: "user", content: userPrompt }],
       }),
-    });
+      signal: mirrorAbort.signal,
+    }).finally(() => clearTimeout(mirrorTimer));
 
     if (!aiRes.ok) {
       const txt = await aiRes.text();
