@@ -246,7 +246,10 @@ Detect 2-5 signals maximum. Quality over quantity.`;
 
         const nowTs = new Date().toISOString();
         const aiScore = signal.confidence || 0.7;
-        const { confidence: newConf, confidence_explanation } = calcConfidence(aiScore, newFragCount, existing.unique_orgs || 1, nowTs);
+        const { data: srcFrags1 } = await adminClient
+          .from("evidence_fragments").select("source_registry_id").in("id", mergedEvidence);
+        const uniqueSources1 = new Set((srcFrags1 || []).map((f: any) => f.source_registry_id).filter(Boolean)).size || 1;
+        const { confidence: newConf, confidence_explanation } = calcConfidence(aiScore, uniqueSources1, existing.unique_orgs || 1, nowTs);
 
         await adminClient.from("strategic_signals").update({
           supporting_evidence_ids: mergedEvidence,
@@ -274,7 +277,10 @@ Detect 2-5 signals maximum. Quality over quantity.`;
           const mergedEvidence = unique([...(current.supporting_evidence_ids || []), ...evidenceIds]);
           const nowTs2 = new Date().toISOString();
           const aiScore2 = signal.confidence || 0.7;
-          const { confidence: newConf2, confidence_explanation: ce2 } = calcConfidence(aiScore2, mergedEvidence.length, 1, nowTs2);
+          const { data: srcFrags2 } = await adminClient
+            .from("evidence_fragments").select("source_registry_id").in("id", mergedEvidence);
+          const uniqueSources2 = new Set((srcFrags2 || []).map((f: any) => f.source_registry_id).filter(Boolean)).size || 1;
+          const { confidence: newConf2, confidence_explanation: ce2 } = calcConfidence(aiScore2, uniqueSources2, 1, nowTs2);
           await adminClient.from("strategic_signals").update({
             supporting_evidence_ids: mergedEvidence,
             fragment_count: mergedEvidence.length,
@@ -289,7 +295,10 @@ Detect 2-5 signals maximum. Quality over quantity.`;
         // Insert new signal
         const nowTs3 = new Date().toISOString();
         const aiScore3 = signal.confidence || 0.7;
-        const { confidence: newConf3, confidence_explanation: ce3 } = calcConfidence(aiScore3, evidenceIds.length, 1, nowTs3);
+        const { data: srcFrags3 } = await adminClient
+          .from("evidence_fragments").select("source_registry_id").in("id", evidenceIds);
+        const uniqueSources3 = new Set((srcFrags3 || []).map((f: any) => f.source_registry_id).filter(Boolean)).size || 1;
+        const { confidence: newConf3, confidence_explanation: ce3 } = calcConfidence(aiScore3, uniqueSources3, 1, nowTs3);
 
         const { data: row, error: insErr } = await adminClient
           .from("strategic_signals")
