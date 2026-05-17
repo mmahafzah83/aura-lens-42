@@ -18,7 +18,7 @@ export async function shareToLinkedIn(opts: {
   if (toastMessage) toast.success(toastMessage);
   const target =
     mode === "feed"
-      ? "https://www.linkedin.com/feed/?shareActive=true"
+      ? `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
       : `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
   window.open(target, "_blank", "noopener,noreferrer");
 }
