@@ -241,15 +241,15 @@ serve(async (req) => {
       personalized_nudge = `Your ${topTitle} signal (${topConf}%) is ready to publish. Draft a post from this signal to boost your content score.`;
     }
 
-    // ── G4 Weekly rhythm (last 12 weeks) ──
-    const twelveWeeksAgo = new Date(now.getTime() - 12 * 7 * 24 * 60 * 60 * 1000);
+    // ── G4 Weekly rhythm (last 4 weeks) ──
+    const fourWeeksAgo = new Date(now.getTime() - 4 * 7 * 24 * 60 * 60 * 1000);
     const { data: rhythmEntries } = await admin
       .from("entries")
       .select("created_at,has_strategic_insight")
       .eq("user_id", userId)
-      .gte("created_at", twelveWeeksAgo.toISOString());
+      .gte("created_at", fourWeeksAgo.toISOString());
     const weekly_data: boolean[] = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 4; i++) {
       const wkEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const wkStart = new Date(wkEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
       const active = (rhythmEntries || []).some((e: any) => {
@@ -260,7 +260,7 @@ serve(async (req) => {
     }
     const weekly_rhythm = {
       active_weeks: weekly_data.filter(Boolean).length,
-      total_weeks: 12,
+      total_weeks: 4,
       weekly_data,
     };
 
