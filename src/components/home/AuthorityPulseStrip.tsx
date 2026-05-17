@@ -43,19 +43,23 @@ const Item = ({
   >
     <div
       className="tabular-nums"
-      style={{ fontSize: 20, fontWeight: 500, color: valueColor || "hsl(var(--foreground))", lineHeight: 1.1 }}
+      style={{
+        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+        fontSize: 22, fontWeight: 700,
+        color: valueColor || "var(--aura-t1)", lineHeight: 1.1,
+      }}
     >
       {value}
     </div>
     <div
       style={{
         fontSize: 9.5, marginTop: 4, textTransform: "uppercase",
-        letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))",
+        letterSpacing: "0.08em", color: "var(--aura-t2)",
       }}
     >
       {label}
     </div>
-    <div style={{ fontSize: 10, marginTop: 3, color: "hsl(var(--muted-foreground))" }}>
+    <div style={{ fontSize: 10, marginTop: 3, color: "var(--aura-t3)" }}>
       {delta}
     </div>
   </button>
@@ -110,39 +114,43 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
     <div
       style={{
         display: "flex",
-        background: "hsl(var(--secondary) / 0.5)",
+        background: "var(--aura-card)",
         borderRadius: 10,
         padding: 3,
-        border: "1px solid hsl(var(--border) / 0.4)",
+        border: "1px solid var(--aura-border)",
       }}
     >
       <Item
         value={authorityScore != null ? String(Math.round(authorityScore)) : "--"}
         label="Authority"
         delta={authorityScore != null ? `+${Math.round(authorityScore)}` : "Build it"}
-        valueColor="#B08D3A"
+        valueColor="var(--aura-accent)"
       />
       <Item
         value={String(stats.signalsCount)}
         label="Signals"
         delta={stats.topConfidence != null ? `${Math.round(stats.topConfidence * 100)}% conf.` : "—"}
+        valueColor="var(--aura-accent3)"
       />
       <Item
         value={stats.postsCount > 0 ? String(stats.postsCount) : (hasLinkedIn ? "0" : "--")}
         label="Posts"
         delta={hasLinkedIn ? "imported" : "Import LinkedIn"}
+        valueColor="var(--aura-blue)"
         onClick={!hasLinkedIn ? onGoToImpact : undefined}
       />
       <Item
         value={stats.engagementRate != null ? `${stats.engagementRate.toFixed(1)}%` : "--"}
         label="Engagement"
         delta={stats.engagementRate != null ? "vs 2.5% avg" : "Import LinkedIn"}
+        valueColor="var(--aura-positive)"
         onClick={stats.engagementRate == null ? onGoToImpact : undefined}
       />
       <Item
         value={stats.followers != null ? fmtCompact(stats.followers) : "--"}
         label="Followers"
         delta={stats.followers != null ? "tracked" : "Import LinkedIn"}
+        valueColor="var(--aura-purple)"
         onClick={stats.followers == null ? onGoToImpact : undefined}
       />
     </div>
