@@ -1,6 +1,5 @@
 import { Star, Info } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useTheme } from "@/components/ThemeProvider";
+import { useAuraTheme } from "@/components/ThemeProvider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
@@ -49,8 +48,7 @@ export default function ArchetypeHeroCard({
   const description = toFirstPerson(positioningStatement || "", firstName);
 
   // Theme-aware background + glow
-  let theme: "nebula" | "prism" | "terrain" = "prism";
-  try { theme = (useTheme() as any).theme || "prism"; } catch {}
+  const { theme } = useAuraTheme();
   const themeStyle = (() => {
     if (theme === "nebula") {
       return {
