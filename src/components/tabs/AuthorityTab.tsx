@@ -2735,8 +2735,12 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
-      window.open("https://www.linkedin.com/feed/", "_blank", "noopener,noreferrer");
-      toast.success("Copied. LinkedIn opened in a new tab.");
+      window.open(
+        `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`,
+        "_blank",
+        "noopener,noreferrer"
+      );
+      toast.success("Opening LinkedIn with your post pre-filled.");
     } catch (err) {
       console.error("[Library] copy failed", err);
       toast.error("Could not copy — please select and copy manually");
@@ -2984,7 +2988,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Copy to LinkedIn"}
+                      {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                     </button>
                     <button
                       onClick={() => setConfirmingId(p.id)}
@@ -3120,7 +3124,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Copy to LinkedIn"}
+                      {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                     </button>
                     <button
                       onClick={() => setPendingDeleteId(p.id)}

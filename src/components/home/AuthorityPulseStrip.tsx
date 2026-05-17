@@ -21,6 +21,14 @@ const fmtCompact = (n: number) => {
   return String(Math.round(n));
 };
 
+const tierBenchmark = (followers: number | null): { low: number; high: number; label: string } => {
+  const f = followers ?? 0;
+  if (f < 1000) return { low: 5, high: 10, label: "under 1K" };
+  if (f < 10000) return { low: 3, high: 7, label: "1K–10K" };
+  if (f < 50000) return { low: 1.5, high: 4, label: "10K–50K" };
+  return { low: 0.5, high: 2, label: "50K+" };
+};
+
 const Item = ({
   value, label, delta, valueColor, onClick,
 }: { value: string; label: string; delta: string; valueColor?: string; onClick?: () => void }) => (
@@ -142,7 +150,11 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
       <Item
         value={stats.engagementRate != null ? `${stats.engagementRate.toFixed(1)}%` : "--"}
         label="Engagement"
-        delta={stats.engagementRate != null ? "vs 2.5% avg" : "Import LinkedIn"}
+        delta={(() => {
+          if (stats.engagementRate == null) return "Import LinkedIn";
+          const b = tierBenchmark(stats.followers);
+          return `vs ${b.low}–${b.high}% (${b.label})`;
+        })()}
         valueColor="var(--aura-positive)"
         onClick={stats.engagementRate == null ? onGoToImpact : undefined}
       />
