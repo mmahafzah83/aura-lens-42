@@ -26,7 +26,7 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import ArchetypeHeroCard from "@/components/identity/ArchetypeHeroCard";
-import AuthorityRadar from "@/components/identity/AuthorityRadar";
+import ScoreBreakdown from "@/components/identity/ScoreBreakdown";
 import TerritoryMap from "@/components/identity/TerritoryMap";
 
 interface IdentityTabProps {
@@ -556,13 +556,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             tierLabel={intelligenceStage ? `Stage ${intelligenceStage}` : null}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AuthorityRadar
-              signals={radar.signals}
-              content={radar.content}
-              engagement={radar.engagement}
-              voice={radar.voice}
-              rhythm={radar.rhythm}
-            />
+            <ScoreBreakdown userId={authUser?.id ?? null} />
             <TerritoryMap
               themes={signalStats.themeGroups.map((g) => ({ theme: g.theme, count: g.count }))}
             />
