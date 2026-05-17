@@ -314,8 +314,9 @@ ${identityCtx}`;
       const mergedEvidence = unique([...existingEvidence, ...newIds]);
       const newFragCount = mergedEvidence.length;
       const newUniqueOrgs = await countUniqueOrgs(admin, mergedEvidence);
+      const newUniqueSources = await countUniqueSources(admin, mergedEvidence);
       const now = new Date().toISOString();
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newFragCount, newUniqueOrgs, now);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueSources, newUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
 
       await admin.from("strategic_signals").update({
@@ -342,7 +343,8 @@ ${identityCtx}`;
     } else {
       const now = new Date().toISOString();
       const initialUniqueOrgs = await countUniqueOrgs(admin, targetFragmentIds);
-      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, targetFragmentIds.length, initialUniqueOrgs, now);
+      const initialUniqueSources = await countUniqueSources(admin, targetFragmentIds);
+      const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueSources, initialUniqueOrgs, now);
       const priorityScore = await calcPriorityScore(confidence, now, 1.0, targetFragmentIds.length, admin, user_id, newTags);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
