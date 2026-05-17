@@ -82,6 +82,15 @@ const formatCompact = (n: number): string => {
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
+/* Tier-specific engagement benchmark by follower count */
+const tierBenchmark = (followers: number | null): { low: number; high: number; label: string } => {
+  const f = followers ?? 0;
+  if (f < 1000) return { low: 5, high: 10, label: "under 1K" };
+  if (f < 10000) return { low: 3, high: 7, label: "1K–10K" };
+  if (f < 50000) return { low: 1.5, high: 4, label: "10K–50K" };
+  return { low: 0.5, high: 2, label: "50K+" };
+};
+
 /* ── Component ── */
 interface ImpactTabProps {
   onOpenCapture?: () => void;
