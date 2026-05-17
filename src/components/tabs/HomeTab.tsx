@@ -1395,7 +1395,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             scoreGrowing={(auraData?.score_trend ?? 0) > 0}
             authorityScore={auraData?.aura_score ?? 0}
           />
-          <MissionControl userId={authUser.id} />
+          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
         </div>
       )}
 
