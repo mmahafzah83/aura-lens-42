@@ -1224,7 +1224,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <section>
         <SectionToggle
           title="Post performance"
-          right={<span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>vs 2.5% LinkedIn avg</span>}
+          right={(() => {
+            const b = tierBenchmark(latestFollowers);
+            const er = periodEngagementRate != null ? periodEngagementRate.toFixed(1) : "—";
+            return (
+              <span className="text-[10px]" style={{ color: "var(--aura-t2)" }}>
+                {er}% vs {b.low}–{b.high}% for your tier ({b.label})
+              </span>
+            );
+          })()}
           open={openSections.posts}
           onToggle={() => toggleSection("posts")}
         />
