@@ -325,7 +325,10 @@ const Dashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-background flex relative safe-area-container">
+    <div
+      className="min-h-screen bg-background flex relative safe-area-container"
+      style={{ background: "var(--aura-bg)", color: "var(--aura-t1)" }}
+    >
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
@@ -337,6 +340,7 @@ const Dashboard = () => {
         className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-[68px]" : "w-[220px]"
         }`}
+        style={{ background: "var(--aura-card)" }}
       >
         {/* Logo */}
         <div
