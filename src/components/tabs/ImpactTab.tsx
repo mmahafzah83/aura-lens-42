@@ -121,6 +121,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
 
+  // 4 Pillars supplementary data
+  const [pillarSignalCount, setPillarSignalCount] = useState(0);
+  const [pillarAvgSignalConf, setPillarAvgSignalConf] = useState(0);
+  const [pillarWeeksActive, setPillarWeeksActive] = useState(0);
+
   // Peak score in last 30 days (always — regardless of filter — for narrative)
   const [peakScore30, setPeakScore30] = useState<number | null>(null);
   const [peakDate30, setPeakDate30] = useState<string | null>(null);
