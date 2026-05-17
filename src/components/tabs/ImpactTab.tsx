@@ -426,6 +426,42 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     })();
   }, []);
 
+  // 4 Pillars — signal depth + momentum
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: sigs } = await (supabase as any)
+          .from("strategic_signals")
+          .select("confidence")
+          .eq("user_id", user.id)
+          .eq("status", "active");
+        const rows = (sigs as any[]) || [];
+        setPillarSignalCount(rows.length);
+        if (rows.length) {
+          const avg = rows.reduce((s, r) => s + Number(r.confidence || 0), 0) / rows.length;
+          setPillarAvgSignalConf(Math.round(avg * 100));
+        }
+        // Momentum: weeks active in last 4 (entries + documents)
+        const fourWeeks = new Date();
+        fourWeeks.setDate(fourWeeks.getDate() - 28);
+        const [eRes, dRes] = await Promise.all([
+          supabase.from("entries").select("created_at").eq("user_id", user.id).gte("created_at", fourWeeks.toISOString()),
+          supabase.from("documents").select("created_at").eq("user_id", user.id).gte("created_at", fourWeeks.toISOString()),
+        ]);
+        const all = [...((eRes.data as any[]) || []), ...((dRes.data as any[]) || [])];
+        const weeks = new Set<number>();
+        all.forEach(r => {
+          const t = new Date(r.created_at).getTime();
+          const weekIdx = Math.floor((Date.now() - t) / (7 * 86400000));
+          if (weekIdx < 4) weeks.add(weekIdx);
+        });
+        setPillarWeeksActive(weeks.size);
+      } catch { /* silent */ }
+    })();
+  }, []);
+
   /* ── Score derivations ── */
   const latest = snapshots[snapshots.length - 1];
   const latestScore = latest?.score ?? 0;
