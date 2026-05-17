@@ -2988,7 +2988,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Copy to LinkedIn"}
+                      {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                     </button>
                     <button
                       onClick={() => setConfirmingId(p.id)}
@@ -3124,7 +3124,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                       className="hover:text-foreground transition-colors disabled:opacity-30"
                     >
                       {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Linkedin className="w-3.5 h-3.5" />}
-                      {copiedId === p.id ? "Copied" : "Copy to LinkedIn"}
+                      {copiedId === p.id ? "Copied" : "Post on LinkedIn →"}
                     </button>
                     <button
                       onClick={() => setPendingDeleteId(p.id)}
