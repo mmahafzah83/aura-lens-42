@@ -990,6 +990,137 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
+      {/* ─────────── 4 PILLARS ─────────── */}
+      <section>
+        <h2 style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 18, fontWeight: 500, color: "var(--aura-t1)",
+          margin: "0 0 12px",
+        }}>
+          The four pillars
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <PillarCard
+            label="Visibility"
+            value={(() => {
+              if (!periodImpressions || (postMetricsCount || 0) === 0) return "—";
+              const avg = Math.round(periodImpressions / Math.max(1, postMetricsCount));
+              return formatCompact(avg);
+            })()}
+            unit="avg/post"
+            color="var(--aura-blue)"
+            tooltip={{
+              what: "Average impressions per published post.",
+              how: "Total impressions ÷ posts in your selected window.",
+              improve: "Publish more often and use hooks tied to live signals.",
+            }}
+          />
+          <PillarCard
+            label="Resonance"
+            value={periodEngagementRate != null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
+            unit={(() => {
+              const b = tierBenchmark(latestFollowers);
+              return `tier ${b.low}–${b.high}%`;
+            })()}
+            color={(() => {
+              if (periodEngagementRate == null) return "var(--aura-t3)";
+              const b = tierBenchmark(latestFollowers);
+              if (periodEngagementRate >= b.high) return "var(--aura-positive)";
+              if (periodEngagementRate >= b.low) return "var(--aura-accent)";
+              return "var(--aura-negative)";
+            })()}
+            tooltip={{
+              what: "Engagement rate (reactions ÷ impressions).",
+              how: "Benchmarked against your follower tier.",
+              improve: "Open with a sharp POV; reply in the first hour.",
+            }}
+          />
+          <PillarCard
+            label="Signal Depth"
+            value={String(pillarSignalCount)}
+            unit={pillarAvgSignalConf > 0 ? `${pillarAvgSignalConf}% avg conf` : "no signals"}
+            color="var(--aura-accent3)"
+            tooltip={{
+              what: "Active strategic signals you're tracking.",
+              how: "Counts active signals × average confidence.",
+              improve: "Capture from diverse sources to surface new signals.",
+            }}
+          />
+          <PillarCard
+            label="Momentum"
+            value={`${pillarWeeksActive}/4`}
+            unit="weeks active"
+            color="var(--aura-accent)"
+            dots={pillarWeeksActive}
+            tooltip={{
+              what: "How many of the last 4 weeks you captured at least once.",
+              how: "1 capture per week keeps the streak alive.",
+              improve: "Commit to a weekly capture rhythm — even 1 entry counts.",
+            }}
+          />
+        </div>
+      </section>
+
+      {/* ─────────── INSIGHTS + NEXT TIER ─────────── */}
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div style={{
+            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
+            borderRadius: 12, padding: "16px 18px",
+          }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+              color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
+            }}>
+              Insight
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--aura-t1)", margin: 0 }}>
+              {(() => {
+                if (pillarWeeksActive >= 4 && periodEngagementRate != null) {
+                  return "Consistent capture is paying off — your engagement is tracking above baseline. Double down on the formats that worked.";
+                }
+                if (pillarSignalCount > 0 && contentScore < 40) {
+                  return "You're sitting on strong signals but under-publishing. The fastest path to score growth is one post from your top signal this week.";
+                }
+                if (daysSinceLastAll !== null && daysSinceLastAll > 7) {
+                  return `It's been ${daysSinceLastAll} days since your last capture. A single source today restarts your weekly rhythm.`;
+                }
+                return "Your authority compounds when capture, signal, and publish cycle together. Keep the loop closed.";
+              })()}
+            </p>
+          </div>
+          <div style={{
+            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
+            borderRadius: 12, padding: "16px 18px",
+          }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+              color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
+            }}>
+              Next tier
+            </div>
+            {auraData?.next_tier_name && auraData?.points_to_next ? (
+              <>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                  fontSize: 22, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.1,
+                }}>
+                  {auraData.points_to_next} pts
+                </div>
+                <p style={{ fontSize: 13, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.55 }}>
+                  to reach <span style={{ color: "var(--aura-accent)", fontWeight: 600 }}>{auraData.next_tier_name}</span>.
+                  Publishing from your top signal is the fastest mover.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--aura-t2)", margin: 0, lineHeight: 1.55 }}>
+                You've reached the top tier — focus on maintaining cadence.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
       <section
         data-impact-section="trajectory"
