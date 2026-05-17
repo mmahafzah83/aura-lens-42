@@ -232,11 +232,70 @@ const SignalDetailPanel = ({
       if (signal.supporting_evidence_ids?.length) {
         const ef = await supabase
           .from("evidence_fragments")
-          .select("id, title, content, created_at")
+          .select("id, title, content, created_at, source_registry_id")
           .in("id", signal.supporting_evidence_ids)
           .order("created_at", { ascending: false })
           .limit(20);
-        setEvidenceFragments((ef.data || []) as unknown as EvidenceFragmentRow[]);
+        const frags = (ef.data || []) as any[];
+        // Resolve to underlying entries via source_registry → entries
+        const registryIds = Array.from(new Set(frags.map(f => f.source_registry_id).filter(Boolean)));
+        let registryMap = new Map<string, { source_type: string; source_id: string | null; title: string | null }>();
+        let entryMap = new Map<string, { title: string | null; type: string | null; account_name: string | null }>();
+        if (registryIds.length) {
+          const sr = await supabase
+            .from("source_registry" as any)
+            .select("id, source_type, source_id, title")
+            .in("id", registryIds);
+          (sr.data || []).forEach((r: any) => registryMap.set(r.id, r));
+          const entryIds = Array.from(new Set(
+            (sr.data || []).filter((r: any) => r.source_type === "entry" && r.source_id).map((r: any) => r.source_id)
+          ));
+          if (entryIds.length) {
+            const ents = await supabase
+              .from("entries")
+              .select("id, title, type, account_name")
+              .in("id", entryIds);
+            (ents.data || []).forEach((e: any) => entryMap.set(e.id, e));
+          }
+        }
+        // Dedupe by entry/registry, label by origin
+        const seen = new Set<string>();
+        const enriched: EvidenceFragmentRow[] = [];
+        for (const f of frags) {
+          const reg = f.source_registry_id ? registryMap.get(f.source_registry_id) : null;
+          let kind: "capture" | "aura" | "unknown" = "unknown";
+          let label = f.title || "Untitled source";
+          let dedupeKey = f.id;
+          if (reg) {
+            dedupeKey = reg.id;
+            if (reg.source_type === "entry" && reg.source_id) {
+              const ent = entryMap.get(reg.source_id);
+              if (ent) {
+                const isAura =
+                  (ent.account_name || "").toLowerCase().includes("aura") ||
+                  (ent.type || "").toLowerCase().includes("onboarding") ||
+                  (ent.type || "").toLowerCase().includes("exa");
+                kind = isAura ? "aura" : "capture";
+                label = ent.title || reg.title || label;
+                dedupeKey = reg.source_id;
+              }
+            } else if (reg.source_type === "document") {
+              kind = "capture";
+              label = reg.title || label;
+            }
+          }
+          if (seen.has(dedupeKey)) continue;
+          seen.add(dedupeKey);
+          enriched.push({
+            id: f.id,
+            title: label,
+            content: f.content,
+            created_at: f.created_at,
+            source_kind: kind,
+            source_label: kind === "aura" ? "Found by Aura" : kind === "capture" ? "Your capture" : null as any,
+          });
+        }
+        setEvidenceFragments(enriched);
       } else {
         setEvidenceFragments([]);
       }
