@@ -82,6 +82,15 @@ const formatCompact = (n: number): string => {
 
 const formatNumber = (n: number) => n.toLocaleString("en-US");
 
+/* Tier-specific engagement benchmark by follower count */
+const tierBenchmark = (followers: number | null): { low: number; high: number; label: string } => {
+  const f = followers ?? 0;
+  if (f < 1000) return { low: 5, high: 10, label: "under 1K" };
+  if (f < 10000) return { low: 3, high: 7, label: "1K–10K" };
+  if (f < 50000) return { low: 1.5, high: 4, label: "10K–50K" };
+  return { low: 0.5, high: 2, label: "50K+" };
+};
+
 /* ── Component ── */
 interface ImpactTabProps {
   onOpenCapture?: () => void;
@@ -120,6 +129,11 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
+
+  // 4 Pillars supplementary data
+  const [pillarSignalCount, setPillarSignalCount] = useState(0);
+  const [pillarAvgSignalConf, setPillarAvgSignalConf] = useState(0);
+  const [pillarWeeksActive, setPillarWeeksActive] = useState(0);
 
   // Peak score in last 30 days (always — regardless of filter — for narrative)
   const [peakScore30, setPeakScore30] = useState<number | null>(null);
@@ -417,6 +431,42 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           .limit(1);
         const top = (data as any[])?.[0];
         if (top?.signal_title) setTopSignal(top.signal_title);
+      } catch { /* silent */ }
+    })();
+  }, []);
+
+  // 4 Pillars — signal depth + momentum
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: sigs } = await (supabase as any)
+          .from("strategic_signals")
+          .select("confidence")
+          .eq("user_id", user.id)
+          .eq("status", "active");
+        const rows = (sigs as any[]) || [];
+        setPillarSignalCount(rows.length);
+        if (rows.length) {
+          const avg = rows.reduce((s, r) => s + Number(r.confidence || 0), 0) / rows.length;
+          setPillarAvgSignalConf(Math.round(avg * 100));
+        }
+        // Momentum: weeks active in last 4 (entries + documents)
+        const fourWeeks = new Date();
+        fourWeeks.setDate(fourWeeks.getDate() - 28);
+        const [eRes, dRes] = await Promise.all([
+          supabase.from("entries").select("created_at").eq("user_id", user.id).gte("created_at", fourWeeks.toISOString()),
+          supabase.from("documents").select("created_at").eq("user_id", user.id).gte("created_at", fourWeeks.toISOString()),
+        ]);
+        const all = [...((eRes.data as any[]) || []), ...((dRes.data as any[]) || [])];
+        const weeks = new Set<number>();
+        all.forEach(r => {
+          const t = new Date(r.created_at).getTime();
+          const weekIdx = Math.floor((Date.now() - t) / (7 * 86400000));
+          if (weekIdx < 4) weeks.add(weekIdx);
+        });
+        setPillarWeeksActive(weeks.size);
       } catch { /* silent */ }
     })();
   }, []);
@@ -940,6 +990,137 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
+      {/* ─────────── 4 PILLARS ─────────── */}
+      <section>
+        <h2 style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 18, fontWeight: 500, color: "var(--aura-t1)",
+          margin: "0 0 12px",
+        }}>
+          The four pillars
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <PillarCard
+            label="Visibility"
+            value={(() => {
+              if (!periodImpressions || (postMetricsCount || 0) === 0) return "—";
+              const avg = Math.round(periodImpressions / Math.max(1, postMetricsCount));
+              return formatCompact(avg);
+            })()}
+            unit="avg/post"
+            color="var(--aura-blue)"
+            tooltip={{
+              what: "Average impressions per published post.",
+              how: "Total impressions ÷ posts in your selected window.",
+              improve: "Publish more often and use hooks tied to live signals.",
+            }}
+          />
+          <PillarCard
+            label="Resonance"
+            value={periodEngagementRate != null ? `${periodEngagementRate.toFixed(1)}%` : "—"}
+            unit={(() => {
+              const b = tierBenchmark(latestFollowers);
+              return `tier ${b.low}–${b.high}%`;
+            })()}
+            color={(() => {
+              if (periodEngagementRate == null) return "var(--aura-t3)";
+              const b = tierBenchmark(latestFollowers);
+              if (periodEngagementRate >= b.high) return "var(--aura-positive)";
+              if (periodEngagementRate >= b.low) return "var(--aura-accent)";
+              return "var(--aura-negative)";
+            })()}
+            tooltip={{
+              what: "Engagement rate (reactions ÷ impressions).",
+              how: "Benchmarked against your follower tier.",
+              improve: "Open with a sharp POV; reply in the first hour.",
+            }}
+          />
+          <PillarCard
+            label="Signal Depth"
+            value={String(pillarSignalCount)}
+            unit={pillarAvgSignalConf > 0 ? `${pillarAvgSignalConf}% avg conf` : "no signals"}
+            color="var(--aura-accent3)"
+            tooltip={{
+              what: "Active strategic signals you're tracking.",
+              how: "Counts active signals × average confidence.",
+              improve: "Capture from diverse sources to surface new signals.",
+            }}
+          />
+          <PillarCard
+            label="Momentum"
+            value={`${pillarWeeksActive}/4`}
+            unit="weeks active"
+            color="var(--aura-accent)"
+            dots={pillarWeeksActive}
+            tooltip={{
+              what: "How many of the last 4 weeks you captured at least once.",
+              how: "1 capture per week keeps the streak alive.",
+              improve: "Commit to a weekly capture rhythm — even 1 entry counts.",
+            }}
+          />
+        </div>
+      </section>
+
+      {/* ─────────── INSIGHTS + NEXT TIER ─────────── */}
+      <section>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div style={{
+            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
+            borderRadius: 12, padding: "16px 18px",
+          }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+              color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
+            }}>
+              Insight
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--aura-t1)", margin: 0 }}>
+              {(() => {
+                if (pillarWeeksActive >= 4 && periodEngagementRate != null) {
+                  return "Consistent capture is paying off — your engagement is tracking above baseline. Double down on the formats that worked.";
+                }
+                if (pillarSignalCount > 0 && contentScore < 40) {
+                  return "You're sitting on strong signals but under-publishing. The fastest path to score growth is one post from your top signal this week.";
+                }
+                if (daysSinceLastAll !== null && daysSinceLastAll > 7) {
+                  return `It's been ${daysSinceLastAll} days since your last capture. A single source today restarts your weekly rhythm.`;
+                }
+                return "Your authority compounds when capture, signal, and publish cycle together. Keep the loop closed.";
+              })()}
+            </p>
+          </div>
+          <div style={{
+            background: "var(--aura-card)", border: "1px solid var(--aura-border)",
+            borderRadius: 12, padding: "16px 18px",
+          }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+              color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
+            }}>
+              Next tier
+            </div>
+            {auraData?.next_tier_name && auraData?.points_to_next ? (
+              <>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                  fontSize: 22, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.1,
+                }}>
+                  {auraData.points_to_next} pts
+                </div>
+                <p style={{ fontSize: 13, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.55 }}>
+                  to reach <span style={{ color: "var(--aura-accent)", fontWeight: 600 }}>{auraData.next_tier_name}</span>.
+                  Publishing from your top signal is the fastest mover.
+                </p>
+              </>
+            ) : (
+              <p style={{ fontSize: 13, color: "var(--aura-t2)", margin: 0, lineHeight: 1.55 }}>
+                You've reached the top tier — focus on maintaining cadence.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* ─────────── TRAJECTORY SECTION (moved out of hero — relocated below Score Breakdown via render order) ─────────── */}
       <section
         data-impact-section="trajectory"
@@ -1174,7 +1355,15 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <section>
         <SectionToggle
           title="Post performance"
-          right={<span className="text-[10px]" style={{ color: "var(--color-text-muted)" }}>vs 2.5% LinkedIn avg</span>}
+          right={(() => {
+            const b = tierBenchmark(latestFollowers);
+            const er = periodEngagementRate != null ? periodEngagementRate.toFixed(1) : "—";
+            return (
+              <span className="text-[10px]" style={{ color: "var(--aura-t2)" }}>
+                {er}% vs {b.low}–{b.high}% for your tier ({b.label})
+              </span>
+            );
+          })()}
           open={openSections.posts}
           onToggle={() => toggleSection("posts")}
         />
@@ -1999,3 +2188,84 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
 );
 
 export default ImpactTab;
+
+/* ─── PillarCard ─────────────────────────────────────────────── */
+const PillarCard = ({
+  label, value, unit, color, tooltip, dots,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  color: string;
+  tooltip: { what: string; how: string; improve: string };
+  dots?: number;
+}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div
+      style={{
+        background: "var(--aura-card)",
+        border: "1px solid var(--aura-border)",
+        borderTop: `3px solid ${color}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        position: "relative",
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
+          {label}
+        </div>
+        <button
+          type="button"
+          onMouseEnter={() => setShow(true)}
+          onMouseLeave={() => setShow(false)}
+          onFocus={() => setShow(true)}
+          onBlur={() => setShow(false)}
+          aria-label={`${label} info`}
+          style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+        >
+          <Info size={12} />
+        </button>
+      </div>
+      {show && (
+        <div
+          role="tooltip"
+          style={{
+            position: "absolute", top: -8, right: 12, transform: "translateY(-100%)",
+            background: "var(--aura-card)", color: "var(--aura-t1)",
+            border: "1px solid var(--aura-border)", borderRadius: 8,
+            padding: "10px 12px", fontSize: 11, lineHeight: 1.5,
+            width: 240, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          <div style={{ marginBottom: 4 }}><b style={{ color }}>What:</b> {tooltip.what}</div>
+          <div style={{ marginBottom: 4 }}><b style={{ color }}>How:</b> {tooltip.how}</div>
+          <div><b style={{ color }}>Improve:</b> {tooltip.improve}</div>
+        </div>
+      )}
+      <div
+        className="tabular-nums mt-1"
+        style={{
+          fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+          fontSize: 26, fontWeight: 700, color, lineHeight: 1.1,
+        }}
+      >
+        {value}
+      </div>
+      {typeof dots === "number" ? (
+        <div className="flex" style={{ gap: 4, marginTop: 8 }}>
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: i < dots ? color : "var(--aura-border)",
+            }} />
+          ))}
+        </div>
+      ) : null}
+      <div style={{ fontSize: 11, color: "var(--aura-t2)", marginTop: 8 }}>
+        {unit}
+      </div>
+    </div>
+  );
+};

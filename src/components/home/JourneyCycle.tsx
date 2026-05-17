@@ -39,10 +39,10 @@ export default function JourneyCycle({
       style={{
         display: "flex",
         alignItems: "center",
-        background: "hsl(var(--secondary) / 0.4)",
+        background: "var(--aura-card)",
         borderRadius: 10,
         padding: "14px 16px",
-        border: "1px solid hsl(var(--border) / 0.4)",
+        border: "1px solid var(--aura-border)",
         gap: 0,
       }}
     >
@@ -53,7 +53,7 @@ export default function JourneyCycle({
             <div
               style={{
                 fontSize: 9.5,
-                color: s.state === "active" ? "#B08D3A" : "hsl(var(--muted-foreground))",
+                color: s.state === "active" ? "var(--aura-accent)" : "var(--aura-t2)",
                 fontWeight: s.state === "active" ? 500 : 400,
                 whiteSpace: "nowrap",
               }}
@@ -66,7 +66,7 @@ export default function JourneyCycle({
               style={{
                 flex: 1,
                 height: 2,
-                background: s.state === "done" ? "#B08D3A" : "hsl(var(--border) / 0.6)",
+                background: s.state === "done" ? "var(--aura-accent)" : "var(--aura-border)",
                 margin: "0 6px",
                 marginBottom: 18,
               }}
@@ -83,10 +83,10 @@ function Node({ state }: { state: StepState }) {
     return (
       <div style={{
         width: 32, height: 32, borderRadius: "50%",
-        background: "rgba(176,141,58,0.15)",
+        background: "color-mix(in srgb, var(--aura-accent) 18%, transparent)",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <Check size={16} color="#B08D3A" strokeWidth={2.5} />
+        <Check size={16} color="var(--aura-accent)" strokeWidth={2.5} />
       </div>
     );
   }
@@ -94,9 +94,9 @@ function Node({ state }: { state: StepState }) {
     return (
       <div style={{
         width: 32, height: 32, borderRadius: "50%",
-        background: "#B08D3A",
+        background: "var(--aura-accent)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: "0 0 0 4px rgba(176,141,58,0.18)",
+        boxShadow: "0 0 0 4px color-mix(in srgb, var(--aura-accent) 22%, transparent)",
       }}>
         <Circle size={10} fill="#fff" color="#fff" />
       </div>
@@ -105,11 +105,11 @@ function Node({ state }: { state: StepState }) {
   return (
     <div style={{
       width: 32, height: 32, borderRadius: "50%",
-      background: "hsl(var(--background))",
-      border: "1.5px solid hsl(var(--border))",
+      background: "var(--aura-bg)",
+      border: "1.5px solid var(--aura-border)",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      <Circle size={10} color="hsl(var(--muted-foreground))" />
+      <Circle size={10} color="var(--aura-t3)" />
     </div>
   );
 }

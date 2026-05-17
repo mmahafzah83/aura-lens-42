@@ -15,7 +15,13 @@ const TYPE_LABEL: Record<string, string> = {
   signal: "Signal", content: "Content", rhythm: "Rhythm", voice: "Voice", baseline: "Baseline",
 };
 
-export default function MissionControl({ userId }: { userId: string | null }) {
+const DEFAULT_MISSIONS: Mission[] = [
+  { id: "default-1", title: "Capture a new source", description: null, mission_type: "signal", points: 5, status: "pending" },
+  { id: "default-2", title: "Publish from your strongest signal", description: null, mission_type: "content", points: 8, status: "pending" },
+  { id: "default-3", title: "Train your voice with 2 posts", description: null, mission_type: "voice", points: 6, status: "pending" },
+];
+
+export default function MissionControl({ userId, entriesCount = 0 }: { userId: string | null; entriesCount?: number }) {
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -31,14 +37,24 @@ export default function MissionControl({ userId }: { userId: string | null }) {
         .order("created_at", { ascending: true })
         .limit(8);
       if (!cancelled) {
-        setMissions((data as any) || []);
+        const rows = ((data as any) || []) as Mission[];
+        if (rows.length === 0 && entriesCount > 0) {
+          setMissions(DEFAULT_MISSIONS);
+        } else {
+          setMissions(rows);
+        }
         setLoaded(true);
       }
     })();
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, entriesCount]);
 
   const toggle = async (m: Mission) => {
+    if (m.id.startsWith("default-")) {
+      // Defaults are placeholders only; flip local state without DB write
+      setMissions(prev => prev.map(x => x.id === m.id ? { ...x, status: x.status === "completed" ? "pending" : "completed" } : x));
+      return;
+    }
     const next = m.status === "completed" ? "pending" : "completed";
     setMissions(prev => prev.map(x => x.id === m.id ? { ...x, status: next } : x));
     await supabase.from("weekly_missions" as any)
@@ -53,34 +69,34 @@ export default function MissionControl({ userId }: { userId: string | null }) {
   return (
     <div
       style={{
-        border: "1px solid hsl(var(--border) / 0.6)",
+        border: "1px solid var(--aura-border)",
         borderRadius: 10,
         overflow: "hidden",
-        background: "hsl(var(--card))",
+        background: "var(--aura-card)",
       }}
     >
       <div
         className="flex items-center justify-between"
-        style={{ padding: "14px 16px", borderBottom: "1px solid hsl(var(--border) / 0.5)" }}
+        style={{ padding: "14px 16px", borderBottom: "1px solid var(--aura-border)" }}
       >
         <div className="flex items-center" style={{ gap: 8 }}>
-          <Target size={15} color="#B08D3A" />
-          <span style={{ fontSize: 13, fontWeight: 500, color: "hsl(var(--foreground))" }}>
+          <Target size={15} color="var(--aura-accent)" />
+          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--aura-t1)" }}>
             Your missions this week
           </span>
         </div>
         {total > 0 && (
           <div className="flex items-center" style={{ gap: 10 }}>
-            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>{done} of {total}</span>
-            <div style={{ width: 60, height: 4, background: "hsl(var(--border) / 0.6)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ width: `${pct}%`, height: "100%", background: "#B08D3A", transition: "width 400ms" }} />
+            <span style={{ fontSize: 11, color: "var(--aura-t2)" }}>{done} of {total}</span>
+            <div style={{ width: 60, height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ width: `${pct}%`, height: "100%", background: "var(--aura-accent)", transition: "width 400ms" }} />
             </div>
           </div>
         )}
       </div>
 
       {loaded && missions.length === 0 ? (
-        <div style={{ padding: "20px 16px", fontSize: 12, color: "hsl(var(--muted-foreground))", textAlign: "center" }}>
+        <div style={{ padding: "20px 16px", fontSize: 12, color: "var(--aura-t2)", textAlign: "center" }}>
           Your first missions will appear after your first capture.
         </div>
       ) : (
@@ -92,7 +108,7 @@ export default function MissionControl({ userId }: { userId: string | null }) {
               className="flex"
               style={{
                 gap: 12, padding: "12px 16px",
-                borderBottom: i === missions.length - 1 ? "none" : "1px solid hsl(var(--border) / 0.35)",
+                borderBottom: i === missions.length - 1 ? "none" : "1px solid var(--aura-border)",
                 alignItems: "flex-start",
               }}
             >
@@ -102,8 +118,8 @@ export default function MissionControl({ userId }: { userId: string | null }) {
                 aria-label={isDone ? "Mark as pending" : "Mark complete"}
                 style={{
                   width: 20, height: 20, borderRadius: "50%",
-                  border: isDone ? "0" : "1.5px solid hsl(var(--border))",
-                  background: isDone ? "#B08D3A" : "transparent",
+                  border: isDone ? "0" : "1.5px solid var(--aura-border)",
+                  background: isDone ? "var(--aura-accent)" : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", flexShrink: 0, marginTop: 1,
                 }}
@@ -114,7 +130,7 @@ export default function MissionControl({ userId }: { userId: string | null }) {
                 <div
                   style={{
                     fontSize: 13,
-                    color: isDone ? "hsl(var(--muted-foreground))" : "hsl(var(--foreground))",
+                    color: isDone ? "var(--aura-t2)" : "var(--aura-t1)",
                     textDecoration: isDone ? "line-through" : "none",
                   }}
                 >
@@ -122,11 +138,11 @@ export default function MissionControl({ userId }: { userId: string | null }) {
                 </div>
                 <div
                   className="flex items-center"
-                  style={{ gap: 8, marginTop: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}
+                  style={{ gap: 8, marginTop: 4, fontSize: 11, color: "var(--aura-t2)" }}
                 >
                   <span style={{
-                    color: "#B08D3A", fontWeight: 500,
-                    background: "rgba(176,141,58,0.10)",
+                    color: "var(--aura-accent)", fontWeight: 500,
+                    background: "color-mix(in srgb, var(--aura-accent) 12%, transparent)",
                     padding: "2px 6px", borderRadius: 4, fontSize: 10,
                   }}>
                     +{m.points ?? 5} pts
