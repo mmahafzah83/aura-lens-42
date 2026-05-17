@@ -930,21 +930,28 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.
             </p>
           </div>
-          <div data-testid="intel-stats" style={{ display: "flex", gap: 24, alignItems: "baseline" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{entryCount}</div>
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>sources</div>
-            </div>
-            <div style={{ width: 0.5, height: 32, background: "var(--brand-line)" }} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{signals.length}</div>
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>signals</div>
-            </div>
-            <div style={{ width: 0.5, height: 32, background: "var(--brand-line)" }} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{movesCount}</div>
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>moves</div>
-            </div>
+          <div data-testid="intel-stats" style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+            {[
+              { val: entryCount, label: "Sources", color: "var(--aura-accent3)" },
+              { val: signals.length, label: "Signals", color: "var(--aura-blue)" },
+              { val: movesCount, label: "Moves", color: "var(--aura-accent)" },
+            ].map(c => (
+              <div key={c.label} style={{
+                background: "var(--aura-card)",
+                border: "1px solid var(--aura-card-glass)",
+                borderRadius: 10,
+                padding: "10px 16px",
+                textAlign: "center",
+                minWidth: 88,
+              }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 600, color: c.color, lineHeight: 1 }}>
+                  {c.val}
+                </div>
+                <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--aura-t1)", opacity: 0.6, textTransform: "uppercase", marginTop: 4 }}>
+                  {c.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
