@@ -170,10 +170,12 @@ const Auth = () => {
       } catch (e) {
         console.warn("password_changed notification failed:", e);
       }
-      toast({ title: "Password updated", description: "Welcome back." });
       inRecoveryRef.current = false;
       setShowNewPasswordForm(false);
-      navigate("/home");
+      // Force sign-out so the user must log in with the new password.
+      try { await supabase.auth.signOut(); } catch {}
+      toast({ title: "Password updated", description: "Please sign in with your new password." });
+      navigate("/auth");
     } catch (e: any) {
       toast({ title: "Couldn't update password", description: e?.message || "Please try again.", variant: "destructive" });
     } finally {
