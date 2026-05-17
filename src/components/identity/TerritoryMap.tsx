@@ -3,13 +3,20 @@ import { useMemo, useState } from "react";
 interface ThemeDatum { theme: string; count: number; }
 interface Props { themes: ThemeDatum[]; }
 
-const COLORS = [
-  { fill: "rgba(212,176,86,0.18)", stroke: "rgba(212,176,86,0.55)", text: "#B08D3A" },
-  { fill: "rgba(132,99,189,0.16)", stroke: "rgba(132,99,189,0.5)",  text: "#7E5FB8" },
-  { fill: "rgba(60,160,150,0.16)", stroke: "rgba(60,160,150,0.5)",  text: "#2E8C7E" },
-  { fill: "rgba(214,128,64,0.16)", stroke: "rgba(214,128,64,0.5)",  text: "#B86A30" },
-  { fill: "rgba(96,160,90,0.16)",  stroke: "rgba(96,160,90,0.5)",   text: "#3E8838" },
+const COLOR_VARS = [
+  "var(--aura-accent)",
+  "var(--aura-blue)",
+  "var(--aura-accent3)",
+  "var(--aura-pink)",
+  "var(--aura-purple)",
 ];
+
+const prettify = (s: string) =>
+  (s || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (m) => m.toUpperCase());
 
 // Deterministic-ish positions for up to 8 bubbles inside a 320x220 canvas
 const SLOTS: Array<{ x: number; y: number }> = [
@@ -33,39 +40,39 @@ export default function TerritoryMap({ themes }: Props) {
     return themes.slice(0, 8).map((t, i) => {
       const ratio = max === min ? 0.7 : (t.count - min) / (max - min);
       const r = 22 + ratio * 22; // 22-44px radius
-      return { ...t, r, color: COLORS[i % COLORS.length], pos: SLOTS[i] };
+      return { ...t, label: prettify(t.theme), r, color: COLOR_VARS[i % COLOR_VARS.length], pos: SLOTS[i] };
     });
   }, [themes]);
 
   return (
     <div
       style={{
-        background: "#fff",
+        background: "var(--aura-card)",
+        border: "1px solid var(--aura-card-glass)",
         borderRadius: 16,
         padding: 18,
-        boxShadow: "var(--shadow-sm)",
       }}
     >
       <div
         style={{
           fontSize: 9.5, fontWeight: 600, letterSpacing: "0.12em",
-          color: "var(--ink)", textTransform: "uppercase", marginBottom: 12,
+          color: "var(--aura-t1)", textTransform: "uppercase", marginBottom: 12,
         }}
       >
         Territory map
       </div>
       {bubbles.length === 0 ? (
-        <p style={{ fontSize: 11, color: "var(--ink-5)", fontStyle: "italic" }}>
+        <p style={{ fontSize: 11, color: "var(--aura-t1)", opacity: 0.6, fontStyle: "italic" }}>
           Capture more to chart your territory.
         </p>
       ) : (
-        <div style={{ position: "relative", width: "100%", maxWidth: 320, height: 220, margin: "0 auto" }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: 320, minHeight: 200, height: 220, margin: "0 auto" }}>
           {bubbles.map((b, i) => (
             <div
               key={i}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              title={`${b.theme} · ${b.count} signal${b.count === 1 ? "" : "s"}`}
+              title={`${b.label} · ${b.count} signal${b.count === 1 ? "" : "s"}`}
               style={{
                 position: "absolute",
                 left: b.pos.x - b.r,
@@ -73,23 +80,23 @@ export default function TerritoryMap({ themes }: Props) {
                 width: b.r * 2,
                 height: b.r * 2,
                 borderRadius: "50%",
-                background: b.color.fill,
-                border: `1px solid ${b.color.stroke}`,
-                color: b.color.text,
+                background: `color-mix(in srgb, ${b.color} 16%, transparent)`,
+                border: `1px solid ${b.color}`,
+                color: b.color,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 textAlign: "center",
                 fontSize: 10,
-                fontWeight: 500,
+                fontWeight: 600,
                 padding: 4,
                 lineHeight: 1.15,
-                transform: hover === i ? "scale(1.08)" : "scale(1)",
+                transform: hover === i ? "scale(1.12)" : "scale(1)",
                 transition: "transform 180ms ease",
                 cursor: "default",
               }}
             >
-              {b.theme}
+              {b.label}
             </div>
           ))}
         </div>
