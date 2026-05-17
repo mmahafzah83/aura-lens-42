@@ -84,6 +84,21 @@ async function countUniqueOrgs(
   return Math.max(domains.size, 1);
 }
 
+/* Count unique underlying sources (entries/documents) for a set of fragment IDs */
+async function countUniqueSources(
+  admin: any,
+  fragmentIds: string[],
+): Promise<number> {
+  if (fragmentIds.length === 0) return 1;
+  const { data: frags } = await admin
+    .from("evidence_fragments")
+    .select("source_registry_id")
+    .in("id", fragmentIds);
+  const ids = new Set<string>();
+  (frags || []).forEach((f: any) => { if (f.source_registry_id) ids.add(f.source_registry_id); });
+  return Math.max(ids.size, 1);
+}
+
 async function calcPriorityScore(
   confidence: number,
   updatedAt: string,
