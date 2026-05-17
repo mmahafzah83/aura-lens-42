@@ -325,7 +325,10 @@ const Dashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-background flex relative safe-area-container">
+    <div
+      className="min-h-screen bg-background flex relative safe-area-container"
+      style={{ background: "var(--aura-bg)", color: "var(--aura-t1)" }}
+    >
       <div className="gradient-mesh fixed inset-0 pointer-events-none z-0" />
 
       {showDiagnostic && <ExecutiveDiagnostic onComplete={() => setShowDiagnostic(false)} />}
