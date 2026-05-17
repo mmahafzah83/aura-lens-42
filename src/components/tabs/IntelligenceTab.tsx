@@ -98,6 +98,9 @@ interface EvidenceFragmentRow {
   title: string;
   content: string;
   created_at: string;
+  source_kind?: "capture" | "aura" | "unknown";
+  source_label?: string;
+  source_url?: string | null;
 }
 
 /* ── Helpers ── */
