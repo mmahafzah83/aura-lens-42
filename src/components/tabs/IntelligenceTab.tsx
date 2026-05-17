@@ -239,14 +239,14 @@ const SignalDetailPanel = ({
         const frags = (ef.data || []) as any[];
         // Resolve to underlying entries via source_registry → entries
         const registryIds = Array.from(new Set(frags.map(f => f.source_registry_id).filter(Boolean)));
-        let registryMap = new Map<string, { source_type: string; source_id: string | null; title: string | null }>();
+        let registryMap = new Map<string, { id: string; source_type: string; source_id: string | null; title: string | null }>();
         let entryMap = new Map<string, { title: string | null; type: string | null; account_name: string | null }>();
         if (registryIds.length) {
           const sr = await supabase
             .from("source_registry" as any)
             .select("id, source_type, source_id, title")
             .in("id", registryIds);
-          (sr.data || []).forEach((r: any) => registryMap.set(r.id, r));
+          (sr.data || []).forEach((r: any) => registryMap.set(r.id as string, r as any));
           const entryIds = Array.from(new Set(
             (sr.data || []).filter((r: any) => r.source_type === "entry" && r.source_id).map((r: any) => r.source_id)
           ));
