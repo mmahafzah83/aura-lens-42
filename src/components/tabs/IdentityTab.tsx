@@ -749,7 +749,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 }}
               >
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                  <div
+                    title="AI-generated from your assessment, signals, and intelligence. Evolves as evidence accumulates."
+                    style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--aura-t1, var(--ink))", textTransform: "uppercase", cursor: "help" }}
+                  >
                     How the market sees you
                   </div>
                   <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
@@ -773,8 +776,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     <>
                       <p
                         style={{
-                          fontFamily: "'Cormorant Garamond', serif",
-                          fontSize: 15,
+                          fontFamily: "var(--aura-font-heading, 'Cormorant Garamond')",
+                          fontSize: 16,
                           fontStyle: "italic",
                           lineHeight: 1.55,
                           color: "var(--ink)",
@@ -785,12 +788,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       </p>
                       {isThirdPerson && (
                         <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, fontStyle: "italic" }}>
-                          Based on your assessment — regenerate for a first-person version.
+                          Based on your assessment — click Regenerate for a first-person version.
                         </p>
                       )}
                       <div style={{ marginTop: 10, display: "flex", gap: 14, alignItems: "center" }}>
                         <ShareLink
-                          label="Share your positioning →"
+                          label="Share positioning →"
                           ariaLabel="Share your positioning on LinkedIn"
                           onClick={() => shareToLinkedIn({
                             text: shareText,
@@ -803,7 +806,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           disabled={regenerating}
                           style={{
                             fontSize: 11,
-                            color: "var(--brand)",
+                            color: "var(--aura-accent, var(--brand))",
                             background: "transparent",
                             border: 0,
                             cursor: regenerating ? "default" : "pointer",
