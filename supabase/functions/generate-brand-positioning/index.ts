@@ -86,7 +86,7 @@ serve(async (req) => {
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
     const aiAbort = new AbortController();
-    const aiTimer = setTimeout(() => aiAbort.abort(), 25000);
+    const aiTimer = setTimeout(() => aiAbort.abort(), 30000);
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
