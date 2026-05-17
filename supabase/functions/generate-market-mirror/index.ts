@@ -132,6 +132,8 @@ ${trendLines}`;
     const PERPLEXITY_KEY = Deno.env.get("PERPLEXITY_API_KEY");
     if (PERPLEXITY_KEY && p.sector_focus) {
       try {
+        const perpAbort = new AbortController();
+        const perpTimer = setTimeout(() => perpAbort.abort(), 12000);
         const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {
@@ -145,7 +147,8 @@ ${trendLines}`;
               content: `What have McKinsey, PwC, BCG, Deloitte, and EY published about ${p.sector_focus} in the last 30 days? List specific article titles, dates, and key arguments. Focus on thought leadership and LinkedIn content, not press releases.`,
             }],
           }),
-        });
+          signal: perpAbort.signal,
+        }).finally(() => clearTimeout(perpTimer));
         if (perpRes.ok) {
           const perpData = await perpRes.json();
           const content = perpData?.choices?.[0]?.message?.content || "No recent competitor content found.";
