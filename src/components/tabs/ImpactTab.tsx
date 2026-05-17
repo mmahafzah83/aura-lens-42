@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -916,16 +916,22 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         {openSections.forces && (
           <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
             {([
-              { key: "signal", label: "Signal", value: signalScore, color: "#B08D3A",
+              { key: "signal", label: "Signal", rawValue: signalScore, weight: 0.40, maxPoints: 40,
+                color: "var(--aura-accent)",
                 hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
+                tooltip: "How deep your intelligence runs. Based on signals count, confidence, and territory breadth. Capture from diverse sources to grow.",
                 status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
-              { key: "content", label: "Content", value: contentScore, color: "#378ADD",
+              { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
+                color: "var(--aura-blue)",
                 hint: `${contentPerf?.postCount ?? 0} posts analysed`,
+                tooltip: "Publishing activity. Imports = baseline (max 30pts). New Aura-published posts = active (max 70pts). Publish signal-driven content to grow.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
-              { key: "consistency", label: "Consistency", value: captureScore, color: "#1D9E75",
+              { key: "consistency", label: "Consistency", rawValue: captureScore, weight: 0.20, maxPoints: 20,
+                color: "var(--aura-positive)",
                 hint: daysSinceLastAll === null ? "No captures yet"
                   : daysSinceLastAll === 0 ? "Captured today"
                   : `${daysSinceLastAll}d since last capture`,
+                tooltip: "Weekly capture streak over last 4 weeks. 1 capture/week maintains it. Miss a week and it drops immediately.",
                 status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action" },
             ]).map(c => (
               <ForceCard key={c.key} {...c} />
@@ -1729,31 +1735,47 @@ const SectionToggle = ({
 
 /* ─── ForceCard ─────────────────────────────────────────────── */
 const ForceCard = ({
-  label, value, color, hint, status,
-}: { label: string; value: number; color: string; hint: string; status: string }) => {
-  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  label, rawValue, weight, maxPoints, color, hint, status, tooltip,
+}: {
+  label: string; rawValue: number; weight: number; maxPoints: number;
+  color: string; hint: string; status: string; tooltip: string;
+}) => {
+  const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
+  const weighted = Math.round(raw * weight);
+  const pct = (weighted / maxPoints) * 100;
+  const [showTip, setShowTip] = useState(false);
   return (
     <div
       style={{
-        background: "var(--color-card)",
+        background: "var(--aura-card)",
         borderRadius: 12,
-        border: "0.5px solid var(--color-border)",
+        border: "1px solid var(--aura-border)",
         borderTop: `3px solid ${color}`,
         padding: "14px 16px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        position: "relative",
       }}
     >
       <div className="flex items-baseline justify-between">
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          {label}
+        <div className="inline-flex items-center gap-1.5">
+          <div
+            style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: "0.1em",
+              textTransform: "uppercase", color: "var(--aura-t2)",
+            }}
+          >
+            {label}
+          </div>
+          <button
+            type="button"
+            onMouseEnter={() => setShowTip(true)}
+            onMouseLeave={() => setShowTip(false)}
+            onFocus={() => setShowTip(true)}
+            onBlur={() => setShowTip(false)}
+            aria-label={`${label} info`}
+            style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+          >
+            <Info size={12} />
+          </button>
         </div>
         <div
           className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -1762,33 +1784,50 @@ const ForceCard = ({
           {status}
         </div>
       </div>
+      {showTip && (
+        <div
+          role="tooltip"
+          style={{
+            position: "absolute", top: -8, left: 12, transform: "translateY(-100%)",
+            background: "var(--aura-card)", color: "var(--aura-t1)",
+            border: "1px solid var(--aura-border)", borderRadius: 8,
+            padding: "8px 10px", fontSize: 11, lineHeight: 1.45,
+            width: 230, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          {tooltip}
+        </div>
+      )}
       <div
-        className="tabular-nums mt-1"
+        className="tabular-nums mt-1 inline-flex items-baseline gap-1.5"
         style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 22,
+          fontSize: 30,
           fontWeight: 700,
           color,
           lineHeight: 1.1,
         }}
       >
-        {pct}
+        {weighted}
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--aura-t3)" }}>
+          /{maxPoints}
+        </span>
       </div>
       <div
         className="mt-2"
-        style={{ height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden" }}
+        style={{ height: 6, background: "var(--aura-border)", borderRadius: 3, overflow: "hidden" }}
       >
         <div
           style={{
-            width: `${pct}%`,
+            width: `${Math.max(0, Math.min(100, pct))}%`,
             height: "100%",
-            background: `linear-gradient(90deg, ${color}AA, ${color})`,
-            borderRadius: 2,
+            background: color,
+            borderRadius: 3,
             transition: "width 700ms ease",
           }}
         />
       </div>
-      <div className="text-[11px] mt-2" style={{ color: "var(--color-text-muted)" }}>
+      <div className="text-[11px] mt-2" style={{ color: "var(--aura-t2)" }}>
         {hint}
       </div>
     </div>
@@ -1825,21 +1864,20 @@ const ScoreHero = ({
     <section
       className="relative overflow-hidden"
       style={{
-        background: "var(--color-card)",
-        border: "0.5px solid var(--color-border)",
+        background: "var(--aura-card)",
+        border: "1px solid var(--aura-border)",
         borderRadius: 14,
         padding: "22px 22px",
-        boxShadow: "var(--shadow-rest, 0 1px 3px rgba(0,0,0,0.05))",
       }}
     >
       <div className="flex items-start gap-5 flex-wrap">
         {/* Score ring */}
         <div data-testid="impact-score" style={{ width: 140, height: 140, position: "relative", flexShrink: 0 }}>
           <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-border)" strokeWidth="6" />
+            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--aura-border)" strokeWidth="11" />
             <circle
               cx="70" cy="70" r={r} fill="none"
-              stroke="#B08D3A" strokeWidth="6" strokeLinecap="round"
+              stroke="var(--aura-accent)" strokeWidth="11" strokeLinecap="round"
               strokeDasharray={`${dash} ${c}`}
               transform="rotate(-90 70 70)"
               style={{ transition: "stroke-dasharray 800ms ease" }}
@@ -1856,14 +1894,14 @@ const ScoreHero = ({
               className="tabular-nums"
               style={{
                 fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                fontSize: 28, fontWeight: 700, color: "#B08D3A", lineHeight: 1,
+                fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1,
               }}
             >
               {pct}
             </div>
             <div
               style={{
-                fontSize: 10, color: "var(--color-text-muted)", marginTop: 4,
+                fontSize: 10, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
               }}
             >
@@ -1878,40 +1916,42 @@ const ScoreHero = ({
           <div
             data-testid="impact-tier"
             style={{
-              background: "linear-gradient(135deg, #2C2418, #3D3226)",
+              background: "var(--aura-card-glass)",
+              border: "1px solid var(--aura-border)",
               borderRadius: 12,
               padding: "14px 16px",
-              color: "#F0E8D8",
+              color: "var(--aura-t1)",
             }}
           >
-            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C5A55A", opacity: 0.7 }}>
+            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--aura-accent)", opacity: 0.8 }}>
               Current tier
             </div>
-            <div
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: 18, color: "#D4B056", marginTop: 2, lineHeight: 1.2,
-              }}
-            >
-              {tierName || "Observer"}
+            <div style={{ marginTop: 4, display: "inline-flex" }}>
+              <span style={{
+                background: "var(--aura-accent)", color: "var(--aura-bg)",
+                padding: "3px 10px", borderRadius: 999,
+                fontFamily: "var(--aura-font-heading)", fontSize: 13, fontWeight: 600, letterSpacing: "0.02em",
+              }}>
+                {tierName || "Observer"}
+              </span>
             </div>
             {sector && (
-              <div style={{ fontSize: 12, color: "#A89980", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--aura-t2)", marginTop: 6 }}>
                 {sector}
               </div>
             )}
             {nextTierName && pointsToNext != null && pointsToNext > 0 && (
               <>
-                <div className="mt-2.5" style={{ height: 3, background: "rgba(197,165,90,0.15)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "#C5A55A" }} />
+                <div className="mt-2.5" style={{ height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "var(--aura-accent)" }} />
                 </div>
-                <div style={{ fontSize: 10, color: "#A89980", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "var(--aura-t2)", marginTop: 4 }}>
                   {pointsToNext} to {nextTierName}
                 </div>
               </>
             )}
             {trendLabel && (
-              <div style={{ fontSize: 10, color: "#C5A55A", marginTop: 6 }}>
+              <div style={{ fontSize: 11, color: "var(--aura-positive)", marginTop: 6, fontWeight: 600 }}>
                 {trendLabel}
               </div>
             )}
@@ -1932,8 +1972,8 @@ const ScoreHero = ({
 const MiniKPI = ({ label, value }: { label: string; value: string }) => (
   <div
     style={{
-      background: "var(--color-card)",
-      border: "0.5px solid var(--color-border)",
+      background: "var(--aura-card-glass)",
+      border: "1px solid var(--aura-border)",
       borderRadius: 8,
       padding: "10px 12px",
     }}
@@ -1942,7 +1982,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
       className="tabular-nums"
       style={{
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 16, fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1.1,
+        fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.1,
       }}
     >
       {value}
@@ -1950,7 +1990,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
     <div
       style={{
         fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase",
-        color: "var(--color-text-muted)", marginTop: 4,
+        color: "var(--aura-t2)", marginTop: 4,
       }}
     >
       {label}

@@ -32,6 +32,7 @@ import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
+import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -2054,7 +2055,14 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               confidencePct={topSignal ? Math.round((topSignal.confidence || 0) * 100) : null}
               actionText={topMove.rationale}
               publishWindow="Wed 8:30 AM"
-              onDraft={() => onSwitchTab?.("authority")}
+              onDraft={() => {
+                const text = `${topMove.title}\n\n${topMove.rationale}`;
+                shareToLinkedIn({
+                  text,
+                  mode: "feed",
+                  toastMessage: "Post copied — opening LinkedIn",
+                });
+              }}
               onFullBrief={() => onSwitchTab?.("intelligence")}
             />
           );
