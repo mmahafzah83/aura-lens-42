@@ -1185,7 +1185,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         const confPct = Math.round(s.confidence * 100);
                         const isSelected = selectedSignal?.id === s.id;
                         const themeGroup = getThemeGroup(s);
-                        const confColor = confPct >= 80 ? "#1D9E75" : confPct >= 60 ? "#B08D3A" : "#C24A4A";
+                        const confColor =
+                          confPct > 70 ? "var(--aura-positive)"
+                          : confPct >= 40 ? "var(--aura-accent)"
+                          : "var(--aura-warning)";
                         const velocity = s.velocity_status;
                         const trendLabel = velocity === "accelerating" ? "Rising" : velocity === "fading" ? "Fading" : velocity === "dormant" ? "Dormant" : "Stable";
                         const trendIcon = velocity === "accelerating" ? "↗" : velocity === "fading" ? "↘" : velocity === "dormant" ? "◌" : "→";
@@ -1220,7 +1223,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               </p>
                             </div>
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
-                              <div style={{ fontSize: 18, fontWeight: 500, color: confColor, fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                              <div
+                                title="Evidence quality measure, not probability. Based on: AI analysis 40%, unique source articles 35%, source diversity 15%, recency 10%. Capture from more organizations to increase."
+                                style={{ fontSize: 24, fontWeight: 600, color: confColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, cursor: "help" }}
+                              >
                                 {confPct}%
                               </div>
                               <div style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>
@@ -1230,8 +1236,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           </div>
 
                           {/* Confidence bar */}
-                          <div style={{ height: 4, background: "var(--surface-ink-subtle)", borderRadius: 2, overflow: "hidden", margin: "8px 0" }}>
-                            <div style={{ height: "100%", width: `${confPct}%`, background: confColor, borderRadius: 2 }} />
+                          <div style={{ height: 6, background: "var(--surface-ink-subtle)", borderRadius: 3, overflow: "hidden", margin: "8px 0" }}>
+                            <div style={{ height: "100%", width: `${confPct}%`, background: confColor, borderRadius: 3 }} />
                           </div>
 
                           {/* What / Why / Act */}
