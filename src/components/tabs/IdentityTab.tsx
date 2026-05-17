@@ -26,7 +26,7 @@ import FirstVisitHint from "@/components/ui/FirstVisitHint";
 import GuidedJourney from "@/components/GuidedJourney";
 import { useJourneyState } from "@/hooks/useJourneyState";
 import ArchetypeHeroCard from "@/components/identity/ArchetypeHeroCard";
-import AuthorityRadar from "@/components/identity/AuthorityRadar";
+import ScoreBreakdown from "@/components/identity/ScoreBreakdown";
 import TerritoryMap from "@/components/identity/TerritoryMap";
 
 interface IdentityTabProps {
@@ -556,13 +556,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             tierLabel={intelligenceStage ? `Stage ${intelligenceStage}` : null}
           />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <AuthorityRadar
-              signals={radar.signals}
-              content={radar.content}
-              engagement={radar.engagement}
-              voice={radar.voice}
-              rhythm={radar.rhythm}
-            />
+            <ScoreBreakdown userId={authUser?.id ?? null} />
             <TerritoryMap
               themes={signalStats.themeGroups.map((g) => ({ theme: g.theme, count: g.count }))}
             />
@@ -755,7 +749,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 }}
               >
                 <div style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                  <div
+                    title="AI-generated from your assessment, signals, and intelligence. Evolves as evidence accumulates."
+                    style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--aura-t1, var(--ink))", textTransform: "uppercase", cursor: "help" }}
+                  >
                     How the market sees you
                   </div>
                   <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
@@ -779,8 +776,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     <>
                       <p
                         style={{
-                          fontFamily: "'Cormorant Garamond', serif",
-                          fontSize: 15,
+                          fontFamily: "var(--aura-font-heading, 'Cormorant Garamond')",
+                          fontSize: 16,
                           fontStyle: "italic",
                           lineHeight: 1.55,
                           color: "var(--ink)",
@@ -791,12 +788,12 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                       </p>
                       {isThirdPerson && (
                         <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, fontStyle: "italic" }}>
-                          Based on your assessment — regenerate for a first-person version.
+                          Based on your assessment — click Regenerate for a first-person version.
                         </p>
                       )}
                       <div style={{ marginTop: 10, display: "flex", gap: 14, alignItems: "center" }}>
                         <ShareLink
-                          label="Share your positioning →"
+                          label="Share positioning →"
                           ariaLabel="Share your positioning on LinkedIn"
                           onClick={() => shareToLinkedIn({
                             text: shareText,
@@ -809,7 +806,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           disabled={regenerating}
                           style={{
                             fontSize: 11,
-                            color: "var(--brand)",
+                            color: "var(--aura-accent, var(--brand))",
                             background: "transparent",
                             border: 0,
                             cursor: regenerating ? "default" : "pointer",

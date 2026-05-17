@@ -125,7 +125,7 @@ const SourceHealthSummary = () => {
 
           {browserSnapshots > 0 && (
             <p className="text-[10px] text-muted-foreground/25 leading-relaxed">
-              {browserSnapshots} follower snapshot{browserSnapshots !== 1 ? "s" : ""} captured via browser extension.
+              {browserSnapshots} follower snapshot{browserSnapshots !== 1 ? "s" : ""} on file.
             </p>
           )}
         </div>

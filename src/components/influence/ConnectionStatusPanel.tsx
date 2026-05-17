@@ -59,7 +59,7 @@ const ConnectionStatusPanel = () => {
 
       {isConnected && (
         <p className="text-[10px] text-muted-foreground/25 mt-2.5 leading-relaxed max-w-sm">
-          Identity metadata only — analytics are captured via the browser extension from your logged-in LinkedIn session.
+          Identity metadata only — import your LinkedIn analytics XLSX export to populate performance data.
         </p>
       )}
     </motion.div>

@@ -42,14 +42,14 @@ const EMPTY_IDENTITY: IdentityModel = {
 };
 
 const SECTION_CONFIG = [
-  { key: "expertise_areas", label: "Expertise Areas", icon: Layers, color: "text-primary", subtitle: "Where your captured intelligence shows real depth" },
-  { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400", subtitle: "The sectors your signals consistently track" },
-  { key: "knowledge_domains", label: "Your deep expertise", icon: Lightbulb, color: "text-amber-400", subtitle: "The fields where your captured intelligence runs deepest" },
-  { key: "capabilities", label: "What sets you apart", icon: Star, color: "text-violet-400", subtitle: "The things you do that most people in your space can't. These show up in everything you write." },
-  { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400", subtitle: "The decision-makers your expertise serves" },
-  { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400", subtitle: "What drives your approach — these shape your voice and content tone" },
-  { key: "authority_ambitions", label: "Authority Ambitions", icon: Target, color: "text-primary", subtitle: "Where you are heading — Aura measures every action against these targets" },
-  { key: "strategic_goals", label: "Strategic Goals", icon: Target, color: "text-emerald-400", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
+  { key: "expertise_areas", label: "Expertise Areas", icon: Layers, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where your captured intelligence shows real depth" },
+  { key: "industries", label: "Industries", icon: Globe, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The sectors your signals consistently track" },
+  { key: "knowledge_domains", label: "Your deep expertise", icon: Lightbulb, color: "text-amber-400", dot: "var(--aura-accent)", subtitle: "The fields where your captured intelligence runs deepest" },
+  { key: "capabilities", label: "What sets you apart", icon: Star, color: "text-violet-400", dot: "var(--aura-purple)", subtitle: "The things you do that most people in your space can't. These show up in everything you write." },
+  { key: "clients", label: "Target Clients", icon: Users, color: "text-sky-400", dot: "var(--aura-accent3)", subtitle: "The decision-makers your expertise serves" },
+  { key: "values", label: "Core Values", icon: Compass, color: "text-rose-400", dot: "var(--aura-pink)", subtitle: "What drives your approach — these shape your voice and content tone" },
+  { key: "authority_ambitions", label: "Authority Ambitions", icon: Target, color: "text-primary", dot: "var(--aura-accent)", subtitle: "Where you are heading — Aura measures every action against these targets" },
+  { key: "strategic_goals", label: "Strategic Goals", icon: Target, color: "text-emerald-400", dot: "var(--aura-positive)", subtitle: "The outcomes that define success for you — your score reflects progress toward these" },
 ] as const;
 
 type EditableArrayKey = typeof SECTION_CONFIG[number]["key"];
@@ -213,7 +213,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
 
           {/* Sections Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {SECTION_CONFIG.map(({ key, label, icon: Icon, color, subtitle }) => (
+            {SECTION_CONFIG.map(({ key, label, icon: Icon, color, subtitle, dot }) => (
               <div key={key} className="p-4 rounded-xl bg-secondary/30 border border-border/10">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -263,7 +263,10 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
                   <div className="flex flex-wrap gap-1.5">
                     {(identity[key] as string[]).length > 0 ? (
                       (identity[key] as string[]).map((item, i) => (
-                        <span key={i} className="text-[11px] px-2.5 py-1 rounded-full bg-secondary/60 text-foreground/80 border border-border/10">{item}</span>
+                        <span key={i} className="text-[11px] px-2.5 py-1 rounded-full bg-secondary/60 text-foreground/80 border border-border/10 inline-flex items-center gap-1.5">
+                          <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: dot, display: "inline-block", flexShrink: 0 }} />
+                          {item}
+                        </span>
                       ))
                     ) : (
                       <span className="text-xs text-muted-foreground italic">Not yet analyzed</span>

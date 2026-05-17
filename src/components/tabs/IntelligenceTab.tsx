@@ -930,21 +930,28 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               You already see these patterns. Aura just makes them visible — so you can turn what you know into content that builds your name.
             </p>
           </div>
-          <div data-testid="intel-stats" style={{ display: "flex", gap: 24, alignItems: "baseline" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{entryCount}</div>
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>sources</div>
-            </div>
-            <div style={{ width: 0.5, height: 32, background: "var(--brand-line)" }} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{signals.length}</div>
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>signals</div>
-            </div>
-            <div style={{ width: 0.5, height: 32, background: "var(--brand-line)" }} />
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 500, color: "var(--brand)" }}>{movesCount}</div>
-              <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--ink-3)", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>moves</div>
-            </div>
+          <div data-testid="intel-stats" style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+            {[
+              { val: entryCount, label: "Sources", color: "var(--aura-accent3)" },
+              { val: signals.length, label: "Signals", color: "var(--aura-blue)" },
+              { val: movesCount, label: "Moves", color: "var(--aura-accent)" },
+            ].map(c => (
+              <div key={c.label} style={{
+                background: "var(--aura-card)",
+                border: "1px solid var(--aura-card-glass)",
+                borderRadius: 10,
+                padding: "10px 16px",
+                textAlign: "center",
+                minWidth: 88,
+              }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 600, color: c.color, lineHeight: 1 }}>
+                  {c.val}
+                </div>
+                <div style={{ fontSize: 10, letterSpacing: 1, color: "var(--aura-t1)", opacity: 0.6, textTransform: "uppercase", marginTop: 4 }}>
+                  {c.label}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1178,7 +1185,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         const confPct = Math.round(s.confidence * 100);
                         const isSelected = selectedSignal?.id === s.id;
                         const themeGroup = getThemeGroup(s);
-                        const confColor = confPct >= 80 ? "#1D9E75" : confPct >= 60 ? "#B08D3A" : "#C24A4A";
+                        const confColor =
+                          confPct > 70 ? "var(--aura-positive)"
+                          : confPct >= 40 ? "var(--aura-accent)"
+                          : "var(--aura-warning)";
                         const velocity = s.velocity_status;
                         const trendLabel = velocity === "accelerating" ? "Rising" : velocity === "fading" ? "Fading" : velocity === "dormant" ? "Dormant" : "Stable";
                         const trendIcon = velocity === "accelerating" ? "↗" : velocity === "fading" ? "↘" : velocity === "dormant" ? "◌" : "→";
@@ -1213,7 +1223,10 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               </p>
                             </div>
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
-                              <div style={{ fontSize: 18, fontWeight: 500, color: confColor, fontFamily: "var(--font-mono)", lineHeight: 1 }}>
+                              <div
+                                title="Evidence quality measure, not probability. Based on: AI analysis 40%, unique source articles 35%, source diversity 15%, recency 10%. Capture from more organizations to increase."
+                                style={{ fontSize: 24, fontWeight: 600, color: confColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, cursor: "help" }}
+                              >
                                 {confPct}%
                               </div>
                               <div style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>
@@ -1223,8 +1236,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           </div>
 
                           {/* Confidence bar */}
-                          <div style={{ height: 4, background: "var(--surface-ink-subtle)", borderRadius: 2, overflow: "hidden", margin: "8px 0" }}>
-                            <div style={{ height: "100%", width: `${confPct}%`, background: confColor, borderRadius: 2 }} />
+                          <div style={{ height: 6, background: "var(--surface-ink-subtle)", borderRadius: 3, overflow: "hidden", margin: "8px 0" }}>
+                            <div style={{ height: "100%", width: `${confPct}%`, background: confColor, borderRadius: 3 }} />
                           </div>
 
                           {/* What / Why / Act */}
