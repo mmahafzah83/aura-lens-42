@@ -1864,21 +1864,20 @@ const ScoreHero = ({
     <section
       className="relative overflow-hidden"
       style={{
-        background: "var(--color-card)",
-        border: "0.5px solid var(--color-border)",
+        background: "var(--aura-card)",
+        border: "1px solid var(--aura-border)",
         borderRadius: 14,
         padding: "22px 22px",
-        boxShadow: "var(--shadow-rest, 0 1px 3px rgba(0,0,0,0.05))",
       }}
     >
       <div className="flex items-start gap-5 flex-wrap">
         {/* Score ring */}
         <div data-testid="impact-score" style={{ width: 140, height: 140, position: "relative", flexShrink: 0 }}>
           <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--color-border)" strokeWidth="6" />
+            <circle cx="70" cy="70" r={r} fill="none" stroke="var(--aura-border)" strokeWidth="11" />
             <circle
               cx="70" cy="70" r={r} fill="none"
-              stroke="#B08D3A" strokeWidth="6" strokeLinecap="round"
+              stroke="var(--aura-accent)" strokeWidth="11" strokeLinecap="round"
               strokeDasharray={`${dash} ${c}`}
               transform="rotate(-90 70 70)"
               style={{ transition: "stroke-dasharray 800ms ease" }}
@@ -1895,14 +1894,14 @@ const ScoreHero = ({
               className="tabular-nums"
               style={{
                 fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                fontSize: 28, fontWeight: 700, color: "#B08D3A", lineHeight: 1,
+                fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1,
               }}
             >
               {pct}
             </div>
             <div
               style={{
-                fontSize: 10, color: "var(--color-text-muted)", marginTop: 4,
+                fontSize: 10, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
               }}
             >
@@ -1917,40 +1916,42 @@ const ScoreHero = ({
           <div
             data-testid="impact-tier"
             style={{
-              background: "linear-gradient(135deg, #2C2418, #3D3226)",
+              background: "var(--aura-card-glass)",
+              border: "1px solid var(--aura-border)",
               borderRadius: 12,
               padding: "14px 16px",
-              color: "#F0E8D8",
+              color: "var(--aura-t1)",
             }}
           >
-            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C5A55A", opacity: 0.7 }}>
+            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--aura-accent)", opacity: 0.8 }}>
               Current tier
             </div>
-            <div
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: 18, color: "#D4B056", marginTop: 2, lineHeight: 1.2,
-              }}
-            >
-              {tierName || "Observer"}
+            <div style={{ marginTop: 4, display: "inline-flex" }}>
+              <span style={{
+                background: "var(--aura-accent)", color: "var(--aura-bg)",
+                padding: "3px 10px", borderRadius: 999,
+                fontFamily: "var(--aura-font-heading)", fontSize: 13, fontWeight: 600, letterSpacing: "0.02em",
+              }}>
+                {tierName || "Observer"}
+              </span>
             </div>
             {sector && (
-              <div style={{ fontSize: 12, color: "#A89980", marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: "var(--aura-t2)", marginTop: 6 }}>
                 {sector}
               </div>
             )}
             {nextTierName && pointsToNext != null && pointsToNext > 0 && (
               <>
-                <div className="mt-2.5" style={{ height: 3, background: "rgba(197,165,90,0.15)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "#C5A55A" }} />
+                <div className="mt-2.5" style={{ height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "var(--aura-accent)" }} />
                 </div>
-                <div style={{ fontSize: 10, color: "#A89980", marginTop: 4 }}>
+                <div style={{ fontSize: 10, color: "var(--aura-t2)", marginTop: 4 }}>
                   {pointsToNext} to {nextTierName}
                 </div>
               </>
             )}
             {trendLabel && (
-              <div style={{ fontSize: 10, color: "#C5A55A", marginTop: 6 }}>
+              <div style={{ fontSize: 11, color: "var(--aura-positive)", marginTop: 6, fontWeight: 600 }}>
                 {trendLabel}
               </div>
             )}
@@ -1971,8 +1972,8 @@ const ScoreHero = ({
 const MiniKPI = ({ label, value }: { label: string; value: string }) => (
   <div
     style={{
-      background: "var(--color-card)",
-      border: "0.5px solid var(--color-border)",
+      background: "var(--aura-card-glass)",
+      border: "1px solid var(--aura-border)",
       borderRadius: 8,
       padding: "10px 12px",
     }}
@@ -1981,7 +1982,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
       className="tabular-nums"
       style={{
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 16, fontWeight: 700, color: "var(--color-text-primary)", lineHeight: 1.1,
+        fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.1,
       }}
     >
       {value}
@@ -1989,7 +1990,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
     <div
       style={{
         fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase",
-        color: "var(--color-text-muted)", marginTop: 4,
+        color: "var(--aura-t2)", marginTop: 4,
       }}
     >
       {label}
