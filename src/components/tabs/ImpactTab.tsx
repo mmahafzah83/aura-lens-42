@@ -1735,31 +1735,47 @@ const SectionToggle = ({
 
 /* ─── ForceCard ─────────────────────────────────────────────── */
 const ForceCard = ({
-  label, value, color, hint, status,
-}: { label: string; value: number; color: string; hint: string; status: string }) => {
-  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  label, rawValue, weight, maxPoints, color, hint, status, tooltip,
+}: {
+  label: string; rawValue: number; weight: number; maxPoints: number;
+  color: string; hint: string; status: string; tooltip: string;
+}) => {
+  const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
+  const weighted = Math.round(raw * weight);
+  const pct = (weighted / maxPoints) * 100;
+  const [showTip, setShowTip] = useState(false);
   return (
     <div
       style={{
-        background: "var(--color-card)",
+        background: "var(--aura-card)",
         borderRadius: 12,
-        border: "0.5px solid var(--color-border)",
+        border: "1px solid var(--aura-border)",
         borderTop: `3px solid ${color}`,
         padding: "14px 16px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        position: "relative",
       }}
     >
       <div className="flex items-baseline justify-between">
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          {label}
+        <div className="inline-flex items-center gap-1.5">
+          <div
+            style={{
+              fontSize: 11, fontWeight: 600, letterSpacing: "0.1em",
+              textTransform: "uppercase", color: "var(--aura-t2)",
+            }}
+          >
+            {label}
+          </div>
+          <button
+            type="button"
+            onMouseEnter={() => setShowTip(true)}
+            onMouseLeave={() => setShowTip(false)}
+            onFocus={() => setShowTip(true)}
+            onBlur={() => setShowTip(false)}
+            aria-label={`${label} info`}
+            style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+          >
+            <Info size={12} />
+          </button>
         </div>
         <div
           className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -1768,33 +1784,50 @@ const ForceCard = ({
           {status}
         </div>
       </div>
+      {showTip && (
+        <div
+          role="tooltip"
+          style={{
+            position: "absolute", top: -8, left: 12, transform: "translateY(-100%)",
+            background: "var(--aura-card)", color: "var(--aura-t1)",
+            border: "1px solid var(--aura-border)", borderRadius: 8,
+            padding: "8px 10px", fontSize: 11, lineHeight: 1.45,
+            width: 230, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+          }}
+        >
+          {tooltip}
+        </div>
+      )}
       <div
-        className="tabular-nums mt-1"
+        className="tabular-nums mt-1 inline-flex items-baseline gap-1.5"
         style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 22,
+          fontSize: 30,
           fontWeight: 700,
           color,
           lineHeight: 1.1,
         }}
       >
-        {pct}
+        {weighted}
+        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--aura-t3)" }}>
+          /{maxPoints}
+        </span>
       </div>
       <div
         className="mt-2"
-        style={{ height: 4, background: "var(--color-border)", borderRadius: 2, overflow: "hidden" }}
+        style={{ height: 6, background: "var(--aura-border)", borderRadius: 3, overflow: "hidden" }}
       >
         <div
           style={{
-            width: `${pct}%`,
+            width: `${Math.max(0, Math.min(100, pct))}%`,
             height: "100%",
-            background: `linear-gradient(90deg, ${color}AA, ${color})`,
-            borderRadius: 2,
+            background: color,
+            borderRadius: 3,
             transition: "width 700ms ease",
           }}
         />
       </div>
-      <div className="text-[11px] mt-2" style={{ color: "var(--color-text-muted)" }}>
+      <div className="text-[11px] mt-2" style={{ color: "var(--aura-t2)" }}>
         {hint}
       </div>
     </div>
