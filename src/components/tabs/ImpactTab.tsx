@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -916,16 +916,22 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         {openSections.forces && (
           <div data-testid="impact-breakdown" className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
             {([
-              { key: "signal", label: "Signal", value: signalScore, color: "#B08D3A",
+              { key: "signal", label: "Signal", rawValue: signalScore, weight: 0.40, maxPoints: 40,
+                color: "var(--aura-accent)",
                 hint: topSignal ? `Top: ${topSignal}` : "Build signals from diverse sources",
+                tooltip: "How deep your intelligence runs. Based on signals count, confidence, and territory breadth. Capture from diverse sources to grow.",
                 status: signalScore >= 70 ? "Growing" : signalScore >= 40 ? "Build more" : "Needs action" },
-              { key: "content", label: "Content", value: contentScore, color: "#378ADD",
+              { key: "content", label: "Content", rawValue: contentScore, weight: 0.40, maxPoints: 40,
+                color: "var(--aura-blue)",
                 hint: `${contentPerf?.postCount ?? 0} posts analysed`,
+                tooltip: "Publishing activity. Imports = baseline (max 30pts). New Aura-published posts = active (max 70pts). Publish signal-driven content to grow.",
                 status: contentScore >= 70 ? "Growing" : contentScore >= 40 ? "Build more" : "Needs action" },
-              { key: "consistency", label: "Consistency", value: captureScore, color: "#1D9E75",
+              { key: "consistency", label: "Consistency", rawValue: captureScore, weight: 0.20, maxPoints: 20,
+                color: "var(--aura-positive)",
                 hint: daysSinceLastAll === null ? "No captures yet"
                   : daysSinceLastAll === 0 ? "Captured today"
                   : `${daysSinceLastAll}d since last capture`,
+                tooltip: "Weekly capture streak over last 4 weeks. 1 capture/week maintains it. Miss a week and it drops immediately.",
                 status: captureScore >= 70 ? "Growing" : captureScore >= 40 ? "Build more" : "Needs action" },
             ]).map(c => (
               <ForceCard key={c.key} {...c} />
