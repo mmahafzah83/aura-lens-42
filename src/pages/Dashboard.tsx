@@ -340,6 +340,7 @@ const Dashboard = () => {
         className={`aura-sidebar-shell hidden md:flex flex-col fixed top-0 left-0 h-full z-30 backdrop-blur-xl transition-all duration-300 ${
           sidebarCollapsed ? "w-[68px]" : "w-[220px]"
         }`}
+        style={{ background: "var(--aura-card)" }}
       >
         {/* Logo */}
         <div
