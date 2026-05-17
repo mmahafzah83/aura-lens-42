@@ -132,6 +132,8 @@ ${trendLines}`;
     const PERPLEXITY_KEY = Deno.env.get("PERPLEXITY_API_KEY");
     if (PERPLEXITY_KEY && p.sector_focus) {
       try {
+        const perpAbort = new AbortController();
+        const perpTimer = setTimeout(() => perpAbort.abort(), 12000);
         const perpRes = await fetch("https://api.perplexity.ai/chat/completions", {
           method: "POST",
           headers: {
@@ -145,7 +147,8 @@ ${trendLines}`;
               content: `What have McKinsey, PwC, BCG, Deloitte, and EY published about ${p.sector_focus} in the last 30 days? List specific article titles, dates, and key arguments. Focus on thought leadership and LinkedIn content, not press releases.`,
             }],
           }),
-        });
+          signal: perpAbort.signal,
+        }).finally(() => clearTimeout(perpTimer));
         if (perpRes.ok) {
           const perpData = await perpRes.json();
           const content = perpData?.choices?.[0]?.message?.content || "No recent competitor content found.";
@@ -160,6 +163,8 @@ ${trendLines}`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+    const mirrorAbort = new AbortController();
+    const mirrorTimer = setTimeout(() => mirrorAbort.abort(), 30000);
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -173,7 +178,8 @@ ${trendLines}`;
         system: systemPrompt + competitorContext + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
         messages: [{ role: "user", content: userPrompt }],
       }),
-    });
+      signal: mirrorAbort.signal,
+    }).finally(() => clearTimeout(mirrorTimer));
 
     if (!aiRes.ok) {
       const txt = await aiRes.text();
