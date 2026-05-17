@@ -490,6 +490,7 @@ export type Database = {
           primary_strength: string | null
           sector_focus: string | null
           skill_ratings: Json
+          theme_preference: string | null
           user_id: string
           years_experience: string | null
         }
@@ -524,6 +525,7 @@ export type Database = {
           primary_strength?: string | null
           sector_focus?: string | null
           skill_ratings?: Json
+          theme_preference?: string | null
           user_id: string
           years_experience?: string | null
         }
@@ -558,6 +560,7 @@ export type Database = {
           primary_strength?: string | null
           sector_focus?: string | null
           skill_ratings?: Json
+          theme_preference?: string | null
           user_id?: string
           years_experience?: string | null
         }

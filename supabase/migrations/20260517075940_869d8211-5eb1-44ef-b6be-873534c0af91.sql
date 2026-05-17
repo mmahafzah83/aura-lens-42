@@ -1,0 +1,1 @@
+ALTER TABLE public.diagnostic_profiles ADD COLUMN IF NOT EXISTS theme_preference TEXT DEFAULT 'nebula' CHECK (theme_preference IN ('nebula', 'prism', 'terrain'));
