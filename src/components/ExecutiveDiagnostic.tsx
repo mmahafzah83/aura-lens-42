@@ -300,9 +300,10 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
 
   return (
     <div
-      className={`fixed inset-0 z-[100] bg-background flex flex-col transition-all duration-700 ${
+      className={`fixed inset-0 z-[100] flex flex-col transition-all duration-700 ${
         exiting ? "opacity-0 scale-[1.15] pointer-events-none" : "opacity-100 scale-100"
       }`}
+      style={{ background: "#1A1814", color: "#E8DCC8" }}
     >
       <div className="absolute inset-0 overflow-hidden">
         <div className="onboarding-mesh absolute inset-0" />
