@@ -41,11 +41,11 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
     if (password !== confirm) { toast.error("Passwords do not match"); return; }
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password,
-        data: { password_set: true },
+      const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
+        body: { new_password: password },
       });
       if (error) throw error;
+      if ((pwData as any)?.error) throw new Error((pwData as any).error);
       try { localStorage.setItem("password_set", "1"); } catch {}
       // Force sign-out and hard redirect to login with new password.
       try { await supabase.auth.signOut(); } catch {}
