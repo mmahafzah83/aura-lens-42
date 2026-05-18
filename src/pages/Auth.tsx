@@ -53,6 +53,15 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    // Show post-password-update toast after hard redirect from password reset.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("msg") === "password_updated") {
+        toast({ title: "Password updated", description: "Please sign in with your new password." });
+        window.history.replaceState({}, "", "/auth");
+      }
+    } catch {}
+
     // Detect expired/invalid recovery links arriving in the URL hash
     // (e.g. #error=access_denied&error_code=otp_expired&error_description=...)
     if (typeof window !== "undefined" && window.location.hash) {
@@ -107,9 +116,10 @@ const Auth = () => {
   // accounts for non-allowlisted users via OAuth before that check runs.)
 
   const sendReset = async (target: string) => {
-    await supabase.functions.invoke("send-password-reset", {
+    const { error } = await supabase.functions.invoke("send-password-reset", {
       body: { email: target.trim().toLowerCase() },
     });
+    if (error) throw error;
   };
 
   const handleForgotPassword = async () => {
@@ -174,8 +184,8 @@ const Auth = () => {
       setShowNewPasswordForm(false);
       // Force sign-out so the user must log in with the new password.
       try { await supabase.auth.signOut(); } catch {}
-      toast({ title: "Password updated", description: "Please sign in with your new password." });
-      navigate("/auth");
+      // Hard redirect clears React state + any cached session tokens.
+      window.location.href = "/auth?msg=password_updated";
     } catch (e: any) {
       toast({ title: "Couldn't update password", description: e?.message || "Please try again.", variant: "destructive" });
     } finally {

@@ -352,7 +352,7 @@ const Dashboard = () => {
             <div className="overflow-hidden min-w-0">
               <h1
                 className="text-lg tracking-tight font-semibold"
-                style={{ color: "var(--ink)" }}
+                style={{ color: "var(--aura-t1)" }}
               >
                 Aura
               </h1>
@@ -360,7 +360,7 @@ const Dashboard = () => {
                 style={{
                   fontSize: 9,
                   letterSpacing: "0.08em",
-                  color: "var(--ink-2)",
+                  color: "var(--aura-t2)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textTransform: "uppercase",
@@ -381,7 +381,7 @@ const Dashboard = () => {
                 fontFamily: "var(--font-mono)",
                 fontSize: 10,
                 letterSpacing: "0.18em",
-                color: "var(--ink-2)",
+                color: "var(--aura-t2)",
                 padding: "12px 24px 8px",
                 textTransform: "uppercase",
               }}
@@ -413,7 +413,7 @@ const Dashboard = () => {
                 <item.icon
                   className="w-5 h-5 shrink-0"
                   style={{
-                    color: isActive ? "var(--brand)" : "var(--ink-3)",
+                    color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
                     transition: "color var(--t-fast) var(--ease)",
                   }}
                 />
@@ -437,12 +437,12 @@ const Dashboard = () => {
             className="w-full flex items-center gap-3 px-3 py-3 tactile-press group"
             style={{
               background: "transparent",
-              color: "var(--brand)",
-              border: "1px solid var(--brand-line)",
+              color: "var(--aura-accent)",
+              border: "1px solid var(--aura-border)",
               borderRadius: "var(--r-md)",
               transition: "all var(--t-fast) var(--ease)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--brand-ghost)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--aura-card-glass)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
           >
             <Paperclip className="w-4.5 h-4.5 shrink-0 group-hover:scale-110 transition-transform" />
@@ -453,7 +453,7 @@ const Dashboard = () => {
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
-            style={{ color: "var(--ink-4)", borderRadius: "var(--r-md)" }}
+            style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
           >
             <Menu className="w-4 h-4 shrink-0" />
             {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
@@ -463,9 +463,9 @@ const Dashboard = () => {
             onClick={() => setInviteOpen(true)}
             aria-label="Bring someone in"
             className="w-full flex items-center gap-3 px-3 py-2 transition-all min-h-[44px]"
-            style={{ color: "var(--ink-3)", borderRadius: "var(--r-md)" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--brand)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--ink-3)"; }}
+            style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--aura-accent)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--aura-t3)"; }}
             title="Bring someone in"
           >
             <UserPlus className="w-4 h-4 shrink-0" />
@@ -494,12 +494,12 @@ const Dashboard = () => {
             >
               <div className="flex items-center gap-2.5">
                 <AuraLogo size={32} variant="auto" />
-                <span className="text-lg font-semibold" style={{ color: "var(--ink)" }}>Aura</span>
+                <span className="text-lg font-semibold" style={{ color: "var(--aura-t1)" }}>Aura</span>
               </div>
               <button
                 onClick={() => setMobileSidebarOpen(false)}
                 className="p-1"
-                style={{ color: "var(--ink-3)" }}
+                style={{ color: "var(--aura-t3)" }}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -510,7 +510,7 @@ const Dashboard = () => {
                   fontFamily: "var(--font-mono)",
                   fontSize: 10,
                   letterSpacing: "0.18em",
-                  color: "var(--ink-4)",
+                  color: "var(--aura-t3)",
                   padding: "12px 24px 8px",
                   textTransform: "uppercase",
                 }}
@@ -540,7 +540,7 @@ const Dashboard = () => {
                   >
                     <item.icon
                       className="w-5 h-5"
-                      style={{ color: isActive ? "var(--brand)" : "var(--ink-3)" }}
+                      style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
                   </button>
@@ -559,7 +559,7 @@ const Dashboard = () => {
                 data-testid="nav-capture"
                 className="w-full flex items-center justify-center gap-2 px-3 py-2.5 transition-all text-xs"
                 style={{
-                  color: "var(--ink-3)",
+                  color: "var(--aura-t3)",
                   background: "transparent",
                   border: "0.5px solid var(--paper-3)",
                   borderRadius: "var(--r-md)",

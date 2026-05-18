@@ -46,9 +46,10 @@ export default function SetPasswordModal({ open, onClose, isFirstTime = false }:
         data: { password_set: true },
       });
       if (error) throw error;
-      toast.success("Password updated successfully");
       try { localStorage.setItem("password_set", "1"); } catch {}
-      setTimeout(onClose, 600);
+      // Force sign-out and hard redirect to login with new password.
+      try { await supabase.auth.signOut(); } catch {}
+      window.location.href = "/auth?msg=password_updated";
     } catch (e: any) {
       toast.error(e?.message || "Could not update password");
     } finally {

@@ -471,12 +471,14 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     })();
   }, []);
 
-  /* ── Score derivations ── */
+  /* ── Score derivations ──
+     Use live EF data (auraData) as PRIMARY source for current display,
+     fall back to most recent snapshot only if EF hasn't returned yet. */
   const latest = snapshots[snapshots.length - 1];
-  const latestScore = latest?.score ?? 0;
-  const captureScore = latest?.components?.capture_score ?? 0;
-  const contentScore = latest?.components?.content_score ?? 0;
-  const signalScore = latest?.components?.signal_score ?? 0;
+  const latestScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
+  const captureScore = (auraData as any)?.capture_score ?? latest?.components?.capture_score ?? 0;
+  const contentScore = (auraData as any)?.content_score ?? latest?.components?.content_score ?? 0;
+  const signalScore = (auraData as any)?.signal_score ?? latest?.components?.signal_score ?? 0;
 
   // Score 7 days ago (closest snapshot to that date)
   const score7 = useMemo(() => {
