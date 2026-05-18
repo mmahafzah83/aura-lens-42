@@ -116,10 +116,11 @@ const Auth = () => {
   // accounts for non-allowlisted users via OAuth before that check runs.)
 
   const sendReset = async (target: string) => {
-    const { error } = await supabase.functions.invoke("send-password-reset", {
+    const { data, error } = await supabase.functions.invoke("send-password-reset", {
       body: { email: target.trim().toLowerCase() },
     });
     if (error) throw error;
+    if ((data as any)?.error) throw new Error((data as any).error);
   };
 
   const handleForgotPassword = async () => {
@@ -165,11 +166,11 @@ const Auth = () => {
     }
     setUpdatingPwd(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-        data: { password_set: true },
+      const { data: pwData, error } = await supabase.functions.invoke("update-user-password", {
+        body: { new_password: newPassword },
       });
       if (error) throw error;
+      if ((pwData as any)?.error) throw new Error((pwData as any).error);
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.email) {
