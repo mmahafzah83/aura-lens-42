@@ -107,9 +107,10 @@ const Auth = () => {
   // accounts for non-allowlisted users via OAuth before that check runs.)
 
   const sendReset = async (target: string) => {
-    await supabase.functions.invoke("send-password-reset", {
+    const { error } = await supabase.functions.invoke("send-password-reset", {
       body: { email: target.trim().toLowerCase() },
     });
+    if (error) throw error;
   };
 
   const handleForgotPassword = async () => {
@@ -174,8 +175,8 @@ const Auth = () => {
       setShowNewPasswordForm(false);
       // Force sign-out so the user must log in with the new password.
       try { await supabase.auth.signOut(); } catch {}
-      toast({ title: "Password updated", description: "Please sign in with your new password." });
-      navigate("/auth");
+      // Hard redirect clears React state + any cached session tokens.
+      window.location.href = "/auth?msg=password_updated";
     } catch (e: any) {
       toast({ title: "Couldn't update password", description: e?.message || "Please try again.", variant: "destructive" });
     } finally {
