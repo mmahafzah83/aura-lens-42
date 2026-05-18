@@ -53,6 +53,15 @@ const Auth = () => {
   };
 
   useEffect(() => {
+    // Show post-password-update toast after hard redirect from password reset.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("msg") === "password_updated") {
+        toast({ title: "Password updated", description: "Please sign in with your new password." });
+        window.history.replaceState({}, "", "/auth");
+      }
+    } catch {}
+
     // Detect expired/invalid recovery links arriving in the URL hash
     // (e.g. #error=access_denied&error_code=otp_expired&error_description=...)
     if (typeof window !== "undefined" && window.location.hash) {
