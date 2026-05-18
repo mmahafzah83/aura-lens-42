@@ -474,7 +474,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   /* ── Score derivations ──
      Use live EF data (auraData) as PRIMARY source for current display,
      fall back to most recent snapshot only if EF hasn't returned yet. */
-  const latest = snapshots[snapshots.length - 1];
+  const latest = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
   const latestScore = (auraData as any)?.aura_score ?? latest?.score ?? 0;
   const captureScore = (auraData as any)?.capture_score ?? latest?.components?.capture_score ?? 0;
   const contentScore = (auraData as any)?.content_score ?? latest?.components?.content_score ?? 0;
