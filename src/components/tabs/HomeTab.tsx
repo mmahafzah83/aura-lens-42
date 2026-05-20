@@ -1571,7 +1571,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </div>
               <div className="flex items-center" style={{ gap: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                 <span>{activeWeeks}/12w</span>
-                <InfoTooltip side="top" align="end" label="Capture Rhythm" width={280}>
+                <InfoTooltip side="top" align="right" label="Capture Rhythm" width={280}>
                   <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Capture Rhythm</div>
                   <p style={{ margin: 0 }}>
                     Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
