@@ -1940,7 +1940,6 @@ const ForceCard = ({
   const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
   const weighted = Math.round(raw * weight);
   const pct = (weighted / maxPoints) * 100;
-  const [showTip, setShowTip] = useState(false);
   return (
     <div
       style={{
@@ -1962,17 +1961,22 @@ const ForceCard = ({
           >
             {label}
           </div>
-          <button
-            type="button"
-            onMouseEnter={() => setShowTip(true)}
-            onMouseLeave={() => setShowTip(false)}
-            onFocus={() => setShowTip(true)}
-            onBlur={() => setShowTip(false)}
-            aria-label={`${label} info`}
-            style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
-          >
-            <Info size={12} />
-          </button>
+          <TooltipProvider delayDuration={150}>
+            <UiTooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`${label} info`}
+                  style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+                >
+                  <Info size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="start" className="max-w-xs text-xs">
+                {tooltip}
+              </TooltipContent>
+            </UiTooltip>
+          </TooltipProvider>
         </div>
         <div
           className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -1981,20 +1985,6 @@ const ForceCard = ({
           {status}
         </div>
       </div>
-      {showTip && (
-        <div
-          role="tooltip"
-          style={{
-            position: "absolute", top: -8, left: 12, transform: "translateY(-100%)",
-            background: "var(--aura-card)", color: "var(--aura-t1)",
-            border: "1px solid var(--aura-border)", borderRadius: 8,
-            padding: "8px 10px", fontSize: 11, lineHeight: 1.45,
-            width: 230, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          {tooltip}
-        </div>
-      )}
       <div
         className="tabular-nums mt-1 inline-flex items-baseline gap-1.5"
         style={{
