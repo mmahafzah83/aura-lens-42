@@ -25,18 +25,28 @@ interface StylePalette {
   monoFont: string;
   // New differentiation fields
   headingWeight?: number;       // weight for headings (default 700)
-  stripPosition?: "left" | "right" | "none";
+  stripPosition?: "left" | "right" | "top" | "none";
   stripColor?: string;          // overrides per-slide STRIP_COLORS when set
   topAccentLine?: boolean;      // executive briefing
   pattern?: "none" | "dots" | "diagonal" | "circuit";
   numberBadgeBg?: string;       // override for grid number circle / hi-contrast
   numberBadgeFg?: string;
+  sectionLabel?: string;        // small-caps label color (defaults to accent)
+  compareBg?: string;           // COMPARE column container fill
+  gridCellBg?: string;          // GRID cell fill
+  bigNumberColor?: string;      // BIG_NUMBER color (defaults to accent)
+  terminalDots?: [string, string, string]; // macOS dot colors per style
 }
 
 const STYLES: Record<StyleKey, StylePalette> = {
   clean_paper: {
     key: "clean_paper", name: "Clean Paper",
-    bg: "#FAFAF8", fg: "#2D2D2D", accent: "#2D2D2D", emphasis: "#2D2D2D", muted: "#888888", border: "#E5E5E5", codeBg: "#F0F0EE",
+    bg: "#FAFAF8", fg: "#1A1A1A", accent: "#2D2D2D", emphasis: "#1A1A1A",
+    muted: "#4A4A4A", sectionLabel: "#888888",
+    border: "#E8E8E8", codeBg: "#F0F0EE",
+    compareBg: "#F2F0EC", gridCellBg: "#F0F0EE",
+    bigNumberColor: "#1A1A1A",
+    terminalDots: ["#ccc", "#ccc", "#ccc"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -45,7 +55,12 @@ const STYLES: Record<StyleKey, StylePalette> = {
   bold_statement: {
     key: "bold_statement", name: "Bold Statement",
     bg: "#1A1714", bgGradient: "linear-gradient(135deg,#1A1714 0%,#241D16 100%)",
-    fg: "#F5F0F0", accent: "#D4B056", emphasis: "#D4B056", muted: "#9A9388", border: "rgba(255,255,255,0.1)", codeBg: "#0D0B08",
+    fg: "#F5F0E6", accent: "#D4B056", emphasis: "#D4B056",
+    muted: "#C4B89A", sectionLabel: "#D4B056",
+    border: "rgba(212,176,86,0.2)", codeBg: "rgba(255,255,255,0.05)",
+    compareBg: "rgba(212,176,86,0.06)", gridCellBg: "rgba(212,176,86,0.08)",
+    bigNumberColor: "#D4B056",
+    terminalDots: ["#D4B056", "#C4A040", "#B49030"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -53,15 +68,25 @@ const STYLES: Record<StyleKey, StylePalette> = {
   },
   executive_briefing: {
     key: "executive_briefing", name: "Executive Briefing",
-    bg: "#F5F0E8", fg: "#2A2419", accent: "#6B4F1D", emphasis: "#6B4F1D", muted: "#6F6A60", border: "#D4C5A0", codeBg: "#EBE3D2",
+    bg: "#F5F0E8", fg: "#2A2419", accent: "#6B4F1D", emphasis: "#6B4F1D",
+    muted: "#5C5347", sectionLabel: "#6B4F1D",
+    border: "#D4C5A0", codeBg: "#EDE6D8",
+    compareBg: "#EBE3D2", gridCellBg: "#EDE6D8",
+    bigNumberColor: "#6B4F1D",
+    terminalDots: ["#6B4F1D", "#8B6F3D", "#AB8F5D"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
-    headingWeight: 700, stripPosition: "none", topAccentLine: true, pattern: "diagonal",
+    headingWeight: 700, stripPosition: "top", stripColor: "#6B4F1D", pattern: "diagonal",
   },
   terminal: {
     key: "terminal", name: "Terminal",
-    bg: "#0D1117", fg: "#E6EDF3", accent: "#58A6FF", emphasis: "#58A6FF", muted: "#7D8590", border: "rgba(88,166,255,0.15)", codeBg: "#010409",
+    bg: "#0D1117", fg: "#E6EDF3", accent: "#58A6FF", emphasis: "#58A6FF",
+    muted: "#8B949E", sectionLabel: "#58A6FF",
+    border: "rgba(88,166,255,0.15)", codeBg: "rgba(255,255,255,0.03)",
+    compareBg: "rgba(88,166,255,0.05)", gridCellBg: "rgba(88,166,255,0.06)",
+    bigNumberColor: "#58A6FF",
+    terminalDots: ["#FF5F56", "#FFBD2E", "#27C93F"],
     bodyFont: "'JetBrains Mono', ui-monospace, monospace",
     headingFont: "'JetBrains Mono', ui-monospace, monospace",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -69,7 +94,12 @@ const STYLES: Record<StyleKey, StylePalette> = {
   },
   high_contrast: {
     key: "high_contrast", name: "High Contrast",
-    bg: "#000000", fg: "#FFFFFF", accent: "#FFFFFF", emphasis: "#FFFFFF", muted: "rgba(255,255,255,0.55)", border: "rgba(255,255,255,0.15)", codeBg: "#0A0A0A",
+    bg: "#000000", fg: "#FFFFFF", accent: "#FFFFFF", emphasis: "#FFFFFF",
+    muted: "#CCCCCC", sectionLabel: "rgba(255,255,255,0.5)",
+    border: "rgba(255,255,255,0.12)", codeBg: "rgba(255,255,255,0.04)",
+    compareBg: "rgba(255,255,255,0.04)", gridCellBg: "rgba(255,255,255,0.05)",
+    bigNumberColor: "#FFFFFF",
+    terminalDots: ["#666", "#666", "#666"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
