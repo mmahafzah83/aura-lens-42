@@ -631,7 +631,7 @@ const AdminQA = () => {
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 14, color: "#D4CCBC" }}>{progress}</div>
             <div style={{ marginTop: 6, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#C5A55A)", transition: "width 0.4s" }} />
+              <div style={{ height: "100%", width: running ? "60%" : "100%", background: "var(--brand,#B08D3A)", transition: "width 0.4s" }} />
             </div>
           </div>
         )}
@@ -969,7 +969,7 @@ const linkBtn: React.CSSProperties = { background: "transparent", border: "1px s
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
-  background: "var(--brand,#C5A55A)", color: "#0a0a0a", border: "none",
+  background: "var(--brand,#B08D3A)", color: "#0a0a0a", border: "none",
   padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
 };
 const secondaryBtnStyle: React.CSSProperties = {
@@ -997,7 +997,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Stat({ label, value, color, emphasis }: { label: string; value: number; color?: string; emphasis?: boolean }) {
   return (
     <div style={{ ...cardStyle, ...(emphasis ? { background: "rgba(197,165,90,0.08)", border: "1px solid rgba(197,165,90,0.4)" } : null) }}>
-      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #C5A55A)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: emphasis ? "var(--brand, #B08D3A)" : "#B8B0A2", fontWeight: 600 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: emphasis ? 40 : 30, marginTop: 6, color: color || "#F4EFE6", fontWeight: emphasis ? 700 : 500 }}>{value}</div>
     </div>
   );

@@ -68,7 +68,7 @@ export function AmbientOrbs({ theme, pageKey }: AmbientOrbsProps) {
 
   const c1 =
     resolve(fx?.orb_color_1 as ThemeValue, theme) ||
-    (theme === "dark" ? "#C5A55A" : "#D4B670");
+    (theme === "dark" ? "#B08D3A" : "#D4B670");
   const c2 =
     resolve(fx?.orb_color_2 as ThemeValue, theme) ||
     (theme === "dark" ? "#7A5C2E" : "#E8D9B4");

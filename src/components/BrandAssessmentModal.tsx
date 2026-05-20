@@ -675,7 +675,7 @@ function ResultsView({
         .label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8b6f2a}
         h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;color:#8b6f2a;margin:8px 0 4px;font-weight:500}
         .desc{color:#666;font-size:14px;margin:0 0 16px}
-        .oneliner{font-size:17px;font-weight:600;border-left:3px solid #c5a55a;padding:8px 14px;margin:18px 0;background:#fbf7ec}
+        .oneliner{font-size:17px;font-weight:600;border-left:3px solid #B08D3A;padding:8px 14px;margin:18px 0;background:#fbf7ec}
         h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;color:#8b6f2a;text-transform:uppercase;letter-spacing:1px;margin:24px 0 8px;border-bottom:1px solid #e6dcc4;padding-bottom:4px}
         section p{font-size:14px}
         footer{margin-top:40px;font-size:11px;color:#999;text-align:center}
