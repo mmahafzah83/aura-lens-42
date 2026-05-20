@@ -842,19 +842,36 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       // Convention: compare_left_* = WRONG (mistake, muted+strike), compare_right_* = CORRECT (gold, bold).
       // RTL swap: in Arabic the WRONG renders on visual RIGHT (read first), CORRECT on visual LEFT (read second, payoff).
       const wrongTitle = slide.compare_left_title || "BEFORE";
-      const wrongItems = slide.compare_left_items || [];
+      const wrongItems = (slide.compare_left_items || []).slice(0, 4);
       const correctTitle = slide.compare_right_title || "AFTER";
-      const correctItems = slide.compare_right_items || [];
+      const correctItems = (slide.compare_right_items || []).slice(0, 4);
       const visLeftTitle = isRTL ? correctTitle : wrongTitle;
       const visLeftItems = isRTL ? correctItems : wrongItems;
       const visRightTitle = isRTL ? wrongTitle : correctTitle;
       const visRightItems = isRTL ? wrongItems : correctItems;
       const correctOnLeft = isRTL;
-      const itemH = 60;
-      const rowsCount = Math.max(visLeftItems.length, visRightItems.length, 1);
-      const blockH = 80 + rowsCount * itemH;
-      const headlineSpace = slide.headline ? 70 : 0;
-      const blockTop = Math.max(140, cy - blockH / 2 - headlineSpace / 2);
+      // Dynamic row heights: pre-wrap every item, then accumulate offsets so
+      // multi-line items push the next item down instead of overlapping.
+      const itemLineH = 28;          // line-height per wrapped line (~1.27 of 22px)
+      const itemGap = 18;            // gap between items
+      const wrapW = isRTL ? 18 : 24;
+      const leftWrapped = visLeftItems.map((it) => wrapText(it, wrapW));
+      const rightWrapped = visRightItems.map((it) => wrapText(it, wrapW));
+      const cumOffsets = (groups: string[][]) => {
+        const out: number[] = [];
+        let acc = 0;
+        for (let i = 0; i < groups.length; i++) {
+          out.push(acc);
+          acc += groups[i].length * itemLineH + (i < groups.length - 1 ? itemGap : 0);
+        }
+        return { offsets: out, total: acc };
+      };
+      const leftLayout = cumOffsets(leftWrapped);
+      const rightLayout = cumOffsets(rightWrapped);
+      const colsTotalH = Math.max(leftLayout.total, rightLayout.total, itemLineH);
+      const blockH = 80 + colsTotalH + 32;
+      // Fill layout — start near top of content zone so columns get max vertical room.
+      const blockTop = 140;
       const headerY = blockTop + 30;
       const rowsStartY = blockTop + 80;
       const rightColX = cx + 30;
@@ -904,8 +921,8 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           </text>
           {/* Visual LEFT column items */}
           {visLeftItems.map((it, i) => {
-            const lns = wrapText(it, isRTL ? 18 : 24);
-            const rowY = rowsStartY + i * itemH;
+            const lns = leftWrapped[i];
+            const rowY = rowsStartY + leftLayout.offsets[i];
             const textXi = isRTL ? leftColX + leftColW : leftColX;
             const anchor: "start" | "end" = isRTL ? "end" : "start";
             if (correctOnLeft) {
@@ -914,13 +931,13 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                   {/* Gold accent on the inner edge (right side in RTL since text reads RTL) */}
                   <line
                     x1={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
-                    y1={rowY - 24}
+                    y1={rowY - 22}
                     x2={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
-                    y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                    y2={rowY - 22 + Math.max(itemLineH, lns.length * itemLineH)}
                     stroke={style.accent} strokeWidth={2} />
                   {lns.map((ln, li) => (
-                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                    <text key={li} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                       {ln}
                     </text>
                   ))}
@@ -928,7 +945,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               );
             }
             return lns.map((ln, li) => (
-              <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+              <text key={`l${i}-${li}`} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
@@ -938,18 +955,18 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           })}
           {/* Visual RIGHT column items */}
           {visRightItems.map((it, i) => {
-            const lns = wrapText(it, isRTL ? 18 : 24);
-            const rowY = rowsStartY + i * itemH;
+            const lns = rightWrapped[i];
+            const rowY = rowsStartY + rightLayout.offsets[i];
             const textXi = isRTL ? rightColX + rightColW : rightColX;
             const anchor: "start" | "end" = isRTL ? "end" : "start";
             if (!correctOnLeft) {
               return (
                 <g key={`rg${i}`}>
-                  <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                  <line x1={rightColX - 8} y1={rowY - 22} x2={rightColX - 8} y2={rowY - 22 + Math.max(itemLineH, lns.length * itemLineH)}
                         stroke={style.accent} strokeWidth={2} />
                   {lns.map((ln, li) => (
-                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                    <text key={li} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                       {ln}
                     </text>
                   ))}
@@ -957,7 +974,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               );
             }
             return lns.map((ln, li) => (
-              <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+              <text key={`r${i}-${li}`} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
@@ -1209,6 +1226,19 @@ async function getCairoEmbeddedCSS(): Promise<string> {
 }
 
 function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extraCSS = ""): Promise<Blob> {
+  return svgToImageBlob(svgEl, width, height, extraCSS, "image/png", 1);
+}
+
+/** Rasterise an SVG to a blob. Use JPEG with quality<1 for PDF embedding
+ *  to keep file size well below LinkedIn's 10MB carousel limit. */
+function svgToImageBlob(
+  svgEl: SVGSVGElement,
+  width: number,
+  height: number,
+  extraCSS = "",
+  mime: "image/png" | "image/jpeg" = "image/png",
+  quality = 1,
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     // Clone and inject <style> with @import so fonts load inside the SVG sandbox
     const clone = svgEl.cloneNode(true) as SVGSVGElement;
@@ -1228,9 +1258,18 @@ function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extra
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d")!;
+        // JPEG has no alpha — paint a background so transparent regions don't go black.
+        if (mime === "image/jpeg") {
+          ctx.fillStyle = "#0F0E0C";
+          ctx.fillRect(0, 0, width, height);
+        }
         ctx.drawImage(img, 0, 0, width, height);
         URL.revokeObjectURL(url);
-        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")),
+          mime,
+          mime === "image/jpeg" ? quality : undefined,
+        );
       }, 500);
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
@@ -1550,7 +1589,10 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     }
   };
 
-  const renderSlideToBlob = async (s: Slide): Promise<Blob> => {
+  const renderSlideToBlob = async (
+    s: Slide,
+    fmt: { mime?: "image/png" | "image/jpeg"; quality?: number } = {},
+  ): Promise<Blob> => {
     // Render into offscreen container
     const container = offscreenRef.current!;
     container.innerHTML = "";
@@ -1572,7 +1614,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     svgEl.setAttribute("height", String(h));
     // For Arabic, embed Cairo as base64 inside the SVG so the raster sandbox uses it.
     const extraCSS = lang === "ar" ? await getCairoEmbeddedCSS() : "";
-    const blob = await svgToPngBlob(svgEl, w, h, extraCSS);
+    const blob = await svgToImageBlob(svgEl, w, h, extraCSS, fmt.mime ?? "image/png", fmt.quality ?? 1);
     root.unmount();
     return blob;
   };
@@ -1613,12 +1655,13 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       const { w, h } = DIM[dim];
       const pdf = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "px", format: [w, h] });
       for (let i = 0; i < slides.length; i++) {
-        const blob = await renderSlideToBlob(slides[i]);
+        // JPEG @ 0.85 → ~3–5MB total for 8 slides vs ~33MB with PNG.
+        const blob = await renderSlideToBlob(slides[i], { mime: "image/jpeg", quality: 0.85 });
         const dataUrl = await new Promise<string>((resolve) => {
           const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(blob);
         });
         if (i > 0) pdf.addPage([w, h], w > h ? "landscape" : "portrait");
-        pdf.addImage(dataUrl, "PNG", 0, 0, w, h);
+        pdf.addImage(dataUrl, "JPEG", 0, 0, w, h, undefined, "MEDIUM");
       }
       pdf.save(`carousel-${slugify(carousel.carousel_title || topic)}.pdf`);
     } catch (e: any) { console.error(e); toast.error(e.message || "PDF export failed"); }
