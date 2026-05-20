@@ -23,7 +23,8 @@ export function useMilestones(userId: string | null) {
       .from("user_milestones" as any)
       .select("*")
       .eq("user_id", userId)
-      .order("earned_at", { ascending: false });
+      .order("earned_at", { ascending: false })
+      .limit(50);
     if (!error && data) setAllMilestones(data as unknown as Milestone[]);
     setLoading(false);
   }, [userId]);

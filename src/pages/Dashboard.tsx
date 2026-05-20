@@ -279,7 +279,8 @@ const Dashboard = () => {
     const { data } = await supabase
       .from("entries")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(50);
     if (data) setEntries(data);
   };
 
