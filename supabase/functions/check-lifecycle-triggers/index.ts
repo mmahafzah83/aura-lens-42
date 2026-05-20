@@ -12,6 +12,13 @@ serve(async (req) => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") ||
+    (req.headers.get("Authorization") || "").replace("Bearer ", "");
+  if (!SERVICE_KEY || apiKey !== SERVICE_KEY) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
   const results: any[] = [];
