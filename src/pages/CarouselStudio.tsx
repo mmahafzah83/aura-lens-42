@@ -850,42 +850,51 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const visRightTitle = isRTL ? wrongTitle : correctTitle;
       const visRightItems = isRTL ? wrongItems : correctItems;
       const correctOnLeft = isRTL;
-      // Dynamic row heights: pre-wrap every item, then accumulate offsets so
-      // multi-line items push the next item down instead of overlapping.
-      const itemLineH = 28;          // line-height per wrapped line (~1.27 of 22px)
-      const itemGap = 18;            // gap between items
+      // Pre-wrap items so multi-line entries don't overlap.
+      const itemLineH = 28;          // per wrapped line (~1.27 of 22px)
+      const itemGap = 18;            // minimum gap between items
       const wrapW = isRTL ? 18 : 24;
       const leftWrapped = visLeftItems.map((it) => wrapText(it, wrapW));
       const rightWrapped = visRightItems.map((it) => wrapText(it, wrapW));
-      const cumOffsets = (groups: string[][]) => {
-        const out: number[] = [];
-        let acc = 0;
-        for (let i = 0; i < groups.length; i++) {
-          out.push(acc);
-          acc += groups[i].length * itemLineH + (i < groups.length - 1 ? itemGap : 0);
-        }
-        return { offsets: out, total: acc };
-      };
-      const leftLayout = cumOffsets(leftWrapped);
-      const rightLayout = cumOffsets(rightWrapped);
-      const colsTotalH = Math.max(leftLayout.total, rightLayout.total, itemLineH);
-      const blockH = 80 + colsTotalH + 32;
-      // Fill layout — start near top of content zone so columns get max vertical room.
-      const blockTop = 140;
+      // Headline — placed BELOW the header zone (section label y=70, divider y=92).
+      const headlineLines = slide.headline ? wrapText(slide.headline, isRTL ? 22 : 28) : [];
+      const headLineH = 44;
+      const headlineFirstY = 130; // first baseline safely below divider at y=92
+      const headlineLastY = headlineFirstY + Math.max(0, headlineLines.length - 1) * headLineH;
+      // Column block fills the rest of the content zone down to footer clearance.
+      const blockTop = Math.max(200, headlineLastY + 30);
+      const footerClear = 120;
+      const blockH = Math.max(280, h - blockTop - footerClear);
       const headerY = blockTop + 30;
       const rowsStartY = blockTop + 80;
+      const rowsBottomY = blockTop + blockH - 32;
+      const availRowsH = Math.max(itemLineH, rowsBottomY - rowsStartY);
+      // Distribute items evenly within the available column height.
+      const distribute = (groups: string[][]) => {
+        const heights = groups.map((g) => g.length * itemLineH);
+        const baseTotal = heights.reduce((a, b) => a + b, 0);
+        const gaps = Math.max(0, groups.length - 1);
+        const extra = Math.max(0, availRowsH - baseTotal - gaps * itemGap);
+        const gap = itemGap + (gaps > 0 ? extra / gaps : 0);
+        const offsets: number[] = [];
+        let acc = 0;
+        for (let i = 0; i < groups.length; i++) {
+          offsets.push(acc);
+          acc += heights[i] + (i < groups.length - 1 ? gap : 0);
+        }
+        return { offsets, total: acc };
+      };
+      const leftLayout = distribute(leftWrapped);
+      const rightLayout = distribute(rightWrapped);
       const rightColX = cx + 30;
       const rightColW = w - edgePad - rightColX;
       const leftColX = edgePad + 20;
       const leftColW = cx - leftColX - 10;
-      // Headline centered above
-      const headlineLines = slide.headline ? wrapText(slide.headline, isRTL ? 22 : 28) : [];
-      const headLineH = 44;
       return (
         <g>
           {headlineLines.map((ln, i) => (
             <text key={`hl${i}`} x={cx}
-                  y={blockTop - 24 - (headlineLines.length - 1 - i) * headLineH}
+                  y={headlineFirstY + i * headLineH}
                   textAnchor="middle"
                   fontFamily={headingFont} fontSize={isRTL ? 34 : 38}
                   fontWeight={style.headingWeight ?? 700} fill={style.fg}>
