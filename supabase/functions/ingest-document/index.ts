@@ -355,6 +355,22 @@ async function processDocument(
       error_message: null,
     }).eq("id", document_id);
 
+    // Write to entries so document uploads count toward capture score
+    const { error: entryErr } = await adminClient
+      .from("entries")
+      .insert({
+        user_id: userId,
+        type: "document",
+        title: doc.filename || null,
+        content: (extractedText || doc.filename || "Document upload").slice(0, 10000),
+        summary: docSummary || null,
+        image_url: doc.file_url || null,
+      });
+    if (entryErr) {
+      console.error("[ingest-document] entries insert failed:", entryErr.message);
+      // Non-blocking — document processing already succeeded
+    }
+
     // Defer ALL non-essential downstream work so the document row appears `completed`
     // to the UI immediately. None of these block the perceived completion.
     // @ts-ignore EdgeRuntime.waitUntil is available in Supabase Edge Functions
