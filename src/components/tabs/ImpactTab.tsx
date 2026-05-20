@@ -2090,9 +2090,30 @@ const ScoreHero = ({
               style={{
                 fontSize: 10, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
+                display: "inline-flex", alignItems: "center", gap: 4,
               }}
             >
               of 100
+              <TooltipProvider delayDuration={150}>
+                <UiTooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="About your authority score"
+                      style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+                    >
+                      <HelpCircle size={11} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="center" className="max-w-xs text-xs">
+                    <p className="font-semibold mb-1">Authority Score</p>
+                    <p>Signal intelligence — 40%</p>
+                    <p>Content authority — 40%</p>
+                    <p>Capture consistency — 20%</p>
+                    <p className="mt-1 opacity-70">Observer → Strategist → Authority</p>
+                  </TooltipContent>
+                </UiTooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
