@@ -5,7 +5,7 @@ export const BLACKBOARD = {
   chalk: '#e8e4d9',
   chalkDim: '#9e9a8e',
   chalkFaint: '#5a5850',
-  gold: '#C5A55A',
+  gold: '#B08D3A',
   goldDim: '#8a7440',
   goldBright: '#e0c675',
   ember: '#E85D24',
@@ -18,7 +18,7 @@ export const BLACKBOARD = {
     handwritten: "'Caveat', cursive",
   },
   nodeStroke: '#5a5850',
-  nodeStrokeHighlighted: '#C5A55A',
+  nodeStrokeHighlighted: '#B08D3A',
   nodeFill: 'rgba(232,228,217,0.03)',
   nodeFillHighlighted: 'rgba(197,165,90,0.08)',
 } as const;

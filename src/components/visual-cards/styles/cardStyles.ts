@@ -42,14 +42,14 @@ export const CARD_STYLES: Record<CardStyleName, CardStyleConfig> = {
   blackboard: {
     name: 'blackboard',
     background: '#0d0d0d',
-    accent: '#C5A55A',
+    accent: '#B08D3A',
     accentBar: {
       position: 'left',
       size: 4,
       length: '100%',
-      background: 'linear-gradient(180deg, #C5A55A, #8a7440)',
+      background: 'linear-gradient(180deg, #B08D3A, #8a7440)',
     },
-    tagColor: '#C5A55A',
+    tagColor: '#B08D3A',
     tagFont: MONO,
     headlineFont: DM,
     headlineWeight: 700,

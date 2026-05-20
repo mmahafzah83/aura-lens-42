@@ -158,7 +158,7 @@ export default function TierCredentialCard({ userId, tierName, earnedAt, onShare
             flex: 1,
             padding: "12px 18px",
             borderRadius: 8,
-            background: "var(--brand, #C5A55A)",
+            background: "var(--brand, #B08D3A)",
             color: "var(--ink-on-brand, #1a160f)",
             border: "none",
             fontWeight: 600,
@@ -238,10 +238,10 @@ const CredentialCardSurface = forwardRef<HTMLDivElement, SurfaceProps>(
         }}
       >
         {/* Gold corner ornaments */}
-        <div style={{ position: "absolute", top: 24, left: 24, width: 48, height: 48, borderTop: "2px solid #C5A55A", borderLeft: "2px solid #C5A55A" }} />
-        <div style={{ position: "absolute", top: 24, right: 24, width: 48, height: 48, borderTop: "2px solid #C5A55A", borderRight: "2px solid #C5A55A" }} />
-        <div style={{ position: "absolute", bottom: 24, left: 24, width: 48, height: 48, borderBottom: "2px solid #C5A55A", borderLeft: "2px solid #C5A55A" }} />
-        <div style={{ position: "absolute", bottom: 24, right: 24, width: 48, height: 48, borderBottom: "2px solid #C5A55A", borderRight: "2px solid #C5A55A" }} />
+        <div style={{ position: "absolute", top: 24, left: 24, width: 48, height: 48, borderTop: "2px solid #B08D3A", borderLeft: "2px solid #B08D3A" }} />
+        <div style={{ position: "absolute", top: 24, right: 24, width: 48, height: 48, borderTop: "2px solid #B08D3A", borderRight: "2px solid #B08D3A" }} />
+        <div style={{ position: "absolute", bottom: 24, left: 24, width: 48, height: 48, borderBottom: "2px solid #B08D3A", borderLeft: "2px solid #B08D3A" }} />
+        <div style={{ position: "absolute", bottom: 24, right: 24, width: 48, height: 48, borderBottom: "2px solid #B08D3A", borderRight: "2px solid #B08D3A" }} />
 
         {/* Header */}
         <div>
@@ -260,7 +260,7 @@ const CredentialCardSurface = forwardRef<HTMLDivElement, SurfaceProps>(
               marginTop: 8,
               height: 2,
               width: 64,
-              background: "#C5A55A",
+              background: "#B08D3A",
             }}
           />
         </div>

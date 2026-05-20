@@ -1727,7 +1727,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <ArrowLeft className="w-4 h-4" /> Back to Publish
           </button>
           <div className="ml-auto flex items-center gap-2">
-            <Sparkles className="w-4 h-4" style={{ color: "#C5A55A" }} />
+            <Sparkles className="w-4 h-4" style={{ color: "#B08D3A" }} />
             <span className="text-sm font-medium">Carousel Studio</span>
           </div>
         </div>
@@ -1752,9 +1752,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <button key={l} onClick={() => setLang(l)}
                     className="px-3 py-1.5 rounded-full text-xs font-medium border"
                     style={{
-                      background: lang === l ? "#C5A55A" : "transparent",
+                      background: lang === l ? "#B08D3A" : "transparent",
                       color: lang === l ? "#0A0908" : "inherit",
-                      borderColor: lang === l ? "#C5A55A" : "rgba(255,255,255,0.15)",
+                      borderColor: lang === l ? "#B08D3A" : "rgba(255,255,255,0.15)",
                       fontFamily: l === "ar" ? "'Cairo', sans-serif" : undefined,
                     }}>
               {l === "ar" ? "العربية" : "English"}
@@ -1773,7 +1773,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
           />
           <button onClick={generate} disabled={generating}
                   className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-                  style={{ background: "#C5A55A", color: "#0A0908" }}>
+                  style={{ background: "#B08D3A", color: "#0A0908" }}>
             {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             Generate Carousel
           </button>
@@ -1795,7 +1795,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                          style={{ background: style.bg, color: style.fg }}>
                       {generating ? (
                         <>
-                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: "#C5A55A" }} />
+                          <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: "#B08D3A" }} />
                           <div className="text-base font-semibold mb-1">Generating your carousel…</div>
                           {topic && <div className="text-sm opacity-70 max-w-md">Creating 8 slides on: {topic}</div>}
                         </>
@@ -1821,7 +1821,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                   {slides.map((_, i) => (
                     <button key={i} onClick={() => setActiveIdx(i)}
                             className="w-2 h-2 rounded-full transition-all"
-                            style={{ background: i === activeIdx ? "#C5A55A" : "rgba(255,255,255,0.2)", width: i === activeIdx ? 18 : 8 }} />
+                            style={{ background: i === activeIdx ? "#B08D3A" : "rgba(255,255,255,0.2)", width: i === activeIdx ? 18 : 8 }} />
                   ))}
                 </div>
                 <button onClick={() => setActiveIdx(Math.min(slides.length - 1, activeIdx + 1))} disabled={activeIdx >= slides.length - 1}
@@ -1839,7 +1839,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                               style={{
                                 width: "100%", aspectRatio: `${DIM[dim].w} / ${DIM[dim].h}`,
                                 borderRadius: 8, overflow: "hidden",
-                                border: i === activeIdx ? "2px solid #C5A55A" : "1px solid rgba(255,255,255,0.1)",
+                                border: i === activeIdx ? "2px solid #B08D3A" : "1px solid rgba(255,255,255,0.1)",
                                 cursor: "pointer", padding: 0, background: "transparent", display: "block",
                               }}>
                         <SlideSVG slide={s} total={slides.length} style={style} dim={dim} carousel={carousel} lang={lang} />
@@ -1852,13 +1852,13 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                         style={{ background: "rgba(15,14,12,0.85)", border: "1px solid rgba(197,165,90,0.4)" }}
                       >
                         {regeneratingIndex === i
-                          ? <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#C5A55A" }} />
-                          : <RefreshCw className="w-3 h-3" style={{ color: "#C5A55A" }} />}
+                          ? <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#B08D3A" }} />
+                          : <RefreshCw className="w-3 h-3" style={{ color: "#B08D3A" }} />}
                       </button>
                       {regeneratingIndex === i && (
                         <div className="absolute inset-0 flex items-center justify-center rounded-lg"
                              style={{ background: "rgba(15,14,12,0.6)" }}>
-                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A55A" }} />
+                          <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#B08D3A" }} />
                         </div>
                       )}
                     </div>
@@ -1956,7 +1956,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {carousel.hashtags.map((h, i) => (
                     <span key={i} className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ background: "rgba(197,165,90,0.12)", color: "#C5A55A", border: "1px solid rgba(197,165,90,0.25)" }}>
+                          style={{ background: "rgba(197,165,90,0.12)", color: "#B08D3A", border: "1px solid rgba(197,165,90,0.25)" }}>
                       {h.startsWith("#") ? h : "#" + h}
                     </span>
                   ))}
@@ -1975,7 +1975,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             <button key={d} onClick={() => setDim(d)}
                     className="px-2.5 py-1 text-xs rounded"
                     style={{
-                      background: dim === d ? "#C5A55A" : "rgba(255,255,255,0.06)",
+                      background: dim === d ? "#B08D3A" : "rgba(255,255,255,0.06)",
                       color: dim === d ? "#0A0908" : "inherit",
                     }}>
               {d.replace("x", "×")}
@@ -1992,7 +1992,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
         </button>
         <button onClick={exportPdf} disabled={exporting}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
-                style={{ background: "#C5A55A", color: "#0A0908" }}>
+                style={{ background: "#B08D3A", color: "#0A0908" }}>
           {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} PDF
         </button>
         <button onClick={saveToLibrary} disabled={saving || savedToLibrary || !slides.length}

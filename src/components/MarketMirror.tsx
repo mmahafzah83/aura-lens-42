@@ -97,7 +97,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Eye size={16} style={{ color: "var(--brand, #C5A55A)" }} />
+          <Eye size={16} style={{ color: "var(--brand, #B08D3A)" }} />
           <h3 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 20, margin: 0 }}>
             Market Mirror
           </h3>
@@ -116,7 +116,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                 padding: "6px 10px", borderRadius: 8,
                 background: "transparent",
                 border: "1px solid var(--brand-line, rgba(197,165,90,0.3))",
-                color: canRefresh ? "var(--brand, #C5A55A)" : "var(--ink-muted, rgba(245,239,225,0.4))",
+                color: canRefresh ? "var(--brand, #B08D3A)" : "var(--ink-muted, rgba(245,239,225,0.4))",
                 fontSize: 12, cursor: canRefresh && !generating ? "pointer" : "not-allowed",
               }}
             >
@@ -143,7 +143,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
             disabled={generating || !userId}
             style={{
               padding: "10px 18px", borderRadius: 8,
-              background: "var(--brand, #C5A55A)",
+              background: "var(--brand, #B08D3A)",
               color: "var(--ink-on-brand, #1a160f)",
               border: "none", fontWeight: 600, fontSize: 13,
               cursor: generating ? "wait" : "pointer",
@@ -178,8 +178,8 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                     padding: "8px 12px",
                     background: "transparent",
                     border: "none",
-                    borderBottom: active ? "2px solid var(--brand, #C5A55A)" : "2px solid transparent",
-                    color: active ? "var(--brand, #C5A55A)" : "var(--ink, rgba(245,239,225,0.85))",
+                    borderBottom: active ? "2px solid var(--brand, #B08D3A)" : "2px solid transparent",
+                    color: active ? "var(--brand, #B08D3A)" : "var(--ink, rgba(245,239,225,0.85))",
                     fontSize: 13, fontWeight: active ? 600 : 600,
                     opacity: active ? 1 : 0.85,
                     cursor: "pointer",

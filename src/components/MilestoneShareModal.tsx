@@ -172,7 +172,7 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
               }}
             >
               {/* Top brand */}
-              <div style={{ fontSize: 9, letterSpacing: "0.2em", color: "#C5A55A", fontWeight: 600 }}>
+              <div style={{ fontSize: 9, letterSpacing: "0.2em", color: "#B08D3A", fontWeight: 600 }}>
                 AURA INTELLIGENCE
               </div>
 
@@ -196,9 +196,9 @@ const MilestoneShareModal = ({ open, onClose, data }: Props) => {
 
               {/* Bottom: gold line + name */}
               <div>
-                <div style={{ height: 1, background: "#C5A55A", width: 60, marginBottom: 12 }} />
+                <div style={{ height: 1, background: "#B08D3A", width: 60, marginBottom: 12 }} />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                  <div style={{ fontSize: 12, color: "#C5A55A" }}>
+                  <div style={{ fontSize: 12, color: "#B08D3A" }}>
                     {footerLine}
                   </div>
                   <div style={{ fontSize: 8, letterSpacing: "0.2em", color: "rgba(197,165,90,0.25)", fontWeight: 600 }}>

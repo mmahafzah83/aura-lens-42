@@ -185,7 +185,7 @@ export default function TierCeremonyModal({ userId }: Props) {
             fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
             fontSize: 28,
             lineHeight: 1.15,
-            color: "var(--brand, #C5A55A)",
+            color: "var(--brand, #B08D3A)",
             margin: "0 0 12px",
           }}
         >
@@ -235,7 +235,7 @@ export default function TierCeremonyModal({ userId }: Props) {
                   </div>
                   <div style={{
                     fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                    fontSize: 18, color: "var(--brand, #C5A55A)", lineHeight: 1,
+                    fontSize: 18, color: "var(--brand, #B08D3A)", lineHeight: 1,
                   }}>
                     {r.val}<span style={{ fontSize: 11, opacity: 0.55 }}>/{r.max}</span>
                   </div>
@@ -265,7 +265,7 @@ export default function TierCeremonyModal({ userId }: Props) {
             {topSignal.confidence > 0 && (
               <>
                 {" "}at{" "}
-                <span style={{ fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)", color: "var(--brand, #C5A55A)" }}>
+                <span style={{ fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)", color: "var(--brand, #B08D3A)" }}>
                   {Math.round(topSignal.confidence * 100)}%
                 </span>{" "}
                 confidence
@@ -281,7 +281,7 @@ export default function TierCeremonyModal({ userId }: Props) {
               flex: "1 1 200px",
               padding: "12px 18px",
               borderRadius: 8,
-              background: "var(--brand, #C5A55A)",
+              background: "var(--brand, #B08D3A)",
               color: "var(--ink-on-brand, #1a160f)",
               border: "none",
               fontWeight: 600,
@@ -342,8 +342,8 @@ function TierBadge({ tier, animate }: { tier: string; animate: boolean }) {
       <svg viewBox="0 0 128 128" width={128} height={128} aria-hidden>
         <defs>
           <radialGradient id="tier-bg" cx="50%" cy="45%" r="55%">
-            <stop offset="0%" stopColor="var(--brand, #C5A55A)" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="var(--brand, #C5A55A)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--brand, #B08D3A)" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="var(--brand, #B08D3A)" stopOpacity="0" />
           </radialGradient>
         </defs>
         <circle cx="64" cy="64" r="60" fill="url(#tier-bg)" />
@@ -352,7 +352,7 @@ function TierBadge({ tier, animate }: { tier: string; animate: boolean }) {
           cy="64"
           r="52"
           fill="none"
-          stroke="var(--brand, #C5A55A)"
+          stroke="var(--brand, #B08D3A)"
           strokeWidth="1.5"
           opacity="0.85"
         />
@@ -361,7 +361,7 @@ function TierBadge({ tier, animate }: { tier: string; animate: boolean }) {
           cy="64"
           r="44"
           fill="none"
-          stroke="var(--brand, #C5A55A)"
+          stroke="var(--brand, #B08D3A)"
           strokeWidth="0.75"
           opacity="0.5"
         />
@@ -371,7 +371,7 @@ function TierBadge({ tier, animate }: { tier: string; animate: boolean }) {
           textAnchor="middle"
           fontFamily="var(--font-display, 'Cormorant Garamond', serif)"
           fontSize="22"
-          fill="var(--brand, #C5A55A)"
+          fill="var(--brand, #B08D3A)"
           letterSpacing="2"
         >
           {tier.toUpperCase()}
@@ -415,7 +415,7 @@ function StatBox({ value, label }: { value: number; label: string }) {
         style={{
           fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
           fontSize: 24,
-          color: "var(--brand, #C5A55A)",
+          color: "var(--brand, #B08D3A)",
           lineHeight: 1,
         }}
       >

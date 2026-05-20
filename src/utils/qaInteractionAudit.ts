@@ -669,7 +669,7 @@ function auditLoadingStates(results: QaResult[], doc: Document) {
       status: "warn",
       details: {
         description: `${badSpinners.length} spinners not using brand bronze`,
-        expected: "Brand bronze (#C5A55A) or ink",
+        expected: "Brand bronze (#B08D3A) or ink",
         actual: "off-brand color",
         samples: badSpinners.slice(0, 5),
         severity: "low",

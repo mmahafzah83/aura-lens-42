@@ -98,7 +98,7 @@ function applyTokens(tokens: DesignTokens, theme: "dark" | "light") {
     const b = parseInt(h.slice(4, 6), 16);
     root.style.setProperty("--brand-rgb", `${r}, ${g}, ${b}`);
   } else if (!getComputedStyle(root).getPropertyValue("--brand-rgb").trim()) {
-    // Bronze fallback (#C5A55A)
+    // Bronze fallback (#B08D3A)
     root.style.setProperty("--brand-rgb", "197, 165, 90");
   }
 

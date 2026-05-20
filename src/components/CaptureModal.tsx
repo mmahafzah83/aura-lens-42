@@ -522,7 +522,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 style={{
                   background: "var(--ink, #1C1812)",
                   color: "var(--ink-on-brand, #f5efe1)",
-                  border: "1px solid var(--brand, #C5A55A)",
+                  border: "1px solid var(--brand, #B08D3A)",
                   borderRadius: 12,
                   padding: "14px 18px",
                   boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
@@ -535,7 +535,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     fontSize: 18,
                     lineHeight: 1.25,
                     marginBottom: 4,
-                    color: "var(--brand, #C5A55A)",
+                    color: "var(--brand, #B08D3A)",
                   }}
                 >
                   Your intelligence system is now active.
@@ -563,7 +563,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 maxWidth: 380,
               }}
             >
-              <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #C5A55A)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #B08D3A)", fontWeight: 600, marginBottom: 6 }}>
                 ✦ Captured
               </div>
               <div style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.9 }}>
