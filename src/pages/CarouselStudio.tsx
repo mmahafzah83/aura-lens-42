@@ -1481,10 +1481,11 @@ export default function CarouselStudio() {
         ...data,
         slides: numbered,
         total_slides: numbered.length,
-        // Always overwrite EF-returned author with the current user's profile to prevent leakage.
-        author_name: authorDefaults.name || data.author_name || "",
-        author_title: authorDefaults.title || data.author_title || "",
-        author_handle: authorDefaults.handle || data.author_handle || "",
+        // EF reads from the same diagnostic_profiles row, so prefer its value;
+        // fall back to the locally-prefilled defaults if the EF returned nothing.
+        author_name: data.author_name || authorDefaults.name || "",
+        author_title: data.author_title || authorDefaults.title || "",
+        author_handle: data.author_handle || authorDefaults.handle || "",
       });
       // Auto-collapse signals once a real carousel is loaded
       setShowSignals(false);
