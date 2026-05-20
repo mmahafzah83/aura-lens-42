@@ -96,7 +96,7 @@ const buildEmailHtml = (BRAND: string) => {
     <div style="padding:24px 40px;">
       <p style="font-size:12px;color:#8a8a8a;line-height:1.6;margin:0 0 16px;word-break:break-all;">If the button doesn't work, paste this link:<br><a href="{{CONFIRMATION_URL}}" style="color:${BRAND};">{{CONFIRMATION_URL}}</a></p>
       <p style="font-size:13px;line-height:1.7;color:#bdbdbd;margin:0 0 18px;">Questions or feedback — reply directly. This email reaches me, not a support queue.</p>
-      <p style="font-size:14px;line-height:1.6;color:#ededed;margin:0 0 14px;">Mohammad Mahafzah<br><span style="color:#8a8a8a;">Building Aura · <a href="https://aura-intel.org" style="color:#8a8a8a;text-decoration:none;">aura-intel.org</a></span></p>
+      <p style="font-size:14px;line-height:1.6;color:#ededed;margin:0 0 14px;">Mohammad Mahafdhah<br><span style="color:#8a8a8a;">Building Aura · <a href="https://aura-intel.org" style="color:#8a8a8a;text-decoration:none;">aura-intel.org</a></span></p>
       <p style="font-size:11px;letter-spacing:1.5px;color:#8a8a8a;margin:0;">Strategic Intelligence · Private Beta</p>
     </div>
 
