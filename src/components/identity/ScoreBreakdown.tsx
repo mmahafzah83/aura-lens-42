@@ -70,7 +70,7 @@ export default function ScoreBreakdown({ userId }: Props) {
                 <Info className="w-3.5 h-3.5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-xs text-xs">
+            <TooltipContent side="bottom" align="end" className="max-w-xs text-xs">
               <p><strong>Signal (40%)</strong>: intelligence depth from captures.</p>
               <p className="mt-1"><strong>Content (40%)</strong>: imports give baseline max 30, new posts give max 70.</p>
               <p className="mt-1"><strong>Consistency (20%)</strong>: weekly capture streak over 4 weeks.</p>

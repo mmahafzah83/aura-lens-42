@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -13,6 +13,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { safeQuery } from "@/lib/safeQuery";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import InfoTooltip from "@/components/ui/InfoTooltip";
+import {
+  Tooltip as UiTooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { useCountUp } from "@/hooks/useCountUp";
 import { runPostImportPipeline, type PipelineState, PIPELINE_LABELS } from "@/lib/runPostImportPipeline";
@@ -1934,7 +1940,6 @@ const ForceCard = ({
   const raw = Math.max(0, Math.min(100, Math.round(rawValue)));
   const weighted = Math.round(raw * weight);
   const pct = (weighted / maxPoints) * 100;
-  const [showTip, setShowTip] = useState(false);
   return (
     <div
       style={{
@@ -1956,17 +1961,22 @@ const ForceCard = ({
           >
             {label}
           </div>
-          <button
-            type="button"
-            onMouseEnter={() => setShowTip(true)}
-            onMouseLeave={() => setShowTip(false)}
-            onFocus={() => setShowTip(true)}
-            onBlur={() => setShowTip(false)}
-            aria-label={`${label} info`}
-            style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
-          >
-            <Info size={12} />
-          </button>
+          <TooltipProvider delayDuration={150}>
+            <UiTooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`${label} info`}
+                  style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+                >
+                  <Info size={12} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="start" className="max-w-xs text-xs">
+                {tooltip}
+              </TooltipContent>
+            </UiTooltip>
+          </TooltipProvider>
         </div>
         <div
           className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -1975,20 +1985,6 @@ const ForceCard = ({
           {status}
         </div>
       </div>
-      {showTip && (
-        <div
-          role="tooltip"
-          style={{
-            position: "absolute", top: -8, left: 12, transform: "translateY(-100%)",
-            background: "var(--aura-card)", color: "var(--aura-t1)",
-            border: "1px solid var(--aura-border)", borderRadius: 8,
-            padding: "8px 10px", fontSize: 11, lineHeight: 1.45,
-            width: 230, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          {tooltip}
-        </div>
-      )}
       <div
         className="tabular-nums mt-1 inline-flex items-baseline gap-1.5"
         style={{
@@ -2094,9 +2090,30 @@ const ScoreHero = ({
               style={{
                 fontSize: 10, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
+                display: "inline-flex", alignItems: "center", gap: 4,
               }}
             >
               of 100
+              <TooltipProvider delayDuration={150}>
+                <UiTooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="About your authority score"
+                      style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+                    >
+                      <HelpCircle size={11} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="center" className="max-w-xs text-xs">
+                    <p className="font-semibold mb-1">Authority Score</p>
+                    <p>Signal intelligence — 40%</p>
+                    <p>Content authority — 40%</p>
+                    <p>Capture consistency — 20%</p>
+                    <p className="mt-1 opacity-70">Observer → Strategist → Authority</p>
+                  </TooltipContent>
+                </UiTooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
@@ -2202,7 +2219,6 @@ const PillarCard = ({
   tooltip: { what: string; how: string; improve: string };
   dots?: number;
 }) => {
-  const [show, setShow] = useState(false);
   return (
     <div
       style={{
@@ -2218,34 +2234,25 @@ const PillarCard = ({
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
           {label}
         </div>
-        <button
-          type="button"
-          onMouseEnter={() => setShow(true)}
-          onMouseLeave={() => setShow(false)}
-          onFocus={() => setShow(true)}
-          onBlur={() => setShow(false)}
-          aria-label={`${label} info`}
-          style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
-        >
-          <Info size={12} />
-        </button>
+        <TooltipProvider delayDuration={150}>
+          <UiTooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={`${label} info`}
+                style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+              >
+                <Info size={12} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end" className="max-w-xs text-xs">
+              {tooltip.what && <p><b style={{ color }}>What:</b> {tooltip.what}</p>}
+              {tooltip.how && <p className="mt-1"><b style={{ color }}>How:</b> {tooltip.how}</p>}
+              {tooltip.improve && <p className="mt-1"><b style={{ color }}>Improve:</b> {tooltip.improve}</p>}
+            </TooltipContent>
+          </UiTooltip>
+        </TooltipProvider>
       </div>
-      {show && (
-        <div
-          role="tooltip"
-          style={{
-            position: "absolute", top: -8, right: 12, transform: "translateY(-100%)",
-            background: "var(--aura-card)", color: "var(--aura-t1)",
-            border: "1px solid var(--aura-border)", borderRadius: 8,
-            padding: "10px 12px", fontSize: 11, lineHeight: 1.5,
-            width: 240, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          <div style={{ marginBottom: 4 }}><b style={{ color }}>What:</b> {tooltip.what}</div>
-          <div style={{ marginBottom: 4 }}><b style={{ color }}>How:</b> {tooltip.how}</div>
-          <div><b style={{ color }}>Improve:</b> {tooltip.improve}</div>
-        </div>
-      )}
       <div
         className="tabular-nums mt-1"
         style={{

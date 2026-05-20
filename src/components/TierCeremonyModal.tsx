@@ -67,6 +67,7 @@ export default function TierCeremonyModal({ userId }: Props) {
 
   const [stats, setStats] = useState<{ signals: number; posts: number; weeks: number } | null>(null);
   const [topSignal, setTopSignal] = useState<{ title: string; confidence: number } | null>(null);
+  const [scoreBreakdown, setScoreBreakdown] = useState<{ signal: number; content: number; capture: number } | null>(null);
   const [mounted, setMounted] = useState(false);
   const [showCredential, setShowCredential] = useState(false);
 
@@ -75,7 +76,7 @@ export default function TierCeremonyModal({ userId }: Props) {
     let cancelled = false;
     (async () => {
       const twelveWeeksAgo = new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString();
-      const [{ count: sigCount }, { count: postCount }, { data: entries }, { data: sigTop }] = await Promise.all([
+      const [{ count: sigCount }, { count: postCount }, { data: entries }, { data: sigTop }, { data: latestSnapshot }] = await Promise.all([
         supabase.from("strategic_signals").select("id", { count: "exact", head: true })
           .eq("user_id", userId).eq("status", "active"),
         supabase.from("linkedin_posts").select("id", { count: "exact", head: true })
@@ -84,6 +85,12 @@ export default function TierCeremonyModal({ userId }: Props) {
         supabase.from("strategic_signals").select("signal_title,confidence")
           .eq("user_id", userId).eq("status", "active")
           .order("confidence", { ascending: false }).limit(1).maybeSingle(),
+        (supabase.from("score_snapshots") as any)
+          .select("components")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
       ]);
       if (cancelled) return;
 
@@ -96,6 +103,12 @@ export default function TierCeremonyModal({ userId }: Props) {
 
       const ctx = (tierMilestone.context || {}) as any;
       setStats({ signals: sigCount ?? 0, posts: postCount ?? 0, weeks: weeks.size });
+      const comp = (latestSnapshot as any)?.components || {};
+      setScoreBreakdown({
+        signal: Math.round((Number(comp.signal_score) || 0) * 0.4),
+        content: Math.round((Number(comp.content_score) || 0) * 0.4),
+        capture: Math.round((Number(comp.capture_score) || 0) * 0.2),
+      });
       const t = sigTop as any;
       setTopSignal(
         t?.signal_title
@@ -191,6 +204,52 @@ export default function TierCeremonyModal({ userId }: Props) {
         </p>
 
         <StatsRow stats={stats} animate={mounted} />
+
+        {scoreBreakdown && (
+          <div style={{ marginTop: 20, textAlign: "left" }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase",
+              color: "var(--ink-muted, rgba(245,239,225,0.6))", fontWeight: 600,
+              marginBottom: 10, textAlign: "center",
+            }}>
+              What earned this tier
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {[
+                { label: "Signal", val: scoreBreakdown.signal, max: 40 },
+                { label: "Content", val: scoreBreakdown.content, max: 40 },
+                { label: "Consistency", val: scoreBreakdown.capture, max: 20 },
+              ].map((r) => (
+                <div key={r.label} style={{
+                  padding: "10px 8px",
+                  background: "rgba(197,165,90,0.04)",
+                  border: "1px solid var(--brand-line, rgba(197,165,90,0.15))",
+                  borderRadius: 8,
+                  textAlign: "center",
+                }}>
+                  <div style={{
+                    fontSize: 10, color: "var(--ink-muted, rgba(245,239,225,0.65))",
+                    letterSpacing: 0.3, marginBottom: 4,
+                  }}>
+                    {r.label}
+                  </div>
+                  <div style={{
+                    fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+                    fontSize: 18, color: "var(--brand, #C5A55A)", lineHeight: 1,
+                  }}>
+                    {r.val}<span style={{ fontSize: 11, opacity: 0.55 }}>/{r.max}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              fontSize: 11, color: "var(--ink-muted, rgba(245,239,225,0.55))",
+              textAlign: "center", marginTop: 10,
+            }}>
+              {copy.name} requires {copy.name === "Authority" ? "65" : copy.name === "Strategist" ? "35" : "0"}+ points
+            </div>
+          </div>
+        )}
 
         {topSignal && (
           <p
