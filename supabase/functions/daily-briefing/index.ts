@@ -24,7 +24,6 @@ const HIGH_AUTHORITY_SOURCES = [
   "MEWA (Ministry of Environment, Water and Agriculture)",
   "SWA (Saudi Water Authority)",
   "NWC (National Water Company)",
-  "EY",
   "McKinsey",
   "PIF (Public Investment Fund)",
   "Deloitte Insights",
@@ -101,7 +100,7 @@ Deno.serve(async (req) => {
     // Fetch profile
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("generated_skills, skill_ratings, sector_focus, core_practice, years_experience, brand_pillars")
+      .select("generated_skills, skill_ratings, sector_focus, core_practice, years_experience, brand_pillars, firm")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -110,6 +109,11 @@ Deno.serve(async (req) => {
     const sectorFocus = (profile as any)?.sector_focus || "Consulting";
     const corePractice = (profile as any)?.core_practice || "Strategy";
     const brandPillars = (profile as any)?.brand_pillars || [];
+    const userFirm = ((profile as any)?.firm || "").trim();
+    // Prepend user's firm so model treats it as a high-authority source for them.
+    const authoritySources = userFirm
+      ? [userFirm, ...HIGH_AUTHORITY_SOURCES]
+      : HIGH_AUTHORITY_SOURCES;
 
     // Intelligence boosts
     const { data: intelligence } = await supabase
@@ -178,7 +182,7 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `You are a market intelligence analyst. Return a JSON object with: {"title": "headline", "source": "publisher", "url": "direct article URL (not a homepage)", "summary": "2-sentence summary"}. Focus on ${sectorFocus} sector from sources like ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")}. CRITICAL: The URL must be a direct link to a specific article page, NOT a homepage or category page. Only include content from 2026.`,
+                content: `You are a market intelligence analyst. Return a JSON object with: {"title": "headline", "source": "publisher", "url": "direct article URL (not a homepage)", "summary": "2-sentence summary"}. Focus on ${sectorFocus} sector from sources like ${authoritySources.slice(0, 8).join(", ")}. CRITICAL: The URL must be a direct link to a specific article page, NOT a homepage or category page. Only include content from 2026.`,
               },
               { role: "user", content: searchQuery },
             ],

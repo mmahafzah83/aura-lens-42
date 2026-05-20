@@ -54,8 +54,10 @@ function extract(post_text: string) {
   return { headline, core_insight, key_stat };
 }
 
-function buildPrompt(style: string, vars: { headline: string; core_insight: string; key_stat: string; sector_context: string; brandAccent: string; brandGold: string }) {
-  const { headline, core_insight, key_stat, sector_context, brandAccent, brandGold } = vars;
+function buildPrompt(style: string, vars: { headline: string; core_insight: string; key_stat: string; sector_context: string; brandAccent: string; brandGold: string; authorName: string; authorFirm: string; authorTitle: string; authorHandle: string; followCta: string }) {
+  const { headline, core_insight, key_stat, sector_context, brandAccent, brandGold, authorName, authorFirm, authorTitle, authorHandle, followCta } = vars;
+  const sigLeft = [authorName, authorFirm].filter(Boolean).join(" | ");
+  const sigRight = authorHandle ? `${followCta} @${authorHandle}` : followCta;
   switch (style) {
     case "comparison":
       return `Create a professional Arabic LinkedIn infographic card in portrait format (4:5 ratio).
@@ -67,7 +69,7 @@ Design a split-screen comparison layout:
 - Center divider: vertical accent line (${brandAccent}) with arrow pointing right
 - Top title: "${headline}" in large bold Arabic text, centered, white
 - Subtitle: "${sector_context}" in smaller gold text (${brandGold})
-- Bottom signature bar: dark strip, left side "Mohammad Mahafzah | EY" in white, right side LinkedIn icon + "تابعني على LinkedIn" in small text
+- Bottom signature bar: dark strip, left side "${sigLeft}" in white, right side LinkedIn icon + "${sigRight}" in small text
 - Colors: background #0d0d0d, accents ${brandAccent} and ${brandGold}
 - All Arabic text must be legible, RTL, modern sans-serif font
 - NO stock photos. Flat design. Professional infographic style.
@@ -82,7 +84,7 @@ Design a numbered framework breakdown card:
 - Each point separated by subtle divider line
 - Right edge: thin vertical accent bar (${brandAccent}) the full height of content area
 - Bottom: key insight or conclusion from the post in italic gold text (${brandGold})
-- Bottom signature bar: "Mohammad Mahafzah | EY" left, "تابعني على LinkedIn" right
+- Bottom signature bar: "${sigLeft}" left, "${sigRight}" right
 - Style: clean, structured, editorial. No photos. Modern flat design.
 - Content extracted from: ${core_insight}`;
     case "stat":
@@ -95,7 +97,7 @@ Design a bold statement card centered on a key statistic:
 - Below label: 2-3 short insight lines from post_text in smaller white text
 - Bottom closing question or insight from post in gold italic text (${brandGold})
 - Minimal geometric accent: single horizontal accent line (${brandAccent}) or corner bracket
-- Bottom signature bar: "Mohammad Mahafzah | EY" left, "تابعني على LinkedIn" right
+- Bottom signature bar: "${sigLeft}" left, "${sigRight}" right
 - No photos. Typography-first design. Maximum visual impact.
 - Content from: ${core_insight}, stat: ${key_stat}`;
     case "quote":
@@ -107,7 +109,7 @@ Design a bold typographic quote card:
 - Thin accent horizontal line (${brandAccent}) below the quote
 - Below line: 2-3 supporting lines of context from the post, smaller white text
 - Topic tag: "${sector_context}" as a small accent pill badge (${brandAccent}), top left
-- Bottom signature: "Mohammad Mahafzah" large, "Senior Manager | EY" smaller gold, LinkedIn icon + "تابعني على LinkedIn"
+- Bottom signature: "${authorName}" large, "${[authorTitle, authorFirm].filter(Boolean).join(' | ')}" smaller gold, LinkedIn icon + "${sigRight}"
 - Style: premium, editorial, dark luxury. No photos. Typography only.
 - Quote extracted from: ${headline}, context from: ${core_insight}`;
     case "pattern":
@@ -183,6 +185,35 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
+    // Resolve author from authenticated user's profile
+    let authorName = "";
+    let authorFirm = "";
+    let authorTitle = "";
+    let authorHandle = "";
+    try {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        const anon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user } } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
+        if (user) {
+          const { data: profile } = await admin
+            .from("diagnostic_profiles")
+            .select("first_name, last_name, level, firm, sector_focus, linkedin_handle")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          const p = (profile as any) || {};
+          authorName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+          authorFirm = p.firm || "";
+          authorTitle = p.level || "";
+          authorHandle = (p.linkedin_handle || "").replace(/^@/, "");
+        }
+      }
+    } catch (e) {
+      console.warn("[generate-flash-image] profile lookup failed:", e);
+    }
+
     const { data: dsRow } = await admin
       .from('design_system')
       .select('tokens')
@@ -200,9 +231,10 @@ serve(async (req) => {
 
     const { headline, core_insight, key_stat } = extract(post_text || "");
     const sector_context = String(sector || "").trim();
+    const followCta = String(lang || "en").toLowerCase().startsWith("ar") ? "تابعني على LinkedIn" : "Follow on LinkedIn";
 
     const promises = styles.map(style => {
-      const prompt = buildPrompt(style, { headline, core_insight, key_stat, sector_context, brandAccent: BRAND_ACCENT, brandGold: BRAND_GOLD });
+      const prompt = buildPrompt(style, { headline, core_insight, key_stat, sector_context, brandAccent: BRAND_ACCENT, brandGold: BRAND_GOLD, authorName, authorFirm, authorTitle, authorHandle, followCta });
       return generateOne(style, prompt, OPENAI_API_KEY);
     });
 

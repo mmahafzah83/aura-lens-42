@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
 
     const { data: fw } = await adminClient
       .from("master_frameworks")
-      .select("diagram_description, title, framework_steps, summary")
+      .select("diagram_description, title, framework_steps, summary, user_id")
       .eq("id", framework_id)
       .single();
 
@@ -118,6 +118,21 @@ Deno.serve(async (req) => {
     const steps = (fw.framework_steps as any[]) || [];
     stepsText = steps.map((s: any) => `${s.step_number}. ${s.step_title}: ${s.step_description || ""}`).join("\n");
     diagramDesc = diagramDesc || fw.diagram_description;
+
+    // Resolve author signature from owner profile
+    let authorFooter = "";
+    try {
+      const { data: profile } = await adminClient
+        .from("diagnostic_profiles")
+        .select("first_name, last_name, level, firm, sector_focus, linkedin_handle")
+        .eq("user_id", (fw as any).user_id)
+        .maybeSingle();
+      const p = (profile as any) || {};
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      authorFooter = [name, p.level, p.firm || p.sector_focus].filter(Boolean).join(" | ");
+    } catch (e) {
+      console.warn("[generate-framework-diagram] profile lookup failed:", e);
+    }
 
     // ── Step 1: Use AI to select the best archetype and style ──
     const archetypeSelectionPrompt = `You are a strategic visual design expert. Analyze this framework and select the BEST diagram archetype and visual style.
@@ -239,7 +254,7 @@ Layout guidance: ${dd.layout_notes || "Clean, balanced spacing with clear visual
 
 === FOOTER SIGNATURE (max 6% of image height, at very bottom) ===
 Slim footer on the same dark background:
-Left: "M. Mahafzah | Business & Digital Transformation Architect | Energy & Utilities"
+Left: "${authorFooter}"
 Right: "→ Share this Framework"
 Footer must blend seamlessly with the diagram background — no solid bars or blocks.`;
 
