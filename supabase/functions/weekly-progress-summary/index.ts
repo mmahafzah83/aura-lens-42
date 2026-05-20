@@ -11,6 +11,13 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") ||
+      (req.headers.get("Authorization") || "").replace("Bearer ", "");
+    if (!serviceKey || apiKey !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // Get all users with diagnostic profiles
