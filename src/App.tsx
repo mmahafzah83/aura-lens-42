@@ -1,27 +1,30 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import LinkedInCallback from "./pages/LinkedInCallback";
-import TrendDetail from "./pages/TrendDetail";
 import RequestAccess from "./pages/RequestAccess";
-import Admin from "./pages/Admin";
-import AdminDesignSystem from "./pages/AdminDesignSystem";
-import AdminExperience from "./pages/AdminExperience";
-import AdminQA from "./pages/AdminQA";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
-import CarouselStudio from "./pages/CarouselStudio";
 import PasswordGate from "./components/PasswordGate";
 import { ThemeProvider } from "./components/ThemeProvider";
+
+// Lazy-loaded heavy / rarely-visited routes
+const Landing = lazy(() => import("./pages/Landing"));
+const TrendDetail = lazy(() => import("./pages/TrendDetail"));
+const CarouselStudio = lazy(() => import("./pages/CarouselStudio"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminDesignSystem = lazy(() => import("./pages/AdminDesignSystem"));
+const AdminExperience = lazy(() => import("./pages/AdminExperience"));
+const AdminQA = lazy(() => import("./pages/AdminQA"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +46,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
@@ -63,6 +67,7 @@ const App = () => (
             <Route path="/carousel-studio" element={<PasswordGate><CarouselStudio /></PasswordGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
       </ThemeProvider>
