@@ -1922,10 +1922,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         )
       )}
       <div data-testid="home-moves">
-      <SectionHeader
-        label="RECOMMENDED MOVES"
-        subtitle="Actions Aura suggests based on your latest signals"
-      />
       {(() => {
         const alarmFresh = competitorAlert && !alarmDismissed &&
           (Date.now() - new Date(competitorAlert.fetchedAt).getTime()) < 48 * 3_600_000;
