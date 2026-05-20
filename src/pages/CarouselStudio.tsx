@@ -697,7 +697,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
     case "BIG_NUMBER": {
       return (
         <g>
-      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={style.headingWeight ?? 700} fill={style.accent} direction="ltr">
+      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
           {slide.number_context && (
