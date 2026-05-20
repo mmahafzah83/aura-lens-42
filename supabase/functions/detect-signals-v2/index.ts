@@ -372,6 +372,21 @@ ${identityCtx}`;
       isNew = true;
     }
 
+    // Trigger score recalc in background (non-blocking)
+    try {
+      // @ts-ignore EdgeRuntime is available in Supabase Edge
+      EdgeRuntime.waitUntil((async () => {
+        try {
+          await admin.functions.invoke("calculate-aura-score", {
+            body: { user_id },
+          });
+          console.log(`[detect-signals-v2] score recalc triggered for ${user_id}`);
+        } catch (e) {
+          console.error(`[detect-signals-v2] score recalc failed (non-blocking):`, e);
+        }
+      })());
+    } catch (_) { /* EdgeRuntime not available */ }
+
     return new Response(JSON.stringify({
       success: true,
       signal_id: primarySignalId,
