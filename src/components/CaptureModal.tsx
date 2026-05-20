@@ -358,24 +358,18 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         // Fire-and-forget signal detection
         if (entryRow?.id) {
           supabase.functions
-            .invoke("detect-signals-v2", {
-              body: { entry_id: entryRow.id, user_id: session.user.id },
+            .invoke("extract-evidence", {
+              body: { source_type: "entry", source_id: entryRow.id, user_id: session.user.id },
             })
-            .then(({ data: result, error }) => {
+            .then(({ error }) => {
               if (error) {
-                console.error("detect-signals-v2 (voice) error:", error);
+                console.error("[voice] extract-evidence error:", error);
                 return;
-              }
-              if (result?.is_new) {
-                sonnerToast("New signal detected from your voice note", {
-                  position: "bottom-right",
-                  duration: 3000,
-                });
               }
               queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
               queryClient.invalidateQueries({ queryKey: ["signals"] });
             })
-            .catch((err) => console.error("detect-signals-v2 (voice) exception:", err));
+            .catch((err) => console.error("[voice] extract-evidence failed:", err));
         }
       } catch (err: any) {
         toast({
