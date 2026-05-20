@@ -76,9 +76,6 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-
     const authHeader = req.headers.get("Authorization");
     const token = authHeader?.replace("Bearer ", "") || null;
     const frameworkDigest = await fetchFrameworks(token);
@@ -232,7 +229,7 @@ FINAL RULE:
     const sysPrompt = systemPrompts[type as string] || systemPrompts["default"];
     const userPrompt = userPrompts[type as string] || userPrompts["default"];
 
-    const draft = await callAI(LOVABLE_API_KEY, sysPrompt, userPrompt);
+    const draft = await callAI("", sysPrompt, userPrompt);
 
     let finalPost = draft;
     if (frameworkDigest && !["weekly-memo", "directors-insight-en"].includes(type as string)) {
@@ -253,7 +250,7 @@ ${frameworkDigest}
 === END FRAMEWORKS ===`;
 
       const auditPrompt = `Audit and correct this LinkedIn draft:\n\n${draft}`;
-      finalPost = await callAI(LOVABLE_API_KEY, auditSystem, auditPrompt);
+      finalPost = await callAI("", auditSystem, auditPrompt);
     }
 
     // Strip any hashtags the model may have added despite instructions
