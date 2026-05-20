@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     // Fetch profile
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("generated_skills, skill_ratings, sector_focus, core_practice, years_experience, brand_pillars")
+      .select("generated_skills, skill_ratings, sector_focus, core_practice, years_experience, brand_pillars, firm")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -109,6 +109,11 @@ Deno.serve(async (req) => {
     const sectorFocus = (profile as any)?.sector_focus || "Consulting";
     const corePractice = (profile as any)?.core_practice || "Strategy";
     const brandPillars = (profile as any)?.brand_pillars || [];
+    const userFirm = ((profile as any)?.firm || "").trim();
+    // Prepend user's firm so model treats it as a high-authority source for them.
+    const authoritySources = userFirm
+      ? [userFirm, ...HIGH_AUTHORITY_SOURCES]
+      : HIGH_AUTHORITY_SOURCES;
 
     // Intelligence boosts
     const { data: intelligence } = await supabase
