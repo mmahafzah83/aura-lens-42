@@ -65,6 +65,13 @@ serve(async (req) => {
     const authorFullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || "Author";
     const authorTitle = [p.level, p.firm].filter(Boolean).join(" · ").trim();
 
+    // Fetch voice profile (learning engine)
+    const { data: voiceProfile } = await supabase
+      .from("authority_voice_profiles")
+      .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences, example_posts")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
     const isArabic = lang === "ar";
 
     const systemPrompt = `You are the #1 LinkedIn carousel ghostwriter. Your carousels average 8,000+ saves and 200,000+ impressions. You write for C-suite executives in the GCC — people who've seen every framework and buzzword. Your job: make them stop scrolling and save.
@@ -207,102 +214,168 @@ WRAPPER:
   signal_attribution: string|null
 }
 
-${isArabic ? `Write ALL carousel content in Arabic. Follow these rules with ZERO exceptions:
+${isArabic ? `═══ ARABIC CAROUSEL CONTENT — COMPLETE INSTRUCTIONS ═══
 
-═══ ARABIC LANGUAGE REGISTER ═══
-Use فصحى معاصرة (contemporary professional Arabic) — NOT stiff bureaucratic MSA, NOT dialect. The register Arab C-suite executives use in boardrooms. Natural, direct, authoritative.
-GOOD: «المشكلة ليست في غياب البيانات. المشكلة في أن أحداً لا يثق فيها.»
-BAD: «إن التحديات التي تواجه المؤسسات في مجال إدارة البيانات تتطلب...» (too academic)
-BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
+You are writing for a senior GCC executive's LinkedIn carousel. Your Arabic is not translated English — it's the language of a confident Director who speaks to peers over coffee. Sharp. Direct. Rhythmic. Every line lands like a slide in a premium consulting deck.
 
-═══ ARABIC CONTENT RULES ═══
-1. SHORT LINES creating rhythm and tension. One idea per line. Arabic on LinkedIn needs even MORE whitespace than English.
-2. Technical terms stay in English (Latin script): AI, IoT, KPI, dashboard, smart meter, SCADA, ERP, CRM, SaaS. Never translate these.
-3. ONE specific number mid-carousel (BIG_NUMBER slide). Use Western numerals (86%) for LinkedIn readability.
-4. Closing QUESTION slide: uncomfortable, sector-specific, painful — never generic.
-5. Arabic quote marks: use «» not "".
-6. Formatting markers: ◆ main points, ↳ sub-points (in GRID/LIST only).
-7. CTA in Arabic ("احفظ هذا المنشور"). The author handle is injected by the renderer — do not hardcode any specific handle in slide text.
-8. section_label may be Arabic ("البيانات", "الاستراتيجية", "التحول", "نداء للعمل") or English if industry-standard ("ROI", "KPI"). Still must be unique and topic-specific (never the slide_type name).
+═══ THE WRITING DNA (NON-NEGOTIABLE) ═══
 
-═══ ARABIC VOICE CALIBRATION ═══
-- Blunt truth-telling: open with what others avoid saying
-- Single-line rhythm, one thought per line
-- Contradictory pairs: "ليس ... بل ..." or "المشكلة ليست في ... بل في ..."
-- Specific numbers AFTER tension, not before
-- Uncomfortable closing question, sector-specific
-- GCC utilities, digital transformation, IT/OT convergence, Vision 2030
+1. SINGLE-LINE BREATHING: One idea per line. Maximum 8 Arabic words per visual line. Lines are short. The whitespace IS the design.
 
-═══ ARABIC WORD LIMITS (TIGHTER — Arabic renders WIDER) ═══
+2. THE ".." PAUSE: Use ".." between thoughts to create a contemplative rhythm. Not a full stop. A breath. A beat before the insight.
+   ✅ "البيانات موجودة.. القرار غائب."
+   ✗ "البيانات موجودة. القرار غائب."
+
+3. ENGLISH TERMS STAY ENGLISH — but follow these BiDi rules:
+   - NEVER attach an Arabic preposition directly to an English word
+     ✗ "بـ AI" or "لـ SCADA"
+     ✅ "باستخدام AI" or "عبر نظام SCADA"
+   - Place English terms at LINE START or after ".." pause — never mid-sentence
+     ✗ "تحليل البيانات عبر Generative AI المعقدة"
+     ✅ "Generative AI يختصر أسابيع التحليل.. إلى ساعات"
+   - First mention: Arabic explanation + English term in parentheses
+     ✅ "الذكاء الاصطناعي التوليدي (Generative AI)"
+   - After first mention: English term alone is fine
+     ✅ "AI يختصر.. لا يُلغي"
+   - Keep as English WITHOUT translation: AI, SCADA, GIS, KPI, dashboard, IoT, AMI, NRW, SLA, CIS, ERP
+
+4. TONE = عامية مهنية (professional-colloquial), NOT فصحى textbook:
+   ✅ "من يفهم أولاً.. يفوز" (coffee-talk directness)
+   ✗ "المنافس الذي يفهم السوق أولاً يفوز" (translated English structure)
+   ✅ "البيانات وحدها لا تكفي" (short, punchy)
+   ✗ "تُعيد كتابة قواعد الذكاء التنافسي الاستراتيجي" (bureaucratic فصحى)
+
+5. REFRAME HOOKS: Use the "السؤال الحقيقي ليس... بل..." pattern:
+   ✅ "السؤال ليس هل تملك بيانات.. بل هل تملك قراراً"
+   ✅ "المشكلة ليست في غياب التقنية.. بل في غياب الربط"
+
+6. EMOTIONAL CRESCENDO for lists: Each item builds weight. No bullets. Each item is a standalone line that hits harder than the previous one.
+
+═══ CONCRETE EXAMPLES PER SLIDE TYPE ═══
+
+COVER — the hook. 4-6 Arabic words. Provocative. Personal.
+  ✅ headline: "أنفقنا الملايين.. والنتيجة؟"
+  ✅ headline: "التحول الرقمي يبدأ من القرار"
+  ✅ body: "ما لا يقوله تقرير الأداء."
+  ✗ headline: "نظرة شاملة على التحول الرقمي في قطاع المياه" (too long, too formal)
+
+REFRAME — myth vs truth. Myth = what everyone believes. Truth = the sharp counter.
+  ✅ myth: "كل ما زادت البيانات.. تحسّنت القرارات"
+  ✅ truth_headline: "من يفهم أولاً.. يفوز"
+  ✅ truth_body: "الفرق ليس في حجم البيانات.. الفرق في سرعة تحويلها إلى قرار."
+  ✗ myth: "البيانات الأكثر تعني رؤى أفضل" (translated English, stiff)
+  ✗ truth_body: "المنافس الذي يفهم السوق أولاً يفوز، لا من يملك أكبر قاعدة بيانات." (one long sentence, no rhythm)
+
+BIG_NUMBER — one number. Context below. Source citation.
+  ✅ number: "73%"
+  ✅ context: "من بيانات العدادات الذكية.. لا تُحلَّل أبداً"
+  ✅ source: "تقرير EY للنضج الرقمي — 40 مؤسسة في الشرق الأوسط"
+  ✗ context: "من بيانات AMI لا تُحلَّل أبداً في الوقت الفعلي" (BiDi issue: AMI mid-sentence)
+
+GRID — 6 items. Each 2-3 Arabic words. Clean. Technical terms as standalone.
+  ✅ items: ["تكامل SCADA", "ربط AMI بـ CIS", "كشف التسرب", "حوكمة البيانات", "النمذجة الرقمية", "لوحة قيادة موحدة"]
+  ✗ items: ["تكامل SCADA مع GIS في الوقت الفعلي"] (too long for a grid cell)
+
+COMPARE — 3 items per column. Each item ≤ 5 Arabic words. Column headers 2-3 words.
+  ✅ left_title: "الطريقة القديمة" (not "الطريقة التي تكلّفك الفرص")
+  ✅ right_title: "الطريقة الذكية" (not "الطريقة التي تبني التفوق")
+  ✅ left_items: ["تقارير ربع سنوية", "بيانات منفصلة", "تحليل يدوي"]
+  ✅ right_items: ["رصد لحظي", "أنظمة مترابطة", "AI يُحلّل ويُنبّه"]
+  ✗ left_items: ["تقارير ربع سنوية وبيانات قديمة"] (two ideas in one item)
+
+INSIGHT — headline 4-6 words. Body 2-3 SHORT lines with ".." pauses.
+  ✅ headline: "المشكلة ليست تقنية"
+  ✅ body: "كل مؤسسة تملك بيانات كافية.. لكن لا أحد يملك صلاحية الربط. التحول يبدأ من الهيكل.. ليس من الميزانية."
+  ✗ body: "كل مؤسسة مياه زرتها تمتلك بيانات كافية لتحسين كفاءتها بنسبة 30%. لكن لا أحد يمتلك صلاحية ربط الأنظمة عبر الإدارات." (too long, no rhythm, translated English)
+
+QUESTION — uncomfortable. Sector-specific. 8-12 Arabic words.
+  ✅ "آخر قرار تشغيلي اتخذته.. كم أسبوعاً استغرق التحليل؟"
+  ✅ "هل يستطيع مدير العمليات اليوم.. اتخاذ قرار من بيانات العداد مباشرة؟"
+  ✗ "ما رأيك في التحول الرقمي؟" (too generic, not painful)
+
+CTA — bold imperative 3-5 words. Sub-CTA is a sharing nudge.
+  ✅ headline: "ابدأ من الربط"
+  ✅ cta_main: "احفظ هذا قبل اجتماعك القادم"
+  ✅ cta_sub: "شاركه مع من يدير التحول.. ولا يزال يعتمد على Excel"
+  ✗ headline: "بذكاء ابدأ التحليل" (word order is wrong, sounds machine-translated)
+
+═══ BANNED PATTERNS (EXPANDED — AI-tells in Arabic) ═══
+NEVER generate ANY of these:
+- "في عالم اليوم المتغير" / "في عالمنا الرقمي"
+- "لا يخفى على أحد" / "مما لا شك فيه"
+- "في ظل التحديات" / "في هذا السياق"
+- "يُعد من أهم" / "تجدر الإشارة إلى"
+- "من نافلة القول" / "على صعيد آخر"
+- "من الضروري أن ندرك" / "يسعدنا أن نقدم"
+- "هذا الكاروسيل يغطي" / "يتناول هذا المنشور"
+- "الجزر الرقمية" / "الصوامع الرقمية" / any metaphorical use of "جزر"
+- "التكامل الشامل" → use "الربط المتكامل"
+- "بذكاء" at the start of a sentence (sounds machine-translated)
+- Any sentence longer than 12 Arabic words (break it into two lines)
+- Any body text block longer than 25 Arabic words total
+
+═══ ARABIC WORD LIMITS (STRICT — Arabic renders WIDER) ═══
 - headline: 4-8 words MAX
-- headline_accent: 2-5 words MAX
-- body: 6-12 words MAX
-- terminal_lines: 4 lines MAX, each 3-6 Arabic words + English terms
+- headline_accent: 2-4 words MAX
+- body/supporting_text: MAX 25 words, broken into 2-3 lines with ".." pauses
 - grid_items: 2-4 words each
-- compare items: 3-6 words each
-- question_text: 8-15 words MAX
-- cta_main: 6-10 words
+- compare column headers: 2-3 words each
+- compare items: 3-5 words each, max 3 items per column
+- question_text: 8-12 words MAX
+- cta headline: 3-5 words
+- cta_main: 5-8 words
 - cta_sub: 8-12 words
-- INSIGHT body: 15-25 Arabic words MAX (2-3 SHORT lines). Cut aggressively. Every word must earn its place.
-
-═══ ARABIC BANNED PHRASES (AI-tells — NEVER use) ═══
-- "في عالم اليوم المتغير"
-- "لا يخفى على أحد"
-- "في ظل التحديات"
-- "يُعد من أهم"
-- "على صعيد آخر"
-- "من نافلة القول"
-- "في هذا السياق"
-- "تجدر الإشارة إلى"
-- "مما لا شك فيه"
-- "هذا الكاروسيل يغطي" / "يتناول هذا المنشور" — never describe, always hook
-- "في عالمنا الرقمي"
-- "من الضروري أن ندرك"
-- "يسعدنا أن نقدم"
-- "الجزر الرقمية" (digital islands — not used in GCC executive Arabic)
-- "الصوامع الرقمية" (digital silos — use "أنظمة منعزلة" instead)
-- ANY use of "جزر" or "الجزر" as a metaphor for data/digital silos (e.g., "بيانات في جزر", "جزر معلوماتية", "جزر بيانات"). The word "جزر" is BANNED in this metaphorical sense — no exceptions.
-
-═══ PREFERRED ARABIC TERMINOLOGY (use these exact replacements) ═══
-- Instead of "الجزر الرقمية" / "الصوامع" → use "أنظمة منعزلة" or "بيانات مبعثرة"
-- Instead of "جزر بيانات" / "جزر معلوماتية" → use "بيانات غير مترابطة" or "أنظمة منعزلة"
-- Instead of "التكامل الشامل" → use "الربط المتكامل"
-- Instead of "المنظومة الرقمية" → use "النظام البيئي الرقمي"
-- Instead of "التحول الرقمي الشامل" → use "التحول المؤسسي الرقمي"
-
-═══ CTA SLIDE — MANDATORY HEADLINE (Arabic) ═══
-The CTA slide MUST include a "headline" field with a bold imperative statement (3-5 Arabic words). Examples: "ابدأ من البيانات", "حان وقت التغيير", "افعل هذا الآن". The headline is the emotional peak ABOVE the save/share/follow lines. Never omit it.
-
-═══ ARABIC NARRATIVE RHYTHM ═══
-ARABIC SLIDE TYPE RESTRICTION: Do NOT use TERMINAL slide type for Arabic carousels. The code-block aesthetic breaks with Arabic text direction (BiDi jumbles English technical terms with Arabic). Instead, use GRID for action steps — present the same content as short numbered items in a 2×2 or 2×3 grid. The GRID type handles Arabic text correctly.
-
-Arabic 8-slide rhythm (replaces the English one):
-- Slide 1: COVER
-- Slide 2: REFRAME or BOLD_CLAIM
-- Slide 3: BIG_NUMBER
-- Slide 4: GRID (action steps — replaces TERMINAL)
-- Slide 5: COMPARE or LIST
-- Slide 6: INSIGHT
-- Slide 7: QUESTION
-- Slide 8: CTA
-
-Per-slide Arabic notes:
-- COVER: provocative Arabic headline + Arabic body. The body must be PURE CONTENT — do NOT append "اسحب ←" or any swipe cue. The renderer adds a chevron automatically.
-- REFRAME (Arabic): three required fields:
-  - headline (myth): 3-6 Arabic words. The myth itself only — do NOT prefix with "يعتقد الأغلبية:" (renderer adds the label).
-  - headline_accent (truth): 3-6 Arabic words. Must directly contradict the myth.
-  - body: 2-3 SHORT Arabic sentences (15-30 words total) explaining the truth. NEVER leave empty.
-- BIG_NUMBER: Western numeral (e.g., 86%), Arabic context line
-- GRID (used in place of TERMINAL): 4-6 short numbered Arabic action phrases, 2-4 words each. No English code syntax.
-- COMPARE: keep English convention — compare_left_* = the WRONG/mistake, compare_right_* = the CORRECT/fix. The renderer auto-swaps visual position for RTL so the wrong approach is read first on the right and the correct fix sits on the left.
-- QUESTION: Arabic question ending with ؟
-- CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع ←" (the renderer injects the handle from the user profile — do not hardcode)
-
-═══ ARABIC HASHTAGS ═══
-5-7 mixing Arabic and English. Always include #التحول_الرقمي. Topic Arabic tags (#الذكاء_الاصطناعي, #حوكمة_البيانات, #البنية_التحتية). 1-2 English (#DigitalTransformation, #AI). Audience (#قادة_الأعمال or #رؤية_السعودية_2030).
 
 ═══ ARABIC LINKEDIN CAPTION ═══
-Arabic. Professional-conversational. Short paragraphs. End with a question inviting comments. NO emojis (◆ ↳ allowed for structure).` : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
+The caption is a standalone LinkedIn post, NOT a carousel description.
+Structure:
+- Line 1: Hook — provocative personal observation. Use "أنا" or first-person plural. Example: "أنفقنا 4 ملايين على العدادات الذكية.. ولم نستفد من بيانات واحد منها."
+- Lines 2-3: Tension — expand the problem. Use ".." pauses. Name the sector.
+- Line 4: Pivot — frame what the carousel reveals. "في هذا المنشور.." or "8 شرائح تكشف.."
+- Line 5: Uncomfortable question — sector-specific, painful, invites comments.
+- Hashtags: 3 Arabic + 2 English on new line.
+
+NEVER start with "يتناول هذا المنشور" or "في هذا الكاروسيل". These are engagement killers.
+
+═══ ARABIC NARRATIVE RHYTHM ═══
+Slide sequence: COVER → REFRAME → BIG_NUMBER → GRID → COMPARE → INSIGHT → QUESTION → CTA
+No TERMINAL slide in Arabic (use GRID instead).
+COMPARE: right column = correct answer (RTL reading order = right first).
+
+═══ VARIATION RULES (CRITICAL — prevent repetition) ═══
+
+1. The examples above show the STYLE, not the WORDS. Never reuse an example headline or body verbatim. Every carousel must have original text grounded in the specific topic.
+
+2. COVER hooks must use a DIFFERENT pattern each time. Rotate between:
+   - Provocative number: "73% من بيانات العدادات.. لا تُقرأ"
+   - Personal confession: "أنفقنا الملايين.. والنتيجة صفر"
+   - Contrarian statement: "العداد الذكي ليس ذكياً"
+   - Direct challenge: "مديرك لا يملك هذه المعلومة"
+   Use whichever pattern was NOT used in recent generations for this user.
+
+3. REFRAME truth_headline must be topic-specific. Never generic.
+   ✅ Topic about water: "الربط يسبق القياس"
+   ✅ Topic about AI: "السرعة تسبق الدقة"
+   ✗ Generic: "من يفهم أولاً يفوز" (this fits any topic — too vague)
+
+4. QUESTION slide must name the reader's SPECIFIC role and situation:
+   ✅ "هل يستطيع مدير العمليات في شركة المياه اتخاذ قرار من بيانات العداد.. بدون تقرير Excel؟"
+   ✗ "ما رأيك في التحول الرقمي؟" (generic)
+
+5. When the topic has no sector-specific angle (e.g., generic AI, leadership), adapt the writing to the user's sector_focus from diagnostic_profiles. If sector = "Energy & Utilities", ground examples in that sector even if the topic is broad.` : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
+
+═══ USER VOICE PROFILE (adapt your writing to match) ═══
+${voiceProfile ? `
+Voice tone: ${voiceProfile.tone || 'analytical, calm authority'}
+Structural patterns this user prefers: ${JSON.stringify(voiceProfile.preferred_structures || [])}
+Storytelling patterns: ${JSON.stringify(voiceProfile.storytelling_patterns || [])}
+${voiceProfile.vocabulary_preferences ? `Vocabulary notes: ${typeof voiceProfile.vocabulary_preferences === 'object' ? JSON.stringify(voiceProfile.vocabulary_preferences) : voiceProfile.vocabulary_preferences}` : ''}
+${voiceProfile.example_posts && Array.isArray(voiceProfile.example_posts) ? `
+Reference posts (match this voice):
+${voiceProfile.example_posts.slice(0, 3).map((p: any) => (p.content || '').substring(0, 300)).filter(Boolean).join('\n---\n')}
+` : ''}
+IMPORTANT: Adapt your carousel content to match this user's voice — their sentence rhythm, their vocabulary choices, their structural preferences. The carousel should sound like THEM, not like a template. The voice profile OVERRIDES generic tone instructions, but NEVER overrides BiDi rules, word limits, or banned phrases — those are structural, not voice.
+` : 'No voice profile available — use confident, direct executive tone.'}
 
 BANNED WORDS: delve, tapestry, landscape, synergy, leverage (as verb), holistic, robust, utilize, comprehensive, cutting-edge, game-changer, unprecedented, paradigm
 
