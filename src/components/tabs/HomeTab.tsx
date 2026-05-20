@@ -1027,6 +1027,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   // the dashboard sections carry their own value at that point.
   const welcomeVariant: "first-signal" | "building" | "intro" | null = (() => {
     if (welcomeDismissed || !entriesLoaded || !profileLoaded) return null;
+    // Users who have ever had signals (active or dormant) are past the welcome phase
+    if (hasAnySignals) return null;
     if (entryCountForWelcome >= 5 && hasSignals) return null;
     if (hasSignals) return "first-signal";
     if (entryCountForWelcome > 0) return "building";
