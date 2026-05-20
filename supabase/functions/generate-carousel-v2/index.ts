@@ -391,15 +391,18 @@ BANNED SECTION_LABELS: COVER, BOLD_CLAIM, REFRAME, BIG_NUMBER, TERMINAL, GRID, C
 
 OUTPUT: Valid JSON only. No markdown fences. No preamble. No explanation.`;
 
-    const userMessage = `Create a ${total_slides}-slide LinkedIn carousel about: ${topic}
+    const userMessage = isArabic
+      ? `أنشئ كاروسيل لينكدإن من ${total_slides} شرائح حول الموضوع التالي (إذا كان بالإنجليزية، ترجم المفهوم وأنشئ كل المحتوى بالعربية): ${topic}
+${context ? "سياق إضافي: " + context : ""}
+${signal ? "اربط المحتوى بهذه الإشارة الاستراتيجية (العنوان قد يكون بالإنجليزية — ترجم المفهوم وأنشئ كل المحتوى بالعربية): " + signal.signal_title + " — مستوى الثقة: " + Math.round((signal.confidence || 0) * 100) + "%. " + (signal.explanation ? "السياق: " + signal.explanation : "") : ""}
+المؤلف (للسياق فقط، لا تُدرج الاسم في الشرائح): ${authorFullName}${authorTitle ? `، ${authorTitle}` : ""}${p.sector_focus ? `، القطاع: ${p.sector_focus}` : ""}
+
+تعليمات صارمة: جميع الحقول في JSON يجب أن تكون باللغة العربية. العناوين، النصوص، التسميات (section_label)، الأسئلة، تعليق لينكدإن — كل شيء بالعربية.
+المصطلحات التقنية فقط تبقى بالإنجليزية: AI, SCADA, GIS, KPI, dashboard, IoT, AMI, ROI, API.`
+      : `Create a ${total_slides}-slide LinkedIn carousel about: ${topic}
 ${context ? "Additional context: " + context : ""}
-${signal ? (isArabic
-  ? "اربط المحتوى بهذه الإشارة الاستراتيجية (العنوان بالإنجليزية — ترجم المفهوم إلى العربية): " + signal.signal_title + " — مستوى الثقة: " + Math.round((signal.confidence || 0) * 100) + "%. " + (signal.explanation ? "السياق: " + signal.explanation : "")
-  : "Ground this in the signal: " + signal.signal_title + " at " + Math.round((signal.confidence || 0) * 100) + "% confidence. " + (signal.explanation || "")
-) : ""}
-${isArabic
-  ? `(معلومات المؤلف — للسياق فقط، لا تؤثر على لغة المخرجات): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, ${p.sector_focus}` : ""}`
-  : `Author context (for tone only — do not hardcode in slides): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, specializing in ${p.sector_focus}` : ""}`}`;
+${signal ? "Ground this in the signal: " + signal.signal_title + " at " + Math.round((signal.confidence || 0) * 100) + "% confidence. " + (signal.explanation || "") : ""}
+Author context (for tone only — do not hardcode in slides): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, specializing in ${p.sector_focus}` : ""}`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
