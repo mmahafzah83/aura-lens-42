@@ -205,6 +205,52 @@ export default function TierCeremonyModal({ userId }: Props) {
 
         <StatsRow stats={stats} animate={mounted} />
 
+        {scoreBreakdown && (
+          <div style={{ marginTop: 20, textAlign: "left" }}>
+            <div style={{
+              fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase",
+              color: "var(--ink-muted, rgba(245,239,225,0.6))", fontWeight: 600,
+              marginBottom: 10, textAlign: "center",
+            }}>
+              What earned this tier
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {[
+                { label: "Signal", val: scoreBreakdown.signal, max: 40 },
+                { label: "Content", val: scoreBreakdown.content, max: 40 },
+                { label: "Consistency", val: scoreBreakdown.capture, max: 20 },
+              ].map((r) => (
+                <div key={r.label} style={{
+                  padding: "10px 8px",
+                  background: "rgba(197,165,90,0.04)",
+                  border: "1px solid var(--brand-line, rgba(197,165,90,0.15))",
+                  borderRadius: 8,
+                  textAlign: "center",
+                }}>
+                  <div style={{
+                    fontSize: 10, color: "var(--ink-muted, rgba(245,239,225,0.65))",
+                    letterSpacing: 0.3, marginBottom: 4,
+                  }}>
+                    {r.label}
+                  </div>
+                  <div style={{
+                    fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
+                    fontSize: 18, color: "var(--brand, #C5A55A)", lineHeight: 1,
+                  }}>
+                    {r.val}<span style={{ fontSize: 11, opacity: 0.55 }}>/{r.max}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              fontSize: 11, color: "var(--ink-muted, rgba(245,239,225,0.55))",
+              textAlign: "center", marginTop: 10,
+            }}>
+              {copy.name} requires {copy.name === "Authority" ? "65" : copy.name === "Strategist" ? "35" : "0"}+ points
+            </div>
+          </div>
+        )}
+
         {topSignal && (
           <p
             style={{
