@@ -129,12 +129,6 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
       }}
     >
       <Item
-        value={authorityScore != null ? String(Math.round(authorityScore)) : "--"}
-        label="Authority"
-        delta={authorityScore != null ? `+${Math.round(authorityScore)}` : "Build it"}
-        valueColor="var(--aura-accent)"
-      />
-      <Item
         value={String(stats.signalsCount)}
         label="Signals"
         delta={stats.topConfidence != null ? `${Math.round(stats.topConfidence * 100)}% conf.` : "—"}
