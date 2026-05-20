@@ -84,6 +84,12 @@ html.dark  { background-color: var(--paper, #14110C); }
   --bronze-mist: #1F1B12;
   --bronze-line: rgba(212,176,86,0.28);
 
+  /* Canonical brand gold — single source of truth.
+     gold-light = bright variant (dark-mode default accent).
+     gold-dark  = deep variant (light-mode default accent, hover/pressed state). */
+  --gold-light: #D4B056;
+  --gold-dark:  #B08D3A;
+
   /* Signal — orange, time-sensitive ONLY */
   --signal: #FF8A3D;
   --signal-pale: rgba(255,138,61,0.10);
