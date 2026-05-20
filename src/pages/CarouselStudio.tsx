@@ -917,6 +917,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const rightColW = w - edgePad - rightColX;
       const leftColX = edgePad + 20;
       const leftColW = cx - leftColX - 10;
+      // Column background height = headers + content + padding, capped at full block height.
+      const colContentH = Math.max(leftLayout.total, rightLayout.total);
+      const colBgH = Math.min(blockH, Math.max(140, 40 + colContentH + 60));
       return (
         <g>
           {headlineLines.map((ln, i) => (
@@ -928,15 +931,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               {ln}
             </text>
           ))}
-          <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
+          <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + colBgH} stroke={style.border} strokeWidth={1} />
           {/* Both columns get equal-weight containers; visual difference comes from opacity, weight, and accent border. */}
-          <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} rx={8}
-                fill={correctOnLeft ? style.accent : style.fg}
-                fillOpacity={correctOnLeft ? 0.08 : 0.04}
+          <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={colBgH} rx={8}
+                fill={correctOnLeft ? style.accent : (style.compareBg ?? style.fg)}
+                fillOpacity={correctOnLeft ? 0.08 : (style.compareBg ? 1 : 0.04)}
                 stroke={style.border} strokeWidth={1} />
-          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} rx={8}
-                fill={correctOnLeft ? style.fg : style.accent}
-                fillOpacity={correctOnLeft ? 0.04 : 0.08}
+          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={colBgH} rx={8}
+                fill={correctOnLeft ? (style.compareBg ?? style.fg) : style.accent}
+                fillOpacity={correctOnLeft ? (style.compareBg ? 1 : 0.04) : 0.08}
                 stroke={style.border} strokeWidth={1} />
           <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 20 : 18}
                 letterSpacing={isRTL ? 0 : 2}
