@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
 import AuthorityProgressModal from "@/components/AuthorityProgressModal";
-import { HelpCircle, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
@@ -191,9 +191,6 @@ const getGreeting = (h: number) => {
   return "GOOD EVENING";
 };
 
-const fmtTime = (d: Date) =>
-  d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-
 const timeAgo = (iso: string) => formatSmartDate(iso);
 
 // ────────────────────────────────────────────────
@@ -302,7 +299,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
   // J12 — empty state for new users with zero captures
   const isEmpty = Array.isArray(entries) && entries.length === 0;
-  const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
   const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("aura_alarm_seen") === "true";
