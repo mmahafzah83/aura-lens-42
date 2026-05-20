@@ -185,6 +185,35 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
+    // Resolve author from authenticated user's profile
+    let authorName = "";
+    let authorFirm = "";
+    let authorTitle = "";
+    let authorHandle = "";
+    try {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        const anon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user } } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
+        if (user) {
+          const { data: profile } = await admin
+            .from("diagnostic_profiles")
+            .select("first_name, last_name, level, firm, sector_focus, linkedin_handle")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          const p = (profile as any) || {};
+          authorName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+          authorFirm = p.firm || "";
+          authorTitle = p.level || "";
+          authorHandle = (p.linkedin_handle || "").replace(/^@/, "");
+        }
+      }
+    } catch (e) {
+      console.warn("[generate-flash-image] profile lookup failed:", e);
+    }
+
     const { data: dsRow } = await admin
       .from('design_system')
       .select('tokens')
@@ -202,9 +231,10 @@ serve(async (req) => {
 
     const { headline, core_insight, key_stat } = extract(post_text || "");
     const sector_context = String(sector || "").trim();
+    const followCta = String(lang || "en").toLowerCase().startsWith("ar") ? "تابعني على LinkedIn" : "Follow on LinkedIn";
 
     const promises = styles.map(style => {
-      const prompt = buildPrompt(style, { headline, core_insight, key_stat, sector_context, brandAccent: BRAND_ACCENT, brandGold: BRAND_GOLD });
+      const prompt = buildPrompt(style, { headline, core_insight, key_stat, sector_context, brandAccent: BRAND_ACCENT, brandGold: BRAND_GOLD, authorName, authorFirm, authorTitle, authorHandle, followCta });
       return generateOne(style, prompt, OPENAI_API_KEY);
     });
 
