@@ -27,9 +27,6 @@ verify_jwt = false
 [functions.ingest-document]
 verify_jwt = false
 
-[functions.generate-embedding]
-verify_jwt = false
-
 [functions.account-brief]
 verify_jwt = false
 
@@ -37,9 +34,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.extract-evidence]
-verify_jwt = false
-
-[functions.backfill-intelligence]
 verify_jwt = false
 
 [functions.generate-framework-diagram]
@@ -63,10 +57,6 @@ verify_jwt = false
 [functions.generate-branded-post]
 verify_jwt = false
 
-
-[functions.generate-slide-visual]
-verify_jwt = false
-
 [functions.linkedin-oauth]
 verify_jwt = false
 
@@ -80,9 +70,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.ingest-capture]
-verify_jwt = false
-
-[functions.detect-signals]
 verify_jwt = false
 
 [functions.fetch-industry-trends]

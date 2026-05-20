@@ -384,47 +384,6 @@ export type Database = {
           },
         ]
       }
-      content_topics: {
-        Row: {
-          avg_engagement: number
-          created_at: string
-          id: string
-          label: string
-          parent_topic_id: string | null
-          post_count: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avg_engagement?: number
-          created_at?: string
-          id?: string
-          label: string
-          parent_topic_id?: string | null
-          post_count?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avg_engagement?: number
-          created_at?: string
-          id?: string
-          label?: string
-          parent_topic_id?: string | null
-          post_count?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_topics_parent_topic_id_fkey"
-            columns: ["parent_topic_id"]
-            isOneToOne: false
-            referencedRelation: "content_topics"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       design_system: {
         Row: {
           created_at: string | null

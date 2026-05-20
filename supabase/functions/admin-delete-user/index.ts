@@ -16,7 +16,6 @@ const TABLES_TO_CLEAN = [
   "linkedin_post_metrics",
   "linkedin_posts",
   "content_items",
-  "content_topics",
   "evidence_fragments",
   "strategic_signals",
   "score_snapshots",
