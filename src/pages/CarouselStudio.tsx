@@ -867,20 +867,14 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const blockH = Math.max(280, h - blockTop - footerClear);
       const headerY = blockTop + 30;
       const rowsStartY = blockTop + 80;
-      const rowsBottomY = blockTop + blockH - 32;
-      const availRowsH = Math.max(itemLineH, rowsBottomY - rowsStartY);
-      // Distribute items evenly within the available column height.
+      // Top-cluster items with a fixed gap; columns still get full-height backgrounds.
+      const ITEM_GAP = 24;
       const distribute = (groups: string[][]) => {
-        const heights = groups.map((g) => g.length * itemLineH);
-        const baseTotal = heights.reduce((a, b) => a + b, 0);
-        const gaps = Math.max(0, groups.length - 1);
-        const extra = Math.max(0, availRowsH - baseTotal - gaps * itemGap);
-        const gap = itemGap + (gaps > 0 ? extra / gaps : 0);
         const offsets: number[] = [];
         let acc = 0;
         for (let i = 0; i < groups.length; i++) {
           offsets.push(acc);
-          acc += heights[i] + (i < groups.length - 1 ? gap : 0);
+          acc += groups[i].length * itemLineH + (i < groups.length - 1 ? ITEM_GAP : 0);
         }
         return { offsets, total: acc };
       };
