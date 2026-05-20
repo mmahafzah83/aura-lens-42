@@ -15,9 +15,26 @@ const TABLES = [
 ];
 
 const EDGE_FUNCTIONS = [
-  "detect-signals-v2", "calculate-aura-score", "generate-authority-content",
-  "chat-aura", "ingest-capture", "detect-patterns", "generate-silence-alarm",
-  "generate-market-mirror", "detect-market-gaps",
+  "account-brief", "activate-framework", "admin-active-users", "admin-delete-user",
+  "analyze-image", "analyze-linkedin-profile", "analyze-potential", "ask-aura",
+  "audit-interpretation", "auras-read", "brand-assessment", "browser-capture",
+  "calculate-aura-score", "chat-aura", "check-lifecycle-triggers", "classify-posts",
+  "cleanup-posts", "colleague-invite", "daily-briefing", "deduplicate-entries",
+  "detect-card-style", "detect-market-gaps", "detect-patterns", "detect-signals-v2",
+  "discover-linkedin-posts", "draft-post", "evaluate-content-quality", "extract-evidence",
+  "fetch-industry-trends", "generate-action-output", "generate-authority-content",
+  "generate-brand-positioning", "generate-branded-post", "generate-carousel-v2",
+  "generate-framework-diagram", "generate-identity-intelligence", "generate-market-mirror",
+  "generate-schematic-spec", "generate-silence-alarm", "import-linkedin-analytics",
+  "import-linkedin-csv", "ingest-capture", "ingest-document", "knowledge-intelligence",
+  "linkedin-claim", "linkedin-expert-advisor", "linkedin-oauth", "linkedin-oauth-callback",
+  "linkedin-sync", "mark-user-active", "market-intelligence", "onboarding-find-article",
+  "onboarding-linkedin-prefill", "open-document", "qa-ai-evaluate", "regenerate-schematic",
+  "run-qa-walkthrough", "send-account-notification", "send-invite", "send-lifecycle-email",
+  "send-password-reset", "send-weekly-brief", "signal-decay-engine", "sovereign-reading-list",
+  "strategic-advisor", "strategic-briefing", "strategic-critique", "strategic-nudge",
+  "submit-waitlist", "summarize-link", "transcribe-voice", "trend-why-matters",
+  "update-user-password", "voice-distill", "weekly-influence-brief", "weekly-progress-summary",
 ];
 
 const SCHEMA_EXPECTATIONS: Record<string, string[]> = {
