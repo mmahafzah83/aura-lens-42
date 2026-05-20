@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("firm, level, core_practice, sector_focus, brand_pillars, north_star_goal")
+      .select("first_name, last_name, firm, level, core_practice, sector_focus, brand_pillars, north_star_goal, linkedin_handle")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
     const firm = p.firm || "Big 4";
     const level = p.level || "Director";
     const sector = p.sector_focus || "Water & Utilities";
+    const authorName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+    const authorFooter = [authorName, level, firm || sector].filter(Boolean).join(" | ");
 
     const { data: frameworks } = await supabase
       .from("master_frameworks")
@@ -203,7 +205,7 @@ OUTPUT FORMAT - valid JSON only:
             messages: [
               {
                 role: "user",
-                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}\n\n=== SLIM SIGNATURE FOOT (max 8% of image height, at the very bottom) ===\nDo NOT add any solid bar, gray block, or colored strip.\nWrite the footer text DIRECTLY on the same charcoal blackboard background in the same handwritten ink style as the diagram.\nLeft side (small): "M. Mahafdhah | Digital Transformation Architect | 18Y Sector Expert"\nRight side (small): "→ Share this Framework"\nThe foot must be ultra-slim and feel like a natural hand-lettered extension of the blackboard — NOT a separate UI element.`,
+                content: `Create a 1080x1350 vertical image. Style: Minimalist Handwritten Blackboard Schematic. Background: deep charcoal/black. Ink: white or gold single-color line art. Use simple boxes, circles, connecting arrows, loops. Simulated clear handwriting labels. NO photorealistic elements. NO glossy renders.\n\nDiagram concept: ${parsed.image_prompt}\n\n=== SLIM SIGNATURE FOOT (max 8% of image height, at the very bottom) ===\nDo NOT add any solid bar, gray block, or colored strip.\nWrite the footer text DIRECTLY on the same charcoal blackboard background in the same handwritten ink style as the diagram.\nLeft side (small): "${authorFooter}"\nRight side (small): "→ Share this Framework"\nThe foot must be ultra-slim and feel like a natural hand-lettered extension of the blackboard — NOT a separate UI element.`,
               },
             ],
             modalities: ["image", "text"],
