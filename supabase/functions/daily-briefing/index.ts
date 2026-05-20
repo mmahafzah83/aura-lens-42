@@ -24,7 +24,6 @@ const HIGH_AUTHORITY_SOURCES = [
   "MEWA (Ministry of Environment, Water and Agriculture)",
   "SWA (Saudi Water Authority)",
   "NWC (National Water Company)",
-  "EY",
   "McKinsey",
   "PIF (Public Investment Fund)",
   "Deloitte Insights",
