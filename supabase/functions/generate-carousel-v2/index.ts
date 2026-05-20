@@ -43,9 +43,6 @@ serve(async (req) => {
     }
     const targetUserId = user_id || authUserId;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     // Fetch signal (optional)
     let signal: any = null;
     if (signal_id) {
@@ -341,7 +338,7 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 16384,
         system: systemPrompt,
         messages: [{ role: "user", content: userMessage }],
