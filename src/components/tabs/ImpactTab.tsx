@@ -2208,7 +2208,6 @@ const PillarCard = ({
   tooltip: { what: string; how: string; improve: string };
   dots?: number;
 }) => {
-  const [show, setShow] = useState(false);
   return (
     <div
       style={{
@@ -2224,34 +2223,25 @@ const PillarCard = ({
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
           {label}
         </div>
-        <button
-          type="button"
-          onMouseEnter={() => setShow(true)}
-          onMouseLeave={() => setShow(false)}
-          onFocus={() => setShow(true)}
-          onBlur={() => setShow(false)}
-          aria-label={`${label} info`}
-          style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
-        >
-          <Info size={12} />
-        </button>
+        <TooltipProvider delayDuration={150}>
+          <UiTooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={`${label} info`}
+                style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
+              >
+                <Info size={12} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" align="end" className="max-w-xs text-xs">
+              {tooltip.what && <p><b style={{ color }}>What:</b> {tooltip.what}</p>}
+              {tooltip.how && <p className="mt-1"><b style={{ color }}>How:</b> {tooltip.how}</p>}
+              {tooltip.improve && <p className="mt-1"><b style={{ color }}>Improve:</b> {tooltip.improve}</p>}
+            </TooltipContent>
+          </UiTooltip>
+        </TooltipProvider>
       </div>
-      {show && (
-        <div
-          role="tooltip"
-          style={{
-            position: "absolute", top: -8, right: 12, transform: "translateY(-100%)",
-            background: "var(--aura-card)", color: "var(--aura-t1)",
-            border: "1px solid var(--aura-border)", borderRadius: 8,
-            padding: "10px 12px", fontSize: 11, lineHeight: 1.5,
-            width: 240, zIndex: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          }}
-        >
-          <div style={{ marginBottom: 4 }}><b style={{ color }}>What:</b> {tooltip.what}</div>
-          <div style={{ marginBottom: 4 }}><b style={{ color }}>How:</b> {tooltip.how}</div>
-          <div><b style={{ color }}>Improve:</b> {tooltip.improve}</div>
-        </div>
-      )}
       <div
         className="tabular-nums mt-1"
         style={{
