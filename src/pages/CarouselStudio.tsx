@@ -449,21 +449,24 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         </text>
       )}
 
-      {/* Accent strip */}
-      {showStrip && <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />}
-
-      {/* Top accent line under section_label (Executive Briefing only) */}
-      {style.topAccentLine && (
+      {/* Accent strip — slides 2+ only (COVER is the hook, no decoration). */}
+      {showStrip && slide.slide_number > 1 && stripPos !== "top" && (
+        <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />
+      )}
+      {showStrip && slide.slide_number > 1 && stripPos === "top" && (
+        <rect x={60} y={78} width={w - 120} height={2} fill={stripColor} />
+      )}
+      {style.topAccentLine && slide.slide_number > 1 && (
         <line x1={isRTL ? w - edgePad - 200 : edgePad} y1={84}
               x2={isRTL ? w - edgePad : edgePad + 200} y2={84}
               stroke={style.accent} strokeWidth={2} />
       )}
 
       {/* Section label + icon */}
-      <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
+      <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.sectionLabel ?? style.accent} size={16} />
       <text x={labelTextX} y={70} textAnchor={labelAnchor}
             fontFamily={bodyFont} fontSize={isRTL ? 20 : 18} letterSpacing={isRTL ? 0 : 3}
-            fill={style.accent} fontWeight={isRTL ? 700 : 600}>
+            fill={style.sectionLabel ?? style.accent} fontWeight={isRTL ? 700 : 600}>
         {displayLabel}
       </text>
 
