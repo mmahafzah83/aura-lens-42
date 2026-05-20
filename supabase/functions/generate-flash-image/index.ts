@@ -54,8 +54,10 @@ function extract(post_text: string) {
   return { headline, core_insight, key_stat };
 }
 
-function buildPrompt(style: string, vars: { headline: string; core_insight: string; key_stat: string; sector_context: string; brandAccent: string; brandGold: string }) {
-  const { headline, core_insight, key_stat, sector_context, brandAccent, brandGold } = vars;
+function buildPrompt(style: string, vars: { headline: string; core_insight: string; key_stat: string; sector_context: string; brandAccent: string; brandGold: string; authorName: string; authorFirm: string; authorTitle: string; authorHandle: string; followCta: string }) {
+  const { headline, core_insight, key_stat, sector_context, brandAccent, brandGold, authorName, authorFirm, authorTitle, authorHandle, followCta } = vars;
+  const sigLeft = [authorName, authorFirm].filter(Boolean).join(" | ");
+  const sigRight = authorHandle ? `${followCta} @${authorHandle}` : followCta;
   switch (style) {
     case "comparison":
       return `Create a professional Arabic LinkedIn infographic card in portrait format (4:5 ratio).
