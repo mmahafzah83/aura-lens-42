@@ -1149,21 +1149,29 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               </g>
             );
           })}
-          {slide.cta_button && (
-            <g>
-              <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
-              <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
-                {(() => {
-                  const t = slide.cta_button || "";
-                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@your-handle"])[0];
-                  if (isRTL) {
-                    return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
-                  }
-                  return `Follow \u202A${handle}\u202C →`;
-                })()}
-              </text>
-            </g>
-          )}
+          {(() => {
+            // Prefer the user's real handle from the profile; fall back to any handle
+            // mentioned in slide.cta_button; otherwise show a generic "Follow for more".
+            const fromBtn = (slide.cta_button || "").match(/@[A-Za-z0-9_]+/)?.[0] || "";
+            const raw = (authorHandle || fromBtn || "").trim();
+            const hasHandle =
+              raw !== "" &&
+              raw !== "@" &&
+              raw.toLowerCase() !== "@handle" &&
+              raw.toLowerCase() !== "@your-handle";
+            const handle = hasHandle ? (raw.startsWith("@") ? raw : `@${raw}`) : "";
+            const label = isRTL
+              ? (hasHandle ? `\u200Fتابع \u202A${handle}\u202C \u200F←` : "\u200Fتابع للمزيد \u200F←")
+              : (hasHandle ? `Follow \u202A${handle}\u202C →` : "Follow for more →");
+            return (
+              <g>
+                <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
+                <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
+                  {label}
+                </text>
+              </g>
+            );
+          })()}
         </g>
       );
     }
