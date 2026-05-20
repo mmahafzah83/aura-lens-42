@@ -67,18 +67,20 @@ serve(async (req) => {
       activeSignalCount * 20 + avgConf * 100 * 0.5 + Math.min(allTags.size, 5) * 6
     ), 100);
 
-    // --- content_score: split imported (≤30) vs active last-30d (≤70) ---
+    // --- content_score: split imported (≤30) vs active published (≤70) ---
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Imported = all non-user-published content (history baseline, no date filter)
     const { count: importedCount } = await admin
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .in("source_type", ["linkedin_export", "browser_capture"]);
+      .in("source_type", ["linkedin_export", "browser_capture", "search_discovery", "external_reference"]);
+    // Active = only posts the user published through Aura in the last 30 days
     const { count: activeCount } = await admin
       .from("linkedin_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .not("source_type", "in", "(linkedin_export,browser_capture)")
+      .in("source_type", ["aura", "aura_generated"])
       .gte("created_at", thirtyDaysAgo);
     const contentScore = Math.min((importedCount ?? 0) * 2, 30) + Math.min((activeCount ?? 0) * 10, 70);
 
