@@ -248,6 +248,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [score7dAgo, setScore7dAgo] = useState<number | null>(null);
   const [daysSinceCapture, setDaysSinceCapture] = useState<number | null>(null);
   const [topSignal, setTopSignal] = useState<TopSignal | null>(null);
+  const [hasAnySignals, setHasAnySignals] = useState(false);
   const [topMove, setTopMove] = useState<RecMove | null>(null);
   const [newFollowers30d, setNewFollowers30d] = useState<number>(0);
   const [moves, setMoves] = useState<RecMove[]>([]);
@@ -387,6 +388,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         setDaysSinceCapture(null);
       }
       setTopSignal(sigRes.data ?? null);
+      const { count: totalSignalCount } = await supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid);
+      setHasAnySignals((totalSignalCount ?? 0) > 0);
       setTopMove(moveRes.data ?? null);
       setNewFollowers30d((follRes.data || []).reduce((s: number, r: any) => s + (r.follower_growth || 0), 0));
       console.log("[HomeTab] briefing finished");
@@ -1013,8 +1019,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const showWelcomeState = dataReady
     && !journey.loading
     && !allFoundationDone
-    && (preCapture || (noEntries && !hasSignals));
-  const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
+    && (preCapture || (noEntries && !hasAnySignals));
+  const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasAnySignals;
 
   // Context-aware persistent welcome card (rendered later in the tree).
   // Hide entirely once the user has 5+ captures AND at least one signal —
