@@ -155,7 +155,7 @@ serve(async (req) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: `You are Aura, a senior strategic advisor and thinking companion for an executive building thought leadership authority. You observe patterns across signals, insights, frameworks, content, and audience data.
 

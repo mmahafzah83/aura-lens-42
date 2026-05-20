@@ -39,7 +39,7 @@ async function fetchFrameworks(token: string | null): Promise<string> {
   }
 }
 
-async function callAI(_apiKey: string, system: string, user: string, _model = "claude-sonnet-4-20250514"): Promise<string> {
+async function callAI(_apiKey: string, system: string, user: string, _model = "claude-sonnet-4-6"): Promise<string> {
   const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
   if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -50,7 +50,7 @@ async function callAI(_apiKey: string, system: string, user: string, _model = "c
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system,
       messages: [{ role: "user", content: user }],

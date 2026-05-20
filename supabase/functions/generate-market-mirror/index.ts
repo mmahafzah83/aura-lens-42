@@ -173,7 +173,7 @@ ${trendLines}`;
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: systemPrompt + competitorContext + "\n\nReturn ONLY a valid JSON object. No markdown fences, no preamble.",
         messages: [{ role: "user", content: userPrompt }],

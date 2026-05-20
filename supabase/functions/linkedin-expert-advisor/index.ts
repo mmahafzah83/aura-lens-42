@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 8192,
         system: `You are an elite LinkedIn Expert Agent and Strategic Authority Advisor. You analyze the user's complete knowledge ecosystem — LinkedIn analytics, captures, documents, frameworks, and learned intelligence — to produce a continuous strategic advisory.
 
