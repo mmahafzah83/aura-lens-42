@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
 import AuthorityProgressModal from "@/components/AuthorityProgressModal";
-import { HelpCircle, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
@@ -191,9 +191,6 @@ const getGreeting = (h: number) => {
   return "GOOD EVENING";
 };
 
-const fmtTime = (d: Date) =>
-  d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-
 const timeAgo = (iso: string) => formatSmartDate(iso);
 
 // ────────────────────────────────────────────────
@@ -302,7 +299,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
   // J12 — empty state for new users with zero captures
   const isEmpty = Array.isArray(entries) && entries.length === 0;
-  const [rhythmTooltipOpen, setRhythmTooltipOpen] = useState(false);
   const [alarmEducationSeen, setAlarmEducationSeen] = useState<boolean>(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem("aura_alarm_seen") === "true";
@@ -1357,12 +1353,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* SECTION 1 — Header bar */}
       <header className="flex items-end justify-between gap-3 pt-1">
         <div>
-          <div className="text-foreground" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em" }}>
-            {fmtTime(now)}
-          </div>
-          <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
-            {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
-          </div>
           {returnGreeting && (
             <div
               data-testid="home-return-greeting"
@@ -1370,7 +1360,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
                 fontSize: 16,
                 color: "var(--ink-2, var(--ink))",
-                marginTop: 8,
                 lineHeight: 1.4,
                 maxWidth: 540,
               }}
@@ -1387,27 +1376,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
-      {/* P4 — Authority pulse strip + Journey cycle + Mission control */}
-      {authUser?.id && (
-        <div className="flex flex-col" style={{ gap: 10 }}>
-          <AuthorityPulseStrip
-            userId={authUser.id}
-            authorityScore={auraData?.aura_score ?? null}
-            onGoToImpact={() => onSwitchTab?.("influence")}
-          />
-          <JourneyCycle
-            hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
-            hasSignals={!!topSignal}
-            publishedThisWeek={false}
-            hasLinkedInData={!!auraData?.content_score && auraData.content_score > 0}
-            scoreGrowing={(auraData?.score_trend ?? 0) > 0}
-            authorityScore={auraData?.aura_score ?? 0}
-          />
-          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
-        </div>
-      )}
-
-      {/* H2b — STATUS STRIP */}
+      {/* H2b — STATUS STRIP (score + tier + rhythm) — promoted above KPI strip */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
           weekly rhythm grid so users never see partial flashes (e.g. tier
           label appearing before the rhythm cells). */}
@@ -1536,6 +1505,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
           >
             <div className="flex flex-col" style={{ gap: 2 }}>
+              <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
+                {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
+              </div>
               <div className="flex items-center" style={{ gap: 6 }}>
                 <span
                   data-testid="home-score"
@@ -1595,41 +1567,39 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </div>
               <div className="flex items-center" style={{ gap: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                 <span>{activeWeeks}/12w</span>
-                <button
-                  type="button"
-                  aria-label="About capture rhythm"
-                  onClick={(e) => { e.stopPropagation(); setRhythmTooltipOpen(o => !o); }}
-                  style={{
-                    background: "transparent", border: 0, padding: 0,
-                    cursor: "pointer", color: "hsl(var(--muted-foreground))",
-                    display: "inline-flex", alignItems: "center", position: "relative",
-                  }}
-                >
-                  <HelpCircle size={12} strokeWidth={1.75} />
-                  {rhythmTooltipOpen && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        position: "absolute", bottom: "calc(100% + 8px)", right: 0,
-                        background: "hsl(var(--popover))",
-                        color: "hsl(var(--popover-foreground))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 6, padding: 10,
-                        fontSize: 11, lineHeight: 1.5, fontWeight: 400,
-                        width: 280, maxWidth: 280, textAlign: "left",
-                        zIndex: 50,
-                        boxShadow: "0 4px 14px hsl(var(--background) / 0.4)",
-                      }}
-                    >
-                      <strong>Capture Rhythm:</strong> Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
-                    </div>
-                  )}
-                </button>
+                <InfoTooltip side="top" align="right" label="Capture Rhythm" width={280}>
+                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Capture Rhythm</div>
+                  <p style={{ margin: 0 }}>
+                    Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
+                  </p>
+                </InfoTooltip>
               </div>
             </div>
           </div>
         );
       })()}
+
+      {/* P4 — Authority pulse strip + Journey cycle + Mission control (now below score) */}
+      {authUser?.id && (
+        <div className="flex flex-col" style={{ gap: 10 }}>
+          <AuthorityPulseStrip
+            userId={authUser.id}
+            authorityScore={auraData?.aura_score ?? null}
+            onGoToImpact={() => onSwitchTab?.("influence")}
+          />
+          {!hasAnySignals && (
+            <JourneyCycle
+              hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
+              hasSignals={!!topSignal}
+              publishedThisWeek={false}
+              hasLinkedInData={!!auraData?.content_score && auraData.content_score > 0}
+              scoreGrowing={(auraData?.score_trend ?? 0) > 0}
+              authorityScore={auraData?.aura_score ?? 0}
+            />
+          )}
+          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
+        </div>
+      )}
 
       {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
       {!auraLoading && !isEmpty && auraData && (() => {
@@ -1948,10 +1918,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         )
       )}
       <div data-testid="home-moves">
-      <SectionHeader
-        label="RECOMMENDED MOVES"
-        subtitle="Actions Aura suggests based on your latest signals"
-      />
       {(() => {
         const alarmFresh = competitorAlert && !alarmDismissed &&
           (Date.now() - new Date(competitorAlert.fetchedAt).getTime()) < 48 * 3_600_000;
