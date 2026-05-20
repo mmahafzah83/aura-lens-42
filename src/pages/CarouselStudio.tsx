@@ -1589,7 +1589,10 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     }
   };
 
-  const renderSlideToBlob = async (s: Slide): Promise<Blob> => {
+  const renderSlideToBlob = async (
+    s: Slide,
+    fmt: { mime?: "image/png" | "image/jpeg"; quality?: number } = {},
+  ): Promise<Blob> => {
     // Render into offscreen container
     const container = offscreenRef.current!;
     container.innerHTML = "";
@@ -1611,7 +1614,7 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
     svgEl.setAttribute("height", String(h));
     // For Arabic, embed Cairo as base64 inside the SVG so the raster sandbox uses it.
     const extraCSS = lang === "ar" ? await getCairoEmbeddedCSS() : "";
-    const blob = await svgToPngBlob(svgEl, w, h, extraCSS);
+    const blob = await svgToImageBlob(svgEl, w, h, extraCSS, fmt.mime ?? "image/png", fmt.quality ?? 1);
     root.unmount();
     return blob;
   };
@@ -1652,12 +1655,13 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       const { w, h } = DIM[dim];
       const pdf = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "px", format: [w, h] });
       for (let i = 0; i < slides.length; i++) {
-        const blob = await renderSlideToBlob(slides[i]);
+        // JPEG @ 0.85 → ~3–5MB total for 8 slides vs ~33MB with PNG.
+        const blob = await renderSlideToBlob(slides[i], { mime: "image/jpeg", quality: 0.85 });
         const dataUrl = await new Promise<string>((resolve) => {
           const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(blob);
         });
         if (i > 0) pdf.addPage([w, h], w > h ? "landscape" : "portrait");
-        pdf.addImage(dataUrl, "PNG", 0, 0, w, h);
+        pdf.addImage(dataUrl, "JPEG", 0, 0, w, h, undefined, "MEDIUM");
       }
       pdf.save(`carousel-${slugify(carousel.carousel_title || topic)}.pdf`);
     } catch (e: any) { console.error(e); toast.error(e.message || "PDF export failed"); }
