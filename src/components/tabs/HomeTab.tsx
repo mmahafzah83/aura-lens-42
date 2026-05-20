@@ -1019,8 +1019,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const showWelcomeState = dataReady
     && !journey.loading
     && !allFoundationDone
-    && (preCapture || (noEntries && !hasSignals));
-  const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasSignals;
+    && (preCapture || (noEntries && !hasAnySignals));
+  const showBuildingState = dataReady && entriesLoaded && entries!.length > 0 && !hasAnySignals;
 
   // Context-aware persistent welcome card (rendered later in the tree).
   // Hide entirely once the user has 5+ captures AND at least one signal —
