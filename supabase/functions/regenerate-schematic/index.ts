@@ -73,6 +73,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Resolve author signature from profile
+    let authorFooter = "";
+    try {
+      const { data: profile } = await supabase
+        .from("diagnostic_profiles")
+        .select("first_name, last_name, level, firm, sector_focus, linkedin_handle")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const p = (profile as any) || {};
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      authorFooter = [name, p.level, p.firm || p.sector_focus].filter(Boolean).join(" | ");
+    } catch (e) {
+      console.warn("[regenerate-schematic] profile lookup failed:", e);
+    }
+
     // Select style — use provided index or random
     const idx = typeof style_index === "number"
       ? style_index % CONTENT_STYLES.length
@@ -96,7 +111,7 @@ ${image_prompt}
 
 === FOOTER (max 6% height, at very bottom) ===
 On the same dark background in small text:
-Left: "M. Mahafzah | Business & Digital Transformation Architect | Energy & Utilities"
+Left: "${authorFooter}"
 Right: "→ Share this Framework"
 No solid bars or blocks — blend seamlessly.`;
 
