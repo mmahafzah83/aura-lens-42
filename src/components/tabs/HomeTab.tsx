@@ -248,6 +248,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   const [score7dAgo, setScore7dAgo] = useState<number | null>(null);
   const [daysSinceCapture, setDaysSinceCapture] = useState<number | null>(null);
   const [topSignal, setTopSignal] = useState<TopSignal | null>(null);
+  const [hasAnySignals, setHasAnySignals] = useState(false);
   const [topMove, setTopMove] = useState<RecMove | null>(null);
   const [newFollowers30d, setNewFollowers30d] = useState<number>(0);
   const [moves, setMoves] = useState<RecMove[]>([]);
