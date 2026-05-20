@@ -25,18 +25,28 @@ interface StylePalette {
   monoFont: string;
   // New differentiation fields
   headingWeight?: number;       // weight for headings (default 700)
-  stripPosition?: "left" | "right" | "none";
+  stripPosition?: "left" | "right" | "top" | "none";
   stripColor?: string;          // overrides per-slide STRIP_COLORS when set
   topAccentLine?: boolean;      // executive briefing
   pattern?: "none" | "dots" | "diagonal" | "circuit";
   numberBadgeBg?: string;       // override for grid number circle / hi-contrast
   numberBadgeFg?: string;
+  sectionLabel?: string;        // small-caps label color (defaults to accent)
+  compareBg?: string;           // COMPARE column container fill
+  gridCellBg?: string;          // GRID cell fill
+  bigNumberColor?: string;      // BIG_NUMBER color (defaults to accent)
+  terminalDots?: [string, string, string]; // macOS dot colors per style
 }
 
 const STYLES: Record<StyleKey, StylePalette> = {
   clean_paper: {
     key: "clean_paper", name: "Clean Paper",
-    bg: "#FAFAF8", fg: "#2D2D2D", accent: "#2D2D2D", emphasis: "#2D2D2D", muted: "#888888", border: "#E5E5E5", codeBg: "#F0F0EE",
+    bg: "#FAFAF8", fg: "#1A1A1A", accent: "#2D2D2D", emphasis: "#1A1A1A",
+    muted: "#4A4A4A", sectionLabel: "#888888",
+    border: "#E8E8E8", codeBg: "#F0F0EE",
+    compareBg: "#F2F0EC", gridCellBg: "#F0F0EE",
+    bigNumberColor: "#1A1A1A",
+    terminalDots: ["#ccc", "#ccc", "#ccc"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -45,7 +55,12 @@ const STYLES: Record<StyleKey, StylePalette> = {
   bold_statement: {
     key: "bold_statement", name: "Bold Statement",
     bg: "#1A1714", bgGradient: "linear-gradient(135deg,#1A1714 0%,#241D16 100%)",
-    fg: "#F5F0F0", accent: "#D4B056", emphasis: "#D4B056", muted: "#9A9388", border: "rgba(255,255,255,0.1)", codeBg: "#0D0B08",
+    fg: "#F5F0E6", accent: "#D4B056", emphasis: "#D4B056",
+    muted: "#C4B89A", sectionLabel: "#D4B056",
+    border: "rgba(212,176,86,0.2)", codeBg: "rgba(255,255,255,0.05)",
+    compareBg: "rgba(212,176,86,0.06)", gridCellBg: "rgba(212,176,86,0.08)",
+    bigNumberColor: "#D4B056",
+    terminalDots: ["#D4B056", "#C4A040", "#B49030"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -53,15 +68,25 @@ const STYLES: Record<StyleKey, StylePalette> = {
   },
   executive_briefing: {
     key: "executive_briefing", name: "Executive Briefing",
-    bg: "#F5F0E8", fg: "#2A2419", accent: "#6B4F1D", emphasis: "#6B4F1D", muted: "#6F6A60", border: "#D4C5A0", codeBg: "#EBE3D2",
+    bg: "#F5F0E8", fg: "#2A2419", accent: "#6B4F1D", emphasis: "#6B4F1D",
+    muted: "#5C5347", sectionLabel: "#6B4F1D",
+    border: "#D4C5A0", codeBg: "#EDE6D8",
+    compareBg: "#EBE3D2", gridCellBg: "#EDE6D8",
+    bigNumberColor: "#6B4F1D",
+    terminalDots: ["#6B4F1D", "#8B6F3D", "#AB8F5D"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'Cormorant Garamond', Georgia, serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
-    headingWeight: 700, stripPosition: "none", topAccentLine: true, pattern: "diagonal",
+    headingWeight: 700, stripPosition: "top", stripColor: "#6B4F1D", pattern: "diagonal",
   },
   terminal: {
     key: "terminal", name: "Terminal",
-    bg: "#0D1117", fg: "#E6EDF3", accent: "#58A6FF", emphasis: "#58A6FF", muted: "#7D8590", border: "rgba(88,166,255,0.15)", codeBg: "#010409",
+    bg: "#0D1117", fg: "#E6EDF3", accent: "#58A6FF", emphasis: "#58A6FF",
+    muted: "#8B949E", sectionLabel: "#58A6FF",
+    border: "rgba(88,166,255,0.15)", codeBg: "rgba(255,255,255,0.03)",
+    compareBg: "rgba(88,166,255,0.05)", gridCellBg: "rgba(88,166,255,0.06)",
+    bigNumberColor: "#58A6FF",
+    terminalDots: ["#FF5F56", "#FFBD2E", "#27C93F"],
     bodyFont: "'JetBrains Mono', ui-monospace, monospace",
     headingFont: "'JetBrains Mono', ui-monospace, monospace",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -69,7 +94,12 @@ const STYLES: Record<StyleKey, StylePalette> = {
   },
   high_contrast: {
     key: "high_contrast", name: "High Contrast",
-    bg: "#000000", fg: "#FFFFFF", accent: "#FFFFFF", emphasis: "#FFFFFF", muted: "rgba(255,255,255,0.55)", border: "rgba(255,255,255,0.15)", codeBg: "#0A0A0A",
+    bg: "#000000", fg: "#FFFFFF", accent: "#FFFFFF", emphasis: "#FFFFFF",
+    muted: "#CCCCCC", sectionLabel: "rgba(255,255,255,0.5)",
+    border: "rgba(255,255,255,0.12)", codeBg: "rgba(255,255,255,0.04)",
+    compareBg: "rgba(255,255,255,0.04)", gridCellBg: "rgba(255,255,255,0.05)",
+    bigNumberColor: "#FFFFFF",
+    terminalDots: ["#666", "#666", "#666"],
     bodyFont: "'DM Sans', system-ui, sans-serif",
     headingFont: "'DM Sans', system-ui, sans-serif",
     monoFont: "'JetBrains Mono', ui-monospace, monospace",
@@ -419,21 +449,24 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
         </text>
       )}
 
-      {/* Accent strip */}
-      {showStrip && <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />}
-
-      {/* Top accent line under section_label (Executive Briefing only) */}
-      {style.topAccentLine && (
+      {/* Accent strip — slides 2+ only (COVER is the hook, no decoration). */}
+      {showStrip && slide.slide_number > 1 && stripPos !== "top" && (
+        <rect x={stripX} y={0} width={4} height={h} fill={stripColor} rx={0} />
+      )}
+      {showStrip && slide.slide_number > 1 && stripPos === "top" && (
+        <rect x={60} y={78} width={w - 120} height={2} fill={stripColor} />
+      )}
+      {style.topAccentLine && slide.slide_number > 1 && (
         <line x1={isRTL ? w - edgePad - 200 : edgePad} y1={84}
               x2={isRTL ? w - edgePad : edgePad + 200} y2={84}
               stroke={style.accent} strokeWidth={2} />
       )}
 
       {/* Section label + icon */}
-      <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.accent} size={16} />
+      <TypeIcon type={slide.slide_type} x={labelIconX} y={56} color={style.sectionLabel ?? style.accent} size={16} />
       <text x={labelTextX} y={70} textAnchor={labelAnchor}
             fontFamily={bodyFont} fontSize={isRTL ? 20 : 18} letterSpacing={isRTL ? 0 : 3}
-            fill={style.accent} fontWeight={isRTL ? 700 : 600}>
+            fill={style.sectionLabel ?? style.accent} fontWeight={isRTL ? 700 : 600}>
         {displayLabel}
       </text>
 
@@ -664,7 +697,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
     case "BIG_NUMBER": {
       return (
         <g>
-      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.monoFont} fontSize={200} fontWeight={style.headingWeight ?? 700} fill={style.accent} direction="ltr">
+      <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
           {slide.number_context && (
@@ -765,9 +798,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       return (
         <g>
           <rect x={blockX} y={blockY} width={blockW} height={blockH} rx={16} fill={style.codeBg} stroke={style.accent} strokeOpacity={0.2} />
-          <circle cx={blockX + 28} cy={blockY + 32} r={8} fill="#ef4444" />
-          <circle cx={blockX + 56} cy={blockY + 32} r={8} fill="#eab308" />
-          <circle cx={blockX + 84} cy={blockY + 32} r={8} fill="#22c55e" />
+          <circle cx={blockX + 28} cy={blockY + 32} r={8} fill={style.terminalDots?.[0] ?? "#ef4444"} />
+          <circle cx={blockX + 56} cy={blockY + 32} r={8} fill={style.terminalDots?.[1] ?? "#eab308"} />
+          <circle cx={blockX + 84} cy={blockY + 32} r={8} fill={style.terminalDots?.[2] ?? "#22c55e"} />
           {slide.terminal_file && (
             <text x={blockX + blockW - 24} y={blockY + 38} textAnchor="end" fontFamily={style.monoFont} fontSize={18} fill={style.muted} direction="ltr">
               {slide.terminal_file}
@@ -818,7 +851,7 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
             const cellTextAnchor: "start" | "end" = isRTL ? "end" : "start";
             return (
               <g key={i}>
-                <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill="none" stroke={style.border} strokeWidth={1} />
+                <rect x={x} y={y} width={cellW} height={cellH} rx={12} fill={style.gridCellBg ?? "none"} stroke={style.border} strokeWidth={1} />
                 <circle cx={numCx} cy={y + cellH / 2} r={20}
                         fill={style.numberBadgeBg ?? style.accent}
                         fillOpacity={style.numberBadgeBg ? 1 : 0.15} />
@@ -884,6 +917,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       const rightColW = w - edgePad - rightColX;
       const leftColX = edgePad + 20;
       const leftColW = cx - leftColX - 10;
+      // Column background height = headers + content + padding, capped at full block height.
+      const colContentH = Math.max(leftLayout.total, rightLayout.total);
+      const colBgH = Math.min(blockH, Math.max(140, 40 + colContentH + 60));
       return (
         <g>
           {headlineLines.map((ln, i) => (
@@ -895,15 +931,15 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
               {ln}
             </text>
           ))}
-          <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + blockH} stroke={style.border} strokeWidth={1} />
+          <line x1={cx} y1={blockTop} x2={cx} y2={blockTop + colBgH} stroke={style.border} strokeWidth={1} />
           {/* Both columns get equal-weight containers; visual difference comes from opacity, weight, and accent border. */}
-          <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={blockH} rx={8}
-                fill={correctOnLeft ? style.accent : style.fg}
-                fillOpacity={correctOnLeft ? 0.08 : 0.04}
+          <rect x={leftColX - 16} y={blockTop} width={leftColW + 16} height={colBgH} rx={8}
+                fill={correctOnLeft ? style.accent : (style.compareBg ?? style.fg)}
+                fillOpacity={correctOnLeft ? 0.08 : (style.compareBg ? 1 : 0.04)}
                 stroke={style.border} strokeWidth={1} />
-          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={blockH} rx={8}
-                fill={correctOnLeft ? style.fg : style.accent}
-                fillOpacity={correctOnLeft ? 0.04 : 0.08}
+          <rect x={rightColX - 16} y={blockTop} width={rightColW + 16} height={colBgH} rx={8}
+                fill={correctOnLeft ? (style.compareBg ?? style.fg) : style.accent}
+                fillOpacity={correctOnLeft ? (style.compareBg ? 1 : 0.04) : 0.08}
                 stroke={style.border} strokeWidth={1} />
           <text x={leftColX} y={headerY} fontFamily={bodyFont} fontSize={correctOnLeft ? 20 : 18}
                 letterSpacing={isRTL ? 0 : 2}
@@ -1367,21 +1403,23 @@ export default function CarouselStudio() {
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess?.session?.user?.id;
       if (!uid) return;
-      const [pRes, lRes] = await Promise.all([
-        supabase.from("diagnostic_profiles").select("first_name, level, firm, core_practice").eq("user_id", uid).maybeSingle(),
-        supabase.from("linkedin_connections").select("handle, display_name, profile_name").eq("user_id", uid).maybeSingle(),
-      ]);
-      const p: any = pRes.data || {};
-      const l: any = lRes.data || {};
-      const name = (l.display_name || l.profile_name || p.first_name || "").trim();
-      const title = [p.level, p.firm].filter(Boolean).join(" · ") || (p.core_practice || "");
-      const handle = (l.handle || "").replace(/^@/, "").trim();
-      setAuthorDefaults({ name, title, handle: handle ? `@${handle}` : "" });
+      // Source of truth = diagnostic_profiles. Do not pull from linkedin_connections
+      // (that surfaced stale display names from other contexts).
+      const { data: pRes } = await supabase
+        .from("diagnostic_profiles")
+        .select("first_name, last_name, level, firm")
+        .eq("user_id", uid)
+        .maybeSingle();
+      const p: any = pRes || {};
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      const title = [p.level, p.firm].filter(Boolean).join(" · ");
+      // linkedin_handle column not yet added — keep handle empty by default.
+      setAuthorDefaults({ name, title, handle: "" });
       setCarousel(c => ({
         ...c,
         author_name: c.author_name || name,
         author_title: c.author_title || title,
-        author_handle: c.author_handle || (handle ? `@${handle}` : ""),
+        author_handle: c.author_handle || "",
       }));
     })();
   }, []);
@@ -1443,10 +1481,11 @@ export default function CarouselStudio() {
         ...data,
         slides: numbered,
         total_slides: numbered.length,
-        // Always overwrite EF-returned author with the current user's profile to prevent leakage.
-        author_name: authorDefaults.name || data.author_name || "",
-        author_title: authorDefaults.title || data.author_title || "",
-        author_handle: authorDefaults.handle || data.author_handle || "",
+        // EF reads from the same diagnostic_profiles row, so prefer its value;
+        // fall back to the locally-prefilled defaults if the EF returned nothing.
+        author_name: data.author_name || authorDefaults.name || "",
+        author_title: data.author_title || authorDefaults.title || "",
+        author_handle: data.author_handle || authorDefaults.handle || "",
       });
       // Auto-collapse signals once a real carousel is loaded
       setShowSignals(false);
