@@ -289,8 +289,8 @@ ${identityCtx}`;
     /* ── Dedup check against existing signals ── */
     const { data: existingSignals } = await admin
       .from("strategic_signals")
-      .select("id, signal_title, theme_tags, confidence, fragment_count, supporting_evidence_ids, unique_orgs, updated_at")
-      .eq("user_id", user_id).eq("status", "active");
+      .select("id, signal_title, theme_tags, confidence, fragment_count, supporting_evidence_ids, unique_orgs, updated_at, status")
+      .eq("user_id", user_id).in("status", ["active", "dormant"]);
 
     const allSignals = existingSignals || [];
 
@@ -328,6 +328,10 @@ ${identityCtx}`;
         what_it_means_for_you: whatItMeans,
         priority_score: priorityScore,
         updated_at: now,
+        // Reactivate dormant signals when fresh evidence pushes confidence above threshold
+        ...(signalRow.status === "dormant" && confidence >= 0.15
+          ? { status: "active", velocity_status: "stable" }
+          : {}),
       }).eq("id", signalRow.id);
 
       return signalRow.id;
