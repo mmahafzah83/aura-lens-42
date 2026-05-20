@@ -1357,12 +1357,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       {/* SECTION 1 — Header bar */}
       <header className="flex items-end justify-between gap-3 pt-1">
         <div>
-          <div className="text-foreground" style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.01em" }}>
-            {fmtTime(now)}
-          </div>
-          <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>
-            {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
-          </div>
           {returnGreeting && (
             <div
               data-testid="home-return-greeting"
@@ -1370,7 +1364,6 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
                 fontSize: 16,
                 color: "var(--ink-2, var(--ink))",
-                marginTop: 8,
                 lineHeight: 1.4,
                 maxWidth: 540,
               }}
@@ -1387,27 +1380,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
-      {/* P4 — Authority pulse strip + Journey cycle + Mission control */}
-      {authUser?.id && (
-        <div className="flex flex-col" style={{ gap: 10 }}>
-          <AuthorityPulseStrip
-            userId={authUser.id}
-            authorityScore={auraData?.aura_score ?? null}
-            onGoToImpact={() => onSwitchTab?.("influence")}
-          />
-          <JourneyCycle
-            hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
-            hasSignals={!!topSignal}
-            publishedThisWeek={false}
-            hasLinkedInData={!!auraData?.content_score && auraData.content_score > 0}
-            scoreGrowing={(auraData?.score_trend ?? 0) > 0}
-            authorityScore={auraData?.aura_score ?? 0}
-          />
-          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
-        </div>
-      )}
-
-      {/* H2b — STATUS STRIP */}
+      {/* H2b — STATUS STRIP (score + tier + rhythm) — promoted above KPI strip */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
           weekly rhythm grid so users never see partial flashes (e.g. tier
           label appearing before the rhythm cells). */}
