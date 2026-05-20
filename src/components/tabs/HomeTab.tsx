@@ -388,6 +388,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         setDaysSinceCapture(null);
       }
       setTopSignal(sigRes.data ?? null);
+      const { count: totalSignalCount } = await supabase
+        .from("strategic_signals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", uid);
+      setHasAnySignals((totalSignalCount ?? 0) > 0);
       setTopMove(moveRes.data ?? null);
       setNewFollowers30d((follRes.data || []).reduce((s: number, r: any) => s + (r.follower_growth || 0), 0));
       console.log("[HomeTab] briefing finished");
