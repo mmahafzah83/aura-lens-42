@@ -1630,6 +1630,99 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       })()}
 
       {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
+      {!auraLoading && !isEmpty && auraData && (() => {
+        const signalW = Math.round((auraData.signal_score ?? 0) * 0.4);
+        const contentW = Math.round((auraData.content_score ?? 0) * 0.4);
+        const captureW = Math.round((auraData.capture_score ?? 0) * 0.2);
+
+        let weakestAction = "";
+        if (signalW === 0 && contentW === 0 && captureW === 0) {
+          weakestAction = "Start by capturing an article — your score builds from there";
+        } else if (signalW <= contentW && signalW <= captureW) {
+          weakestAction = "Signal needs attention — capture from a new source";
+        } else if (contentW <= signalW && contentW <= captureW) {
+          weakestAction = "Content needs attention — publish from your strongest signal";
+        } else {
+          weakestAction = "Consistency needs attention — capture one thing this week";
+        }
+
+        const forces = [
+          { label: "Signal", weighted: signalW, max: 40, color: "var(--aura-accent)" },
+          { label: "Content", weighted: contentW, max: 40, color: "var(--aura-blue)" },
+          { label: "Consistency", weighted: captureW, max: 20, color: "var(--aura-positive)" },
+        ];
+
+        return (
+          <div
+            data-testid="home-forces-strip"
+            role="button"
+            tabIndex={0}
+            onClick={() => onSwitchTab?.("influence")}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSwitchTab?.("influence"); } }}
+            style={{
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border) / 0.5)",
+              borderRadius: 10,
+              padding: "14px 16px",
+              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {forces.map((f) => {
+                const pct = Math.max(0, Math.min(100, (f.weighted / f.max) * 100));
+                return (
+                  <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
+                      textTransform: "uppercase", color: "hsl(var(--muted-foreground))",
+                    }}>
+                      {f.label}
+                    </div>
+                    <div
+                      className="tabular-nums"
+                      style={{
+                        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+                        fontSize: 18, fontWeight: 700, color: f.color, lineHeight: 1,
+                      }}
+                    >
+                      {f.weighted}
+                      <span style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))" }}>
+                        {" "}/{f.max}
+                      </span>
+                    </div>
+                    <div style={{
+                      height: 4, background: "hsl(var(--border) / 0.6)",
+                      borderRadius: 2, overflow: "hidden",
+                    }}>
+                      <div style={{
+                        width: `${pct}%`, height: "100%",
+                        background: f.color, transition: "width 600ms ease",
+                      }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{
+              fontSize: 12, color: "hsl(var(--foreground) / 0.85)",
+              lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6,
+            }}>
+              <span aria-hidden style={{ color: "var(--brand)" }}>⚡</span>
+              <span style={{ flex: 1, minWidth: 0 }}>{weakestAction}</span>
+            </div>
+            <div style={{
+              fontSize: 12, color: "hsl(var(--muted-foreground))",
+              textAlign: "right",
+            }}>
+              See full breakdown →
+            </div>
+          </div>
+        );
+      })()}
+
       <WeeklyIntelligenceLoopCard onSwitchTab={onSwitchTab} />
 
       {/* Silence Alarm — substance-backed urgency when capture has paused 3+ days */}
