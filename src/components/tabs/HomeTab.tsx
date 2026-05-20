@@ -1571,41 +1571,39 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </div>
               <div className="flex items-center" style={{ gap: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
                 <span>{activeWeeks}/12w</span>
-                <button
-                  type="button"
-                  aria-label="About capture rhythm"
-                  onClick={(e) => { e.stopPropagation(); setRhythmTooltipOpen(o => !o); }}
-                  style={{
-                    background: "transparent", border: 0, padding: 0,
-                    cursor: "pointer", color: "hsl(var(--muted-foreground))",
-                    display: "inline-flex", alignItems: "center", position: "relative",
-                  }}
-                >
-                  <HelpCircle size={12} strokeWidth={1.75} />
-                  {rhythmTooltipOpen && (
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      style={{
-                        position: "absolute", bottom: "calc(100% + 8px)", right: 0,
-                        background: "hsl(var(--popover))",
-                        color: "hsl(var(--popover-foreground))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: 6, padding: 10,
-                        fontSize: 11, lineHeight: 1.5, fontWeight: 400,
-                        width: 280, maxWidth: 280, textAlign: "left",
-                        zIndex: 50,
-                        boxShadow: "0 4px 14px hsl(var(--background) / 0.4)",
-                      }}
-                    >
-                      <strong>Capture Rhythm:</strong> Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
-                    </div>
-                  )}
-                </button>
+                <InfoTooltip side="top" align="end" label="Capture Rhythm" width={280}>
+                  <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Capture Rhythm</div>
+                  <p style={{ margin: 0 }}>
+                    Each square = one week. Filled = at least one meaningful capture. {activeWeeks} of 12 weeks active.
+                  </p>
+                </InfoTooltip>
               </div>
             </div>
           </div>
         );
       })()}
+
+      {/* P4 — Authority pulse strip + Journey cycle + Mission control (now below score) */}
+      {authUser?.id && (
+        <div className="flex flex-col" style={{ gap: 10 }}>
+          <AuthorityPulseStrip
+            userId={authUser.id}
+            authorityScore={auraData?.aura_score ?? null}
+            onGoToImpact={() => onSwitchTab?.("influence")}
+          />
+          {!hasAnySignals && (
+            <JourneyCycle
+              hasEntries={(entries?.length ?? 0) > 0 || journey.entryCount > 0}
+              hasSignals={!!topSignal}
+              publishedThisWeek={false}
+              hasLinkedInData={!!auraData?.content_score && auraData.content_score > 0}
+              scoreGrowing={(auraData?.score_trend ?? 0) > 0}
+              authorityScore={auraData?.aura_score ?? 0}
+            />
+          )}
+          <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
+        </div>
+      )}
 
       {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
       {!auraLoading && !isEmpty && auraData && (() => {
