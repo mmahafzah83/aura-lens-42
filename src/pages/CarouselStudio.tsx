@@ -798,9 +798,9 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       return (
         <g>
           <rect x={blockX} y={blockY} width={blockW} height={blockH} rx={16} fill={style.codeBg} stroke={style.accent} strokeOpacity={0.2} />
-          <circle cx={blockX + 28} cy={blockY + 32} r={8} fill="#ef4444" />
-          <circle cx={blockX + 56} cy={blockY + 32} r={8} fill="#eab308" />
-          <circle cx={blockX + 84} cy={blockY + 32} r={8} fill="#22c55e" />
+          <circle cx={blockX + 28} cy={blockY + 32} r={8} fill={style.terminalDots?.[0] ?? "#ef4444"} />
+          <circle cx={blockX + 56} cy={blockY + 32} r={8} fill={style.terminalDots?.[1] ?? "#eab308"} />
+          <circle cx={blockX + 84} cy={blockY + 32} r={8} fill={style.terminalDots?.[2] ?? "#22c55e"} />
           {slide.terminal_file && (
             <text x={blockX + blockW - 24} y={blockY + 38} textAnchor="end" fontFamily={style.monoFont} fontSize={18} fill={style.muted} direction="ltr">
               {slide.terminal_file}
