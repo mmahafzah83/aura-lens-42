@@ -1226,6 +1226,19 @@ async function getCairoEmbeddedCSS(): Promise<string> {
 }
 
 function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extraCSS = ""): Promise<Blob> {
+  return svgToImageBlob(svgEl, width, height, extraCSS, "image/png", 1);
+}
+
+/** Rasterise an SVG to a blob. Use JPEG with quality<1 for PDF embedding
+ *  to keep file size well below LinkedIn's 10MB carousel limit. */
+function svgToImageBlob(
+  svgEl: SVGSVGElement,
+  width: number,
+  height: number,
+  extraCSS = "",
+  mime: "image/png" | "image/jpeg" = "image/png",
+  quality = 1,
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     // Clone and inject <style> with @import so fonts load inside the SVG sandbox
     const clone = svgEl.cloneNode(true) as SVGSVGElement;
@@ -1245,9 +1258,18 @@ function svgToPngBlob(svgEl: SVGSVGElement, width: number, height: number, extra
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext("2d")!;
+        // JPEG has no alpha — paint a background so transparent regions don't go black.
+        if (mime === "image/jpeg") {
+          ctx.fillStyle = "#0F0E0C";
+          ctx.fillRect(0, 0, width, height);
+        }
         ctx.drawImage(img, 0, 0, width, height);
         URL.revokeObjectURL(url);
-        canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")), "image/png");
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")),
+          mime,
+          mime === "image/jpeg" ? quality : undefined,
+        );
       }, 500);
     };
     img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
