@@ -414,6 +414,32 @@ Author context (for tone only — do not hardcode in slides): ${authorFullName}$
     }
     parsed.style = style || null;
 
+    // Post-generation word limit enforcement (Sonnet sometimes overruns).
+    const truncateWords = (s: string, max: number, keep: number) => {
+      const words = String(s).trim().split(/\s+/).filter(Boolean);
+      if (words.length <= max) return s;
+      let out = words.slice(0, keep).join(" ");
+      if (!/[.!?…؟]$/.test(out)) out += ".";
+      return out;
+    };
+    if (Array.isArray(parsed?.slides)) {
+      for (const slide of parsed.slides) {
+        if (typeof slide.body === "string") {
+          slide.body = truncateWords(slide.body, 30, 25);
+        }
+        if (slide.slide_type === "COMPARE") {
+          for (const key of ["compare_left_items", "compare_right_items", "left_items", "right_items", "correct_items", "wrong_items"]) {
+            if (Array.isArray(slide[key])) {
+              slide[key] = slide[key].slice(0, 4).map((item: any) => {
+                const w = String(item).split(/\s+/).filter(Boolean);
+                return w.length > 6 ? w.slice(0, 6).join(" ") : item;
+              });
+            }
+          }
+        }
+      }
+    }
+
     return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

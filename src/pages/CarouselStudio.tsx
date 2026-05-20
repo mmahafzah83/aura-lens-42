@@ -447,7 +447,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       <line x1={60} y1={92} x2={w - 60} y2={92} stroke={style.accent} strokeOpacity={0.13} strokeWidth={1} />
 
       {/* Slide-type body */}
-      <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} />
+      <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} authorHandle={carousel.author_handle} />
 
       {/* Progress dots — above footer */}
       <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 110} accent={style.accent} dotOutline={dotOutline} />
@@ -538,7 +538,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   );
 }
 
-function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: StylePalette; w: number; h: number; lang?: "en" | "ar" }) {
+function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { slide: Slide; style: StylePalette; w: number; h: number; lang?: "en" | "ar"; authorHandle?: string }) {
   const cx = w / 2;
   const isRTL = lang === "ar";
   const arFont = "'Cairo', 'DM Sans', sans-serif";
@@ -867,20 +867,14 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       const blockH = Math.max(280, h - blockTop - footerClear);
       const headerY = blockTop + 30;
       const rowsStartY = blockTop + 80;
-      const rowsBottomY = blockTop + blockH - 32;
-      const availRowsH = Math.max(itemLineH, rowsBottomY - rowsStartY);
-      // Distribute items evenly within the available column height.
+      // Top-cluster items with a fixed gap; columns still get full-height backgrounds.
+      const ITEM_GAP = 24;
       const distribute = (groups: string[][]) => {
-        const heights = groups.map((g) => g.length * itemLineH);
-        const baseTotal = heights.reduce((a, b) => a + b, 0);
-        const gaps = Math.max(0, groups.length - 1);
-        const extra = Math.max(0, availRowsH - baseTotal - gaps * itemGap);
-        const gap = itemGap + (gaps > 0 ? extra / gaps : 0);
         const offsets: number[] = [];
         let acc = 0;
         for (let i = 0; i < groups.length; i++) {
           offsets.push(acc);
-          acc += heights[i] + (i < groups.length - 1 ? gap : 0);
+          acc += groups[i].length * itemLineH + (i < groups.length - 1 ? ITEM_GAP : 0);
         }
         return { offsets, total: acc };
       };
@@ -1092,11 +1086,11 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
     case "CTA": {
       const headlineLines = wrapText(slide.headline || "", 22);
       const headLineH = 56;
-      const btnH = slide.cta_button ? 80 : 0;
+      const btnH = 80;
       const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
       const gapIcons = headBlockH ? 48 : 0;
-      const gapBtn = btnH ? 56 : 0;
+      const gapBtn = 56;
       const totalH = headBlockH + gapIcons + iconRowH + gapBtn + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
@@ -1155,21 +1149,29 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               </g>
             );
           })}
-          {slide.cta_button && (
-            <g>
-              <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
-              <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
-                {(() => {
-                  const t = slide.cta_button || "";
-                  const handle = (t.match(/@[A-Za-z0-9_]+/) || ["@your-handle"])[0];
-                  if (isRTL) {
-                    return `\u200Fتابع \u202A${handle}\u202C \u200F←`;
-                  }
-                  return `Follow \u202A${handle}\u202C →`;
-                })()}
-              </text>
-            </g>
-          )}
+          {(() => {
+            // Prefer the user's real handle from the profile; fall back to any handle
+            // mentioned in slide.cta_button; otherwise show a generic "Follow for more".
+            const fromBtn = (slide.cta_button || "").match(/@[A-Za-z0-9_]+/)?.[0] || "";
+            const raw = (authorHandle || fromBtn || "").trim();
+            const hasHandle =
+              raw !== "" &&
+              raw !== "@" &&
+              raw.toLowerCase() !== "@handle" &&
+              raw.toLowerCase() !== "@your-handle";
+            const handle = hasHandle ? (raw.startsWith("@") ? raw : `@${raw}`) : "";
+            const label = isRTL
+              ? (hasHandle ? `\u200Fتابع \u202A${handle}\u202C \u200F←` : "\u200Fتابع للمزيد \u200F←")
+              : (hasHandle ? `Follow \u202A${handle}\u202C →` : "Follow for more →");
+            return (
+              <g>
+                <rect x={btnX} y={btnY} width={btnW} height={64} rx={32} fill="none" stroke={style.accent} strokeWidth={1.5} />
+                <text x={cx} y={btnY + 40} textAnchor="middle" fontFamily={bodyFont} fontSize={22} fill={style.accent} fontWeight={isRTL ? 800 : 600}>
+                  {label}
+                </text>
+              </g>
+            );
+          })()}
         </g>
       );
     }
