@@ -26,7 +26,7 @@ export interface CallAIConfig {
   toolChoice?: any;
   /** Optional override for max output tokens (Anthropic only). Default 4096. */
   maxTokens?: number;
-  /** Optional model override. Defaults: claude-sonnet-4-20250514 / google/gemini-3-flash-preview */
+  /** Optional model override. Defaults: claude-sonnet-4-6 / google/gemini-3-flash-preview */
   model?: string;
 }
 
@@ -41,7 +41,7 @@ export async function callAI(config: CallAIConfig): Promise<CallAIResult> {
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
 
     const body: Record<string, unknown> = {
-      model: config.model ?? "claude-sonnet-4-20250514",
+      model: config.model ?? "claude-sonnet-4-6",
       max_tokens: config.maxTokens ?? 4096,
       system: config.systemPrompt,
       messages: [{ role: "user", content: config.userMessage }],

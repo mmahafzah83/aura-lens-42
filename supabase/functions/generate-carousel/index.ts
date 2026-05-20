@@ -19,8 +19,6 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const isArabic = lang === "ar";
 
@@ -120,7 +118,7 @@ ABSOLUTE RULES — VIOLATION = TOTAL FAILURE:
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 16384,
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt + retryAddendum }],

@@ -78,15 +78,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("voice-distill: missing LOVABLE_API_KEY");
-      return new Response(
-        JSON.stringify({ error: "missing_api_key" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     // Step 1 — Fetch posts
@@ -147,7 +138,7 @@ Deno.serve(async (req) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
         temperature: 0.3,
         system: SYSTEM_PROMPT,
