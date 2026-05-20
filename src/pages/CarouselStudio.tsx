@@ -447,7 +447,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
       <line x1={60} y1={92} x2={w - 60} y2={92} stroke={style.accent} strokeOpacity={0.13} strokeWidth={1} />
 
       {/* Slide-type body */}
-      <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} />
+      <SlideBody slide={slide} style={style} w={w} h={h} lang={lang} authorHandle={carousel.author_handle} />
 
       {/* Progress dots — above footer */}
       <ProgressDots current={slide.slide_number - 1} total={total} cx={w / 2} y={h - 110} accent={style.accent} dotOutline={dotOutline} />
@@ -538,7 +538,7 @@ function SlideSVG({ slide, total, style, dim, carousel, lang = "en" }: RenderPro
   );
 }
 
-function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: StylePalette; w: number; h: number; lang?: "en" | "ar" }) {
+function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { slide: Slide; style: StylePalette; w: number; h: number; lang?: "en" | "ar"; authorHandle?: string }) {
   const cx = w / 2;
   const isRTL = lang === "ar";
   const arFont = "'Cairo', 'DM Sans', sans-serif";
