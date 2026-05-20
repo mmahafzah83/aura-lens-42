@@ -842,19 +842,36 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
       // Convention: compare_left_* = WRONG (mistake, muted+strike), compare_right_* = CORRECT (gold, bold).
       // RTL swap: in Arabic the WRONG renders on visual RIGHT (read first), CORRECT on visual LEFT (read second, payoff).
       const wrongTitle = slide.compare_left_title || "BEFORE";
-      const wrongItems = slide.compare_left_items || [];
+      const wrongItems = (slide.compare_left_items || []).slice(0, 4);
       const correctTitle = slide.compare_right_title || "AFTER";
-      const correctItems = slide.compare_right_items || [];
+      const correctItems = (slide.compare_right_items || []).slice(0, 4);
       const visLeftTitle = isRTL ? correctTitle : wrongTitle;
       const visLeftItems = isRTL ? correctItems : wrongItems;
       const visRightTitle = isRTL ? wrongTitle : correctTitle;
       const visRightItems = isRTL ? wrongItems : correctItems;
       const correctOnLeft = isRTL;
-      const itemH = 60;
-      const rowsCount = Math.max(visLeftItems.length, visRightItems.length, 1);
-      const blockH = 80 + rowsCount * itemH;
-      const headlineSpace = slide.headline ? 70 : 0;
-      const blockTop = Math.max(140, cy - blockH / 2 - headlineSpace / 2);
+      // Dynamic row heights: pre-wrap every item, then accumulate offsets so
+      // multi-line items push the next item down instead of overlapping.
+      const itemLineH = 28;          // line-height per wrapped line (~1.27 of 22px)
+      const itemGap = 18;            // gap between items
+      const wrapW = isRTL ? 18 : 24;
+      const leftWrapped = visLeftItems.map((it) => wrapText(it, wrapW));
+      const rightWrapped = visRightItems.map((it) => wrapText(it, wrapW));
+      const cumOffsets = (groups: string[][]) => {
+        const out: number[] = [];
+        let acc = 0;
+        for (let i = 0; i < groups.length; i++) {
+          out.push(acc);
+          acc += groups[i].length * itemLineH + (i < groups.length - 1 ? itemGap : 0);
+        }
+        return { offsets: out, total: acc };
+      };
+      const leftLayout = cumOffsets(leftWrapped);
+      const rightLayout = cumOffsets(rightWrapped);
+      const colsTotalH = Math.max(leftLayout.total, rightLayout.total, itemLineH);
+      const blockH = 80 + colsTotalH + 32;
+      // Fill layout — start near top of content zone so columns get max vertical room.
+      const blockTop = 140;
       const headerY = blockTop + 30;
       const rowsStartY = blockTop + 80;
       const rightColX = cx + 30;
@@ -904,8 +921,8 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           </text>
           {/* Visual LEFT column items */}
           {visLeftItems.map((it, i) => {
-            const lns = wrapText(it, isRTL ? 18 : 24);
-            const rowY = rowsStartY + i * itemH;
+            const lns = leftWrapped[i];
+            const rowY = rowsStartY + leftLayout.offsets[i];
             const textXi = isRTL ? leftColX + leftColW : leftColX;
             const anchor: "start" | "end" = isRTL ? "end" : "start";
             if (correctOnLeft) {
@@ -914,13 +931,13 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
                   {/* Gold accent on the inner edge (right side in RTL since text reads RTL) */}
                   <line
                     x1={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
-                    y1={rowY - 24}
+                    y1={rowY - 22}
                     x2={isRTL ? leftColX + leftColW + 8 : leftColX - 8}
-                    y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                    y2={rowY - 22 + Math.max(itemLineH, lns.length * itemLineH)}
                     stroke={style.accent} strokeWidth={2} />
                   {lns.map((ln, li) => (
-                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                    <text key={li} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                       {ln}
                     </text>
                   ))}
@@ -928,7 +945,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               );
             }
             return lns.map((ln, li) => (
-              <text key={`l${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+              <text key={`l${i}-${li}`} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
@@ -938,18 +955,18 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
           })}
           {/* Visual RIGHT column items */}
           {visRightItems.map((it, i) => {
-            const lns = wrapText(it, isRTL ? 18 : 24);
-            const rowY = rowsStartY + i * itemH;
+            const lns = rightWrapped[i];
+            const rowY = rowsStartY + rightLayout.offsets[i];
             const textXi = isRTL ? rightColX + rightColW : rightColX;
             const anchor: "start" | "end" = isRTL ? "end" : "start";
             if (!correctOnLeft) {
               return (
                 <g key={`rg${i}`}>
-                  <line x1={rightColX - 8} y1={rowY - 24} x2={rightColX - 8} y2={rowY - 24 + Math.max(28, lns.length * 28)}
+                  <line x1={rightColX - 8} y1={rowY - 22} x2={rightColX - 8} y2={rowY - 22 + Math.max(itemLineH, lns.length * itemLineH)}
                         stroke={style.accent} strokeWidth={2} />
                   {lns.map((ln, li) => (
-                    <text key={li} x={textXi} y={rowY + li * 28} textAnchor={anchor}
-                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 24} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
+                    <text key={li} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
+                          fontFamily={bodyFont} fontSize={isRTL ? 20 : 22} fill={style.fg} fontWeight={isRTL ? 800 : 600}>
                       {ln}
                     </text>
                   ))}
@@ -957,7 +974,7 @@ function SlideBody({ slide, style, w, h, lang = "en" }: { slide: Slide; style: S
               );
             }
             return lns.map((ln, li) => (
-              <text key={`r${i}-${li}`} x={textXi} y={rowY + li * 28} textAnchor={anchor}
+              <text key={`r${i}-${li}`} x={textXi} y={rowY + li * itemLineH} textAnchor={anchor}
                     fontFamily={bodyFont} fontSize={isRTL ? 19 : 22} fill={style.fg} opacity={0.55}
                     fontWeight={isRTL ? 600 : 400}
                     textDecoration="line-through" style={{ textDecorationColor: style.fg, textDecorationThickness: 1.5 }}>
