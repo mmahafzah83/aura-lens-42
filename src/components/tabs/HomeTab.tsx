@@ -1509,6 +1509,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
           >
             <div className="flex flex-col" style={{ gap: 2 }}>
+              <div data-testid="home-greeting" className="text-muted-foreground" style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
+                {getGreeting(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
+              </div>
               <div className="flex items-center" style={{ gap: 6 }}>
                 <span
                   data-testid="home-score"
