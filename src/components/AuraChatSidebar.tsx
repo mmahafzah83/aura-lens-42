@@ -424,9 +424,11 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       .from("chat_messages" as any)
       .select("*")
       .eq("conversation_id", convId)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: false })
+      .limit(100);
     if (data) {
-      setMessages((data as any[]).map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
+      const ordered = (data as any[]).slice().reverse();
+      setMessages(ordered.map(m => ({ role: m.role as "user" | "assistant", content: m.content })));
     }
     setLoadingHistory(false);
   }, []);
