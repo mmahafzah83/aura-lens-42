@@ -1086,11 +1086,11 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
     case "CTA": {
       const headlineLines = wrapText(slide.headline || "", 22);
       const headLineH = 56;
-      const btnH = slide.cta_button ? 80 : 0;
+      const btnH = 80;
       const iconRowH = 110;
       const headBlockH = headlineLines.length * headLineH;
       const gapIcons = headBlockH ? 48 : 0;
-      const gapBtn = btnH ? 56 : 0;
+      const gapBtn = 56;
       const totalH = headBlockH + gapIcons + iconRowH + gapBtn + btnH;
       const top = cy - totalH / 2;
       const startY = top + headLineH;
