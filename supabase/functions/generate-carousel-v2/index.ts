@@ -216,6 +216,12 @@ WRAPPER:
 
 ${isArabic ? `═══ ARABIC CAROUSEL CONTENT — COMPLETE INSTRUCTIONS ═══
 
+⚠️ MANDATORY OUTPUT LANGUAGE: Arabic (العربية).
+ALL slide content MUST be in Arabic — every headline, body, section_label, headline_accent, question_text, cta_main, cta_sub, compare column titles, compare items, grid items, and linkedin_caption.
+The topic, signal_title, and author context may arrive in English. This is expected and normal. Translate the CONCEPT into Arabic and generate ALL output in Arabic.
+The ONLY English allowed within Arabic text: technical terms that professionals keep in English (AI, SCADA, GIS, KPI, dashboard, IoT, AMI, NRW, SLA, CIS, ERP, Excel, PDF). These stay as English words inside Arabic sentences.
+Hashtags: use a MIX of Arabic and English (e.g., #التحول_الرقمي, #DigitalTransformation). English hashtags are allowed and encouraged for cross-audience reach.
+
 You are writing for a senior GCC executive's LinkedIn carousel. Your Arabic is not translated English — it's the language of a confident Director who speaks to peers over coffee. Sharp. Direct. Rhythmic. Every line lands like a slide in a premium consulting deck.
 
 ═══ THE WRITING DNA (NON-NEGOTIABLE) ═══
@@ -362,7 +368,9 @@ COMPARE: right column = correct answer (RTL reading order = right first).
    ✅ "هل يستطيع مدير العمليات في شركة المياه اتخاذ قرار من بيانات العداد.. بدون تقرير Excel؟"
    ✗ "ما رأيك في التحول الرقمي؟" (generic)
 
-5. When the topic has no sector-specific angle (e.g., generic AI, leadership), adapt the writing to the user's sector_focus from diagnostic_profiles. If sector = "Energy & Utilities", ground examples in that sector even if the topic is broad.` : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
+5. When the topic has no sector-specific angle (e.g., generic AI, leadership), adapt the writing to the user's sector_focus from diagnostic_profiles. If sector = "Energy & Utilities", ground examples in that sector even if the topic is broad.
+
+═══ تذكير نهائي: لغة المخرجات = العربية. جميع الحقول بالعربية. لا تكتب أي محتوى بالإنجليزية إلا المصطلحات التقنية المذكورة أعلاه ═══` : "Write in English. Authoritative but conversational. The voice of a peer strategist, not a management consultant. GCC senior leader audience (CIO/CDO level)."}
 
 ═══ USER VOICE PROFILE (adapt your writing to match) ═══
 ${voiceProfile ? `
@@ -385,8 +393,13 @@ OUTPUT: Valid JSON only. No markdown fences. No preamble. No explanation.`;
 
     const userMessage = `Create a ${total_slides}-slide LinkedIn carousel about: ${topic}
 ${context ? "Additional context: " + context : ""}
-${signal ? "Ground this in the signal: " + signal.signal_title + " at " + Math.round((signal.confidence || 0) * 100) + "% confidence. " + (signal.explanation || "") : ""}
-Author context (for tone only — do not hardcode in slides): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, specializing in ${p.sector_focus}` : ""}`;
+${signal ? (isArabic
+  ? "اربط المحتوى بهذه الإشارة الاستراتيجية (العنوان بالإنجليزية — ترجم المفهوم إلى العربية): " + signal.signal_title + " — مستوى الثقة: " + Math.round((signal.confidence || 0) * 100) + "%. " + (signal.explanation ? "السياق: " + signal.explanation : "")
+  : "Ground this in the signal: " + signal.signal_title + " at " + Math.round((signal.confidence || 0) * 100) + "% confidence. " + (signal.explanation || "")
+) : ""}
+${isArabic
+  ? `(معلومات المؤلف — للسياق فقط، لا تؤثر على لغة المخرجات): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, ${p.sector_focus}` : ""}`
+  : `Author context (for tone only — do not hardcode in slides): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, specializing in ${p.sector_focus}` : ""}`}`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
