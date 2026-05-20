@@ -43,9 +43,6 @@ serve(async (req) => {
     }
     const targetUserId = user_id || authUserId;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     // Fetch signal (optional)
     let signal: any = null;
     if (signal_id) {
