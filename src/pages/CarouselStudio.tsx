@@ -1403,21 +1403,23 @@ export default function CarouselStudio() {
       const { data: sess } = await supabase.auth.getSession();
       const uid = sess?.session?.user?.id;
       if (!uid) return;
-      const [pRes, lRes] = await Promise.all([
-        supabase.from("diagnostic_profiles").select("first_name, level, firm, core_practice").eq("user_id", uid).maybeSingle(),
-        supabase.from("linkedin_connections").select("handle, display_name, profile_name").eq("user_id", uid).maybeSingle(),
-      ]);
-      const p: any = pRes.data || {};
-      const l: any = lRes.data || {};
-      const name = (l.display_name || l.profile_name || p.first_name || "").trim();
-      const title = [p.level, p.firm].filter(Boolean).join(" · ") || (p.core_practice || "");
-      const handle = (l.handle || "").replace(/^@/, "").trim();
-      setAuthorDefaults({ name, title, handle: handle ? `@${handle}` : "" });
+      // Source of truth = diagnostic_profiles. Do not pull from linkedin_connections
+      // (that surfaced stale display names from other contexts).
+      const { data: pRes } = await supabase
+        .from("diagnostic_profiles")
+        .select("first_name, last_name, level, firm")
+        .eq("user_id", uid)
+        .maybeSingle();
+      const p: any = pRes || {};
+      const name = [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
+      const title = [p.level, p.firm].filter(Boolean).join(" · ");
+      // linkedin_handle column not yet added — keep handle empty by default.
+      setAuthorDefaults({ name, title, handle: "" });
       setCarousel(c => ({
         ...c,
         author_name: c.author_name || name,
         author_title: c.author_title || title,
-        author_handle: c.author_handle || (handle ? `@${handle}` : ""),
+        author_handle: c.author_handle || "",
       }));
     })();
   }, []);
