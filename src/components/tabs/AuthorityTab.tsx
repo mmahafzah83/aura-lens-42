@@ -2782,6 +2782,10 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       setDrafts(prev => prev.filter(p => p.id !== id));
       toast.success("Published — this post now contributes to your authority score", { duration: 4000 });
       loadPosts();
+      // Trigger score recalc (non-blocking)
+      supabase.functions.invoke("calculate-aura-score", {
+        body: { user_id: session.user.id },
+      }).catch((e) => console.error("calculate-aura-score failed:", e));
     } catch (e: any) {
       toast.error(e.message || "Failed to mark as published");
     }
