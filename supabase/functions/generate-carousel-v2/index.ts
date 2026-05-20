@@ -57,11 +57,13 @@ serve(async (req) => {
     // Fetch profile
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
-      .select("first_name, level, firm, sector_focus")
+      .select("first_name, last_name, level, firm, sector_focus")
       .eq("user_id", targetUserId)
       .maybeSingle();
 
-    const p = profile || { first_name: "M.", level: "Director", firm: "EY", sector_focus: "Energy & Utilities" };
+    const p: any = profile || { first_name: "", last_name: "", level: "", firm: "", sector_focus: "" };
+    const authorFullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || "Author";
+    const authorTitle = [p.level, p.firm].filter(Boolean).join(" · ").trim();
 
     const isArabic = lang === "ar";
 
@@ -144,18 +146,17 @@ Slide 8: CTA (tell them exactly what to do)
 
 NEVER: two text-heavy slides in a row. After a dense slide (TERMINAL, GRID, COMPARE), place a light slide (BOLD_CLAIM, QUESTION, BIG_NUMBER).
 
-═══ WORD LIMITS (STRICT — ENFORCE ON EVERY SLIDE) ═══
-- headline: 6-10 words MAX
-- headline_accent: 3-8 words MAX  
-- body: 8-15 words MAX (COVER/INSIGHT/CTA only)
-- terminal_lines: 4-6 lines, each 6-10 words
-- grid_items: 3-5 words each
-- compare items: 4-8 words each
-- question_text: 10-18 words MAX
-- cta_main: 8-12 words
-- cta_sub: 10-15 words
+═══ WORD LIMITS (STRICTLY ENFORCED) ═══
+- Headline: 4-8 words maximum. Punchy, not explanatory.
+- Body/supporting text: 10-18 words maximum. One idea, one sentence.
+- Total per slide: NEVER exceed 25 words (headline + body combined).
+- COMPARE items: maximum 5 words per item, maximum 3 items per column.
+- TERMINAL lines: maximum 8 words per line, maximum 4 lines.
+- GRID cells: maximum 4 words per cell.
+- CTA: maximum 6 words for the main headline.
+- question_text: 10-18 words MAX.
 
-If ANY field exceeds its limit, shorten it. Brevity = saves.
+If you cannot fit the idea in these limits, split it across two slides.
 
 ═══ OUTPUT SCHEMA ═══
 
@@ -191,32 +192,18 @@ WRAPPER:
 {
   slides: [...],
   carousel_title: string (sharp, specific — not just the topic restated),
-  linkedin_caption: string — A standalone LinkedIn post that makes people WANT to open the carousel. NOT a description of the carousel.
-
-ENGLISH CAPTION STRUCTURE (4 paragraphs, 150-200 words, NO emojis):
-- P1 HOOK: First person ("I" or "We") + specific number + uncomfortable truth. e.g. "We spent $4M on smart meters last year. The data told us nothing we didn't already know."
-- P2 TENSION: Expand the problem. Name what "everyone" does wrong. Use a contradictory pair: "Everyone invests in X. Almost nobody asks about Y."
-- P3 PIVOT: What the carousel reveals. Frame as insider knowledge: "These 8 slides break down the 6 investments that actually move the needle — and the 4 that just look good in board decks."
-- P4 QUESTION: End with a specific, uncomfortable question that invites comments. Not "What do you think?" but a concrete sector question.
-
-ARABIC CAPTION STRUCTURE (4 paragraphs, 150-180 words, فصحى معاصرة, NO emojis):
-- ف1 الخطاف: First person plural (نحن/استثمرنا). One specific number. واقع يعرفه الجميع.
-- ف2 التوتر: Contradictory pair. "الجميع يستثمر في... لكن قليلون يسألون عن..."
-- ف3 التحول: "٨ شرائح تكشف..." or reference the carousel's core insight.
-- ف4 السؤال: Uncomfortable sector-specific question. e.g. "هل مؤسستك مستعدة للانتقال من..."
-
-CAPTION RULES (BOTH LANGUAGES):
-- MUST include one specific number ($4M, 86%, 6 investments)
-- MUST name the audience (Directors, CDOs, "whoever approves your next transformation budget")
-- NEVER start with "This carousel...", "In this post...", or "هذا الكاروسيل يغطي" — start with a personal observation or striking fact
-- Arabic: words normal people use. NOT bureaucratic MSA. "نقاط بيانات منعزلة" NOT "بيانات في جزر رقمية". "ربط الأنظمة" NOT "التكامل الشامل للمنظومة".
-- Each paragraph separated by a blank line
-- Tone: peer strategist sharing hard-won insight, NOT a marketer promoting content,
+  linkedin_caption: A compelling LinkedIn post caption that drives engagement. Structure:
+    - Line 1: A provocative hook that creates curiosity (question, contrarian statement, or surprising number). This line determines if anyone reads the rest.
+    - Lines 2-4: The core insight in 2-3 short sentences. First person perspective. Specific to the topic.
+    - Line 5: An uncomfortable question that invites comments.
+    - NEVER start with "This carousel covers..." or "I created a carousel about..." or "هذا الكاروسيل يغطي" — these are engagement killers.
+    - NEVER describe the carousel content — tease it. The caption makes them swipe, the slides deliver.
+    - Maximum 150 words total. No emojis.,
   hashtags: string[] (5-7, mix of broad + niche),
   total_slides: number,
-  author_name: string,
-  author_title: string,
-  author_handle: '@mmahafzah',
+  author_name: string (will be overwritten by renderer from user profile — leave as empty string),
+  author_title: string (will be overwritten by renderer from user profile — leave as empty string),
+  author_handle: string (will be overwritten by renderer — leave as empty string),
   signal_attribution: string|null
 }
 
@@ -235,7 +222,7 @@ BAD: «يعني الموضوع مو سهل بس لازم نحاول» (dialect)
 4. Closing QUESTION slide: uncomfortable, sector-specific, painful — never generic.
 5. Arabic quote marks: use «» not "".
 6. Formatting markers: ◆ main points, ↳ sub-points (in GRID/LIST only).
-7. CTA in Arabic ("احفظ هذا المنشور") but @handle stays Latin ("@mmahafzah").
+7. CTA in Arabic ("احفظ هذا المنشور"). The author handle is injected by the renderer — do not hardcode any specific handle in slide text.
 8. section_label may be Arabic ("البيانات", "الاستراتيجية", "التحول", "نداء للعمل") or English if industry-standard ("ROI", "KPI"). Still must be unique and topic-specific (never the slide_type name).
 
 ═══ ARABIC VOICE CALIBRATION ═══
@@ -309,7 +296,7 @@ Per-slide Arabic notes:
 - GRID (used in place of TERMINAL): 4-6 short numbered Arabic action phrases, 2-4 words each. No English code syntax.
 - COMPARE: keep English convention — compare_left_* = the WRONG/mistake, compare_right_* = the CORRECT/fix. The renderer auto-swaps visual position for RTL so the wrong approach is read first on the right and the correct fix sits on the left.
 - QUESTION: Arabic question ending with ؟
-- CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع @mmahafzah ←"
+- CTA: cta_main "احفظ هذا..." / cta_sub "شاركه مع..." / cta_button "تابع ←" (the renderer injects the handle from the user profile — do not hardcode)
 
 ═══ ARABIC HASHTAGS ═══
 5-7 mixing Arabic and English. Always include #التحول_الرقمي. Topic Arabic tags (#الذكاء_الاصطناعي, #حوكمة_البيانات, #البنية_التحتية). 1-2 English (#DigitalTransformation, #AI). Audience (#قادة_الأعمال or #رؤية_السعودية_2030).
@@ -326,7 +313,7 @@ OUTPUT: Valid JSON only. No markdown fences. No preamble. No explanation.`;
     const userMessage = `Create a ${total_slides}-slide LinkedIn carousel about: ${topic}
 ${context ? "Additional context: " + context : ""}
 ${signal ? "Ground this in the signal: " + signal.signal_title + " at " + Math.round((signal.confidence || 0) * 100) + "% confidence. " + (signal.explanation || "") : ""}
-Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focus}`;
+Author context (for tone only — do not hardcode in slides): ${authorFullName}${authorTitle ? `, ${authorTitle}` : ""}${p.sector_focus ? `, specializing in ${p.sector_focus}` : ""}`;
 
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
@@ -417,15 +404,10 @@ Author: ${p.first_name} ${p.level} at ${p.firm}, specializing in ${p.sector_focu
       }
     }
 
-    // Backfill author info if model omitted
-    if (isArabic) {
-      parsed.author_name = "محمد محافظة";
-      parsed.author_title = "مدير التحول الرقمي";
-    } else {
-      parsed.author_name = "Mohammad Mahafzah";
-      parsed.author_title = parsed.author_title || `${p.level}${p.firm ? ', ' + p.firm : ''}`;
-    }
-    parsed.author_handle = parsed.author_handle || "@mmahafzah";
+    // Author info — always from diagnostic_profiles, never hardcoded.
+    parsed.author_name = authorFullName;
+    parsed.author_title = authorTitle;
+    parsed.author_handle = "";
     parsed.lang = lang;
     if (signal && !parsed.signal_attribution) {
       parsed.signal_attribution = `${signal.signal_title} at ${Math.round((signal.confidence || 0) * 100)}%`;
