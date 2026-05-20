@@ -1,0 +1,1 @@
+ALTER TABLE public.diagnostic_profiles ADD COLUMN IF NOT EXISTS linkedin_handle text;
