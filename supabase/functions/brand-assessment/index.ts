@@ -81,8 +81,6 @@ serve(async (req) => {
     }
 
     const { answers, auditScores } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     // Build audit scores context for the AI
     const auditContext = typeof auditScores === "string"
