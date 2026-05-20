@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: "system",
-                content: `You are a market intelligence analyst. Return a JSON object with: {"title": "headline", "source": "publisher", "url": "direct article URL (not a homepage)", "summary": "2-sentence summary"}. Focus on ${sectorFocus} sector from sources like ${HIGH_AUTHORITY_SOURCES.slice(0, 8).join(", ")}. CRITICAL: The URL must be a direct link to a specific article page, NOT a homepage or category page. Only include content from 2026.`,
+                content: `You are a market intelligence analyst. Return a JSON object with: {"title": "headline", "source": "publisher", "url": "direct article URL (not a homepage)", "summary": "2-sentence summary"}. Focus on ${sectorFocus} sector from sources like ${authoritySources.slice(0, 8).join(", ")}. CRITICAL: The URL must be a direct link to a specific article page, NOT a homepage or category page. Only include content from 2026.`,
               },
               { role: "user", content: searchQuery },
             ],
