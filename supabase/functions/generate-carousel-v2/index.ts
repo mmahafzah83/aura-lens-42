@@ -65,6 +65,13 @@ serve(async (req) => {
     const authorFullName = [p.first_name, p.last_name].filter(Boolean).join(" ").trim() || "Author";
     const authorTitle = [p.level, p.firm].filter(Boolean).join(" · ").trim();
 
+    // Fetch voice profile (learning engine)
+    const { data: voiceProfile } = await supabase
+      .from("authority_voice_profiles")
+      .select("tone, preferred_structures, storytelling_patterns, vocabulary_preferences, example_posts")
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
     const isArabic = lang === "ar";
 
     const systemPrompt = `You are the #1 LinkedIn carousel ghostwriter. Your carousels average 8,000+ saves and 200,000+ impressions. You write for C-suite executives in the GCC — people who've seen every framework and buzzword. Your job: make them stop scrolling and save.
