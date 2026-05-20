@@ -254,7 +254,7 @@ Layout guidance: ${dd.layout_notes || "Clean, balanced spacing with clear visual
 
 === FOOTER SIGNATURE (max 6% of image height, at very bottom) ===
 Slim footer on the same dark background:
-Left: "M. Mahafzah | Business & Digital Transformation Architect | Energy & Utilities"
+Left: "${authorFooter}"
 Right: "→ Share this Framework"
 Footer must blend seamlessly with the diagram background — no solid bars or blocks.`;
 
