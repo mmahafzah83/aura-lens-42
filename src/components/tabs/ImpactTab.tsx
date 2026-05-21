@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle } from "lucide-react";
+import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { EMPTY_STATE } from "@/constants/language";
@@ -804,12 +804,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   }
 
   const ranges: RangeDays[] = [7, 30, 90, 365];
-  const isEmpty = totalCaptureCount === 0;
+  // Empty when no impact data exists at all — no LinkedIn metrics and no influence snapshots
+  const isEmpty = postMetricsCount === 0 && latestFollowers === null;
 
   // ─── New-user empty state ───
-  // With no captures there is nothing meaningful to show in the trajectory,
-  // breakdown, follower-growth, or LinkedIn sections. Render only the header,
-  // a 0-state score, the Authority Journey starting at Observer, and a CTA.
+  // With no LinkedIn analytics there is nothing meaningful to show in the trajectory,
+  // breakdown, follower-growth, or LinkedIn sections.
   if (isEmpty) {
     return (
       <motion.div
@@ -828,75 +828,61 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         </div>
 
         <section
-          className="relative overflow-hidden"
+          className="relative overflow-hidden flex flex-col items-center text-center"
           style={{
             background: "var(--surface-ink-raised)",
             borderRadius: 14,
-            padding: "32px 28px",
+            padding: "40px 28px",
             color: "var(--ink)",
             border: "0.5px solid var(--brand-line)",
             boxShadow: "var(--shadow-rest)",
-            textAlign: "center",
           }}
         >
           <div
+            className="flex items-center justify-center mb-5"
             style={{
-              width: 160,
-              height: 160,
-              margin: "0 auto",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "1px solid var(--brand-line)",
+              width: 72,
+              height: 72,
               borderRadius: "50%",
-              fontFamily: "'DM Serif Display', Georgia, serif",
-              fontSize: 72,
-              color: "var(--ink-3)",
-              letterSpacing: "-0.04em",
+              background: "var(--gold-pale)",
+              border: "1px solid var(--gold-light)",
             }}
           >
-            0
+            <TrendingUp className="w-7 h-7" style={{ color: "var(--brand)" }} />
           </div>
-          <p style={{ marginTop: 18, fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 480, marginInline: "auto" }}>
-            {EMPTY_STATE.impact.text}
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
+            Your authority trajectory starts here
+          </h2>
+          <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
+            Publish your first LinkedIn post from Aura and upload your analytics to see your impact grow.
           </p>
 
-          {auraData && (
-            <div className="relative mt-8 text-left">
-              <AuthorityJourney userId={userId} data={auraData} />
-            </div>
-          )}
-        </section>
-
-        <section
-          style={{
-            background: "hsl(var(--card))",
-            border: "1px solid hsl(var(--border) / 0.6)",
-            borderRadius: 10,
-            padding: "20px 22px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 220 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
-              Your authority trajectory starts with your first publish
-            </div>
-            <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
-              Generate a post from your signals, publish it on LinkedIn, and upload your analytics to close the loop.
-            </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-7 w-full">
+            <AuraButton
+              variant="primary"
+              size="sm"
+              onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
+              style={{ borderRadius: 6, padding: "10px 22px" }}
+            >
+              Create your first post →
+            </AuraButton>
+            <AuraButton
+              variant="ghost"
+              size="sm"
+              onClick={handleUploadClick}
+              style={{ borderRadius: 6, padding: "10px 22px" }}
+            >
+              Upload LinkedIn CSV
+            </AuraButton>
           </div>
-          <AuraButton
-            variant="primary"
-            size="sm"
-            onClick={() => window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "authority" } }))}
-            style={{ borderRadius: 4, padding: "8px 18px" }}
-          >
-            Go to Publish →
-          </AuraButton>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </section>
       </motion.div>
     );
