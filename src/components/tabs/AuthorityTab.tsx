@@ -2804,15 +2804,17 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       }
       toast.custom((t) => (
         <div
+          className="aura-publish-ceremony"
           style={{
             display: "flex", alignItems: "flex-start", gap: 14,
             padding: "14px 18px",
-            background: "var(--paper, var(--card))",
             borderLeft: "3px solid var(--gold-dark, var(--brand))",
             border: "1px solid var(--brand-line, var(--border))",
             borderRadius: 8,
             boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
             minWidth: 320, maxWidth: 420,
+            position: "relative",
+            overflow: "hidden",
           }}
         >
           <span aria-hidden className="aura-gold-pulse" style={{
@@ -2820,8 +2822,11 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
             flexShrink: 0, marginTop: 2,
           }}>✦</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div className="font-medium text-sm" style={{ color: "var(--ink)", marginBottom: 4 }}>
-              Published — your authority just grew
+            <div style={{
+              fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
+              fontSize: 18, lineHeight: 1.25, color: "var(--ink)", marginBottom: 4,
+            }}>
+              Published — your authority is compounding.
             </div>
             <div className="font-normal text-sm text-ink-4">
               {linkedSignalId
@@ -2830,7 +2835,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
             </div>
           </div>
         </div>
-      ), { duration: 5000 });
+      ), { duration: 4000 });
       loadPosts();
       // Trigger score recalc (non-blocking)
       invokeEdgeFunction("calculate-aura-score", {
