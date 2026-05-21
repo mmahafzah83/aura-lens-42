@@ -1652,6 +1652,41 @@ button[aria-label="Notifications"]:focus-visible {
   color: var(--gold-dark, var(--brand));
 }
 
+/* ── Publish ceremony toast — warm parchment with subtle gold shimmer ── */
+.aura-publish-ceremony {
+  background:
+    linear-gradient(120deg,
+      var(--paper) 0%,
+      var(--bronze-mist, var(--paper)) 45%,
+      var(--bronze-pale, var(--paper)) 55%,
+      var(--paper) 100%);
+  background-size: 220% 100%;
+  animation: aura-publish-shimmer 2.8s ease-in-out 1;
+}
+@keyframes aura-publish-shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aura-publish-ceremony { animation: none; background: var(--paper); }
+}
+
+/* ── Onboarding → Home ceremony overlay ── */
+.aura-ceremony-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; text-align: center;
+  background:
+    radial-gradient(ellipse at center, rgba(176,141,58,0.10) 0%, transparent 60%),
+    linear-gradient(135deg, #14110C 0%, #2A2318 100%);
+  color: hsl(40 20% 95%);
+  animation: aura-ceremony-in 500ms ease-out both;
+  cursor: pointer;
+}
+.aura-ceremony-overlay.is-leaving { animation: aura-ceremony-out 500ms ease-in both; }
+@keyframes aura-ceremony-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes aura-ceremony-out { from { opacity: 1; } to { opacity: 0; } }
+
 /* Interactive card hover lift — apply only to clickable cards */
 .card-interactive {
   transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
