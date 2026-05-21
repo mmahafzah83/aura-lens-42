@@ -1,5 +1,4 @@
 import { Star, Info } from "lucide-react";
-import { useAuraTheme } from "@/components/ThemeProvider";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Props {
@@ -47,26 +46,11 @@ export default function ArchetypeHeroCard({
   const roleLine = [level, firm, sectorFocus].filter(Boolean).join(" · ");
   const description = toFirstPerson(positioningStatement || "", firstName);
 
-  // Theme-aware background + glow
-  const { theme } = useAuraTheme();
-  const themeStyle = (() => {
-    if (theme === "nebula") {
-      return {
-        background: "var(--aura-card-glass)",
-        glow: "radial-gradient(circle, rgba(162,155,254,0.06) 0%, transparent 70%)",
-      };
-    }
-    if (theme === "terrain") {
-      return {
-        background: "linear-gradient(150deg, #0A140D, #122018, #0A140D)",
-        glow: "radial-gradient(circle, rgba(74,222,128,0.06) 0%, transparent 70%)",
-      };
-    }
-    return {
-      background: "linear-gradient(150deg, #12100B, #1F1A12, #2A2318)",
-      glow: "radial-gradient(circle, rgba(212,176,86,0.08) 0%, transparent 70%)",
-    };
-  })();
+  // Single warm parchment + bronze identity.
+  const themeStyle = {
+    background: "linear-gradient(150deg, #12100B, #1F1A12, #2A2318)",
+    glow: "radial-gradient(circle, rgba(212,176,86,0.08) 0%, transparent 70%)",
+  };
 
   return (
     <div
