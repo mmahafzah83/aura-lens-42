@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCountUp } from "@/hooks/useCountUp";
 
 interface Props {
   userId: string | null;
@@ -30,11 +31,12 @@ const tierBenchmark = (followers: number | null): { low: number; high: number; l
 };
 
 const Item = ({
-  value, label, delta, valueColor, onClick,
-}: { value: string; label: string; delta: string; valueColor?: string; onClick?: () => void }) => (
+  value, label, delta, valueColor, onClick, index = 0,
+}: { value: string; label: string; delta: string; valueColor?: string; onClick?: () => void; index?: number }) => (
   <button
     type="button"
     onClick={onClick}
+    className="animate-fade-up-in"
     style={{
       flex: 1,
       padding: "10px 6px",
@@ -45,6 +47,8 @@ const Item = ({
       cursor: onClick ? "pointer" : "default",
       transition: "background 150ms",
       color: "inherit",
+      animationDelay: `${index * 80}ms`,
+      animationFillMode: "backwards",
     }}
     onMouseEnter={(e) => { (e.currentTarget.style.background = "hsl(var(--primary) / 0.08)"); }}
     onMouseLeave={(e) => { (e.currentTarget.style.background = "transparent"); }}
@@ -118,6 +122,16 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
 
   const hasLinkedIn = stats.postsCount > 0 || stats.followers != null;
 
+  // Count-up animated numerics (once per session).
+  const animSignals = useCountUp(stats.signalsCount, { duration: 800, once: true, key: "pulse-signals" });
+  const animPosts = useCountUp(stats.postsCount, { duration: 800, once: true, key: "pulse-posts" });
+  const animEngagement = useCountUp(
+    stats.engagementRate != null ? Math.round(stats.engagementRate * 10) : 0,
+    { duration: 800, once: true, key: "pulse-engagement" }
+  );
+  const animFollowers = useCountUp(stats.followers ?? 0, { duration: 800, once: true, key: "pulse-followers" });
+  const animEngagementDisplay = stats.engagementRate != null ? (animEngagement / 10).toFixed(1) : null;
+
   return (
     <div
       style={{
@@ -129,18 +143,21 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
       }}
     >
       <Item
-        value={String(stats.signalsCount)}
+        index={0}
+        value={String(animSignals)}
         label="Signals"
         delta={stats.topConfidence != null ? `${Math.round(stats.topConfidence * 100)}% conf.` : "—"}
       />
       <Item
-        value={stats.postsCount > 0 ? String(stats.postsCount) : (hasLinkedIn ? "0" : "--")}
+        index={1}
+        value={stats.postsCount > 0 ? String(animPosts) : (hasLinkedIn ? "0" : "--")}
         label="Posts"
         delta={hasLinkedIn ? "imported" : "Import LinkedIn"}
         onClick={!hasLinkedIn ? onGoToImpact : undefined}
       />
       <Item
-        value={stats.engagementRate != null ? `${stats.engagementRate.toFixed(1)}%` : "--"}
+        index={2}
+        value={animEngagementDisplay != null ? `${animEngagementDisplay}%` : "--"}
         label="Engagement"
         delta={(() => {
           if (stats.engagementRate == null) return "Import LinkedIn";
@@ -150,7 +167,8 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
         onClick={stats.engagementRate == null ? onGoToImpact : undefined}
       />
       <Item
-        value={stats.followers != null ? fmtCompact(stats.followers) : "--"}
+        index={3}
+        value={stats.followers != null ? fmtCompact(animFollowers) : "--"}
         label="Followers"
         delta={stats.followers != null ? "tracked" : "Import LinkedIn"}
         onClick={stats.followers == null ? onGoToImpact : undefined}
