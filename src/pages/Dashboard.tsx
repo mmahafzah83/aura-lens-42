@@ -445,7 +445,7 @@ const Dashboard = () => {
                 }}
               >
                 <item.icon
-                  className="w-5 h-5 shrink-0"
+                  className="w-4.5 h-4.5 shrink-0"
                   style={{
                     color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
                     transition: "color var(--t-fast) var(--ease)",
@@ -580,7 +580,7 @@ const Dashboard = () => {
                     }}
                   >
                     <item.icon
-                      className="w-5 h-5"
+                      className="w-4.5 h-4.5"
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
