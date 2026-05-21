@@ -1547,7 +1547,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     fontFamily: "'Cormorant Garamond', serif",
                     fontSize: 36,
                     fontWeight: 700,
-                    color: "hsl(var(--foreground))",
+                    color: "var(--brand)",
                     lineHeight: 1.5,
                   }}
                 >
