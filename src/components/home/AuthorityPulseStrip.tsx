@@ -65,7 +65,7 @@ const Item = ({
     </div>
     <div
       style={{
-        fontSize: 9.5, marginTop: 4,
+        fontSize: 11, marginTop: 4,
         letterSpacing: "0.08em", color: "var(--ink-4)",
       }}
     >

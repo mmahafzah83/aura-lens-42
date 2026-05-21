@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Download, FileImage, FileArchive, FileText, Sparkles, ChevronDown, ChevronUp, BarChart3, Copy, RefreshCw, BookmarkPlus, Check, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import usePageMeta from "@/hooks/usePageMeta";
 import StartFromPanel from "@/components/StartFromPanel";
 
 /* ============================ STYLES ============================ */
@@ -1371,6 +1372,11 @@ function slugify(s: string): string {
 /* ============================ MAIN PAGE ============================ */
 
 export default function CarouselStudio() {
+  usePageMeta({
+    title: "Aura — Carousel Studio",
+    description: "Create strategic LinkedIn carousels in your voice.",
+    path: "/carousel-studio",
+  });
   const navigate = useNavigate();
   const location = useLocation();
   const navState = location.state as {

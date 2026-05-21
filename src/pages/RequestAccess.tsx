@@ -20,7 +20,7 @@ const inputStyle: React.CSSProperties = {
 
 const RequestAccess = () => {
   usePageMeta({
-    title: "Request Early Access — Aura",
+    title: "Aura — Request Access",
     description: "Closed beta for senior transformation leaders. Strategic intelligence that compounds your authority.",
     path: "/request-access",
   });
