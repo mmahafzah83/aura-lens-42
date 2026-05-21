@@ -1001,6 +1001,39 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         )}
       </section>
 
+      {/* ─────────── PROGRESSIVE DISCLOSURE — master toggle for detailed breakdown ─────────── */}
+      <button
+        type="button"
+        onClick={() => setShowDetailed(v => !v)}
+        style={{
+          width: "100%",
+          background: "transparent",
+          border: "0.5px solid var(--brand-line)",
+          borderRadius: 10,
+          padding: "14px 18px",
+          textAlign: "left",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 16, fontWeight: 500, color: "var(--ink)" }}>
+            {showDetailed ? "Hide detailed breakdown" : "See detailed breakdown"}
+          </div>
+          {!showDetailed && (
+            <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>
+              6 more sections · Pillars · Trajectory · Content · Posts · Followers · Analytics
+            </div>
+          )}
+        </div>
+        <span style={{ color: "var(--gold-dark)", fontSize: 18 }}>{showDetailed ? "▾" : "▸"}</span>
+      </button>
+
+      {showDetailed && (
+      <>
       {/* ─────────── 4 PILLARS ─────────── */}
       <section>
         <h2 style={{
