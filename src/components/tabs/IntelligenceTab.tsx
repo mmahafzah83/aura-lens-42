@@ -1219,7 +1219,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         <div
                           key={s.id}
                           data-testid="intel-signal-card"
-                          className="intel-signal-row card-interactive"
+                          className="intel-signal-row card-interactive animate-fade-up-in"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
                             display: "block", padding: isTop ? "16px" : "12px",
@@ -1231,6 +1231,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             cursor: "pointer", transition: "background 0.1s",
                             background: isSelected ? "var(--surface-ink-subtle)" : "transparent",
                             position: "relative",
+                            animationDelay: `${Math.min(idx * 50, 400)}ms`,
+                            animationFillMode: "both",
                           }}
                           onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--surface-ink-subtle)"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
