@@ -37,12 +37,14 @@ function buildHtml(opts: {
   firstName: string;
   dayDate: string;
   alerts: Array<{ type: string; title: string; body: string }>;
-  topSignalTitle: string | null;
-  topSignalConfidencePct: number | null;
+  topSignals: Array<{ title: string; currentPct: number; deltaPct: number }>;
+  postsThisWeek: number;
+  postsLastWeek: number;
+  moves: Array<{ title: string; rationale: string }>;
   brand: string;
   brandFont: string;
 }): string {
-  const { firstName, dayDate, alerts, topSignalTitle, topSignalConfidencePct, brand, brandFont } = opts;
+  const { firstName, dayDate, alerts, topSignals, postsThisWeek, postsLastWeek, moves, brand, brandFont } = opts;
 
   const alertsHtml = alerts.length
     ? alerts
@@ -56,15 +58,47 @@ function buildHtml(opts: {
         </div>`;
         })
         .join("")
-    : `<div style="margin-bottom:14px;padding:18px;background:#faf8f4;border-radius:8px;border-left:4px solid #6B7280;">
-         <p style="font-size:14px;line-height:1.6;color:#333;margin:0;">Your signals are stable this week. Keep capturing — consistency builds authority.</p>
+    : "";
+
+  const signalsHtml = topSignals.length
+    ? `<div style="margin:8px 0 22px;">
+         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Top signals this week</p>
+         ${topSignals
+           .map((s) => {
+             const sign = s.deltaPct > 0 ? "+" : "";
+             const deltaColor = s.deltaPct > 0 ? "#16a34a" : s.deltaPct < 0 ? "#dc2626" : "#888";
+             const deltaText = s.deltaPct === 0 ? "no change" : `${sign}${s.deltaPct} pts`;
+             return `
+           <div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;">
+             <p style="font-size:14px;font-weight:600;color:#0d0d0d;margin-bottom:4px;">${escapeHtml(s.title)}</p>
+             <p style="font-size:12px;color:#555;margin:0;">Confidence <strong style="color:#0d0d0d;">${s.currentPct}%</strong> · <span style="color:${deltaColor};">${deltaText} vs 7d ago</span></p>
+           </div>`;
+           })
+           .join("")}
+       </div>`
+    : "";
+
+  const pubDelta = postsThisWeek - postsLastWeek;
+  const pubDeltaTxt = pubDelta === 0 ? "same as last week" : pubDelta > 0 ? `+${pubDelta} vs last week` : `${pubDelta} vs last week`;
+  const publishingHtml = `<div style="margin:8px 0 22px;padding:14px 16px;background:#faf8f4;border-radius:8px;">
+         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Publishing cadence</p>
+         <p style="font-size:14px;color:#0d0d0d;margin:0;"><strong>${postsThisWeek}</strong> post${postsThisWeek === 1 ? "" : "s"} this week · <span style="color:#555;">${escapeHtml(pubDeltaTxt)}</span></p>
        </div>`;
 
-  const topSignalLine = topSignalTitle
-    ? `Your top signal this week: <strong style="color:#0d0d0d;">${escapeHtml(topSignalTitle)}</strong>${
-        topSignalConfidencePct !== null ? ` · ${topSignalConfidencePct}% confidence` : ""
-      }`
-    : "Capture more this week to surface your next top signal.";
+  const movesHtml = moves.length
+    ? `<div style="margin:8px 0 22px;">
+         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Recommended moves</p>
+         ${moves
+           .map(
+             (m) => `
+           <div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;border-left:4px solid ${brand};">
+             <p style="font-size:14px;font-weight:600;color:#0d0d0d;margin-bottom:4px;">${escapeHtml(m.title)}</p>
+             <p style="font-size:13px;line-height:1.6;color:#555;margin:0;">${escapeHtml(m.rationale)}</p>
+           </div>`,
+           )
+           .join("")}
+       </div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -103,12 +137,13 @@ function buildHtml(opts: {
       <p style="font-size:15px;line-height:1.7;color:#333;margin-bottom:24px;">Here is what shifted in your authority landscape this week.</p>
 
       ${alertsHtml}
+      ${signalsHtml}
+      ${publishingHtml}
+      ${movesHtml}
 
       <div style="text-align:center;margin:28px 0 8px;">
-        <a href="${APP_URL}" class="cta-btn" style="display:inline-block;background:${brand};color:#0d0d0d;padding:16px 32px;border-radius:8px;font-weight:700;font-size:15px;">Open Aura · take action →</a>
+        <a href="${APP_URL}/home" class="cta-btn" style="display:inline-block;background:${brand};color:#0d0d0d;padding:16px 32px;border-radius:8px;font-weight:700;font-size:15px;">Open Aura →</a>
       </div>
-
-      <p style="font-size:13px;line-height:1.6;color:#555;text-align:center;margin-top:20px;">${topSignalLine}</p>
     </div>
 
     <div class="footer-pad" style="padding:28px 40px;background:#faf8f4;border-top:1px solid #ece8e0;">
