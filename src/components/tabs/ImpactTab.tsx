@@ -133,6 +133,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     narrative: true, forces: true, trajectory: true, content: true, posts: true, linkedin: true, followers: true,
   });
   const toggleSection = (k: string) => setOpenSections(s => ({ ...s, [k]: !s[k] }));
+  // Progressive disclosure: hide everything past "three forces" behind a master toggle.
+  const [showDetailed, setShowDetailed] = useState(false);
   const [publishedPosts, setPublishedPosts] = useState<{ published_at: string; post_text: string | null }[]>([]);
   const [periodImpressions, setPeriodImpressions] = useState<number | null>(null);
   const [periodEngagementRate, setPeriodEngagementRate] = useState<number | null>(null);
