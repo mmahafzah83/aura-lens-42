@@ -229,56 +229,9 @@ export default function ProfileMenu({
           style={{
             height: 0,
             borderTop: "0.5px solid var(--brand-line, rgba(0,0,0,0.08))",
-            margin: "8px 4px 0",
+            margin: "8px 4px 8px",
           }}
         />
-
-        {/* COLOR THEME */}
-        <div style={{ padding: "10px 12px 4px" }}>
-          <div style={{ fontSize: 12, color: "var(--muted-foreground)", marginBottom: 8 }}>
-            Color theme
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {(Object.keys(THEME_LABELS) as AuraTheme[]).map((t) => {
-              const active = auraTheme === t;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setAuraTheme(t)}
-                  aria-pressed={active}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "8px 4px",
-                    background: "transparent",
-                    border: active ? "1px solid var(--brand)" : "0.5px solid var(--brand-line, rgba(0,0,0,0.1))",
-                    borderRadius: 10,
-                    cursor: "pointer",
-                    transition: "border-color 150ms ease",
-                  }}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: "50%",
-                      background: THEME_SWATCHES[t],
-                      border: "0.5px solid rgba(0,0,0,0.15)",
-                    }}
-                  />
-                  <span style={{ fontSize: 12, color: active ? "var(--brand)" : "var(--foreground)", fontWeight: 500 }}>
-                    {THEME_LABELS[t]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* EDIT PROFILE */}
         {onEditProfile && (
