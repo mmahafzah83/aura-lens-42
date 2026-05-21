@@ -57,6 +57,8 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -212,7 +214,7 @@ const Dashboard = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) navigate("/auth");
-      else setUser({ email: session.user.email });
+      else { setUser({ email: session.user.email }); setUserId(session.user.id); }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -220,6 +222,7 @@ const Dashboard = () => {
       else {
         setUser({ email: session.user.email });
         const uid = session.user.id;
+        setUserId(uid);
         // Self-promote beta_allowlist row to 'active' on first sign-in.
         // Fire-and-forget; failures must not block the dashboard.
         try {
