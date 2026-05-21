@@ -81,13 +81,13 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
       >
         <div className="flex items-center" style={{ gap: 8 }}>
           <Target size={15} color="var(--aura-accent)" />
-          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--aura-t1)" }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>
             Your missions this week
           </span>
         </div>
         {total > 0 && (
           <div className="flex items-center" style={{ gap: 10 }}>
-            <span style={{ fontSize: 12, color: "var(--aura-t2)" }}>{done} of {total}</span>
+            <span style={{ fontSize: 12, color: "var(--ink-3)" }}>{done} of {total}</span>
             <div style={{ width: 60, height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ width: `${pct}%`, height: "100%", background: "var(--aura-accent)", transition: "width 400ms" }} />
             </div>
@@ -96,7 +96,7 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
       </div>
 
       {loaded && missions.length === 0 ? (
-        <div style={{ padding: "20px 16px", fontSize: 12, color: "var(--aura-t2)", textAlign: "center" }}>
+        <div style={{ padding: "20px 16px", fontSize: 12, color: "var(--ink-3)", textAlign: "center" }}>
           Your first missions will appear after your first capture.
         </div>
       ) : (
@@ -130,7 +130,7 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
                 <div
                   style={{
                     fontSize: 14,
-                    color: isDone ? "var(--aura-t2)" : "var(--aura-t1)",
+                    color: isDone ? "var(--ink-3)" : "var(--ink)",
                     textDecoration: isDone ? "line-through" : "none",
                   }}
                 >
@@ -138,7 +138,7 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
                 </div>
                 <div
                   className="flex items-center"
-                  style={{ gap: 8, marginTop: 4, fontSize: 12, color: "var(--aura-t2)" }}
+                  style={{ gap: 8, marginTop: 4, fontSize: 12, color: "var(--ink-3)" }}
                 >
                   <span style={{
                     color: "var(--aura-accent)", fontWeight: 500,

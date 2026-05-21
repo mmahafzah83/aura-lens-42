@@ -56,7 +56,7 @@ export default function TerritoryMap({ themes }: Props) {
       <div
         style={{
           fontSize: 9.5, fontWeight: 600, letterSpacing: "0.12em",
-          color: "var(--aura-t1)", textTransform: "uppercase", marginBottom: 12,
+          color: "var(--ink)", marginBottom: 12,
         }}
       >
         Territory map

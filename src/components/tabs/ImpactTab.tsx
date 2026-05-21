@@ -1077,7 +1077,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             borderRadius: 12, padding: "16px 18px",
           }}>
             <div style={{
-              fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.1em",
               color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
             }}>
               Insight
@@ -1102,7 +1102,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             borderRadius: 12, padding: "16px 18px",
           }}>
             <div style={{
-              fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.1em",
               color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
             }}>
               Next tier
@@ -1173,7 +1173,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: "0.1em",
-                    textTransform: "uppercase",
                     color: "var(--ink-3)",
                     display: "inline-flex",
                     alignItems: "center",
@@ -1492,7 +1491,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       </div>
                       {badge && (
                         <div
-                          className="text-xs uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
+                          className="text-xs tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
                           style={{ background: badge.bg, color: badge.color, fontWeight: 600, border: `0.5px solid ${badge.border}` }}
                         >
                           {badge.label}
@@ -1537,7 +1536,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
           const UploadZone = (
             <div className="mt-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
+              <div className="text-xs font-semibold tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
                 How to export your LinkedIn data
               </div>
               <ol className="text-[12px] leading-relaxed space-y-1 pl-4 list-decimal" style={{ color: "var(--color-text-secondary)" }}>
@@ -1605,7 +1604,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" style={{ color: "var(--brand)" }} />
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
+                  <h2 className="text-xs font-semibold tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
                     LinkedIn analytics
                   </h2>
                 </div>
@@ -1680,7 +1679,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
         <h2
-          className="text-xs font-semibold uppercase tracking-[0.14em] mb-3"
+          className="text-xs font-semibold tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
           Follower growth — daily new followers
@@ -1711,7 +1710,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: "0.1em",
-                    textTransform: "uppercase",
                     color: "var(--ink-4)",
                   }}
                 >
@@ -1777,7 +1775,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     }}
                     formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
-                  <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="growth" fill="#B08D3A" radius={[2, 2, 0, 0]} />
                   {publishMarkers.map((m, idx) => {
                     const first = m.posts[0];
                     const preview = (first.post_text || "").replace(/\s+/g, " ").trim().slice(0, 40);
@@ -1859,7 +1857,6 @@ const HeroStat = ({ value, label, color }: { value: string; label: string; color
     <div
       style={{
         fontSize: 12,
-        textTransform: "uppercase",
         letterSpacing: "0.06em",
         color: "var(--color-text-secondary)",
         marginTop: 4,
@@ -1878,7 +1875,7 @@ const Stat = ({ label, value, valueColor }: { label: string; value: string; valu
     >
       {value}
     </div>
-    <div className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
+    <div className="text-xs tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
       {label}
     </div>
   </div>
@@ -1946,7 +1943,7 @@ const ForceCard = ({
         background: "var(--aura-card)",
         borderRadius: 12,
         border: "1px solid var(--aura-border)",
-        borderTop: `3px solid ${color}`,
+        borderTop: `3px solid var(--brand)`,
         padding: "14px 16px",
         position: "relative",
       }}
@@ -1956,7 +1953,7 @@ const ForceCard = ({
           <div
             style={{
               fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
-              textTransform: "uppercase", color: "var(--aura-t2)",
+              color: "var(--ink-3)",
             }}
           >
             {label}
@@ -1979,7 +1976,7 @@ const ForceCard = ({
           </TooltipProvider>
         </div>
         <div
-          className="text-xs uppercase tracking-wider px-1.5 py-0.5 rounded"
+          className="text-xs tracking-wider px-1.5 py-0.5 rounded"
           style={{ background: `${color}1F`, color, fontWeight: 600 }}
         >
           {status}
@@ -2224,14 +2221,14 @@ const PillarCard = ({
       style={{
         background: "var(--aura-card)",
         border: "1px solid var(--aura-border)",
-        borderTop: `3px solid ${color}`,
+        borderTop: `3px solid var(--brand)`,
         borderRadius: 12,
         padding: "14px 16px",
         position: "relative",
       }}
     >
       <div className="flex items-center justify-between">
-        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "var(--ink-3)" }}>
           {label}
         </div>
         <TooltipProvider delayDuration={150}>

@@ -486,7 +486,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             }}
           />
           <div className="relative">
-            <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--brand)", marginBottom: 8, textTransform: "uppercase", fontWeight: 600 }}>
+            <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
               Your professional identity
             </div>
             <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.375 }}>
@@ -514,7 +514,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               Show me who I am in this market →
             </button>
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontSize: 12, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: 10, fontWeight: 600 }}>
                 What you'll discover
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -579,7 +579,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div
                 style={{
                   fontSize: 12,
-                  textTransform: "uppercase",
                   color: "var(--ink-5)",
                   letterSpacing: "0.08em",
                   fontWeight: 600,
@@ -641,8 +640,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               }}
             >
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
-                  SIGNAL COVERAGE
+                <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)" }}>
+                  Signal coverage
                 </div>
                 <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                   {intelligenceStage === 3
@@ -751,7 +750,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <div style={{ marginBottom: 8 }}>
                   <div
                     title="AI-generated from your assessment, signals, and intelligence. Evolves as evidence accumulates."
-                    style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--aura-t1, var(--ink))", textTransform: "uppercase", cursor: "help" }}
+                    style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", cursor: "help" }}
                   >
                     How the market sees you
                   </div>
@@ -838,7 +837,6 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <div
                   style={{
                     fontSize: 12,
-                    textTransform: "uppercase",
                     color: "var(--ink-5)",
                     letterSpacing: "0.08em",
                     fontWeight: 600,

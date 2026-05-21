@@ -306,7 +306,7 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
         {/* Header */}
         <div className="flex items-center justify-between" style={{ padding: "16px 16px 8px" }}>
           <SectionHeader
-            label="YOUR PUBLISHING WINDOW"
+            label="Your publishing window"
             subtitle="Your strongest signal territories — publish here first"
           />
           <button
@@ -443,7 +443,6 @@ export default function StartFromPanel({ currentFormat, hasDraft, onSelect }: St
               style={{
                 fontSize: 12,
                 color: "var(--ink-5)",
-                textTransform: "uppercase",
                 letterSpacing: "0.1em",
                 fontWeight: 700,
                 marginBottom: 4,
