@@ -60,7 +60,7 @@ const RecommendedReadingSection = () => {
           <h3 style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>
             Recommended reading
           </h3>
-          <InfoTooltip content="Articles selected by Aura based on your skill gaps and sector focus" />
+          <InfoTooltip text="Articles selected by Aura based on your skill gaps and sector focus" />
         </div>
         <button
           onClick={() => fetchRecs(true)}
