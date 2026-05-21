@@ -136,6 +136,11 @@ export default function TierCeremonyModal({ userId }: Props) {
     await acknowledgeMilestone(tierMilestone.id);
   };
 
+  const viewTrajectory = async () => {
+    try { window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "impact" } })); } catch {}
+    await close();
+  };
+
   const onShare = () => setShowCredential(true);
 
   const handleSharedSuccess = async () => {
@@ -176,31 +181,41 @@ export default function TierCeremonyModal({ userId }: Props) {
           fontFamily: "var(--font-body, 'DM Sans', system-ui, sans-serif)",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-          <TierBadge tier={copy.name} animate={mounted} />
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+          <span
+            aria-hidden
+            className="aura-gold-pulse"
+            style={{ fontSize: 56, lineHeight: 1 }}
+          >
+            ✦
+          </span>
         </div>
 
         <h2
+          className="font-serif font-normal"
           style={{
-            fontFamily: "var(--font-display, 'Cormorant Garamond', serif)",
             fontSize: 28,
             lineHeight: 1.15,
-            color: "var(--brand, #B08D3A)",
+            color: "var(--gold-dark, var(--brand))",
             margin: "0 0 12px",
           }}
         >
-          You've reached {copy.name}
+          {copy.name}
         </h2>
 
         <p
+          className="font-normal"
           style={{
-            color: "var(--ink-muted, rgba(245,239,225,0.72))",
-            fontSize: 15,
+            color: "var(--ink-3, rgba(245,239,225,0.72))",
+            fontSize: 14,
             lineHeight: 1.625,
             margin: "0 0 24px",
+            maxWidth: 380,
+            marginLeft: "auto",
+            marginRight: "auto",
           }}
         >
-          {copy.subtitle}
+          {copy.subtitle || "Your consistent intelligence capture is building market presence."}
         </p>
 
         <StatsRow stats={stats} animate={mounted} />
@@ -293,7 +308,7 @@ export default function TierCeremonyModal({ userId }: Props) {
             Share this credential →
           </button>}
           <button
-            onClick={close}
+            onClick={showCredential ? close : viewTrajectory}
             style={{
               flex: "1 1 140px",
               padding: "12px 18px",
@@ -307,7 +322,7 @@ export default function TierCeremonyModal({ userId }: Props) {
               fontFamily: "inherit",
             }}
           >
-            {showCredential ? "Close" : "Continue →"}
+            {showCredential ? "Close" : "View your trajectory →"}
           </button>
         </div>
 
