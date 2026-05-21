@@ -726,7 +726,7 @@ function ResultsView({
           {archetype}
         </h2>
         {oneLineDesc && (
-          <p style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.55, margin: 0 }}>
+          <p style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.625, margin: 0 }}>
             {oneLineDesc}
           </p>
         )}
@@ -739,7 +739,7 @@ function ResultsView({
               fontSize: 16,
               color: "var(--ink-7, #fff)",
               fontWeight: 600,
-              lineHeight: 1.55,
+              lineHeight: 1.625,
               margin: 0,
             }}
           >

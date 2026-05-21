@@ -49,7 +49,7 @@ export default function RecommendedMoveCard({
           )}
         </div>
         <p style={{
-          fontSize: 14, lineHeight: 1.55, color: "var(--aura-t2)",
+          fontSize: 14, lineHeight: 1.625, color: "var(--aura-t2)",
           margin: "8px 0 0",
         }}>
           {actionText}

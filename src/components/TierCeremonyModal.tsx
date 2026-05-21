@@ -196,7 +196,7 @@ export default function TierCeremonyModal({ userId }: Props) {
           style={{
             color: "var(--ink-muted, rgba(245,239,225,0.72))",
             fontSize: 15,
-            lineHeight: 1.55,
+            lineHeight: 1.625,
             margin: "0 0 24px",
           }}
         >
@@ -235,7 +235,7 @@ export default function TierCeremonyModal({ userId }: Props) {
                   </div>
                   <div style={{
                     fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
-                    fontSize: 18, color: "var(--brand, #B08D3A)", lineHeight: 1,
+                    fontSize: 18, color: "var(--brand, #B08D3A)", lineHeight: 1.5,
                   }}>
                     {r.val}<span style={{ fontSize: 12, opacity: 0.55 }}>/{r.max}</span>
                   </div>
@@ -416,7 +416,7 @@ function StatBox({ value, label }: { value: number; label: string }) {
           fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
           fontSize: 24,
           color: "var(--brand, #B08D3A)",
-          lineHeight: 1,
+          lineHeight: 1.5,
         }}
       >
         {value}

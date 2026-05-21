@@ -533,7 +533,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   style={{
                     fontFamily: "'Cormorant Garamond', Georgia, serif",
                     fontSize: 18,
-                    lineHeight: 1.25,
+                    lineHeight: 1.375,
                     marginBottom: 4,
                     color: "var(--brand, #B08D3A)",
                   }}
@@ -731,7 +731,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   fontSize: 18,
                   color: "var(--ink)",
                   margin: 0,
-                  lineHeight: 1.1,
+                  lineHeight: 1.375,
                 }}
               >
                 Capture
@@ -1259,7 +1259,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       fontSize: 22,
                       color: "var(--brand)",
                       letterSpacing: "-0.02em",
-                      lineHeight: 1,
+                      lineHeight: 1.5,
                     }}
                   >
                     {fmtMMSS(recordingSeconds)}

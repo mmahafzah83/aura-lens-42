@@ -305,7 +305,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         if (m) {
           const [, title, pct, rest] = m;
           return (
-            <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.6, color: "hsl(var(--foreground))" }} className="font-sans">
+            <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.625, color: "hsl(var(--foreground))" }} className="font-sans">
               <div style={{ color: "var(--ink-3)", marginBottom: 4 }}>
                 Your strongest signal is ready to publish:
               </div>
@@ -319,7 +319,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         return (
           <p
             className="font-sans"
-            style={{ fontSize: 14, color: "hsl(var(--foreground))", marginTop: 12, lineHeight: 1.6 }}
+            style={{ fontSize: 14, color: "hsl(var(--foreground))", marginTop: 12, lineHeight: 1.625 }}
           >
             {nudge}
           </p>

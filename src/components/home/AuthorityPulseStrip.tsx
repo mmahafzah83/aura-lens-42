@@ -54,7 +54,7 @@ const Item = ({
       style={{
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
         fontSize: 22, fontWeight: 700,
-        color: valueColor || "var(--aura-t1)", lineHeight: 1.1,
+        color: valueColor || "var(--aura-t1)", lineHeight: 1.375,
       }}
     >
       {value}

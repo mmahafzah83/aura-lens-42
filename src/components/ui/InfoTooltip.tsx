@@ -58,7 +58,7 @@ export function InfoTooltip({
     padding: 0,
     transition: "color 0.2s, border-color 0.2s",
     verticalAlign: "middle",
-    lineHeight: 1,
+    lineHeight: 1.5,
   };
 
   const panelStyle: CSSProperties = {

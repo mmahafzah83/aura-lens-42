@@ -853,7 +853,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
             Your authority trajectory starts here
           </h2>
-          <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
+          <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, maxWidth: 420, margin: "0 auto" }}>
             Publish your first LinkedIn post from Aura and upload your analytics to see your impact grow.
           </p>
 
@@ -1082,7 +1082,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             }}>
               Insight
             </div>
-            <p style={{ fontSize: 14, lineHeight: 1.55, color: "var(--aura-t1)", margin: 0 }}>
+            <p style={{ fontSize: 14, lineHeight: 1.625, color: "var(--aura-t1)", margin: 0 }}>
               {(() => {
                 if (pillarWeeksActive >= 4 && periodEngagementRate != null) {
                   return "Consistent capture is paying off — your engagement is tracking above baseline. Double down on the formats that worked.";
@@ -1111,17 +1111,17 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <>
                 <div style={{
                   fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                  fontSize: 22, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.1,
+                  fontSize: 22, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.375,
                 }}>
                   {auraData.points_to_next} pts
                 </div>
-                <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.55 }}>
+                <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.625 }}>
                   to reach <span style={{ color: "var(--aura-accent)", fontWeight: 600 }}>{auraData.next_tier_name}</span>.
                   Publishing from your top signal is the fastest mover.
                 </p>
               </>
             ) : (
-              <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0, lineHeight: 1.55 }}>
+              <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0, lineHeight: 1.625 }}>
                 You've reached the top tier — focus on maintaining cadence.
               </p>
             )}
@@ -1724,7 +1724,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontSize: 28,
                     color: "var(--success)",
                     letterSpacing: "-0.02em",
-                    lineHeight: 1.1,
+                    lineHeight: 1.375,
                   }}
                 >
                   {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
@@ -1852,7 +1852,7 @@ const HeroStat = ({ value, label, color }: { value: string; label: string; color
   >
     <div
       className="tabular-nums"
-      style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "Inter, sans-serif", lineHeight: 1.1 }}
+      style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "Inter, sans-serif", lineHeight: 1.375 }}
     >
       {value}
     </div>
@@ -1992,7 +1992,7 @@ const ForceCard = ({
           fontSize: 30,
           fontWeight: 700,
           color,
-          lineHeight: 1.1,
+          lineHeight: 1.375,
         }}
       >
         {weighted}
@@ -2081,7 +2081,7 @@ const ScoreHero = ({
               className="tabular-nums"
               style={{
                 fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1,
+                fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1.5,
               }}
             >
               {pct}
@@ -2190,7 +2190,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
       className="tabular-nums"
       style={{
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.1,
+        fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.375,
       }}
     >
       {value}
@@ -2257,7 +2257,7 @@ const PillarCard = ({
         className="tabular-nums mt-1"
         style={{
           fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-          fontSize: 26, fontWeight: 700, color, lineHeight: 1.1,
+          fontSize: 26, fontWeight: 700, color, lineHeight: 1.375,
         }}
       >
         {value}

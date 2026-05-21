@@ -122,7 +122,7 @@ export default function FirstVisitHint({
       role="note"
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.55 }}>
+        <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.625 }}>
           {h.desc}
         </div>
         {h.action && (

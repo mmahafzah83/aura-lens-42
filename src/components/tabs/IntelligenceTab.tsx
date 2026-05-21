@@ -363,7 +363,7 @@ const SignalDetailPanel = ({
           </p>
 
           {/* Confidence number */}
-          <p style={{ fontSize: 64, fontWeight: 800, color: "var(--brand)", letterSpacing: -3, lineHeight: 1, margin: "0 0 4px" }}>
+          <p style={{ fontSize: 64, fontWeight: 800, color: "var(--brand)", letterSpacing: -3, lineHeight: 1.5, margin: "0 0 4px" }}>
             {confPct}%
           </p>
 
@@ -896,12 +896,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 Your strategic radar
               </div>
               {entryCount >= 3 ? (
-                <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 600 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.625, margin: "0 0 18px", maxWidth: 600 }}>
                   Aura is analyzing your captures. Signals typically appear within a few minutes after capture.
                 </p>
               ) : (
                 <>
-                  <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 600 }}>
+                  <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.625, margin: "0 0 18px", maxWidth: 600 }}>
                     Intelligence emerges from patterns across your captures. Aura needs at least 3 articles from different sources to start detecting meaningful signals. Aura reads what you read — every article you capture adds a layer of intelligence.
                   </p>
                   <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 16 }}>
@@ -945,7 +945,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 textAlign: "center",
                 minWidth: 88,
               }}>
-                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 600, color: c.color, lineHeight: 1 }}>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 36, fontWeight: 600, color: c.color, lineHeight: 1.5 }}>
                   {c.val}
                 </div>
                 <div style={{ fontSize: 12, letterSpacing: 1, color: "var(--aura-t1)", opacity: 0.6, textTransform: "uppercase", marginTop: 4 }}>
@@ -979,7 +979,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
             <div style={{ fontSize: 12, letterSpacing: "0.14em", fontWeight: 700, color: "var(--brand)", textTransform: "uppercase", marginBottom: 8 }}>
               Your intelligence is growing
             </div>
-            <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.6, margin: "0 0 12px" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.625, margin: "0 0 12px" }}>
               Aura needs a broader view of your expertise before recommending strategic moves. Keep capturing articles from different sources — each one adds a new dimension to your intelligence map.
             </p>
             <Button size="sm" onClick={() => onOpenCapture?.()} style={{ borderRadius: 4 }}>
@@ -1226,7 +1226,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                             <div style={{ textAlign: "right", flexShrink: 0 }}>
                               <div
                                 title="Evidence quality measure, not probability. Based on: AI analysis 40%, unique source articles 35%, source diversity 15%, recency 10%. Capture from more organizations to increase."
-                                style={{ fontSize: 24, fontWeight: 600, color: confColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, cursor: "help" }}
+                                style={{ fontSize: 24, fontWeight: 600, color: confColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.5, cursor: "help" }}
                               >
                                 {confPct}%
                               </div>

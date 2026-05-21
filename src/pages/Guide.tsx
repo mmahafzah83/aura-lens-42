@@ -113,7 +113,7 @@ const Guide = () => {
           style={{
             fontFamily: "var(--font-display)",
             fontSize: "clamp(32px, 5vw, 48px)",
-            lineHeight: 1.1,
+            lineHeight: 1.375,
             letterSpacing: "-0.02em",
             color: "var(--ink-7)",
             fontWeight: 500,
@@ -121,7 +121,7 @@ const Guide = () => {
         >
           How Aura works
         </h1>
-        <p style={{ fontSize: 16, color: "var(--ink-5)", lineHeight: 1.6 }}>
+        <p style={{ fontSize: 16, color: "var(--ink-5)", lineHeight: 1.625 }}>
           From first capture to market authority — in 4 steps.
         </p>
       </section>
@@ -144,7 +144,7 @@ const Guide = () => {
                   <Icon size={22} style={{ color: "var(--brand)" }} />
                 </div>
               </div>
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink-7)", marginBottom: 10, lineHeight: 1.25 }}>{t}</h3>
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink-7)", marginBottom: 10, lineHeight: 1.375 }}>{t}</h3>
               <p style={{ fontSize: 14, lineHeight: 1.65, color: "var(--ink-5)" }}>{d}</p>
             </div>
           ))}
@@ -173,7 +173,7 @@ const Guide = () => {
                 </div>
                 <div>
                   <h3 style={{ fontSize: 16, fontWeight: 500, color: "var(--ink-7)", marginBottom: 4 }}>{t}</h3>
-                  <p style={{ fontSize: 14, color: "var(--ink-5)", lineHeight: 1.55 }}>{d}</p>
+                  <p style={{ fontSize: 14, color: "var(--ink-5)", lineHeight: 1.625 }}>{d}</p>
                 </div>
               </div>
             ))}
@@ -188,7 +188,7 @@ const Guide = () => {
           <h2 className="text-center mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-7)", fontWeight: 500 }}>
             How authority is calculated
           </h2>
-          <p className="text-center mb-12" style={{ fontSize: 14, color: "var(--ink-5)", lineHeight: 1.6 }}>
+          <p className="text-center mb-12" style={{ fontSize: 14, color: "var(--ink-5)", lineHeight: 1.625 }}>
             One number. Three components. Built from real activity, not vanity metrics.
           </p>
           <div className="space-y-7">
@@ -201,7 +201,7 @@ const Guide = () => {
                 <div style={{ height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 999, overflow: "hidden" }}>
                   <div className="guide-bar-fill" style={{ width: `${pct}%` }} />
                 </div>
-                <p style={{ fontSize: 14, color: "var(--ink-5)", marginTop: 8, lineHeight: 1.55 }}>{desc}</p>
+                <p style={{ fontSize: 14, color: "var(--ink-5)", marginTop: 8, lineHeight: 1.625 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -276,7 +276,7 @@ const Guide = () => {
         <h2 className="mb-5" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", color: "var(--ink-7)", fontWeight: 500 }}>
           Ready to start?
         </h2>
-        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.6 }}>
+        <p className="mb-8 max-w-md mx-auto" style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.625 }}>
           {authed ? "Jump back into your dashboard and keep building." : "Join the private beta. We review applications weekly."}
         </p>
         <button
