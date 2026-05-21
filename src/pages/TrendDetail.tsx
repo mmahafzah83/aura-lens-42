@@ -128,7 +128,7 @@ export default function TrendDetail() {
       final_score: signal.final_score,
     });
     if (result.ok) {
-      toast.success(`Added to ${result.signalTitle} — fragment count now ${result.newCount}`);
+      toast.success(`Evidence strengthened — ${result.newCount} sources connected to ${result.signalTitle}`);
     } else {
       toast.error("Couldn't add to signals — try again");
     }
