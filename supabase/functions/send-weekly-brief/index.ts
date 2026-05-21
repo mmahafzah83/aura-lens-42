@@ -127,8 +127,8 @@ function buildHtml(opts: {
   <div class="email-card" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;">
 
     <div class="hero-pad" style="padding:40px 40px 32px;background:linear-gradient(135deg,#0d0d0d,#1a1a1a);color:#f0f0f0;">
-      <p style="font-size:13px;color:${brand};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">⚡ Aura · Weekly Brief</p>
-      <h1 style="font-size:26px;line-height:1.25;font-weight:700;color:#f0f0f0;margin-bottom:8px;">Your intelligence brief</h1>
+      <p style="font-size:13px;color:${brand};letter-spacing:0.08em;text-transform:uppercase;margin-bottom:14px;">Aura · Weekly Brief</p>
+      <h1 style="font-family:'Cormorant Garamond',Georgia,'Times New Roman',serif;font-size:30px;line-height:1.2;font-weight:600;color:#f0f0f0;margin-bottom:8px;">Your intelligence brief</h1>
       <p style="font-size:14px;color:#aaa;line-height:1.5;">${escapeHtml(dayDate)}</p>
     </div>
 
