@@ -8,6 +8,7 @@ import SectionError from "@/components/ui/section-error";
 import { formatSmartDate } from "@/lib/formatDate";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import { useCountUp } from "@/hooks/useCountUp";
 import { withTimeout } from "@/lib/safeQuery";
 import { EMPTY_STATE } from "@/constants/language";
 import AurasRead from "@/components/AurasRead";
@@ -1553,7 +1554,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     lineHeight: 1.5,
                   }}
                 >
-                  {auraData.aura_score}
+                  <AnimatedScore value={auraData.aura_score} />
                 </span>
                 <InfoTooltip side="bottom" align="left" label="Authority Score" width={280}>
                   <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>

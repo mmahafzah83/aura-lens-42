@@ -2037,7 +2037,7 @@ const ScoreHero = ({
   const pct = Math.max(0, Math.min(100, Math.round(score)));
   const r = 64;
   const c = 2 * Math.PI * r;
-  const dash = (pct / 100) * c;
+  const targetDash = (pct / 100) * c;
   const tierProgressPct = pointsToNext != null && nextTierName
     ? Math.max(0, Math.min(100, 100 - (pointsToNext / 100) * 100))
     : 100;
@@ -2045,6 +2045,22 @@ const ScoreHero = ({
     n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`
       : n >= 1_000 ? `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`
       : String(Math.round(n));
+
+  // Count-up score + ring draw-in + breathing pulse (once per session).
+  const animatedScore = useCountUp(pct, { duration: 800, once: true, key: "impact-score-ring" });
+  const [dash, setDash] = useState(0);
+  const [breathing, setBreathing] = useState(false);
+  useEffect(() => {
+    const reduced = typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setDash(targetDash); setBreathing(true); return; }
+    setDash(0);
+    const id = requestAnimationFrame(() => setDash(targetDash));
+    const t = window.setTimeout(() => setBreathing(true), 850);
+    return () => { cancelAnimationFrame(id); window.clearTimeout(t); };
+  }, [targetDash]);
+
+  // Stagger 100ms between the 3 mini KPI cards.
   return (
     <section
       className="relative overflow-hidden"
@@ -2065,7 +2081,8 @@ const ScoreHero = ({
               stroke="var(--aura-accent)" strokeWidth="11" strokeLinecap="round"
               strokeDasharray={`${dash} ${c}`}
               transform="rotate(-90 70 70)"
-              style={{ transition: "stroke-dasharray 800ms ease" }}
+              className={breathing ? "aura-ring-breathing" : undefined}
+              style={{ transition: "stroke-dasharray 800ms cubic-bezier(0.16, 1, 0.3, 1)" }}
             />
           </svg>
           <div
@@ -2082,7 +2099,7 @@ const ScoreHero = ({
                 fontSize: 40, fontWeight: 700, color: "var(--aura-accent)", lineHeight: 1.5,
               }}
             >
-              {pct}
+              {animatedScore}
             </div>
             <div
               style={{
@@ -2165,9 +2182,9 @@ const ScoreHero = ({
 
           {/* Mini KPIs */}
           <div className="grid grid-cols-3 gap-2">
-            <MiniKPI label="Followers" value={followers != null ? fmt(followers) : "—"} />
-            <MiniKPI label="Impressions" value={impressions != null ? fmt(impressions) : "—"} />
-            <MiniKPI label="Avg Engagement" value={engagementRate != null ? `${engagementRate.toFixed(1)}%` : "—"} />
+            <MiniKPI index={0} label="Followers" rawValue={followers} formatter={(n) => fmt(n)} />
+            <MiniKPI index={1} label="Impressions" rawValue={impressions} formatter={(n) => fmt(n)} />
+            <MiniKPI index={2} label="Avg Engagement" rawValue={engagementRate} formatter={(n) => `${n.toFixed(1)}%`} />
           </div>
         </div>
       </div>
@@ -2175,13 +2192,28 @@ const ScoreHero = ({
   );
 };
 
-const MiniKPI = ({ label, value }: { label: string; value: string }) => (
+const MiniKPI = ({ label, rawValue, formatter, index = 0 }: {
+  label: string;
+  rawValue: number | null;
+  formatter: (n: number) => string;
+  index?: number;
+}) => {
+  // For decimals (engagement rate), scale by 10 so the count-up stays integer-safe.
+  const isDecimal = formatter(0.1).includes(".");
+  const scale = isDecimal ? 10 : 1;
+  const target = rawValue != null ? Math.round(rawValue * scale) : 0;
+  const anim = useCountUp(target, { duration: 800, delay: index * 100, once: true, key: `mini-kpi-${label}` });
+  const display = rawValue == null ? "—" : formatter(anim / scale);
+  return (
   <div
+    className="animate-fade-up-in"
     style={{
       background: "var(--aura-card-glass)",
       border: "1px solid var(--aura-border)",
       borderRadius: 8,
       padding: "10px 12px",
+      animationDelay: `${index * 100}ms`,
+      animationFillMode: "backwards",
     }}
   >
     <div
@@ -2191,7 +2223,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
         fontSize: 18, fontWeight: 700, color: "var(--aura-t1)", lineHeight: 1.375,
       }}
     >
-      {value}
+      {display}
     </div>
     <div
       style={{
@@ -2203,6 +2235,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
     </div>
   </div>
 );
+};
 
 export default ImpactTab;
 
