@@ -1491,7 +1491,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       </div>
                       {badge && (
                         <div
-                          className="text-xs uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
+                          className="text-xs tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
                           style={{ background: badge.bg, color: badge.color, fontWeight: 600, border: `0.5px solid ${badge.border}` }}
                         >
                           {badge.label}
@@ -1536,7 +1536,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
           const UploadZone = (
             <div className="mt-4">
-              <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
+              <div className="text-xs font-semibold tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
                 How to export your LinkedIn data
               </div>
               <ol className="text-[12px] leading-relaxed space-y-1 pl-4 list-decimal" style={{ color: "var(--color-text-secondary)" }}>
