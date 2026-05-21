@@ -830,7 +830,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
       </div>
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
-      <div className="flex-1 min-w-0 space-y-5">
+      <div className="flex-1 min-w-0 space-y-6">
         {/* Hero CTA — top signal */}
         {(() => {
           if (contentType === "flash" || contentType === "framework_summary") return null;
@@ -1441,7 +1441,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           type="button"
                           disabled={disabled}
                           onClick={() => runVariation(v.key, v.instruction)}
-                          className="text-left p-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-left p-5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed card-interactive"
                           style={{
                             background: "var(--vellum)",
                             border: "1px solid var(--brand-line)",
@@ -1495,7 +1495,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   </div>
                 </div>
                 {visualMode === 'card' ? (
-                  <div className="p-3">
+                  <div className="p-5">
                     <CardPreviewPanel
                       postText={displayedOutput}
                       topicLabel={topic}

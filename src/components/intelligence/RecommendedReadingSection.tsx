@@ -96,10 +96,10 @@ const RecommendedReadingSection = () => {
           {recs.map((rec, i) => {
             const domain = domainFromUrl(rec.url);
             return (
-              <div key={i} style={{
+              <div key={i} className={rec.url ? "card-interactive" : undefined} style={{
                 background: "var(--surface-ink-raised)",
                 border: "0.5px solid var(--surface-ink-subtle)",
-                borderRadius: 8, padding: "12px 14px",
+                borderRadius: 8, padding: "20px",
               }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
