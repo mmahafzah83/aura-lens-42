@@ -854,7 +854,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     onKeyDown={e => e.key === "Enter" && saveEdit("north_star_goal")}
                     onBlur={() => saveEdit("north_star_goal")}
                     autoFocus
-                    className="bg-transparent border-b border-brand text-[13px] text-surface-ink-subtle outline-none"
+                    className="bg-transparent border-b border-brand text-sm text-surface-ink-subtle outline-none"
                     style={{ minWidth: 240 }}
                   />
                 ) : (

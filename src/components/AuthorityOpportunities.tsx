@@ -72,9 +72,9 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
         </div>
         <div>
           <h3 className="text-sm font-semibold text-foreground tracking-tight">Authority Opportunities</h3>
-          <p className="text-[10px] text-muted-foreground/50">Ideas strong enough to publish</p>
+          <p className="text-xs text-muted-foreground/50">Ideas strong enough to publish</p>
         </div>
-        <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold ml-auto">
+        <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold ml-auto">
           {opps.length}
         </span>
       </div>
@@ -94,22 +94,22 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-xs font-semibold text-foreground leading-snug">{ct.title || opp.signal_title}</p>
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
                       confidencePct >= 85 ? "bg-green-500/15 text-green-400" : "bg-amber-500/15 text-amber-400"
                     }`}>
                       {confidencePct}%
                     </span>
                   </div>
                   {ct.hook && (
-                    <p className="text-[11px] text-primary/50 italic mb-1.5 border-l-2 border-primary/15 pl-2">
+                    <p className="text-xs text-primary/50 italic mb-1.5 border-l-2 border-primary/15 pl-2">
                       "{ct.hook}"
                     </p>
                   )}
-                  <p className="text-[10px] text-muted-foreground/50 leading-relaxed line-clamp-2">{opp.explanation}</p>
+                  <p className="text-xs text-muted-foreground/50 leading-relaxed line-clamp-2">{opp.explanation}</p>
 
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {opp.theme_tags?.slice(0, 3).map((t, i) => (
-                      <span key={i} className="text-[8px] bg-muted/30 text-muted-foreground/40 px-1.5 py-0.5 rounded">
+                      <span key={i} className="text-xs bg-muted/30 text-muted-foreground/40 px-1.5 py-0.5 rounded">
                         {t}
                       </span>
                     ))}
@@ -122,7 +122,7 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
                         hook: ct.hook,
                         context: opp.explanation,
                       })}
-                      className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors bg-primary/5 hover:bg-primary/10 rounded-lg px-2.5 py-1"
+                      className="text-xs text-primary/60 hover:text-primary flex items-center gap-1 transition-colors bg-primary/5 hover:bg-primary/10 rounded-lg px-2.5 py-1"
                     >
                       <FileText className="w-3 h-3" /> Draft Content
                     </button>
@@ -133,7 +133,7 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
                         signalTitle: ct.title || opp.signal_title,
                         contentFormat: "carousel",
                       })}
-                      className="text-[10px] text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors bg-amber-500/5 hover:bg-amber-500/10 rounded-lg px-2.5 py-1"
+                      className="text-xs text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors bg-amber-500/5 hover:bg-amber-500/10 rounded-lg px-2.5 py-1"
                     >
                       <LayoutGrid className="w-3 h-3" /> Carousel
                     </button>

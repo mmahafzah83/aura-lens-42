@@ -148,8 +148,8 @@ const MobileTestimonials = ({ testimonials }: { testimonials: { q: string; a: st
           {testimonials.map((t, i) => (
             <div key={i} className="w-full flex-shrink-0 px-1">
               <div className="p-5 rounded-xl" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
-                <p className="text-[13px] leading-relaxed mb-3" style={{ color: "var(--ink-6)" }}>"{t.q}"</p>
-                <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{t.a}</p>
+                <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--ink-6)" }}>"{t.q}"</p>
+                <p className="text-xs" style={{ color: "var(--ink-4)" }}>{t.a}</p>
               </div>
             </div>
           ))}
@@ -338,7 +338,7 @@ const Landing = () => {
           <div className="flex justify-center mb-6">
             <AuraLogo size={80} variant="dark" withWordmark />
           </div>
-          <p className="text-[10px] tracking-[0.2em] uppercase mb-6" style={{ color: "var(--ink-4)" }}>For senior transformation leaders</p>
+          <p className="text-xs tracking-[0.2em] uppercase mb-6" style={{ color: "var(--ink-4)" }}>For senior transformation leaders</p>
           <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
             Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>authority</span>.
           </h1>
@@ -421,7 +421,7 @@ const Landing = () => {
 
       {/* Section 4 — Pull quote (scroll reveal) */}
       <section ref={pullQuote.ref} className="landing-compact px-5 sm:px-10 py-14 max-w-2xl mx-auto">
-        <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "var(--ink-4)" }}>The problem</p>
+        <p className="section-label text-xs uppercase tracking-[0.2em] mb-4" style={{ color: "var(--ink-4)" }}>The problem</p>
         <div className="relative pl-5">
           {/* Animated gold line */}
           <div style={{
@@ -458,7 +458,7 @@ const Landing = () => {
         }} />
         <div className="absolute inset-0 pointer-events-none" style={{ background: "rgba(10,10,10,0.80)" }} />
         <div className="relative max-w-2xl mx-auto">
-          <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-4" style={{ color: "var(--ink-4)" }}>What makes Aura different</p>
+          <p className="section-label text-xs uppercase tracking-[0.2em] mb-4" style={{ color: "var(--ink-4)" }}>What makes Aura different</p>
           <div className="relative pl-5 mb-10">
             <div style={{
               position: "absolute", left: 0, top: 0, bottom: 0, width: 2,
@@ -475,7 +475,7 @@ const Landing = () => {
               <p className="text-[16px] sm:text-[18px] font-medium leading-snug mb-3" style={{ fontFamily: "var(--font-display)", color: "var(--ink-7)" }}>
                 "Aura does not just help you create content. It first helps you understand what to stand for."
               </p>
-              <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-5)" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--ink-5)" }}>
                 Most professionals skip this step. They start posting without a clear positioning. The result is content that gets ignored. Aura starts with the foundation — who you are, what you are best at, and where you should focus.
               </p>
             </div>
@@ -501,10 +501,10 @@ const Landing = () => {
           </div>
 
           {/* Framework pills */}
-          <p className="text-[9px] uppercase tracking-[0.15em] mb-3 text-center" style={{ color: "var(--ink-4)" }}>Inspired by proven frameworks</p>
+          <p className="text-xs uppercase tracking-[0.15em] mb-3 text-center" style={{ color: "var(--ink-4)" }}>Inspired by proven frameworks</p>
           <div className="flex flex-wrap justify-center gap-2">
             {["Gallup CliftonStrengths", "Personal brand positioning", "Career gap analysis", "Voice profiling"].map(f => (
-              <span key={f} className="px-3 py-1.5 rounded-full text-[11px]" style={{ color: "var(--brand)", border: "1px solid rgba(197,165,90,0.25)", background: "var(--surface-ink-subtle)" }}>{f}</span>
+              <span key={f} className="px-3 py-1.5 rounded-full text-xs" style={{ color: "var(--brand)", border: "1px solid rgba(197,165,90,0.25)", background: "var(--surface-ink-subtle)" }}>{f}</span>
             ))}
           </div>
         </div>
@@ -513,7 +513,7 @@ const Landing = () => {
       {/* Section 6 — Built for (Improvement 6: horizontal compact cards on mobile) */}
       <section className="landing-compact py-16 px-5 sm:px-10">
         <div className="max-w-3xl mx-auto">
-          <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "var(--ink-4)" }}>Built for</p>
+          <p className="section-label text-xs uppercase tracking-[0.2em] mb-8 text-center" style={{ color: "var(--ink-4)" }}>Built for</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 0 0-8 0v2"/></svg>, title: "Senior consultants", desc: "Who want to be recognised as the go-to expert in their practice area" },
@@ -525,8 +525,8 @@ const Landing = () => {
                   {p.icon}
                 </div>
                 <div className="text-left sm:text-center">
-                  <div className="text-[13px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{p.title}</div>
-                  <div className="text-[11px] leading-relaxed" style={{ color: "var(--ink-5)" }}>{p.desc}</div>
+                  <div className="text-sm font-medium mb-1" style={{ color: "var(--ink-7)" }}>{p.title}</div>
+                  <div className="text-xs leading-relaxed" style={{ color: "var(--ink-5)" }}>{p.desc}</div>
                 </div>
               </div>
             ))}
@@ -540,7 +540,7 @@ const Landing = () => {
           background: "linear-gradient(180deg, var(--ink) 0%, #0a0e18 40%, #0a0e18 60%, var(--ink) 100%)",
         }} />
         <div className="relative max-w-2xl mx-auto">
-          <p className="section-label text-[9px] uppercase tracking-[0.2em] mb-10 text-center" style={{ color: "var(--ink-4)" }}>How it works</p>
+          <p className="section-label text-xs uppercase tracking-[0.2em] mb-10 text-center" style={{ color: "var(--ink-4)" }}>How it works</p>
           <div className="flex flex-col gap-10 md:gap-10" style={{}}>
             {stepData.map((s, i) => (
               <div
@@ -558,7 +558,7 @@ const Landing = () => {
                 <div className="font-bold shrink-0 w-12 text-[28px] md:text-[32px]" style={{ color: "var(--surface-ink-subtle)", fontFamily: "var(--font-display)" }}>{s.n}</div>
                 <div>
                   <div className="text-[16px] md:text-[15px] font-medium mb-1" style={{ color: "var(--ink-7)" }}>{s.t}</div>
-                  <div className="text-[13px] leading-[1.6]" style={{ color: "var(--ink-5)" }}>{s.d}</div>
+                  <div className="text-sm leading-[1.6]" style={{ color: "var(--ink-5)" }}>{s.d}</div>
                 </div>
               </div>
             ))}
@@ -574,8 +574,8 @@ const Landing = () => {
             <div className="testimonial-track">
               {desktopTestimonials.map((t, i) => (
                 <div key={i} className="flex-shrink-0 w-[340px] p-5 rounded-xl" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
-                  <p className="text-[13px] leading-relaxed mb-3" style={{ color: "var(--ink-6)" }}>"{t.q}"</p>
-                  <p className="text-[11px]" style={{ color: "var(--ink-4)" }}>{t.a}</p>
+                  <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--ink-6)" }}>"{t.q}"</p>
+                  <p className="text-xs" style={{ color: "var(--ink-4)" }}>{t.a}</p>
                 </div>
               ))}
             </div>
@@ -596,7 +596,7 @@ const Landing = () => {
         }} />
         <div className="relative">
           <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "var(--ink)", fontFamily: "var(--font-display)" }}>Your authority starts here.</h2>
-          <p className="text-[13px] mb-6" style={{ color: "var(--ink-3)" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
+          <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
           <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
             Get early access
           </button>

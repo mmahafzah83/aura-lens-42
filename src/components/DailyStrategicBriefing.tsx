@@ -153,8 +153,8 @@ const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicB
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-[0.15em] text-primary/50 font-semibold">Daily Strategic Briefing</p>
-                <p className="text-[10px] text-muted-foreground/40">{briefing.date}</p>
+                <p className="text-xs uppercase tracking-[0.15em] text-primary/50 font-semibold">Daily Strategic Briefing</p>
+                <p className="text-xs text-muted-foreground/40">{briefing.date}</p>
               </div>
             </div>
             <button
@@ -183,20 +183,20 @@ const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicB
                 <Icon className={`w-4 h-4 ${iconColor}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold mb-0.5">{label}</p>
+                <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground/40 font-semibold mb-0.5">{label}</p>
                 <p className="text-xs font-semibold text-foreground mb-1 leading-snug">{title}</p>
-                <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{body}</p>
+                <p className="text-xs text-muted-foreground/60 leading-relaxed">{body}</p>
                 <div className="flex items-center gap-3 mt-2">
                   <button
                     onClick={action}
-                    className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                    className="text-xs text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
                   >
                     <ArrowRight className="w-3 h-3" /> {actionLabel}
                   </button>
                   {secondaryAction && (
                     <button
                       onClick={secondaryAction}
-                      className="text-[10px] text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                      className="text-xs text-amber-400/60 hover:text-amber-400 flex items-center gap-1 transition-colors"
                     >
                       <LayoutGrid className="w-3 h-3" /> {secondaryLabel}
                     </button>
@@ -218,10 +218,10 @@ const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicB
             <ArrowRight className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="flex-1">
-            <p className="text-[9px] uppercase tracking-[0.15em] text-emerald-400/60 font-semibold mb-0.5">Recommended Action</p>
+            <p className="text-xs uppercase tracking-[0.15em] text-emerald-400/60 font-semibold mb-0.5">Recommended Action</p>
             <p className="text-xs font-semibold text-foreground leading-snug mb-1">{briefing.recommended_action.action}</p>
-            <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{briefing.recommended_action.rationale}</p>
-            <p className="text-[10px] text-emerald-400/50 mt-2 flex items-center gap-1 group-hover:text-emerald-400 transition-colors">
+            <p className="text-xs text-muted-foreground/50 leading-relaxed">{briefing.recommended_action.rationale}</p>
+            <p className="text-xs text-emerald-400/50 mt-2 flex items-center gap-1 group-hover:text-emerald-400 transition-colors">
               <ArrowRight className="w-3 h-3" /> Open Action Workspace
             </p>
           </div>

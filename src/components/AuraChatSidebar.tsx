@@ -1072,7 +1072,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                       {activeConv?.title || "Aura"}
                     </h2>
                   )}
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">
                     {activeConv ? "Strategic Thread" : "Chief of Staff"}
                   </p>
                   {!activeConv && headerCounts && (
@@ -1126,7 +1126,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
             <span className="truncate">
               {activeConv ? "Continuing" : "Linked to"}: {contextLabel}
             </span>
-            <span className="text-[10px] opacity-60 uppercase shrink-0">{contextType}</span>
+            <span className="text-xs opacity-60 uppercase shrink-0">{contextType}</span>
           </div>
         )}
 
@@ -1189,7 +1189,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                 {/* Pinned */}
                 {pinnedConvs.length > 0 && (
                   <div>
-                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest mb-2 px-1">Pinned</p>
+                    <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mb-2 px-1">Pinned</p>
                     <div className="space-y-1">
                       {pinnedConvs.map(c => (
                         <ConversationRow key={c.id} conv={c} onOpen={openConversation} onDelete={deleteConversation} onTogglePin={togglePin} />
@@ -1201,7 +1201,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                 {/* Linked groups */}
                 {Object.entries(linkedGroups).map(([type, convs]) => (
                   <div key={type}>
-                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest mb-2 px-1 capitalize">{type}s</p>
+                    <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mb-2 px-1 capitalize">{type}s</p>
                     <div className="space-y-1">
                       {convs.map(c => (
                         <ConversationRow key={c.id} conv={c} onOpen={openConversation} onDelete={deleteConversation} onTogglePin={togglePin} />
@@ -1213,7 +1213,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                 {/* General / Recent */}
                 {generalConvs.length > 0 && (
                   <div>
-                    <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest mb-2 px-1">Recent</p>
+                    <p className="text-xs text-muted-foreground/60 uppercase tracking-widest mb-2 px-1">Recent</p>
                     <div className="space-y-1">
                       {generalConvs.map(c => (
                         <ConversationRow key={c.id} conv={c} onOpen={openConversation} onDelete={deleteConversation} onTogglePin={togglePin} />
@@ -1269,7 +1269,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     >
                       <button
                         onClick={() => vaultAskFollowUp(item.content)}
-                        className="text-[11px] font-medium px-2 py-1 rounded-md text-primary hover:bg-primary/10 tactile-press"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-primary hover:bg-primary/10 tactile-press"
                       >
                         Ask follow-up →
                       </button>
@@ -1278,13 +1278,13 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                           try { await navigator.clipboard.writeText(item.content); toast.success("Copied"); }
                           catch { toast.error("Copy failed"); }
                         }}
-                        className="text-[11px] font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 tactile-press"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 tactile-press"
                       >
                         Copy
                       </button>
                       <button
                         onClick={() => vaultDelete(item)}
-                        className="text-[11px] font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 tactile-press"
+                        className="text-xs font-medium px-2 py-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 tactile-press"
                       >
                         Delete
                       </button>
@@ -1422,7 +1422,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                             toast.error("Failed to save", { description: e.message });
                           }
                         }}
-                        className={`mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${
+                        className={`mt-1.5 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${
                           savedFlash.has(i) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-primary hover:bg-secondary/60"
                         }`}
                       >
@@ -1440,7 +1440,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                             toast.error("Copy failed");
                           }
                         }}
-                        className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md transition-colors tactile-press"
+                        className="mt-1.5 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-colors tactile-press"
                         style={{
                           background: "#EEEDFE",
                           color: "#3C3489",
@@ -1478,7 +1478,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                       key={action.mode}
                       onClick={() => isAdaptive ? send(label) : handleQuickAction(action)}
                       disabled={isLoading}
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
+                      className="flex items-center gap-1.5 text-xs font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg bg-secondary/40 border border-border/20 whitespace-nowrap shrink-0 tactile-press"
                     >
                       <action.icon className="w-3.5 h-3.5" />
                       {label}
@@ -1490,7 +1490,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   key="market-mirror"
                   onClick={() => send("Generate my Shadow Twin portrait.")}
                   disabled={isLoading}
-                  className="flex items-center gap-1.5 text-[11px] transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap shrink-0 tactile-press"
+                  className="flex items-center gap-1.5 text-xs transition-colors disabled:opacity-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap shrink-0 tactile-press"
                   style={{
                     background: "#EEEDFE",
                     border: "0.5px solid #AFA9EC",
@@ -1553,9 +1553,9 @@ const ConversationRow = ({
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground truncate">{conv.title}</p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[10px] text-muted-foreground/50">{timeAgo}</span>
+          <span className="text-xs text-muted-foreground/50">{timeAgo}</span>
           {conv.linked_type && conv.linked_type !== "general" && (
-            <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${typeColor}`}>
+            <span className={`text-xs uppercase tracking-wider px-1.5 py-0.5 rounded border ${typeColor}`}>
               {conv.linked_type}
             </span>
           )}

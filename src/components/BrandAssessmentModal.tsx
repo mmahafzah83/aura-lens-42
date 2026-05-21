@@ -412,7 +412,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               )}
               <div className="flex items-center gap-2">
                 <Compass className="w-4 h-4 text-brand" />
-                <span className="text-[13px] text-ink-7 font-medium">Brand Assessment</span>
+                <span className="text-sm text-ink-7 font-medium">Brand Assessment</span>
               </div>
             </div>
             <button onClick={handleCloseRequest} className="text-ink-4 hover:text-ink-5 p-1">
@@ -421,7 +421,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           </div>
 
           {!showResults && step === 0 && (
-            <p className="text-[11px] text-ink-5 mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
+            <p className="text-xs text-ink-5 mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
           )}
 
           {/* Progress bar */}
@@ -442,19 +442,19 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="w-3 h-3 rounded-full bg-brand animate-pulse" />
-                  <p className="text-[13px] text-ink-5 transition-opacity duration-300">{LOADING_STAGES[loadingStage]}</p>
+                  <p className="text-sm text-ink-5 transition-opacity duration-300">{LOADING_STAGES[loadingStage]}</p>
                 </div>
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
                   <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
                     We couldn't build your analysis right now
                   </h3>
-                  <p className="text-[13px] text-ink-5 leading-relaxed">
+                  <p className="text-sm text-ink-5 leading-relaxed">
                     Your answers are saved. You can try again from My Story whenever you're ready.
                   </p>
                   <button
                     onClick={() => { onOpenChange(false); onNavigate?.("identity"); }}
-                    className="mt-2 px-5 py-2.5 rounded-xl text-[13px] font-medium bg-brand text-white hover:brightness-110 transition"
+                    className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
                   >
                     Go to My Story →
                   </button>
@@ -469,7 +469,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             </div>
           ) : (
             <div className="max-w-lg mx-auto pt-4">
-              <p className="text-[11px] text-ink-5 mb-1 tracking-wider uppercase">
+              <p className="text-xs text-ink-5 mb-1 tracking-wider uppercase">
                 Question {step + 1} of {QUESTIONS.length}
               </p>
               <h2 className="text-[18px] text-ink-7 font-medium leading-snug mb-1">
@@ -482,7 +482,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   value={(currentAnswer as string) || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
                   placeholder={q.placeholder}
-                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-[13px] text-ink-7 placeholder:text-ink-4 resize-none focus:outline-none focus:border-brand/40 transition-colors"
+                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-sm text-ink-7 placeholder:text-ink-4 resize-none focus:outline-none focus:border-brand/40 transition-colors"
                 />
               ) : (
                 <div className="space-y-2">
@@ -490,7 +490,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                     <button
                       key={opt}
                       onClick={() => toggleOption(opt)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border text-[13px] transition-all duration-200 ${
+                      className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200 ${
                         isSelected(opt)
                           ? "border-brand/50 bg-brand/10 text-ink-7"
                           : "border-ink-3 bg-surface-ink-raised text-ink-5 hover:border-ink-4"
@@ -518,7 +518,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             <button
               onClick={handleNext}
               disabled={!canProceed()}
-              className={`w-full py-3.5 rounded-xl text-[13px] font-medium tracking-wide transition-all duration-200 ${
+              className={`w-full py-3.5 rounded-xl text-sm font-medium tracking-wide transition-all duration-200 ${
                 canProceed()
                   ? "hover:brightness-110 active:scale-[0.98]"
                   : "bg-surface-ink-subtle text-ink-4 cursor-not-allowed"
@@ -552,13 +552,13 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             }}
           >
             <h3 className="text-[15px] text-ink-7 font-medium mb-2">Your analysis is being built</h3>
-            <p className="text-[13px] text-ink-5 leading-relaxed mb-5">
+            <p className="text-sm text-ink-5 leading-relaxed mb-5">
               If you close now, your answers are saved and you can regenerate from My Story.
             </p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setConfirmClose(false)}
-                className="w-full py-2.5 rounded-xl text-[13px] font-medium bg-brand text-white hover:brightness-110 transition"
+                className="w-full py-2.5 rounded-xl text-sm font-medium bg-brand text-white hover:brightness-110 transition"
               >
                 Wait for results
               </button>
@@ -568,7 +568,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   setConfirmClose(false);
                   onOpenChange(false);
                 }}
-                className="w-full py-2.5 rounded-xl text-[13px] text-ink-5 hover:text-ink-7 transition"
+                className="w-full py-2.5 rounded-xl text-sm text-ink-5 hover:text-ink-7 transition"
               >
                 Close anyway
               </button>
@@ -633,8 +633,8 @@ function ResultsView({
       <div className="space-y-0">
         <div className="prose prose-sm max-w-none
           [&_h1]:text-brand [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-3
-          [&_h2]:text-brand [&_h2]:text-[13px] [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
-          [&_h3]:text-brand [&_h3]:text-[13px] [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
+          [&_h2]:text-brand [&_h2]:text-sm [&_h2]:font-bold [&_h2]:mt-6 [&_h2]:mb-3
+          [&_h3]:text-brand [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mt-5 [&_h3]:mb-2
           [&_p]:text-ink-5 [&_p]:text-[12px] [&_p]:leading-relaxed [&_p]:mb-3
           [&_strong]:text-brand [&_strong]:font-semibold
         ">
@@ -643,7 +643,7 @@ function ResultsView({
         <div className="pt-6 mt-6 border-t border-brand/20">
           <button
             onClick={onSaveAndContinue}
-            className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
+            className="w-full py-3 rounded-xl text-sm font-medium tracking-wide hover:brightness-110 transition-all active:scale-[0.98]"
             style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)" }}
           >
             View my complete Strategic Identity →
@@ -847,7 +847,7 @@ function ResultsView({
                   ">
                     {content
                       ? <ReactMarkdown>{content}</ReactMarkdown>
-                      : <p className="text-[13px] text-ink-4 italic">Not enough signal yet — keep using Aura and this will sharpen.</p>}
+                      : <p className="text-sm text-ink-4 italic">Not enough signal yet — keep using Aura and this will sharpen.</p>}
                   </div>
                 </div>
               </div>

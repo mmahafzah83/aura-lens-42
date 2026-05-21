@@ -259,7 +259,7 @@ const FrameworkBuilder = ({
             <div className="space-y-3">
               {steps.map((step, idx) => (
                 <div key={idx} className="flex gap-2 items-start">
-                  <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center border border-primary/15 tabular-nums mt-1">
+                  <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center border border-primary/15 tabular-nums mt-1">
                     {step.step_number}
                   </span>
                   <div className="flex-1 space-y-1">
@@ -305,7 +305,7 @@ const FrameworkBuilder = ({
                 <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
               </div>
               {diagramMeta && (
-                <p className="text-[10px] text-muted-foreground text-center capitalize">{diagramMeta}</p>
+                <p className="text-xs text-muted-foreground text-center capitalize">{diagramMeta}</p>
               )}
             </div>
           )}

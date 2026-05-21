@@ -154,10 +154,10 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
             <>
               <Progress value={progress} className="h-1.5 mb-2" />
               <div className="flex items-center justify-between">
-                <p className="text-[10px] text-ink-5">
+                <p className="text-xs text-ink-5">
                   Skill {currentSkillIdx + 1} of {EVIDENCE_MATRIX.length} · <span className="text-brand font-semibold">Running score: {calculateTotalScore(checks)}%</span>
                 </p>
-                <p className="text-[10px] text-ink-5">Answer honestly. Only verified evidence counts.</p>
+                <p className="text-xs text-ink-5">Answer honestly. Only verified evidence counts.</p>
               </div>
             </>
           )}
@@ -175,7 +175,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-semibold text-ink-7">{skill.name}</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-surface-ink-subtle text-ink-5">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-ink-subtle text-ink-5">
                   {skill.tier} Tier · {skill.category}
                 </span>
               </div>
@@ -189,7 +189,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
                     }`}
                     onClick={() => toggle(qIdx)}
                   >
-                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${levelColor(q.level)}`}>
+                    <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${levelColor(q.level)}`}>
                       {q.level}
                     </span>
                     <div className="flex items-start gap-3">
@@ -219,7 +219,7 @@ const ObjectiveAuditModal = ({ open, onOpenChange, onComplete, onNavigate }: Obj
           >
             <div className="text-center mb-3">
               <span className="text-2xl font-bold text-brand">{calculateScore(checks[skill.name])}%</span>
-              <p className="text-[10px] text-ink-5">Calculated Score</p>
+              <p className="text-xs text-ink-5">Calculated Score</p>
             </div>
             <div className="flex items-center justify-between">
               <Button

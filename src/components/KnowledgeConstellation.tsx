@@ -164,7 +164,7 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
             <h2 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-display)" }}>
               Knowledge Constellation
             </h2>
-            <p className="text-[10px] text-muted-foreground/40">Explore how your ideas connect</p>
+            <p className="text-xs text-muted-foreground/40">Explore how your ideas connect</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -185,7 +185,7 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
         {Object.entries(TYPE_LABELS).map(([key, label]) => (
           <div key={key} className="flex items-center gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TYPE_COLORS[key] }} />
-            <span className="text-[10px] text-muted-foreground/50">{label}</span>
+            <span className="text-xs text-muted-foreground/50">{label}</span>
           </div>
         ))}
       </div>
@@ -274,16 +274,16 @@ const KnowledgeConstellation = ({ open, onClose }: KnowledgeConstellationProps) 
           <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-secondary/90 backdrop-blur-xl rounded-xl p-5 border border-primary/15 animate-fade-in">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: TYPE_COLORS[selectedNode.type] }} />
-              <span className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">{TYPE_LABELS[selectedNode.type]}</span>
+              <span className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-wider">{TYPE_LABELS[selectedNode.type]}</span>
             </div>
             <h4 className="text-sm font-semibold text-foreground mb-1" style={{ fontFamily: "var(--font-display)" }}>
               {selectedNode.label}
             </h4>
             {selectedNode.detail && (
-              <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{selectedNode.detail}</p>
+              <p className="text-xs text-muted-foreground/50 leading-relaxed">{selectedNode.detail}</p>
             )}
             <div className="mt-3 pt-3 border-t border-border/10">
-              <p className="text-[10px] text-muted-foreground/30">
+              <p className="text-xs text-muted-foreground/30">
                 {edges.filter(e => e.from === selectedNode.id || e.to === selectedNode.id).length} connections
               </p>
             </div>

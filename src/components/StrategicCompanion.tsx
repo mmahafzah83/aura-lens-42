@@ -151,7 +151,7 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
                   <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{alert.message}</p>
                 </div>
                 {alert.urgency === "high" && (
-                  <span className="text-[9px] uppercase font-bold tracking-wider text-red-400/70 shrink-0">Urgent</span>
+                  <span className="text-xs uppercase font-bold tracking-wider text-red-400/70 shrink-0">Urgent</span>
                 )}
               </motion.div>
             );
@@ -215,13 +215,13 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Eye className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-400/70">Observation</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-emerald-400/70">Observation</span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{critique.observation.summary}</p>
                   {(critique.observation.key_themes || []).length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {critique.observation.key_themes.map((t, i) => (
-                        <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400/80 font-medium">{t}</span>
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400/80 font-medium">{t}</span>
                       ))}
                     </div>
                   )}
@@ -231,7 +231,7 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Brain className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-blue-400/70">Strategic Synthesis</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-blue-400/70">Strategic Synthesis</span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{critique.synthesis.insight}</p>
                 </div>
@@ -240,7 +240,7 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
                 <div className="space-y-2 p-4 rounded-xl bg-amber-500/[0.04] border border-amber-500/10">
                   <div className="flex items-center gap-2">
                     <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-400/70">Strategic Challenge</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-amber-400/70">Strategic Challenge</span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{critique.challenge.assumption_gap}</p>
                   <p className="text-sm text-foreground font-medium italic leading-snug">
@@ -258,7 +258,7 @@ const StrategicCompanion = ({ onOpenChat }: { onOpenChat?: (msg?: string) => voi
                 <div className="space-y-2 p-4 rounded-xl border border-primary/15 bg-gradient-to-br from-primary/[0.05] to-transparent">
                   <div className="flex items-center gap-2">
                     <Target className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-[10px] uppercase tracking-wider font-semibold text-primary/60">Highest Leverage Move</span>
+                    <span className="text-xs uppercase tracking-wider font-semibold text-primary/60">Highest Leverage Move</span>
                   </div>
                   <p className="text-sm font-semibold text-foreground leading-snug">{critique.recommendation.action}</p>
                   <p className="text-xs text-muted-foreground leading-relaxed">{critique.recommendation.reason}</p>

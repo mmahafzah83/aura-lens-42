@@ -223,12 +223,12 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         </div>
         {lastRun && (
           <div className="text-right">
-            <p className="text-[10px] text-muted-foreground/30">
+            <p className="text-xs text-muted-foreground/30">
               Last: {formatSmartDate(lastRun.completed_at)} · {syncTypeLabel(lastRun.sync_type)}
               {lastRun.status === "failed" && " · failed"}
             </p>
             {lastRun.records_stored > 0 && (
-              <p className="text-[9px] text-primary/40 mt-0.5">
+              <p className="text-xs text-primary/40 mt-0.5">
                 {lastRun.records_stored} new post{lastRun.records_stored !== 1 ? "s" : ""} found
               </p>
             )}
@@ -237,17 +237,17 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       </div>
 
       {/* Indexing note */}
-      <p className="text-[10px] text-muted-foreground/35 leading-relaxed px-1">
+      <p className="text-xs text-muted-foreground/35 leading-relaxed px-1">
         May lag behind recent posts due to search indexing delays. Aura scans periodically to recover older posts that were not captured in real time.
       </p>
 
       {/* Schedule status */}
       <div className="flex items-center gap-4 px-1">
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
           <CalendarClock className="w-3 h-3 text-muted-foreground/25" />
           <span>Daily scan: 6 AM UTC</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
           <Timer className="w-3 h-3 text-muted-foreground/25" />
           <span>Retry: every 6h · 7-day window</span>
         </div>
@@ -256,11 +256,11 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       {/* Discovery stats */}
       {totalDiscovered > 0 && (
         <div className="flex items-center gap-4 px-1">
-          <div className="text-[10px] text-muted-foreground/50">
+          <div className="text-xs text-muted-foreground/50">
             <span className="text-primary/50 font-medium">{totalDiscovered}</span> authored posts discovered
           </div>
           {lateIndexedTotal > 0 && (
-            <div className="text-[10px] text-amber-500/50">
+            <div className="text-xs text-amber-500/50">
               <Clock className="w-3 h-3 inline mr-1" />
               {lateIndexedTotal} late-indexed
             </div>
@@ -271,7 +271,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       {/* Profile URL input */}
       {needsUrl && (
         <div className="space-y-2">
-          <p className="text-[11px] text-muted-foreground/50">
+          <p className="text-xs text-muted-foreground/50">
             Enter your LinkedIn profile URL. Once set, discovery runs automatically.
           </p>
           <div className="flex gap-2">
@@ -294,7 +294,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         <button
           onClick={handleDiscover}
           disabled={discovering || (needsUrl && !profileUrl.trim())}
-          className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press disabled:opacity-30"
+          className="flex items-center gap-2 text-xs font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press disabled:opacity-30"
         >
           {discovering ? (
             <>
@@ -313,7 +313,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           <button
             onClick={handleClassify}
             disabled={classifying}
-            className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
+            className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
           >
             {classifying ? (
               <>
@@ -333,12 +333,12 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
       {/* Recent runs log */}
       {recentRuns.length > 1 && (
         <div className="space-y-1">
-          <p className="text-[10px] text-muted-foreground/30 font-medium">Recent runs</p>
+          <p className="text-xs text-muted-foreground/30 font-medium">Recent runs</p>
           <div className="space-y-0.5">
             {recentRuns.slice(0, 5).map((run, i) => (
-              <div key={i} className="flex items-center gap-3 text-[9px] text-muted-foreground/40">
+              <div key={i} className="flex items-center gap-3 text-xs text-muted-foreground/40">
                 <span className="w-14 shrink-0">{formatSmartDate(run.completed_at)}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[8px] font-medium ${
+                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                   run.sync_type === "retry_discovery" 
                     ? "bg-amber-500/5 text-amber-500/50" 
                     : "bg-primary/5 text-primary/50"
@@ -365,7 +365,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         >
           <div className="flex items-center gap-2">
             <Tag className="w-4 h-4 text-primary/50 shrink-0" />
-            <p className="text-[11px] font-medium text-foreground/70">
+            <p className="text-xs font-medium text-foreground/70">
               {classifyResult.classified} posts classified
             </p>
           </div>
@@ -374,7 +374,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
               {[...new Set(classifyResult.labels)].map((label, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded-full bg-primary/5 text-[9px] text-primary/60 border border-primary/8"
+                  className="px-2 py-0.5 rounded-full bg-primary/5 text-xs text-primary/60 border border-primary/8"
                 >
                   {label}
                 </span>
@@ -393,10 +393,10 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
         >
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-primary/50 shrink-0" />
-            <p className="text-[11px] font-medium text-foreground/70">Discovery complete</p>
+            <p className="text-xs font-medium text-foreground/70">Discovery complete</p>
           </div>
           {(result.raw_links_found ?? 0) > 0 && (
-            <div className="flex items-center flex-wrap gap-3 pl-6 text-[10px]">
+            <div className="flex items-center flex-wrap gap-3 pl-6 text-xs">
               <span className="flex items-center gap-1 text-muted-foreground/40">
                 <Filter className="w-3 h-3" />
                 {result.raw_links_found} links scanned
@@ -417,7 +417,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[10px] text-muted-foreground/50 pl-6">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground/50 pl-6">
             {result.profile_url && (
               <p><span className="text-muted-foreground/30">Profile:</span> {result.profile_url.replace("https://www.linkedin.com/in/", "")}</p>
             )}
@@ -448,7 +448,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           {/* Rejection breakdown */}
           {result.rejection_reasons && (result.rejected_count ?? 0) > 0 && (
             <div className="pl-6 space-y-1 mt-1">
-              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/35">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/35">
                 <ShieldX className="w-3 h-3" />
                 <span className="font-medium">Rejection reasons</span>
               </div>
@@ -459,7 +459,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
                   .map(([reason, count]) => (
                     <span
                       key={reason}
-                      className="px-2 py-0.5 rounded-full bg-destructive/5 text-[9px] text-destructive/40 border border-destructive/8"
+                      className="px-2 py-0.5 rounded-full bg-destructive/5 text-xs text-destructive/40 border border-destructive/8"
                     >
                       {reason.replace(/_/g, " ")} ({count})
                     </span>
@@ -472,7 +472,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
               {[...new Set(result.labels)].map((label, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 rounded-full bg-primary/5 text-[9px] text-primary/60 border border-primary/8"
+                  className="px-2 py-0.5 rounded-full bg-primary/5 text-xs text-primary/60 border border-primary/8"
                 >
                   {label}
                 </span>
@@ -482,7 +482,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           {result.errors && result.errors.length > 0 && (
             <div className="pl-6 space-y-0.5">
               {result.errors.map((e, i) => (
-                <p key={i} className="text-[9px] text-destructive/40 truncate">{e}</p>
+                <p key={i} className="text-xs text-destructive/40 truncate">{e}</p>
               ))}
             </div>
           )}
@@ -497,7 +497,7 @@ const PostDiscoveryPanel = ({ onDiscoveryComplete }: Props) => {
           className="flex items-start gap-3 p-3 rounded-lg bg-destructive/[0.03] border border-destructive/10"
         >
           <AlertCircle className="w-4 h-4 text-destructive/50 mt-0.5 shrink-0" />
-          <p className="text-[11px] text-muted-foreground/50 leading-relaxed">{error}</p>
+          <p className="text-xs text-muted-foreground/50 leading-relaxed">{error}</p>
         </motion.div>
       )}
     </motion.div>

@@ -187,11 +187,11 @@ const LegalPage = ({ title, updated, sections }: Props) => {
         >
           AURA
         </span>
-        <p className="mt-2 text-[11px]" style={{ color: "var(--ink-4)" }}>
+        <p className="mt-2 text-xs" style={{ color: "var(--ink-4)" }}>
           Strategic intelligence for senior professionals.
         </p>
         <div
-          className="mt-3 flex justify-center items-center gap-3 text-[11px] flex-wrap"
+          className="mt-3 flex justify-center items-center gap-3 text-xs flex-wrap"
           style={{ color: "var(--ink-4)" }}
         >
           <Link to="/terms" style={{ color: "var(--ink-4)" }}>Terms</Link>
@@ -204,7 +204,7 @@ const LegalPage = ({ title, updated, sections }: Props) => {
           <span>·</span>
           <a href="mailto:mohammad.mahafdhah@aura-intel.org" style={{ color: "var(--ink-4)" }}>Contact</a>
         </div>
-        <p className="mt-3 text-[10px]" style={{ color: "var(--ink-5)" }}>
+        <p className="mt-3 text-xs" style={{ color: "var(--ink-5)" }}>
           © {new Date().getFullYear()} Aura Intelligence. All rights reserved.
         </p>
       </footer>

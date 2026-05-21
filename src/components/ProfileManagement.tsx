@@ -192,20 +192,20 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           <div className="grid grid-cols-2 gap-3">
             {[{ label: "Firm", value: firm }, { label: "Level", value: level }, { label: "Practice", value: corePractice }, { label: "Sector", value: sectorFocus }].map(item => (
               <div key={item.label} className="p-3 rounded-xl bg-secondary/30">
-                <span className="text-[10px] text-muted-foreground tracking-wider uppercase">{item.label}</span>
+                <span className="text-xs text-muted-foreground tracking-wider uppercase">{item.label}</span>
                 <p className="text-sm text-foreground mt-0.5 truncate">{item.value || "—"}</p>
               </div>
             ))}
           </div>
           {northStar && (
             <div className="p-3 rounded-xl bg-secondary/30">
-              <span className="text-[10px] text-muted-foreground tracking-wider uppercase">My 3-year ambition</span>
+              <span className="text-xs text-muted-foreground tracking-wider uppercase">My 3-year ambition</span>
               <p className="text-sm text-foreground mt-0.5">{northStar}</p>
             </div>
           )}
           <div className="flex flex-wrap gap-1.5">
             {brandPillars.map((p, i) => (
-              <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{p}</span>
+              <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">{p}</span>
             ))}
           </div>
 
@@ -243,11 +243,11 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               </label>
             </div>
             <div className="flex-1">
-              <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">First name</label>
+              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">First name</label>
               <Input placeholder="e.g., Mohammad" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
             <div className="flex-1">
-              <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">Last name</label>
+              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Last name</label>
               <Input placeholder="e.g., Mahafzah" value={lastName} onChange={(e) => setLastName(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
             </div>
           </div>
@@ -259,12 +259,12 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
               { label: "Core Practice", value: corePractice, set: setCorePractice, placeholder: "e.g., Strategy, Technology, Finance — the area you work in" },
             ].map(item => (
               <div key={item.label}>
-                <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
+                <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">{item.label}</label>
                 <Input placeholder={item.placeholder} value={item.value} onChange={(e) => item.set(e.target.value)} className="h-9 bg-secondary border-border/30 text-sm" />
               </div>
             ))}
             <div>
-              <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">Sector Focus</label>
+              <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">Sector Focus</label>
               <Select value={sectorFocus || undefined} onValueChange={setSectorFocus}>
                 <SelectTrigger className="h-9 bg-secondary border-border/30 text-sm">
                   <SelectValue placeholder="Select…" />
@@ -287,20 +287,20 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           </div>
 
           <div>
-            <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
+            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-1 block">My 3-year ambition</label>
             <Input
               placeholder="What do you want to be known for in 3 years?"
               value={northStar}
               onChange={(e) => setNorthStar(e.target.value)}
               className="h-9 bg-secondary border-border/30 text-sm"
             />
-            <p className="text-[11px] text-muted-foreground/80 mt-1.5 leading-relaxed">
+            <p className="text-xs text-muted-foreground/80 mt-1.5 leading-relaxed">
               Where do you want your career to be? Be specific — Aura uses this to shape your content.
             </p>
           </div>
 
           <div>
-            <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-2 block">Brand Pillars</label>
+            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-2 block">Brand Pillars</label>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {brandPillars.map((p, i) => (
                 <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
@@ -316,7 +316,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
           </div>
 
           <div>
-            <label className="text-[10px] text-muted-foreground tracking-wider uppercase mb-2 block">Skills & Self-Assessment</label>
+            <label className="text-xs text-muted-foreground tracking-wider uppercase mb-2 block">Skills & Self-Assessment</label>
             <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
               {skills.map((skill) => {
                 const isObjective = EVIDENCE_MATRIX.some(e => e.name === skill.name);
@@ -357,7 +357,7 @@ const ProfileManagement = ({ onResetDiagnostic, onNavigate, startExpanded, compa
                   Save my profile
                 </Button>
                 {!canSave && (
-                  <p className="text-[11px] text-muted-foreground/70 mt-2 text-center">
+                  <p className="text-xs text-muted-foreground/70 mt-2 text-center">
                     Fill in the required fields to continue.
                   </p>
                 )}

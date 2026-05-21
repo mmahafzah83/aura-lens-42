@@ -112,7 +112,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
         }}
       >
         <div className="mb-6">
-          <div className="text-[11px] tracking-[0.2em] uppercase mb-3" style={{ color: "var(--brand, hsl(var(--primary)))" }}>
+          <div className="text-xs tracking-[0.2em] uppercase mb-3" style={{ color: "var(--brand, hsl(var(--primary)))" }}>
             Aura · Strategic Intelligence
           </div>
           <h1 className="mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 30, fontWeight: 500, lineHeight: 1.15, color: "hsl(var(--foreground))" }}>

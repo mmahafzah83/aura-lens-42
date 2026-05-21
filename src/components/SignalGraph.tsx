@@ -226,7 +226,7 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
               <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: style.bg, border: `1.5px solid ${style.border}` }}>
                 <style.icon className="w-3 h-3" style={{ color: style.border }} />
               </div>
-              <span className="text-[9px] uppercase tracking-[0.12em] font-semibold" style={{ color: style.border }}>
+              <span className="text-xs uppercase tracking-[0.12em] font-semibold" style={{ color: style.border }}>
                 {style.label}
               </span>
             </div>
@@ -235,31 +235,31 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
             {d.detail && <p className="text-xs text-muted-foreground/70 mt-1.5 leading-relaxed line-clamp-3">{d.detail}</p>}
 
             {d.confidence != null && (
-              <p className="text-[10px] text-primary/60 mt-1.5 tabular-nums">Confidence: {Math.round(d.confidence * 100)}%</p>
+              <p className="text-xs text-primary/60 mt-1.5 tabular-nums">Confidence: {Math.round(d.confidence * 100)}%</p>
             )}
             {d.evidenceCount != null && (
-              <p className="text-[10px] text-muted-foreground/50 mt-0.5">{d.evidenceCount} evidence sources</p>
+              <p className="text-xs text-muted-foreground/50 mt-0.5">{d.evidenceCount} evidence sources</p>
             )}
             {d.components?.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {d.components.map((c: string, i: number) => (
-                  <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-secondary/30 border border-border/10 text-foreground/70">{c}</span>
+                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary/30 border border-border/10 text-foreground/70">{c}</span>
                 ))}
               </div>
             )}
-            {d.contentType && <p className="text-[10px] text-muted-foreground/50 mt-1 capitalize">Type: {d.contentType}</p>}
+            {d.contentType && <p className="text-xs text-muted-foreground/50 mt-1 capitalize">Type: {d.contentType}</p>}
             {d.engagement != null && (
-              <p className="text-[10px] text-primary/60 mt-1 tabular-nums">Engagement: {Number(d.engagement).toFixed(1)}%</p>
+              <p className="text-xs text-primary/60 mt-1 tabular-nums">Engagement: {Number(d.engagement).toFixed(1)}%</p>
             )}
             {d.themes?.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {d.themes.map((t: string, i: number) => (
-                  <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10">{t}</span>
+                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-primary/8 text-primary/70 border border-primary/10">{t}</span>
                 ))}
               </div>
             )}
             {d.segments?.length > 0 && (
-              <p className="text-[10px] text-muted-foreground/50 mt-1">Segments: {d.segments.join(", ")}</p>
+              <p className="text-xs text-muted-foreground/50 mt-1">Segments: {d.segments.join(", ")}</p>
             )}
           </div>
           <button onClick={() => setSelectedNode(null)} className="text-muted-foreground/40 hover:text-foreground shrink-0">
@@ -280,7 +280,7 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
             </div>
             <div className="flex-1">
               <SheetTitle className="text-base font-bold text-foreground">Signal Graph</SheetTitle>
-              <SheetDescription className="text-[10px] text-muted-foreground/50">
+              <SheetDescription className="text-xs text-muted-foreground/50">
                 Strategic intelligence network · Signal → Insight → Framework → Content → Audience
               </SheetDescription>
             </div>
@@ -294,7 +294,7 @@ const SignalGraph = ({ open, onClose }: SignalGraphProps) => {
           {Object.entries(NODE_STYLES).map(([key, s]) => (
             <div key={key} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.border }} />
-              <span className="text-[9px] text-muted-foreground/60 font-medium">{s.label}</span>
+              <span className="text-xs text-muted-foreground/60 font-medium">{s.label}</span>
             </div>
           ))}
         </div>

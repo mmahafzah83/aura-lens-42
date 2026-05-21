@@ -1367,7 +1367,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             const b = tierBenchmark(latestFollowers);
             const er = periodEngagementRate != null ? periodEngagementRate.toFixed(1) : "—";
             return (
-              <span className="text-[10px]" style={{ color: "var(--aura-t2)" }}>
+              <span className="text-xs" style={{ color: "var(--aura-t2)" }}>
                 {er}% vs {b.low}–{b.high}% for your tier ({b.label})
               </span>
             );
@@ -1492,7 +1492,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       </div>
                       {badge && (
                         <div
-                          className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
+                          className="text-xs uppercase tracking-wider px-1.5 py-0.5 rounded mt-0.5 inline-block"
                           style={{ background: badge.bg, color: badge.color, fontWeight: 600, border: `0.5px solid ${badge.border}` }}
                         >
                           {badge.label}
@@ -1537,7 +1537,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
           const UploadZone = (
             <div className="mt-4">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] mb-2" style={{ color: "var(--color-text-muted)" }}>
                 How to export your LinkedIn data
               </div>
               <ol className="text-[12px] leading-relaxed space-y-1 pl-4 list-decimal" style={{ color: "var(--color-text-secondary)" }}>
@@ -1567,7 +1567,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   </button>
                 ) : (
                   <>
-                    <span className="text-[11px] px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
+                    <span className="text-xs px-3 py-1.5 rounded-md" style={{ background: "var(--color-border)", color: "var(--color-text-primary)" }}>
                       {selectedFile.name}
                     </span>
                     <button
@@ -1582,7 +1582,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     {!uploading && (
                       <button
                         onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                        className="text-[11px]"
+                        className="text-xs"
                         style={{ color: "var(--color-text-muted)" }}
                       >
                         Cancel
@@ -1591,7 +1591,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   </>
                 )}
               </div>
-              <p className="mt-3 text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+              <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
                 Takes ~30 seconds. Includes your posts, follower growth, and audience demographics.
               </p>
             </div>
@@ -1605,12 +1605,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" style={{ color: "var(--brand)" }} />
-                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
+                  <h2 className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
                     LinkedIn analytics
                   </h2>
                 </div>
                 {hasData && lastUpdatedLabel && (
-                  <span className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>
+                  <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
                     Last updated: {lastUpdatedLabel}
                   </span>
                 )}
@@ -1618,7 +1618,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
               {hasData ? (
                 <div className="mt-3">
-                  <p className="text-[13px]" style={{ color: "var(--color-text-primary)" }}>
+                  <p className="text-sm" style={{ color: "var(--color-text-primary)" }}>
                     <Check className="inline w-3.5 h-3.5 mr-1" style={{ color: "var(--brand)" }} />
                     {postMetricsCount > 0 ? `${postMetricsCount} posts imported` : "Imported"}
                     {latestFollowers != null ? ` · ${latestFollowers.toLocaleString()} followers tracked` : ""}
@@ -1637,7 +1637,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 </div>
               ) : (
                 <div className="mt-3">
-                  <p className="text-[13px]" style={{ color: "var(--color-text-secondary)" }}>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
                     Connect your LinkedIn data to close the intelligence loop — see which signals drive real engagement.
                   </p>
                   {UploadZone}
@@ -1680,7 +1680,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
         <h2
-          className="text-[11px] font-semibold uppercase tracking-[0.14em] mb-3"
+          className="text-xs font-semibold uppercase tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
           Follower growth — daily new followers
@@ -1729,7 +1729,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 >
                   {only ? only.label : "—"} {delta > 0 ? `(+${delta})` : delta < 0 ? `(${delta})` : "(0)"}
                 </div>
-                <div className="text-[11px] mt-1" style={{ color: "var(--ink-5)" }}>
+                <div className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>
                   Only one day of follower data so far. More data will appear after additional snapshots.
                 </div>
               </div>
@@ -1878,7 +1878,7 @@ const Stat = ({ label, value, valueColor }: { label: string; value: string; valu
     >
       {value}
     </div>
-    <div className="text-[10px] uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
+    <div className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
       {label}
     </div>
   </div>
@@ -1979,7 +1979,7 @@ const ForceCard = ({
           </TooltipProvider>
         </div>
         <div
-          className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded"
+          className="text-xs uppercase tracking-wider px-1.5 py-0.5 rounded"
           style={{ background: `${color}1F`, color, fontWeight: 600 }}
         >
           {status}
@@ -2014,7 +2014,7 @@ const ForceCard = ({
           }}
         />
       </div>
-      <div className="text-[11px] mt-2" style={{ color: "var(--aura-t2)" }}>
+      <div className="text-xs mt-2" style={{ color: "var(--aura-t2)" }}>
         {hint}
       </div>
     </div>

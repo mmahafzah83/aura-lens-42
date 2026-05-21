@@ -233,10 +233,10 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
         {/* Header */}
         <div className="flex items-center gap-2 mb-2">
           <Zap className="w-3.5 h-3.5 text-primary" />
-          <span className="text-[10px] text-primary font-semibold tracking-widest uppercase">
+          <span className="text-xs text-primary font-semibold tracking-widest uppercase">
             Live Sector Pulse
           </span>
-          <span className="text-[9px] text-muted-foreground/40 ml-auto uppercase tracking-wider">
+          <span className="text-xs text-muted-foreground/40 ml-auto uppercase tracking-wider">
             {userSector === "default" ? "Multi-Sector" : userSector} · {items.length} signals
           </span>
         </div>
@@ -265,7 +265,7 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
           {["saudi_official", "pif", "saudi_press", "competitors", "ey"].map((type) => (
             <div key={type} className="flex items-center gap-1">
               <span className={`w-1.5 h-1.5 rounded-full ${dotColor(type)}`} />
-              <span className="text-[8px] text-muted-foreground/30 uppercase tracking-wider">
+              <span className="text-xs text-muted-foreground/30 uppercase tracking-wider">
                 {sourceTypeLabel(type)}
               </span>
             </div>
@@ -280,10 +280,10 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
             <div className="pt-2 pb-6 px-1 space-y-5">
               <SheetHeader className="text-left">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${labelColor(selectedItem.sourceType)}`}>
+                  <span className={`text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-md border ${labelColor(selectedItem.sourceType)}`}>
                     {sourceTypeLabel(selectedItem.sourceType)}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/40">{selectedItem.source}</span>
+                  <span className="text-xs text-muted-foreground/40">{selectedItem.source}</span>
                 </div>
                 <SheetTitle className="text-base font-semibold text-foreground leading-snug">
                   {selectedItem.headline}
@@ -292,12 +292,12 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
 
               {/* BLUF */}
               <div className="p-4 rounded-xl bg-background/40 border border-border/10 space-y-3">
-                <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider">Director's BLUF</p>
+                <p className="text-xs font-bold text-primary/70 uppercase tracking-wider">Director's BLUF</p>
                 {selectedItem.bluf.split("|").map((bullet, bi) => {
                   const labels = ["The Shift", "The Impact", "The Action"];
                   return (
                     <div key={bi} className="flex items-start gap-2">
-                      <span className="text-[9px] font-bold text-primary/60 uppercase whitespace-nowrap mt-0.5 min-w-[70px]">
+                      <span className="text-xs font-bold text-primary/60 uppercase whitespace-nowrap mt-0.5 min-w-[70px]">
                         {labels[bi] || "•"}
                       </span>
                       <span className="text-sm text-foreground/80 leading-relaxed">{bullet.trim()}</span>
@@ -338,7 +338,7 @@ const SectorPulseTicker = ({ onOpenChat }: SectorPulseTickerProps) => {
               </button>
 
               <div className="flex items-center gap-2 px-1">
-                <span className="text-[10px] text-muted-foreground/30 uppercase tracking-wider">
+                <span className="text-xs text-muted-foreground/30 uppercase tracking-wider">
                   Applied to: {userSector === "default" ? "General" : userSector} profile only
                 </span>
               </div>

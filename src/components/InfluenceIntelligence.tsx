@@ -140,7 +140,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
 
           {authorityThemes.length > 0 && (
             <div className="mt-6 pt-6 border-t border-border/10">
-              <p className="text-label text-[11px] mb-4">Supporting signals</p>
+              <p className="text-label text-xs mb-4">Supporting signals</p>
               <div className="flex flex-wrap gap-2">
                 {authorityThemes.map((theme, i) => (
                   <span
@@ -173,7 +173,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
           ].map((m) => (
             <div key={m.label} className="glass-card rounded-2xl p-5 text-center">
               <p className={`text-2xl font-bold tabular-nums ${m.color || "text-foreground"}`}>{m.value}</p>
-              <p className="text-label text-[10px] mt-1">{m.label}</p>
+              <p className="text-label text-xs mt-1">{m.label}</p>
             </div>
           ))}
         </div>
@@ -236,13 +236,13 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                 <div className="space-y-3">
                   {latest.top_topic && (
                     <div className="p-4 rounded-xl bg-secondary/15 border border-border/10">
-                      <p className="text-label text-[10px] mb-1">Strongest Topic</p>
+                      <p className="text-label text-xs mb-1">Strongest Topic</p>
                       <p className="text-sm font-medium text-foreground">{latest.top_topic}</p>
                     </div>
                   )}
                   {latest.top_format && (
                     <div className="p-4 rounded-xl bg-secondary/15 border border-border/10">
-                      <p className="text-label text-[10px] mb-1">Strongest Format</p>
+                      <p className="text-label text-xs mb-1">Strongest Format</p>
                       <p className="text-sm font-medium text-foreground">{latest.top_format}</p>
                     </div>
                   )}
@@ -263,12 +263,12 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                     { title: "Geography", data: audienceBreakdown.geography || [] },
                   ].filter(g => g.data.length > 0).map((group) => (
                     <div key={group.title} className="space-y-3">
-                      <p className="text-label text-[10px]">{group.title}</p>
+                      <p className="text-label text-xs">{group.title}</p>
                       {group.data.map((item: any) => (
                         <div key={item.name} className="space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="text-xs text-foreground/80">{item.name}</span>
-                            <span className="text-[10px] text-muted-foreground/40 tabular-nums">{item.pct}%</span>
+                            <span className="text-xs text-muted-foreground/40 tabular-nums">{item.pct}%</span>
                           </div>
                           <Progress value={item.pct} className="h-1" />
                         </div>
@@ -303,7 +303,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                 {authorityThemes.map((theme, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/15 border border-border/10">
                     <span className="text-xs font-medium text-foreground capitalize">{String(theme).replace(/_/g, " ")}</span>
-                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-medium">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-medium">
                       {i === 0 ? "Dominant" : i <= 1 ? "Emerging" : "Nascent"}
                     </span>
                   </div>
@@ -331,7 +331,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                   return (
                     <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/15 border border-border/10">
                       <span className="text-xs font-medium text-foreground capitalize">{t.tone}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${impactStyle}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${impactStyle}`}>
                         {t.impact} effectiveness
                       </span>
                     </div>
@@ -357,7 +357,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                     <div key={item.name} className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-foreground/80">{item.name}</span>
-                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">{pct}%</span>
+                        <span className="text-xs text-muted-foreground/40 tabular-nums">{pct}%</span>
                       </div>
                       <Progress value={pct} className="h-1" />
                     </div>

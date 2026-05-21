@@ -76,10 +76,10 @@ const WeeklyTransformationLens = ({ entries }: { entries: Entry[] }) => {
         <p className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
           {voiceCount}
         </p>
-        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">
+        <p className="text-xs sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">
           Weekly Thoughts
         </p>
-        <p className="text-[10px] text-primary mt-2 font-medium group-hover:underline">
+        <p className="text-xs text-primary mt-2 font-medium group-hover:underline">
           Generate Leadership Memo →
         </p>
       </div>
@@ -89,7 +89,7 @@ const WeeklyTransformationLens = ({ entries }: { entries: Entry[] }) => {
           <DialogHeader>
             <DialogTitle className="text-gradient-gold text-lg">Weekly Transformation Lens</DialogTitle>
           </DialogHeader>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Leadership Memo + Coach's Challenge</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest">Leadership Memo + Coach's Challenge</p>
           <div className="bg-secondary/50 rounded-xl p-5 mt-2 text-sm text-foreground leading-relaxed whitespace-pre-line max-h-[400px] overflow-y-auto" dir="auto">
             {memo}
           </div>

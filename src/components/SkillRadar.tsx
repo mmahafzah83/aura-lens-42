@@ -170,16 +170,16 @@ const SkillRadar = () => {
       <div className="flex items-center gap-4 mb-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-1 rounded-full" style={{ background: "hsl(43 72% 52%)" }} />
-          <span className="text-[10px] text-muted-foreground">You</span>
+          <span className="text-xs text-muted-foreground">You</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-1 rounded-full bg-muted-foreground/40" />
-          <span className="text-[10px] text-muted-foreground">Partner Target</span>
+          <span className="text-xs text-muted-foreground">Partner Target</span>
         </div>
         {hasExperienceBonus && (
           <div className="flex items-center gap-1">
             <TrendingUp className="w-3 h-3 text-emerald-400" />
-            <span className="text-[10px] text-emerald-400">+10% Exp Bonus</span>
+            <span className="text-xs text-emerald-400">+10% Exp Bonus</span>
           </div>
         )}
       </div>
@@ -248,7 +248,7 @@ const SkillRadar = () => {
       </div>
 
       {/* Tap hint */}
-      <p className="text-[10px] text-center text-muted-foreground/40 mt-1 mb-2">Tap a skill label to inspect evidence</p>
+      <p className="text-xs text-center text-muted-foreground/40 mt-1 mb-2">Tap a skill label to inspect evidence</p>
 
       {/* Gap Analysis Card */}
       {gapSkills.length > 0 && (
@@ -287,17 +287,17 @@ const SkillRadar = () => {
           <div className="flex items-center gap-4 mt-2 mb-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">{selectedScore}%</div>
-              <div className="text-[10px] text-muted-foreground uppercase">Your Score</div>
+              <div className="text-xs text-muted-foreground uppercase">Your Score</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-muted-foreground">{selectedBenchmark}%</div>
-              <div className="text-[10px] text-muted-foreground uppercase">Partner Target</div>
+              <div className="text-xs text-muted-foreground uppercase">Partner Target</div>
             </div>
             <div className="text-center">
               <div className={`text-2xl font-bold ${selectedBenchmark - selectedScore > 0 ? "text-rose-400" : "text-emerald-400"}`}>
                 {selectedBenchmark - selectedScore > 0 ? `−${selectedBenchmark - selectedScore}` : `+${selectedScore - selectedBenchmark}`}%
               </div>
-              <div className="text-[10px] text-muted-foreground uppercase">Gap</div>
+              <div className="text-xs text-muted-foreground uppercase">Gap</div>
             </div>
           </div>
 
@@ -308,7 +308,7 @@ const SkillRadar = () => {
                 const levelColor = q.level === "Base" ? "bg-emerald-500/20 text-emerald-400" : q.level === "Intermediate" ? "bg-amber-500/20 text-amber-400" : "bg-rose-500/20 text-rose-400";
                 return (
                   <div key={i} className="p-3 rounded-lg bg-muted/5 border border-border/10">
-                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full mb-1.5 ${levelColor}`}>
+                    <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-1.5 ${levelColor}`}>
                       {q.level}
                     </span>
                     <p className="text-sm text-foreground/80 leading-relaxed">{q.question}</p>

@@ -107,7 +107,7 @@ const Guide = () => {
 
       {/* Hero */}
       <section className="px-5 sm:px-10 pt-20 pb-14 text-center max-w-3xl mx-auto">
-        <p className="text-[10px] tracking-[0.2em] uppercase mb-5" style={{ color: "var(--ink-4)" }}>The Aura Guide</p>
+        <p className="text-xs tracking-[0.2em] uppercase mb-5" style={{ color: "var(--ink-4)" }}>The Aura Guide</p>
         <h1
           className="mb-5"
           style={{
@@ -154,7 +154,7 @@ const Guide = () => {
       {/* Your pages */}
       <section className="px-5 sm:px-10 py-20" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-6xl mx-auto">
-          <p className="text-[10px] tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--ink-4)" }}>The interface</p>
+          <p className="text-xs tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--ink-4)" }}>The interface</p>
           <h2 className="text-center mb-12" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-7)", fontWeight: 500 }}>
             Your pages
           </h2>
@@ -184,7 +184,7 @@ const Guide = () => {
       {/* Authority score */}
       <section className="px-5 sm:px-10 py-20" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div className="max-w-3xl mx-auto">
-          <p className="text-[10px] tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--ink-4)" }}>The score</p>
+          <p className="text-xs tracking-[0.2em] uppercase mb-4 text-center" style={{ color: "var(--ink-4)" }}>The score</p>
           <h2 className="text-center mb-3" style={{ fontFamily: "var(--font-display)", fontSize: "clamp(26px, 3.5vw, 36px)", color: "var(--ink-7)", fontWeight: 500 }}>
             How authority is calculated
           </h2>

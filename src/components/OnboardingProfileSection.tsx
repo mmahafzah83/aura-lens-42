@@ -290,7 +290,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               style={{ borderBottom: i < profileFields.length - 1 ? "1px solid var(--ink-3)" : "none" }}
             >
               <div className="flex-1 min-w-0">
-                <span className="text-[10px] uppercase tracking-wider block" style={{ color: "var(--ink-5)" }}>{f.label}</span>
+                <span className="text-xs uppercase tracking-wider block" style={{ color: "var(--ink-5)" }}>{f.label}</span>
                 {editingField === f.key ? (
                   <div className="flex items-center gap-2 mt-1">
                     <input
@@ -339,14 +339,14 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
           <button
             onClick={handleRegenerate}
             disabled={regenerating}
-            className="text-[11px] flex items-center gap-1"
+            className="text-xs flex items-center gap-1"
             style={{ color: "var(--ink-5)" }}
           >
             <RefreshCw className={`w-3 h-3 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
           </button>
         </div>
         <div className="rounded-xl p-4 space-y-2" style={{ background: "var(--surface-ink-raised)", border: "1px solid var(--ink-3)" }}>
-          <p className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>Your positioning statement</p>
+          <p className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>Your positioning statement</p>
           <p className="text-sm leading-relaxed" style={{ color: regenerating ? "var(--ink-5)" : "var(--ink-7)", fontStyle: regenerating ? "italic" : "normal" }}>
             {brandSummary}
           </p>
@@ -363,7 +363,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--ink-5)" }} />
               <div>
                 <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Onboarding</span>
-                <span className="text-[10px] block" style={{ color: "var(--ink-5)" }}>
+                <span className="text-xs block" style={{ color: "var(--ink-5)" }}>
                   {dates?.onboarding_completed ? `Completed ${formatDate(dates.created_at)}` : "Not completed"}
                 </span>
               </div>
@@ -376,12 +376,12 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--ink-5)" }} />
               <div>
                 <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Evidence Audit</span>
-                <span className="text-[10px] block" style={{ color: dates?.audit_completed_at ? "var(--ink-5)" : "var(--ink-4)" }}>
+                <span className="text-xs block" style={{ color: dates?.audit_completed_at ? "var(--ink-5)" : "var(--ink-4)" }}>
                   {dates?.audit_completed_at ? `Completed ${formatDate(dates.audit_completed_at)}` : "Not completed yet"}
                 </span>
               </div>
             </div>
-            <button onClick={onRetakeAudit} className="text-[11px] flex items-center gap-1" style={{ color: "var(--brand)" }}>
+            <button onClick={onRetakeAudit} className="text-xs flex items-center gap-1" style={{ color: "var(--brand)" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -392,12 +392,12 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
               <Calendar className="w-3.5 h-3.5 shrink-0" style={{ color: "var(--ink-5)" }} />
               <div>
                 <span className="text-sm block" style={{ color: "var(--ink-7)" }}>Brand Assessment</span>
-                <span className="text-[10px] block" style={{ color: dates?.brand_assessment_completed_at ? "var(--ink-5)" : "var(--ink-4)" }}>
+                <span className="text-xs block" style={{ color: dates?.brand_assessment_completed_at ? "var(--ink-5)" : "var(--ink-4)" }}>
                   {dates?.brand_assessment_completed_at ? `Completed ${formatDate(dates.brand_assessment_completed_at)}` : "Not completed yet"}
                 </span>
               </div>
             </div>
-            <button onClick={onRetakeBrand} className="text-[11px] flex items-center gap-1" style={{ color: "var(--brand)" }}>
+            <button onClick={onRetakeBrand} className="text-xs flex items-center gap-1" style={{ color: "var(--brand)" }}>
               Retake <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -426,7 +426,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
             { key: "firm", label: "Firm" },
           ].map(f => (
             <div key={f.key} className="space-y-1">
-              <label className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>{f.label}</label>
+              <label className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>{f.label}</label>
               <input
                 value={(fullEditData as any)?.[f.key] || ""}
                 onChange={e => setFullEditData(prev => prev ? { ...prev, [f.key]: e.target.value } : prev)}

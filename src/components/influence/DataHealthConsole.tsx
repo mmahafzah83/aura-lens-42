@@ -102,7 +102,7 @@ const DataHealthConsole = () => {
           <p className="text-meta mt-0.5">Gaps, coverage, and import integrity</p>
         </div>
         {!loading && (
-          <span className="text-[11px] font-medium text-muted-foreground/50 tabular-nums">{coverage}% coverage</span>
+          <span className="text-xs font-medium text-muted-foreground/50 tabular-nums">{coverage}% coverage</span>
         )}
       </div>
 
@@ -121,7 +121,7 @@ const DataHealthConsole = () => {
               className="h-full rounded-full bg-primary/30"
             />
           </div>
-          <p className="text-[10px] text-muted-foreground/30 -mt-2">
+          <p className="text-xs text-muted-foreground/30 -mt-2">
             {coverage >= 80 ? "Trend analysis is reliable." :
              coverage >= 50 ? "A few gaps are acceptable — trend analysis can still begin." :
              "Consider importing historical data to strengthen trend accuracy."}
@@ -135,7 +135,7 @@ const DataHealthConsole = () => {
                   {statusDot(check.status)}
                   <span className="text-xs text-foreground/70">{check.label}</span>
                 </div>
-                <span className="text-[11px] text-muted-foreground/40">{check.detail}</span>
+                <span className="text-xs text-muted-foreground/40">{check.detail}</span>
               </div>
             ))}
           </div>

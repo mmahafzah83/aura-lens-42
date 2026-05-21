@@ -158,7 +158,7 @@ const LinkedInProfileAnalyzer = () => {
         <button
           type="button"
           onClick={() => setShowPasteArea(!showPasteArea)}
-          className="text-[11px] text-muted-foreground/50 hover:text-primary/70 transition-colors mt-2"
+          className="text-xs text-muted-foreground/50 hover:text-primary/70 transition-colors mt-2"
         >
           {showPasteArea ? "Hide paste area" : "💡 LinkedIn blocking? Paste profile text for better results"}
         </button>
@@ -196,14 +196,14 @@ const LinkedInProfileAnalyzer = () => {
               <h3 className="text-sm font-semibold text-foreground">Strategic Authority Position</h3>
             </div>
             {analysis.name && (
-              <p className="text-label text-[11px] mb-3">{analysis.name} · {analysis.headline}</p>
+              <p className="text-label text-xs mb-3">{analysis.name} · {analysis.headline}</p>
             )}
             <p className="text-body text-foreground/90 leading-relaxed" dir="auto">
               {analysis.strategic_positioning}
             </p>
             {analysis.industries.length > 0 && (
               <div className="mt-5 pt-5 border-t border-border/10">
-                <p className="text-label text-[10px] mb-3">Industries</p>
+                <p className="text-label text-xs mb-3">Industries</p>
                 <div className="flex flex-wrap gap-2">
                   {analysis.industries.map((ind, i) => (
                     <span key={i} className="px-3 py-1.5 rounded-full text-xs font-medium bg-primary/8 text-primary/80 border border-primary/15">
@@ -228,13 +228,13 @@ const LinkedInProfileAnalyzer = () => {
                   <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-medium text-foreground">{t.theme}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${confidenceColor(t.confidence)}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${confidenceColor(t.confidence)}`}>
                         {stageLabel(t.stage)}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {t.evidence_signals.map((s, j) => (
-                        <span key={j} className="text-[9px] px-1.5 py-0.5 rounded bg-secondary/30 text-muted-foreground/50">
+                        <span key={j} className="text-xs px-1.5 py-0.5 rounded bg-secondary/30 text-muted-foreground/50">
                           {s}
                         </span>
                       ))}
@@ -254,7 +254,7 @@ const LinkedInProfileAnalyzer = () => {
                 {analysis.tone_profile.map((t, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/15 border border-border/10">
                     <span className="text-xs font-medium text-foreground">{t.tone}</span>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${confidenceColor(t.strength)}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${confidenceColor(t.strength)}`}>
                       {t.strength} signal
                     </span>
                   </div>
@@ -275,17 +275,17 @@ const LinkedInProfileAnalyzer = () => {
                   { label: "Industry Position", value: analysis.influence_signals.industry_positioning },
                 ].map((s, i) => (
                   <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10">
-                    <p className="text-label text-[10px] mb-1">{s.label}</p>
+                    <p className="text-label text-xs mb-1">{s.label}</p>
                     <p className="text-xs font-medium text-foreground/80">{s.value}</p>
                   </div>
                 ))}
               </div>
               {analysis.content_formats.length > 0 && (
                 <>
-                  <p className="text-label text-[10px] mb-3">Detected Formats</p>
+                  <p className="text-label text-xs mb-3">Detected Formats</p>
                   <div className="flex flex-wrap gap-1.5">
                     {analysis.content_formats.map((f, i) => (
-                      <span key={i} className="px-2.5 py-1 rounded-full text-[10px] font-medium bg-secondary/20 text-muted-foreground/60 border border-border/10">
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary/20 text-muted-foreground/60 border border-border/10">
                         {f}
                       </span>
                     ))}

@@ -203,7 +203,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
                 <h4 className="text-base font-semibold text-foreground">{identity.primary_role}</h4>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {identity.secondary_strengths.map((s, i) => (
-                    <span key={i} className="text-[10px] px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/20 font-medium">{s}</span>
+                    <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/20 font-medium">{s}</span>
                   ))}
                 </div>
                 <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{identity.identity_summary}</p>
@@ -222,7 +222,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
                       <span className="text-xs font-semibold text-muted-foreground tracking-wider uppercase">{label}</span>
                     </div>
                     {subtitle && (
-                      <p className="text-[11px] text-muted-foreground/70 mt-1 leading-snug">{subtitle}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-1 leading-snug">{subtitle}</p>
                     )}
                   </div>
                   {editing !== key && (
@@ -263,7 +263,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
                   <div className="flex flex-wrap gap-1.5">
                     {(identity[key] as string[]).length > 0 ? (
                       (identity[key] as string[]).map((item, i) => (
-                        <span key={i} className="text-[11px] px-2.5 py-1 rounded-full bg-secondary/60 text-foreground/80 border border-border/10 inline-flex items-center gap-1.5">
+                        <span key={i} className="text-xs px-2.5 py-1 rounded-full bg-secondary/60 text-foreground/80 border border-border/10 inline-flex items-center gap-1.5">
                           <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: dot, display: "inline-block", flexShrink: 0 }} />
                           {item}
                         </span>
@@ -281,7 +281,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
           {identity.authority_themes.length > 0 && (
             <div className="space-y-3">
               {intelligenceStage && (
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground" style={{ letterSpacing: "0.08em" }}>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground" style={{ letterSpacing: "0.08em" }}>
                   {intelligenceStage === 3
                     ? "Your proven authority territories"
                     : intelligenceStage === 2
@@ -304,7 +304,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
                       {onGenerateContent && (
                         <button
                           onClick={() => onGenerateContent(at.theme, at.rationale)}
-                          className="text-[11px] font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
+                          className="text-xs font-medium flex items-center gap-1 shrink-0 mt-0.5 hover:underline"
                           style={{ color: "var(--brand)" }}
                         >
                           Create post on this <ArrowRight className="w-3 h-3" />
@@ -319,7 +319,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
 
           {/* Generated timestamp */}
           {identity.generated_at && (
-            <p className="text-[10px] text-muted-foreground text-right">
+            <p className="text-xs text-muted-foreground text-right">
               Last analyzed: {new Date(identity.generated_at).toLocaleDateString()}
             </p>
           )}

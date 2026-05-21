@@ -327,7 +327,7 @@ const AdminExperience = () => {
                         }}
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-[10px]" style={{ color: "var(--ink-5)" }}>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs" style={{ color: "var(--ink-5)" }}>
                         no image
                       </div>
                     )}

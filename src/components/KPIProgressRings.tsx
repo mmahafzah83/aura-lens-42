@@ -115,7 +115,7 @@ const KPIProgressRings = () => {
                 <span className="text-lg font-semibold text-foreground">{ring.value}</span>
               </div>
             </div>
-            <span className="text-[10px] text-muted-foreground text-center tracking-wider uppercase leading-tight">
+            <span className="text-xs text-muted-foreground text-center tracking-wider uppercase leading-tight">
               {ring.label}
             </span>
           </div>

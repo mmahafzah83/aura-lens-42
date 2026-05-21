@@ -49,7 +49,7 @@ const LinkedInFeedPreview = ({ text, language }: Props) => {
 
       {open && (
         <div className="mt-2">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 mb-1.5">Preview</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground/60 mb-1.5">Preview</p>
           <div
             style={{
               background: "#fff",

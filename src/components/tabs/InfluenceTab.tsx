@@ -100,11 +100,11 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
                       {entry.summary && <SummaryText text={entry.summary} />}
                       <div className="flex items-center gap-2.5 mt-3">
                         {entry.skill_pillar && (
-                          <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
+                          <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
                             {entry.skill_pillar}
                           </span>
                         )}
-                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">
+                        <span className="text-xs text-muted-foreground/40 tabular-nums">
                           {formatSmartDate(entry.created_at)}
                         </span>
                       </div>
@@ -114,7 +114,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
                     <button
                       onClick={() => handleDraft(entry)}
                       disabled={isDrafting}
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary/70 hover:text-primary transition-all duration-200 disabled:opacity-40 px-3 py-1.5 rounded-lg bg-primary/6 hover:bg-primary/12 tactile-press border border-primary/8"
+                      className="flex items-center gap-1.5 text-xs font-medium text-primary/70 hover:text-primary transition-all duration-200 disabled:opacity-40 px-3 py-1.5 rounded-lg bg-primary/6 hover:bg-primary/12 tactile-press border border-primary/8"
                     >
                       {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
                       Generate EN Post

@@ -71,10 +71,10 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
         <p className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
           Mirror
         </p>
-        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">
+        <p className="text-xs sm:text-xs text-muted-foreground mt-1 sm:mt-1.5 tracking-wide uppercase">
           Brand & Potential
         </p>
-        <p className="text-[10px] text-primary mt-2 font-medium group-hover:underline">
+        <p className="text-xs text-primary mt-2 font-medium group-hover:underline">
           Open the Mirror →
         </p>
       </div>
@@ -84,7 +84,7 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
           <DialogHeader>
             <DialogTitle className="text-gradient-gold text-lg">Brand Mirror</DialogTitle>
           </DialogHeader>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Based on your last 10 captures</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest">Based on your last 10 captures</p>
 
           {result && (
             <div className="space-y-5 mt-3">
@@ -95,7 +95,7 @@ const PotentialUnleashed = ({ entries }: { entries: Entry[] }) => {
                   <span className={`text-3xl font-bold ${getBrandColor(result.brand_alignment)}`}>
                     {result.brand_alignment}
                   </span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wider">/10</span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">/10</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-primary uppercase tracking-widest font-semibold mb-1">Brand Alignment</p>

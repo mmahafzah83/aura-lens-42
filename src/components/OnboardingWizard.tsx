@@ -207,7 +207,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
     <div className="mb-1.5">
       <p className="text-xs font-medium text-foreground">{children}</p>
       {hint && (
-        <p className="text-[11px] mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
+        <p className="text-xs mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
           {hint}
         </p>
       )}
@@ -261,7 +261,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
         </div>
 
         <p
-          className="text-[11px] tracking-[0.18em] uppercase mb-2 font-medium"
+          className="text-xs tracking-[0.18em] uppercase mb-2 font-medium"
           style={{ color: "var(--brand)" }}
         >
           Step {step} of 3 — {stepLabels[step]}

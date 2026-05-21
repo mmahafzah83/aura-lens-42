@@ -169,7 +169,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
               <div className="p-3 rounded-xl bg-secondary/20 border border-border/10">
                 <div className="flex items-center gap-2 mb-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="text-label text-[10px]">Status</span>
+                  <span className="text-label text-xs">Status</span>
                 </div>
                 <p className="text-sm font-semibold text-foreground">
                   {syncing ? "Syncing…" : "Active"}
@@ -179,7 +179,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
               <div className="p-3 rounded-xl bg-secondary/20 border border-border/10">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Clock className="w-3.5 h-3.5 text-muted-foreground/50" />
-                  <span className="text-label text-[10px]">Last Sync</span>
+                  <span className="text-label text-xs">Last Sync</span>
                 </div>
                 <p className="text-sm font-semibold text-foreground">
                   {lastSynced ? formatSmartDate(lastSynced) : "Never"}
@@ -189,7 +189,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
               <div className="p-3 rounded-xl bg-secondary/20 border border-border/10">
                 <div className="flex items-center gap-2 mb-1.5">
                   <FileText className="w-3.5 h-3.5 text-muted-foreground/50" />
-                  <span className="text-label text-[10px]">Posts</span>
+                  <span className="text-label text-xs">Posts</span>
                 </div>
                 <p className="text-sm font-semibold text-foreground tabular-nums">{postCount}</p>
               </div>
@@ -197,7 +197,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
               <div className="p-3 rounded-xl bg-secondary/20 border border-border/10">
                 <div className="flex items-center gap-2 mb-1.5">
                   <Database className="w-3.5 h-3.5 text-muted-foreground/50" />
-                  <span className="text-label text-[10px]">Snapshots</span>
+                  <span className="text-label text-xs">Snapshots</span>
                 </div>
                 <p className="text-sm font-semibold text-foreground tabular-nums">{snapshotCount}</p>
               </div>

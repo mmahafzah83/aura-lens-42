@@ -1193,7 +1193,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     const conf = Math.round((sig.confidence ?? 0) * 100);
                     return (
                       <div
-                        className="text-[11px]"
+                        className="text-xs"
                         style={{
                           color: "var(--ink-3)",
                           fontStyle: "italic",
@@ -1207,7 +1207,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   }
                   return (
                     <div
-                      className="text-[11px]"
+                      className="text-xs"
                       style={{ color: "var(--ink-3)", fontStyle: "italic", paddingLeft: 2 }}
                     >
                       Based on your voice profile
@@ -1238,13 +1238,13 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         onClick={() => setProvenanceOpen(o => !o)}
                         className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-secondary/20 transition-colors"
                       >
-                        <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                        <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold">
                           How this was built
                         </span>
-                        <span className="text-[10px] text-muted-foreground/70">{provenanceOpen ? "−" : "+"}</span>
+                        <span className="text-xs text-muted-foreground/70">{provenanceOpen ? "−" : "+"}</span>
                       </button>
                       {provenanceOpen && (
-                        <div className="px-4 pb-3 space-y-1.5 text-[11px] text-muted-foreground/90 leading-relaxed">
+                        <div className="px-4 pb-3 space-y-1.5 text-xs text-muted-foreground/90 leading-relaxed">
                           {sigTitle ? (
                             <div>
                               <span style={{ color: "var(--brand)" }}>✦</span> Signal:{" "}
@@ -1272,7 +1272,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       {gateActive && (
                         <div className="border-t border-border/10 px-4 py-3 space-y-2.5">
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+                            <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-semibold">
                               Publish confidence
                             </span>
                             <span className={`text-xs font-semibold tabular-nums ${gate!.overall_score >= 70 ? "text-amber-500" : "text-muted-foreground"}`}>
@@ -1292,14 +1292,14 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                               const pct = Math.max(0, Math.min(100, Math.round(d.raw * 10)));
                               return (
                                 <div key={d.key} className="flex items-center gap-2">
-                                  <span className="text-[10px] text-muted-foreground w-20 shrink-0">{d.label}</span>
+                                  <span className="text-xs text-muted-foreground w-20 shrink-0">{d.label}</span>
                                   <div className="flex-1 bg-secondary/30 rounded-full h-1 overflow-hidden">
                                     <div
                                       className={`h-full rounded-full ${d.raw >= 7 ? "bg-amber-500" : "bg-muted-foreground/30"}`}
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className={`text-[10px] tabular-nums w-8 text-right ${d.raw >= 7 ? "text-amber-500" : "text-muted-foreground/60"}`}>{pct}%</span>
+                                  <span className={`text-xs tabular-nums w-8 text-right ${d.raw >= 7 ? "text-amber-500" : "text-muted-foreground/60"}`}>{pct}%</span>
                                 </div>
                               );
                             })}
@@ -1332,7 +1332,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                               {actionLoading === "strengthen" ? "Strengthening…" : "Strengthen before publishing →"}
                             </Button>
                           ) : (
-                            <div className="text-[10px] text-amber-600/80 dark:text-amber-400/80">
+                            <div className="text-xs text-amber-600/80 dark:text-amber-400/80">
                               Ready to publish — quality threshold met.
                             </div>
                           )}
@@ -1344,7 +1344,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                             const minutes = Math.max(1, Math.ceil(words / 200));
                             const over = chars > 3000;
                             return (
-                              <div className={`text-[11px] tabular-nums pt-1 ${over ? "text-orange-500 font-medium" : "text-muted-foreground/60"}`}>
+                              <div className={`text-xs tabular-nums pt-1 ${over ? "text-orange-500 font-medium" : "text-muted-foreground/60"}`}>
                                 {chars.toLocaleString()} / 3,000 chars · ~{minutes} min read
                               </div>
                             );
@@ -1363,7 +1363,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+                  className="h-7 text-xs text-muted-foreground border-border/20 hover:bg-secondary/30"
                   onClick={async () => {
                     try {
                       const { data: { session } } = await supabase.auth.getSession();
@@ -1387,7 +1387,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 text-[11px] text-muted-foreground border-border/20 hover:bg-secondary/30"
+                  className="h-7 text-xs text-muted-foreground border-border/20 hover:bg-secondary/30"
                   onClick={async () => {
                     try {
                       const { data: { session } } = await supabase.auth.getSession();
@@ -1420,10 +1420,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 {/* Variations */}
                 <div>
                   <div className="mb-2">
-                    <p className="text-[10px] uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--ink-2)" }}>
+                    <p className="text-xs uppercase tracking-[0.12em] font-semibold" style={{ color: "var(--ink-2)" }}>
                       Variations
                     </p>
-                    <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>
+                    <p className="text-xs" style={{ color: "var(--ink-3)" }}>
                       Different angles on the same signal
                     </p>
                   </div>
@@ -1451,11 +1451,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         >
                           <div className="flex items-center gap-2 mb-1">
                             {loading && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--brand)" }} />}
-                            <span className="text-[13px] font-medium" style={{ color: "var(--ink)" }}>
+                            <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>
                               {v.label}
                             </span>
                           </div>
-                          <p className="text-[11px]" style={{ color: "var(--ink-3)" }}>{v.desc}</p>
+                          <p className="text-xs" style={{ color: "var(--ink-3)" }}>{v.desc}</p>
                         </button>
                       );
                     })}
@@ -1470,7 +1470,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/8">
                   <div className="flex items-center gap-2">
                     <ImageIcon className="w-3.5 h-3.5 text-primary/60" />
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
+                    <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/50 font-semibold">
                       Visual Companion
                     </p>
                   </div>
@@ -1483,7 +1483,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         key={opt.key}
                         type="button"
                         onClick={() => setVisualMode(opt.key)}
-                        className="px-2.5 h-7 text-[11px] font-medium transition-colors"
+                        className="px-2.5 h-7 text-xs font-medium transition-colors"
                         style={{
                           background: visualMode === opt.key ? "var(--brand)" : "transparent",
                           color: visualMode === opt.key ? "var(--ink-on-brand, var(--ink))" : "var(--muted-foreground)",
@@ -1892,7 +1892,7 @@ const AnalyzeTab = () => {
             {auraDrafts.slice(0, 5).map((p: any, i: number) => (
               <div key={`${p.theme}-${p.tone}-${i}`} className="flex items-center justify-between py-1.5">
                 <span className="text-sm text-foreground/70 truncate flex-1">{p.theme || p.format_type || "Untitled"}</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted/20 text-muted-foreground border border-border/15 shrink-0 ml-2">
+                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-muted/20 text-muted-foreground border border-border/15 shrink-0 ml-2">
                   Not published yet
                 </span>
               </div>
@@ -2191,10 +2191,10 @@ const LibraryCard = ({
                 {p.post_text || "Untitled"}
               </p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-muted-foreground/40">Aura Draft</span>
+                <span className="text-xs text-muted-foreground/40">Aura Draft</span>
               </div>
               {p.source_metadata?.signal_titles?.[0] && (
-                <p className="text-[10px] text-muted-foreground/40 mt-1 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
+                <p className="text-xs text-muted-foreground/40 mt-1 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
               )}
             </>
           ) : (
@@ -2206,19 +2206,19 @@ const LibraryCard = ({
                 <p className="text-xs text-muted-foreground/50 mt-1 line-clamp-1">{p.topic_label}</p>
               )}
               {p.source_metadata?.from_plan && (
-                <p className="text-[10px] text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
+                <p className="text-xs text-muted-foreground/40 mt-0.5">From plan: {p.source_metadata.from_plan}</p>
               )}
               {p.source_metadata?.signal_titles?.[0] && (
-                <p className="text-[10px] text-muted-foreground/40 mt-0.5 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
+                <p className="text-xs text-muted-foreground/40 mt-0.5 line-clamp-1">From signal: {p.source_metadata.signal_titles[0]}</p>
               )}
             </>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${badge.cls}`}>
             {badge.label}
           </span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${
             isDraft
               ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
               : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
@@ -2229,7 +2229,7 @@ const LibraryCard = ({
       </div>
 
       <div className="flex items-center gap-2 mt-3">
-        <span className="text-[10px] text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
+        <span className="text-xs text-muted-foreground/40">{formatSmartDate(p.created_at)}</span>
         <div className="flex-1" />
         <Button
           size="sm"
@@ -2275,7 +2275,7 @@ const LibraryCard = ({
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-1">Impressions</label>
+                  <label className="text-xs text-muted-foreground block mb-1">Impressions</label>
                   <Input
                     type="number"
                     min="0"
@@ -2286,7 +2286,7 @@ const LibraryCard = ({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-1">Reactions</label>
+                  <label className="text-xs text-muted-foreground block mb-1">Reactions</label>
                   <Input
                     type="number"
                     min="0"
@@ -2297,7 +2297,7 @@ const LibraryCard = ({
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-1">Comments</label>
+                  <label className="text-xs text-muted-foreground block mb-1">Comments</label>
                   <Input
                     type="number"
                     min="0"

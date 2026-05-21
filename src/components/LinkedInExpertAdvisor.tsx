@@ -180,21 +180,21 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
             <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-4 h-4 text-primary" />
-                <p className="text-label text-[11px]">Priority Strategic Move</p>
+                <p className="text-label text-xs">Priority Strategic Move</p>
               </div>
               <p className="text-lg font-semibold text-foreground leading-snug mb-3" style={{ fontFamily: "var(--font-display)" }}>
                 {advisory.priorityMove.topic}
               </p>
               <p className="text-sm text-muted-foreground/70 leading-relaxed mb-4" dir="auto">{advisory.priorityMove.reason}</p>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-primary/8 text-primary/70 border border-primary/15">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/8 text-primary/70 border border-primary/15">
                   {advisory.priorityMove.format}
                 </span>
-                <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-secondary/30 text-muted-foreground/60 border border-border/10">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-secondary/30 text-muted-foreground/60 border border-border/10">
                   {advisory.priorityMove.tone} tone
                 </span>
                 {advisory.priorityMove.themeReinforced && (
-                  <span className="px-3 py-1 rounded-full text-[10px] font-medium bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/15">
+                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/8 text-emerald-400/70 border border-emerald-500/15">
                     Reinforces: {advisory.priorityMove.themeReinforced}
                   </span>
                 )}
@@ -214,7 +214,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                   const t = trajectoryIcon[advisory.authorityEvolution.trajectory] || trajectoryIcon.steady;
                   const Icon = t.icon;
                   return (
-                    <span className={`flex items-center gap-1.5 text-[10px] font-medium ${t.color}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-medium ${t.color}`}>
                       <Icon className="w-3.5 h-3.5" />
                       {t.label}
                     </span>
@@ -231,7 +231,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                       {trendIcon(t.trend)}
                       <span className="text-xs font-medium text-foreground">{t.theme}</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground/50">{t.signalDelta}</span>
+                    <span className="text-xs text-muted-foreground/50">{t.signalDelta}</span>
                   </div>
                 ))}
               </div>
@@ -267,7 +267,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                 <p className="text-sm text-foreground/90 leading-relaxed mb-4" dir="auto">{advisory.becomingKnownFor.headline}</p>
                 <div className="space-y-2">
                   {advisory.becomingKnownFor.evidence.map((e, i) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px] text-muted-foreground/60">
+                    <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground/60">
                       <ArrowUpRight className="w-3 h-3 mt-0.5 text-primary/40 shrink-0" />
                       <span dir="auto">{e}</span>
                     </div>
@@ -278,7 +278,7 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
               {/* Weekly Brief */}
               {advisory.weeklyBrief && (
                 <div className="glass-card rounded-2xl p-6">
-                  <p className="text-label text-[11px] mb-3">Strategic Brief</p>
+                  <p className="text-label text-xs mb-3">Strategic Brief</p>
                   <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line" dir="auto">
                     {advisory.weeklyBrief}
                   </p>
@@ -296,13 +296,13 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-foreground">{t.tone}</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-muted-foreground/40">{t.usagePercent}% of posts</span>
-                            <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${priorityColor[t.effectiveness] || priorityColor.low}`}>
+                            <span className="text-xs text-muted-foreground/40">{t.usagePercent}% of posts</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priorityColor[t.effectiveness] || priorityColor.low}`}>
                               {t.effectiveness}
                             </span>
                           </div>
                         </div>
-                        <p className="text-[10px] text-muted-foreground/50 leading-relaxed" dir="auto">{t.recommendation}</p>
+                        <p className="text-xs text-muted-foreground/50 leading-relaxed" dir="auto">{t.recommendation}</p>
                       </div>
                     ))}
                   </div>
@@ -316,9 +316,9 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                       <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10">
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-foreground">{f.format}</span>
-                          <span className="text-[9px] text-muted-foreground/40">{f.postCount} posts</span>
+                          <span className="text-xs text-muted-foreground/40">{f.postCount} posts</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground/50 leading-relaxed" dir="auto">{f.verdict}</p>
+                        <p className="text-xs text-muted-foreground/50 leading-relaxed" dir="auto">{f.verdict}</p>
                       </div>
                     ))}
                   </div>
@@ -334,35 +334,35 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-foreground">{t.theme}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${strengthColor[t.strength]}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${strengthColor[t.strength]}`}>
                         {t.strength}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {trendIcon(t.trend)}
-                      <span className="text-[10px] text-muted-foreground/50">{t.trend}</span>
+                      <span className="text-xs text-muted-foreground/50">{t.trend}</span>
                     </div>
                   </div>
                   <p className="text-xs text-foreground/70 leading-relaxed mb-4" dir="auto">{t.insight}</p>
                   {/* Evidence Sources */}
                   <div className="flex flex-wrap gap-3 pt-3 border-t border-border/10">
                     {t.evidenceSources.linkedinPosts > 0 && (
-                      <span className="text-[9px] text-muted-foreground/40">
+                      <span className="text-xs text-muted-foreground/40">
                         <span className="text-foreground/60 font-medium">{t.evidenceSources.linkedinPosts}</span> LinkedIn posts
                       </span>
                     )}
                     {t.evidenceSources.captures > 0 && (
-                      <span className="text-[9px] text-muted-foreground/40">
+                      <span className="text-xs text-muted-foreground/40">
                         <span className="text-foreground/60 font-medium">{t.evidenceSources.captures}</span> captures
                       </span>
                     )}
                     {t.evidenceSources.documents > 0 && (
-                      <span className="text-[9px] text-muted-foreground/40">
+                      <span className="text-xs text-muted-foreground/40">
                         <span className="text-foreground/60 font-medium">{t.evidenceSources.documents}</span> documents
                       </span>
                     )}
                     {t.evidenceSources.frameworks > 0 && (
-                      <span className="text-[9px] text-muted-foreground/40">
+                      <span className="text-xs text-muted-foreground/40">
                         <span className="text-foreground/60 font-medium">{t.evidenceSources.frameworks}</span> frameworks
                       </span>
                     )}
@@ -383,14 +383,14 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                         <OppIcon className="w-4 h-4 text-primary/60" />
                         <span className="text-sm font-semibold text-foreground">{opp.title}</span>
                       </div>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${priorityColor[opp.priority]}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${priorityColor[opp.priority]}`}>
                         {opp.priority} priority
                       </span>
                     </div>
                     <p className="text-xs text-foreground/70 leading-relaxed mb-3" dir="auto">{opp.description}</p>
                     {/* Evidence */}
                     <div className="p-3 rounded-xl bg-secondary/10 border border-border/8 mb-3">
-                      <p className="text-[10px] text-muted-foreground/50">
+                      <p className="text-xs text-muted-foreground/50">
                         <span className="text-muted-foreground/70 font-medium">Evidence: </span>
                         <span dir="auto">{opp.evidence}</span>
                       </p>
@@ -413,8 +413,8 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
                   <p className="text-sm font-semibold text-foreground leading-snug mb-2" dir="auto">{w.topic}</p>
                   <p className="text-xs text-muted-foreground/60 leading-relaxed mb-3" dir="auto">{w.reason}</p>
                   <div className="flex flex-wrap gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-medium bg-primary/8 text-primary/70 border border-primary/15">{w.format}</span>
-                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-medium bg-secondary/30 text-muted-foreground/60 border border-border/10">{w.angle}</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/8 text-primary/70 border border-primary/15">{w.format}</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary/30 text-muted-foreground/60 border border-border/10">{w.angle}</span>
                   </div>
                 </div>
               ))}

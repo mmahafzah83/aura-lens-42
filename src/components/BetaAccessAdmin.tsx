@@ -450,7 +450,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="flex rounded-lg border border-border/40 overflow-hidden text-[11px]">
+                    <div className="flex rounded-lg border border-border/40 overflow-hidden text-xs">
                       <button
                         onClick={() => setBulkNoteMode("shared")}
                         className={`px-2.5 py-1 transition-colors ${
@@ -523,7 +523,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           <div className="overflow-x-auto rounded-xl border border-border/40">
             <table className="w-full text-sm">
               <thead className="bg-secondary/30">
-                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="w-8 px-3 py-2 font-normal">
                     <Checkbox
                       checked={allPendingSelected}
@@ -561,7 +561,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/15 text-primary border border-primary/30 flex items-center justify-center text-[11px] font-medium">
+                          <div className="w-8 h-8 rounded-full bg-primary/15 text-primary border border-primary/30 flex items-center justify-center text-xs font-medium">
                             {initials(r.name, r.email)}
                           </div>
                           <div className="min-w-0">
@@ -578,7 +578,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                         {formatDate(r.requested_at || r.created_at)}
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
                           {r.status}
                         </span>
                       </td>
@@ -730,7 +730,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
           <div className="overflow-x-auto rounded-xl border border-border/40">
             <table className="w-full text-sm">
               <thead className="bg-secondary/30">
-                <tr className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                   <th className="text-left px-3 py-2 font-normal">Recipient</th>
                   <th className="text-left px-3 py-2 font-normal">Invited at</th>
                   <th className="text-left px-3 py-2 font-normal">Invited by</th>
@@ -768,7 +768,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                       <td className="px-3 py-3">
                         {hasNote ? (
                           <span
-                            className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border bg-[#B08D3A]/10 text-[#D4B056] border-[#B08D3A]/30"
+                            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border bg-[#B08D3A]/10 text-[#D4B056] border-[#B08D3A]/30"
                             title={r.personal_note || ""}
                           >
                             <StickyNote className="w-3 h-3" />
@@ -779,7 +779,7 @@ const BetaAccessAdmin = ({ userId }: Props) => {
                         )}
                       </td>
                       <td className="px-3 py-3">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
                           {r.status}
                         </span>
                       </td>

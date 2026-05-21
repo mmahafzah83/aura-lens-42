@@ -117,7 +117,7 @@ const ExecutiveInsightFeed = () => {
         </div>
         <div>
           <h3 className="text-sm font-semibold text-foreground tracking-tight">Intelligence Feed</h3>
-          <p className="text-[10px] text-muted-foreground/50">Your evolving strategic landscape</p>
+          <p className="text-xs text-muted-foreground/50">Your evolving strategic landscape</p>
         </div>
       </div>
 
@@ -135,14 +135,14 @@ const ExecutiveInsightFeed = () => {
                 <div className="flex items-center gap-2">
                   <p className="text-xs font-semibold text-foreground truncate">{item.title}</p>
                   {item.confidence && (
-                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-bold ${colors.badge}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${colors.badge}`}>
                       {Math.round(item.confidence * 100)}%
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground/50 line-clamp-1 mt-0.5">{item.description}</p>
+                <p className="text-xs text-muted-foreground/50 line-clamp-1 mt-0.5">{item.description}</p>
               </div>
-              <span className="text-[9px] text-muted-foreground/30 flex-shrink-0 mt-1">{formatAgo(item.created_at)}</span>
+              <span className="text-xs text-muted-foreground/30 flex-shrink-0 mt-1">{formatAgo(item.created_at)}</span>
             </div>
           );
         })}

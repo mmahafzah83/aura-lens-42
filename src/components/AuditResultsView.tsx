@@ -252,7 +252,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
     <div className="space-y-6">
       {/* Section 1 — Radar Chart */}
       <div>
-        <p className="text-[13px] font-medium text-ink-7 mb-3">Your Capability Radar</p>
+        <p className="text-sm font-medium text-ink-7 mb-3">Your Capability Radar</p>
         <canvas
           ref={canvasRef}
           className="w-full"
@@ -279,7 +279,7 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
         {/* Primary CTA */}
         <button
           onClick={() => { onClose?.(); onNavigate?.("settings"); }}
-          className="w-full py-3 rounded-xl text-[13px] font-medium tracking-wide transition-all active:scale-[0.98] hover:brightness-110"
+          className="w-full py-3 rounded-xl text-sm font-medium tracking-wide transition-all active:scale-[0.98] hover:brightness-110"
           style={{
             background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
             color: "var(--ink)",

@@ -225,7 +225,7 @@ const VoiceEngineSection = () => {
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Your writing samples
                 </label>
-                <p className="text-[10px] text-muted-foreground/50 mb-2">
+                <p className="text-xs text-muted-foreground/50 mb-2">
                   Paste examples of your best posts or writing. Separate multiple samples with --- on a new line.
                 </p>
                 <Textarea
@@ -240,7 +240,7 @@ const VoiceEngineSection = () => {
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Admired posts
                 </label>
-                <p className="text-[10px] text-muted-foreground/50 mb-2">
+                <p className="text-xs text-muted-foreground/50 mb-2">
                   Paste posts by others whose style you want to learn from. Separate with --- on a new line.
                 </p>
                 <Textarea
@@ -255,7 +255,7 @@ const VoiceEngineSection = () => {
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">
                   Vocabulary & tone notes
                 </label>
-                <p className="text-[10px] text-muted-foreground/50 mb-2">
+                <p className="text-xs text-muted-foreground/50 mb-2">
                   Describe how you write — e.g. "direct, no jargon, short sentences, always end with a question"
                 </p>
                 <Textarea

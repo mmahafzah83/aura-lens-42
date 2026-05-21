@@ -41,7 +41,7 @@ const ExpandableSummary = ({ text }: { text: string }) => {
       {isLong && (
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="flex items-center gap-0.5 text-[10px] text-primary/70 hover:text-primary mt-1 transition-colors"
+          className="flex items-center gap-0.5 text-xs text-primary/70 hover:text-primary mt-1 transition-colors"
         >
           {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
           {expanded ? t("entries.less") : t("entries.readMore")}
@@ -295,18 +295,18 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                     {entry.summary && <ExpandableSummary text={entry.summary} />}
                     <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                       {pillar && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">
                           {pillar}
                         </span>
                       )}
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {formatSmartDate(entry.created_at)}
                       </span>
 
                       <button
                         onClick={() => handleTogglePin(entry)}
                         disabled={togglingPin === entry.id}
-                        className={`flex items-center gap-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 ${
+                        className={`flex items-center gap-0.5 text-xs font-medium transition-colors disabled:opacity-50 ${
                           isPinned ? "text-primary" : "text-muted-foreground hover:text-primary"
                         }`}
                         title={isPinned ? "Unpin" : "Pin"}
@@ -326,7 +326,7 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                           <button
                             onClick={() => handleTranslate(entry)}
                             disabled={isTranslating}
-                            className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                             title={t("entries.translate")}
                           >
                             {isTranslating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Languages className="w-3.5 h-3.5" />}
@@ -336,17 +336,17 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                           <button
                             onClick={() => handleDraft(entry, true)}
                             disabled={isDraftingAr}
-                            className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
                             title={t("entries.linkedinAr")}
                           >
-                            {isDraftingAr ? <Loader2 className="w-3 h-3 animate-spin" /> : <span className="text-[10px]">عر</span>}
+                            {isDraftingAr ? <Loader2 className="w-3 h-3 animate-spin" /> : <span className="text-xs">عر</span>}
                             <span className="hidden sm:inline">{t("entries.linkedinAr")}</span>
                           </button>
                           {/* English LinkedIn */}
                           <button
                             onClick={() => handleDraft(entry)}
                             disabled={isDrafting}
-                            className="flex items-center gap-1 text-[10px] font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1 text-xs font-medium text-primary/70 hover:text-primary transition-colors disabled:opacity-50"
                             title={t("entries.linkedinPost")}
                           >
                             {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
@@ -378,12 +378,12 @@ const RecentEntries = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: (
                 <div key={gi} className="rounded-xl bg-secondary/30 border border-border/20 p-4 space-y-2">
                   <p className="text-xs text-muted-foreground italic">{group.reason}</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-primary px-2 py-0.5 rounded-full bg-primary/15">{t("dedup.keep")}</span>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-primary px-2 py-0.5 rounded-full bg-primary/15">{t("dedup.keep")}</span>
                     <span className="text-sm text-foreground truncate">{group.keep?.title}</span>
                   </div>
                   {group.archive?.map((a: any, ai: number) => (
                     <div key={ai} className="flex items-center gap-2 opacity-60">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-destructive px-2 py-0.5 rounded-full bg-destructive/15">{t("dedup.remove")}</span>
+                      <span className="text-xs font-semibold uppercase tracking-wider text-destructive px-2 py-0.5 rounded-full bg-destructive/15">{t("dedup.remove")}</span>
                       <span className="text-sm text-foreground truncate">{a.title}</span>
                     </div>
                   ))}

@@ -276,7 +276,7 @@ const IntelligenceCards = () => {
             const cleaned = text.replace(/^(The Shift|The Impact|The Action|SIGNAL|ACTION|VALUE)\s*:\s*/i, "");
             return (
               <div key={i} className="flex items-start gap-2">
-                <span className={`text-[9px] font-black uppercase tracking-widest whitespace-nowrap mt-0.5 ${labels[i].color}`}>
+                <span className={`text-xs font-black uppercase tracking-widest whitespace-nowrap mt-0.5 ${labels[i].color}`}>
                   [{labels[i].key}]
                 </span>
                 <RichText text={cleaned} className="text-xs text-foreground/80 leading-relaxed" />
@@ -299,7 +299,7 @@ const IntelligenceCards = () => {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground tracking-widest uppercase">Daily Intelligence</h3>
-            <p className="text-[10px] text-muted-foreground/50 mt-0.5">Login-triggered deep scan</p>
+            <p className="text-xs text-muted-foreground/50 mt-0.5">Login-triggered deep scan</p>
           </div>
         </div>
         <button
@@ -333,7 +333,7 @@ const IntelligenceCards = () => {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground tracking-widest uppercase">Daily Intelligence</h3>
-              <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+              <p className="text-xs text-muted-foreground/50 mt-0.5">
                 Targeting: {gaps.map((g) => g.name).join(" & ")}
               </p>
             </div>
@@ -347,7 +347,7 @@ const IntelligenceCards = () => {
         {gaps.length > 0 && (
           <div className="flex gap-2 px-1 flex-wrap">
             {gaps.map((gap) => (
-              <div key={gap.name} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/15 text-[10px]">
+              <div key={gap.name} className="px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/15 text-xs">
                 <span className="font-semibold text-destructive">{gap.name}</span>
                 <span className="text-destructive/60 ml-1">−{gap.delta}%</span>
               </div>
@@ -375,7 +375,7 @@ const IntelligenceCards = () => {
               >
                 {/* Priority Ribbon */}
                 {item.priority && !isRead && (
-                  <div className="absolute -top-px -right-px px-3 py-1 rounded-bl-xl rounded-tr-2xl bg-gradient-to-r from-primary/90 to-primary text-[9px] font-black uppercase tracking-widest text-primary-foreground">
+                  <div className="absolute -top-px -right-px px-3 py-1 rounded-bl-xl rounded-tr-2xl bg-gradient-to-r from-primary/90 to-primary text-xs font-black uppercase tracking-widest text-primary-foreground">
                     Priority 1: High Client Impact
                   </div>
                 )}
@@ -384,12 +384,12 @@ const IntelligenceCards = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{item.icon}</span>
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                       {config.label}
                     </span>
                   </div>
                   {item.estimated_minutes && (
-                    <span className="text-[10px] text-muted-foreground/50">~{item.estimated_minutes} min</span>
+                    <span className="text-xs text-muted-foreground/50">~{item.estimated_minutes} min</span>
                   )}
                 </div>
 
@@ -410,26 +410,26 @@ const IntelligenceCards = () => {
 
                 {/* BLUF — SIGNAL / ACTION / VALUE */}
                 <div className="p-3 rounded-xl bg-background/30 border border-primary/10 mb-3">
-                  <p className="text-[9px] font-black text-primary/70 uppercase tracking-[0.2em] mb-2">Director's BLUF</p>
+                  <p className="text-xs font-black text-primary/70 uppercase tracking-[0.2em] mb-2">Director's BLUF</p>
                   {renderBLUF(item.bluf)}
                 </div>
 
                 {/* Gap Alignment + Skill target */}
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   {item.gap_alignment && (
-                    <span className="text-[9px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/15 font-semibold uppercase tracking-widest">
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/15 font-semibold uppercase tracking-widest">
                       {item.gap_alignment}
                     </span>
                   )}
                   <TrendingUp className="w-3 h-3 text-primary/60" />
-                  <span className="text-[10px] text-primary/60">{item.skill_target}</span>
-                  <span className="text-[10px] text-emerald-400 font-semibold ml-auto">+2%</span>
+                  <span className="text-xs text-primary/60">{item.skill_target}</span>
+                  <span className="text-xs text-emerald-400 font-semibold ml-auto">+2%</span>
                 </div>
 
                 {/* Post Starter — hidden until read (progressive disclosure) */}
                 {item.prompt && isRead && (
                   <div className="p-3 rounded-lg bg-muted/10 border border-border/10 mb-3 animate-fade-in">
-                    <p className="text-[10px] text-muted-foreground/50 uppercase mb-1">Post Starter</p>
+                    <p className="text-xs text-muted-foreground/50 uppercase mb-1">Post Starter</p>
                     <p className="text-xs text-foreground/70 italic">"{item.prompt}"</p>
                   </div>
                 )}
@@ -509,12 +509,12 @@ const IntelligenceCards = () => {
                     style={{ aspectRatio: "4/5" }}
                   />
                   <div className="p-3 bg-background/50 flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest">Blackboard Schematic · 1080×1350</span>
+                    <span className="text-xs text-muted-foreground/60 uppercase tracking-widest">Blackboard Schematic · 1080×1350</span>
                     <a
                       href={draftResult.image_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1"
+                      className="text-xs text-primary/70 hover:text-primary flex items-center gap-1"
                     >
                       <Download className="w-3 h-3" /> Save
                     </a>
@@ -540,12 +540,12 @@ const IntelligenceCards = () => {
               {/* Metadata pills */}
               <div className="flex flex-wrap gap-2">
                 {draftResult.hook_type && (
-                  <span className="text-[9px] px-2.5 py-1 rounded-full bg-primary/10 text-primary/80 border border-primary/15 uppercase tracking-widest">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary/80 border border-primary/15 uppercase tracking-widest">
                     Hook: {draftResult.hook_type}
                   </span>
                 )}
                 {draftResult.brand_pillar_alignment && (
-                  <span className="text-[9px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 uppercase tracking-widest">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 uppercase tracking-widest">
                     {draftResult.brand_pillar_alignment}
                   </span>
                 )}
@@ -554,7 +554,7 @@ const IntelligenceCards = () => {
               {/* Partner Lens callout */}
               {draftResult.partner_lens && (
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/10">
-                  <p className="text-[9px] font-black text-primary/60 uppercase tracking-widest mb-1">Partner Lens</p>
+                  <p className="text-xs font-black text-primary/60 uppercase tracking-widest mb-1">Partner Lens</p>
                   <p className="text-xs text-foreground/70 italic">"{draftResult.partner_lens}"</p>
                 </div>
               )}

@@ -157,7 +157,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
       <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
         <Icon className="w-3.5 h-3.5 text-primary/70" />
       </div>
-      <h4 className="text-[11px] uppercase tracking-[0.12em] text-primary/60 font-semibold">{label}</h4>
+      <h4 className="text-xs uppercase tracking-[0.12em] text-primary/60 font-semibold">{label}</h4>
     </div>
   );
 
@@ -188,7 +188,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                 <SheetTitle className="text-base font-bold text-foreground leading-tight">
                   {signal.signal_title}
                 </SheetTitle>
-                <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
+                <SheetDescription className="text-xs text-muted-foreground/50 mt-0.5">
                   Signal Explorer · {confidencePct}% confidence · {signal.fragment_count} fragments
                 </SheetDescription>
               </div>
@@ -217,7 +217,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
               <p className="text-xs text-foreground/80 leading-relaxed">{signal.explanation}</p>
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {signal.theme_tags.map((tag, i) => (
-                  <span key={i} className="text-[9px] bg-muted/40 text-muted-foreground/60 px-2 py-0.5 rounded-md">
+                  <span key={i} className="text-xs bg-muted/40 text-muted-foreground/60 px-2 py-0.5 rounded-md">
                     <Hash className="w-2.5 h-2.5 inline mr-0.5" />{tag}
                   </span>
                 ))}
@@ -231,7 +231,7 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
               {signal.skill_pillars.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {signal.skill_pillars.map((p, i) => (
-                    <span key={i} className="text-[9px] bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">
+                    <span key={i} className="text-xs bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">
                       {p}
                     </span>
                   ))}
@@ -250,19 +250,19 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                       className="rounded-xl bg-card/60 backdrop-blur-sm p-3.5 border border-primary/[0.06] hover:border-primary/15 transition-colors"
                     >
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-semibold uppercase tracking-wider ${fragmentTypeColor(frag.fragment_type)}`}>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold uppercase tracking-wider ${fragmentTypeColor(frag.fragment_type)}`}>
                           {frag.fragment_type.replace("_", " ")}
                         </span>
-                        <span className="text-[9px] text-muted-foreground/30">
+                        <span className="text-xs text-muted-foreground/30">
                           {Math.round(frag.confidence * 100)}%
                         </span>
                       </div>
-                      <p className="text-[11px] font-medium text-foreground/90 mb-1">{frag.title}</p>
-                      <p className="text-[10px] text-muted-foreground/55 leading-relaxed line-clamp-3">{frag.content}</p>
+                      <p className="text-xs font-medium text-foreground/90 mb-1">{frag.title}</p>
+                      <p className="text-xs text-muted-foreground/55 leading-relaxed line-clamp-3">{frag.content}</p>
                       {frag.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {frag.tags.slice(0, 4).map((t, i) => (
-                            <span key={i} className="text-[8px] bg-muted/30 text-muted-foreground/40 px-1.5 py-0.5 rounded">
+                            <span key={i} className="text-xs bg-muted/30 text-muted-foreground/40 px-1.5 py-0.5 rounded">
                               {t}
                             </span>
                           ))}
@@ -288,10 +288,10 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                         <FileText className="w-3 h-3 text-primary/50" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-[11px] font-medium text-foreground/80 truncate">{src.title || "Untitled source"}</p>
-                        <p className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">{src.source_type.replace("_", " ")}</p>
+                        <p className="text-xs font-medium text-foreground/80 truncate">{src.title || "Untitled source"}</p>
+                        <p className="text-xs text-muted-foreground/40 uppercase tracking-wider">{src.source_type.replace("_", " ")}</p>
                         {src.content_preview && (
-                          <p className="text-[10px] text-muted-foreground/45 line-clamp-2 mt-1 leading-relaxed">{src.content_preview}</p>
+                          <p className="text-xs text-muted-foreground/45 line-clamp-2 mt-1 leading-relaxed">{src.content_preview}</p>
                         )}
                       </div>
                     </div>
@@ -311,12 +311,12 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                       className="rounded-lg bg-card/40 p-3 border border-primary/[0.04]"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[8px] bg-muted/40 text-muted-foreground/50 px-1.5 py-0.5 rounded uppercase tracking-wider font-medium">
+                        <span className="text-xs bg-muted/40 text-muted-foreground/50 px-1.5 py-0.5 rounded uppercase tracking-wider font-medium">
                           {entry.type}
                         </span>
                       </div>
-                      <p className="text-[11px] font-medium text-foreground/80">{entry.title || "Untitled"}</p>
-                      <p className="text-[10px] text-muted-foreground/45 line-clamp-2 mt-0.5 leading-relaxed">{entry.content}</p>
+                      <p className="text-xs font-medium text-foreground/80">{entry.title || "Untitled"}</p>
+                      <p className="text-xs text-muted-foreground/45 line-clamp-2 mt-0.5 leading-relaxed">{entry.content}</p>
                     </div>
                   ))}
                 </div>
@@ -333,14 +333,14 @@ const SignalExplorer = ({ signal, open, onClose }: SignalExplorerProps) => {
                       key={fw.id}
                       className="rounded-lg bg-card/40 p-3 border border-primary/[0.04]"
                     >
-                      <p className="text-[11px] font-medium text-foreground/80">{fw.title}</p>
+                      <p className="text-xs font-medium text-foreground/80">{fw.title}</p>
                       {fw.summary && (
-                        <p className="text-[10px] text-muted-foreground/45 line-clamp-2 mt-0.5 leading-relaxed">{fw.summary}</p>
+                        <p className="text-xs text-muted-foreground/45 line-clamp-2 mt-0.5 leading-relaxed">{fw.summary}</p>
                       )}
                       {fw.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {fw.tags.slice(0, 4).map((t, i) => (
-                            <span key={i} className="text-[8px] bg-primary/8 text-primary/50 px-1.5 py-0.5 rounded">
+                            <span key={i} className="text-xs bg-primary/8 text-primary/50 px-1.5 py-0.5 rounded">
                               {t}
                             </span>
                           ))}
