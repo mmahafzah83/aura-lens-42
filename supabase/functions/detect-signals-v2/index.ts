@@ -107,10 +107,10 @@ async function calcPriorityScore(
   admin: any,
   userId: string,
   themeTags: string[],
+  contentGap: number = 1.0,
 ): Promise<number> {
   const daysSinceUpdate = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
   const momentum = daysSinceUpdate <= 2 ? 0.8 : daysSinceUpdate <= 7 ? 0.5 : 0.2;
-  const contentGap = 1.0;
   let base = (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
   if (themeTags.length > 0) {
     const { data: prefs } = await admin
@@ -286,6 +286,31 @@ ${identityCtx}`;
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    /* ── Compute content gap based on user's prior posts on these tags ── */
+    async function computeContentGap(tags: string[], title: string): Promise<number> {
+      const topTags = (tags || []).filter(Boolean).slice(0, 2);
+      if (topTags.length === 0) {
+        console.log(`[detect-signals-v2] contentGap=1.0 for "${title}" (no tags)`);
+        return 1.0;
+      }
+      const orFilter = topTags.map(t => `post_text.ilike.%${t.replace(/[,()]/g, " ")}%`).join(",");
+      const { count, error } = await admin
+        .from("linkedin_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user_id)
+        .or(orFilter);
+      if (error) {
+        console.warn(`[detect-signals-v2] contentGap query failed:`, error.message);
+        return 1.0;
+      }
+      const matchCount = count || 0;
+      const gap = matchCount === 0 ? 1.0 : matchCount === 1 ? 0.6 : 0.2;
+      console.log(`[detect-signals-v2] contentGap=${gap} for "${title}" (${matchCount} posts match)`);
+      return gap;
+    }
+
+    const contentGap = await computeContentGap(newTags, newTitle);
+
     /* ── Dedup check against existing signals ── */
     const { data: existingSignals } = await admin
       .from("strategic_signals")
@@ -317,7 +342,7 @@ ${identityCtx}`;
       const newUniqueSources = await countUniqueSources(admin, mergedEvidence);
       const now = new Date().toISOString();
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, newUniqueSources, newUniqueOrgs, now);
-      const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || []);
+      const priorityScore = await calcPriorityScore(confidence, now, 1.0, newFragCount, admin, user_id, signalRow.theme_tags || [], contentGap);
 
       await admin.from("strategic_signals").update({
         supporting_evidence_ids: mergedEvidence,
@@ -349,7 +374,7 @@ ${identityCtx}`;
       const initialUniqueOrgs = await countUniqueOrgs(admin, targetFragmentIds);
       const initialUniqueSources = await countUniqueSources(admin, targetFragmentIds);
       const { confidence, confidence_explanation } = calcConfidence(aiBaseConfidence, initialUniqueSources, initialUniqueOrgs, now);
-      const priorityScore = await calcPriorityScore(confidence, now, 1.0, targetFragmentIds.length, admin, user_id, newTags);
+      const priorityScore = await calcPriorityScore(confidence, now, 1.0, targetFragmentIds.length, admin, user_id, newTags, contentGap);
 
       const { data: row, error: insErr } = await admin.from("strategic_signals").insert({
         user_id,
