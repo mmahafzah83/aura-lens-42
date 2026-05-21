@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { AuraButton } from "@/components/ui/AuraButton";
 import { AuraCard } from "@/components/ui/AuraCard";
 import AuthorityProgressModal from "@/components/AuthorityProgressModal";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Lock, Zap } from "lucide-react";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import FirstVisitHint from "@/components/ui/FirstVisitHint";
@@ -1176,7 +1176,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     flexShrink: 0,
                   }}
                 >
-                  {step.done ? "✓" : step.locked ? "🔒" : step.n}
+                  {step.done ? "✓" : step.locked ? <Lock size={14} /> : step.n}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
@@ -1338,7 +1338,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           }}
         >
           <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}>
-            <span style={{ marginRight: 6 }}>✨</span>
+            <span aria-hidden style={{ marginRight: 6, color: "var(--gold-dark, var(--brand))" }}>✦</span>
             Your score jumped <strong style={{ color: "var(--brand)" }}>{auraData.score_trend} points</strong> this week!{" "}
             <ShareLink
               label="Share your progress →"
@@ -1714,7 +1714,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               fontSize: 12, color: "hsl(var(--foreground) / 0.85)",
               lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6,
             }}>
-              <span aria-hidden style={{ color: "var(--brand)" }}>⚡</span>
+              <Zap aria-hidden size={14} style={{ color: "var(--brand)", flexShrink: 0 }} />
               <span style={{ flex: 1, minWidth: 0 }}>{weakestAction}</span>
             </div>
             <div style={{
