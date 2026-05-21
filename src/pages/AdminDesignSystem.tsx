@@ -85,7 +85,7 @@ function applyTokensToRoot(tokens: DesignTokens, theme: Theme) {
 }
 
 const sectionCard: CSSProperties = {
-  background: "var(--surface-ink-raised, #1c1c1c)",
+  background: "var(--surface-ink-raised, var(--ink-2))",
   border: "1px solid var(--ink-3, #333)",
   borderRadius: 12,
   padding: 24,
