@@ -386,7 +386,7 @@ const Landing = () => {
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "var(--paper)", fontWeight: 500 }}>
+            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all shadow-[0_1px_2px_hsl(0_0%_0%/0.3)] hover:shadow-[0_0_16px_hsl(43_80%_45%/0.25)] hover:brightness-110" style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)", fontWeight: 500 }}>
               Get early access
             </button>
             <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", border: "1px solid var(--brand)", background: "transparent", fontWeight: 500 }}>
@@ -611,10 +611,10 @@ const Landing = () => {
       <footer
         className="landing-footer"
         style={{
-          background: "#0D0D0D",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          background: "var(--surface-ink)",
+          borderTop: "1px solid var(--ink-5)",
           padding: "48px 40px",
-          color: "rgba(255,255,255,0.62)",
+          color: "var(--ink-4)",
         }}
       >
         <style>{`
@@ -629,10 +629,10 @@ const Landing = () => {
           .landing-footer-col-center { text-align: center; }
           .landing-footer-col-right { text-align: right; }
           .landing-footer a {
-            color: rgba(255,255,255,0.62);
+            color: var(--ink-4);
             transition: color 0.15s ease;
           }
-          .landing-footer a:hover { color: rgba(255,255,255,0.9); }
+          .landing-footer a:hover { color: var(--ink-6); }
           .landing-footer-links {
             display: inline-flex;
             flex-wrap: wrap;
@@ -640,7 +640,7 @@ const Landing = () => {
             gap: 10px;
             font-size: 12px;
           }
-          .landing-footer-dot { color: rgba(255,255,255,0.45); }
+          .landing-footer-dot { color: var(--ink-5); }
           @media (max-width: 768px) {
             .landing-footer { padding: 32px 20px !important; }
             .landing-footer-grid {
@@ -656,11 +656,11 @@ const Landing = () => {
           <div>
             <div className="flex items-center gap-3" style={{ height: 28 }}>
               <AuraLogo size={24} variant="dark" />
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "'DM Sans', sans-serif" }}>
+              <span style={{ fontSize: 12, color: "var(--ink-5)", fontFamily: "'DM Sans', sans-serif" }}>
                 Aura · Strategic Intelligence · aura-intel.org
               </span>
             </div>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
               © 2026 Aura Intelligence. All rights reserved.
             </p>
           </div>
@@ -676,10 +676,10 @@ const Landing = () => {
             </div>
           </div>
           <div className="landing-footer-col-right">
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)" }}>
+            <p style={{ fontSize: 12, color: "var(--ink-4)" }}>
               Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
             </p>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)", marginTop: 6 }}>
+            <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 6 }}>
               Built in Riyadh for the world
             </p>
           </div>

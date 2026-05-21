@@ -88,10 +88,16 @@ const RequestAccess = () => {
               Request early access
             </h1>
             <p
-              className="text-sm leading-relaxed mb-8"
+              className="text-sm leading-relaxed mb-2"
               style={{ color: "var(--ink-5)", maxWidth: "360px" }}
             >
               Aura is in closed beta. Join the waitlist and we'll reach out when your spot is ready.
+            </p>
+            <p
+              className="text-xs leading-relaxed mb-8"
+              style={{ color: "var(--ink-4)", maxWidth: "360px" }}
+            >
+              We review every application individually. Current cohort: limited to senior professionals in consulting, energy, and infrastructure.
             </p>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4">
@@ -188,9 +194,9 @@ const RequestAccess = () => {
                 <div
                   className="rounded-lg p-3 text-sm"
                   style={{
-                    backgroundColor: "rgba(239,68,68,0.08)",
-                    border: "1px solid rgba(239,68,68,0.4)",
-                    color: "#fca5a5",
+                    backgroundColor: "var(--danger-pale)",
+                    border: "1px solid var(--danger)",
+                    color: "var(--danger)",
                   }}
                 >
                   Didn't connect. Try once more.
@@ -200,8 +206,8 @@ const RequestAccess = () => {
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{ backgroundColor: "var(--brand)", borderRadius: "8px" }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-bold transition-opacity hover:opacity-90 disabled:opacity-60"
+                style={{ backgroundColor: "var(--brand)", borderRadius: "8px", color: "var(--paper)" }}
               >
                 {status === "loading" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -237,9 +243,9 @@ const RequestAccess = () => {
           <div
             className="rounded-xl p-6 text-center text-sm"
             style={{
-              backgroundColor: "rgba(245,158,11,0.08)",
-              border: "1px solid rgba(245,158,11,0.4)",
-              color: "#fcd34d",
+              backgroundColor: "var(--warning-pale)",
+              border: "1px solid var(--warning)",
+              color: "var(--warning)",
             }}
           >
             You're already on the list. We'll be in touch soon.
