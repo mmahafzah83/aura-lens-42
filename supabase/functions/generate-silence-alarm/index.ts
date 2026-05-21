@@ -12,35 +12,83 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.replace("Bearer ", "");
+    const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+    const isServiceRole = bearer === SERVICE_KEY || apiKey === SERVICE_KEY;
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // Resolve target user(s)
+    let userIds: string[] = [];
+    if (isCron || isServiceRole) {
+      const { data: profiles } = await admin
+        .from("diagnostic_profiles")
+        .select("user_id");
+      userIds = (profiles || []).map((p: any) => p.user_id).filter(Boolean);
+    } else {
+      if (!bearer) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: userData, error: userErr } = await userClient.auth.getUser(bearer);
+      if (userErr || !userData?.user?.id) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userIds = [userData.user.id];
+    }
+
+    const results: any[] = [];
+    for (const userId of userIds) {
+      try {
+        const r = await processUser(userId, admin);
+        if ((isCron || isServiceRole) && r.alarm) {
+          await admin.from("notification_events").insert({
+            user_id: userId,
+            type: "silence_alarm",
+            channel: "inapp",
+            title: `Silence alarm · ${r.days_silent} days`,
+            body: r.alarm_message,
+            metadata: { fading_signals: r.fading_signals, market_movements: r.market_movements },
+          });
+        }
+        results.push({ user_id: userId, ...r });
+      } catch (e) {
+        results.push({ user_id: userId, error: (e as Error).message });
+      }
+    }
+
+    // Single-user response keeps original shape for the frontend.
+    if (userIds.length === 1 && !isCron && !isServiceRole) {
+      return new Response(JSON.stringify(results[0]), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const token = authHeader.replace("Bearer ", "");
+    return new Response(JSON.stringify({ users: userIds.length, results }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("[generate-silence-alarm] error", e);
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-    if (userErr || !userData?.user?.id) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const userId = userData.user.id;
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
+async function processUser(userId: string, admin: any) {
     // 1. Days since last entry
     const { data: lastEntry } = await admin
       .from("entries")
@@ -56,9 +104,7 @@ Deno.serve(async (req) => {
       : 999;
 
     if (days_silent < 3) {
-      return new Response(JSON.stringify({ alarm: false, days_silent }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return { alarm: false, days_silent };
     }
 
     // 3. Fading/dormant signals
@@ -153,29 +199,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        alarm: true,
-        days_silent,
-        fading_signals: fading_signals.map((s: any) => ({
-          title: s.signal_title,
-          confidence: s.confidence,
-          velocity_status: s.velocity_status,
-        })),
-        market_movements: market_movements.map((m: any) => ({
-          headline: m.headline,
-          source: m.source,
-          final_score: m.final_score,
-        })),
-        alarm_message,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
-  } catch (e) {
-    console.error("[generate-silence-alarm] error", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-});
+    return {
+      alarm: true,
+      days_silent,
+      fading_signals: fading_signals.map((s: any) => ({
+        title: s.signal_title,
+        confidence: s.confidence,
+        velocity_status: s.velocity_status,
+      })),
+      market_movements: market_movements.map((m: any) => ({
+        headline: m.headline,
+        source: m.source,
+        final_score: m.final_score,
+      })),
+      alarm_message,
+    };
+}
