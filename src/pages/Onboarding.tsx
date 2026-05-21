@@ -920,6 +920,44 @@ const Onboarding = () => {
           goHome();
         }}
       />
+      {ceremony && (
+        <div
+          className={`aura-ceremony-overlay${ceremonyLeaving ? " is-leaving" : ""}`}
+          role="dialog"
+          aria-label="Your intelligence is active"
+          onClick={completeCeremonyAndNavigate}
+        >
+          <span
+            aria-hidden="true"
+            className="aura-gold-pulse"
+            style={{ fontSize: 56, lineHeight: 1, marginBottom: 28 }}
+          >
+            ✦
+          </span>
+          <h2
+            style={{
+              fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
+              fontSize: 36, lineHeight: 1.15, margin: "0 0 12px",
+              color: "hsl(40 20% 95%)", letterSpacing: "-0.01em",
+            }}
+          >
+            Your intelligence is active.
+          </h2>
+          <p style={{
+            fontSize: 15, lineHeight: 1.6, margin: 0,
+            color: "hsl(40 18% 95% / 0.7)", maxWidth: 360,
+          }}>
+            Aura is now watching the market for you.
+          </p>
+          <span style={{
+            position: "absolute", bottom: 32, left: 0, right: 0,
+            fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "hsl(40 18% 95% / 0.4)",
+          }}>
+            Tap anywhere to continue
+          </span>
+        </div>
+      )}
     </>
   );
 };
