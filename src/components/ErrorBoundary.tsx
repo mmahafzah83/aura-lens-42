@@ -1,4 +1,5 @@
 import React from "react";
+import { AlertTriangle } from "lucide-react";
 
 interface State {
   hasError: boolean;
@@ -29,7 +30,9 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
             margin: "24px",
           }}
         >
-          <div style={{ fontSize: "32px", marginBottom: "16px" }}>⚠️</div>
+          <div style={{ marginBottom: "16px", display: "flex", justifyContent: "center", color: "var(--ink-5)" }}>
+            <AlertTriangle size={32} />
+          </div>
           <h3 style={{ color: "var(--ink-7)", marginBottom: "8px" }}>
             Didn't connect. Try once more.
           </h3>

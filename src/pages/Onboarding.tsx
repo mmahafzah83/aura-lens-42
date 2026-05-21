@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff } from "lucide-react";
+import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
@@ -665,10 +665,10 @@ const Onboarding = () => {
                 <button
                   type="button"
                   onClick={() => setHelperOpen((v) => !v)}
-                  className="text-xs hover:opacity-80 transition-opacity"
+                  className="text-xs hover:opacity-80 transition-opacity inline-flex items-center gap-1.5"
                   style={{ color: "hsl(var(--muted-foreground))" }}
                 >
-                  💡 What should I paste? {helperOpen ? "▾" : "▸"}
+                  <Lightbulb className="w-4 h-4" /> What should I paste? {helperOpen ? "▾" : "▸"}
                 </button>
                 {helperOpen && (
                   <div

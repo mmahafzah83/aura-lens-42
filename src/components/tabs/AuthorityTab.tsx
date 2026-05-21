@@ -1012,7 +1012,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 border: "1px solid #D4B056", cursor: "pointer",
               }}
             >
-              ✨ Carousel Studio
+              <Sparkles className="w-4 h-4 inline-block mr-1.5" /> Carousel Studio
               <span style={{ opacity: 0.7, fontWeight: 400 }}>— viral, multi-style</span>
             </button>
           </div>

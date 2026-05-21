@@ -6,12 +6,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import AuraButton from "@/components/ui/AuraButton";
 
-const EMOJIS: { emoji: string; rating: number }[] = [
-  { emoji: "😍", rating: 5 },
-  { emoji: "😊", rating: 4 },
-  { emoji: "😐", rating: 3 },
-  { emoji: "😕", rating: 2 },
-  { emoji: "😤", rating: 1 },
+const RATINGS: { label: string; rating: number; color: string }[] = [
+  { label: "Exceptional", rating: 5, color: "var(--gold-dark, var(--brand))" },
+  { label: "Strong", rating: 4, color: "var(--ink-3)" },
+  { label: "Adequate", rating: 3, color: "var(--ink-4)" },
+  { label: "Weak", rating: 2, color: "var(--ink-4)" },
+  { label: "Poor", rating: 1, color: "var(--ink-5)" },
 ];
 
 const FeedbackButton = () => {
@@ -133,25 +133,31 @@ const FeedbackButton = () => {
             <>
               <SectionHeader label="Share your feedback" />
 
-              <div style={{ display: "flex", gap: 6, marginTop: 12, marginBottom: 12 }}>
-                {EMOJIS.map((e) => (
-                  <button
-                    key={e.rating}
-                    onClick={() => setRating(e.rating)}
-                    style={{
-                      flex: 1,
-                      height: 36,
-                      fontSize: 18,
-                      borderRadius: 8,
-                      border: rating === e.rating ? "1px solid var(--brand)" : "1px solid transparent",
-                      background: rating === e.rating ? "var(--brand-ghost)" : "transparent",
-                      cursor: "pointer",
-                    }}
-                    aria-label={`Rate ${e.rating}`}
-                  >
-                    {e.emoji}
-                  </button>
-                ))}
+              <div style={{ display: "flex", gap: 6, marginTop: 12, marginBottom: 12, flexWrap: "wrap" }}>
+                {RATINGS.map((r) => {
+                  const selected = rating === r.rating;
+                  return (
+                    <button
+                      key={r.rating}
+                      onClick={() => setRating(r.rating)}
+                      style={{
+                        flex: "1 1 auto",
+                        padding: "6px 10px",
+                        fontSize: 12,
+                        fontWeight: 400,
+                        borderRadius: 999,
+                        border: `1px solid ${selected ? r.color : "var(--brand-line)"}`,
+                        background: selected ? "var(--brand-ghost)" : "transparent",
+                        color: r.color,
+                        cursor: "pointer",
+                        transition: "all 120ms ease",
+                      }}
+                      aria-label={`Rate ${r.label}`}
+                    >
+                      {r.label}
+                    </button>
+                  );
+                })}
               </div>
 
               <textarea

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Eye, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Compass, Lightbulb, Star, Loader2,
+  Eye, TrendingUp, AlertTriangle, CheckCircle2, Sparkles, Compass, Lightbulb, Star, Loader2, Zap,
   Copy, Check, BookmarkPlus, RefreshCw, Linkedin,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,13 +167,13 @@ export default function FlashPanel() {
     sparkPlaceholder: lang === "ar"
       ? "اكتب 3-10 كلمات... مثال: اجتماعات كثيرة ونتائج قليلة"
       : "Write 3-10 words... e.g. too many meetings, no results",
-    generate: lang === "ar" ? "⚡ توليد 3 نسخ" : "⚡ Generate 3 versions",
-    generating: lang === "ar" ? "⚡ جاري الكتابة..." : "⚡ Writing...",
+    generate: lang === "ar" ? "توليد 3 نسخ" : "Generate 3 versions",
+    generating: lang === "ar" ? "جاري الكتابة..." : "Writing...",
     copy: lang === "ar" ? "نسخ" : "Copy",
     saveDraft: lang === "ar" ? "حفظ مسودة" : "Save Draft",
     saved: lang === "ar" ? "تم الحفظ" : "Saved",
     postOnLinkedIn: lang === "ar" ? "انشر على لينكدإن ←" : "Post on LinkedIn →",
-    newVariations: lang === "ar" ? "🔄 نسخ جديدة" : "🔄 New Variations",
+    newVariations: lang === "ar" ? "نسخ جديدة" : "New Variations",
     versionWord: lang === "ar" ? "النسخة" : "Version",
   }), [lang]);
 
@@ -488,7 +488,7 @@ export default function FlashPanel() {
             : "bg-secondary/30 text-muted-foreground cursor-not-allowed"
         }`}
       >
-        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+        {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
         <span style={lang === "ar" ? arabicFontStyle : undefined}>{t.generate}</span>
       </button>
 

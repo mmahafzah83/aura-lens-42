@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import {
-  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain,
+  Loader2, ThumbsUp, ThumbsDown, Archive, RefreshCw, Layers, Brain, Zap, AlertTriangle,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
@@ -161,7 +161,7 @@ const AutomationStrip = ({ signalCount = 0 }: { signalCount?: number }) => {
 
   const movesUnlocked = signalCount >= 3;
   const cards = [
-    { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--brand)", icon: "⚡", title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success)" },
+    { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--brand)", icon: <Zap size={16} />, title: "Auto-detect on capture", desc: "New signal detected within 60s of every capture", status: "Active", statusColor: "var(--success)" },
     { iconBg: "var(--paper-2)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "↻", title: "Weekly signal refresh", desc: "Signals recalculated every Sunday at midnight", status: "Scheduled", statusColor: "var(--info)" },
     movesUnlocked
       ? { iconBg: "var(--brand-ghost)", iconBorder: "var(--brand-line)", iconColor: "var(--ink)", icon: "✦", title: "Move generation", desc: "3 strategic moves refreshed every 24 hours", status: moveTimeLeft, statusColor: "var(--brand)" }
@@ -1052,8 +1052,8 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                   gap: 8,
                 }}
               >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(24 95% 53%)" }}>
-                  ⚠ {fadingSignals.length} signal{fadingSignals.length > 1 ? "s are" : " is"} losing strength
+                <div style={{ fontSize: 12, fontWeight: 600, color: "hsl(24 95% 53%)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <AlertTriangle size={14} /> {fadingSignals.length} signal{fadingSignals.length > 1 ? "s are" : " is"} losing strength
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ink-4)", lineHeight: 1.5 }}>
                   <strong style={{ color: "var(--ink-6)" }}>{topFading.signal_title}</strong> dropped to {Math.round(topFading.confidence * 100)}% confidence.
