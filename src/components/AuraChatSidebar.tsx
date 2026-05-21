@@ -385,11 +385,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         const uid = session.user.id;
-        const [sigRes, entRes] = await Promise.all([
+        const [sigRes, entRes, profRes] = await Promise.all([
           supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active"),
           supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
+          supabase.from("diagnostic_profiles").select("first_name, last_name").eq("user_id", uid).maybeSingle(),
         ]);
         setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
+        const p = (profRes as any)?.data;
+        if (p) setUserIdentity({ firstName: p.first_name ?? null, lastName: p.last_name ?? null });
       } catch {
         // fail silently
       }
