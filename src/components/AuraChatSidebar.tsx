@@ -755,9 +755,21 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         })();
       }
     } catch (e: any) {
+      const lastUserMsg = messages[messages.length - 1]?.role === "user" ? messages[messages.length - 1] : undefined;
+      toast.error("Aura couldn't respond. Try again.", {
+        action: {
+          label: "Retry",
+          onClick: () => {
+            if (lastUserMsg) {
+              setMessages(prev => prev.filter(m => m !== lastUserMsg));
+              send(lastUserMsg.content, mode, existingConvId, ctx);
+            }
+          },
+        },
+      });
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${e.message || "Didn't connect. Try once more."}` },
+        { role: "assistant", content: e.message || "Didn't connect. Try once more.", isError: true },
       ]);
     }
     setIsLoading(false);
