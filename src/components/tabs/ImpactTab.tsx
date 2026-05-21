@@ -1343,7 +1343,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   </>
                 ) : (
                   <>
-                    <div className="text-foreground font-medium text-sm leading-snug">Build active signals to surface your strongest territory</div>
+                    <div className="text-foreground font-normal text-sm leading-relaxed">Build active signals to surface your strongest territory</div>
                     <div className="text-xs text-muted-foreground mt-1">Strongest territory</div>
                   </>
                 )}
