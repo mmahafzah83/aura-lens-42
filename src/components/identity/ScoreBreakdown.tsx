@@ -41,9 +41,9 @@ export default function ScoreBreakdown({ userId }: Props) {
   const total = signalPts + contentPts + consistencyPts;
 
   const rows = [
-    { label: "Signal",      val: signalPts,      max: 40, color: "var(--brand)" },
-    { label: "Content",     val: contentPts,     max: 40, color: "var(--brand)" },
-    { label: "Consistency", val: consistencyPts, max: 20, color: "var(--brand)" },
+    { label: "Signal",      val: signalPts,      max: 40, color: "var(--gold-dark)" },
+    { label: "Content",     val: contentPts,     max: 40, color: "var(--gold-dark)" },
+    { label: "Consistency", val: consistencyPts, max: 20, color: "var(--gold-dark)" },
   ];
 
   return (
@@ -94,7 +94,7 @@ export default function ScoreBreakdown({ userId }: Props) {
                 </span>
               </div>
               <div style={{
-                height: 6, background: "rgba(255,255,255,0.06)",
+                height: 6, background: "var(--paper-3)",
                 borderRadius: 999, overflow: "hidden",
               }}>
                 <div style={{
@@ -110,7 +110,7 @@ export default function ScoreBreakdown({ userId }: Props) {
 
       <div style={{
         marginTop: 14, paddingTop: 12,
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        borderTop: "1px solid var(--vellum)",
         display: "flex", alignItems: "baseline", justifyContent: "space-between",
       }}>
         <span style={{
