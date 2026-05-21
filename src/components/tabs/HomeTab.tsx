@@ -492,8 +492,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           }
         }
         if (shouldRefresh) {
-          supabase.functions
-            .invoke("fetch-industry-trends", { body: { mode: "light" } })
+          supabase.auth.getSession()
+            .then(() => supabase.functions.invoke("fetch-industry-trends", { body: { mode: "light" } }))
             .catch((e) => console.warn("[HomeTab] background trends refresh failed", e));
         }
       } catch (e) {
@@ -950,6 +950,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       // 2. Call edge function (Phase A — returns quickly)
       toast.loading("Finding new trends...", { id: "refresh-trends" });
+      await supabase.auth.getSession();
       const { error } = await supabase.functions.invoke("fetch-industry-trends", {
         body: { mode: "full" },
       });
