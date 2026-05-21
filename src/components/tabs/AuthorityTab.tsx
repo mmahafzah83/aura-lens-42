@@ -2036,7 +2036,7 @@ const VoiceTrainer = () => {
       </div>
 
       <div className="mb-4 space-y-2 text-xs text-muted-foreground leading-relaxed">
-        <p className="text-foreground font-medium">Every post Aura writes will mirror YOUR writing style — not generic AI.</p>
+        <p className="text-foreground font-normal leading-relaxed">Every post Aura writes will mirror YOUR writing style — not generic AI.</p>
         <p>Paste 3-5 LinkedIn posts you've written. Aura analyses your rhythm, your word choices, your sentence patterns.</p>
         <p>The more examples you give, the more authentically Aura writes as you.</p>
       </div>
