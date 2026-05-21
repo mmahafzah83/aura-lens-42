@@ -2775,6 +2775,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
+      const linkedSignalId = (item.source_metadata as any)?.source_signal_id
+        || (item.source_metadata?.signal_ids?.[0])
+        || null;
       const { error } = await supabase
         .from("linkedin_posts")
         .insert({
@@ -2790,9 +2793,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           engagement_score: 0,
           source_trust: 100,
           source_metadata: item.source_metadata || {},
-          source_signal_id: (item.source_metadata as any)?.source_signal_id
-            || (item.source_metadata?.signal_ids?.[0])
-            || null,
+          source_signal_id: linkedSignalId,
           enriched_by: [],
           synced_at: new Date().toISOString(),
         });
@@ -2802,7 +2803,42 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         .update({ status: "published" })
         .eq("id", id);
       setDrafts(prev => prev.filter(p => p.id !== id));
-      toast.success("Published — this post now contributes to your authority score", { duration: 4000 });
+      // Fetch the related signal title to personalize the ceremony toast.
+      let signalTitle = "strategic";
+      if (linkedSignalId) {
+        const { data: sig } = await supabase
+          .from("strategic_signals")
+          .select("signal_title")
+          .eq("id", linkedSignalId)
+          .maybeSingle();
+        if (sig?.signal_title) signalTitle = sig.signal_title;
+      }
+      toast.custom((t) => (
+        <div
+          style={{
+            display: "flex", alignItems: "flex-start", gap: 14,
+            padding: "14px 18px",
+            background: "var(--surface-ink-raised, var(--card))",
+            border: "1px solid var(--brand-line, var(--border))",
+            borderRadius: 12,
+            boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+            minWidth: 320, maxWidth: 420,
+          }}
+        >
+          <span aria-hidden style={{
+            fontSize: 22, lineHeight: 1, color: "var(--gold-dark, var(--brand))",
+            flexShrink: 0, marginTop: 2,
+          }}>✦</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="font-medium text-sm" style={{ color: "var(--ink)", marginBottom: 4 }}>
+              Published — your authority just grew
+            </div>
+            <div className="font-normal text-sm text-ink-4">
+              This post strengthens your {signalTitle} positioning.
+            </div>
+          </div>
+        </div>
+      ), { duration: 5000 });
       loadPosts();
       // Trigger score recalc (non-blocking)
       supabase.functions.invoke("calculate-aura-score", {
