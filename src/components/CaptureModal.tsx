@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link, Mic, Type, Loader2, Square, ImageIcon, X, FileUp, Plus, Camera, FolderOpen, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,6 +61,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     status: string;
     created_at: string;
   }>>([]);
+
+  // First-capture ceremony overlay (lives outside the bottom sheet so it can
+  // appear after the sheet closes). The modal's `!open` guard does not hide it.
+  const [firstCeremonyOpen, setFirstCeremonyOpen] = useState(false);
+  const [firstCeremonyShowCta, setFirstCeremonyShowCta] = useState(false);
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -516,35 +522,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         if (count === 1 && !localStorage.getItem("aura_first_capture_celebrated")) {
           localStorage.setItem("aura_first_capture_celebrated", "true");
           didCelebrate = true;
-          sonnerToast.custom(
-            () => (
-              <div
-                style={{
-                  background: "var(--ink, #1C1812)",
-                  color: "var(--ink-on-brand, #f5efe1)",
-                  border: "1px solid var(--brand, #B08D3A)",
-                  borderRadius: 12,
-                  padding: "14px 18px",
-                  boxShadow: "0 10px 30px -10px rgba(0,0,0,0.4)",
-                  maxWidth: 360,
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: 18,
-                    lineHeight: 1.375,
-                    marginBottom: 4,
-                    color: "var(--brand, #B08D3A)",
-                  }}
-                >
-                  Your intelligence system is now active.
-                </div>
-                <div style={{ fontSize: 12, opacity: 0.75 }}>Aura is analyzing.</div>
-              </div>
-            ),
-            { duration: 4000 },
-          );
+          setFirstCeremonyOpen(true);
+          setFirstCeremonyShowCta(false);
+          // The "See your intelligence" CTA appears after a 2s pause.
+          window.setTimeout(() => setFirstCeremonyShowCta(true), 2000);
         }
       } catch {
         // ignore — fall through to default toast
