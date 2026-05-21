@@ -589,13 +589,13 @@ const AdminQA = () => {
 
   // ---------------- Render ----------------
   if (!authChecked) {
-    return <div style={{ padding: 32, color: "var(--ink)", background: "var(--bg, #0a0a0a)", minHeight: "100vh" }}>Checking access…</div>;
+    return <div style={{ padding: 32, color: "var(--ink)", background: "var(--paper)", minHeight: "100vh" }}>Checking access…</div>;
   }
 
   return (
     <div style={{
       minHeight: "100vh",
-      background: "var(--bg, #0a0a0a)",
+      background: "var(--paper)",
       color: "var(--ink, #F4EFE6)",
       fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
       fontSize: 15,
