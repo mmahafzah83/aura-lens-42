@@ -1195,6 +1195,26 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                         const trendIcon = velocity === "accelerating" ? "↗" : velocity === "fading" ? "↘" : velocity === "dormant" ? "◌" : "→";
                         const whyNow = s.strategic_implications || s.explanation || "";
                         const yourMove = s.what_it_means_for_you || (s.theme_tags || [])[0] || "";
+                        // Top signal = highest priority_score across all sorted signals
+                        const topPriorityId = sortedByConfidence.reduce<{ id: string; p: number } | null>(
+                          (acc, x) => (acc === null || (x.priority_score ?? 0) > acc.p ? { id: x.id, p: x.priority_score ?? 0 } : acc),
+                          null
+                        )?.id;
+                        const isTop = topPriorityId === s.id;
+                        // Origin thread: signal created within last 10 min — find the nearest preceding capture
+                        const ageMs = Date.now() - new Date(s.created_at).getTime();
+                        let originTitle: string | null = null;
+                        if (ageMs < 10 * 60 * 1000 && Array.isArray(entries) && entries.length > 0) {
+                          const sigTime = new Date(s.created_at).getTime();
+                          const candidates = entries
+                            .map(e => ({ e, t: new Date((e as any).created_at).getTime() }))
+                            .filter(({ t }) => t <= sigTime && sigTime - t <= 30 * 60 * 1000)
+                            .sort((a, b) => b.t - a.t);
+                          if (candidates[0]) {
+                            const e: any = candidates[0].e;
+                            originTitle = e.title || e.url_title || e.source_title || "your capture";
+                          }
+                        }
                         return (
                         <div
                           key={s.id}
@@ -1202,17 +1222,24 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                           className="intel-signal-row card-interactive"
                           onClick={() => setSelectedSignalId(s.id)}
                           style={{
-                            display: "block", padding: "12px",
+                            display: "block", padding: isTop ? "16px" : "12px",
                             margin: "8px 12px",
                             border: "0.5px solid var(--surface-ink-subtle)",
-                            borderLeft: `3px solid ${confColor}`,
+                            borderTop: isTop ? "2px solid var(--gold-dark)" : "0.5px solid var(--surface-ink-subtle)",
+                            borderLeft: `${isTop ? 4 : 3}px solid ${confColor}`,
                             borderRadius: 8,
                             cursor: "pointer", transition: "background 0.1s",
                             background: isSelected ? "var(--surface-ink-subtle)" : "transparent",
+                            position: "relative",
                           }}
                           onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = "var(--surface-ink-subtle)"; }}
                           onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}
                         >
+                          {isTop && (
+                            <div style={{ position: "absolute", top: 6, right: 10, fontSize: 10, fontWeight: 600, color: "var(--gold-dark)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                              Top signal
+                            </div>
+                          )}
                           {/* Top row: title + confidence */}
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -1278,6 +1305,20 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                               Competitor intel
                             </button>
                           </div>
+                          {originTitle && (
+                            <div
+                              style={{
+                                marginTop: 10,
+                                paddingLeft: 8,
+                                borderLeft: "2px dashed var(--gold-pale)",
+                                fontSize: 11,
+                                color: "var(--ink-5)",
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              From your capture · {originTitle} · {relativeTime(s.created_at)}
+                            </div>
+                          )}
                         </div>
                         );
                       }}
