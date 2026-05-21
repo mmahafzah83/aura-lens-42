@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, ThumbsUp, MessageSquare, Repeat2, Send } from "lucide-react";
+import { ChevronDown, ChevronUp, ThumbsUp, MessageSquare, Repeat2, Send, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t || "");
@@ -94,7 +94,7 @@ const LinkedInFeedPreview = ({ text, language }: Props) => {
                 {profile?.level && (
                   <div style={{ fontSize: 12, color: "#00000099", lineHeight: 1.3, marginTop: 1 }}>{profile.level}</div>
                 )}
-                <div style={{ fontSize: 12, color: "#00000099", marginTop: 1 }}>Just now • 🌐</div>
+                <div style={{ fontSize: 12, color: "#00000099", marginTop: 1, display: "flex", alignItems: "center", gap: 4 }}>Just now • <Globe size={12} /></div>
               </div>
             </div>
 

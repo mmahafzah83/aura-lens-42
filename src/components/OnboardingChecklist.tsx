@@ -177,7 +177,8 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
               <div className="flex items-center gap-3 py-2">
                 <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                 <span className="text-sm font-semibold text-emerald-500">
-                  🎉 You're all set! Aura is ready.
+                  <span aria-hidden style={{ color: "var(--gold-dark, var(--brand))", marginRight: 6 }}>✦</span>
+                  You're all set! Aura is ready.
                 </span>
               </div>
             ) : (

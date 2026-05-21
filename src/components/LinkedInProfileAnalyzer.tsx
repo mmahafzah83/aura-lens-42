@@ -158,9 +158,9 @@ const LinkedInProfileAnalyzer = () => {
         <button
           type="button"
           onClick={() => setShowPasteArea(!showPasteArea)}
-          className="text-xs text-muted-foreground/50 hover:text-primary/70 transition-colors mt-2"
+          className="text-xs text-muted-foreground/50 hover:text-primary/70 transition-colors mt-2 inline-flex items-center gap-1.5"
         >
-          {showPasteArea ? "Hide paste area" : "💡 LinkedIn blocking? Paste profile text for better results"}
+          {showPasteArea ? "Hide paste area" : (<><Lightbulb className="w-4 h-4" />LinkedIn blocking? Paste profile text for better results</>)}
         </button>
         {showPasteArea && (
           <textarea
