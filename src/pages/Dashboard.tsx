@@ -386,7 +386,7 @@ const Dashboard = () => {
             <div className="overflow-hidden min-w-0">
               <h1
                 className="text-lg tracking-tight font-semibold"
-                style={{ color: "var(--aura-t1)" }}
+                style={{ color: "var(--ink)" }}
               >
                 Aura
               </h1>
@@ -394,10 +394,9 @@ const Dashboard = () => {
                 style={{
                   fontSize: 12,
                   letterSpacing: "0.08em",
-                  color: "var(--aura-t2)",
+                  color: "var(--ink-4)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
-                  textTransform: "uppercase",
                   textOverflow: "ellipsis",
                 }}
               >
