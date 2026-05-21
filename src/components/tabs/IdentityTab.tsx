@@ -469,7 +469,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
       {!assessmentCompleted && (
         <div
           style={{
-            background: "var(--ink, #1a1a1a)",
+            background: "var(--ink)",
             borderRadius: 16,
             padding: "28px 28px 24px",
             position: "relative",
@@ -499,7 +499,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               onClick={() => setBrandOpen(true)}
               style={{
                 background: "var(--brand)",
-                color: "var(--ink, #1a1a1a)",
+                color: "var(--ink)",
                 border: 0,
                 borderRadius: 10,
                 padding: "12px 20px",
