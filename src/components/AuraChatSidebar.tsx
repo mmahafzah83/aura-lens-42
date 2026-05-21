@@ -316,7 +316,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
+  const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number; score: number | null; daysSincePost: number | null } | null>(null);
   // ── User identity for avatar on user messages ──
   const [userIdentity, setUserIdentity] = useState<{ firstName: string | null; lastName: string | null }>({ firstName: null, lastName: null });
   // ── Cross-session memory (aura_conversation_memory) ──
@@ -391,7 +391,20 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
           supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
           supabase.from("diagnostic_profiles").select("first_name, last_name").eq("user_id", uid).maybeSingle(),
         ]);
-        setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
+        // Fetch live context: latest aura score + most recent published post
+        const [scoreRes, postRes] = await Promise.all([
+          supabase.from("aura_scores" as any).select("aura_score").eq("user_id", uid).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+          supabase.from("linkedin_posts" as any).select("published_at").eq("user_id", uid).not("published_at", "is", null).order("published_at", { ascending: false }).limit(1).maybeSingle(),
+        ]);
+        const score = (scoreRes as any)?.data?.aura_score ?? null;
+        const lastPostAt = (postRes as any)?.data?.published_at ?? null;
+        const daysSincePost = lastPostAt ? Math.floor((Date.now() - new Date(lastPostAt).getTime()) / 86400000) : null;
+        setHeaderCounts({
+          signals: sigRes.count ?? 0,
+          captures: entRes.count ?? 0,
+          score,
+          daysSincePost,
+        });
         const p = (profRes as any)?.data;
         if (p) setUserIdentity({ firstName: p.first_name ?? null, lastName: p.last_name ?? null });
       } catch {
@@ -1125,8 +1138,11 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     {activeConv ? "Strategic Thread" : "Chief of Staff"}
                   </p>
                   {!activeConv && headerCounts && (
-                    <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", opacity: 0.7, marginTop: 1 }}>
-                      {headerCounts.signals} signals · {headerCounts.captures} captures loaded
+                    <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 2, lineHeight: 1.4 }}>
+                      <span style={{ color: "var(--gold-dark)", marginRight: 4 }}>✦</span>
+                      Aware of {headerCounts.signals} signal{headerCounts.signals === 1 ? "" : "s"}
+                      {headerCounts.score != null && ` · score ${headerCounts.score}`}
+                      {headerCounts.daysSincePost != null && ` · ${headerCounts.daysSincePost}d since last post`}
                     </p>
                   )}
                 </div>
