@@ -81,13 +81,13 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
       >
         <div className="flex items-center" style={{ gap: 8 }}>
           <Target size={15} color="var(--aura-accent)" />
-          <span style={{ fontSize: 13, fontWeight: 500, color: "var(--aura-t1)" }}>
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--aura-t1)" }}>
             Your missions this week
           </span>
         </div>
         {total > 0 && (
           <div className="flex items-center" style={{ gap: 10 }}>
-            <span style={{ fontSize: 11, color: "var(--aura-t2)" }}>{done} of {total}</span>
+            <span style={{ fontSize: 12, color: "var(--aura-t2)" }}>{done} of {total}</span>
             <div style={{ width: 60, height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
               <div style={{ width: `${pct}%`, height: "100%", background: "var(--aura-accent)", transition: "width 400ms" }} />
             </div>
@@ -129,7 +129,7 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     color: isDone ? "var(--aura-t2)" : "var(--aura-t1)",
                     textDecoration: isDone ? "line-through" : "none",
                   }}
@@ -138,12 +138,12 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
                 </div>
                 <div
                   className="flex items-center"
-                  style={{ gap: 8, marginTop: 4, fontSize: 11, color: "var(--aura-t2)" }}
+                  style={{ gap: 8, marginTop: 4, fontSize: 12, color: "var(--aura-t2)" }}
                 >
                   <span style={{
                     color: "var(--aura-accent)", fontWeight: 500,
                     background: "color-mix(in srgb, var(--aura-accent) 12%, transparent)",
-                    padding: "2px 6px", borderRadius: 4, fontSize: 10,
+                    padding: "2px 6px", borderRadius: 4, fontSize: 12,
                   }}>
                     +{m.points ?? 5} pts
                   </span>

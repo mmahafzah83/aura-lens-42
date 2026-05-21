@@ -128,7 +128,7 @@ const LinkedInFeedPreview = ({ text, language }: Props) => {
                 display: "flex",
                 justifyContent: "space-around",
                 color: "#00000099",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
               }}
             >

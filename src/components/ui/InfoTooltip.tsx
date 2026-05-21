@@ -50,7 +50,7 @@ export function InfoTooltip({
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: 600,
     color: triggerHover ? "var(--brand)" : "var(--ink-3)",
     cursor: "pointer",

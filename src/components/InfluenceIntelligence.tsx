@@ -215,8 +215,8 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.1)" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} width={50} />
+                      <XAxis dataKey="date" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground) / 0.4)" }} axisLine={false} tickLine={false} width={50} />
                       <Tooltip
                         contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border) / 0.15)", borderRadius: 12, fontSize: 12 }}
                       />

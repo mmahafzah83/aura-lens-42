@@ -11,7 +11,7 @@ export function SectionHeader({ label, subtitle, className }: SectionHeaderProps
     <div className={className} style={{ marginBottom: 16 }}>
       <div
         style={{
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: 600,
           letterSpacing: "0.12em",
           color: "var(--ink)",
@@ -26,7 +26,7 @@ export function SectionHeader({ label, subtitle, className }: SectionHeaderProps
         <div
           style={{
             fontFamily: "var(--font-display, 'Cormorant Garamond')",
-            fontSize: 13,
+            fontSize: 14,
             fontStyle: "italic",
             color: "var(--ink-3)",
             marginTop: 3,

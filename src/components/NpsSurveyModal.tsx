@@ -157,7 +157,7 @@ const NpsSurveyModal = () => {
                     style={{
                       width: 36, height: 36, borderRadius: 6,
                       background: c.bg, color: c.color, border: `1px solid ${c.border}`,
-                      fontSize: 13, fontWeight: 500, cursor: "pointer",
+                      fontSize: 14, fontWeight: 500, cursor: "pointer",
                       transition: "all 120ms ease",
                     }}
                   >
@@ -181,7 +181,7 @@ const NpsSurveyModal = () => {
                     background: "var(--paper, #fff)",
                     border: "1px solid var(--brand-line)",
                     borderRadius: 8, padding: 10,
-                    fontSize: 13, color: "var(--ink)", fontFamily: "var(--font-body)",
+                    fontSize: 14, color: "var(--ink)", fontFamily: "var(--font-body)",
                     outline: "none",
                   }}
                 />

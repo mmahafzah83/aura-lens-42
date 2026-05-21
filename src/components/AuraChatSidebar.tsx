@@ -42,33 +42,33 @@ const AlwaysContextStrip = () => {
 
   return (
     <div className="mt-1.5 w-full max-w-[85%]">
-      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "hsl(var(--muted-foreground))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
         <ChevronDown className="w-3 h-3" />
         <span>Context used</span>
       </div>
       <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
         {/* Signals row */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-          <span style={{ fontSize: 9, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Signals</span>
+          <span style={{ fontSize: 12, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Signals</span>
           {!loaded ? null : signals.length > 0 ? (
             signals.map(s => (
-              <span key={s.id} style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>
+              <span key={s.id} style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>
                 {truncate(s.signal_title || "Untitled signal", 30)}
               </span>
             ))
           ) : (
-            <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }}>No signals loaded yet</span>
+            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>No signals loaded yet</span>
           )}
         </div>
         {/* Identity row */}
         {(roleParts || identity.sector_focus) && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-            <span style={{ fontSize: 9, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Identity</span>
+            <span style={{ fontSize: 12, textTransform: "uppercase", color: "hsl(var(--muted-foreground))", letterSpacing: 0.5, marginRight: 2 }}>Identity</span>
             {roleParts && (
-              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>{roleParts}</span>
+              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>{roleParts}</span>
             )}
             {identity.sector_focus && (
-              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 10, padding: "2px 8px", borderRadius: 10 }}>{identity.sector_focus}</span>
+              <span style={{ background: "#EEEDFE", color: "#3C3489", fontSize: 12, padding: "2px 8px", borderRadius: 10 }}>{identity.sector_focus}</span>
             )}
           </div>
         )}
@@ -87,7 +87,7 @@ const SuggestedFollowUp = ({ content, onAsk }: { content: string; onAsk: (q: str
     <button
       onClick={() => onAsk(question)}
       className="mt-1.5 text-left hover:underline"
-      style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+      style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", background: "none", border: "none", padding: 0, cursor: "pointer" }}
     >
       Also ask: {question} ↗
     </button>
@@ -142,40 +142,40 @@ const ContextPanel = ({ userQuery }: { userQuery: string }) => {
     <div className="mt-1.5 w-full max-w-[85%]">
       <button
         onClick={() => setExpanded(e => !e)}
-        style={{ fontSize: 10, color: "var(--ink-4)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+        style={{ fontSize: 12, color: "var(--ink-4)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
       >
         Context used {expanded ? "▴" : "↓"}
       </button>
       {expanded && (
         <div style={{ background: "var(--ink)", border: "0.5px solid var(--surface-ink-subtle)", borderRadius: 6, padding: "10px 12px", marginTop: 6 }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5 }}>SIGNALS</div>
+          <div style={{ fontSize: 12, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5 }}>SIGNALS</div>
           {!loaded ? (
-            <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>Loading…</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>Loading…</div>
           ) : signals.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
               {signals.map(s => (
-                <span key={s.id} style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--brand-muted)", color: "var(--brand)", fontSize: 9, padding: "2px 7px", borderRadius: 4 }}>
+                <span key={s.id} style={{ background: "var(--surface-ink-subtle)", border: "1px solid var(--brand-muted)", color: "var(--brand)", fontSize: 12, padding: "2px 7px", borderRadius: 4 }}>
                   {s.signal_title}
                 </span>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>No stored signals matched this query</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>No stored signals matched this query</div>
           )}
 
-          <div style={{ fontSize: 9, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
+          <div style={{ fontSize: 12, textTransform: "uppercase", color: "var(--ink-3)", letterSpacing: 0.5, marginTop: 8 }}>YOUR PROFILE</div>
           {profileRows.length > 0 ? (
             <div style={{ marginTop: 4 }}>
               {profileRows.map(r => (
-                <div key={r.label} style={{ fontSize: 10, color: "var(--ink-5)" }}>· {r.label}: {r.value}</div>
+                <div key={r.label} style={{ fontSize: 12, color: "var(--ink-5)" }}>· {r.label}: {r.value}</div>
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 10, color: "var(--ink-3)", marginTop: 4 }}>No profile context available</div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>No profile context available</div>
           )}
 
           {loaded && (
-            <div style={{ marginTop: 8, fontSize: 10, color: signals.length > 0 ? "#4a8a4a" : "var(--gold-mid)" }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: signals.length > 0 ? "#4a8a4a" : "var(--gold-mid)" }}>
               {signals.length > 0
                 ? "Response grounded in your stored intelligence"
                 : "Response based on general reasoning — capture more to improve relevance"}
@@ -1076,7 +1076,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     {activeConv ? "Strategic Thread" : "Chief of Staff"}
                   </p>
                   {!activeConv && headerCounts && (
-                    <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", opacity: 0.7, marginTop: 1 }}>
+                    <p style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", opacity: 0.7, marginTop: 1 }}>
                       {headerCounts.signals} signals · {headerCounts.captures} captures loaded
                     </p>
                   )}
@@ -1139,17 +1139,17 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
           return (
             <div style={{ background: "var(--gold-pale)", borderBottom: "0.5px solid var(--gold-light)" }}>
               <div className="flex items-center gap-2 px-4 py-2">
-                <span style={{ background: "var(--brand)", color: "#fff", fontSize: 9, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                <span style={{ background: "var(--brand)", color: "#fff", fontSize: 12, fontWeight: 600, padding: "2px 7px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>
                   Remembers
                 </span>
-                <span style={{ fontSize: 11, color: "var(--gold-text)", lineHeight: 1.35 }} className="truncate">
+                <span style={{ fontSize: 12, color: "var(--gold-text)", lineHeight: 1.35 }} className="truncate">
                   Continuing from last session — {topic}
                 </span>
               </div>
               {showMemoryPanel && (
                 <div style={{ borderTop: "0.5px solid var(--gold-light)", background: "var(--gold-pale-2)", padding: "6px 8px" }}>
                   {lastAssistants.length === 0 ? (
-                    <div style={{ fontSize: 11, color: "var(--gold-mid-2)", padding: "6px 8px" }}>No recent memory yet.</div>
+                    <div style={{ fontSize: 12, color: "var(--gold-mid-2)", padding: "6px 8px" }}>No recent memory yet.</div>
                   ) : (
                     lastAssistants.map(r => {
                       const ts = new Date(r.created_at).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -1163,8 +1163,8 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                           onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--gold-pale-3)"; }}
                           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                         >
-                          <div style={{ fontSize: 9, color: "var(--gold-mid-3)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{ts}</div>
-                          <div style={{ fontSize: 11, color: "var(--gold-dark)", lineHeight: 1.35 }}>{snippet}</div>
+                          <div style={{ fontSize: 12, color: "var(--gold-mid-3)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 }}>{ts}</div>
+                          <div style={{ fontSize: 12, color: "var(--gold-dark)", lineHeight: 1.35 }}>{snippet}</div>
                         </button>
                       );
                     })
@@ -1253,10 +1253,10 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     className="group rounded-lg border border-border/30 bg-secondary/30 hover:bg-secondary/50 transition-colors p-3 cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <span style={{ background: style.bg, color: style.color, fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                      <span style={{ background: style.bg, color: style.color, fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>
                         {item.type}
                       </span>
-                      <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", opacity: 0.7 }}>
+                      <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", opacity: 0.7 }}>
                         {date}
                       </span>
                     </div>
@@ -1337,7 +1337,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     {msg.role === "assistant" && msg.isBrief && (
                       <div
                         className="max-w-[85%]"
-                        style={{ fontSize: 10, color: "var(--brand)", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginBottom: 4 }}
+                        style={{ fontSize: 12, color: "var(--brand)", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 600, marginBottom: 4 }}
                       >
                         WEEKLY BRIEF · {new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
                       </div>
@@ -1345,7 +1345,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                     {msg.role === "assistant" && msg.isShadowTwin && (
                       <div
                         className="max-w-[85%]"
-                        style={{ fontSize: 10, color: "#534AB7", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 500, marginBottom: 4 }}
+                        style={{ fontSize: 12, color: "#534AB7", textTransform: "uppercase", letterSpacing: 0.6, fontWeight: 500, marginBottom: 4 }}
                       >
                         YOUR MARKET MIRROR — 18 MONTHS AHEAD
                       </div>

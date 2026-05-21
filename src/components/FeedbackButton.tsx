@@ -165,7 +165,7 @@ const FeedbackButton = () => {
                   border: "1px solid var(--brand-line)",
                   borderRadius: 8,
                   padding: 10,
-                  fontSize: 13,
+                  fontSize: 14,
                   color: "var(--ink)",
                   resize: "vertical",
                   fontFamily: "inherit",
@@ -183,10 +183,10 @@ const FeedbackButton = () => {
                 {submitting ? "Sending..." : "Send feedback"}
               </AuraButton>
 
-              <p style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 12, textAlign: "center" }}>
+              <p style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 12, textAlign: "center" }}>
                 Your feedback helps us improve Aura
               </p>
-              <p style={{ fontSize: 11, marginTop: 4, textAlign: "center" }}>
+              <p style={{ fontSize: 12, marginTop: 4, textAlign: "center" }}>
                 <a href="mailto:mohammad.mahafdhah@aura-intel.org" style={{ color: "var(--brand)" }}>
                   Talk to the founder: mohammad.mahafdhah@aura-intel.org
                 </a>

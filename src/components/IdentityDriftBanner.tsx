@@ -53,7 +53,7 @@ export default function IdentityDriftBanner() {
       <div style={{ flex: 1 }}>
         <div
           style={{
-            fontSize: 11,
+            fontSize: 12,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             color: "hsl(var(--brand-bronze, 39 38% 56%))",
@@ -72,7 +72,7 @@ export default function IdentityDriftBanner() {
           <button
             onClick={review}
             style={{
-              fontSize: 13,
+              fontSize: 14,
               padding: "6px 14px",
               borderRadius: 8,
               border: "1px solid hsl(var(--brand-bronze, 39 38% 56%))",
@@ -87,7 +87,7 @@ export default function IdentityDriftBanner() {
           <button
             onClick={dismiss}
             style={{
-              fontSize: 13,
+              fontSize: 14,
               padding: "6px 14px",
               borderRadius: 8,
               border: "1px solid hsl(var(--border))",

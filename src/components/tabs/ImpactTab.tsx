@@ -853,7 +853,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
             Your authority trajectory starts here
           </h2>
-          <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
+          <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>
             Publish your first LinkedIn post from Aura and upload your analytics to see your impact grow.
           </p>
 
@@ -911,7 +911,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
             Impact
           </h1>
-          <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
             Every week you show up, your name reaches rooms you've never been in. That's how advisory calls, board invitations, and speaking slots find you.
           </p>
         </div>
@@ -943,7 +943,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         }}
       >
         <div>
-            <p style={{ fontSize: 13, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--color-text-secondary)" }}>
               {narrative.map((p, i) => (
                 <span
                   key={i}
@@ -1077,12 +1077,12 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             borderRadius: 12, padding: "16px 18px",
           }}>
             <div style={{
-              fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
               color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
             }}>
               Insight
             </div>
-            <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--aura-t1)", margin: 0 }}>
+            <p style={{ fontSize: 14, lineHeight: 1.55, color: "var(--aura-t1)", margin: 0 }}>
               {(() => {
                 if (pillarWeeksActive >= 4 && periodEngagementRate != null) {
                   return "Consistent capture is paying off — your engagement is tracking above baseline. Double down on the formats that worked.";
@@ -1102,7 +1102,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             borderRadius: 12, padding: "16px 18px",
           }}>
             <div style={{
-              fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
               color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
             }}>
               Next tier
@@ -1115,13 +1115,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 }}>
                   {auraData.points_to_next} pts
                 </div>
-                <p style={{ fontSize: 13, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.55 }}>
+                <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: "6px 0 0", lineHeight: 1.55 }}>
                   to reach <span style={{ color: "var(--aura-accent)", fontWeight: 600 }}>{auraData.next_tier_name}</span>.
                   Publishing from your top signal is the fastest mover.
                 </p>
               </>
             ) : (
-              <p style={{ fontSize: 13, color: "var(--aura-t2)", margin: 0, lineHeight: 1.55 }}>
+              <p style={{ fontSize: 14, color: "var(--aura-t2)", margin: 0, lineHeight: 1.55 }}>
                 You've reached the top tier — focus on maintaining cadence.
               </p>
             )}
@@ -1170,7 +1170,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               >
                 <div
                   style={{
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
@@ -1201,7 +1201,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                         onClick={() => setSelectedDays(r)}
                         style={{
                           padding: "4px 10px",
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: active ? 600 : 500,
                           borderRadius: 6,
                           background: active ? "var(--vellum)" : "transparent",
@@ -1218,7 +1218,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   })}
                 </div>
               </div>
-              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 0, marginBottom: 6, lineHeight: 1.5 }}>
+              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 0, marginBottom: 6, lineHeight: 1.5 }}>
                 Projected score growth based on your current activity
               </div>
               <div
@@ -1244,7 +1244,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               </div>
               <div
                 className="flex justify-between mt-2"
-                style={{ fontSize: 9, color: "var(--ink-3)" }}
+                style={{ fontSize: 12, color: "var(--ink-3)" }}
               >
                 <span>Now</span>
                 <span>30d · {trajectory.has30dHistory ? trajectory.forecast30 : "—"}</span>
@@ -1281,7 +1281,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                         border: "0.5px solid var(--brand)",
                         borderRadius: 8,
                         padding: "5px 14px",
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 500,
                       }
                     : {
@@ -1290,7 +1290,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                         border: "0.5px solid var(--brand-line)",
                         borderRadius: 8,
                         padding: "5px 14px",
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 500,
                       }
                 }
@@ -1462,7 +1462,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       <div className="flex items-center gap-2">
                         <div
                           className="truncate"
-                          style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text-primary)" }}
+                          style={{ fontSize: 14, fontWeight: 500, color: "var(--color-text-primary)" }}
                         >
                           {title}
                         </div>
@@ -1478,7 +1478,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                           </a>
                         )}
                       </div>
-                      <div className="mt-0.5" style={{ fontSize: 11, color: "var(--color-text-secondary)" }}>
+                      <div className="mt-0.5" style={{ fontSize: 12, color: "var(--color-text-secondary)" }}>
                         {formatNumber(p.impressions ?? 0)} impressions
                         <span className="mx-1.5" style={{ color: "var(--color-text-muted)" }}>·</span>
                         {formatNumber(p.reactions ?? 0)} reactions
@@ -1708,7 +1708,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               >
                 <div
                   style={{
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
@@ -1761,7 +1761,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                   <YAxis
                     allowDecimals={false}
                     domain={[0, "auto"]}
-                    tick={{ fontSize: 9, fill: "var(--color-text-muted)" }}
+                    tick={{ fontSize: 12, fill: "var(--color-text-muted)" }}
                     axisLine={false}
                     tickLine={false}
                     width={30}
@@ -1772,7 +1772,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       background: "var(--color-card)",
                       border: "0.5px solid var(--color-border)",
                       borderRadius: 6,
-                      fontSize: 11,
+                      fontSize: 12,
                       color: "var(--color-text-primary)",
                     }}
                     formatter={(value: any) => [`+${value} new followers`, ""]}
@@ -1858,7 +1858,7 @@ const HeroStat = ({ value, label, color }: { value: string; label: string; color
     </div>
     <div
       style={{
-        fontSize: 10,
+        fontSize: 12,
         textTransform: "uppercase",
         letterSpacing: "0.06em",
         color: "var(--color-text-secondary)",
@@ -1955,7 +1955,7 @@ const ForceCard = ({
         <div className="inline-flex items-center gap-1.5">
           <div
             style={{
-              fontSize: 11, fontWeight: 600, letterSpacing: "0.1em",
+              fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
               textTransform: "uppercase", color: "var(--aura-t2)",
             }}
           >
@@ -1996,7 +1996,7 @@ const ForceCard = ({
         }}
       >
         {weighted}
-        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--aura-t3)" }}>
+        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--aura-t3)" }}>
           /{maxPoints}
         </span>
       </div>
@@ -2088,7 +2088,7 @@ const ScoreHero = ({
             </div>
             <div
               style={{
-                fontSize: 10, color: "var(--aura-t2)", marginTop: 4,
+                fontSize: 12, color: "var(--aura-t2)", marginTop: 4,
                 letterSpacing: "0.08em", textTransform: "uppercase",
                 display: "inline-flex", alignItems: "center", gap: 4,
               }}
@@ -2131,14 +2131,14 @@ const ScoreHero = ({
               color: "var(--aura-t1)",
             }}
           >
-            <div style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--aura-accent)", opacity: 0.8 }}>
+            <div style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--aura-accent)", opacity: 0.8 }}>
               Current tier
             </div>
             <div style={{ marginTop: 4, display: "inline-flex" }}>
               <span style={{
                 background: "var(--aura-accent)", color: "var(--aura-bg)",
                 padding: "3px 10px", borderRadius: 999,
-                fontFamily: "var(--aura-font-heading)", fontSize: 13, fontWeight: 600, letterSpacing: "0.02em",
+                fontFamily: "var(--aura-font-heading)", fontSize: 14, fontWeight: 600, letterSpacing: "0.02em",
               }}>
                 {tierName || "Observer"}
               </span>
@@ -2153,13 +2153,13 @@ const ScoreHero = ({
                 <div className="mt-2.5" style={{ height: 4, background: "var(--aura-border)", borderRadius: 2, overflow: "hidden" }}>
                   <div style={{ width: `${tierProgressPct}%`, height: "100%", background: "var(--aura-accent)" }} />
                 </div>
-                <div style={{ fontSize: 10, color: "var(--aura-t2)", marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: "var(--aura-t2)", marginTop: 4 }}>
                   {pointsToNext} to {nextTierName}
                 </div>
               </>
             )}
             {trendLabel && (
-              <div style={{ fontSize: 11, color: "var(--aura-positive)", marginTop: 6, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "var(--aura-positive)", marginTop: 6, fontWeight: 600 }}>
                 {trendLabel}
               </div>
             )}
@@ -2197,7 +2197,7 @@ const MiniKPI = ({ label, value }: { label: string; value: string }) => (
     </div>
     <div
       style={{
-        fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase",
+        fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase",
         color: "var(--aura-t2)", marginTop: 4,
       }}
     >
@@ -2231,7 +2231,7 @@ const PillarCard = ({
       }}
     >
       <div className="flex items-center justify-between">
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
           {label}
         </div>
         <TooltipProvider delayDuration={150}>
@@ -2272,7 +2272,7 @@ const PillarCard = ({
           ))}
         </div>
       ) : null}
-      <div style={{ fontSize: 11, color: "var(--aura-t2)", marginTop: 8 }}>
+      <div style={{ fontSize: 12, color: "var(--aura-t2)", marginTop: 8 }}>
         {unit}
       </div>
     </div>

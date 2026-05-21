@@ -337,7 +337,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
             <button
               type="button"
               onClick={() => processUpload(pendingFile, ACCEPTED_TYPES[pendingFile.type])}
-              style={{ fontSize: 11, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+              style={{ fontSize: 12, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
             >
               Upload again
             </button>
@@ -345,7 +345,7 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
               type="button"
               onClick={() => { setDuplicate(null); setPendingFile(null); }}
               className="text-muted-foreground"
-              style={{ fontSize: 11, background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}
+              style={{ fontSize: 12, background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}
             >
               Skip
             </button>

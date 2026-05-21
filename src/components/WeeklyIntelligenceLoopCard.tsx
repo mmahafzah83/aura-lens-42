@@ -75,7 +75,7 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
     >
       <p
         style={{
-          fontSize: 10,
+          fontSize: 12,
           letterSpacing: "0.12em",
           fontWeight: 700,
           color: "var(--brand)",
@@ -86,7 +86,7 @@ const WeeklyIntelligenceLoopCard = ({ onSwitchTab }: Props) => {
       >
         Your week at a glance
       </p>
-      <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ink-1)", margin: 0 }}>
+      <p style={{ fontSize: 14, lineHeight: 1.55, color: "var(--ink-1)", margin: 0 }}>
         Your LinkedIn data hasn't been updated in {dayLabel}. Close the loop in 30 seconds: export your analytics, upload here, and watch which signals are driving real engagement.
       </p>
       <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>

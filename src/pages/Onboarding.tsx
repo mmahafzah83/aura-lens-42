@@ -362,7 +362,7 @@ const Onboarding = () => {
     <p
       className="font-semibold mb-3"
       style={{
-        fontSize: 11,
+        fontSize: 12,
         letterSpacing: "0.1em",
         textTransform: "uppercase",
         color: "var(--brand)",
@@ -565,7 +565,7 @@ const Onboarding = () => {
           {checklist.map(({ key, label }) => {
             const ok = checks[key];
             return (
-              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
                 {ok ? (
                   <Check size={14} style={{ color: "hsl(142 70% 45%)" }} />
                 ) : (
@@ -674,7 +674,7 @@ const Onboarding = () => {
                   <div
                     className="mt-2 p-3 rounded-md"
                     style={{
-                      fontSize: 13,
+                      fontSize: 14,
                       lineHeight: 1.6,
                       color: "hsl(var(--muted-foreground))",
                       background: "hsl(var(--muted) / 0.4)",
@@ -923,7 +923,7 @@ const ArticleManualPaste = ({
         color: "var(--brand)",
         border: "1px solid var(--brand)",
         borderRadius: 10,
-        fontSize: 13,
+        fontSize: 14,
       }}
     >
       {loading && <Loader2 className="w-4 h-4 animate-spin" />}

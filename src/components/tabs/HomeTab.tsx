@@ -1168,7 +1168,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     border: step.done ? "1px solid var(--brand)" : step.locked ? "1px solid var(--brand-line)" : "1px solid var(--brand)",
                     background: step.done ? "var(--brand)" : "transparent",
                     color: step.done ? "var(--paper)" : step.locked ? "var(--ink-3)" : "var(--brand)",
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 600,
                     display: "flex",
                     alignItems: "center",
@@ -1182,7 +1182,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
                     {step.title}
                   </div>
-                  <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.55 }}>
+                  <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, lineHeight: 1.55 }}>
                     {step.body}
                   </p>
                   {step.cta && (
@@ -1220,7 +1220,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     </div>
                   )}
                   {step.locked && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: "var(--ink-3)" }}>
+                    <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-3)" }}>
                       Unlocks after Step {step.n - 1}
                     </div>
                   )}
@@ -1261,7 +1261,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             >
               <div
                 style={{
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
                   color: "var(--ink-3)",
@@ -1276,7 +1276,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   <li
                     key={e.id}
                     style={{
-                      fontSize: 13,
+                      fontSize: 14,
                       color: "var(--ink-2, var(--ink))",
                       lineHeight: 1.45,
                       overflow: "hidden",
@@ -1337,7 +1337,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             flexWrap: "wrap",
           }}
         >
-          <div style={{ fontSize: 13, color: "var(--ink)", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.5 }}>
             <span style={{ marginRight: 6 }}>✨</span>
             Your score jumped <strong style={{ color: "var(--brand)" }}>{auraData.score_trend} points</strong> this week!{" "}
             <ShareLink
@@ -1507,11 +1507,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 —
               </span>
             </div>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--brand)" }}>
               Scout
             </div>
             {sectorFocus && (
-              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 {sectorFocus}
               </div>
             )}
@@ -1558,7 +1558,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
                   <p style={{ margin: "0 0 4px" }}>Content authority — 40%</p>
                   <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
-                  <div style={{ fontSize: 11, color: "var(--ink-4)", fontStyle: "italic" }}>
+                  <div style={{ fontSize: 12, color: "var(--ink-4)", fontStyle: "italic" }}>
                     Observer → Strategist → Authority
                   </div>
                 </InfoTooltip>
@@ -1573,11 +1573,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   </span>
                 )}
               </div>
-              <div data-testid="home-tier" style={{ fontSize: 13, fontWeight: 500, color: "var(--brand)" }}>
+              <div data-testid="home-tier" style={{ fontSize: 14, fontWeight: 500, color: "var(--brand)" }}>
                 {auraData.tier_name}
               </div>
               {sectorFocus && (
-                <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+                <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                   {sectorFocus}
                 </div>
               )}
@@ -1597,7 +1597,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   />
                 ))}
               </div>
-              <div className="flex items-center" style={{ gap: 4, fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+              <div className="flex items-center" style={{ gap: 4, fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 <span>{activeWeeks}/12w</span>
                 <InfoTooltip side="top" align="right" label="Capture Rhythm" width={280}>
                   <div style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Capture Rhythm</div>
@@ -1680,7 +1680,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 return (
                   <div key={f.label} style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
                     <div style={{
-                      fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
+                      fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
                       textTransform: "uppercase", color: "hsl(var(--muted-foreground))",
                     }}>
                       {f.label}
@@ -1693,7 +1693,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                       }}
                     >
                       {f.weighted}
-                      <span style={{ fontSize: 11, fontWeight: 500, color: "hsl(var(--muted-foreground))" }}>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "hsl(var(--muted-foreground))" }}>
                         {" "}/{f.max}
                       </span>
                     </div>
@@ -1759,16 +1759,16 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           <div style={{ flex: 1, minWidth: 0 }}>
             {welcomeVariant === "first-signal" && (
               <>
-                <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
                   Your first signal
                 </div>
-                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 6px", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-3)", margin: "0 0 6px", lineHeight: 1.5 }}>
                   Aura detected a pattern in what you captured:
                 </p>
                 <div style={{ fontSize: 15, fontWeight: 500, color: "var(--ink)", margin: "0 0 8px", lineHeight: 1.4 }}>
                   &ldquo;{topSignal?.signal_title}&rdquo;
                 </div>
-                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
                   This is part of your intelligence now. Every article you capture strengthens it — or surfaces new ones.
                 </p>
                 <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
@@ -1778,7 +1778,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     style={{
                       background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
                       border: "none", borderRadius: 8, padding: "8px 14px",
-                      fontSize: 13, fontWeight: 600, cursor: "pointer",
+                      fontSize: 14, fontWeight: 600, cursor: "pointer",
                     }}
                   >
                     See your signals →
@@ -1789,7 +1789,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     style={{
                       background: "transparent", color: "var(--ink-2, var(--ink))",
                       border: "none", padding: "4px 0",
-                      fontSize: 13, fontWeight: 500, cursor: "pointer",
+                      fontSize: 14, fontWeight: 500, cursor: "pointer",
                     }}
                   >
                     Capture another →
@@ -1799,10 +1799,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             )}
             {welcomeVariant === "building" && (
               <>
-                <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
+                <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 6 }}>
                   Building your radar
                 </div>
-                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-3)", margin: "0 0 12px", lineHeight: 1.5 }}>
                   Aura is reading what you captured and looking for patterns. Signals emerge after a few articles from different angles.
                 </p>
                 <button
@@ -1811,7 +1811,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   style={{
                     background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
                     border: "none", borderRadius: 8, padding: "8px 14px",
-                    fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    fontSize: 14, fontWeight: 600, cursor: "pointer",
                   }}
                 >
                   Capture another article →
@@ -1823,7 +1823,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
                   Welcome to Aura{userName ? `, ${userName}` : ""}
                 </div>
-                <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, lineHeight: 1.5 }}>
                   Paste your first article — one link is all it takes to see your first signal. Need help? Tap the ? in the top-right.
                 </p>
               </>
@@ -1865,7 +1865,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               transition: "all 400ms ease",
             }}
           >
-            <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 8 }}>
+            <div style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600, marginBottom: 8 }}>
               ✦ Revelation
             </div>
             <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.2, marginBottom: 6 }}>
@@ -1874,7 +1874,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
               {newSignal.signal_title}
             </div>
-            <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
               Aura found this pattern in what you captured. This is the market theme where your intelligence runs deepest. Capture more on this topic to strengthen it.
             </p>
             <button
@@ -1891,7 +1891,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               style={{
                 background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)",
                 border: "none", borderRadius: 8, padding: "9px 16px",
-                fontSize: 13, fontWeight: 600, cursor: "pointer",
+                fontSize: 14, fontWeight: 600, cursor: "pointer",
               }}
             >
               See this signal →
@@ -1927,7 +1927,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               onSwitchTab?.("intelligence");
               setNewSignal(null);
             }}
-            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 13, fontWeight: 500, cursor: "pointer", padding: 0 }}
+            style={{ background: "transparent", border: "none", color: "var(--brand)", fontSize: 14, fontWeight: 500, cursor: "pointer", padding: 0 }}
           >
             View →
           </button>
@@ -1991,33 +1991,33 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               <div className="flex items-center justify-between" style={{ marginBottom: 10 }}>
                 <div className="flex items-center" style={{ gap: 8 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--danger)", display: "inline-block" }} />
-                  <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--danger)", fontWeight: 600 }}>
+                  <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--danger)", fontWeight: 600 }}>
                     Competitor alert
                   </span>
                 </div>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
                   {competitorTimeAgo(competitorAlert!.fetchedAt)}
                 </span>
               </div>
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
                 They published
               </div>
               <div style={{ fontSize: 15, color: "#fff", lineHeight: 1.4, fontWeight: 500 }}>
                 {competitorAlert!.topic}
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
                 {competitorAlert!.competitorName}
               </div>
 
               {/* Zone 2 */}
               <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "14px 0 10px" }} />
-              <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
                 Your signal on this topic
               </div>
-              <div style={{ fontSize: 13, color: "var(--brand)", fontWeight: 500 }}>
+              <div style={{ fontSize: 14, color: "var(--brand)", fontWeight: 500 }}>
                 {competitorAlert!.signalTitle}
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 4 }}>
                 {competitorAlert!.fragmentCount} fragments · {topSignal ? Math.round((topSignal.confidence || 0) * 100) : 0}% confidence · {competitorAlert!.daysSinceLastPost} days since you published
               </div>
 
@@ -2042,7 +2042,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   onClick={() => setAlarmDismissed(true)}
                   style={{
                     background: "transparent", color: "rgba(255,255,255,0.4)",
-                    border: 0, fontSize: 11, cursor: "pointer", marginLeft: "auto",
+                    border: 0, fontSize: 12, cursor: "pointer", marginLeft: "auto",
                   }}
                 >
                   Dismiss
@@ -2050,7 +2050,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </div>
 
               {!alarmEducationSeen && (
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 12, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12, lineHeight: 1.5 }}>
                   Aura monitors industry publications and alerts you when competitors publish on your signal topics.
                 </div>
               )}
@@ -2087,7 +2087,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               </div>
               <div
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   color: "var(--ink-3)",
                   lineHeight: 1.5,
                   maxWidth: 460,
@@ -2102,7 +2102,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   background: "transparent",
                   border: "none",
                   color: "var(--brand)",
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 500,
                   cursor: "pointer",
                   padding: 0,
@@ -2141,7 +2141,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             >
               <div className="flex items-center" style={{ gap: 8, marginBottom: 8 }}>
                 <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--brand)", display: "inline-block" }} />
-                <span style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
+                <span style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--brand)", fontWeight: 600 }}>
                   Your briefing
                 </span>
               </div>
@@ -2216,7 +2216,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   padding: "10px 12px",
                   background: "hsl(var(--card))",
                 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))" }}>{m.title}</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))" }}>{m.title}</div>
                   <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>{m.rationale}</div>
                 </div>
               ))}

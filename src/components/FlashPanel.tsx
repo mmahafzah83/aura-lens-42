@@ -316,7 +316,7 @@ export default function FlashPanel() {
       {/* Section label with tooltip (G9) */}
       <div
         style={{
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: "hsl(var(--muted-foreground))",

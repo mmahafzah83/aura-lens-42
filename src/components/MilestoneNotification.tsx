@@ -59,7 +59,7 @@ const MilestoneNotification = ({ userId }: Props) => {
         alignItems: "center",
         gap: 10,
         fontFamily: "'DM Sans', sans-serif",
-        fontSize: 13,
+        fontSize: 14,
         color: "hsl(var(--foreground))",
       }}
     >

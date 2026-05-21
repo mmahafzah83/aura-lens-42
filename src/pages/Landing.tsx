@@ -379,7 +379,7 @@ const Landing = () => {
                   <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid var(--brand)", borderRadius: "50%" }}>
                     <Icon size={16} style={{ color: "var(--brand)" }} />
                   </div>
-                  <span className="mt-1 whitespace-nowrap" style={{ fontSize: "9px", color: "var(--ink-4)" }}>{label}</span>
+                  <span className="mt-1 whitespace-nowrap" style={{ fontSize: "12px", color: "var(--ink-4)" }}>{label}</span>
                 </div>
               );
             })}
@@ -412,8 +412,8 @@ const Landing = () => {
                   <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>
-              <div className="mt-1 uppercase tracking-[0.15em]" style={{ fontSize: 9, color: "var(--ink-4)", fontFamily: "'DM Sans', sans-serif" }}>{s.label}</div>
-              <div className="mt-0.5" style={{ fontSize: 10, color: "var(--ink-4)" }}>{s.sub}</div>
+              <div className="mt-1 uppercase tracking-[0.15em]" style={{ fontSize: 12, color: "var(--ink-4)", fontFamily: "'DM Sans', sans-serif" }}>{s.label}</div>
+              <div className="mt-0.5" style={{ fontSize: 12, color: "var(--ink-4)" }}>{s.sub}</div>
             </div>
           </div>
         ))}
@@ -660,7 +660,7 @@ const Landing = () => {
                 Aura · Strategic Intelligence · aura-intel.org
               </span>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.62)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
               © 2026 Aura Intelligence. All rights reserved.
             </p>
           </div>
@@ -679,7 +679,7 @@ const Landing = () => {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)" }}>
               Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
             </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.62)", marginTop: 6 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.62)", marginTop: 6 }}>
               Built in Riyadh for the world
             </p>
           </div>

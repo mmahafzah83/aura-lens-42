@@ -76,7 +76,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           position: { x: 600 + pillarRadius * Math.cos(angle), y: 400 + pillarRadius * Math.sin(angle) },
           style: {
             background: NODE_COLORS.pillar.bg, border: `2px solid ${NODE_COLORS.pillar.border}`,
-            borderRadius: 20, padding: "8px 16px", fontSize: 11, fontWeight: 700,
+            borderRadius: 20, padding: "8px 16px", fontSize: 12, fontWeight: 700,
             color: "var(--surface-ink-subtle)",
           },
         });
@@ -93,7 +93,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           position: { x: 600 + r * Math.cos(angle), y: 400 + r * Math.sin(angle) },
           style: {
             background: NODE_COLORS.signal.bg, border: `2px solid ${NODE_COLORS.signal.border}`,
-            borderRadius: 12, padding: "6px 12px", fontSize: 10, fontWeight: 600,
+            borderRadius: 12, padding: "6px 12px", fontSize: 12, fontWeight: 600,
             maxWidth: 160, color: "var(--surface-ink-subtle)",
           },
         });
@@ -119,7 +119,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           position: { x: 600 + r * Math.cos(angle), y: 400 + r * Math.sin(angle) },
           style: {
             background: NODE_COLORS.framework.bg, border: `2px solid ${NODE_COLORS.framework.border}`,
-            borderRadius: 12, padding: "6px 12px", fontSize: 10, fontWeight: 600,
+            borderRadius: 12, padding: "6px 12px", fontSize: 12, fontWeight: 600,
             maxWidth: 160, color: "var(--surface-ink-subtle)",
           },
         });
@@ -144,7 +144,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           position: { x: 600 + r * Math.cos(angle), y: 400 + r * Math.sin(angle) },
           style: {
             background: NODE_COLORS.entry.bg, border: `1.5px solid ${NODE_COLORS.entry.border}`,
-            borderRadius: 10, padding: "4px 10px", fontSize: 9, fontWeight: 500,
+            borderRadius: 10, padding: "4px 10px", fontSize: 12, fontWeight: 500,
             maxWidth: 140, opacity: 0.8, color: "var(--surface-ink-subtle)",
           },
         });

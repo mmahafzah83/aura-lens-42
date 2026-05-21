@@ -150,7 +150,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             {checklist.map(({ key, label }) => {
               const ok = checks[key];
               return (
-                <div key={key} className="flex items-center gap-2" style={{ fontSize: 13 }}>
+                <div key={key} className="flex items-center gap-2" style={{ fontSize: 14 }}>
                   {ok ? (
                     <Check size={14} style={{ color: "hsl(142 70% 45%)" }} />
                   ) : (
@@ -184,7 +184,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             </div>
           </div>
 
-          <div className="flex items-center gap-2" style={{ fontSize: 13 }}>
+          <div className="flex items-center gap-2" style={{ fontSize: 14 }}>
             {checks.match ? (
               <Check size={14} style={{ color: "hsl(142 70% 45%)" }} />
             ) : (

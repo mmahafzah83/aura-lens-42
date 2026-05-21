@@ -563,10 +563,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 maxWidth: 380,
               }}
             >
-              <div style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #B08D3A)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--brand, #B08D3A)", fontWeight: 600, marginBottom: 6 }}>
                 ✦ Captured
               </div>
-              <div style={{ fontSize: 13, lineHeight: 1.5, opacity: 0.9 }}>
+              <div style={{ fontSize: 14, lineHeight: 1.5, opacity: 0.9 }}>
                 Aura is analyzing this. Patterns emerge as you capture more — your next source might connect the dots.
               </div>
             </div>
@@ -738,7 +738,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               </h2>
               <p
                 style={{
-                  fontSize: 9,
+                  fontSize: 12,
                   color: "var(--ink-4)",
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
@@ -867,7 +867,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     border: urlError ? "0.5px solid var(--danger)" : "0.5px solid var(--border)",
                     borderRadius: 12,
                     padding: "13px 76px 13px 16px",
-                    fontSize: 13,
+                    fontSize: 14,
                     color: "var(--ink)",
                     outline: "none",
                     transition: "all 150ms ease",
@@ -891,7 +891,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     background: "var(--brand-pale)",
                     color: "var(--brand)",
                     borderRadius: 7,
-                    fontSize: 10,
+                    fontSize: 12,
                     fontWeight: 600,
                     padding: "5px 10px",
                     border: "none",
@@ -916,14 +916,14 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                   }}
                 >
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
                     {linkPreview.domain}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", marginTop: 4, lineHeight: 1.35 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", marginTop: 4, lineHeight: 1.35 }}>
                     {linkPreview.title}
                   </div>
                   {linkPreview.snippet && (
-                    <div style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, lineHeight: 1.5 }}>
+                    <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 6, lineHeight: 1.5 }}>
                       {linkPreview.snippet}…
                     </div>
                   )}
@@ -961,10 +961,10 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     You already captured this source on {duplicateInfo.date}.
                   </p>
                   <div style={{ marginTop: 6 }}>
-                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 11, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setDuplicateInfo(null); handleSave(); }} style={{ fontSize: 12, color: "var(--warning)", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
                       Capture anyway
                     </button>
-                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 11, color: "var(--ink-5)", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
+                    <button type="button" onClick={() => { setContent(""); setDuplicateInfo(null); }} style={{ fontSize: 12, color: "var(--ink-5)", background: "transparent", border: "none", marginLeft: 12, cursor: "pointer", padding: 0 }}>
                       Skip
                     </button>
                   </div>
@@ -985,7 +985,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       type="button"
                       onClick={() => setSelectedPillar(active ? null : p)}
                       style={{
-                        fontSize: 11,
+                        fontSize: 12,
                         padding: "5px 12px",
                         borderRadius: 20,
                         background: active ? "var(--ink)" : "var(--surface-subtle)",
@@ -1021,7 +1021,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   border: "0.5px solid var(--border)",
                   borderRadius: 12,
                   padding: "14px 16px",
-                  fontSize: 13,
+                  fontSize: 14,
                   color: "var(--ink)",
                   height: 100,
                   resize: "none",
@@ -1060,8 +1060,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     }}
                   >
                     <ImageIcon className="w-9 h-9 mx-auto mb-3" style={{ color: "var(--ink-5)" }} />
-                    <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0 }}>Drop an image or click to upload</p>
-                    <p style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                    <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0 }}>Drop an image or click to upload</p>
+                    <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 4 }}>PNG, JPG up to 10MB</p>
                   </div>
                   <div className="grid grid-cols-2" style={{ gap: 8 }}>
                     <button
@@ -1113,7 +1113,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 </div>
               )}
               {analyzing && (
-                <div className="flex items-center" style={{ gap: 8, fontSize: 13, color: "var(--ink-5)" }}>
+                <div className="flex items-center" style={{ gap: 8, fontSize: 14, color: "var(--ink-5)" }}>
                   <Loader2 className="w-4 h-4 animate-spin" style={{ color: "var(--brand)" }} />
                   AI is reading your screenshot…
                 </div>
@@ -1126,7 +1126,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             <div className="space-y-3">
               {recentDocs.length > 0 && (
                 <div className="space-y-2">
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)" }}>
                     Recent documents
                   </div>
                   <div className="space-y-1.5">
@@ -1166,13 +1166,13 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                             <div style={{ fontSize: 12, fontWeight: 500, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                               {d.filename}
                             </div>
-                            <div style={{ fontSize: 10, color: "var(--ink-5)", marginTop: 2 }}>
+                            <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 2 }}>
                               {fmtBytes(d.file_size)} · {new Date(d.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </div>
                           </div>
                           <span
                             style={{
-                              fontSize: 9,
+                              fontSize: 12,
                               fontWeight: 600,
                               letterSpacing: "0.06em",
                               textTransform: "uppercase",
@@ -1212,7 +1212,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   >
                     <Loader2 className="w-7 h-7 animate-spin" style={{ color: "var(--brand)" }} />
                   </div>
-                  <p style={{ fontSize: 13, color: "var(--ink-5)", margin: 0 }}>Transcribing…</p>
+                  <p style={{ fontSize: 14, color: "var(--ink-5)", margin: 0 }}>Transcribing…</p>
                 </>
               ) : (
                 <>
@@ -1276,7 +1276,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       Auto-transcription unavailable. Type your notes manually.
                     </p>
                   )}
-                  <p style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)", margin: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-4)", margin: 0 }}>
                     Transcript
                   </p>
                   <textarea
@@ -1291,7 +1291,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       border: "0.5px solid var(--border)",
                       borderRadius: 12,
                       padding: "12px 14px",
-                      fontSize: 13,
+                      fontSize: 14,
                       color: "var(--ink)",
                       resize: "none",
                       outline: "none",

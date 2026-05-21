@@ -70,7 +70,7 @@ function StatusBadge({ status }: { status: string }) {
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 7 ? STATUS_COLORS.pass : score >= 5 ? STATUS_COLORS.warn : STATUS_COLORS.fail;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
       <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden" }}>
         <div style={{ width: `${(score / 10) * 100}%`, height: "100%", background: color }} />
       </div>
@@ -605,7 +605,7 @@ const AdminQA = () => {
       <header style={{ marginBottom: 32 }}>
         <button
           onClick={() => navigate("/admin")}
-          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.18)", color: "var(--ink, #F4EFE6)", padding: "6px 12px", borderRadius: 6, marginBottom: 16, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
+          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.18)", color: "var(--ink, #F4EFE6)", padding: "6px 12px", borderRadius: 6, marginBottom: 16, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" }}
         >
           ← Admin
         </button>
@@ -650,7 +650,7 @@ const AdminQA = () => {
                   {s.state === "ok" ? "✓" : s.state === "fail" ? "✗" : "…"}
                 </span>
                 <code style={{ fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", minWidth: 140 }}>{s.route}</code>
-                <span style={{ fontSize: 13, color: "#B8B0A2" }}>
+                <span style={{ fontSize: 14, color: "#B8B0A2" }}>
                   {s.state === "ok" && `loaded (${((s.ms || 0) / 1000).toFixed(1)}s) — ${s.tests || 0} tests run`}
                   {s.state === "fail" && `failed to load — ${s.error || "unknown error"}`}
                   {s.state === "pending" && "pending…"}
@@ -669,10 +669,10 @@ const AdminQA = () => {
             borderColor: "rgba(220,38,38,0.4)",
             background: "rgba(220,38,38,0.08)",
           }}>
-            <div style={{ fontSize: 13, color: STATUS_COLORS.fail, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>
+            <div style={{ fontSize: 14, color: STATUS_COLORS.fail, fontWeight: 600, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.6 }}>
               run-qa-audit failed
             </div>
-            <pre style={{ margin: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 13, color: "#F4EFE6", whiteSpace: "pre-wrap" }}>{backendError}</pre>
+            <pre style={{ margin: 0, fontFamily: "var(--font-mono, monospace)", fontSize: 14, color: "#F4EFE6", whiteSpace: "pre-wrap" }}>{backendError}</pre>
           </div>
         </Section>
       )}
@@ -711,7 +711,7 @@ const AdminQA = () => {
                   <div key={l} style={cardStyle}>
                     <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.8, color: "#B8B0A2", fontWeight: 600 }}>{l}</div>
                     <div style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 28, marginTop: 4, color: "#F4EFE6" }}>{s.rate}%</div>
-                    <div style={{ fontSize: 13, color: "#B8B0A2" }}>{s.pass} / {s.total} passing</div>
+                    <div style={{ fontSize: 14, color: "#B8B0A2" }}>{s.pass} / {s.total} passing</div>
                   </div>
                 );
               })}
@@ -734,7 +734,7 @@ const AdminQA = () => {
             <>
               {functionalRows.length > 0 && (
                 <Section title={`Functional tests — does the product work? (${functionalRows.length})`}>
-                  <p style={{ marginTop: 0, marginBottom: 12, color: "#B8B0A2", fontSize: 13 }}>
+                  <p style={{ marginTop: 0, marginBottom: 12, color: "#B8B0A2", fontSize: 14 }}>
                     Behavior, navigation, modals, generation, data presence. These determine whether the product actually delivers.
                   </p>
                   {sortedPages.map((page) => {
@@ -752,7 +752,7 @@ const AdminQA = () => {
                             <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>
                               {page === "ask-aura" ? "ASK AURA" : page === "my-story" ? "MY STORY" : page.toUpperCase()}
                             </span>
-                            <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+                            <span style={{ marginLeft: "auto", fontSize: 14, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
                               <span>{rows.length} tests</span>
                               <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
                               <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
@@ -785,7 +785,7 @@ const AdminQA = () => {
                 <Section title={`Design & accessibility (${designRows.length})`}>
                   <button
                     onClick={() => setShowDesignSection((v) => !v)}
-                    style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
+                    style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 14, marginBottom: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
                   >
                     {showDesignSection ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     {showDesignSection ? "Hide" : "Show"} contrast, fonts, colors, focus
@@ -822,17 +822,17 @@ const AdminQA = () => {
                       <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                         {dims.map((dim, i) => (
                           <div key={i}>
-                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--ink-2,#999)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--ink-2,#999)" }}>
                               <span>{dim.name}</span>
                             </div>
                             <ScoreBar score={Number(dim.score) || 0} />
-                            {dim.explanation && <div style={{ fontSize: 11, color: "var(--ink-2,#888)", marginTop: 2 }}>{dim.explanation}</div>}
+                            {dim.explanation && <div style={{ fontSize: 12, color: "var(--ink-2,#888)", marginTop: 2 }}>{dim.explanation}</div>}
                           </div>
                         ))}
                       </div>
                       {Array.isArray(d.critical_issues) && d.critical_issues.length > 0 && (
                         <div style={{ marginTop: 12, padding: 10, background: "rgba(220,38,38,0.08)", border: "1px solid rgba(220,38,38,0.3)", borderRadius: 6 }}>
-                          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, color: STATUS_COLORS.fail, marginBottom: 4 }}>Critical issues</div>
+                          <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: STATUS_COLORS.fail, marginBottom: 4 }}>Critical issues</div>
                           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
                             {d.critical_issues.map((s: string, i: number) => <li key={i}>{s}</li>)}
                           </ul>
@@ -840,7 +840,7 @@ const AdminQA = () => {
                       )}
                       {Array.isArray(d.suggestions) && d.suggestions.length > 0 && (
                         <div style={{ marginTop: 8, padding: 10, background: "rgba(217,119,6,0.08)", border: "1px solid rgba(217,119,6,0.3)", borderRadius: 6 }}>
-                          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.6, color: STATUS_COLORS.warn, marginBottom: 4 }}>Suggestions</div>
+                          <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.6, color: STATUS_COLORS.warn, marginBottom: 4 }}>Suggestions</div>
                           <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12 }}>
                             {d.suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
                           </ul>
@@ -927,7 +927,7 @@ const AdminQA = () => {
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Array.from(knownIssues).map((id) => (
               <button key={id} onClick={() => { const n = new Set(knownIssues); n.delete(id); persistKnown(n); }}
-                style={{ ...secondaryBtnStyle, fontSize: 11, padding: "4px 8px" }}>
+                style={{ ...secondaryBtnStyle, fontSize: 12, padding: "4px 8px" }}>
                 {id} ✕
               </button>
             ))}
@@ -942,7 +942,7 @@ const AdminQA = () => {
               <h3 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
               <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#F4EFE6", cursor: "pointer" }}><X size={18} /></button>
             </div>
-            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "var(--paper)", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 13, lineHeight: 1.5 }} />
+            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "var(--paper)", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 14, lineHeight: 1.5 }} />
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <SecondaryBtn onClick={() => setBatchModal(null)}>Close</SecondaryBtn>
               <PrimaryBtn onClick={() => copyText(batchModal.text)}><Copy size={14} /> Copy to clipboard</PrimaryBtn>
@@ -965,7 +965,7 @@ const cardStyle: React.CSSProperties = {
 
 const thStyle: React.CSSProperties = { padding: "10px 12px", fontWeight: 600 };
 const tdStyle: React.CSSProperties = { padding: "10px 12px", color: "#F4EFE6" };
-const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#F4EFE6", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 13, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" };
+const linkBtn: React.CSSProperties = { background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#F4EFE6", padding: "5px 12px", borderRadius: 4, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)" };
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
@@ -1021,7 +1021,7 @@ function Group({ cat, rows, open, onToggle, onCopyFix, onMarkKnown, onBatchFix }
         <button onClick={onToggle} style={{ background: "none", border: "none", color: "inherit", flex: 1, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 0, textAlign: "left" }}>
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           <span style={{ textTransform: "uppercase", letterSpacing: 0.6, fontSize: 16, color: "#F4EFE6", fontWeight: 700 }}>{cat}</span>
-          <span style={{ marginLeft: "auto", fontSize: 13, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
+          <span style={{ marginLeft: "auto", fontSize: 14, color: "#D4CCBC", display: "inline-flex", gap: 10 }}>
             <span>{rows.length} total</span>
             <span style={{ color: STATUS_COLORS.pass }}>{pass} pass</span>
             <span style={{ color: STATUS_COLORS.warn }}>{warn} warn</span>
@@ -1060,7 +1060,7 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
       <button onClick={() => setOpen((p) => !p)} style={{ background: "none", border: "none", color: "inherit", width: "100%", display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: 4, textAlign: "left", flexWrap: "wrap" }}>
         <StatusBadge status={r.status} />
         {r.status !== "pass" && (
-          <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 8px", borderRadius: 4, background: `${sevColor}22`, color: sevColor, border: `1px solid ${sevColor}66`, textTransform: "uppercase", letterSpacing: 0.4 }}>{severity}</span>
+          <span style={{ fontSize: 12, fontWeight: 600, padding: "3px 8px", borderRadius: 4, background: `${sevColor}22`, color: sevColor, border: `1px solid ${sevColor}66`, textTransform: "uppercase", letterSpacing: 0.4 }}>{severity}</span>
         )}
         <span style={{ fontSize: 14, color: "#F4EFE6", fontWeight: 500 }}>{r.test_name}</span>
         <span style={{ fontFamily: "var(--font-mono,monospace)", fontSize: 12, color: "#9C9485", marginLeft: "auto" }}>{r.test_id}</span>
@@ -1084,16 +1084,16 @@ function ResultRowView({ r, onCopyFix, onMarkKnown }: {
           )}
           {Array.isArray(d.samples) && d.samples.length > 0 && (
             <details style={{ marginTop: 4 }}>
-              <summary style={{ cursor: "pointer", color: "#B8B0A2", fontSize: 13 }}>{d.samples.length} samples</summary>
+              <summary style={{ cursor: "pointer", color: "#B8B0A2", fontSize: 14 }}>{d.samples.length} samples</summary>
               <pre style={{ fontSize: 12, whiteSpace: "pre-wrap", margin: "6px 0", color: "#B8B0A2", fontFamily: "var(--font-mono, monospace)" }}>{d.samples.map((s: any) => typeof s === "string" ? s : JSON.stringify(s)).join("\n")}</pre>
             </details>
           )}
           {r.status !== "pass" && (
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => onCopyFix(r)} style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <button onClick={() => onCopyFix(r)} style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 14, display: "inline-flex", alignItems: "center", gap: 6 }}>
                 <Copy size={13} /> Generate fix prompt
               </button>
-              <button onClick={() => onMarkKnown(r.test_id)} style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 13 }}>
+              <button onClick={() => onMarkKnown(r.test_id)} style={{ ...secondaryBtnStyle, padding: "6px 12px", fontSize: 14 }}>
                 Mark as known issue
               </button>
             </div>
@@ -1110,7 +1110,7 @@ function Label({ children }: { children: React.ReactNode }) {
 
 const codeStyle: React.CSSProperties = {
   fontFamily: "var(--font-mono, monospace)",
-  fontSize: 13,
+  fontSize: 14,
   color: "#F4EFE6",
   background: "rgba(255,255,255,0.05)",
   padding: "2px 6px",

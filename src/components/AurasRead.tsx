@@ -112,7 +112,7 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
           label="AURA'S READ"
           subtitle="What Aura thinks you should focus on today"
         />
-        <div style={{ fontSize: 11, color: "var(--ink-3)" }}>
+        <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
           {formatDate(new Date())}
         </div>
       </div>
@@ -169,7 +169,7 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
                         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
                           <span
                             style={{
-                              fontSize: 10,
+                              fontSize: 12,
                               fontWeight: 500,
                               letterSpacing: "0.08em",
                               textTransform: "uppercase",
@@ -188,7 +188,7 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
                         <span style={{
                           background: ug.bg,
                           color: ug.color,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: 600,
                           padding: "2px 8px",
                           borderRadius: 999,

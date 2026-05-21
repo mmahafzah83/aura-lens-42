@@ -113,7 +113,7 @@ export default function MarketCoverageSection({ onOpenCapture }: Props) {
           {data && (
             <span
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 fontWeight: 700,
                 letterSpacing: 0.5,
                 background: "var(--brand-ghost, rgba(176,141,58,0.12))",
@@ -132,7 +132,7 @@ export default function MarketCoverageSection({ onOpenCapture }: Props) {
 
         {open && data && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 10, color: "var(--ink-3)" }}>
+            <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
               Last refreshed: {formatSmartDate(data.generated_at)}
             </span>
             <Button
@@ -140,7 +140,7 @@ export default function MarketCoverageSection({ onOpenCapture }: Props) {
               variant="outline"
               disabled={!canRefresh}
               onClick={handleRefresh}
-              style={{ fontSize: 11, height: 28 }}
+              style={{ fontSize: 12, height: 28 }}
             >
               <RefreshCw size={12} className={loading ? "animate-spin" : ""} style={{ marginRight: 6 }} />
               Refresh coverage
@@ -226,9 +226,9 @@ function CoverageBody({ data, onOpenCapture }: { data: CoverageResult; onOpenCap
                   />
                 </TooltipTrigger>
                 <TooltipContent side="top">
-                  <div style={{ fontSize: 11, maxWidth: 260 }}>
+                  <div style={{ fontSize: 12, maxWidth: 260 }}>
                     <div style={{ fontWeight: 600 }}>{it.trend_headline}</div>
-                    <div style={{ opacity: 0.7, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5, fontSize: 9 }}>
+                    <div style={{ opacity: 0.7, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.5, fontSize: 12 }}>
                       {it.category}
                     </div>
                   </div>
@@ -275,7 +275,7 @@ function GapCard({ item, onOpenCapture }: { item: CoverageItem; onOpenCapture?: 
             <span
               style={{
                 alignSelf: "flex-start",
-                fontSize: 9, fontWeight: 700, letterSpacing: 0.6,
+                fontSize: 12, fontWeight: 700, letterSpacing: 0.6,
                 background: `${ORANGE}1A`, color: ORANGE,
                 padding: "2px 7px", borderRadius: 4,
               }}
@@ -291,7 +291,7 @@ function GapCard({ item, onOpenCapture }: { item: CoverageItem; onOpenCapture?: 
               Source: {item.source}
             </p>
           )}
-          <p style={{ fontSize: 13, color: "var(--ink-5)", margin: "2px 0 0", lineHeight: 1.5 }}>
+          <p style={{ fontSize: 14, color: "var(--ink-5)", margin: "2px 0 0", lineHeight: 1.5 }}>
             {item.recommendation}
           </p>
           <button
@@ -340,12 +340,12 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <AlertCircle size={16} color="var(--ink-3)" />
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-6)", margin: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-6)", margin: 0 }}>
             Coverage analysis unavailable
           </p>
-          <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "2px 0 0" }}>{message}</p>
+          <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "2px 0 0" }}>{message}</p>
         </div>
-        <Button size="sm" variant="outline" onClick={onRetry} style={{ fontSize: 11, height: 28 }}>
+        <Button size="sm" variant="outline" onClick={onRetry} style={{ fontSize: 12, height: 28 }}>
           Retry
         </Button>
       </div>
@@ -355,7 +355,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function EmptyState() {
   return (
-    <p style={{ fontSize: 13, color: "var(--ink-3)", margin: 0, fontStyle: "italic" }}>
+    <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, fontStyle: "italic" }}>
       Market intelligence is being gathered. Coverage analysis will appear once industry trends are loaded.
     </p>
   );

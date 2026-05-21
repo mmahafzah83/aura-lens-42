@@ -173,7 +173,7 @@ const Guide = () => {
                 </div>
                 <div>
                   <h3 style={{ fontSize: 16, fontWeight: 500, color: "var(--ink-7)", marginBottom: 4 }}>{t}</h3>
-                  <p style={{ fontSize: 13, color: "var(--ink-5)", lineHeight: 1.55 }}>{d}</p>
+                  <p style={{ fontSize: 14, color: "var(--ink-5)", lineHeight: 1.55 }}>{d}</p>
                 </div>
               </div>
             ))}
@@ -201,7 +201,7 @@ const Guide = () => {
                 <div style={{ height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 999, overflow: "hidden" }}>
                   <div className="guide-bar-fill" style={{ width: `${pct}%` }} />
                 </div>
-                <p style={{ fontSize: 13, color: "var(--ink-5)", marginTop: 8, lineHeight: 1.55 }}>{desc}</p>
+                <p style={{ fontSize: 14, color: "var(--ink-5)", marginTop: 8, lineHeight: 1.55 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -219,7 +219,7 @@ const Guide = () => {
               >
                 <p style={{ fontFamily: "var(--font-display)", fontSize: 20, color: "var(--brand)", marginBottom: 4 }}>{t.tier}</p>
                 <p style={{ fontSize: 12, color: "var(--ink-4)", letterSpacing: "0.08em", marginBottom: 8 }}>{t.range}</p>
-                <p style={{ fontSize: 13, color: "var(--ink-5)", lineHeight: 1.5 }}>{t.desc}</p>
+                <p style={{ fontSize: 14, color: "var(--ink-5)", lineHeight: 1.5 }}>{t.desc}</p>
               </div>
             ))}
           </div>
@@ -312,9 +312,9 @@ const Guide = () => {
           <div>
             <div className="flex items-center gap-2" style={{ height: 24 }}>
               <span className="text-base font-bold tracking-[0.15em]" style={{ color: "var(--brand)", fontFamily: "var(--font-display)", lineHeight: "24px" }}>AURA</span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Strategic Intelligence OS</span>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Strategic Intelligence OS</span>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 12 }}>
               © 2026 Aura Intelligence. All rights reserved.
             </p>
           </div>
@@ -333,7 +333,7 @@ const Guide = () => {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
               Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
             </p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>
               Built in Riyadh for the world
             </p>
           </div>

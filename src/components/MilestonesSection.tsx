@@ -160,10 +160,10 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
   return (
     <section aria-label="Milestones" className="space-y-4">
       <div>
-        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", marginBottom: 3, textTransform: "uppercase" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", marginBottom: 3, textTransform: "uppercase" }}>
           ACHIEVEMENTS
         </div>
-        <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 }}>
+        <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginBottom: 6, lineHeight: 1.5 }}>
           Professional credentials earned through consistent intelligence work
         </div>
         <h2 style={{
@@ -184,7 +184,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
         </h2>
         <p style={{
           fontFamily: "'DM Sans', sans-serif",
-          fontSize: 13,
+          fontSize: 14,
           color: "hsl(var(--muted-foreground))",
           marginTop: 4,
         }}>
@@ -221,7 +221,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     {m.name}
                   </div>
                   {m.earned_at && (
-                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
+                    <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "hsl(var(--muted-foreground))", marginTop: 2 }}>
                       Earned {formatDate(m.earned_at)}
                     </div>
                   )}
@@ -253,7 +253,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 4,
-                    fontSize: 11,
+                    fontSize: 12,
                     flexShrink: 0,
                   }}
                   title="Share on LinkedIn"
@@ -269,7 +269,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
 
       {unearned.length > 0 && (
         <div className="space-y-2">
-          <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", textTransform: "uppercase", marginTop: 8 }}>
+          <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--ink-3)", textTransform: "uppercase", marginTop: 8 }}>
             Next
           </div>
           <ul className="space-y-2" style={{ listStyle: "none", padding: 0, margin: 0 }}>

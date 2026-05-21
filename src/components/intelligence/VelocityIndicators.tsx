@@ -46,7 +46,7 @@ export function VelocityTrend({ velocity }: { velocity?: number | null }) {
   const Icon = positive ? TrendingUp : TrendingDown;
   const color = positive ? "var(--success, hsl(140 60% 45%))" : "hsl(24 95% 53%)";
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10, color, fontFamily: "var(--font-mono)" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 12, color, fontFamily: "var(--font-mono)" }}>
       <Icon size={10} strokeWidth={2.4} />
       {positive ? "+" : ""}{pct}% this week
     </span>
@@ -57,15 +57,15 @@ export function ValidationBadge({ score }: { score?: number | null }) {
   if (score === null || score === undefined) return null;
   if (score > 1.5) {
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "1px 6px", borderRadius: 999, fontSize: 9, fontWeight: 600, background: "var(--success-soft, hsl(140 50% 40% / 0.12))", color: "var(--success, hsl(140 60% 45%))", border: "0.5px solid var(--success, hsl(140 60% 45%))" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: "1px 6px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: "var(--success-soft, hsl(140 50% 40% / 0.12))", color: "var(--success, hsl(140 60% 45%))", border: "0.5px solid var(--success, hsl(140 60% 45%))" }}>
         ✦ {score.toFixed(1)}× avg engagement
       </span>
     );
   }
   if (score >= 1.0) {
-    return <span style={{ fontSize: 9, color: "var(--ink-4)" }}>{score.toFixed(1)}× avg</span>;
+    return <span style={{ fontSize: 12, color: "var(--ink-4)" }}>{score.toFixed(1)}× avg</span>;
   }
-  return <span style={{ fontSize: 9, color: "hsl(24 95% 53%)", opacity: 0.85 }}>Below avg</span>;
+  return <span style={{ fontSize: 12, color: "hsl(24 95% 53%)", opacity: 0.85 }}>Below avg</span>;
 }
 
 /**

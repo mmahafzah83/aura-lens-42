@@ -114,7 +114,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
     >
       <div
         style={{
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: "hsl(var(--muted-foreground))",
@@ -130,7 +130,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
           text="Your path from Observer to Authority. Each tier unlocks with specific actions."
         />
       </div>
-      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, marginBottom: 6, lineHeight: 1.5 }}>
+      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, marginBottom: 6, lineHeight: 1.5 }}>
         Your progression from Observer to recognized Authority
       </div>
       {/* Waypoint bar */}
@@ -232,7 +232,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            fontSize: 11,
+            fontSize: 12,
           }}
           title="Share on LinkedIn"
         >
@@ -242,7 +242,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       </div>
 
       {/* Points to next + progress */}
-      <div className="font-sans" style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
+      <div className="font-sans" style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
         {atAuthority ? (
           <>
             <div>You've reached Authority — maintain your edge.</div>
@@ -305,7 +305,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         if (m) {
           const [, title, pct, rest] = m;
           return (
-            <div style={{ marginTop: 12, fontSize: 13, lineHeight: 1.6, color: "hsl(var(--foreground))" }} className="font-sans">
+            <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.6, color: "hsl(var(--foreground))" }} className="font-sans">
               <div style={{ color: "var(--ink-3)", marginBottom: 4 }}>
                 Your strongest signal is ready to publish:
               </div>
@@ -319,7 +319,7 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
         return (
           <p
             className="font-sans"
-            style={{ fontSize: 13, color: "hsl(var(--foreground))", marginTop: 12, lineHeight: 1.6 }}
+            style={{ fontSize: 14, color: "hsl(var(--foreground))", marginTop: 12, lineHeight: 1.6 }}
           >
             {nudge}
           </p>

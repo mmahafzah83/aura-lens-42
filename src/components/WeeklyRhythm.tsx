@@ -85,7 +85,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
     >
       <div
         style={{
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
           color: "hsl(var(--muted-foreground))",
@@ -100,7 +100,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
           text={`Weeks with at least one meaningful capture in the last ${visibleCount} weeks.`}
         />
       </div>
-      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+      <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
         {`Your weekly capture consistency over the last ${visibleCount} weeks`}
       </div>
 

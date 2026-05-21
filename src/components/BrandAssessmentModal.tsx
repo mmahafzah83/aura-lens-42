@@ -709,7 +709,7 @@ function ResultsView({
           padding: "22px 22px 20px",
         }}
       >
-        <div style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600 }}>
+        <div style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600 }}>
           Aura sees you as
         </div>
         <h2
@@ -775,7 +775,7 @@ function ResultsView({
         <button
           type="button"
           onClick={() => setShowFull(v => !v)}
-          style={{ background: "transparent", border: 0, color: "var(--brand)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
+          style={{ background: "transparent", border: 0, color: "var(--brand)", fontSize: 14, cursor: "pointer", fontWeight: 500 }}
         >
           {showFull ? "Hide the full picture ↑" : "See the full picture →"}
         </button>
@@ -783,7 +783,7 @@ function ResultsView({
           <button
             type="button"
             onClick={copyOneLiner}
-            style={{ background: "transparent", border: 0, color: "var(--ink-5)", fontSize: 13, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+            style={{ background: "transparent", border: 0, color: "var(--ink-5)", fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
           >
             <Copy className="w-3.5 h-3.5" /> Copy my one-liner
           </button>
@@ -815,7 +815,7 @@ function ResultsView({
                     <div
                       style={{
                         fontFamily: "'Cormorant Garamond', Georgia, serif",
-                        fontSize: 13,
+                        fontSize: 14,
                         textTransform: "uppercase",
                         letterSpacing: "0.1em",
                         color: "var(--brand)",
