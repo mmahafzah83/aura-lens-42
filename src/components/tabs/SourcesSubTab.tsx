@@ -636,8 +636,8 @@ const SourcesSubTab = ({
     return (
       <EmptyState
         icon={BookOpen}
-        title="Your reading library is waiting. Capture your first article to begin."
-        description="Start by capturing something about {sector} you read today."
+        title="No sources yet"
+        description="Every article you capture becomes raw intelligence. One link about {sector} is all it takes to start."
         personalize
         ctaLabel="Capture your first source"
         ctaAction={onOpenCapture}
