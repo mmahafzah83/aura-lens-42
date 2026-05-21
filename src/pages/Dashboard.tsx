@@ -461,14 +461,11 @@ const Dashboard = () => {
               >
                 <item.icon
                   key={item.value === "intelligence" ? `intel-icon-${intelPulseToken}` : undefined}
-                  className="w-4.5 h-4.5 shrink-0"
+                  className={`w-4.5 h-4.5 shrink-0${item.value === "intelligence" && intelPulseToken > 0 ? " nav-intelligence-pulse" : ""}`}
                   style={{
                     color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
                     transition: "color var(--t-fast) var(--ease)",
                   }}
-                  {...(item.value === "intelligence" && intelPulseToken > 0
-                    ? { "data-pulse": intelPulseToken }
-                    : {})}
                 />
                 {!sidebarCollapsed && (
                   <span className="text-sm font-medium tracking-wide">{item.label}</span>
