@@ -72,7 +72,7 @@ const RecommendedReadingSection = () => {
             cursor: loading ? "default" : "pointer",
           }}
         >
-          {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           Refresh
         </button>
       </div>
