@@ -124,9 +124,12 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.closePath();
+    const cs = getComputedStyle(document.documentElement);
+    const brand = cs.getPropertyValue("--brand").trim() || "#B08D3A";
+    const ink3 = cs.getPropertyValue("--ink-3").trim() || "#B8AE99";
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = "var(--brand)";
+    ctx.strokeStyle = brand;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -138,12 +141,12 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3.5, 0, 2 * Math.PI);
-      ctx.fillStyle = "var(--brand)";
+      ctx.fillStyle = brand;
       ctx.fill();
     }
 
     // Draw labels — full names, positioned outside
-    ctx.fillStyle = "var(--ink-5)";
+    ctx.fillStyle = ink3;
     ctx.textBaseline = "middle";
     for (let i = 0; i < n; i++) {
       const angle = startAngle + i * angleStep;
@@ -167,7 +170,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       }
       ctx.rotate(rotation);
 
-      ctx.font = "10px system-ui, sans-serif";
+      ctx.font = "600 12px system-ui, sans-serif";
       ctx.fillText(DIMENSION_ORDER[i], 0, 0);
       ctx.restore();
     }
