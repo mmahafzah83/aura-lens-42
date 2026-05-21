@@ -57,6 +57,8 @@ const Dashboard = () => {
   const [chatInitialMessage, setChatInitialMessage] = useState<string | undefined>();
   const [chatContext, setChatContext] = useState<ChatContext | undefined>();
   const [user, setUser] = useState<{ email?: string; fullName?: string | null; avatarUrl?: string | null } | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [newIntelSignalCount, setNewIntelSignalCount] = useState(0);
   const showOnboarding = false;
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
@@ -212,7 +214,7 @@ const Dashboard = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!session) navigate("/auth");
-      else setUser({ email: session.user.email });
+      else { setUser({ email: session.user.email }); setUserId(session.user.id); }
     });
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -220,6 +222,7 @@ const Dashboard = () => {
       else {
         setUser({ email: session.user.email });
         const uid = session.user.id;
+        setUserId(uid);
         // Self-promote beta_allowlist row to 'active' on first sign-in.
         // Fire-and-forget; failures must not block the dashboard.
         try {
@@ -316,8 +319,38 @@ const Dashboard = () => {
   const switchTab = (tab: TabValue) => {
     setActiveTab(tab);
     setMobileSidebarOpen(false);
+    if (tab === "intelligence") {
+      try { localStorage.setItem("aura_intel_last_visit", new Date().toISOString()); } catch {}
+      setNewIntelSignalCount(0);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Poll for new strategic signals created since last Intelligence visit.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const since = localStorage.getItem("aura_intel_last_visit") || new Date(0).toISOString();
+        const { count } = await (supabase.from("strategic_signals" as any) as any)
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .gt("created_at", since);
+        if (!cancelled) setNewIntelSignalCount(count || 0);
+      } catch {}
+    };
+    check();
+    const channel = supabase
+      .channel(`intel-badge-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "strategic_signals", filter: `user_id=eq.${userId}` },
+        () => { if (activeTab !== "intelligence") check(); },
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [userId, activeTab]);
 
   // Keep browser tab title in sync with the active section
   useEffect(() => {
@@ -420,6 +453,13 @@ const Dashboard = () => {
                 />
                 {!sidebarCollapsed && (
                   <span className="text-sm font-medium tracking-wide">{item.label}</span>
+                )}
+                {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                  <span
+                    aria-label={`${newIntelSignalCount} new signals`}
+                    className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
+                    style={{ background: "var(--gold-dark)" }}
+                  />
                 )}
               </button>
             );
@@ -544,6 +584,13 @@ const Dashboard = () => {
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
+                    {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                      <span
+                        aria-label={`${newIntelSignalCount} new signals`}
+                        className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
+                        style={{ background: "var(--gold-dark)" }}
+                      />
+                    )}
                   </button>
                 );
               })}

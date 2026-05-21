@@ -2636,6 +2636,28 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   useEffect(() => { loadPosts(); loadProfile(); loadSignalContext(); }, []);
 
+  // Realtime: refetch library when this user's linkedin_posts change.
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      channel = supabase
+        .channel(`publish-live-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "linkedin_posts", filter: `user_id=eq.${user.id}` },
+          () => { loadPosts(); },
+        )
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, []);
+
   const loadSignalContext = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
