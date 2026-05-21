@@ -1395,6 +1395,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
 
+      {/* Today's intelligence — condensed daily briefing, above the status strip */}
+      <TodaysIntelligence />
+
       {/* H2b — STATUS STRIP (score + tier + rhythm) — promoted above KPI strip */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
           weekly rhythm grid so users never see partial flashes (e.g. tier
