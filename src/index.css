@@ -1131,6 +1131,8 @@ html.dark,
 .dark {
   --surface-ink-raised: #2A2419;
   --surface-ink-subtle: #1C1812;
+  /* Ensure --aura-card flips warm-dark in dark mode regardless of cascade order. */
+  --aura-card: hsl(30 12% 11%);
 }
 
 /* ── Dark mode text contrast safety net ──────────────────────────────
