@@ -112,7 +112,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Aura <hello@aura-intel.org>",
+            from: "Aura <invites@aura-intel.org>",
             to: ["mohammad.mahafdhah@aura-intel.org"],
             subject: `New colleague invite: ${email}`,
             html: `<p><strong>${callerEmail}</strong> invited <strong>${email}</strong> to the Aura beta.</p>${note ? `<p>Note: ${note}</p>` : ""}`,
