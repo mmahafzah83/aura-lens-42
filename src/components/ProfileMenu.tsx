@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { User, LogOut, UserCog, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SetPasswordModal from "@/components/SetPasswordModal";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { useAuraTheme, THEME_LABELS, THEME_SWATCHES, type AuraTheme } from "@/components/ThemeProvider";
 import {
   DropdownMenu,
@@ -59,6 +60,8 @@ export default function ProfileMenu({
 
   const fn = (fullName || "").trim();
   const parts = fn.split(/\s+/).filter(Boolean);
+  const firstNameParsed = parts[0] || "";
+  const lastNameParsed = parts.length >= 2 ? parts[parts.length - 1] : "";
   const initials =
     parts.length >= 2
       ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
@@ -76,11 +79,15 @@ export default function ProfileMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="aura-initials-avatar focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-full"
+          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-full"
           title={fn || email || "Account"}
           aria-label={fn || "Account menu"}
         >
-          {initials || <User className="w-4 h-4" />}
+          {firstNameParsed ? (
+            <UserAvatar firstName={firstNameParsed} lastName={lastNameParsed} size="sm" />
+          ) : (
+            <span className="aura-initials-avatar"><User className="w-4 h-4" /></span>
+          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
