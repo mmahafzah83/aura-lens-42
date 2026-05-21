@@ -27,6 +27,7 @@ import { CollapsibleList } from "@/components/ui/CollapsibleList";
 import type { Database } from "@/integrations/supabase/types";
 import { VelocityPill, VelocityTrend, ValidationBadge, daysUntilDormant } from "@/components/intelligence/VelocityIndicators";
 import MarketCoverageSection from "@/components/intelligence/MarketCoverageSection";
+import RecommendedReadingSection from "@/components/intelligence/RecommendedReadingSection";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -1286,6 +1287,7 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                 <div data-testid="intel-coverage">
                   <MarketCoverageSection onOpenCapture={onOpenCapture} />
                 </div>
+                <RecommendedReadingSection />
               </>
             )}
           </>
