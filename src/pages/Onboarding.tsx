@@ -41,8 +41,39 @@ interface FoundArticle {
 const Onboarding = () => {
   const navigate = useNavigate();
 
+  // One-time ceremony overlay shown between onboarding completion and Home.
+  const [ceremony, setCeremony] = useState(false);
+  const [ceremonyLeaving, setCeremonyLeaving] = useState(false);
+
+  const completeCeremonyAndNavigate = () => {
+    if (ceremonyLeaving) return;
+    setCeremonyLeaving(true);
+    window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem("aura_visited_pages");
+        const arr: string[] = raw ? JSON.parse(raw) : [];
+        if (!arr.includes("home")) {
+          arr.push("home");
+          localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
+        }
+      } catch { /* ignore */ }
+      navigate("/home", { replace: true });
+    }, 500);
+  };
+
   // Suppress the home first-visit hint for users who just completed onboarding.
   const goHome = () => {
+    // Play the ceremony exactly once per browser; subsequent visits go straight home.
+    try {
+      const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
+      if (!alreadyPlayed) {
+        localStorage.setItem("aura_onboarding_ceremony_seen", "true");
+        setCeremony(true);
+        // Auto-advance after 2.5s
+        window.setTimeout(() => completeCeremonyAndNavigate(), 2500);
+        return;
+      }
+    } catch { /* ignore — fall through to navigation */ }
     try {
       const raw = localStorage.getItem("aura_visited_pages");
       const arr: string[] = raw ? JSON.parse(raw) : [];
@@ -889,6 +920,44 @@ const Onboarding = () => {
           goHome();
         }}
       />
+      {ceremony && (
+        <div
+          className={`aura-ceremony-overlay${ceremonyLeaving ? " is-leaving" : ""}`}
+          role="dialog"
+          aria-label="Your intelligence is active"
+          onClick={completeCeremonyAndNavigate}
+        >
+          <span
+            aria-hidden="true"
+            className="aura-gold-pulse"
+            style={{ fontSize: 56, lineHeight: 1, marginBottom: 28 }}
+          >
+            ✦
+          </span>
+          <h2
+            style={{
+              fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
+              fontSize: 36, lineHeight: 1.15, margin: "0 0 12px",
+              color: "hsl(40 20% 95%)", letterSpacing: "-0.01em",
+            }}
+          >
+            Your intelligence is active.
+          </h2>
+          <p style={{
+            fontSize: 15, lineHeight: 1.6, margin: 0,
+            color: "hsl(40 18% 95% / 0.7)", maxWidth: 360,
+          }}>
+            Aura is now watching the market for you.
+          </p>
+          <span style={{
+            position: "absolute", bottom: 32, left: 0, right: 0,
+            fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "hsl(40 18% 95% / 0.4)",
+          }}>
+            Tap anywhere to continue
+          </span>
+        </div>
+      )}
     </>
   );
 };
