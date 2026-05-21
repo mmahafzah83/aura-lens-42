@@ -817,18 +817,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Branded header */}
-      <div style={{ marginBottom: 0 }}>
-        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-          Your content engine
-        </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-          Publish
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-          You already know things most people in your sector don't. This is where that knowledge becomes content that opens doors.
-        </p>
-      </div>
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
       <div className="flex-1 min-w-0 space-y-6">
