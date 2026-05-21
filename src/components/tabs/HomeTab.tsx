@@ -394,7 +394,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       console.error("[HomeTab] briefing load failed", e);
       setBriefError(true);
       toast.error("Couldn't load your briefing.", {
-        action: { label: "Retry", onClick: () => loadBriefing(uid) },
+        action: { label: "Try again", onClick: () => loadBriefing(uid) },
       });
     } finally {
       setBriefLoading(false);
@@ -423,7 +423,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       console.error("[HomeTab] moves load failed", e);
       setMovesError(true);
       toast.error("Couldn't load recommended moves.", {
-        action: { label: "Retry", onClick: () => loadMoves(uid) },
+        action: { label: "Try again", onClick: () => loadMoves(uid) },
       });
     } finally {
       setMovesLoading(false);
@@ -504,7 +504,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       if (didAttempt) setTrendsError(true);
       if (didAttempt) {
         toast.error("Couldn't load intelligence signals.", {
-          action: { label: "Retry", onClick: () => loadTrends(uid) },
+          action: { label: "Try again", onClick: () => loadTrends(uid) },
         });
       }
     } finally {
@@ -784,7 +784,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         console.warn("[HomeTab] aura score load failed", e);
       toast.error("Couldn't load your Aura score.", {
         action: {
-          label: "Retry",
+          label: "Try again",
           onClick: async () => {
             setAuraLoading(true);
             try {

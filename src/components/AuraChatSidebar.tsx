@@ -757,7 +757,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
     } catch (e: any) {
       toast.error("Aura couldn't respond. Try again.", {
         action: {
-          label: "Retry",
+          label: "Try again",
           onClick: () => {
             setMessages(prev => prev.filter(m => m !== userMsg && !m.isError));
             send(userMsg.content, mode, existingConvId, ctx);
