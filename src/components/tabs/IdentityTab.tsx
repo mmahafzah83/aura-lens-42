@@ -486,7 +486,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             }}
           />
           <div className="relative">
-            <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--brand)", marginBottom: 8, textTransform: "uppercase", fontWeight: 600 }}>
+            <div style={{ fontSize: 12, letterSpacing: "0.16em", color: "var(--brand)", marginBottom: 8, fontWeight: 600 }}>
               Your professional identity
             </div>
             <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.375 }}>
@@ -514,7 +514,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               Show me who I am in this market →
             </button>
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontSize: 12, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)", marginBottom: 10, fontWeight: 600 }}>
                 What you'll discover
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
