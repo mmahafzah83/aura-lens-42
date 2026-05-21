@@ -68,6 +68,13 @@ const RequestAccess = () => {
       className="min-h-screen flex items-center justify-center px-4 py-12"
       style={{ backgroundColor: "var(--ink)", fontFamily: "Inter, sans-serif" }}
     >
+      <style>{`
+        .ra-field:focus {
+          border-color: var(--gold-dark, var(--brand)) !important;
+          box-shadow: 0 0 0 3px hsl(43 50% 40% / 0.30) !important;
+          outline: none !important;
+        }
+      `}</style>
       <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
@@ -100,7 +107,7 @@ const RequestAccess = () => {
                   value={name}
                   onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                   maxLength={200}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-ink-5"
+                  className="ra-field w-full px-3 py-2.5 rounded-md text-sm outline-none transition-colors placeholder:text-ink-5"
                   style={inputStyle}
                 />
                 {errors.name && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.name}</p>}
@@ -118,7 +125,7 @@ const RequestAccess = () => {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                   maxLength={255}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors placeholder:text-ink-5"
+                  className="ra-field w-full px-3 py-2.5 rounded-md text-sm outline-none transition-colors placeholder:text-ink-5"
                   style={inputStyle}
                 />
                 {errors.email && <p className="mt-1.5 text-xs" style={{ color: "var(--danger)" }}>{errors.email}</p>}
@@ -133,7 +140,7 @@ const RequestAccess = () => {
                   id="seniority"
                   value={seniority}
                   onChange={(e) => { setSeniority(e.target.value); if (errors.seniority) setErrors((p) => ({ ...p, seniority: undefined })); }}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors appearance-none"
+                  className="ra-field w-full px-3 py-2.5 rounded-md text-sm outline-none transition-colors appearance-none"
                   style={{
                     ...inputStyle,
                     backgroundImage:
@@ -160,7 +167,7 @@ const RequestAccess = () => {
                   id="sector"
                   value={sector}
                   onChange={(e) => setSector(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors appearance-none"
+                  className="ra-field w-full px-3 py-2.5 rounded-md text-sm outline-none transition-colors appearance-none"
                   style={{
                     ...inputStyle,
                     backgroundImage:
@@ -208,15 +215,21 @@ const RequestAccess = () => {
 
         {status === "success" && (
           <div
-            className="rounded-xl p-6 text-center text-sm"
+            className="rounded-xl p-8 text-center"
             style={{
               backgroundColor: "var(--brand-muted)",
               border: "1px solid var(--bronze-line)",
               color: "var(--ink-7)",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 20,
+              lineHeight: 1.45,
             }}
           >
-            Your request has been received. Aura is invite-only — we review every application personally. We'll be in touch at{" "}
-            <span className="font-semibold" style={{ color: "var(--brand)" }}>{submittedEmail}</span>.
+            Your request is with us.
+            <div className="mt-3" style={{ fontSize: 15, fontFamily: "Inter, sans-serif", color: "var(--ink-5)", lineHeight: 1.6 }}>
+              We review every application personally — expect a response within 48 hours at{" "}
+              <span style={{ color: "var(--brand)", fontWeight: 600 }}>{submittedEmail}</span>.
+            </div>
           </div>
         )}
 
