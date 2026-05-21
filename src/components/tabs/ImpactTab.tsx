@@ -1077,7 +1077,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             borderRadius: 12, padding: "16px 18px",
           }}>
             <div style={{
-              fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.1em",
               color: "var(--aura-accent)", fontWeight: 600, marginBottom: 8,
             }}>
               Insight
@@ -1102,7 +1102,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             borderRadius: 12, padding: "16px 18px",
           }}>
             <div style={{
-              fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.1em",
               color: "var(--aura-accent2)", fontWeight: 600, marginBottom: 8,
             }}>
               Next tier
@@ -1173,7 +1173,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: "0.1em",
-                    textTransform: "uppercase",
                     color: "var(--ink-3)",
                     display: "inline-flex",
                     alignItems: "center",
@@ -1605,7 +1604,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" style={{ color: "var(--brand)" }} />
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
+                  <h2 className="text-xs font-semibold tracking-[0.14em]" style={{ color: "var(--color-text-secondary)" }}>
                     LinkedIn analytics
                   </h2>
                 </div>
@@ -1680,7 +1679,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── 6. FOLLOWER GROWTH ─────────── */}
       <section>
         <h2
-          className="text-xs font-semibold uppercase tracking-[0.14em] mb-3"
+          className="text-xs font-semibold tracking-[0.14em] mb-3"
           style={{ color: "var(--color-text-secondary)" }}
         >
           Follower growth — daily new followers
@@ -1711,7 +1710,6 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     fontSize: 12,
                     fontWeight: 600,
                     letterSpacing: "0.1em",
-                    textTransform: "uppercase",
                     color: "var(--ink-4)",
                   }}
                 >
@@ -1777,7 +1775,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     }}
                     formatter={(value: any) => [`+${value} new followers`, ""]}
                   />
-                  <Bar dataKey="growth" fill="var(--success)" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="growth" fill="#B08D3A" radius={[2, 2, 0, 0]} />
                   {publishMarkers.map((m, idx) => {
                     const first = m.posts[0];
                     const preview = (first.post_text || "").replace(/\s+/g, " ").trim().slice(0, 40);
