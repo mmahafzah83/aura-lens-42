@@ -35,6 +35,7 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
   });
   const [celebrate, setCelebrate] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const [showCtaButton, setShowCtaButton] = useState(false);
 
   const [status, setStatus] = useState({
     profile: false,
@@ -124,16 +125,19 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
         setHidden(true);
       } else {
         setCelebrate(true);
-        const t1 = setTimeout(() => setExiting(true), 2000);
-        const t2 = setTimeout(() => {
-          window.localStorage.setItem(STORAGE_KEY, "true");
-          setHidden(true);
-        }, 2400);
-        return () => { clearTimeout(t1); clearTimeout(t2); };
+        // Ceremony pause: hold the moment for 2s before revealing the CTA.
+        const t1 = setTimeout(() => setShowCtaButton(true), 2000);
+        return () => { clearTimeout(t1); };
       }
     }
     prevAllDoneRef.current = allDone;
   }, [allDone, loaded]);
+
+  const dismissCeremony = () => {
+    try { window.localStorage.setItem(STORAGE_KEY, "true"); } catch {}
+    setExiting(true);
+    setTimeout(() => setHidden(true), 400);
+  };
 
   // Don't render until we know status (prevents flash)
   if (!isReady || !user || !loaded) return null;
@@ -174,12 +178,46 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
             }}
           >
             {celebrate ? (
-              <div className="flex items-center gap-3 py-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <span className="text-sm font-semibold text-emerald-500">
-                  <span aria-hidden style={{ color: "var(--gold-dark, var(--brand))", marginRight: 6 }}>✦</span>
-                  You're all set! Aura is ready.
+              <div className="flex flex-col items-center text-center py-8 px-4">
+                <span
+                  aria-hidden
+                  className="aura-gold-pulse"
+                  style={{ fontSize: 48, lineHeight: 1, marginBottom: 18 }}
+                >
+                  ✦
                 </span>
+                <h3
+                  className="font-serif text-xl font-normal text-ink"
+                  style={{ margin: "0 0 8px" }}
+                >
+                  Your intelligence engine is live
+                </h3>
+                <p className="font-normal text-sm text-ink-4" style={{ maxWidth: 360, margin: 0 }}>
+                  Aura is now analyzing your expertise and building your strategic profile.
+                </p>
+                <AnimatePresence>
+                  {showCtaButton && (
+                    <motion.button
+                      key="onboarding-cta"
+                      type="button"
+                      onClick={dismissCeremony}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      className="mt-7 inline-flex items-center text-sm font-medium"
+                      style={{
+                        padding: "10px 20px",
+                        borderRadius: 8,
+                        background: "var(--brand)",
+                        color: "var(--ink-on-brand, var(--ink))",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Begin exploring →
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               <>
