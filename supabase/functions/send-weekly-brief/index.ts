@@ -128,6 +128,35 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const authHeader = req.headers.get("Authorization") || "";
+    const bearer = authHeader.replace("Bearer ", "");
+    const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+    const isServiceRole = bearer === SERVICE_ROLE || apiKey === SERVICE_ROLE;
+
+    // Authn: cron / service-role / user JWT
+    let authedUserId: string | null = null;
+    if (!isCron && !isServiceRole) {
+      if (!bearer) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${bearer}` } },
+      });
+      const { data: { user }, error: userErr } = await userClient.auth.getUser(bearer);
+      if (userErr || !user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      authedUserId = user.id;
+    }
+
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
     if (!RESEND_API_KEY) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not configured" }), {
@@ -157,6 +186,10 @@ serve(async (req) => {
       } catch {
         // no body — process all users
       }
+    }
+    // User-scoped callers can only send their own brief.
+    if (!isCron && !isServiceRole) {
+      targetUserId = authedUserId;
     }
 
     // Resolve target user IDs
