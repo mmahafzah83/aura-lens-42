@@ -1737,7 +1737,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           })()
         ) : (
           <div
-            className="rounded-lg p-4"
+            className="rounded-lg p-5"
             style={{ background: "var(--color-card)", border: "0.5px solid var(--color-border)" }}
           >
             <div style={{ height: 160, width: "100%" }}>

@@ -1590,3 +1590,12 @@ button[aria-label="Notifications"]:focus-visible {
   animation: aura-milestone-pulse-kf 1.8s ease-out 3;
   background: linear-gradient(180deg, hsl(var(--primary) / 0.10), hsl(var(--card))) !important;
 }
+
+/* Interactive card hover lift — apply only to clickable cards */
+.card-interactive {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+.card-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(176, 141, 58, 0.08);
+}
