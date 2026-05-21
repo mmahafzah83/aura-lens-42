@@ -1651,9 +1651,15 @@ button[aria-label="Notifications"]:focus-visible {
 
 /* Interactive card hover lift — apply only to clickable cards */
 .card-interactive {
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
 }
 .card-interactive:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(176, 141, 58, 0.08);
+  border-color: var(--gold-glow, rgba(176, 141, 58, 0.4));
+  box-shadow: 0 3px 16px rgba(176, 141, 58, 0.06);
+}
+.card-interactive:active {
+  transform: translateY(0);
+  transition-duration: 100ms;
 }
