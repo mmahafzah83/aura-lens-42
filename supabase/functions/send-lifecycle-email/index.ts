@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const APP_URL = "https://aura-intel.org";
-const FROM = "Mohammad Mahafdhah <mohammad.mahafdhah@aura-intel.org>";
+const FROM = "Mohammad Mahafdhah <invites@aura-intel.org>";
 const REPLY_TO = "mohammad.mahafdhah@aura-intel.org";
 
 type EmailType = "welcome" | "day1" | "day3" | "day7" | "inactive" | "silence";
@@ -57,7 +57,9 @@ function heading(text: string) {
 
 function signoff(firstName: string, level: string | null) {
   const role = level ? `${level}` : "Founder, Aura";
-  return `<p style="margin-top:28px;color:#3a3530;">— ${firstName || "Mohammad"}, ${role}<br/><span style="color:#8a8478;font-size:13px;">Aura · Strategic Intelligence</span></p>`;
+  return firstName
+    ? `<p style="margin-top:28px;color:#3a3530;">— ${firstName}, ${role}<br/><span style="color:#8a8478;font-size:13px;">Aura · Strategic Intelligence</span></p>`
+    : `<p style="margin-top:28px;color:#3a3530;">— The Aura Team<br/><span style="color:#8a8478;font-size:13px;">Aura · Strategic Intelligence</span></p>`;
 }
 
 function buildEmail(
