@@ -72,10 +72,10 @@ serve(async (req) => {
         .limit(5),
       supabase
         .from("linkedin_posts")
-        .select("post_text, posted_at")
+        .select("post_text, hook, published_at")
         .eq("user_id", user.id)
-        .gte("posted_at", new Date(Date.now() - 30 * 86400000).toISOString())
-        .order("posted_at", { ascending: false })
+        .gte("published_at", new Date(Date.now() - 30 * 86400000).toISOString())
+        .order("published_at", { ascending: false })
         .limit(50),
       supabase
         .from("score_snapshots")
@@ -92,11 +92,10 @@ serve(async (req) => {
     const latestScore: any = latestScoreRes.data || {};
 
     const postCount = recentPosts.length;
-    const latestHook = recentPosts[0]?.post_text
-      ? String(recentPosts[0].post_text).split("\n")[0].slice(0, 160)
-      : "";
-    const daysSinceLastPost = recentPosts[0]?.posted_at
-      ? Math.floor((Date.now() - new Date(recentPosts[0].posted_at).getTime()) / 86400000)
+    const latestHook = recentPosts[0]?.hook
+      || (recentPosts[0]?.post_text ? String(recentPosts[0].post_text).split("\n")[0].slice(0, 160) : "");
+    const daysSinceLastPost = recentPosts[0]?.published_at
+      ? Math.floor((Date.now() - new Date(recentPosts[0].published_at).getTime()) / 86400000)
       : 999;
 
     const signalsLine = topSignals.length
