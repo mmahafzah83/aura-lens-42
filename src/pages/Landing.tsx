@@ -339,7 +339,7 @@ const Landing = () => {
             <AuraLogo size={80} variant="dark" withWordmark />
           </div>
           <p className="text-xs tracking-[0.2em] uppercase mb-6" style={{ color: "var(--ink-4)" }}>For senior transformation leaders</p>
-          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+          <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 animate-fade-up-in" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", animationDuration: "600ms" }}>
             Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>authority</span>.
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
@@ -386,7 +386,7 @@ const Landing = () => {
           </div>
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "#FFF8E7", fontWeight: 500 }}>
+            <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-110" style={{ background: "var(--brand)", color: "var(--paper)", fontWeight: 500 }}>
               Get early access
             </button>
             <button onClick={scrollToHowItWorks} className="px-6 py-3 rounded-xl text-sm transition-colors hover:bg-brand/10" style={{ color: "var(--brand)", border: "1px solid var(--brand)", background: "transparent", fontWeight: 500 }}>
