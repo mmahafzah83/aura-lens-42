@@ -16,14 +16,17 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const cronSecret = Deno.env.get("CRON_SECRET") || "";
   const authHeader = req.headers.get("Authorization") || "";
   const bearer = authHeader.replace("Bearer ", "");
   const apiKeyHeader = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+  const cronHeader = req.headers.get("x-cron-secret") || "";
+  const isCron = !!cronSecret && cronHeader === cronSecret;
 
   // Allow service-role callers (cron/lifecycle) OR authenticated users.
   let authedUserId: string | null = null;
   const isServiceRole = bearer === serviceKey || apiKeyHeader === serviceKey;
-  if (!isServiceRole) {
+  if (!isServiceRole && !isCron) {
     if (!bearer) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -43,20 +46,36 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const requested = (body as any)?.user_id;
-    // Authenticated users may only decay their own signals; service-role can pass any user_id.
-    const user_id = isServiceRole ? requested : authedUserId;
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: "user_id required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Cron / service-role with no specific user → iterate every user that has active signals.
+    let userIds: string[];
+    if (isCron && !requested) {
+      const { data: rows } = await admin
+        .from("strategic_signals")
+        .select("user_id")
+        .eq("status", "active");
+      userIds = Array.from(new Set((rows || []).map((r: any) => r.user_id).filter(Boolean)));
+    } else {
+      const single = (isServiceRole || isCron) ? requested : authedUserId;
+      if (!single) {
+        return new Response(JSON.stringify({ error: "user_id required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userIds = [single];
+    }
+
+    const now = Date.now();
+    const nowIso = new Date(now).toISOString();
+    let totalProcessed = 0;
+    const totalCounts = { fading: 0, dormant: 0, accelerating: 0, stable: 0 };
+
+    for (const user_id of userIds) {
     const { data: signals, error } = await admin
       .from("strategic_signals")
       .select("id, confidence, supporting_evidence_ids, last_decay_at, status, velocity_status")
@@ -65,8 +84,6 @@ Deno.serve(async (req) => {
 
     if (error) throw new Error(error.message);
 
-    const now = Date.now();
-    const nowIso = new Date(now).toISOString();
     let processed = 0;
     const counts = { fading: 0, dormant: 0, accelerating: 0, stable: 0 };
 
@@ -141,14 +158,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`[signal-decay-engine] user=${user_id} processed=${processed}`, counts);
+      console.log(`[signal-decay-engine] user=${user_id} processed=${processed}`, counts);
+      totalProcessed += processed;
+      totalCounts.fading += counts.fading;
+      totalCounts.dormant += counts.dormant;
+      totalCounts.accelerating += counts.accelerating;
+      totalCounts.stable += counts.stable;
+    }
 
     return new Response(JSON.stringify({
-      processed,
-      fading: counts.fading,
-      dormant: counts.dormant,
-      accelerating: counts.accelerating,
-      stable: counts.stable,
+      users: userIds.length,
+      processed: totalProcessed,
+      ...totalCounts,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

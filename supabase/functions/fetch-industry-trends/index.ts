@@ -1557,6 +1557,32 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const adminClient = createClient(supabaseUrl, serviceKey);
 
+    // Cron mode: x-cron-secret header → run Phase A discovery for every profile.
+    const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
+    const isCron = !!CRON_SECRET && cronHeader === CRON_SECRET;
+    if (isCron && phase === "discover") {
+      const { data: profiles } = await adminClient
+        .from("diagnostic_profiles")
+        .select("user_id, firm, level, core_practice, sector_focus, north_star_goal, leadership_style");
+      const summary: any[] = [];
+      for (const p of profiles || []) {
+        const userId = (p as any).user_id as string;
+        if (!userId) continue;
+        try {
+          const result = await runPhaseA({
+            userId, mode, adminClient, exaKey, profile: p, supabaseUrl, serviceKey,
+          });
+          summary.push({ user_id: userId, ...result });
+        } catch (e) {
+          summary.push({ user_id: userId, error: (e as Error).message });
+        }
+      }
+      return new Response(JSON.stringify({ cron: true, users: summary.length, summary }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── Phase B: self-invoked enrichment ──
     if (phase === "enrich") {
       const isServiceCall = authHeader.includes(serviceKey);
