@@ -41,9 +41,9 @@ export default function ScoreBreakdown({ userId }: Props) {
   const total = signalPts + contentPts + consistencyPts;
 
   const rows = [
-    { label: "Signal",      val: signalPts,      max: 40, color: "var(--aura-accent)"   },
-    { label: "Content",     val: contentPts,     max: 40, color: "var(--aura-blue)"     },
-    { label: "Consistency", val: consistencyPts, max: 20, color: "var(--aura-positive)" },
+    { label: "Signal",      val: signalPts,      max: 40, color: "var(--brand)" },
+    { label: "Content",     val: contentPts,     max: 40, color: "var(--brand)" },
+    { label: "Consistency", val: consistencyPts, max: 20, color: "var(--brand)" },
   ];
 
   return (
@@ -59,7 +59,7 @@ export default function ScoreBreakdown({ userId }: Props) {
       }}>
         <div style={{
           fontSize: 9.5, fontWeight: 600, letterSpacing: "0.12em",
-          color: "var(--aura-t1)", textTransform: "uppercase",
+          color: "var(--ink)",
         }}>
           Score breakdown
         </div>
@@ -115,15 +115,14 @@ export default function ScoreBreakdown({ userId }: Props) {
       }}>
         <span style={{
           fontSize: 12, letterSpacing: "0.12em",
-          color: "var(--aura-t1)", opacity: 0.7,
-          textTransform: "uppercase", fontWeight: 600,
+          color: "var(--ink-3)", fontWeight: 600,
         }}>
           Total
         </span>
         <span style={{
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 24, fontWeight: 700,
-          color: "var(--aura-accent)",
+          color: "var(--brand)",
         }}>
           {total}<span style={{ fontSize: 14, opacity: 0.6 }}>/100</span>
         </span>

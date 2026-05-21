@@ -109,7 +109,7 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
     <section>
       <div className="flex items-start justify-between" style={{ marginBottom: 10 }}>
         <SectionHeader
-          label="AURA'S READ"
+          label="Aura's read"
           subtitle="What Aura thinks you should focus on today"
         />
         <div style={{ fontSize: 12, color: "var(--ink-3)" }}>
@@ -172,7 +172,6 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
                               fontSize: 12,
                               fontWeight: 500,
                               letterSpacing: "0.08em",
-                              textTransform: "uppercase",
                               color: actionColor,
                               flexShrink: 0,
                             }}
