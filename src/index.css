@@ -23,7 +23,7 @@ html.dark  { background-color: var(--paper, #14110C); }
 /* ── Design v2 tokens (warm parchment) ── */
 :root {
   --aura-bg: var(--paper);
-  --aura-card: #FFFFFF;
+  --aura-card: #1C1812;
   --aura-card-foreground: var(--ink);
   --aura-ink: var(--ink);
   --aura-ink-2: var(--ink-2);
