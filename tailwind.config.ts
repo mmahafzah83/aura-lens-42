@@ -18,6 +18,10 @@ export default {
         serif: ['var(--font-display)', 'Cormorant Garamond', 'Georgia', 'serif'],
         sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
       },
+      spacing: {
+        '4.5': '1.125rem', // 18px — standard button/inline icon size
+        '5.5': '1.375rem', // 22px — section marker icon size
+      },
       fontSize: {
         'display': ['80px', { lineHeight: '1', letterSpacing: '-0.03em', fontWeight: '400' }],
         'hero':    ['36px', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '400' }],
