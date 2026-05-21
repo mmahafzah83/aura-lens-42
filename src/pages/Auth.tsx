@@ -34,6 +34,18 @@ const Auth = () => {
   const inRecoveryRef = useRef(false);
   const [linkExpired, setLinkExpired] = useState(false);
 
+  // Daily rotating insight shown beneath "Welcome back" — gives returning
+  // users a sense of continuity without an API call.
+  const dailyInsights = [
+    "Your signals are watching the market for you.",
+    "New intelligence may be waiting inside.",
+    "Your authority compounds while you're away.",
+    "The market moved today. Let's see what Aura found.",
+    "Your next post could be one signal away.",
+  ];
+  const dailyInsight =
+    dailyInsights[new Date().getDay() % dailyInsights.length];
+
   const checkOnboardingAndRedirect = async (session: any) => {
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
