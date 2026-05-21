@@ -48,8 +48,8 @@ export default function ArchetypeHeroCard({
 
   // Single warm parchment + bronze identity.
   const themeStyle = {
-    background: "linear-gradient(150deg, #12100B, #1F1A12, #2A2318)",
-    glow: "radial-gradient(circle, rgba(212,176,86,0.08) 0%, transparent 70%)",
+    background: "linear-gradient(135deg, #12100B 0%, #2A2318 100%)",
+    glow: "radial-gradient(circle, rgba(176,141,58,0.08) 0%, transparent 70%)",
   };
 
   return (
@@ -66,7 +66,8 @@ export default function ArchetypeHeroCard({
       <div
         aria-hidden="true"
         style={{
-          position: "absolute", top: -60, right: -60, width: 200, height: 200,
+          position: "absolute", top: -40, right: -40, width: 160, height: 160,
+          borderRadius: "50%",
           background: themeStyle.glow,
           pointerEvents: "none",
         }}
@@ -92,11 +93,11 @@ export default function ArchetypeHeroCard({
             )}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--aura-font-heading)", fontSize: 18, color: "var(--aura-t1)", lineHeight: 1.2 }}>
+            <div style={{ fontFamily: "var(--aura-font-heading)", fontSize: 18, color: "#FBF8F1", lineHeight: 1.2 }}>
               {fullName}
             </div>
             {roleLine && (
-              <div style={{ fontSize: 12, color: "var(--aura-t1)", opacity: 0.55, marginTop: 3 }}>
+              <div style={{ fontSize: 12, color: "rgba(251,248,241,0.6)", marginTop: 3 }}>
                 {roleLine}
               </div>
             )}
@@ -149,7 +150,7 @@ export default function ArchetypeHeroCard({
           {archetypeName || "Complete assessment to reveal your archetype"}
         </div>
         {description && (
-          <p style={{ fontSize: 14, color: "var(--aura-t1)", opacity: 0.78, lineHeight: 1.625, margin: 0, marginBottom: 16 }}>
+          <p style={{ fontSize: 14, color: "rgba(251,248,241,0.7)", lineHeight: 1.625, margin: 0, marginBottom: 16 }}>
             {description}
           </p>
         )}
