@@ -921,9 +921,9 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
         {/* ── Header: title + inline counters ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24, gap: 16, flexWrap: "wrap" }}>
           <div>
-            <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase", fontFamily: "var(--font-body)" }}>
-              Your strategic radar
-            </div>
+            <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+                Your strategic radar
+              </div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
               Intelligence
             </h1>
