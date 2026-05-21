@@ -25,7 +25,7 @@ const horizonEye = (size = 40, color = "#B08D3A") => `
 const buildEmailHtml = (BRAND: string) => {
   const HEADING_FONT = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
   const BODY_FONT = "'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif";
-  const CTA = "#F97316";
+  const CTA = BRAND;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -66,8 +66,8 @@ const buildEmailHtml = (BRAND: string) => {
       <p style="font-size:11px;letter-spacing:2px;color:${BRAND};margin:0 0 16px;font-weight:600;">YOUR ACCESS</p>
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">You're one of fewer than 50 people in the private beta. I reviewed your request personally.</p>
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 14px;">Two things before you click:</p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 12px;">⏱&nbsp;&nbsp;This link expires in <strong style="color:#ededed;">48 hours</strong>. Click when you have 10 quiet minutes — it's worth your full attention.</p>
-      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 28px;">🔐&nbsp;&nbsp;You'll be logged in automatically. Once inside, tap your avatar (top right) → <strong style="color:#ededed;">set a password</strong> so you can return anytime.</p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 12px;">This link expires in <strong style="color:#ededed;">48 hours</strong>. Click when you have 10 quiet minutes — it's worth your full attention.</p>
+      <p style="font-size:14px;line-height:1.7;color:#bdbdbd;margin:0 0 28px;">You'll be logged in automatically. Once inside, tap your avatar (top right) → <strong style="color:#ededed;">set a password</strong> so you can return anytime.</p>
       <p style="font-size:15px;line-height:1.7;color:#ededed;margin:0 0 18px;">Click below to give your expertise the visibility it deserves.</p>
       <div style="margin:0 0 28px;">
         <a href="{{CONFIRMATION_URL}}" style="display:inline-block;background:${CTA};color:#ffffff;padding:0 28px;height:48px;line-height:48px;border-radius:8px;font-weight:600;font-size:15px;text-decoration:none;font-family:${BODY_FONT};">Open my Aura →</a>
