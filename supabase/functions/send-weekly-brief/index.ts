@@ -302,39 +302,86 @@ serve(async (req) => {
             body: (e.body as string) ?? "",
           }));
 
-        // 5. Top signal
-        const { data: topSignal } = await admin
+        // 5. Top 3 signals + 7-day confidence deltas (snapshot comparison from score_snapshots.components)
+        const { data: topSignalsRows } = await admin
           .from("strategic_signals")
-          .select("signal_title, confidence")
+          .select("id, signal_title, confidence")
           .eq("user_id", userId)
           .eq("status", "active")
           .order("priority_score", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(3);
 
-        const topSignalTitle = (topSignal?.signal_title as string | undefined) ?? null;
-        const topConfidencePct = topSignal?.confidence != null
-          ? Math.round(Number(topSignal.confidence) * 100)
-          : null;
-
-        // 6. Latest authority score (fetched per spec — included in logs for future use)
-        const { data: authority } = await admin
-          .from("authority_scores")
-          .select("authority_score, momentum_score, engagement_score, snapshot_date")
+        // Pull a snapshot from ~7 days ago to compute confidence deltas, if available
+        let priorConfidenceById: Record<string, number> = {};
+        const { data: priorSnapshot } = await admin
+          .from("score_snapshots")
+          .select("components, created_at")
           .eq("user_id", userId)
-          .order("snapshot_date", { ascending: false })
+          .lte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (authority) {
-          console.log("authority loaded for", userId, authority);
+        const priorSignals = (priorSnapshot?.components as any)?.signals;
+        if (Array.isArray(priorSignals)) {
+          for (const s of priorSignals) {
+            if (s?.id && typeof s?.confidence === "number") {
+              priorConfidenceById[s.id] = s.confidence;
+            }
+          }
         }
+
+        const topSignals = (topSignalsRows ?? []).map((s: any) => {
+          const currentPct = s.confidence != null ? Math.round(Number(s.confidence) * 100) : 0;
+          const prior = priorConfidenceById[s.id];
+          const priorPct = prior != null ? Math.round(prior * 100) : currentPct;
+          return {
+            title: s.signal_title as string,
+            currentPct,
+            deltaPct: currentPct - priorPct,
+          };
+        });
+        const topSignalTitle = topSignals[0]?.title ?? null;
+
+        // 6. Publishing cadence: posts this week vs last week
+        const oneWeekAgoIso = sevenDaysAgo;
+        const twoWeeksAgoIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+        const [{ count: postsThisWeek }, { count: postsLastWeek }] = await Promise.all([
+          admin
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("published_at", oneWeekAgoIso),
+          admin
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("published_at", twoWeeksAgoIso)
+            .lt("published_at", oneWeekAgoIso),
+        ]);
+
+        // 7. Recommended moves — up to 2 active
+        const nowIso = new Date().toISOString();
+        const { data: moveRows } = await admin
+          .from("recommended_moves")
+          .select("title, rationale, status, expires_at")
+          .eq("user_id", userId)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+          .in("status", ["active", "pending", "open"])
+          .order("created_at", { ascending: false })
+          .limit(2);
+        const moves = (moveRows ?? []).map((m: any) => ({
+          title: m.title as string,
+          rationale: (m.rationale as string) ?? "",
+        }));
 
         const html = buildHtml({
           firstName,
           dayDate,
           alerts: sortedEvents,
-          topSignalTitle,
-          topSignalConfidencePct: topConfidencePct,
+          topSignals,
+          postsThisWeek: postsThisWeek ?? 0,
+          postsLastWeek: postsLastWeek ?? 0,
+          moves,
           brand: BRAND,
           brandFont: BRAND_FONT,
         });
