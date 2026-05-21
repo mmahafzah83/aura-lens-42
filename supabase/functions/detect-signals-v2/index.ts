@@ -107,10 +107,10 @@ async function calcPriorityScore(
   admin: any,
   userId: string,
   themeTags: string[],
+  contentGap: number = 1.0,
 ): Promise<number> {
   const daysSinceUpdate = Math.floor((Date.now() - new Date(updatedAt).getTime()) / 86400000);
   const momentum = daysSinceUpdate <= 2 ? 0.8 : daysSinceUpdate <= 7 ? 0.5 : 0.2;
-  const contentGap = 1.0;
   let base = (profileRelevance * 0.35) + (confidence * 0.30) + (momentum * 0.20) + (contentGap * 0.15) + (fragmentCount / 1000);
   if (themeTags.length > 0) {
     const { data: prefs } = await admin
