@@ -743,7 +743,7 @@ const SourcesSubTab = ({
             const domain = entry.type === "link" ? extractDomain(entry.image_url) || extractDomain(entry.content) : null;
 
             return (
-              <div key={`${entry.type}-${entry.id}`} style={{ background: "var(--surface-ink-raised)", borderRadius: 14, border: "1px solid var(--ink-3)", marginBottom: 10, overflow: "hidden", position: "relative" }} className="group">
+              <div key={`${entry.type}-${entry.id}`} style={{ background: "var(--surface-ink-raised)", borderRadius: 14, border: "1px solid var(--ink-3)", marginBottom: 10, overflow: "hidden", position: "relative" }} className={`group ${!isDoc ? "card-interactive" : ""}`}>
                 {/* Open button */}
                 <button
                   onClick={e => { e.stopPropagation(); openEntryInNewTab(entry); }}
