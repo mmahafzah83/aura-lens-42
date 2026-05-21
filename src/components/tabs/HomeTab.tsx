@@ -1,3 +1,4 @@
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -778,7 +779,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     (async () => {
       try {
         await supabase.auth.getSession();
-        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
         if (!error && res) setAuraData(res as AuraScoreData);
       } catch (e) {
         console.warn("[HomeTab] aura score load failed", e);
@@ -789,7 +790,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             setAuraLoading(true);
             try {
               await supabase.auth.getSession();
-              const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+              const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
               if (!error && res) setAuraData(res as AuraScoreData);
             } finally {
               setAuraLoading(false);

@@ -1,3 +1,4 @@
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Upload, Loader2, ExternalLink, Sparkles, Check, BarChart3, ChevronDown, Info, HelpCircle, TrendingUp } from "lucide-react";
@@ -352,7 +353,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         if (!user) return;
         if (!cancelled) setUserId(user.id);
         await supabase.auth.getSession();
-        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
         if (!cancelled && !error && res) setAuraData(res);
         const { data: prof } = await supabase
           .from("diagnostic_profiles")

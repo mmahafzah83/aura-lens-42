@@ -1,3 +1,4 @@
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +36,7 @@ const WeeklyRhythm = ({ userId, data: provided }: Props) => {
       setLoading(true);
       try {
         await supabase.auth.getSession();
-        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
         if (!cancelled && !error && res) setData(res as AuraScoreResponse);
       } catch (e) {
         console.error("WeeklyRhythm load failed", e);
