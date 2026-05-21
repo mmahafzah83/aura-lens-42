@@ -454,6 +454,13 @@ const Dashboard = () => {
                 {!sidebarCollapsed && (
                   <span className="text-sm font-medium tracking-wide">{item.label}</span>
                 )}
+                {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                  <span
+                    aria-label={`${newIntelSignalCount} new signals`}
+                    className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
+                    style={{ background: "var(--gold-dark)" }}
+                  />
+                )}
               </button>
             );
           })}
@@ -577,6 +584,13 @@ const Dashboard = () => {
                       style={{ color: isActive ? "var(--aura-accent)" : "var(--aura-t3)" }}
                     />
                     <span className="text-sm font-medium">{item.label}</span>
+                    {item.value === "intelligence" && newIntelSignalCount > 0 && !isActive && (
+                      <span
+                        aria-label={`${newIntelSignalCount} new signals`}
+                        className="w-2 h-2 rounded-full ml-auto mr-1 shrink-0"
+                        style={{ background: "var(--gold-dark)" }}
+                      />
+                    )}
                   </button>
                 );
               })}
