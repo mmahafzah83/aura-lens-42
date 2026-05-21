@@ -482,7 +482,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                   value={(currentAnswer as string) || ""}
                   onChange={(e) => setAnswers((prev) => ({ ...prev, [step]: e.target.value }))}
                   placeholder={q.placeholder}
-                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-[13px] text-ink-7 placeholder-[#3a3a3a] resize-none focus:outline-none focus:border-brand/40 transition-colors"
+                  className="w-full h-28 bg-surface-ink-raised border border-ink-3 rounded-xl p-3 text-[13px] text-ink-7 placeholder:text-ink-4 resize-none focus:outline-none focus:border-brand/40 transition-colors"
                 />
               ) : (
                 <div className="space-y-2">
@@ -703,7 +703,7 @@ function ResultsView({
       {/* === CARD 1 — The Verdict === */}
       <div
         style={{
-          background: "var(--surface-ink-raised, #1d1d1d)",
+          background: "var(--surface-ink-raised, var(--ink-2))",
           border: "1px solid var(--brand)",
           borderRadius: 14,
           padding: "22px 22px 20px",
@@ -794,7 +794,7 @@ function ResultsView({
       {showFull && (
         <div
           style={{
-            background: "var(--surface-ink-raised, #1a1a1a)",
+            background: "var(--surface-ink-raised, var(--ink-2))",
             border: "1px solid var(--ink-3)",
             borderRadius: 14,
             padding: "8px 4px",
@@ -859,7 +859,7 @@ function ResultsView({
       {/* === CARD 3 — Actions === */}
       <div
         style={{
-          background: "var(--surface-ink-raised, #181818)",
+          background: "var(--surface-ink-raised, var(--ink-2))",
           border: "1px solid var(--ink-3)",
           borderRadius: 14,
           padding: 14,
