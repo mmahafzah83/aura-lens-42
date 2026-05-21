@@ -3,7 +3,6 @@ import { User, LogOut, UserCog, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import UserAvatar from "@/components/ui/UserAvatar";
-import { useAuraTheme, THEME_LABELS, THEME_SWATCHES, type AuraTheme } from "@/components/ThemeProvider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,7 +39,6 @@ export default function ProfileMenu({
   onViewFullJourney: _onViewFullJourney,
 }: ProfileMenuProps) {
   const [pwModalOpen, setPwModalOpen] = useState(false);
-  const { theme: auraTheme, setTheme: setAuraTheme } = useAuraTheme();
   const [hasPassword, setHasPassword] = useState<boolean>(() => {
     try { return localStorage.getItem("password_set") === "1"; } catch { return false; }
   });
