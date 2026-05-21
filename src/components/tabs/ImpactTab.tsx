@@ -819,7 +819,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
         className="space-y-7 max-w-5xl"
       >
         <div style={{ marginBottom: 8 }}>
-          <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
+          <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
             Your authority trajectory
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
@@ -905,7 +905,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       {/* ─────────── 1. PAGE HEADER ─────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
-          <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--ink-3)", marginBottom: 6, textTransform: "uppercase" }}>
+          <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
             Your authority trajectory
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
