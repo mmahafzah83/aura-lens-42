@@ -41,8 +41,39 @@ interface FoundArticle {
 const Onboarding = () => {
   const navigate = useNavigate();
 
+  // One-time ceremony overlay shown between onboarding completion and Home.
+  const [ceremony, setCeremony] = useState(false);
+  const [ceremonyLeaving, setCeremonyLeaving] = useState(false);
+
+  const completeCeremonyAndNavigate = () => {
+    if (ceremonyLeaving) return;
+    setCeremonyLeaving(true);
+    window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem("aura_visited_pages");
+        const arr: string[] = raw ? JSON.parse(raw) : [];
+        if (!arr.includes("home")) {
+          arr.push("home");
+          localStorage.setItem("aura_visited_pages", JSON.stringify(arr));
+        }
+      } catch { /* ignore */ }
+      navigate("/home", { replace: true });
+    }, 500);
+  };
+
   // Suppress the home first-visit hint for users who just completed onboarding.
   const goHome = () => {
+    // Play the ceremony exactly once per browser; subsequent visits go straight home.
+    try {
+      const alreadyPlayed = localStorage.getItem("aura_onboarding_ceremony_seen") === "true";
+      if (!alreadyPlayed) {
+        localStorage.setItem("aura_onboarding_ceremony_seen", "true");
+        setCeremony(true);
+        // Auto-advance after 2.5s
+        window.setTimeout(() => completeCeremonyAndNavigate(), 2500);
+        return;
+      }
+    } catch { /* ignore — fall through to navigation */ }
     try {
       const raw = localStorage.getItem("aura_visited_pages");
       const arr: string[] = raw ? JSON.parse(raw) : [];
