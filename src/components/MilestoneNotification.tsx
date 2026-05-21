@@ -1,3 +1,4 @@
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useState } from "react";
 import { Award, X } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -19,7 +20,7 @@ const MilestoneNotification = ({ userId }: Props) => {
     (async () => {
       try {
         await supabase.auth.getSession();
-        const { data, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        const { data, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
         if (cancelled || error || !data) return;
         const newly: string[] = (data as any).newly_earned || [];
         const all: Milestone[] = (data as any).milestones || [];

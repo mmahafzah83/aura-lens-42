@@ -1,3 +1,4 @@
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuraButton } from "@/components/ui/AuraButton";
@@ -2841,7 +2842,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
       ), { duration: 5000 });
       loadPosts();
       // Trigger score recalc (non-blocking)
-      supabase.functions.invoke("calculate-aura-score", {
+      invokeEdgeFunction("calculate-aura-score", {
         body: { user_id: session.user.id },
       }).catch((e) => console.error("calculate-aura-score failed:", e));
     } catch (e: any) {

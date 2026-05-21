@@ -1,3 +1,4 @@
+import { invokeEdgeFunction } from "@/lib/invokeEdgeFunction";
 import { useEffect, useState } from "react";
 import { Check, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,7 +109,7 @@ const MilestonesSection = ({ userId, data: provided }: Props) => {
       setLoading(true);
       try {
         await supabase.auth.getSession();
-        const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+        const { data: res, error } = await invokeEdgeFunction("calculate-aura-score", { body: {} });
         if (!cancelled && !error && res) setData(res as AuraScoreResponse);
       } catch (e) {
         console.error("MilestonesSection load failed", e);
