@@ -1867,6 +1867,8 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {/* ─────────── 8. CAPTURE ACTIVITY ─────────── */}
       {/* "Your rhythm — last X days" chart removed — duplicated from Home/Intelligence. */}
