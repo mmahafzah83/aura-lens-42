@@ -1069,10 +1069,10 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       >
         <header className="pt-1">
           <div
-            className="text-muted-foreground"
-            style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}
+            className="font-serif text-2xl font-normal text-ink"
+            style={{ marginBottom: 12, letterSpacing: "-0.005em" }}
           >
-            {getGreeting(now.getHours())}{userName ? `, ${userName}` : ""}
+            {getGreetingTitle(now.getHours())}{userName ? `, ${userName}` : ""}
           </div>
           <h1
             style={{
