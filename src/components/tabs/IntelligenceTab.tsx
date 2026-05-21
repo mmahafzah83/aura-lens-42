@@ -1151,8 +1151,6 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               )
             ) : (
               <>
-                {/* Compute top signal by priority_score for visual hierarchy */}
-                {(() => null)()}
                 {/* Command Center container */}
                 <div data-testid="intel-signals" className="intel-command-center" style={{ background: "transparent", border: "none", borderRadius: 10, overflow: "hidden", display: "flex", minHeight: 500 }}>
                   {/* LEFT PANEL — detail view (~58%) */}
