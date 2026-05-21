@@ -3,7 +3,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 
 const Privacy = () => {
   usePageMeta({
-    title: "Privacy Policy — Aura",
+    title: "Aura — Privacy Policy",
     description: "How Aura collects, stores, and protects your data. We never sell your data and never train AI models on your content.",
     path: "/privacy",
   });

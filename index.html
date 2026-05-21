@@ -30,7 +30,7 @@
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="theme-color" content="#c9952a" />
+    <meta name="theme-color" content="#B08D3A" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Aura" />
@@ -73,6 +73,40 @@
 </head>
 
   <body style="background-color: inherit;">
+    <div id="splash" style="
+      position:fixed; inset:0; z-index:9999;
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column; gap:12px;
+      background: var(--paper, #F5F1E8);
+      transition: opacity 0.4s ease;
+    ">
+      <svg width="48" height="48" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="color:#B08D3A">
+        <g transform="translate(50 40)" stroke="currentColor" fill="none" stroke-linecap="round">
+          <path d="M-44,0 Q-22,-28 0,-28 Q22,-28 44,0" stroke-width="1.6"/>
+          <path d="M-44,0 Q-22,28 0,28 Q22,28 44,0" stroke-width="1.6"/>
+          <circle cx="0" cy="0" r="12" stroke-width="1.2"/>
+          <circle cx="0" cy="0" r="5" fill="currentColor" stroke="none"/>
+          <g stroke-width="0.7" stroke="currentColor">
+            <line x1="0" y1="-30" x2="0" y2="-34" opacity="0.3"/>
+            <line x1="-16" y1="-27" x2="-19" y2="-31" opacity="0.25"/>
+            <line x1="16" y1="-27" x2="19" y2="-31" opacity="0.25"/>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <script>
+      (function() {
+        try {
+          var splash = document.getElementById('splash');
+          var t = localStorage.getItem('aura-theme');
+          var theme = (t === 'dark' || t === 'light') ? t : 'light';
+          if (splash) {
+            splash.style.backgroundColor = theme === 'dark' ? '#0c0c0c' : '#F5F1E8';
+            splash.querySelector('svg').style.color = theme === 'dark' ? '#D4B056' : '#B08D3A';
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

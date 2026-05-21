@@ -45,7 +45,7 @@ const Guide = () => {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   usePageMeta({
-    title: "Guide — How Aura Works",
+    title: "Aura — How It Works",
     description: "How Aura turns your daily reading into market authority: capture, detect signals, generate content, and track your authority score.",
     path: "/guide",
     jsonLd: {

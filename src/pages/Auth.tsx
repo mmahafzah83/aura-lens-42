@@ -8,7 +8,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 
 const Auth = () => {
   usePageMeta({
-    title: "Sign in — Aura",
+    title: "Aura — Sign in",
     description: "Sign in to Aura to access your strategic intelligence dashboard, signals, and content tools.",
     path: "/auth",
   });
@@ -489,7 +489,7 @@ const Auth = () => {
           ) : showNewPasswordForm ? (
             <div className="space-y-4">
               <div>
-                <label className="auth-label">NEW PASSWORD</label>
+                <label className="auth-label">New password</label>
                 <div style={{ position: "relative" }}>
                   <input
                     type={showPwd ? "text" : "password"}
@@ -512,7 +512,7 @@ const Auth = () => {
                 </div>
               </div>
               <div>
-                <label className="auth-label">CONFIRM PASSWORD</label>
+                <label className="auth-label">Confirm password</label>
                 <input
                   type={showPwd ? "text" : "password"}
                   value={newPasswordConfirm}
@@ -570,7 +570,7 @@ const Auth = () => {
             )}
             <div>
               <label htmlFor="email" className="auth-label">
-                EMAIL
+                Email
               </label>
               <input
                 id="email"
@@ -588,7 +588,7 @@ const Auth = () => {
 
             <div>
               <label htmlFor="password" className="auth-label">
-                PASSWORD
+                Password
               </label>
               <div style={{ position: "relative" }}>
                 <input

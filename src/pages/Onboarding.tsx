@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, ArrowRight, FileText, Check, Eye, EyeOff, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
 const SECTORS = [
@@ -39,6 +40,11 @@ interface FoundArticle {
 }
 
 const Onboarding = () => {
+  usePageMeta({
+    title: "Aura — Get Started",
+    description: "Complete your Aura onboarding to unlock strategic intelligence.",
+    path: "/onboarding",
+  });
   const navigate = useNavigate();
 
   // One-time ceremony overlay shown between onboarding completion and Home.
