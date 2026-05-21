@@ -192,6 +192,12 @@ const getGreeting = (h: number) => {
   return "GOOD EVENING";
 };
 
+const getGreetingTitle = (h: number) => {
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  return "Good evening";
+};
+
 const timeAgo = (iso: string) => formatSmartDate(iso);
 
 // ────────────────────────────────────────────────
