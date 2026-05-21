@@ -23,7 +23,8 @@ html.dark  { background-color: var(--paper, #14110C); }
 /* ── Design v2 tokens (warm parchment) ── */
 :root {
   --aura-bg: var(--paper);
-  --aura-card: #1C1812;
+  /* Warm dark card surface — flips to paper under [data-theme="light"] below. */
+  --aura-card: hsl(30 12% 11%);
   --aura-card-foreground: var(--ink);
   --aura-ink: var(--ink);
   --aura-ink-2: var(--ink-2);
@@ -1130,6 +1131,8 @@ html.dark,
 .dark {
   --surface-ink-raised: #2A2419;
   --surface-ink-subtle: #1C1812;
+  /* Ensure --aura-card flips warm-dark in dark mode regardless of cascade order. */
+  --aura-card: hsl(30 12% 11%);
 }
 
 /* ── Dark mode text contrast safety net ──────────────────────────────
