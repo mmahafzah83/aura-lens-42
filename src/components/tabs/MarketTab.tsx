@@ -107,7 +107,7 @@ const MarketTab = () => {
       setApprovedPosts((prev) => [...prev, idx]);
       if (drafts[idx]) {
         navigator.clipboard?.writeText(drafts[idx].post).catch(() => {});
-        toast({ title: "Post Approved ✓", description: "Copied to clipboard. Ready to publish." });
+        toast({ title: "Published — your authority just grew", description: "Copied to clipboard. Ready to publish." });
       }
       setSwipingIdx(null);
       setSwipeDirection(null);

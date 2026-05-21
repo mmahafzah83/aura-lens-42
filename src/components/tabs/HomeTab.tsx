@@ -187,9 +187,9 @@ const SIGNAL = "var(--signal)";
 // ────────────────────────────────────────────────
 
 const getGreeting = (h: number) => {
-  if (h >= 5 && h < 12) return "GOOD MORNING";
-  if (h >= 12 && h < 17) return "GOOD AFTERNOON";
-  return "GOOD EVENING";
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  return "Good evening";
 };
 
 const getGreetingTitle = (h: number) => {
@@ -394,7 +394,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       console.error("[HomeTab] briefing load failed", e);
       setBriefError(true);
       toast.error("Couldn't load your briefing.", {
-        action: { label: "Retry", onClick: () => loadBriefing(uid) },
+        action: { label: "Try again", onClick: () => loadBriefing(uid) },
       });
     } finally {
       setBriefLoading(false);
@@ -423,7 +423,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       console.error("[HomeTab] moves load failed", e);
       setMovesError(true);
       toast.error("Couldn't load recommended moves.", {
-        action: { label: "Retry", onClick: () => loadMoves(uid) },
+        action: { label: "Try again", onClick: () => loadMoves(uid) },
       });
     } finally {
       setMovesLoading(false);
@@ -504,7 +504,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       if (didAttempt) setTrendsError(true);
       if (didAttempt) {
         toast.error("Couldn't load intelligence signals.", {
-          action: { label: "Retry", onClick: () => loadTrends(uid) },
+          action: { label: "Try again", onClick: () => loadTrends(uid) },
         });
       }
     } finally {
@@ -784,7 +784,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         console.warn("[HomeTab] aura score load failed", e);
       toast.error("Couldn't load your Aura score.", {
         action: {
-          label: "Retry",
+          label: "Try again",
           onClick: async () => {
             setAuraLoading(true);
             try {
@@ -921,7 +921,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setAddedSignalIds(prev => new Set(prev).add(trend.id));
     const result = await wireTrendToSignals(trend);
     if (result.ok) {
-      toast.success(`Added to ${result.signalTitle} — fragment count now ${result.newCount}`);
+      toast.success(`Evidence strengthened — ${result.newCount} sources connected to ${result.signalTitle}`);
     } else {
       toast.error("Couldn't add to signals — try again");
     }

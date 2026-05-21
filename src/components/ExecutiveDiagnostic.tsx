@@ -374,7 +374,7 @@ const ExecutiveDiagnostic = ({ onComplete }: { onComplete: () => void }) => {
                 </div>
                 {parseInt(totalExp) > 15 && parseInt(consultingExp) < 10 && (
                   <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                    <p className="text-sm text-amber-400 font-medium flex items-center gap-2"><Tag className="w-4 h-4" /> Industry Expert Pivot detected</p>
+                    <p className="text-sm text-amber-400 font-medium flex items-center gap-2"><Tag className="w-4 h-4" /> Industry expert pivot detected</p>
                     <p className="text-xs text-amber-400/60 mt-1">Your deep industry experience will shape a unique consulting trajectory.</p>
                   </div>
                 )}
