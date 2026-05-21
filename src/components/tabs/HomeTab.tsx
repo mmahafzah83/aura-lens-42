@@ -1645,6 +1645,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* P4 — Authority pulse strip + Journey cycle + Mission control (now below score) */}
       {authUser?.id && (
+        <>
+        <BeatDivider label="What to do next" />
         <div className="flex flex-col" style={{ gap: 10 }}>
           <AuthorityPulseStrip
             userId={authUser.id}
@@ -1663,6 +1665,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
           )}
           <MissionControl userId={authUser.id} entriesCount={Array.isArray(entries) ? entries.length : 0} />
         </div>
+        </>
       )}
 
       {/* Weekly LinkedIn data reminder — appears when LinkedIn data is 7+ days stale */}
@@ -2259,6 +2262,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 
       {/* SECTION 2 — AI daily briefing */}
       {/* Aura's Read */}
+      <BeatDivider label="What's happening" />
       <div data-testid="home-live-intel">
         <AurasRead
           userId={sessionConfirmed ? authUser?.id ?? null : null}
@@ -2292,3 +2296,33 @@ const AnimatedScore = ({ value }: { value: number }) => {
   const display = useCountUp(value, { duration: 800, once: true, key: "home-score" });
   return <>{display}</>;
 };
+
+/* Narrative beat divider — thin gold line + small-caps eyebrow */
+const BeatDivider = ({ label }: { label: string }) => (
+  <div
+    aria-hidden="true"
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "16px 0 8px",
+      marginTop: 16,
+    }}
+  >
+    <div style={{ height: 1, flex: "0 0 24px", background: "var(--gold-pale)" }} />
+    <div
+      style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: 12,
+        fontWeight: 500,
+        letterSpacing: "0.18em",
+        textTransform: "uppercase",
+        color: "var(--ink-5)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </div>
+    <div style={{ height: 1, flex: 1, background: "var(--gold-pale)" }} />
+  </div>
+);
