@@ -62,7 +62,7 @@ export default function TerritoryMap({ themes }: Props) {
         Territory map
       </div>
       {bubbles.length === 0 ? (
-        <p style={{ fontSize: 12, color: "var(--aura-t1)", opacity: 0.6, fontStyle: "italic" }}>
+        <p style={{ fontSize: 12, color: "var(--ink-4)", fontStyle: "italic" }}>
           Capture more to chart your territory.
         </p>
       ) : (
