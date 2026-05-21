@@ -1,5 +1,4 @@
 import React from "react";
-import { AlertTriangle } from "lucide-react";
 
 interface State {
   hasError: boolean;
@@ -22,38 +21,57 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren, State> {
       return (
         <div
           style={{
-            padding: "40px",
+            padding: "48px 32px",
             textAlign: "center",
-            background: "var(--surface-ink-raised)",
+            background: "var(--paper)",
             borderRadius: "12px",
-            border: "1px solid var(--ink-3)",
+            border: "1px solid var(--vellum)",
             margin: "24px",
           }}
         >
-          <div style={{ marginBottom: "16px", display: "flex", justifyContent: "center", color: "var(--ink-5)" }}>
-            <AlertTriangle size={32} />
-          </div>
-          <h3 style={{ color: "var(--ink-7)", marginBottom: "8px" }}>
-            Didn't connect. Try once more.
-          </h3>
-          <p style={{ color: "var(--ink-5)", fontSize: "14px", marginBottom: "24px" }}>
-            This section failed to load. Your data is safe.
-          </p>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
+          <h3
             style={{
-              background: "var(--brand)",
-              color: "#000",
-              border: "none",
-              borderRadius: "8px",
-              padding: "10px 24px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "600",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 26,
+              fontWeight: 500,
+              color: "var(--ink)",
+              marginBottom: "10px",
+              letterSpacing: "-0.01em",
             }}
           >
-            Try again
+            Something went wrong
+          </h3>
+          <p style={{ color: "var(--ink-4)", fontSize: "14px", marginBottom: "24px", lineHeight: 1.6 }}>
+            Your data is safe. Try refreshing the page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              background: "var(--brand)",
+              color: "var(--paper)",
+              border: "none",
+              borderRadius: "8px",
+              padding: "12px 28px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: 600,
+            }}
+          >
+            Refresh →
           </button>
+          <div style={{ marginTop: 18 }}>
+            <a
+              href="mailto:support@aura-intel.org?subject=Aura%20issue%20report"
+              style={{
+                fontSize: 12,
+                color: "var(--ink-5)",
+                textDecoration: "underline",
+                textUnderlineOffset: 3,
+              }}
+            >
+              Report this issue
+            </a>
+          </div>
         </div>
       );
     }
