@@ -1301,20 +1301,21 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <AuraLogo size={40} variant="auto" />
                   </div>
-                  <h3 className="text-base font-semibold text-foreground mb-1">Your Chief of Staff</h3>
-                  <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                    {EMPTY_STATE.askAura.text}
+                  <h3 className="text-base font-semibold text-foreground mb-1">I'm Aura, your strategic advisor</h3>
+                  <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed mb-5">
+                    Ask me anything about your authority, signals, or what to publish next.
                   </p>
-                  <div className="mt-5 space-y-2 w-full max-w-[280px]">
+                  <div className="flex flex-wrap items-center justify-center gap-2 w-full max-w-[340px]">
                     {[
-                      "What should I write about?",
-                      "What did my competitors publish?",
-                      "Where am I invisible?",
+                      "What should I publish this week?",
+                      "Which signal is strongest right now?",
+                      "How is my authority score trending?",
+                      "What are my competitors missing?",
                     ].map(q => (
                       <button
                         key={q}
                         onClick={() => send(q)}
-                        className="w-full text-left text-xs px-3 py-2.5 rounded-lg bg-secondary/60 border border-border/20 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors tactile-press"
+                        className="text-xs px-3.5 py-2 rounded-full bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors tactile-press"
                       >
                         {q}
                       </button>
