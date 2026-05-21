@@ -1486,7 +1486,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         className="px-2.5 h-7 text-[11px] font-medium transition-colors"
                         style={{
                           background: visualMode === opt.key ? "var(--brand)" : "transparent",
-                          color: visualMode === opt.key ? "var(--ink-on-brand, #0d0d0d)" : "var(--muted-foreground)",
+                          color: visualMode === opt.key ? "var(--ink-on-brand, var(--ink))" : "var(--muted-foreground)",
                         }}
                       >
                         {opt.label}
@@ -2584,7 +2584,7 @@ const LinkedInPreview = ({
     <div
       style={{
         background: "#fff",
-        border: "1px solid #e6e6e6",
+        border: "1px solid var(--vellum)",
         borderRadius: 8,
         padding: 12,
         marginBottom: 10,

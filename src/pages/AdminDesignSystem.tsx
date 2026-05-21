@@ -85,7 +85,7 @@ function applyTokensToRoot(tokens: DesignTokens, theme: Theme) {
 }
 
 const sectionCard: CSSProperties = {
-  background: "var(--surface-ink-raised, #1c1c1c)",
+  background: "var(--surface-ink-raised, var(--ink-2))",
   border: "1px solid var(--ink-3, #333)",
   borderRadius: 12,
   padding: 24,
@@ -166,7 +166,7 @@ function ColorEditor({
   };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--ink-3, #2a2a2a)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid var(--ink-3)" }}>
       <div style={{ flex: "0 0 160px", fontSize: 12, color: "var(--ink-7, #eee)" }}>{tokenKey}</div>
       {isHex && (
         <input
@@ -183,7 +183,7 @@ function ColorEditor({
         style={{
           flex: 1,
           padding: "6px 10px",
-          background: "var(--ink, #0d0d0d)",
+          background: "var(--ink)",
           border: "1px solid var(--ink-3, #333)",
           color: "var(--ink-7, #eee)",
           borderRadius: 6,
@@ -420,7 +420,7 @@ const AdminDesignSystem = () => {
 
   if (!authChecked || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink, #0d0d0d)" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--ink)" }}>
         <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--brand)" }} />
       </div>
     );
@@ -435,7 +435,7 @@ const AdminDesignSystem = () => {
     <div
       className="min-h-screen w-full"
       style={{
-        backgroundColor: "var(--ink, #0d0d0d)",
+        backgroundColor: "var(--ink)",
         color: "var(--ink-7, #eee)",
         fontFamily: "Inter, system-ui, sans-serif",
       }}
@@ -504,7 +504,7 @@ const AdminDesignSystem = () => {
               <div style={headingStyle}>Typography</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
                 {Object.entries(activeTypography).map(([k, v]) => (
-                  <div key={k} style={{ padding: 12, border: "1px solid var(--ink-3, #2a2a2a)", borderRadius: 8 }}>
+                  <div key={k} style={{ padding: 12, border: "1px solid var(--ink-3)", borderRadius: 8 }}>
                     <div style={{ fontSize: 11, color: "var(--ink-5)" }}>{k}</div>
                     <div style={{ fontFamily: typeof v === "string" ? `'${v}', sans-serif` : "inherit", fontSize: 18, color: "var(--ink-7)" }}>
                       {String(v)}
@@ -523,7 +523,7 @@ const AdminDesignSystem = () => {
                       borderRadius: 8,
                       background: "var(--paper, #14110C)",
                       boxShadow: resolve(v, editTheme),
-                      border: "1px solid var(--ink-3, #2a2a2a)",
+                      border: "1px solid var(--ink-3)",
                     }}
                   >
                     <div style={{ fontSize: 12, color: "var(--ink-7)", fontWeight: 600 }}>{k}</div>
@@ -688,7 +688,7 @@ const AdminDesignSystem = () => {
                   <tr
                     key={r.id}
                     style={{
-                      borderTop: "1px solid var(--ink-3, #2a2a2a)",
+                      borderTop: "1px solid var(--ink-3)",
                       background: r.is_active ? "var(--brand-ghost, rgba(212,176,86,0.06))" : "transparent",
                     }}
                   >
