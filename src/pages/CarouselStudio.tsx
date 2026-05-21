@@ -1813,7 +1813,16 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
                         <>
                           <Loader2 className="w-10 h-10 animate-spin mb-4" style={{ color: "#B08D3A" }} />
                           <div className="text-base font-semibold mb-1">Generating your carousel…</div>
-                          {topic && <div className="text-sm opacity-70 max-w-md">Creating 8 slides on: {topic}</div>}
+                          <div
+                            key={genMessageIdx}
+                            className="text-sm opacity-70 max-w-md transition-opacity duration-500 ease-in-out"
+                            style={{ animation: "fadeIn 0.5s ease-in-out" }}
+                          >
+                            {GEN_MESSAGES[genMessageIdx]}
+                          </div>
+                          {topic && (
+                            <div className="text-sm opacity-50 max-w-md mt-1">Creating 8 slides on: {topic}</div>
+                          )}
                         </>
                       ) : (
                         <>
