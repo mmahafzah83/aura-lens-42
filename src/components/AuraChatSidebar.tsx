@@ -1356,23 +1356,27 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         YOUR MARKET MIRROR — 18 MONTHS AHEAD
                       </div>
                     )}
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-md"
-                          : msg.isError
-                            ? "bg-destructive/10 border border-destructive/30 text-foreground rounded-bl-md"
-                            : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
-                      }`}
-                      style={{
-                        wordBreak: "break-word",
-                        overflowWrap: "anywhere",
-                        ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid var(--brand)" } : {}),
-                        ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
-                        ...(msg.role === "assistant" && msg.isError ? { borderLeft: "3px solid hsl(var(--destructive))" } : {}),
-                      }}
-                    >
-                      {msg.role === "assistant" ? (
+                    <div className={`flex ${msg.role === "user" ? "flex-row-reverse" : "flex-row"} items-end gap-2 max-w-[85%]`}>
+                      {msg.role === "user" && (
+                        <UserAvatar firstName={userIdentity.firstName} lastName={userIdentity.lastName} size="sm" />
+                      )}
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : msg.isError
+                              ? "bg-destructive/10 border border-destructive/30 text-foreground rounded-bl-md"
+                              : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
+                        }`}
+                        style={{
+                          wordBreak: "break-word",
+                          overflowWrap: "anywhere",
+                          ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid var(--brand)" } : {}),
+                          ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
+                          ...(msg.role === "assistant" && msg.isError ? { borderLeft: "3px solid hsl(var(--destructive))" } : {}),
+                        }}
+                      >
+                        {msg.role === "assistant" ? (
                         <ReactMarkdown
                           components={{
                             // Preserve the bubble's text-sm leading-relaxed styling
@@ -1393,6 +1397,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                       ) : (
                         msg.content
                       )}
+                      </div>
                     </div>
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <>
