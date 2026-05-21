@@ -30,7 +30,6 @@ const SESSION_TOAST_STYLE = {
 };
 
 const DEFAULT_TIMEOUT_MS = 15_000;
-const GENERIC_MSG = "Didn't connect. Try once more.";
 const SESSION_MSG = "Your session expired. Please sign in again.";
 
 let sessionRedirectScheduled = false;
@@ -65,11 +64,18 @@ function handleSessionExpired() {
   }, 2000);
 }
 
-function showErrorToast() {
-  toast(GENERIC_MSG, {
-    duration: 4000,
+function showErrorToast(context: string, retry?: () => void) {
+  const label = context && context !== "query" && context !== "edge-function"
+    ? context
+    : "your data";
+  const message = `Couldn't load ${label}. Pull down to refresh.`;
+  toast(message, {
+    duration: 5000,
     position: "bottom-right",
     style: ERROR_TOAST_STYLE,
+    action: retry
+      ? { label: "Retry", onClick: () => { try { retry(); } catch (e) { console.error("[safeQuery] retry failed", e); } } }
+      : undefined,
   });
 }
 
@@ -97,6 +103,8 @@ interface SafeOptions {
   silent?: boolean;
   /** Timeout in ms (default 15000). */
   timeoutMs?: number;
+  /** Optional retry callback wired into the toast action. */
+  onRetry?: () => void;
 }
 
 /**
@@ -107,7 +115,7 @@ export async function safeQuery<T = any>(
   fn: () => PromiseLike<{ data: T | null; error: any }>,
   options: SafeOptions = {}
 ): Promise<{ data: T | null; error: any }> {
-  const { context = "query", silent = false, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
+  const { context = "query", silent = false, timeoutMs = DEFAULT_TIMEOUT_MS, onRetry } = options;
   try {
     const result = await withTimeout(Promise.resolve(fn()), timeoutMs);
     if (result?.error) {
@@ -115,7 +123,7 @@ export async function safeQuery<T = any>(
       if (isAuthError(result.error)) {
         handleSessionExpired();
       } else if (!silent) {
-        showErrorToast();
+        showErrorToast(context, onRetry);
       }
     }
     return result ?? { data: null, error: new Error("empty result") };
@@ -124,7 +132,7 @@ export async function safeQuery<T = any>(
     if (isAuthError(err)) {
       handleSessionExpired();
     } else if (!silent) {
-      showErrorToast();
+      showErrorToast(context, onRetry);
     }
     return { data: null, error: err };
   }
@@ -142,6 +150,6 @@ export async function safeInvoke<T = any>(
 }
 
 /** Manually trigger the standard error toast (e.g. after a non-Supabase failure). */
-export function showQueryErrorToast() {
-  showErrorToast();
+export function showQueryErrorToast(context = "your data", retry?: () => void) {
+  showErrorToast(context, retry);
 }

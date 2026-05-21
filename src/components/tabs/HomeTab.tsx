@@ -386,6 +386,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     } catch (e) {
       console.error("[HomeTab] briefing load failed", e);
       setBriefError(true);
+      toast.error("Couldn't load your briefing.", {
+        action: { label: "Retry", onClick: () => loadBriefing(uid) },
+      });
     } finally {
       setBriefLoading(false);
     }
@@ -412,6 +415,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     } catch (e) {
       console.error("[HomeTab] moves load failed", e);
       setMovesError(true);
+      toast.error("Couldn't load recommended moves.", {
+        action: { label: "Retry", onClick: () => loadMoves(uid) },
+      });
     } finally {
       setMovesLoading(false);
     }
@@ -489,6 +495,11 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     } catch (e) {
       console.error("[HomeTab] trends load failed", e);
       if (didAttempt) setTrendsError(true);
+      if (didAttempt) {
+        toast.error("Couldn't load intelligence signals.", {
+          action: { label: "Retry", onClick: () => loadTrends(uid) },
+        });
+      }
     } finally {
       if (didAttempt) setTrendsLoading(false);
     }
@@ -764,6 +775,21 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         if (!error && res) setAuraData(res as AuraScoreData);
       } catch (e) {
         console.warn("[HomeTab] aura score load failed", e);
+      toast.error("Couldn't load your Aura score.", {
+        action: {
+          label: "Retry",
+          onClick: async () => {
+            setAuraLoading(true);
+            try {
+              await supabase.auth.getSession();
+              const { data: res, error } = await supabase.functions.invoke("calculate-aura-score", { body: {} });
+              if (!error && res) setAuraData(res as AuraScoreData);
+            } finally {
+              setAuraLoading(false);
+            }
+          },
+        },
+      });
       } finally {
         setAuraLoading(false);
       }
@@ -880,6 +906,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
       await supabase.from("recommended_moves").update({ status: "dismissed" }).eq("id", id);
     } catch (e) {
       console.error("[HomeTab] dismiss move failed", e);
+      toast.error("Couldn't dismiss move. Refresh and try again.");
     }
   };
 
