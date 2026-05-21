@@ -97,7 +97,7 @@ const AttributionSection = ({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-            <p className="text-[10px] text-muted-foreground/30">{subtitle}</p>
+            <p className="text-xs text-muted-foreground/30">{subtitle}</p>
           </div>
         </div>
 
@@ -117,7 +117,7 @@ const AttributionSection = ({
                     {i === 0 && <Crown className="w-3 h-3 text-primary/40" />}
                     <span className="text-xs text-foreground/60 capitalize">{d.label}</span>
                   </div>
-                  <div className="flex items-center gap-4 text-[10px] text-muted-foreground/25 tabular-nums">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground/25 tabular-nums">
                     <span>{d.count} assets</span>
                     <span>{d.avgComments} avg comments</span>
                     <span className="text-foreground/50 font-medium">{d.avgEng}% eng</span>
@@ -138,7 +138,7 @@ const AttributionSection = ({
 
         {data.length > 0 && data[0].topPost && (
           <div className="pt-2 border-t border-border/5">
-            <p className="text-[10px] text-muted-foreground/20">
+            <p className="text-xs text-muted-foreground/20">
               Best performer: "{(data[0].topPost.hook || data[0].topPost.title || data[0].topPost.post_text?.slice(0, 60) || "—")}…"
             </p>
           </div>
@@ -267,7 +267,7 @@ const StrategicAttribution = () => {
           >
             Strategic Attribution
           </h2>
-          <p className="text-[11px] text-muted-foreground/30 mt-1 max-w-lg">
+          <p className="text-xs text-muted-foreground/30 mt-1 max-w-lg">
             Which frameworks, visual strategies, and narrative structures are compounding your authority.
           </p>
         </div>
@@ -321,7 +321,7 @@ const StrategicAttribution = () => {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Theme × Format Matrix</h3>
-                <p className="text-[10px] text-muted-foreground/30">Which topics perform best in which structure</p>
+                <p className="text-xs text-muted-foreground/30">Which topics perform best in which structure</p>
               </div>
             </div>
 
@@ -339,12 +339,12 @@ const StrategicAttribution = () => {
                     <span className="text-xs text-foreground/55 capitalize truncate">
                       {combo.theme}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/20">×</span>
+                    <span className="text-xs text-muted-foreground/20">×</span>
                     <span className="text-xs text-foreground/40 capitalize truncate">
                       {combo.format}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-[10px] tabular-nums flex-shrink-0">
+                  <div className="flex items-center gap-3 text-xs tabular-nums flex-shrink-0">
                     <span className="text-muted-foreground/25">{combo.count} assets</span>
                     <span className="text-foreground/50 font-medium">{combo.avgEng}% eng</span>
                   </div>
@@ -364,7 +364,7 @@ const StrategicAttribution = () => {
               <h3 className="text-sm font-semibold text-foreground">Strategic Recommendation</h3>
             </div>
             <p className="text-sm text-foreground/55 leading-relaxed">{recommendation}</p>
-            <button className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press mt-1">
+            <button className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press mt-1">
               <FileText className="w-3.5 h-3.5" />
               Draft Content
             </button>

@@ -49,7 +49,7 @@ const OpportunitySection = ({
       <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center">
         <Icon className={`w-3.5 h-3.5 ${accentClass}`} />
       </div>
-      <h5 className="text-[10px] uppercase tracking-[0.15em] text-primary/60 font-semibold">{label}</h5>
+      <h5 className="text-xs uppercase tracking-[0.15em] text-primary/60 font-semibold">{label}</h5>
     </div>
     {children}
   </div>
@@ -134,10 +134,10 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground tracking-tight">Strategic Opportunities</h3>
-            <p className="text-[10px] text-muted-foreground/50">Pattern-detected signals from your evidence</p>
+            <p className="text-xs text-muted-foreground/50">Pattern-detected signals from your evidence</p>
           </div>
           {signals.length > 0 && (
-            <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">
+            <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">
               {signals.length}
             </span>
           )}
@@ -145,7 +145,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
         <button
           onClick={runPatternScan}
           disabled={scanning}
-          className="flex items-center gap-1.5 text-[11px] text-primary/70 hover:text-primary transition-colors disabled:opacity-50 bg-primary/5 hover:bg-primary/10 rounded-lg px-3 py-1.5"
+          className="flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary transition-colors disabled:opacity-50 bg-primary/5 hover:bg-primary/10 rounded-lg px-3 py-1.5"
         >
           {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
           {scanning ? "Scanning…" : "Detect Patterns"}
@@ -158,7 +158,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
             <Zap className="w-7 h-7 text-primary/30" />
           </div>
           <p className="text-sm text-muted-foreground/60 mb-1">No strategic signals detected yet.</p>
-          <p className="text-[11px] text-muted-foreground/40 mb-4">Capture more insights to fuel pattern detection.</p>
+          <p className="text-xs text-muted-foreground/40 mb-4">Capture more insights to fuel pattern detection.</p>
           <button
             onClick={runPatternScan}
             disabled={scanning}
@@ -200,7 +200,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <h4 className="text-sm font-bold text-foreground">{signal.signal_title}</h4>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
                         confidencePct >= 80 ? "bg-green-500/15 text-green-400" :
                         confidencePct >= 60 ? "bg-primary/15 text-primary" :
                         "bg-muted/50 text-muted-foreground/60"
@@ -209,15 +209,15 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                       </span>
                       {typeof signal.commercial_validation_score === "number" && (
                         signal.commercial_validation_score > 1.5 ? (
-                          <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 bg-green-500/15 text-green-400">
+                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 bg-green-500/15 text-green-400">
                             ✦ Market validated · {signal.commercial_validation_score.toFixed(1)}× avg
                           </span>
                         ) : signal.commercial_validation_score >= 1.0 ? (
-                          <span className="text-[9px] text-muted-foreground/70 flex-shrink-0">
+                          <span className="text-xs text-muted-foreground/70 flex-shrink-0">
                             {signal.commercial_validation_score.toFixed(1)}× avg engagement
                           </span>
                         ) : (
-                          <span className="text-[9px] text-muted-foreground/40 flex-shrink-0">
+                          <span className="text-xs text-muted-foreground/40 flex-shrink-0">
                             Below average engagement
                           </span>
                         )
@@ -226,11 +226,11 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                     <p className="text-xs text-muted-foreground/70 leading-relaxed line-clamp-2">{signal.explanation}</p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
                       {signal.theme_tags.slice(0, 4).map((tag, i) => (
-                        <span key={i} className="text-[9px] bg-muted/40 text-muted-foreground/50 px-2 py-0.5 rounded-md">
+                        <span key={i} className="text-xs bg-muted/40 text-muted-foreground/50 px-2 py-0.5 rounded-md">
                           {tag}
                         </span>
                       ))}
-                      <span className="text-[9px] text-muted-foreground/30 ml-1">
+                      <span className="text-xs text-muted-foreground/30 ml-1">
                         {signal.fragment_count} evidence fragments
                       </span>
                     </div>
@@ -254,7 +254,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                       {signal.skill_pillars.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {signal.skill_pillars.map((pillar, i) => (
-                            <span key={i} className="text-[9px] bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">
+                            <span key={i} className="text-xs bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">
                               {pillar}
                             </span>
                           ))}
@@ -266,12 +266,12 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                     {fw.title && (
                       <OpportunitySection icon={Target} label="Framework Opportunity" accentClass="text-blue-400/80">
                         <p className="text-xs font-semibold text-foreground/90 mb-1">{fw.title}</p>
-                        <p className="text-[11px] text-muted-foreground/60 mb-2.5 leading-relaxed">{fw.description}</p>
+                        <p className="text-xs text-muted-foreground/60 mb-2.5 leading-relaxed">{fw.description}</p>
                         {fw.potential_steps?.length > 0 && (
                           <div className="space-y-1 mb-3">
                             {fw.potential_steps.map((step: string, i: number) => (
-                              <div key={i} className="flex items-start gap-2 text-[10px] text-muted-foreground/55">
-                                <span className="w-4 h-4 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0 text-primary/60 font-bold text-[8px] mt-0.5">
+                              <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground/55">
+                                <span className="w-4 h-4 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0 text-primary/60 font-bold text-xs mt-0.5">
                                   {i + 1}
                                 </span>
                                 <span className="leading-relaxed">{step}</span>
@@ -285,7 +285,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                             description: fw.description || "",
                             steps: fw.potential_steps || [],
                           })}
-                          className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
+                          className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
                         >
                           <ArrowRight className="w-3 h-3" /> Generate Full Framework
                         </button>
@@ -297,11 +297,11 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                       <OpportunitySection icon={Crown} label="Authority Opportunity" accentClass="text-amber-400/80">
                         <p className="text-xs font-semibold text-foreground/90 mb-1">{ct.title}</p>
                         {ct.hook && (
-                          <p className="text-[11px] text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">
+                          <p className="text-xs text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">
                             "{ct.hook}"
                           </p>
                         )}
-                        {ct.angle && <p className="text-[11px] text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
+                        {ct.angle && <p className="text-xs text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
                         <button
                           onClick={() => setDraftData({
                             title: ct.title,
@@ -309,7 +309,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                             angle: ct.angle || "Strategic thought leadership",
                             context: signal.strategic_implications,
                           })}
-                          className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
+                          className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
                         >
                           <ArrowRight className="w-3 h-3" /> Draft Authority Post
                         </button>
@@ -320,12 +320,12 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                     {co.service_name && (
                       <OpportunitySection icon={Briefcase} label="Consulting Opportunity" accentClass="text-emerald-400/80">
                         <p className="text-xs font-semibold text-foreground/90 mb-1">{co.service_name}</p>
-                        {co.problem && <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Problem:</span> {co.problem}</p>}
-                        {co.target_clients && <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Target:</span> {co.target_clients}</p>}
-                        {co.value_proposition && <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-2.5"><span className="text-foreground/50 font-medium">Value:</span> {co.value_proposition}</p>}
+                        {co.problem && <p className="text-xs text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Problem:</span> {co.problem}</p>}
+                        {co.target_clients && <p className="text-xs text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Target:</span> {co.target_clients}</p>}
+                        {co.value_proposition && <p className="text-xs text-muted-foreground/60 leading-relaxed mb-2.5"><span className="text-foreground/50 font-medium">Value:</span> {co.value_proposition}</p>}
                         <button
                           onClick={() => onOpenChat?.(`Develop a consulting proposal based on: "${co.service_name}" — Problem: ${co.problem}. Target: ${co.target_clients}. Value: ${co.value_proposition}`)}
-                          className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
+                          className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
                         >
                           <ArrowRight className="w-3 h-3" /> Develop Proposal
                         </button>
@@ -336,7 +336,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                     <div className="flex gap-2 pt-2">
                       <button
                         onClick={() => setExplorerSignal(signal)}
-                        className="flex-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium"
+                        className="flex-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium"
                       >
                         <Search className="w-3.5 h-3.5" /> Explore
                       </button>
@@ -347,13 +347,13 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                           signalTitle: signal.signal_title,
                           contentFormat: "carousel",
                         })}
-                        className="text-[11px] bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
+                        className="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium"
                       >
                         <LayoutGrid className="w-3.5 h-3.5" /> Carousel
                       </button>
                       <button
                         onClick={() => dismissSignal(signal.id)}
-                        className="text-[11px] text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1"
+                        className="text-xs text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1"
                       >
                         <X className="w-3 h-3" /> Dismiss
                       </button>

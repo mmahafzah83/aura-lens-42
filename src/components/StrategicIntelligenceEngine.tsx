@@ -49,18 +49,18 @@ const SectionHeader = ({ icon: Icon, label, count, color = "text-primary" }: { i
     </div>
     <h4 className="text-xs font-semibold text-foreground tracking-tight">{label}</h4>
     {count !== undefined && count > 0 && (
-      <span className="text-[9px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">{count}</span>
+      <span className="text-xs bg-primary/15 text-primary px-2 py-0.5 rounded-full font-semibold">{count}</span>
     )}
   </div>
 );
 
 const EvidenceBar = ({ label, count, max, color }: { label: string; count: number; max: number; color: string }) => (
   <div className="flex items-center gap-3">
-    <span className="text-[10px] text-muted-foreground/60 w-20 truncate">{label}</span>
+    <span className="text-xs text-muted-foreground/60 w-20 truncate">{label}</span>
     <div className="flex-1 h-1 bg-secondary/30 rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.round((count / Math.max(max, 1)) * 100)}%` }} />
     </div>
-    <span className="text-[10px] text-muted-foreground/40 tabular-nums w-6 text-right">{count}</span>
+    <span className="text-xs text-muted-foreground/40 tabular-nums w-6 text-right">{count}</span>
   </div>
 );
 
@@ -70,7 +70,7 @@ const OpportunitySection = ({ icon: Icon, label, children, accentClass = "text-p
       <div className="w-6 h-6 rounded-md bg-primary/8 flex items-center justify-center">
         <Icon className={`w-3.5 h-3.5 ${accentClass}`} />
       </div>
-      <h5 className="text-[10px] uppercase tracking-[0.15em] text-primary/60 font-semibold">{label}</h5>
+      <h5 className="text-xs uppercase tracking-[0.15em] text-primary/60 font-semibold">{label}</h5>
     </div>
     {children}
   </div>
@@ -180,13 +180,13 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
             <h2 className="text-section-title text-foreground">
               Strategic Intelligence
             </h2>
-            <p className="text-[10px] text-muted-foreground/40 tracking-wide">Converting knowledge into strategic signals</p>
+            <p className="text-xs text-muted-foreground/40 tracking-wide">Converting knowledge into strategic signals</p>
           </div>
         </div>
         <button
           onClick={runPatternScan}
           disabled={scanning}
-          className="flex items-center gap-1.5 text-[11px] text-primary/70 hover:text-primary bg-primary/5 hover:bg-primary/10 rounded-lg px-3.5 py-2 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary bg-primary/5 hover:bg-primary/10 rounded-lg px-3.5 py-2 transition-colors disabled:opacity-50"
         >
           {scanning ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
           {scanning ? "Scanning…" : "Detect Patterns"}
@@ -197,7 +197,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
       <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-2 mb-5">
           <Layers className="w-4 h-4 text-primary/60" />
-          <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Knowledge Base</p>
+          <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-[0.2em]">Knowledge Base</p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-5">
@@ -217,7 +217,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
 
         {evidence.topTypes.length > 0 && (
           <div className="pt-4 border-t border-border/8 space-y-2">
-            <p className="text-[9px] text-muted-foreground/30 uppercase tracking-widest mb-2">Evidence Distribution</p>
+            <p className="text-xs text-muted-foreground/30 uppercase tracking-widest mb-2">Evidence Distribution</p>
             {evidence.topTypes.map(({ type, count }) => (
               <EvidenceBar
                 key={type}
@@ -247,7 +247,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
             <Icon className="w-3.5 h-3.5" />
             <span className="text-xs font-medium tracking-wide">{label}</span>
             {count !== undefined && count > 0 && (
-              <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{count}</span>
+              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{count}</span>
             )}
           </button>
         ))}
@@ -262,7 +262,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                 <Zap className="w-7 h-7 text-primary/30" />
               </div>
               <p className="text-sm text-muted-foreground/60 mb-1">No strategic signals detected yet.</p>
-              <p className="text-[11px] text-muted-foreground/40 mb-4">Capture more insights to fuel pattern detection.</p>
+              <p className="text-xs text-muted-foreground/40 mb-4">Capture more insights to fuel pattern detection.</p>
               <button
                 onClick={runPatternScan}
                 disabled={scanning}
@@ -294,7 +294,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5">
                         <h4 className="text-sm font-bold text-foreground">{signal.signal_title}</h4>
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0 ${
                           confidencePct >= 80 ? "bg-emerald-500/15 text-emerald-400" :
                           confidencePct >= 60 ? "bg-primary/15 text-primary" :
                           "bg-muted/50 text-muted-foreground/60"
@@ -306,11 +306,11 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
 
                       {/* Evidence Summary */}
                       <div className="flex flex-wrap items-center gap-2 mt-3">
-                        <span className="text-[9px] bg-secondary/40 text-muted-foreground/50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                        <span className="text-xs bg-secondary/40 text-muted-foreground/50 px-2 py-0.5 rounded-md flex items-center gap-1">
                           <FileText className="w-2.5 h-2.5" /> {signal.fragment_count} evidence
                         </span>
                         {signal.theme_tags.slice(0, 3).map((tag, i) => (
-                          <span key={i} className="text-[9px] bg-muted/30 text-muted-foreground/40 px-2 py-0.5 rounded-md">{tag}</span>
+                          <span key={i} className="text-xs bg-muted/30 text-muted-foreground/40 px-2 py-0.5 rounded-md">{tag}</span>
                         ))}
                       </div>
                     </div>
@@ -326,7 +326,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                         {signal.skill_pillars.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {signal.skill_pillars.map((pillar, i) => (
-                              <span key={i} className="text-[9px] bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">{pillar}</span>
+                              <span key={i} className="text-xs bg-primary/8 text-primary/60 px-2.5 py-1 rounded-full border border-primary/10 font-medium">{pillar}</span>
                             ))}
                           </div>
                         )}
@@ -336,18 +336,18 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                       {fw.title && (
                         <OpportunitySection icon={Target} label="Framework Opportunity" accentClass="text-blue-400/80">
                           <p className="text-xs font-semibold text-foreground/90 mb-1">{fw.title}</p>
-                          <p className="text-[11px] text-muted-foreground/60 mb-2.5 leading-relaxed">{fw.description}</p>
+                          <p className="text-xs text-muted-foreground/60 mb-2.5 leading-relaxed">{fw.description}</p>
                           {fw.potential_steps?.length > 0 && (
                             <div className="space-y-1 mb-3">
                               {fw.potential_steps.map((step: string, i: number) => (
-                                <div key={i} className="flex items-start gap-2 text-[10px] text-muted-foreground/55">
-                                  <span className="w-4 h-4 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0 text-primary/60 font-bold text-[8px] mt-0.5">{i + 1}</span>
+                                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground/55">
+                                  <span className="w-4 h-4 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0 text-primary/60 font-bold text-xs mt-0.5">{i + 1}</span>
                                   <span className="leading-relaxed">{step}</span>
                                 </div>
                               ))}
                             </div>
                           )}
-                          <button onClick={() => setBuilderData({ title: fw.title, description: fw.description || "", steps: fw.potential_steps || [] })} className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
+                          <button onClick={() => setBuilderData({ title: fw.title, description: fw.description || "", steps: fw.potential_steps || [] })} className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
                             <ArrowRight className="w-3 h-3" /> Build Framework
                           </button>
                         </OpportunitySection>
@@ -357,9 +357,9 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                       {ct.title && (
                         <OpportunitySection icon={Crown} label="Authority Opportunity" accentClass="text-amber-400/80">
                           <p className="text-xs font-semibold text-foreground/90 mb-1">{ct.title}</p>
-                          {ct.hook && <p className="text-[11px] text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">"{ct.hook}"</p>}
-                          {ct.angle && <p className="text-[11px] text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
-                          <button onClick={() => setDraftData({ title: ct.title, hook: ct.hook || signal.explanation, angle: ct.angle || "Strategic thought leadership", context: signal.strategic_implications })} className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
+                          {ct.hook && <p className="text-xs text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">"{ct.hook}"</p>}
+                          {ct.angle && <p className="text-xs text-muted-foreground/55 leading-relaxed mb-2.5">{ct.angle}</p>}
+                          <button onClick={() => setDraftData({ title: ct.title, hook: ct.hook || signal.explanation, angle: ct.angle || "Strategic thought leadership", context: signal.strategic_implications })} className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
                             <ArrowRight className="w-3 h-3" /> Draft Content
                           </button>
                         </OpportunitySection>
@@ -369,10 +369,10 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                       {co.service_name && (
                         <OpportunitySection icon={Briefcase} label="Consulting Opportunity" accentClass="text-emerald-400/80">
                           <p className="text-xs font-semibold text-foreground/90 mb-1">{co.service_name}</p>
-                          {co.problem && <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Problem:</span> {co.problem}</p>}
-                          {co.target_clients && <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Target:</span> {co.target_clients}</p>}
-                          {co.value_proposition && <p className="text-[11px] text-muted-foreground/60 leading-relaxed mb-2.5"><span className="text-foreground/50 font-medium">Value:</span> {co.value_proposition}</p>}
-                          <button onClick={() => onOpenChat?.(`Develop a consulting proposal: "${co.service_name}" — Problem: ${co.problem}. Target: ${co.target_clients}. Value: ${co.value_proposition}`)} className="text-[10px] text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
+                          {co.problem && <p className="text-xs text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Problem:</span> {co.problem}</p>}
+                          {co.target_clients && <p className="text-xs text-muted-foreground/60 leading-relaxed mb-1.5"><span className="text-foreground/50 font-medium">Target:</span> {co.target_clients}</p>}
+                          {co.value_proposition && <p className="text-xs text-muted-foreground/60 leading-relaxed mb-2.5"><span className="text-foreground/50 font-medium">Value:</span> {co.value_proposition}</p>}
+                          <button onClick={() => onOpenChat?.(`Develop a consulting proposal: "${co.service_name}" — Problem: ${co.problem}. Target: ${co.target_clients}. Value: ${co.value_proposition}`)} className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors">
                             <ArrowRight className="w-3 h-3" /> Develop Proposal
                           </button>
                         </OpportunitySection>
@@ -380,13 +380,13 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
 
                       {/* Action Bar */}
                       <div className="flex gap-2 pt-2">
-                        <button onClick={() => setExplorerSignal(signal)} className="flex-1 text-[11px] bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium">
+                        <button onClick={() => setExplorerSignal(signal)} className="flex-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-xl py-2.5 px-4 transition-colors flex items-center justify-center gap-1.5 font-medium">
                           <Search className="w-3.5 h-3.5" /> Explore Evidence
                         </button>
-                        <button onClick={() => onDraftToStudio?.({ topic: signal.signal_title, context: `${signal.explanation}\n\n${signal.strategic_implications}`, signalTitle: signal.signal_title, contentFormat: "carousel" })} className="text-[11px] bg-primary/5 hover:bg-primary/10 text-primary/70 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium">
+                        <button onClick={() => onDraftToStudio?.({ topic: signal.signal_title, context: `${signal.explanation}\n\n${signal.strategic_implications}`, signalTitle: signal.signal_title, contentFormat: "carousel" })} className="text-xs bg-primary/5 hover:bg-primary/10 text-primary/70 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1.5 font-medium">
                           <LayoutGrid className="w-3.5 h-3.5" /> Carousel
                         </button>
-                        <button onClick={() => dismissSignal(signal.id)} className="text-[11px] text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1">
+                        <button onClick={() => dismissSignal(signal.id)} className="text-xs text-muted-foreground/30 hover:text-destructive/60 rounded-xl py-2.5 px-3 transition-colors flex items-center gap-1">
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -416,11 +416,11 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
               ].map(({ step, title, desc, icon: Icon }) => (
                 <div key={step} className="flex items-start gap-3">
                   <div className="w-7 h-7 rounded-full bg-primary/8 flex items-center justify-center flex-shrink-0 border border-primary/10">
-                    <span className="text-[10px] font-bold text-primary">{step}</span>
+                    <span className="text-xs font-bold text-primary">{step}</span>
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-foreground">{title}</p>
-                    <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{desc}</p>
+                    <p className="text-xs text-muted-foreground/60 leading-relaxed">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -440,7 +440,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Run Pattern Detection</p>
-                  <p className="text-[10px] text-muted-foreground/50">Scan all evidence for new signals</p>
+                  <p className="text-xs text-muted-foreground/50">Scan all evidence for new signals</p>
                 </div>
               </div>
             </button>
@@ -454,7 +454,7 @@ const StrategicIntelligenceEngine = ({ onOpenChat, onDraftToStudio }: StrategicI
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Ask Aura for Insights</p>
-                  <p className="text-[10px] text-muted-foreground/50">Deep analysis of your knowledge</p>
+                  <p className="text-xs text-muted-foreground/50">Deep analysis of your knowledge</p>
                 </div>
               </div>
             </button>

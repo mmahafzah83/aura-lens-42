@@ -122,7 +122,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
                 <SheetTitle className="text-base font-bold text-foreground leading-tight">
                   Action Workspace
                 </SheetTitle>
-                <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
+                <SheetDescription className="text-xs text-muted-foreground/50 mt-0.5">
                   Generate strategic outputs from your recommended action
                 </SheetDescription>
               </div>
@@ -134,10 +134,10 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
 
         {/* Action Context */}
         <div className="px-5 pt-4 pb-3 border-b border-primary/[0.06]">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-emerald-400/50 font-semibold mb-1">Recommended Action</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-emerald-400/50 font-semibold mb-1">Recommended Action</p>
           <p className="text-xs font-medium text-foreground/80 leading-snug">{action}</p>
           {rationale && (
-            <p className="text-[10px] text-muted-foreground/40 mt-1 leading-relaxed">{rationale}</p>
+            <p className="text-xs text-muted-foreground/40 mt-1 leading-relaxed">{rationale}</p>
           )}
         </div>
 
@@ -145,7 +145,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
           {!selectedType ? (
             /* Output Type Selection */
             <div className="space-y-2.5">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold mb-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold mb-3">
                 Choose Output Type
               </p>
               {OUTPUT_TYPES.map(({ key, label, description, icon: Icon, accent, iconColor }) => (
@@ -159,7 +159,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-foreground mb-0.5">{label}</p>
-                    <p className="text-[10px] text-muted-foreground/50 leading-relaxed">{description}</p>
+                    <p className="text-xs text-muted-foreground/50 leading-relaxed">{description}</p>
                   </div>
                   <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/20 group-hover:text-primary/50 mt-1 flex-shrink-0 transition-colors" />
                 </button>
@@ -173,7 +173,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
                 <p className="text-xs text-muted-foreground/60">
                   Generating {activeConfig?.label?.toLowerCase()}…
                 </p>
-                <p className="text-[10px] text-muted-foreground/30 mt-1">
+                <p className="text-xs text-muted-foreground/30 mt-1">
                   Applying strategic context and executive formatting
                 </p>
               </div>
@@ -186,14 +186,14 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleBack}
-                    className="text-[10px] text-muted-foreground/40 hover:text-primary transition-colors"
+                    className="text-xs text-muted-foreground/40 hover:text-primary transition-colors"
                   >
                     ← Back
                   </button>
                   <div className="flex-1" />
                   <div className="flex items-center gap-1.5">
                     <activeConfig.icon className={`w-3.5 h-3.5 ${activeConfig.iconColor}`} />
-                    <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">
+                    <span className="text-xs font-semibold text-muted-foreground/60 uppercase tracking-wider">
                       {activeConfig.label}
                     </span>
                   </div>
@@ -203,12 +203,12 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
               {/* Content */}
               <div className="rounded-xl border border-primary/[0.08] bg-card/60 backdrop-blur-sm overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
+                  <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
                     {editing ? "Edit Mode" : "Preview"}
                   </p>
                   <button
                     onClick={() => setEditing(!editing)}
-                    className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                    className="text-xs text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
                   >
                     {editing ? (
                       <><Eye className="w-3 h-3" /> Preview</>
@@ -259,7 +259,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
               </div>
 
               {/* Word count */}
-              <p className="text-[9px] text-muted-foreground/30 text-right">
+              <p className="text-xs text-muted-foreground/30 text-right">
                 {content.split(/\s+/).filter(Boolean).length} words
               </p>
             </div>

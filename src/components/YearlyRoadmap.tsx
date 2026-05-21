@@ -84,7 +84,7 @@ const YearlyRoadmap = () => {
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
             <CalendarClock className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-bold text-primary">{daysToGoal}</span>
-            <span className="text-[10px] text-muted-foreground">days left</span>
+            <span className="text-xs text-muted-foreground">days left</span>
           </div>
           <button onClick={() => setEditOpen(true)} className="text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-lg glass-card tactile-press">
             <Plus className="w-3.5 h-3.5" />
@@ -136,7 +136,7 @@ const YearlyRoadmap = () => {
                       {m.label}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-medium ${isCurrent ? "text-primary" : "text-muted-foreground/50"}`}>
+                      <span className={`text-xs font-medium ${isCurrent ? "text-primary" : "text-muted-foreground/50"}`}>
                         {MONTH_LABELS[m.month]}
                       </span>
                       <button

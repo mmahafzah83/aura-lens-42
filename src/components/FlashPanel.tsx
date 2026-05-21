@@ -424,7 +424,7 @@ export default function FlashPanel() {
                     <div className="text-xs font-semibold" style={lang === "ar" ? arabicFontStyle : undefined}>
                       {lang === "ar" ? pt.labelAr : pt.labelEn}
                     </div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5" style={lang === "ar" ? arabicFontStyle : undefined}>
+                    <div className="text-xs text-muted-foreground mt-0.5" style={lang === "ar" ? arabicFontStyle : undefined}>
                       {lang === "ar" ? pt.subAr : pt.subEn}
                     </div>
                   </button>
@@ -520,7 +520,7 @@ export default function FlashPanel() {
               className="relative rounded-xl border border-border/15 bg-card/60 backdrop-blur-sm p-4 space-y-3"
             >
               <span
-                className="absolute top-3 px-2 py-0.5 rounded-full text-[10px] font-semibold text-white"
+                className="absolute top-3 px-2 py-0.5 rounded-full text-xs font-semibold text-white"
                 style={{
                   backgroundColor: "var(--brand)",
                   ...(lang === "ar" ? { left: "0.75rem" } : { right: "0.75rem" }),

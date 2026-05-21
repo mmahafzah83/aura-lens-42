@@ -276,11 +276,11 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
   return (
     <div ref={containerRef} className="rounded-xl border border-ink-3 bg-surface-ink-raised p-4 mb-4 relative">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[13px] font-medium text-ink-7">Your Capability Radar</p>
+        <p className="text-sm font-medium text-ink-7">Your Capability Radar</p>
         {!editMode ? (
           <button
             onClick={startEdit}
-            className="text-[11px] font-medium hover:underline"
+            className="text-xs font-medium hover:underline"
             style={{ color: "var(--brand)" }}
           >
             Edit scores
@@ -289,7 +289,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setEditMode(false)}
-              className="text-[11px]"
+              className="text-xs"
               style={{ color: "var(--ink-5)" }}
             >
               Cancel
@@ -297,7 +297,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
             <button
               onClick={saveScores}
               disabled={savingScores}
-              className="text-[11px] font-medium px-3 py-1 rounded-lg"
+              className="text-xs font-medium px-3 py-1 rounded-lg"
               style={{ background: "var(--brand)", color: "var(--ink)" }}
             >
               {savingScores ? "Saving..." : "Save"}
@@ -349,8 +349,8 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
                 zIndex: 10,
               }}
             >
-              <p className="text-[11px] font-medium" style={{ color: "var(--ink-7)" }}>{tooltip.name}</p>
-              <p className="text-[10px]" style={{ color: "var(--brand)" }}>
+              <p className="text-xs font-medium" style={{ color: "var(--ink-7)" }}>{tooltip.name}</p>
+              <p className="text-xs" style={{ color: "var(--brand)" }}>
                 {tooltip.score}% · {tooltip.tier} Tier
               </p>
             </div>
@@ -360,11 +360,11 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
           <div className="flex items-center gap-4 mt-3 pt-3" style={{ borderTop: "0.5px solid var(--ink-3)" }}>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ background: "var(--brand)" }} />
-              <span className="text-[10px]" style={{ color: "var(--ink-5)" }}>High Tier (Strategic / Technical)</span>
+              <span className="text-xs" style={{ color: "var(--ink-5)" }}>High Tier (Strategic / Technical)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full" style={{ background: "var(--ink-5)" }} />
-              <span className="text-[10px]" style={{ color: "var(--ink-5)" }}>Mid Tier (Leadership / Commercial)</span>
+              <span className="text-xs" style={{ color: "var(--ink-5)" }}>Mid Tier (Leadership / Commercial)</span>
             </div>
           </div>
         </>

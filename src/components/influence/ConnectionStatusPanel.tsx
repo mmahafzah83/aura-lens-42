@@ -58,7 +58,7 @@ const ConnectionStatusPanel = () => {
       </div>
 
       {isConnected && (
-        <p className="text-[10px] text-muted-foreground/25 mt-2.5 leading-relaxed max-w-sm">
+        <p className="text-xs text-muted-foreground/25 mt-2.5 leading-relaxed max-w-sm">
           Identity metadata only — import your LinkedIn analytics XLSX export to populate performance data.
         </p>
       )}

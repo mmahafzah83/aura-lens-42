@@ -298,7 +298,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
         {visual.badgeBg && (
           <span
             aria-label={`${count} unread`}
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold flex items-center justify-center shadow-md"
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-bold flex items-center justify-center shadow-md"
             style={{
               background: visual.badgeBg,
               color: visual.textColor,
@@ -339,7 +339,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
         >
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 px-2 py-1">
+          <div className="text-xs uppercase tracking-wider text-muted-foreground/70 px-2 py-1">
             Pending alerts
           </div>
           {top3.map((e) => {
@@ -354,12 +354,12 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-foreground truncate">{e.title}</span>
-                    <span className="text-[9px] text-muted-foreground/60 shrink-0">
+                    <span className="text-xs text-muted-foreground/60 shrink-0">
                       {formatDistanceToNow(new Date(e.sent_at), { addSuffix: false })}
                     </span>
                   </div>
                   {e.body && (
-                    <p className="text-[11px] text-muted-foreground leading-snug truncate">{e.body}</p>
+                    <p className="text-xs text-muted-foreground leading-snug truncate">{e.body}</p>
                   )}
                 </div>
                 <ArrowUpRight className="w-3 h-3 mt-0.5 shrink-0 text-brand opacity-0 group-hover/item:opacity-100 transition-opacity" />
@@ -368,7 +368,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
           })}
           <button
             onClick={handleTipItemClick}
-            className="w-full text-[11px] text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
+            className="w-full text-xs text-primary hover:text-primary/80 px-2 py-1.5 text-right transition-colors"
           >
             See all →
           </button>

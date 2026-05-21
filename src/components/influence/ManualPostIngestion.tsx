@@ -262,7 +262,7 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
           <button
             key={key}
             onClick={() => setMode(mode === key ? null : key)}
-            className={`flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg border transition-all tactile-press ${
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all tactile-press ${
               mode === key
                 ? "text-primary border-primary/20 bg-primary/5"
                 : "text-muted-foreground/50 border-border/8 hover:bg-secondary/10"
@@ -307,7 +307,7 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
             <button
               onClick={ingestSingle}
               disabled={ingesting || !form.url.trim()}
-              className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
+              className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
             >
               {ingesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               {ingesting ? "Adding…" : "Add Post"}
@@ -334,7 +334,7 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
             <button
               onClick={ingestBulk}
               disabled={ingesting || !bulkUrls.trim()}
-              className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
+              className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
             >
               {ingesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               {ingesting ? "Importing…" : `Import ${bulkUrls.split("\n").filter(l => l.trim()).length} URLs`}
@@ -351,7 +351,7 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
             exit={{ opacity: 0, height: 0 }}
             className="space-y-3 overflow-hidden"
           >
-            <p className="text-[10px] text-muted-foreground/40">
+            <p className="text-xs text-muted-foreground/40">
               CSV format: <code className="text-primary/40">post_url, title, hook, topic_label, format_type, content_type</code>
             </p>
             <input
@@ -359,10 +359,10 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
               type="file"
               accept=".csv"
               onChange={handleCsv}
-              className="block w-full text-[11px] text-muted-foreground/50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border/10 file:text-[11px] file:font-medium file:text-primary/60 file:bg-primary/5 file:cursor-pointer"
+              className="block w-full text-xs text-muted-foreground/50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border/10 file:text-xs file:font-medium file:text-primary/60 file:bg-primary/5 file:cursor-pointer"
             />
             {ingesting && (
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground/40">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground/40">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing CSV…
               </div>
             )}
@@ -378,7 +378,7 @@ const ManualPostIngestion = ({ onIngestionComplete }: Props) => {
           className="flex items-start gap-3 p-3 rounded-lg bg-primary/[0.03] border border-primary/8"
         >
           <CheckCircle2 className="w-4 h-4 text-primary/50 mt-0.5 shrink-0" />
-          <div className="text-[11px] text-muted-foreground/50 space-y-0.5">
+          <div className="text-xs text-muted-foreground/50 space-y-0.5">
             <p>{result.inserted} post{result.inserted !== 1 ? "s" : ""} added · {result.duplicates} duplicate{result.duplicates !== 1 ? "s" : ""} skipped</p>
             {result.errors.length > 0 && (
               <p className="text-destructive/40">{result.errors.length} error{result.errors.length !== 1 ? "s" : ""}: {result.errors[0]}</p>

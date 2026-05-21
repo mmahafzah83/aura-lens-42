@@ -80,19 +80,19 @@ const SourceHealthSummary = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3 rounded-xl bg-secondary/10 border border-border/5 space-y-1">
               <p className="text-lg font-bold tabular-nums text-foreground">{totalPosts}</p>
-              <p className="text-[10px] text-muted-foreground/35">Posts discovered</p>
+              <p className="text-xs text-muted-foreground/35">Posts discovered</p>
             </div>
             <div className="p-3 rounded-xl bg-secondary/10 border border-border/5 space-y-1">
               <p className="text-lg font-bold tabular-nums text-foreground">{postsBySource["browser_capture"] || 0}</p>
-              <p className="text-[10px] text-muted-foreground/35">Browser captured</p>
+              <p className="text-xs text-muted-foreground/35">Browser captured</p>
             </div>
             <div className="p-3 rounded-xl bg-secondary/10 border border-border/5 space-y-1">
               <p className="text-lg font-bold tabular-nums text-foreground">{postsWithMetrics}</p>
-              <p className="text-[10px] text-muted-foreground/35">With metrics</p>
+              <p className="text-xs text-muted-foreground/35">With metrics</p>
             </div>
             <div className="p-3 rounded-xl bg-secondary/10 border border-border/5 space-y-1">
               <p className="text-lg font-bold tabular-nums text-foreground">{followerSnapshots}</p>
-              <p className="text-[10px] text-muted-foreground/35">Follower snapshots</p>
+              <p className="text-xs text-muted-foreground/35">Follower snapshots</p>
             </div>
           </div>
 
@@ -109,13 +109,13 @@ const SourceHealthSummary = () => {
                     <Icon className="w-3.5 h-3.5 text-muted-foreground/30" />
                     <div>
                       <span className="text-xs text-foreground/70">{meta.label}</span>
-                      <p className="text-[9px] text-muted-foreground/25">{meta.description}</p>
+                      <p className="text-xs text-muted-foreground/25">{meta.description}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs tabular-nums text-foreground/50 font-medium">{count}</span>
                     {totalPosts > 0 && (
-                      <span className="text-[9px] tabular-nums text-muted-foreground/25 w-8 text-right">{pct}%</span>
+                      <span className="text-xs tabular-nums text-muted-foreground/25 w-8 text-right">{pct}%</span>
                     )}
                   </div>
                 </div>
@@ -124,7 +124,7 @@ const SourceHealthSummary = () => {
           </div>
 
           {browserSnapshots > 0 && (
-            <p className="text-[10px] text-muted-foreground/25 leading-relaxed">
+            <p className="text-xs text-muted-foreground/25 leading-relaxed">
               {browserSnapshots} follower snapshot{browserSnapshots !== 1 ? "s" : ""} on file.
             </p>
           )}

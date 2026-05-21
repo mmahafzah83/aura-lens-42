@@ -170,7 +170,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
       <div className="flex gap-2">
         <button
           onClick={() => openMode("manual")}
-          className={`flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg border transition-all tactile-press ${
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all tactile-press ${
             mode === "manual" ? "text-primary border-primary/20 bg-primary/5" : "text-muted-foreground/50 border-border/8 hover:bg-secondary/10"
           }`}
         >
@@ -178,7 +178,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
         </button>
         <button
           onClick={() => openMode("csv")}
-          className={`flex items-center gap-1.5 text-[11px] font-medium px-3 py-1.5 rounded-lg border transition-all tactile-press ${
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition-all tactile-press ${
             mode === "csv" ? "text-primary border-primary/20 bg-primary/5" : "text-muted-foreground/50 border-border/8 hover:bg-secondary/10"
           }`}
         >
@@ -204,7 +204,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
             <button
               onClick={submitManual}
               disabled={ingesting || !form.postId}
-              className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
+              className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
             >
               {ingesting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               {ingesting ? "Saving…" : "Save Metrics"}
@@ -214,7 +214,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
 
         {mode === "csv" && (
           <motion.div key="csv" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-3 overflow-hidden">
-            <p className="text-[10px] text-muted-foreground/40">
+            <p className="text-xs text-muted-foreground/40">
               CSV format: <code className="text-primary/40">post_url, impressions, reactions, comments, shares, saves, engagement_rate</code>
             </p>
             <input
@@ -222,10 +222,10 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
               type="file"
               accept=".csv"
               onChange={handleCsv}
-              className="block w-full text-[11px] text-muted-foreground/50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border/10 file:text-[11px] file:font-medium file:text-primary/60 file:bg-primary/5 file:cursor-pointer"
+              className="block w-full text-xs text-muted-foreground/50 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-border/10 file:text-xs file:font-medium file:text-primary/60 file:bg-primary/5 file:cursor-pointer"
             />
             {ingesting && (
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground/40">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground/40">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing CSV…
               </div>
             )}
@@ -236,7 +236,7 @@ const PostMetricsIngestion = ({ onComplete }: Props) => {
       {result && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-3 p-3 rounded-lg bg-primary/[0.03] border border-primary/8">
           <CheckCircle2 className="w-4 h-4 text-primary/50 mt-0.5 shrink-0" />
-          <div className="text-[11px] text-muted-foreground/50 space-y-0.5">
+          <div className="text-xs text-muted-foreground/50 space-y-0.5">
             <p>{result.inserted} metric snapshot{result.inserted !== 1 ? "s" : ""} saved</p>
             {result.errors.length > 0 && result.errors.slice(0, 3).map((e, i) => (
               <p key={i} className="text-destructive/40 truncate">{e}</p>

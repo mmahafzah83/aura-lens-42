@@ -54,11 +54,11 @@ const RecommendationCard = ({
             <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center border ${config.border}`}>
               <Icon className={`w-4 h-4 ${config.color}`} />
             </div>
-            <span className={`text-[9px] font-semibold uppercase tracking-[0.18em] ${config.color}`}>
+            <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${config.color}`}>
               {config.label} Opportunity
             </span>
           </div>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/30 text-muted-foreground/50 tabular-nums">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-secondary/30 text-muted-foreground/50 tabular-nums">
             {Math.round(rec.confidence * 100)}%
           </span>
         </div>
@@ -72,7 +72,7 @@ const RecommendationCard = ({
         </h4>
 
         {/* Rationale */}
-        <p className="text-[11px] text-muted-foreground/60 leading-relaxed">{rec.rationale}</p>
+        <p className="text-xs text-muted-foreground/60 leading-relaxed">{rec.rationale}</p>
 
         {/* Recommended Move */}
         <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/[0.04] border border-primary/8">
@@ -84,13 +84,13 @@ const RecommendationCard = ({
         <div className="flex items-center gap-2 pt-1">
           <button
             onClick={onAccept}
-            className="flex items-center gap-1.5 text-[10px] font-medium text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg bg-primary/8 border border-primary/15 hover:bg-primary/12"
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg bg-primary/8 border border-primary/15 hover:bg-primary/12"
           >
             <Check className="w-3 h-3" /> Accept
           </button>
           <button
             onClick={() => onConvert("content")}
-            className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-secondary/20 border border-border/10 hover:bg-secondary/30"
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg bg-secondary/20 border border-border/10 hover:bg-secondary/30"
           >
             <FileText className="w-3 h-3" /> Create Content
           </button>
@@ -111,7 +111,7 @@ const DailyBriefCard = ({ brief }: { brief: DailyBrief }) => (
   <div className="glass-card rounded-2xl p-6 border border-primary/10 bg-gradient-to-br from-primary/[0.03] to-transparent">
     <div className="flex items-center gap-2 mb-5">
       <Sparkles className="w-4 h-4 text-primary" />
-      <p className="text-[9px] font-semibold text-primary/60 uppercase tracking-[0.2em]">Today's Strategic Brief</p>
+      <p className="text-xs font-semibold text-primary/60 uppercase tracking-[0.2em]">Today's Strategic Brief</p>
     </div>
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
       {[
@@ -122,7 +122,7 @@ const DailyBriefCard = ({ brief }: { brief: DailyBrief }) => (
         <div key={label} className="space-y-2">
           <div className="flex items-center gap-1.5">
             <I className={`w-3 h-3 ${color}`} />
-            <p className="text-[9px] font-semibold text-muted-foreground/40 uppercase tracking-[0.18em]">{label}</p>
+            <p className="text-xs font-semibold text-muted-foreground/40 uppercase tracking-[0.18em]">{label}</p>
           </div>
           <p
             className="text-sm font-medium text-foreground leading-snug"
@@ -364,7 +364,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
             >
               Strategic Advisor
             </h3>
-            <p className="text-[10px] text-muted-foreground/40 tracking-wide">Your AI Chief-of-Staff</p>
+            <p className="text-xs text-muted-foreground/40 tracking-wide">Your AI Chief-of-Staff</p>
           </div>
         </div>
         <Button
@@ -387,7 +387,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <Target className="w-3.5 h-3.5 text-amber-400" />
-            <h4 className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Strategic Opportunities</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Strategic Opportunities</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {strategicRecs.map(rec => (
@@ -406,7 +406,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <Crown className="w-3.5 h-3.5 text-primary" />
-            <h4 className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Authority Opportunities</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Authority Opportunities</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {authorityRecs.map(rec => (
@@ -425,7 +425,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
-            <h4 className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Consulting Opportunities</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Consulting Opportunities</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {consultingRecs.map(rec => (

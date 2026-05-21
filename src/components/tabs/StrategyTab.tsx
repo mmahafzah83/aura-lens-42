@@ -61,7 +61,7 @@ interface StrategyTabProps {
 const FlowArrow = ({ label }: { label: string }) => (
   <div className="flex flex-col items-center gap-1 py-4 opacity-40">
     <ArrowDown className="w-4 h-4 text-primary" />
-    <span className="text-[10px] text-muted-foreground font-medium tracking-wider uppercase">{label}</span>
+    <span className="text-xs text-muted-foreground font-medium tracking-wider uppercase">{label}</span>
   </div>
 );
 

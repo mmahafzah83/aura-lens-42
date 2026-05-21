@@ -134,7 +134,7 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
           <div className="text-left">
             <h3 className="text-sm font-semibold text-foreground">
               Discovery Review Queue
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 text-[10px] text-amber-500/70 font-medium">
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-500/10 text-xs text-amber-500/70 font-medium">
                 {candidates.length}
               </span>
             </h3>
@@ -166,14 +166,14 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
                     href={c.candidate_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[11px] text-primary/50 hover:text-primary truncate max-w-[70%] flex items-center gap-1"
+                    className="text-xs text-primary/50 hover:text-primary truncate max-w-[70%] flex items-center gap-1"
                   >
                     <ExternalLink className="w-3 h-3 shrink-0" />
                     {c.candidate_url.replace("https://www.linkedin.com", "")}
                   </a>
                   <div className="flex items-center gap-1.5">
                     <Shield className={`w-3 h-3 ${confidenceColor(c.confidence)}`} />
-                    <span className={`text-[10px] font-medium ${confidenceColor(c.confidence)}`}>
+                    <span className={`text-xs font-medium ${confidenceColor(c.confidence)}`}>
                       {Math.round(c.confidence * 100)}%
                     </span>
                   </div>
@@ -181,7 +181,7 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
 
                 {/* Snippet */}
                 {c.snippet && (
-                  <p className="text-[10px] text-muted-foreground/50 leading-relaxed line-clamp-3">
+                  <p className="text-xs text-muted-foreground/50 leading-relaxed line-clamp-3">
                     {c.snippet}
                   </p>
                 )}
@@ -191,12 +191,12 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
                   {(c.authorship_signals || []).map((signal, i) => (
                     <span
                       key={i}
-                      className="px-2 py-0.5 rounded-full bg-primary/5 text-[9px] text-primary/50 border border-primary/8"
+                      className="px-2 py-0.5 rounded-full bg-primary/5 text-xs text-primary/50 border border-primary/8"
                     >
                       {signal.replace(/_/g, " ")}
                     </span>
                   ))}
-                  <span className="px-2 py-0.5 rounded-full bg-amber-500/5 text-[9px] text-amber-500/50 border border-amber-500/8">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/5 text-xs text-amber-500/50 border border-amber-500/8">
                     {c.rejection_reason.replace(/_/g, " ")}
                   </span>
                 </div>
@@ -206,7 +206,7 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
                   <button
                     onClick={() => handleAction(c, "approve")}
                     disabled={acting === c.id}
-                    className="flex items-center gap-1.5 text-[10px] font-medium text-primary/60 hover:text-primary px-3 py-1.5 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
+                    className="flex items-center gap-1.5 text-xs font-medium text-primary/60 hover:text-primary px-3 py-1.5 rounded-lg hover:bg-primary/5 border border-primary/10 transition-all tactile-press disabled:opacity-30"
                   >
                     {acting === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
                     Approve as my post
@@ -214,7 +214,7 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
                   <button
                     onClick={() => handleAction(c, "reject")}
                     disabled={acting === c.id}
-                    className="flex items-center gap-1.5 text-[10px] font-medium text-destructive/50 hover:text-destructive px-3 py-1.5 rounded-lg hover:bg-destructive/5 border border-destructive/8 transition-all tactile-press disabled:opacity-30"
+                    className="flex items-center gap-1.5 text-xs font-medium text-destructive/50 hover:text-destructive px-3 py-1.5 rounded-lg hover:bg-destructive/5 border border-destructive/8 transition-all tactile-press disabled:opacity-30"
                   >
                     <XCircle className="w-3 h-3" />
                     Reject
@@ -222,7 +222,7 @@ const ReviewQueuePanel = ({ onReviewComplete }: Props) => {
                   <button
                     onClick={() => handleAction(c, "external")}
                     disabled={acting === c.id}
-                    className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground/40 hover:text-muted-foreground px-3 py-1.5 rounded-lg hover:bg-secondary/10 border border-border/8 transition-all tactile-press disabled:opacity-30"
+                    className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground/40 hover:text-muted-foreground px-3 py-1.5 rounded-lg hover:bg-secondary/10 border border-border/8 transition-all tactile-press disabled:opacity-30"
                   >
                     <AlertTriangle className="w-3 h-3" />
                     External ref

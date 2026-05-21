@@ -221,14 +221,14 @@ const KnowledgeIntelligenceEngine = () => {
       {/* Strategic Identity Summary — Hero */}
       {result.strategic_identity_summary && (
         <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
-          <p className="text-label text-[11px] mb-3">Strategic Authority Position</p>
+          <p className="text-label text-xs mb-3">Strategic Authority Position</p>
           <p className="text-body text-foreground/90 leading-relaxed" dir="auto">
             {result.strategic_identity_summary}
           </p>
           {result.linkedin_active && (
             <div className="mt-4 pt-4 border-t border-border/10 flex items-center gap-2">
               <Linkedin className="w-3.5 h-3.5 text-[hsl(207_100%_62%)]" />
-              <span className="text-[10px] text-muted-foreground/50">LinkedIn audience validation active</span>
+              <span className="text-xs text-muted-foreground/50">LinkedIn audience validation active</span>
             </div>
           )}
         </div>
@@ -236,7 +236,7 @@ const KnowledgeIntelligenceEngine = () => {
 
       {/* Pipeline Visualization */}
       <div className="glass-card rounded-2xl p-6">
-        <p className="text-label text-[11px] mb-5">Intelligence Pipeline</p>
+        <p className="text-label text-xs mb-5">Intelligence Pipeline</p>
         <div className="flex items-center gap-1">
           {pipelineStages.map((stage, i) => {
             const stats = result.pipeline_stats;
@@ -258,7 +258,7 @@ const KnowledgeIntelligenceEngine = () => {
                   <p className={`text-lg font-bold tabular-nums ${active ? "text-foreground" : "text-muted-foreground/25"}`}>
                     {stageCount}
                   </p>
-                  <p className="text-[9px] text-muted-foreground/40 font-medium mt-0.5">{stage.label}</p>
+                  <p className="text-xs text-muted-foreground/40 font-medium mt-0.5">{stage.label}</p>
                 </div>
                 {i < pipelineStages.length - 1 && (
                   <ChevronRight className={`w-3 h-3 mx-0.5 flex-shrink-0 ${active ? "text-primary/30" : "text-muted-foreground/10"}`} />
@@ -307,7 +307,7 @@ const KnowledgeIntelligenceEngine = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1.5">
                       <h3 className="text-sm font-bold text-foreground">{theme.name}</h3>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize ${stageColor[theme.stage]}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium capitalize ${stageColor[theme.stage]}`}>
                         {theme.stage}
                       </span>
                     </div>
@@ -315,7 +315,7 @@ const KnowledgeIntelligenceEngine = () => {
                   </div>
                   <div className="text-right ml-4">
                     <p className={`text-lg font-bold tabular-nums ${confidenceColor[theme.confidence]}`}>{theme.evidence_count}</p>
-                    <p className="text-[9px] text-muted-foreground/30 uppercase tracking-wider">evidence</p>
+                    <p className="text-xs text-muted-foreground/30 uppercase tracking-wider">evidence</p>
                   </div>
                 </div>
 
@@ -331,8 +331,8 @@ const KnowledgeIntelligenceEngine = () => {
                     return (
                       <div key={key} className="flex items-center gap-2 p-2 rounded-lg bg-secondary/10 border border-border/5">
                         <Icon className="w-3 h-3 text-muted-foreground/40 flex-shrink-0" />
-                        <span className="text-[10px] text-muted-foreground/50 truncate">{label}</span>
-                        <span className="text-[10px] font-bold text-foreground tabular-nums ml-auto">{count}</span>
+                        <span className="text-xs text-muted-foreground/50 truncate">{label}</span>
+                        <span className="text-xs font-bold text-foreground tabular-nums ml-auto">{count}</span>
                       </div>
                     );
                   })}
@@ -342,15 +342,15 @@ const KnowledgeIntelligenceEngine = () => {
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-[hsl(207_100%_62%/0.05)] border border-[hsl(207_100%_62%/0.1)]">
                     <Linkedin className="w-3.5 h-3.5 text-[hsl(207_100%_62%)] mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-[10px] font-medium text-[hsl(207_100%_62%/0.8)]">LinkedIn Validated</p>
-                      {theme.linkedin_signal && <p className="text-[10px] text-muted-foreground/50 mt-0.5">{theme.linkedin_signal}</p>}
+                      <p className="text-xs font-medium text-[hsl(207_100%_62%/0.8)]">LinkedIn Validated</p>
+                      {theme.linkedin_signal && <p className="text-xs text-muted-foreground/50 mt-0.5">{theme.linkedin_signal}</p>}
                     </div>
                   </div>
                 )}
 
                 <div className="mt-3 flex items-center gap-2">
                   <CheckCircle2 className={`w-3 h-3 ${confidenceColor[theme.confidence]}`} />
-                  <span className="text-[10px] text-muted-foreground/40 capitalize">{theme.confidence} confidence</span>
+                  <span className="text-xs text-muted-foreground/40 capitalize">{theme.confidence} confidence</span>
                 </div>
               </div>
             ))
@@ -373,12 +373,12 @@ const KnowledgeIntelligenceEngine = () => {
                   <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-foreground capitalize">{t.tone}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${effectivenessColor[t.effectiveness] || effectivenessColor.unknown}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${effectivenessColor[t.effectiveness] || effectivenessColor.unknown}`}>
                         {t.effectiveness !== "unknown" ? `${t.effectiveness} effectiveness` : t.frequency}
                       </span>
                     </div>
                     {t.evidence_source && (
-                      <p className="text-[9px] text-muted-foreground/40 mt-1">{t.evidence_source}</p>
+                      <p className="text-xs text-muted-foreground/40 mt-1">{t.evidence_source}</p>
                     )}
                   </div>
                 ))}
@@ -400,12 +400,12 @@ const KnowledgeIntelligenceEngine = () => {
                   <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium text-foreground">{f.format}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${effectivenessColor[f.engagement_signal] || effectivenessColor.unknown}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${effectivenessColor[f.engagement_signal] || effectivenessColor.unknown}`}>
                         {f.engagement_signal !== "unknown" ? `${f.engagement_signal} engagement` : f.usage_frequency}
                       </span>
                     </div>
                     {f.recommendation && (
-                      <p className="text-[9px] text-muted-foreground/40 mt-1">{f.recommendation}</p>
+                      <p className="text-xs text-muted-foreground/40 mt-1">{f.recommendation}</p>
                     )}
                   </div>
                 ))}
@@ -427,7 +427,7 @@ const KnowledgeIntelligenceEngine = () => {
                   {(result.industry_focus || []).map((ind, i) => (
                     <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-secondary/15 border border-border/10">
                       <span className="text-xs font-medium text-foreground">{ind.industry}</span>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium ${stageColor[ind.strength] || stageColor.nascent}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${stageColor[ind.strength] || stageColor.nascent}`}>
                         {ind.strength}
                       </span>
                     </div>
@@ -448,7 +448,7 @@ const KnowledgeIntelligenceEngine = () => {
                   {(result.language_signals || []).slice(0, 5).map((s, i) => (
                     <div key={i} className="p-3 rounded-xl bg-secondary/15 border border-border/10">
                       <p className="text-xs font-semibold text-foreground mb-1">"{s.signal}"</p>
-                      <p className="text-[10px] text-muted-foreground/50">{s.context}</p>
+                      <p className="text-xs text-muted-foreground/50">{s.context}</p>
                     </div>
                   ))}
                 </div>
@@ -474,7 +474,7 @@ const KnowledgeIntelligenceEngine = () => {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full border font-medium capitalize ${
+                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium capitalize ${
                           a.type === "publish" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/15"
                           : a.type === "reinforce" ? "bg-primary/10 text-primary border-primary/15"
                           : a.type === "format" ? "bg-blue-500/10 text-blue-400 border-blue-500/15"
@@ -502,7 +502,7 @@ const KnowledgeIntelligenceEngine = () => {
               <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/5 border border-primary/10">
                 <Sparkles className="w-4 h-4 text-primary/60 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-label text-[10px] mb-1">Pipeline Insight</p>
+                  <p className="text-label text-xs mb-1">Pipeline Insight</p>
                   <p className="text-xs text-foreground/70 leading-relaxed">{result.pipeline_recommendation}</p>
                 </div>
               </div>
@@ -514,7 +514,7 @@ const KnowledgeIntelligenceEngine = () => {
       {/* ═══════ SOURCE DISTRIBUTION ═══════ */}
       {activeSection === "pipeline" && (
         <div className="glass-card rounded-2xl p-6">
-          <p className="text-label text-[11px] mb-5">Content Sources Powering Your Intelligence</p>
+          <p className="text-label text-xs mb-5">Content Sources Powering Your Intelligence</p>
           <div className="space-y-3">
             {Object.entries(result.pipeline_stats)
               .filter(([, v]) => v > 0)
@@ -533,7 +533,7 @@ const KnowledgeIntelligenceEngine = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-foreground tabular-nums">{count}</span>
-                        <span className="text-[10px] text-muted-foreground/30 tabular-nums w-8 text-right">{pct}%</span>
+                        <span className="text-xs text-muted-foreground/30 tabular-nums w-8 text-right">{pct}%</span>
                       </div>
                     </div>
                     <Progress value={pct} className="h-1" />

@@ -325,9 +325,9 @@ const AccountIntelligence = ({ entries = [] }: AccountIntelligenceProps) => {
                     {entry.summary && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{entry.summary}</p>}
                     <div className="flex items-center gap-2 mt-1">
                       {entry.skill_pillar && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">{entry.skill_pillar}</span>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary">{entry.skill_pillar}</span>
                       )}
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </span>
                     </div>

@@ -491,7 +491,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
           <button
             key={m.key}
             onClick={() => { setMode(m.key); setPreview(null); setCsvLines([]); }}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-[11px] font-medium transition-all border tactile-press ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all border tactile-press ${
               mode === m.key
                 ? "bg-secondary/25 text-foreground/80 border-border/15"
                 : "text-muted-foreground/40 hover:text-muted-foreground/60 border-border/5 hover:bg-secondary/10"
@@ -504,13 +504,13 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
       </div>
 
       {/* Mode description */}
-      <p className="text-[10px] text-muted-foreground/30">
+      <p className="text-xs text-muted-foreground/30">
         {modes.find(m => m.key === mode)?.desc} · Required: {TEMPLATES[mode].required.join(", ")}
       </p>
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2.5 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all cursor-pointer tactile-press">
+        <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2.5 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all cursor-pointer tactile-press">
           {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
           Upload CSV
           <input
@@ -525,7 +525,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
         {mode !== "metrics" && (
           <button
             onClick={() => setManualOpen(true)}
-            className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2.5 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press"
+            className="flex items-center gap-2 text-xs font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2.5 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Manually
@@ -557,7 +557,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
               {preview.warnings.length > 0 && (
                 <div className="space-y-1 pl-6">
                   {preview.warnings.map((w, i) => (
-                    <p key={i} className="text-[10px] text-muted-foreground/40">{w}</p>
+                    <p key={i} className="text-xs text-muted-foreground/40">{w}</p>
                   ))}
                 </div>
               )}
@@ -569,7 +569,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
                 const mapped = col in preview.mapping;
                 const isRequired = TEMPLATES[mode].required.includes(col);
                 return (
-                  <div key={col} className={`px-3 py-2 rounded-lg text-[10px] border ${
+                  <div key={col} className={`px-3 py-2 rounded-lg text-xs border ${
                     mapped
                       ? "border-primary/10 bg-primary/[0.03] text-foreground/60"
                       : isRequired
@@ -595,7 +595,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
                   <thead>
                     <tr className="border-b border-border/5">
                       {preview.headers.map((h, i) => (
-                        <th key={i} className="text-[9px] uppercase tracking-wider text-muted-foreground/25 px-2 py-1.5 font-medium">{h}</th>
+                        <th key={i} className="text-xs uppercase tracking-wider text-muted-foreground/25 px-2 py-1.5 font-medium">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -603,7 +603,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
                     {preview.sampleRows.map((row, ri) => (
                       <tr key={ri} className="border-b border-border/[0.02]">
                         {row.map((cell, ci) => (
-                          <td key={ci} className="text-[10px] text-muted-foreground/50 px-2 py-1.5 max-w-[120px] truncate">{cell}</td>
+                          <td key={ci} className="text-xs text-muted-foreground/50 px-2 py-1.5 max-w-[120px] truncate">{cell}</td>
                         ))}
                       </tr>
                     ))}
@@ -625,7 +625,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
               </Button>
               <button
                 onClick={() => { setPreview(null); setCsvLines([]); if (fileRef.current) fileRef.current.value = ""; }}
-                className="text-[11px] text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
+                className="text-xs text-muted-foreground/30 hover:text-muted-foreground/60 transition-colors"
               >
                 Cancel
               </button>
@@ -656,40 +656,40 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3 rounded-lg bg-secondary/10 border border-border/5">
                 <p className="text-lg font-bold text-foreground tabular-nums">{summary.rowsImported}</p>
-                <p className="text-[10px] text-muted-foreground/35">Rows imported</p>
+                <p className="text-xs text-muted-foreground/35">Rows imported</p>
               </div>
               {summary.duplicates > 0 && (
                 <div className="p-3 rounded-lg bg-secondary/10 border border-border/5">
                   <p className="text-lg font-bold text-muted-foreground/50 tabular-nums">{summary.duplicates}</p>
-                  <p className="text-[10px] text-muted-foreground/35">Duplicates skipped</p>
+                  <p className="text-xs text-muted-foreground/35">Duplicates skipped</p>
                 </div>
               )}
               {summary.postsCreated > 0 && (
                 <div className="p-3 rounded-lg bg-secondary/10 border border-border/5">
                   <p className="text-lg font-bold text-foreground tabular-nums">{summary.postsCreated}</p>
-                  <p className="text-[10px] text-muted-foreground/35">Posts created</p>
+                  <p className="text-xs text-muted-foreground/35">Posts created</p>
                 </div>
               )}
               {summary.metricsCreated > 0 && (
                 <div className="p-3 rounded-lg bg-secondary/10 border border-border/5">
                   <p className="text-lg font-bold text-foreground tabular-nums">{summary.metricsCreated}</p>
-                  <p className="text-[10px] text-muted-foreground/35">Metrics created</p>
+                  <p className="text-xs text-muted-foreground/35">Metrics created</p>
                 </div>
               )}
             </div>
 
             {summary.dateRange !== "—" && (
-              <p className="text-[11px] text-muted-foreground/40">
+              <p className="text-xs text-muted-foreground/40">
                 Date range: <span className="text-foreground/60 font-medium">{summary.dateRange}</span>
               </p>
             )}
 
             {summary.unlockedSections.length > 0 && (
               <div className="space-y-1.5">
-                <p className="text-[10px] text-muted-foreground/30 uppercase tracking-wider font-medium">Unlocked sections</p>
+                <p className="text-xs text-muted-foreground/30 uppercase tracking-wider font-medium">Unlocked sections</p>
                 <div className="flex flex-wrap gap-2">
                   {summary.unlockedSections.map(s => (
-                    <span key={s} className="text-[10px] font-medium px-2.5 py-1 rounded-full bg-primary/8 text-primary/60 border border-primary/10">
+                    <span key={s} className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/8 text-primary/60 border border-primary/10">
                       {s}
                     </span>
                   ))}
@@ -717,7 +717,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
 
           <div className="space-y-4 mt-3">
             <div>
-              <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">
+              <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">
                 {mode === "followers" ? "Date" : "Published Date"}
               </label>
               <Input type="date" value={manualDate} onChange={e => setManualDate(e.target.value)} />
@@ -727,25 +727,25 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Followers *</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Followers *</label>
                     <Input type="number" placeholder="—" value={manualFollowers} onChange={e => setManualFollowers(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Impressions</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Impressions</label>
                     <Input type="number" placeholder="—" value={manualImpressions} onChange={e => setManualImpressions(e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Reactions</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Reactions</label>
                     <Input type="number" placeholder="—" value={manualReactions} onChange={e => setManualReactions(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Comments</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Comments</label>
                     <Input type="number" placeholder="—" value={manualComments} onChange={e => setManualComments(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Shares</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Shares</label>
                     <Input type="number" placeholder="—" value={manualShares} onChange={e => setManualShares(e.target.value)} />
                   </div>
                 </div>
@@ -753,7 +753,7 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
             ) : (
               <>
                 <div>
-                  <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Post text</label>
+                  <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Post text</label>
                   <textarea
                     value={manualPostText}
                     onChange={e => setManualPostText(e.target.value)}
@@ -763,25 +763,25 @@ const HistoricalImportHub = ({ onImportComplete }: { onImportComplete?: () => vo
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Theme / Topic</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Theme / Topic</label>
                     <Input placeholder="e.g. Strategy" value={manualTheme} onChange={e => setManualTheme(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Format</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Format</label>
                     <Input placeholder="e.g. carousel" value={manualFormat} onChange={e => setManualFormat(e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Likes</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Likes</label>
                     <Input type="number" placeholder="—" value={manualLikes} onChange={e => setManualLikes(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Comments</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Comments</label>
                     <Input type="number" placeholder="—" value={manualCommentCount} onChange={e => setManualCommentCount(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-muted-foreground/60 mb-1.5 block">Reposts</label>
+                    <label className="text-xs font-medium text-muted-foreground/60 mb-1.5 block">Reposts</label>
                     <Input type="number" placeholder="—" value={manualReposts} onChange={e => setManualReposts(e.target.value)} />
                   </div>
                 </div>

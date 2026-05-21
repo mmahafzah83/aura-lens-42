@@ -111,50 +111,50 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
         return (
           <div className="flex items-center gap-2">
             <FileText className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-            <span className="text-[11px] text-foreground/80 truncate">{item.title || "Untitled capture"}</span>
-            <span className="ml-auto text-[9px] text-muted-foreground/40 shrink-0">{item.type}</span>
+            <span className="text-xs text-foreground/80 truncate">{item.title || "Untitled capture"}</span>
+            <span className="ml-auto text-xs text-muted-foreground/40 shrink-0">{item.type}</span>
           </div>
         );
       case "signals":
         return (
           <div className="flex items-center gap-2">
             <Zap className="w-3 h-3 text-amber-400/60 shrink-0" />
-            <span className="text-[11px] text-foreground/80 truncate">{item.signal_title}</span>
-            <span className="ml-auto text-[9px] text-emerald-400/70 tabular-nums shrink-0">{Math.round((item.confidence || 0.7) * 100)}%</span>
+            <span className="text-xs text-foreground/80 truncate">{item.signal_title}</span>
+            <span className="ml-auto text-xs text-emerald-400/70 tabular-nums shrink-0">{Math.round((item.confidence || 0.7) * 100)}%</span>
           </div>
         );
       case "insights":
         return (
           <div className="flex items-center gap-2">
             <Lightbulb className="w-3 h-3 text-cyan-400/60 shrink-0" />
-            <span className="text-[11px] text-foreground/80 truncate">{item.title}</span>
-            <span className="ml-auto text-[9px] text-muted-foreground/40 shrink-0">{item.intelligence_type}</span>
+            <span className="text-xs text-foreground/80 truncate">{item.title}</span>
+            <span className="ml-auto text-xs text-muted-foreground/40 shrink-0">{item.intelligence_type}</span>
           </div>
         );
       case "frameworks":
         return (
           <div className="flex items-center gap-2">
             <Layers className="w-3 h-3 text-blue-400/60 shrink-0" />
-            <span className="text-[11px] text-foreground/80 truncate">{item.title}</span>
+            <span className="text-xs text-foreground/80 truncate">{item.title}</span>
           </div>
         );
       case "authority":
         return (
           <div className="flex items-center gap-2">
             <Crown className="w-3 h-3 text-primary/60 shrink-0" />
-            <span className="text-[11px] text-foreground/80 truncate">{item.title}</span>
-            <span className="ml-auto text-[9px] text-muted-foreground/40 shrink-0">{item.output_type}</span>
+            <span className="text-xs text-foreground/80 truncate">{item.title}</span>
+            <span className="ml-auto text-xs text-muted-foreground/40 shrink-0">{item.output_type}</span>
           </div>
         );
       case "influence":
         return (
           <div className="flex items-center gap-2">
             <BarChart3 className="w-3 h-3 text-emerald-400/60 shrink-0" />
-            <span className="text-[11px] text-foreground/80">{item.followers?.toLocaleString()} followers</span>
+            <span className="text-xs text-foreground/80">{item.followers?.toLocaleString()} followers</span>
             {item.follower_growth > 0 && (
-              <span className="text-[9px] text-emerald-400">+{item.follower_growth}</span>
+              <span className="text-xs text-emerald-400">+{item.follower_growth}</span>
             )}
-            <span className="ml-auto text-[9px] text-muted-foreground/40 shrink-0">{item.snapshot_date}</span>
+            <span className="ml-auto text-xs text-muted-foreground/40 shrink-0">{item.snapshot_date}</span>
           </div>
         );
       default:
@@ -182,7 +182,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
           <h2 className="text-lg font-bold text-foreground tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
             Strategic Evolution Map
           </h2>
-          <p className="text-[10px] text-muted-foreground/50 tracking-wide">
+          <p className="text-xs text-muted-foreground/50 tracking-wide">
             Knowledge → Strategy → Authority → Influence
           </p>
         </div>
@@ -219,7 +219,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
                 </div>
 
                 {/* Label & Count */}
-                <span className={`text-[11px] font-semibold transition-colors ${isExpanded ? "text-foreground" : "text-muted-foreground/60"}`}>
+                <span className={`text-xs font-semibold transition-colors ${isExpanded ? "text-foreground" : "text-muted-foreground/60"}`}>
                   {stage.label}
                 </span>
                 <span className={`text-lg font-bold tabular-nums transition-colors ${isExpanded ? stage.color : "text-foreground/80"}`}>
@@ -255,7 +255,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
               <div className="flex items-center gap-2">
                 <Icon className={`w-4 h-4 ${stage.color}`} />
                 <h3 className="text-sm font-semibold text-foreground">{stage.label}</h3>
-                <span className="text-[10px] text-muted-foreground/40">({stage.count} items)</span>
+                <span className="text-xs text-muted-foreground/40">({stage.count} items)</span>
               </div>
               <button onClick={() => setExpandedStage(null)} className="text-muted-foreground/40 hover:text-foreground transition-colors">
                 <X className="w-4 h-4" />
@@ -288,7 +288,7 @@ const StrategicEvolutionMap = ({ onOpenChat }: EvolutionMapProps) => {
       <div className="flex items-center justify-center gap-2 pt-2">
         {stages.map((s, i) => (
           <div key={s.key} className="flex items-center gap-2">
-            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-semibold border transition-all ${
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
               s.count > 0 ? `${s.color} bg-secondary/30 border-border/15` : "text-muted-foreground/30 bg-secondary/10 border-border/5"
             }`}>
               {s.count}

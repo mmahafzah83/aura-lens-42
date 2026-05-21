@@ -110,7 +110,7 @@ const NotificationBell = () => {
           <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
             <span
-              className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center animate-ring-pulse"
+              className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-xs font-bold flex items-center justify-center animate-ring-pulse"
               style={{ background: "var(--signal)", color: "#fff" }}
             >
               {unreadCount > 9 ? "9+" : unreadCount}
@@ -126,7 +126,7 @@ const NotificationBell = () => {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
           <h4 className="text-sm font-semibold text-foreground">Strategic Alerts</h4>
           {notifications.length > 0 && (
-            <button onClick={clearAll} className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">
+            <button onClick={clearAll} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
               Clear all
             </button>
           )}
@@ -136,7 +136,7 @@ const NotificationBell = () => {
             <div className="px-4 py-8 text-center">
               <Bell className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-xs text-muted-foreground">No strategic alerts yet</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-1">Aura will notify you when meaningful patterns emerge</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Aura will notify you when meaningful patterns emerge</p>
             </div>
           ) : (
             notifications.map((n) => {
@@ -156,15 +156,15 @@ const NotificationBell = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <h5 className="text-xs font-semibold text-foreground truncate">{n.title}</h5>
-                        <span className="text-[9px] text-muted-foreground/50 shrink-0">
+                        <span className="text-xs text-muted-foreground/50 shrink-0">
                           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{n.body}</p>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.body}</p>
 
                       {/* Alert urgency badge */}
                       {n.metadata?.urgency === "high" && (
-                        <span className="inline-block mt-1.5 text-[9px] uppercase font-bold tracking-wider text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded">
+                        <span className="inline-block mt-1.5 text-xs uppercase font-bold tracking-wider text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded">
                           High Priority
                         </span>
                       )}
@@ -177,11 +177,11 @@ const NotificationBell = () => {
                             { label: "Voice", value: n.metadata.market_voice, color: "bg-blue-500" },
                           ].map((kpi) => (
                             <div key={kpi.label} className="flex items-center gap-1.5">
-                              <span className="text-[9px] text-muted-foreground">{kpi.label}</span>
+                              <span className="text-xs text-muted-foreground">{kpi.label}</span>
                               <div className="w-12 h-1 rounded-full bg-secondary overflow-hidden">
                                 <div className={`h-full rounded-full ${kpi.color}`} style={{ width: `${kpi.value || 0}%` }} />
                               </div>
-                              <span className="text-[9px] text-muted-foreground">{kpi.value || 0}%</span>
+                              <span className="text-xs text-muted-foreground">{kpi.value || 0}%</span>
                             </div>
                           ))}
                         </div>

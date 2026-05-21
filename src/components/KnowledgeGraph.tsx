@@ -183,7 +183,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
             </div>
             <div className="flex-1">
               <SheetTitle className="text-base font-bold text-foreground">Knowledge Graph</SheetTitle>
-              <SheetDescription className="text-[10px] text-muted-foreground/50">
+              <SheetDescription className="text-xs text-muted-foreground/50">
                 Interactive map of your strategic thinking
               </SheetDescription>
             </div>
@@ -202,7 +202,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           ].map(l => (
             <div key={l.label} className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: l.color.border }} />
-              <span className="text-[9px] text-muted-foreground/60 font-medium">{l.label}</span>
+              <span className="text-xs text-muted-foreground/60 font-medium">{l.label}</span>
             </div>
           ))}
         </div>
@@ -244,7 +244,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
           <div className="absolute bottom-4 left-4 right-4 glass-card rounded-xl border border-primary/10 p-4 animate-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[9px] uppercase tracking-[0.12em] text-primary/50 font-semibold">
+                <span className="text-xs uppercase tracking-[0.12em] text-primary/50 font-semibold">
                   {selectedNode.data?.type}
                 </span>
                 <p className="text-sm font-bold text-foreground mt-0.5">{selectedNode.data?.label}</p>
@@ -252,7 +252,7 @@ const KnowledgeGraph = ({ open, onClose }: KnowledgeGraphProps) => {
                   <p className="text-xs text-muted-foreground/60 mt-1 line-clamp-2">{selectedNode.data.summary}</p>
                 )}
                 {selectedNode.data?.confidence && (
-                  <p className="text-[10px] text-primary/60 mt-1">
+                  <p className="text-xs text-primary/60 mt-1">
                     Confidence: {Math.round(selectedNode.data.confidence * 100)}%
                   </p>
                 )}

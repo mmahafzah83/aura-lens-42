@@ -431,7 +431,7 @@ const Admin = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr
-                    className="text-[10px] uppercase tracking-wider"
+                    className="text-xs uppercase tracking-wider"
                     style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}
                   >
                     <th className="text-left px-4 py-3 font-medium">User</th>
@@ -448,7 +448,7 @@ const Admin = () => {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold"
+                              className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold"
                               style={{
                                 backgroundColor: "var(--brand-muted)",
                                 color: "var(--brand)",
@@ -470,12 +470,12 @@ const Admin = () => {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {r.seniority && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-7)", border: "1px solid var(--ink-3)" }}>
+                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-7)", border: "1px solid var(--ink-3)" }}>
                                 {r.seniority}
                               </span>
                             )}
                             {r.sector && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+                              <span className="text-xs px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
                                 {r.sector}
                               </span>
                             )}
@@ -490,7 +490,7 @@ const Admin = () => {
                           {formatDate(r.requested_at || r.created_at)}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
+                          <span className={`text-xs px-2 py-0.5 rounded-full border ${statusBadge(r.status)}`}>
                             {r.status}
                           </span>
                         </td>
@@ -616,7 +616,7 @@ const Admin = () => {
             <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--ink-3)" }}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}>
+                  <tr className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)", backgroundColor: "rgba(255,255,255,0.02)" }}>
                     <th className="text-left px-4 py-3 font-medium">Name</th>
                     <th className="text-left px-4 py-3 font-medium">Email</th>
                     <th className="text-left px-4 py-3 font-medium">Sector</th>
@@ -678,13 +678,13 @@ const Admin = () => {
                           ? `${profile.first_name}${profile.sector ? ` · ${profile.sector}` : ""}`
                           : r.name || "(Profile not completed)"}
                       </div>
-                      <div className="text-[10px] mt-1 uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
+                      <div className="text-xs mt-1 uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
                         <span className={`inline-block px-2 py-0.5 rounded border ${statusBadge(r.status)}`}>{r.status}</span>
                         <span className="ml-2">Joined: {formatDate(r.invited_at || r.created_at || r.requested_at)}</span>
                       </div>
                     </div>
                     {isAdmin ? (
-                      <span className="text-[10px] px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Cannot delete your own account">
+                      <span className="text-xs px-2 py-1 rounded" style={{ color: "var(--ink-5)", border: "1px dashed var(--ink-3)" }} title="Cannot delete your own account">
                         Protected
                       </span>
                     ) : confirmEmail === r.email ? (
@@ -770,7 +770,7 @@ const Admin = () => {
                     <div className="text-sm" style={{ color: "var(--ink-7)" }}>
                       {r.message?.trim() || <span style={{ color: "var(--ink-5)", fontStyle: "italic" }}>No comment</span>}
                     </div>
-                    <div className="text-[10px] mt-1" style={{ color: "var(--ink-5)" }}>
+                    <div className="text-xs mt-1" style={{ color: "var(--ink-5)" }}>
                       {formatDate(r.created_at)} · {r.page || "—"}
                     </div>
                   </div>
@@ -812,7 +812,7 @@ const Admin = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
+                  <tr className="text-xs uppercase tracking-wider" style={{ color: "var(--ink-5)" }}>
                     <th className="text-left px-3 py-2 font-medium">Date</th>
                     <th className="text-left px-3 py-2 font-medium">Result</th>
                     <th className="text-left px-3 py-2 font-medium">Failed steps</th>

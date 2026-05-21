@@ -76,7 +76,7 @@ const PostCleanupPanel = ({ onCleanupComplete }: Props) => {
       <button
         onClick={handleCleanup}
         disabled={running}
-        className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press disabled:opacity-30"
+        className="flex items-center gap-2 text-xs font-medium text-muted-foreground/60 hover:text-foreground px-4 py-2 rounded-lg hover:bg-secondary/20 border border-border/8 transition-all tactile-press disabled:opacity-30"
       >
         {running ? (
           <>
@@ -99,34 +99,34 @@ const PostCleanupPanel = ({ onCleanupComplete }: Props) => {
         >
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-primary/50 shrink-0" />
-            <p className="text-[11px] font-medium text-foreground/70">Cleanup complete</p>
+            <p className="text-xs font-medium text-foreground/70">Cleanup complete</p>
           </div>
 
           <div className="grid grid-cols-3 gap-4 pl-6">
             <div className="space-y-0.5">
               <p className="text-lg font-bold tabular-nums text-foreground">{result.total}</p>
-              <p className="text-[10px] text-muted-foreground/35">Total records</p>
+              <p className="text-xs text-muted-foreground/35">Total records</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-lg font-bold tabular-nums text-primary/70">{result.kept}</p>
-              <p className="text-[10px] text-muted-foreground/35">Authored (kept)</p>
+              <p className="text-xs text-muted-foreground/35">Authored (kept)</p>
             </div>
             <div className="space-y-0.5">
               <p className="text-lg font-bold tabular-nums text-destructive/50">{result.rejected}</p>
-              <p className="text-[10px] text-muted-foreground/35">Rejected (hidden)</p>
+              <p className="text-xs text-muted-foreground/35">Rejected (hidden)</p>
             </div>
           </div>
 
           {result.rejected > 0 && Object.keys(result.reasons).length > 0 && (
             <div className="pl-6 space-y-1.5">
-              <p className="text-[10px] font-medium text-muted-foreground/35">Rejection reasons</p>
+              <p className="text-xs font-medium text-muted-foreground/35">Rejection reasons</p>
               <div className="flex flex-wrap gap-1.5">
                 {Object.entries(result.reasons)
                   .sort(([, a], [, b]) => b - a)
                   .map(([reason, count]) => (
                     <span
                       key={reason}
-                      className="px-2 py-0.5 rounded-full bg-destructive/5 text-[9px] text-destructive/40 border border-destructive/8"
+                      className="px-2 py-0.5 rounded-full bg-destructive/5 text-xs text-destructive/40 border border-destructive/8"
                     >
                       {REASON_LABELS[reason] || reason.replace(/_/g, " ")} ({count})
                     </span>

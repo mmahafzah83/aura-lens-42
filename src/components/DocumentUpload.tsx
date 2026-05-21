@@ -315,9 +315,9 @@ const DocumentUpload = ({ onUploaded }: DocumentUploadProps) => {
         {statusIcon[status]}
         <p className="text-sm text-foreground mt-3">{statusText[status]}</p>
         <div className="flex items-center gap-3 mt-2">
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> PDF</span>
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> DOCX</span>
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image</span>
+          <span className="text-xs text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> PDF</span>
+          <span className="text-xs text-muted-foreground flex items-center gap-1"><FileText className="w-3 h-3" /> DOCX</span>
+          <span className="text-xs text-muted-foreground flex items-center gap-1"><ImageIcon className="w-3 h-3" /> Image</span>
         </div>
       </div>
 

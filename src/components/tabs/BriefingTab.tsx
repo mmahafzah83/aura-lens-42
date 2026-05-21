@@ -111,7 +111,7 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh, onDraftToStudio }: Briefi
             </div>
             <div className="flex-1">
               <p className="text-xs font-semibold text-foreground leading-snug">Knowledge Graph</p>
-              <p className="text-[10px] text-muted-foreground/50">Explore idea connections</p>
+              <p className="text-xs text-muted-foreground/50">Explore idea connections</p>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/60 transition-colors" />
           </div>
@@ -132,7 +132,7 @@ const BriefingTab = ({ entries, onOpenChat, onRefresh, onDraftToStudio }: Briefi
             </div>
             <div className="flex-1">
               <p className="text-xs font-semibold text-foreground leading-snug">Knowledge Constellation</p>
-              <p className="text-[10px] text-muted-foreground/50">Idea lineage & evolution</p>
+              <p className="text-xs text-muted-foreground/50">Idea lineage & evolution</p>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-primary/60 transition-colors" />
           </div>

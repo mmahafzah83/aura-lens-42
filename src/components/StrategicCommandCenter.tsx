@@ -273,7 +273,7 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
                 <div className="glass-card rounded-xl p-4 text-center border border-border/10 hover:border-primary/15 transition-colors">
                   <Icon className="w-4 h-4 text-primary/50 mx-auto mb-2" />
                   <p className="text-lg sm:text-xl font-bold text-foreground tabular-nums">{step.count}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground/60 mt-1 uppercase tracking-wide">{step.label}</p>
+                  <p className="text-xs sm:text-xs text-muted-foreground/60 mt-1 uppercase tracking-wide">{step.label}</p>
                 </div>
                 {i < data.pipeline.length - 1 && (
                   <ArrowRight className="absolute -right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-border/40 hidden lg:block" />

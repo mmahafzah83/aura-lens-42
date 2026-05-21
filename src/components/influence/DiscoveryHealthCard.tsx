@@ -98,7 +98,7 @@ const DiscoveryHealthCard = () => {
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl card-pad border border-border/8 flex items-center gap-3 text-muted-foreground/30 text-[11px]">
+      <div className="glass-card rounded-2xl card-pad border border-border/8 flex items-center gap-3 text-muted-foreground/30 text-xs">
         <Activity className="w-4 h-4 animate-pulse" />
         Loading discovery health…
       </div>
@@ -135,7 +135,7 @@ const DiscoveryHealthCard = () => {
       {/* Metrics grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {items.map((item) => (
-          <div key={item.label} className="flex items-center gap-2 text-[10px]">
+          <div key={item.label} className="flex items-center gap-2 text-xs">
             <item.icon className={`w-3.5 h-3.5 shrink-0 ${item.color}`} />
             <div>
               <p className="text-muted-foreground/30">{item.label}</p>
@@ -150,21 +150,21 @@ const DiscoveryHealthCard = () => {
       {/* Timing */}
       <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-border/5">
         {stats.lastRunAt && (
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
             <Clock className="w-3 h-3 text-muted-foreground/25" />
             <span>Last run: {formatSmartDate(stats.lastRunAt)}</span>
             {stats.lastRunType && (
-              <span className="px-1.5 py-0.5 rounded bg-primary/5 text-primary/40 text-[8px] font-medium">
+              <span className="px-1.5 py-0.5 rounded bg-primary/5 text-primary/40 text-xs font-medium">
                 {syncLabel(stats.lastRunType)}
               </span>
             )}
           </div>
         )}
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
           <Timer className="w-3 h-3 text-primary/25" />
           <span>Next retry: {formatNextRun(nextRetry())}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground/40">
           <Timer className="w-3 h-3 text-primary/25" />
           <span>Next full scan: {formatNextRun(nextDaily())}</span>
         </div>

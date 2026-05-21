@@ -275,7 +275,7 @@ const FrameworkBuilderInline = ({
           {createdId ? "Refine Framework" : "Build Framework"}
         </h3>
         {initialTitle.trim() && !createdId && (
-          <span className="flex items-center gap-1 text-[10px] text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+          <span className="flex items-center gap-1 text-xs text-primary/60 bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
             <Sparkles className="w-2.5 h-2.5" /> Smart steps generated
           </span>
         )}
@@ -310,7 +310,7 @@ const FrameworkBuilderInline = ({
         <div className="space-y-3">
           {steps.map((step, idx) => (
             <div key={idx} className="flex gap-2 items-start">
-              <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center border border-primary/15 tabular-nums mt-1">
+              <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center border border-primary/15 tabular-nums mt-1">
                 {step.step_number}
               </span>
               <div className="flex-1 space-y-1">
@@ -356,7 +356,7 @@ const FrameworkBuilderInline = ({
             <img src={diagramUrl} alt="Framework diagram" className="w-full h-auto max-h-64 object-contain" />
           </div>
           {diagramMeta && (
-            <p className="text-[10px] text-muted-foreground text-center capitalize">{diagramMeta}</p>
+            <p className="text-xs text-muted-foreground text-center capitalize">{diagramMeta}</p>
           )}
           <div className="flex justify-center">
             <Button

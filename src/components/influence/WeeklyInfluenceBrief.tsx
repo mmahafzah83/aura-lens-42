@@ -87,7 +87,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">Weekly Influence Brief</h3>
-            <p className="text-[10px] text-muted-foreground/30">AI-generated strategic advisory memo</p>
+            <p className="text-xs text-muted-foreground/30">AI-generated strategic advisory memo</p>
           </div>
         </div>
         <p className="text-sm text-foreground/40 leading-relaxed">
@@ -96,7 +96,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
         <button
           onClick={generate}
           disabled={loading}
-          className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press"
+          className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2.5 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press"
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
           {loading ? "Looking…" : "Generate Brief"}
@@ -119,12 +119,12 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-foreground">Weekly Influence Brief</h3>
-                <p className="text-[10px] text-muted-foreground/25">
+                <p className="text-xs text-muted-foreground/25">
                   {brief.period_start} → {brief.period_end} · {brief.posts_analyzed} assets analyzed
                 </p>
               </div>
             </div>
-            <div className="text-[10px] text-muted-foreground/20 tabular-nums">
+            <div className="text-xs text-muted-foreground/20 tabular-nums">
               {Math.round(brief.confidence * 100)}% confidence
             </div>
           </div>
@@ -136,7 +136,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
             {brief.summary}
           </p>
 
-          <div className="flex items-center gap-4 text-[10px] text-muted-foreground/25 pt-1 border-t border-border/5">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground/25 pt-1 border-t border-border/5">
             <span>{brief.current_followers.toLocaleString()} followers</span>
             <span>{brief.follower_delta >= 0 ? "+" : ""}{brief.follower_delta} this week</span>
           </div>
@@ -159,7 +159,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
                 <DirectionIcon dir={change.direction} mag={change.magnitude} />
                 <div className="min-w-0">
                   <p className="text-xs text-foreground/55 leading-relaxed">{change.signal}</p>
-                  <p className="text-[10px] text-muted-foreground/20 mt-0.5 capitalize">
+                  <p className="text-xs text-muted-foreground/20 mt-0.5 capitalize">
                     {change.magnitude} {change.direction === "up" ? "increase" : change.direction === "down" ? "decline" : "hold"}
                   </p>
                 </div>
@@ -174,7 +174,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
         <div className="glass-card rounded-2xl card-pad border border-border/8 space-y-3">
           <h4 className="text-xs font-semibold text-foreground/60 uppercase tracking-widest">Strategic Implication</h4>
           <p className="text-sm text-foreground/50 leading-relaxed">{brief.strategic_implication}</p>
-          <p className="text-[10px] text-muted-foreground/15 italic pt-1 border-t border-border/5">
+          <p className="text-xs text-muted-foreground/15 italic pt-1 border-t border-border/5">
             Here is the pattern beneath the numbers.
           </p>
         </div>
@@ -189,14 +189,14 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
           </div>
           <p className="text-sm text-foreground/60 leading-relaxed font-medium">{brief.recommended_move.action}</p>
           <p className="text-xs text-foreground/35 leading-relaxed">{brief.recommended_move.reasoning}</p>
-          <div className="flex items-center gap-3 text-[10px] text-muted-foreground/25 pt-1">
+          <div className="flex items-center gap-3 text-xs text-muted-foreground/25 pt-1">
             <span className="capitalize">Format: {brief.recommended_move.format_suggestion}</span>
             <span>·</span>
             <span className="capitalize">Theme: {brief.recommended_move.theme_suggestion}</span>
           </div>
           <button
             onClick={handleDraft}
-            className="flex items-center gap-2 text-[11px] font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press mt-1"
+            className="flex items-center gap-2 text-xs font-medium text-primary/60 hover:text-primary px-4 py-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all tactile-press mt-1"
           >
             <FileText className="w-3.5 h-3.5" />
             Draft Content
@@ -211,7 +211,7 @@ const WeeklyInfluenceBrief = ({ onOpenChat }: WeeklyInfluenceBriefProps) => {
           <button
             onClick={generate}
             disabled={loading}
-            className="text-[10px] text-muted-foreground/20 hover:text-muted-foreground/40 transition-colors"
+            className="text-xs text-muted-foreground/20 hover:text-muted-foreground/40 transition-colors"
           >
             {loading ? "Regenerating…" : "Regenerate brief"}
           </button>

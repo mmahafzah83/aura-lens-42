@@ -497,7 +497,7 @@ const Dashboard = () => {
             style={{ color: "var(--aura-t3)", borderRadius: "var(--r-md)" }}
           >
             <Menu className="w-4 h-4 shrink-0" />
-            {!sidebarCollapsed && <span className="text-[11px]">Collapse</span>}
+            {!sidebarCollapsed && <span className="text-xs">Collapse</span>}
           </button>
 
           <button
@@ -510,7 +510,7 @@ const Dashboard = () => {
             title="Bring someone in"
           >
             <UserPlus className="w-4 h-4 shrink-0" />
-            {!sidebarCollapsed && <span className="text-[11px]">Bring someone in</span>}
+            {!sidebarCollapsed && <span className="text-xs">Bring someone in</span>}
           </button>
         </div>
       </aside>

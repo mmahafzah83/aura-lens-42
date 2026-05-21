@@ -273,12 +273,12 @@ const MyFrameworks = () => {
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium text-foreground leading-relaxed">{fw.title}</p>
                     {isApproved(fw) && (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
                         APPROVED
                       </span>
                     )}
                     {hasActivations(fw.id) && (
-                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary/90 border border-primary/15">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary/90 border border-primary/15">
                         ACTIVATED
                       </span>
                     )}
@@ -288,16 +288,16 @@ const MyFrameworks = () => {
                   )}
                   <div className="flex items-center gap-2 mt-3 flex-wrap">
                     {getDiagramType(fw) && (
-                      <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground/70 border border-accent/15">
+                      <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-accent/15 text-accent-foreground/70 border border-accent/15">
                         {DIAGRAM_TYPE_LABELS[getDiagramType(fw)!] || getDiagramType(fw)}
                       </span>
                     )}
                     {(fw.tags || []).filter(t => t !== "Approved").map(tag => (
-                      <span key={tag} className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
+                      <span key={tag} className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
                         {tag}
                       </span>
                     ))}
-                    <span className="text-[10px] text-muted-foreground/40 tabular-nums">
+                    <span className="text-xs text-muted-foreground/40 tabular-nums">
                       {steps(fw).length} steps
                     </span>
                   </div>
@@ -348,12 +348,12 @@ const MyFrameworks = () => {
                   <div className="space-y-3">
                     {steps(fw).map(step => (
                       <div key={step.step_number} className="flex gap-3">
-                        <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center border border-primary/15 tabular-nums">
+                        <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center border border-primary/15 tabular-nums">
                           {step.step_number}
                         </span>
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-foreground">{step.step_title}</p>
-                          <p className="text-[11px] text-muted-foreground/60 mt-0.5 leading-relaxed">{step.step_description}</p>
+                          <p className="text-xs text-muted-foreground/60 mt-0.5 leading-relaxed">{step.step_description}</p>
                         </div>
                       </div>
                     ))}
@@ -377,7 +377,7 @@ const MyFrameworks = () => {
                               className="flex flex-col items-center gap-2 p-3 rounded-lg bg-secondary/20 border border-border/10 hover:border-primary/20 hover:bg-secondary/30 transition-all text-center tactile-press"
                             >
                               <Icon className={`w-5 h-5 ${config.color}`} />
-                              <span className="text-[10px] font-medium text-foreground/80">{config.label}</span>
+                              <span className="text-xs font-medium text-foreground/80">{config.label}</span>
                             </button>
                           );
                         })}
@@ -391,7 +391,7 @@ const MyFrameworks = () => {
                       <Loader2 className="w-5 h-5 animate-spin text-primary" />
                       <div>
                         <p className="text-xs font-medium text-primary">Activating Framework Engine…</p>
-                        <p className="text-[10px] text-muted-foreground/50 mt-0.5">Generating LinkedIn post, consulting opportunity, strategy brief & slide</p>
+                        <p className="text-xs text-muted-foreground/50 mt-0.5">Generating LinkedIn post, consulting opportunity, strategy brief & slide</p>
                       </div>
                     </div>
                   )}
@@ -404,7 +404,7 @@ const MyFrameworks = () => {
                         variant="outline"
                         onClick={() => handleGenerateDiagram(fw)}
                         disabled={generatingDiagramId === fw.id}
-                        className="text-[11px] h-8 border-border/15 text-muted-foreground/70 hover:text-foreground"
+                        className="text-xs h-8 border-border/15 text-muted-foreground/70 hover:text-foreground"
                       >
                         {generatingDiagramId === fw.id ? (
                           <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
@@ -419,7 +419,7 @@ const MyFrameworks = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => openRefine(fw)}
-                      className="text-[11px] h-8 border-border/15 text-muted-foreground/70 hover:text-foreground"
+                      className="text-xs h-8 border-border/15 text-muted-foreground/70 hover:text-foreground"
                     >
                       <Pencil className="w-3 h-3 mr-1.5" />
                       Refine
@@ -430,7 +430,7 @@ const MyFrameworks = () => {
                         size="sm"
                         onClick={() => handleApproveAndActivate(fw)}
                         disabled={activatingId === fw.id}
-                        className="text-[11px] h-8"
+                        className="text-xs h-8"
                       >
                         {activatingId === fw.id ? (
                           <><Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Activating…</>
@@ -443,7 +443,7 @@ const MyFrameworks = () => {
                         size="sm"
                         onClick={() => handleApproveAndActivate(fw)}
                         disabled={activatingId === fw.id}
-                        className="text-[11px] h-8"
+                        className="text-xs h-8"
                       >
                         {activatingId === fw.id ? (
                           <><Loader2 className="w-3 h-3 animate-spin mr-1.5" /> Activating…</>
@@ -458,7 +458,7 @@ const MyFrameworks = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(fw.id); }}
                       disabled={deletingId === fw.id}
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-destructive/70 hover:text-destructive transition-all duration-200 disabled:opacity-40 px-3 py-1.5 rounded-lg bg-destructive/6 hover:bg-destructive/12 tactile-press border border-destructive/8"
+                      className="flex items-center gap-1.5 text-xs font-medium text-destructive/70 hover:text-destructive transition-all duration-200 disabled:opacity-40 px-3 py-1.5 rounded-lg bg-destructive/6 hover:bg-destructive/12 tactile-press border border-destructive/8"
                     >
                       {deletingId === fw.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                       Delete
@@ -502,7 +502,7 @@ const MyFrameworks = () => {
               <div className="space-y-3">
                 {refineSteps.map((step, idx) => (
                   <div key={idx} className="flex gap-2 items-start">
-                    <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center border border-primary/15 tabular-nums mt-1">
+                    <span className="shrink-0 w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center border border-primary/15 tabular-nums mt-1">
                       {step.step_number}
                     </span>
                     <div className="flex-1 space-y-1">

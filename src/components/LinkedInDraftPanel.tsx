@@ -130,7 +130,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                 <SheetTitle className="text-base font-bold text-foreground leading-tight">
                   LinkedIn Draft
                 </SheetTitle>
-                <SheetDescription className="text-[10px] text-muted-foreground/50 mt-0.5">
+                <SheetDescription className="text-xs text-muted-foreground/50 mt-0.5">
                   Bilingual authority post · EN + AR
                 </SheetDescription>
               </div>
@@ -142,10 +142,10 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
 
         {/* Topic */}
         <div className="px-5 pt-4 pb-2">
-          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold mb-1">Topic</p>
+          <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold mb-1">Topic</p>
           <p className="text-xs font-medium text-foreground/80 leading-snug">{title}</p>
           {hook && (
-            <p className="text-[11px] text-primary/50 italic mt-1.5 pl-3 border-l-2 border-primary/15 leading-relaxed">
+            <p className="text-xs text-primary/50 italic mt-1.5 pl-3 border-l-2 border-primary/15 leading-relaxed">
               "{hook}"
             </p>
           )}
@@ -180,12 +180,12 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
               {/* Draft Content */}
               <div className="rounded-xl border border-primary/[0.08] bg-card/60 backdrop-blur-sm overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
+                  <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
                     {editing ? "Edit Mode" : "Preview"}
                   </p>
                   <button
                     onClick={() => setEditing(!editing)}
-                    className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+                    className="text-xs text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
                   >
                     {editing ? (
                       <><Eye className="w-3 h-3" /> Preview</>
@@ -254,7 +254,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
               {/* Visual Section */}
               <div className="rounded-xl border border-primary/[0.08] bg-card/60 backdrop-blur-sm overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-primary/[0.06]">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
+                  <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground/40 font-semibold">
                     Blackboard Schematic
                   </p>
                   <Button
@@ -262,7 +262,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                     variant="ghost"
                     onClick={generateVisual}
                     disabled={visualLoading}
-                    className="text-[10px] h-6 px-2 text-primary/60 hover:text-primary"
+                    className="text-xs h-6 px-2 text-primary/60 hover:text-primary"
                   >
                     {visualLoading ? (
                       <Loader2 className="w-3 h-3 animate-spin mr-1" />
@@ -280,13 +280,13 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
                   <img src={visualUrl} alt="Blackboard schematic" className="w-full" />
                 ) : (
                   <div className="py-8 text-center">
-                    <p className="text-[10px] text-muted-foreground/30">Click Generate to create a visual</p>
+                    <p className="text-xs text-muted-foreground/30">Click Generate to create a visual</p>
                   </div>
                 )}
               </div>
 
               {/* Word count */}
-              <p className="text-[9px] text-muted-foreground/30 text-right">
+              <p className="text-xs text-muted-foreground/30 text-right">
                 {draft.split(/\s+/).filter(Boolean).length} words
               </p>
             </div>

@@ -100,14 +100,14 @@ const LinkedInIntelligence = () => {
             LinkedIn Intelligence
           </h2>
         </div>
-        <p className="text-[11px] text-muted-foreground/50 tracking-wide ml-11">
+        <p className="text-xs text-muted-foreground/50 tracking-wide ml-11">
           Synced LinkedIn data · Last snapshot: {latestSnapshot.snapshot_date}
         </p>
 
         <div className="mt-6 flex items-center gap-6 flex-wrap">
           <div>
             <p className="text-2xl font-bold text-foreground tabular-nums">{followers.toLocaleString()}</p>
-            <p className="text-[10px] text-muted-foreground/50">Followers</p>
+            <p className="text-xs text-muted-foreground/50">Followers</p>
           </div>
           {growth !== 0 && (
             <div className="flex items-center gap-1.5">
@@ -115,13 +115,13 @@ const LinkedInIntelligence = () => {
               <span className={`text-sm font-semibold ${growth > 0 ? "text-emerald-400" : "text-red-400"}`}>
                 {growth > 0 ? "+" : ""}{growth}
               </span>
-              <span className="text-[10px] text-muted-foreground/40">last period</span>
+              <span className="text-xs text-muted-foreground/40">last period</span>
             </div>
           )}
           {engagement > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-semibold text-foreground tabular-nums">{engagement.toFixed(1)}%</span>
-              <span className="text-[10px] text-muted-foreground/40">engagement</span>
+              <span className="text-xs text-muted-foreground/40">engagement</span>
             </div>
           )}
         </div>
@@ -131,7 +131,7 @@ const LinkedInIntelligence = () => {
             <button
               key={s.key}
               onClick={() => setActiveSection(s.key)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap tactile-press ${
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap tactile-press ${
                 activeSection === s.key
                   ? "bg-primary/10 text-primary border border-primary/20"
                   : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/30"
@@ -158,12 +158,12 @@ const LinkedInIntelligence = () => {
                 { title: "Geography", data: audienceBreakdown.geography || [] },
               ].filter(g => g.data.length > 0).map((group) => (
                 <div key={group.title} className="space-y-3">
-                  <p className="text-[10px] font-semibold text-muted-foreground/50 tracking-widest uppercase">{group.title}</p>
+                  <p className="text-xs font-semibold text-muted-foreground/50 tracking-widest uppercase">{group.title}</p>
                   {group.data.map((item: any) => (
                     <div key={item.name} className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-foreground/80">{item.name}</span>
-                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">{item.pct}%</span>
+                        <span className="text-xs text-foreground/80">{item.name}</span>
+                        <span className="text-xs text-muted-foreground/50 tabular-nums">{item.pct}%</span>
                       </div>
                       <Progress value={item.pct} className="h-1" />
                     </div>
@@ -189,7 +189,7 @@ const LinkedInIntelligence = () => {
                 <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
                   <div className="flex-1">
                     <p className="text-xs font-medium text-foreground">Top Topic</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{latestSnapshot.top_topic}</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">{latestSnapshot.top_topic}</p>
                   </div>
                 </div>
               )}
@@ -197,7 +197,7 @@ const LinkedInIntelligence = () => {
                 <div className="flex items-center gap-4 p-3 rounded-xl bg-secondary/15 border border-border/10">
                   <div className="flex-1">
                     <p className="text-xs font-medium text-foreground">Top Format</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{latestSnapshot.top_format}</p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">{latestSnapshot.top_format}</p>
                   </div>
                 </div>
               )}
