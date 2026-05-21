@@ -227,7 +227,7 @@ const AuraResponseBlock = ({ content }: { content: string }) => {
   );
 };
 
-type Msg = { role: "user" | "assistant"; content: string; isBrief?: boolean; isShadowTwin?: boolean };
+type Msg = { role: "user" | "assistant"; content: string; isBrief?: boolean; isShadowTwin?: boolean; isError?: boolean; };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ask-aura`;
 
@@ -755,9 +755,18 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
         })();
       }
     } catch (e: any) {
+      toast.error("Aura couldn't respond. Try again.", {
+        action: {
+          label: "Retry",
+          onClick: () => {
+            setMessages(prev => prev.filter(m => m !== userMsg && !m.isError));
+            send(userMsg.content, mode, existingConvId, ctx);
+          },
+        },
+      });
       setMessages(prev => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${e.message || "Didn't connect. Try once more."}` },
+        { role: "assistant", content: e.message || "Didn't connect. Try once more.", isError: true },
       ]);
     }
     setIsLoading(false);
@@ -1345,13 +1354,16 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground rounded-br-md"
-                          : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
+                          : msg.isError
+                            ? "bg-destructive/10 border border-destructive/30 text-foreground rounded-bl-md"
+                            : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
                       }`}
                       style={{
                         wordBreak: "break-word",
                         overflowWrap: "anywhere",
                         ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid var(--brand)" } : {}),
                         ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
+                        ...(msg.role === "assistant" && msg.isError ? { borderLeft: "3px solid hsl(var(--destructive))" } : {}),
                       }}
                     >
                       {msg.role === "assistant" ? (
