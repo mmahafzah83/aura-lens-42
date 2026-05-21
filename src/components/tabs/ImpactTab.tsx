@@ -1857,7 +1857,6 @@ const HeroStat = ({ value, label, color }: { value: string; label: string; color
     <div
       style={{
         fontSize: 12,
-        textTransform: "uppercase",
         letterSpacing: "0.06em",
         color: "var(--color-text-secondary)",
         marginTop: 4,
@@ -1876,7 +1875,7 @@ const Stat = ({ label, value, valueColor }: { label: string; value: string; valu
     >
       {value}
     </div>
-    <div className="text-xs uppercase tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
+    <div className="text-xs tracking-widest mt-1" style={{ color: "var(--color-text-muted)" }}>
       {label}
     </div>
   </div>
@@ -1944,7 +1943,7 @@ const ForceCard = ({
         background: "var(--aura-card)",
         borderRadius: 12,
         border: "1px solid var(--aura-border)",
-        borderTop: `3px solid ${color}`,
+        borderTop: `3px solid var(--brand)`,
         padding: "14px 16px",
         position: "relative",
       }}
@@ -1954,7 +1953,7 @@ const ForceCard = ({
           <div
             style={{
               fontSize: 12, fontWeight: 600, letterSpacing: "0.1em",
-              textTransform: "uppercase", color: "var(--aura-t2)",
+              color: "var(--ink-3)",
             }}
           >
             {label}
@@ -1977,7 +1976,7 @@ const ForceCard = ({
           </TooltipProvider>
         </div>
         <div
-          className="text-xs uppercase tracking-wider px-1.5 py-0.5 rounded"
+          className="text-xs tracking-wider px-1.5 py-0.5 rounded"
           style={{ background: `${color}1F`, color, fontWeight: 600 }}
         >
           {status}
@@ -2222,14 +2221,14 @@ const PillarCard = ({
       style={{
         background: "var(--aura-card)",
         border: "1px solid var(--aura-border)",
-        borderTop: `3px solid ${color}`,
+        borderTop: `3px solid var(--brand)`,
         borderRadius: 12,
         padding: "14px 16px",
         position: "relative",
       }}
     >
       <div className="flex items-center justify-between">
-        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--aura-t2)" }}>
+        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "var(--ink-3)" }}>
           {label}
         </div>
         <TooltipProvider delayDuration={150}>
