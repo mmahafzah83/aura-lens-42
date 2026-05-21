@@ -1913,6 +1913,22 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         const alarmFresh = competitorAlert && !alarmDismissed &&
           (Date.now() - new Date(competitorAlert.fetchedAt).getTime()) < 48 * 3_600_000;
 
+        // Skeleton — render a card-sized placeholder while the briefing /
+        // moves are still loading and we have no signal/nudge/move to show.
+        if (showMovesSkeleton && !alarmFresh && !topMove && !auraData?.personalized_nudge && !caughtUpReady) {
+          return (
+            <div
+              className="space-y-3"
+              aria-busy="true"
+              aria-label="Loading your briefing"
+            >
+              <div className="h-32 rounded-lg bg-muted animate-pulse" />
+              <div className="h-24 rounded-lg bg-muted animate-pulse" />
+              <div className="h-24 rounded-lg bg-muted animate-pulse" />
+            </div>
+          );
+        }
+
         // Priority 1 — alarm card
         if (alarmFresh) {
           if (!alarmEducationSeen) {

@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -46,7 +47,14 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <Suspense
+            fallback={
+              <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading…</p>
+              </div>
+            }
+          >
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/home" element={<PasswordGate><Dashboard /></PasswordGate>} />
