@@ -242,7 +242,7 @@ const Auth = () => {
           transition: background-color 9999s ease-in-out 0s;
         }
         .auth-headline {
-          color: #ffffff !important;
+          color: var(--paper) !important;
           font-family: 'Cormorant Garamond', Georgia, serif !important;
           font-weight: 400 !important;
           font-size: 34px !important;
@@ -251,7 +251,7 @@ const Auth = () => {
           opacity: 1 !important;
           text-shadow: none !important;
           background: none !important;
-          -webkit-text-fill-color: #ffffff !important;
+          -webkit-text-fill-color: var(--paper) !important;
         }
         .auth-headline em {
           font-style: italic;
@@ -306,7 +306,7 @@ const Auth = () => {
         }
         .auth-submit {
           background: var(--brand);
-          color: #ffffff;
+          color: var(--paper);
           border: none;
           border-radius: 10px;
           padding: 13px;
@@ -325,7 +325,7 @@ const Auth = () => {
         .auth-submit:hover:not(:disabled) { background: var(--brand-hover); }
         .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; }
         .auth-google {
-          background: #ffffff;
+          background: var(--paper);
           color: var(--ink);
           border: none;
           border-radius: 10px;
@@ -348,7 +348,7 @@ const Auth = () => {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-weight: 500;
           font-size: 22px;
-          color: #ffffff;
+          color: var(--paper);
           letter-spacing: 0.04em;
           line-height: 1;
         }
