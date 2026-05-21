@@ -1386,6 +1386,22 @@ export default function CarouselStudio() {
   const [topic, setTopic] = useState(navState?.topic || "");
   const [lang, setLang] = useState<"en" | "ar">(navState?.lang || "en");
   const [generating, setGenerating] = useState(false);
+  const [genMessageIdx, setGenMessageIdx] = useState(0);
+  const GEN_MESSAGES = [
+    "Analyzing your signal…",
+    "Crafting slide narratives…",
+    "Designing 8 slides…",
+    "Running quality checks…",
+    "Almost there…",
+  ];
+
+  useEffect(() => {
+    if (!generating) { setGenMessageIdx(0); return; }
+    const id = setInterval(() => {
+      setGenMessageIdx(prev => (prev + 1) % GEN_MESSAGES.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [generating]);
   const [carousel, setCarousel] = useState<Carousel>(() => emptyCarousel());
   const [activeIdx, setActiveIdx] = useState(0);
   const [exporting, setExporting] = useState(false);
