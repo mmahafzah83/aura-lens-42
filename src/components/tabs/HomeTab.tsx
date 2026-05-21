@@ -1545,6 +1545,33 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               >
                 {getGreetingTitle(now.getHours())}{profileLoaded && userName ? `, ${userName}` : ""}
               </div>
+              {(() => {
+                const score = auraData.aura_score;
+                const tier = auraData.tier_name;
+                const dropped = score7dAgo !== null && score < score7dAgo;
+                const dipDelta = dropped ? (score7dAgo as number) - score : 0;
+                let line = "";
+                if (dropped && dipDelta >= 2) {
+                  line = `Your score dipped ${dipDelta} pts to ${score}. A single capture restarts momentum.`;
+                } else if (daysSinceCapture !== null && daysSinceCapture >= 7) {
+                  line = `It's been ${daysSinceCapture} days since your last capture. Your signals are waiting for fresh evidence.`;
+                } else {
+                  line = `Your authority is at ${score} — ${tier} tier.`;
+                }
+                return (
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "var(--ink-4)",
+                      lineHeight: 1.5,
+                      marginBottom: 6,
+                      maxWidth: 560,
+                    }}
+                  >
+                    {line}
+                  </div>
+                );
+              })()}
               <div className="flex items-center" style={{ gap: 6 }}>
                 <span
                   data-testid="home-score"

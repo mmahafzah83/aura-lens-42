@@ -817,18 +817,6 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Branded header */}
-      <div style={{ marginBottom: 0 }}>
-        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-          Your content engine
-        </div>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
-          Publish
-        </h1>
-        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
-          You already know things most people in your sector don't. This is where that knowledge becomes content that opens doors.
-        </p>
-      </div>
       <div className="flex flex-col lg:flex-row gap-6">
       {/* Main Editor */}
       <div className="flex-1 min-w-0 space-y-6">
@@ -2906,16 +2894,16 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         {topSignal ? (
           <EmptyState
             icon={PenTool}
-            title="No posts yet."
-            description="Your signals are ready — your first post is one click away."
+            title="Your best posts haven't been written yet"
+            description="They're waiting inside your signals. Pick one and let Aura draft something only you could write."
             ctaLabel={`Write about: "${topSignal.signal_title}" →`}
             ctaAction={onSwitchToCreate}
           />
         ) : (
           <EmptyState
             icon={PenTool}
-            title="No posts yet."
-            description="Capture a few articles first. Once Aura detects patterns, you can turn them into posts in your voice."
+            title="Your best posts haven't been written yet"
+            description="They're waiting inside the signals Aura hasn't detected yet. Capture a few articles, then come back."
             ctaLabel="Capture something →"
             ctaAction={() => navigate("/home")}
           />
@@ -3290,6 +3278,18 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
   return (
     <div className="space-y-8">
       <FirstVisitHint page="publish" />
+      {/* Branded header — visible on every sub-tab (Create, Library, Plan) */}
+      <div>
+        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+          Your content engine
+        </div>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+          Publish
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          You already know things most people in your sector don't. This is where that knowledge becomes content that opens doors.
+        </p>
+      </div>
       {brandDone === false && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
           <Target className="w-4 h-4 text-primary shrink-0" />

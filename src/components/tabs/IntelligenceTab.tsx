@@ -1126,24 +1126,24 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
               entryCount === 0 ? (
                 <EmptyState
                   icon={Brain}
-                  title={EMPTY_STATE.intelligence.text.split(".")[0] + "."}
-                  description={EMPTY_STATE.intelligence.text.split(".").slice(1).join(".").trim()}
-                  ctaLabel={EMPTY_STATE.intelligence.cta}
+                  title="Your radar is quiet"
+                  description="The market isn't. Capture one article about your sector and watch Aura detect what others miss."
+                  ctaLabel="Capture your first source →"
                   ctaAction={() => onOpenCapture?.()}
                 />
               ) : entryCount < 3 ? (
                 <EmptyState
                   icon={Brain}
-                  title="Almost there"
+                  title="Your radar is warming up"
                   description={`Aura needs at least 3 captures to detect strategic patterns. You have ${entryCount}/3.`}
-                  ctaLabel="Capture more"
+                  ctaLabel="Capture another source →"
                   ctaAction={() => onOpenCapture?.()}
                 />
               ) : (
                 <EmptyState
                   icon={Brain}
-                  title="Aura detects signals from what you capture."
-                  description="Start by capturing something about {sector} you read today."
+                  title="Your radar is quiet"
+                  description="The market isn't. Capture one more article about {sector} and Aura will surface the pattern."
                   personalize
                   ctaLabel={detecting ? "Detecting..." : "Detect signals"}
                   ctaAction={detecting ? undefined : runPatternDetection}
@@ -1284,10 +1284,12 @@ const IntelligenceTab = ({ entries, onOpenChat, onRefresh, onOpenCapture, onDraf
                     />
                   </div>
                 </div>
-                <div data-testid="intel-coverage">
+                <div data-testid="intel-coverage" style={{ marginTop: 32 }}>
                   <MarketCoverageSection onOpenCapture={onOpenCapture} />
                 </div>
-                <RecommendedReadingSection />
+                <div style={{ marginTop: 32 }}>
+                  <RecommendedReadingSection />
+                </div>
               </>
             )}
           </>
