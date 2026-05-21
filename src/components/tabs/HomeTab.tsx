@@ -207,6 +207,8 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // ────────────────────────────────────────────────
 
 const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
+  // Local helper for the home score number — counts up once per session.
+
   const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
   // Session is "confirmed" only when auth restore is done AND we have an access
   // token. This is the gate for ALL data fetches — without it, RLS-protected
@@ -2258,3 +2260,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 };
 
 export default HomeTab;
+
+const AnimatedScore = ({ value }: { value: number }) => {
+  const display = useCountUp(value, { duration: 800, once: true, key: "home-score" });
+  return <>{display}</>;
+};
