@@ -942,7 +942,7 @@ const AdminQA = () => {
               <h3 style={{ margin: 0, fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: "#F4EFE6" }}>{batchModal.title}</h3>
               <button onClick={() => setBatchModal(null)} style={{ background: "transparent", border: "none", color: "#F4EFE6", cursor: "pointer" }}><X size={18} /></button>
             </div>
-            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "#0a0a0a", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 13, lineHeight: 1.5 }} />
+            <textarea readOnly value={batchModal.text} style={{ width: "100%", flex: 1, minHeight: 360, background: "var(--paper)", color: "#F4EFE6", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, padding: 12, fontFamily: "var(--font-mono, monospace)", fontSize: 13, lineHeight: 1.5 }} />
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <SecondaryBtn onClick={() => setBatchModal(null)}>Close</SecondaryBtn>
               <PrimaryBtn onClick={() => copyText(batchModal.text)}><Copy size={14} /> Copy to clipboard</PrimaryBtn>
@@ -969,7 +969,7 @@ const linkBtn: React.CSSProperties = { background: "transparent", border: "1px s
 
 const primaryBtnStyle: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", gap: 8,
-  background: "var(--brand,#B08D3A)", color: "#0a0a0a", border: "none",
+  background: "var(--brand,#B08D3A)", color: "var(--paper)", border: "none",
   padding: "11px 20px", borderRadius: 6, fontWeight: 600, cursor: "pointer", fontSize: 14, fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
 };
 const secondaryBtnStyle: React.CSSProperties = {
