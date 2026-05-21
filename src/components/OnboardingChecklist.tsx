@@ -188,7 +188,7 @@ const OnboardingChecklist = ({ onOpenCapture, onSwitchTab }: OnboardingChecklist
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4" style={{ color: "var(--brand)" }} fill="var(--brand)" />
                     <span className="text-sm font-semibold text-foreground">
-                      Get started with Aura
+                      Your intelligence engine is ready
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">

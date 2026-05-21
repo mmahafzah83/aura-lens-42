@@ -1237,7 +1237,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <Bookmark className="w-10 h-10 text-muted-foreground/30 mb-3" />
                 <p className="text-xs text-muted-foreground/60 max-w-[260px] leading-relaxed">
-                  Your saved Aura responses appear here. Click Save to Vault after any response.
+                  Your saved Aura responses appear here. Click Save to vault after any response.
                 </p>
               </div>
             ) : (
@@ -1427,7 +1427,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         }`}
                       >
                         {savedFlash.has(i) ? <Check className="w-3 h-3" /> : <Bookmark className="w-3 h-3" />}
-                        {savedFlash.has(i) ? "Saved ✓" : "Save to Vault"}
+                        {savedFlash.has(i) ? "Saved ✓" : "Save to vault"}
                       </button>
                     )}
                     {msg.role === "assistant" && msg.content && !isLoading && msg.isShadowTwin && (

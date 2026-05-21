@@ -76,7 +76,7 @@ const SourceReviewPanel = () => {
           <Loader2 className="w-5 h-5 animate-spin text-primary/30" />
         </div>
       ) : snapshots.length === 0 ? (
-        <p className="text-meta text-center py-10">No data to review in this view.</p>
+        <p className="text-meta text-center py-10">Nothing here yet — capture an article to start building intelligence.</p>
       ) : (
         <div className="overflow-x-auto -mx-2">
           <table className="w-full text-left min-w-[500px]">

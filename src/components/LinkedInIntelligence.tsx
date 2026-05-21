@@ -62,7 +62,7 @@ const LinkedInIntelligence = () => {
       <div className="glass-card rounded-2xl p-6 sm:p-8 text-center py-12">
         <WifiOff className="w-10 h-10 text-primary/20 mx-auto mb-3" />
         <p className="text-sm font-medium text-foreground mb-1">No LinkedIn data</p>
-        <p className="text-xs text-muted-foreground/50">Connect and sync your LinkedIn account to see intelligence here.</p>
+        <p className="text-xs text-muted-foreground/50">Connect your LinkedIn activity to see intelligence here.</p>
       </div>
     );
   }

@@ -1823,7 +1823,7 @@ const AnalyzeTab = () => {
       <div className="text-center py-16 space-y-3">
         <BarChart3 className="w-8 h-8 text-primary/30 mx-auto" />
         <p className="text-foreground font-medium">No content data yet</p>
-        <p className="text-sm text-muted-foreground max-w-sm mx-auto">Publish content and sync your LinkedIn to see performance analytics here.</p>
+        <p className="text-sm text-muted-foreground max-w-sm mx-auto">Create your first post and connect your LinkedIn activity to see performance analytics here.</p>
       </div>
     );
   }
@@ -2753,7 +2753,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
 
   const handleCopy = async (id: string, text: string) => {
     try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      if (!navigator.clipboard?.writeText) throw new Error("Couldn't copy — try selecting the text manually");
       await navigator.clipboard.writeText(text);
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 1500);
