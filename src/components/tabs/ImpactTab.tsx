@@ -1560,7 +1560,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                     disabled={uploading}
                     data-testid="impact-linkedin-upload"
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                    style={{ background: "var(--brand)", color: "#ffffff" }}
+                    style={{ background: "var(--brand)", color: "var(--paper)" }}
                   >
                     <Upload className="w-3.5 h-3.5" />
                     Upload LinkedIn .xlsx file
@@ -1574,7 +1574,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                       onClick={handleUpload}
                       disabled={uploading}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium disabled:opacity-60"
-                      style={{ background: "var(--brand)", color: "#ffffff" }}
+                      style={{ background: "var(--brand)", color: "var(--paper)" }}
                     >
                       {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                       {uploading ? "Importing..." : "Import"}
