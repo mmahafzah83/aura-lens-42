@@ -470,12 +470,12 @@ const Admin = () => {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1">
                             {r.seniority && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "#1c1c1c", color: "var(--ink-7)", border: "1px solid var(--ink-3)" }}>
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-7)", border: "1px solid var(--ink-3)" }}>
                                 {r.seniority}
                               </span>
                             )}
                             {r.sector && (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "#1c1c1c", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground" style={{ backgroundColor: "var(--ink-2)", color: "var(--ink-5)", border: "1px solid var(--ink-3)" }}>
                                 {r.sector}
                               </span>
                             )}
