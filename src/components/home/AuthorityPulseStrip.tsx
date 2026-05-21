@@ -54,7 +54,7 @@ const Item = ({
       style={{
         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
         fontSize: 22, fontWeight: 700,
-        color: valueColor || "var(--aura-t1)", lineHeight: 1.375,
+        color: "var(--brand)", lineHeight: 1.375,
       }}
     >
       {value}
@@ -62,12 +62,12 @@ const Item = ({
     <div
       style={{
         fontSize: 9.5, marginTop: 4, textTransform: "uppercase",
-        letterSpacing: "0.08em", color: "var(--aura-t2)",
+        letterSpacing: "0.08em", color: "var(--ink-4)",
       }}
     >
       {label}
     </div>
-    <div style={{ fontSize: 12, marginTop: 3, color: "var(--aura-t3)" }}>
+    <div style={{ fontSize: 12, marginTop: 3, color: "var(--ink-5)" }}>
       {delta}
     </div>
   </button>
@@ -122,23 +122,21 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
     <div
       style={{
         display: "flex",
-        background: "var(--aura-card)",
+        background: "var(--paper-2, var(--background))",
         borderRadius: 10,
         padding: 3,
-        border: "1px solid var(--aura-border)",
+        border: "1px solid var(--brand-line, rgba(0,0,0,0.08))",
       }}
     >
       <Item
         value={String(stats.signalsCount)}
         label="Signals"
         delta={stats.topConfidence != null ? `${Math.round(stats.topConfidence * 100)}% conf.` : "—"}
-        valueColor="var(--aura-accent3)"
       />
       <Item
         value={stats.postsCount > 0 ? String(stats.postsCount) : (hasLinkedIn ? "0" : "--")}
         label="Posts"
         delta={hasLinkedIn ? "imported" : "Import LinkedIn"}
-        valueColor="var(--aura-blue)"
         onClick={!hasLinkedIn ? onGoToImpact : undefined}
       />
       <Item
@@ -149,14 +147,12 @@ export default function AuthorityPulseStrip({ userId, authorityScore, onGoToImpa
           const b = tierBenchmark(stats.followers);
           return `vs ${b.low}–${b.high}% (${b.label})`;
         })()}
-        valueColor="var(--aura-positive)"
         onClick={stats.engagementRate == null ? onGoToImpact : undefined}
       />
       <Item
         value={stats.followers != null ? fmtCompact(stats.followers) : "--"}
         label="Followers"
         delta={stats.followers != null ? "tracked" : "Import LinkedIn"}
-        valueColor="var(--aura-purple)"
         onClick={stats.followers == null ? onGoToImpact : undefined}
       />
     </div>
