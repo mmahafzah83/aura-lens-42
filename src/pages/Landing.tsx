@@ -596,7 +596,7 @@ const Landing = () => {
         }} />
         <div className="relative">
           <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "var(--ink)", fontFamily: "var(--font-display)" }}>Your authority starts here.</h2>
-          <p className="text-[13px] mb-6" style={{ color: "#0d0d0d99" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
+          <p className="text-[13px] mb-6" style={{ color: "var(--ink-3)" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
           <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
             Get early access
           </button>
