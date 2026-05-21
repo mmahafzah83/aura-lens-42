@@ -316,6 +316,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
+  // ── User identity for avatar on user messages ──
+  const [userIdentity, setUserIdentity] = useState<{ firstName: string | null; lastName: string | null }>({ firstName: null, lastName: null });
   // ── Cross-session memory (aura_conversation_memory) ──
   type MemoryRow = { id: string; role: string | null; content: string | null; created_at: string };
   const [memoryRows, setMemoryRows] = useState<MemoryRow[]>([]);
