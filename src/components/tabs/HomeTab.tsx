@@ -187,9 +187,9 @@ const SIGNAL = "var(--signal)";
 // ────────────────────────────────────────────────
 
 const getGreeting = (h: number) => {
-  if (h >= 5 && h < 12) return "GOOD MORNING";
-  if (h >= 12 && h < 17) return "GOOD AFTERNOON";
-  return "GOOD EVENING";
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  return "Good evening";
 };
 
 const getGreetingTitle = (h: number) => {
@@ -921,7 +921,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     setAddedSignalIds(prev => new Set(prev).add(trend.id));
     const result = await wireTrendToSignals(trend);
     if (result.ok) {
-      toast.success(`Added to ${result.signalTitle} — fragment count now ${result.newCount}`);
+      toast.success(`Evidence strengthened — ${result.newCount} sources connected to ${result.signalTitle}`);
     } else {
       toast.error("Couldn't add to signals — try again");
     }
