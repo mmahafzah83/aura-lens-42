@@ -1591,6 +1591,17 @@ button[aria-label="Notifications"]:focus-visible {
   background: linear-gradient(180deg, hsl(var(--primary) / 0.10), hsl(var(--card))) !important;
 }
 
+/* Ceremony glyph pulse — used in onboarding completion and tier upgrade */
+@keyframes gold-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.1); }
+}
+.aura-gold-pulse {
+  animation: gold-pulse 2s ease-in-out infinite;
+  display: inline-block;
+  color: var(--gold-dark, var(--brand));
+}
+
 /* Interactive card hover lift — apply only to clickable cards */
 .card-interactive {
   transition: transform 200ms ease, box-shadow 200ms ease;
