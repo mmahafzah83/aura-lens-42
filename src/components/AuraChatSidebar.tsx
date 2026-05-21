@@ -400,6 +400,49 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
     })();
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        const unreadSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data, error } = await (supabase.from("notification_events" as any) as any)
+          .select("id")
+          .eq("user_id", session.user.id)
+          .eq("read", false)
+          .gte("sent_at", unreadSince)
+          .limit(100);
+
+        if (error) {
+          console.error("mark notifications on open:", error.message);
+          return;
+        }
+
+        const ids = ((data as Array<{ id: string }> | null) ?? []).map((event) => event.id);
+        if (ids.length === 0) {
+          window.dispatchEvent(new CustomEvent("aura:notifications-read"));
+          return;
+        }
+
+        const { error: updateError } = await (supabase.from("notification_events" as any) as any)
+          .update({ read: true, read_at: new Date().toISOString() })
+          .in("id", ids);
+
+        if (updateError) {
+          console.error("mark notifications on open:", updateError.message);
+          return;
+        }
+
+        window.dispatchEvent(new CustomEvent("aura:notifications-read"));
+      } catch (error) {
+        console.error("mark notifications on open:", error);
+      }
+    })();
+  }, [open]);
+
   // ── Load cross-session memory on open ──
   useEffect(() => {
     if (!open) { setShowMemoryPanel(false); return; }

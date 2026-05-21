@@ -88,10 +88,12 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
   const fetchEvents = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+    const unreadSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data, error } = await (supabase.from("notification_events" as any) as any)
       .select("id, type, title, body, sent_at")
       .eq("user_id", user.id)
       .eq("read", false)
+      .gte("sent_at", unreadSince)
       .order("sent_at", { ascending: false })
       .limit(20);
     if (error) {
@@ -108,6 +110,17 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
     const id = window.setInterval(fetchEvents, POLL_MS);
     return () => window.clearInterval(id);
   }, [fetchEvents]);
+
+  useEffect(() => {
+    const handleNotificationsRead = () => {
+      setEvents([]);
+      setCount(0);
+      setShowTip(false);
+    };
+
+    window.addEventListener("aura:notifications-read", handleNotificationsRead);
+    return () => window.removeEventListener("aura:notifications-read", handleNotificationsRead);
+  }, []);
 
   // ── AA-5: Avatar state checks (signal/window/alarm) ──
   const computeAvatarState = useCallback(async () => {
@@ -200,6 +213,8 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
     if (error) console.error("mark read:", error.message);
     setEvents([]);
     setCount(0);
+    setShowTip(false);
+    window.dispatchEvent(new CustomEvent("aura:notifications-read"));
   }, []);
 
   const top3 = events.slice(0, 3);
