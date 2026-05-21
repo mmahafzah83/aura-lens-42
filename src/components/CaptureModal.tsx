@@ -636,7 +636,112 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
     setSwipeY(0);
   };
 
-  if (!open) return null;
+  // The first-capture ceremony renders independently of `open` so the user
+  // sees it AFTER the bottom sheet closes.
+  const ceremonyPortal = firstCeremonyOpen && typeof document !== "undefined"
+    ? createPortal(
+      <div
+        role="dialog"
+        aria-label="Your first signal is forming"
+        style={{
+          position: "fixed", inset: 0, zIndex: 20000,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(10, 8, 5, 0.78)",
+          backdropFilter: "blur(6px)",
+          animation: "fade-up-in 360ms ease both",
+        }}
+        onClick={() => setFirstCeremonyOpen(false)}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: "relative",
+            maxWidth: 460,
+            padding: "44px 36px 32px",
+            textAlign: "center",
+            background: "var(--paper, #14110C)",
+            border: "1px solid var(--brand-line, rgba(176,141,58,0.28))",
+            borderRadius: 16,
+            boxShadow: "0 30px 80px -20px rgba(0,0,0,0.5)",
+          }}
+        >
+          {/* Gold radial glow behind the glyph */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute", top: 14, left: "50%",
+              width: 220, height: 220, transform: "translateX(-50%)",
+              background: "radial-gradient(circle, rgba(176,141,58,0.25) 0%, transparent 65%)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            className="aura-gold-pulse"
+            style={{
+              position: "relative", fontSize: 42, lineHeight: 1,
+              color: "var(--gold-dark, #B08D3A)",
+              marginBottom: 18,
+            }}
+          >✦</div>
+          <h2
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 26, fontWeight: 500,
+              color: "var(--ink, #FBF8F1)",
+              letterSpacing: "-0.01em",
+              margin: "0 0 12px",
+            }}
+          >
+            Your first signal is forming
+          </h2>
+          <p
+            style={{
+              fontSize: 14, lineHeight: 1.65,
+              color: "var(--ink-3, #B8AE99)",
+              margin: "0 auto 20px", maxWidth: 360,
+            }}
+          >
+            Aura is extracting intelligence from this source. Your strategic radar is now active.
+          </p>
+          {firstCeremonyShowCta && (
+            <button
+              type="button"
+              className="animate-fade-up-in"
+              onClick={() => {
+                setFirstCeremonyOpen(false);
+                window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "intelligence" } }));
+              }}
+              style={{
+                background: "var(--gold-dark, #B08D3A)",
+                color: "var(--paper, #14110C)",
+                border: 0, borderRadius: 8,
+                padding: "10px 22px",
+                fontSize: 14, fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              See your intelligence →
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setFirstCeremonyOpen(false)}
+            aria-label="Close"
+            style={{
+              position: "absolute", top: 12, right: 12,
+              background: "transparent", border: 0,
+              color: "var(--ink-4, #8A8170)", cursor: "pointer",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      </div>,
+      document.body,
+    )
+    : null;
+
+  if (!open) return <>{ceremonyPortal}</>;
 
   // Skill pillar chip fallbacks (per spec)
   const PILLAR_CHIPS = [
