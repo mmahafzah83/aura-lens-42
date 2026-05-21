@@ -783,8 +783,22 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
   /* ── Render ── */
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "var(--color-accent)" }} />
+      <div
+        className="space-y-6 py-6"
+        aria-busy="true"
+        aria-label="Loading impact dashboard"
+      >
+        {/* Score card */}
+        <div className="h-28 rounded-lg bg-muted animate-pulse" />
+        {/* Trajectory chart */}
+        <div className="h-48 rounded-lg bg-muted animate-pulse" />
+        {/* Metrics grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="h-20 rounded-lg bg-muted animate-pulse" />
+          <div className="h-20 rounded-lg bg-muted animate-pulse" />
+          <div className="h-20 rounded-lg bg-muted animate-pulse" />
+          <div className="h-20 rounded-lg bg-muted animate-pulse" />
+        </div>
       </div>
     );
   }
