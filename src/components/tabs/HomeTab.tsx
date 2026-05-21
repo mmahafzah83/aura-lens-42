@@ -1094,7 +1094,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               fontSize: 14,
               color: "var(--ink-3)",
               marginTop: 10,
-              lineHeight: 1.6,
+              lineHeight: 1.625,
               maxWidth: 560,
             }}
           >
@@ -1182,7 +1182,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   <div style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 4 }}>
                     {step.title}
                   </div>
-                  <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, lineHeight: 1.55 }}>
+                  <p style={{ fontSize: 14, color: "var(--ink-3)", margin: 0, lineHeight: 1.625 }}>
                     {step.body}
                   </p>
                   {step.cta && (
@@ -1231,7 +1231,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               style={{
                 fontSize: 12,
                 color: "var(--ink-3)",
-                lineHeight: 1.6,
+                lineHeight: 1.625,
                 margin: "4px 4px 0",
                 opacity: 0.85,
               }}
@@ -1367,7 +1367,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             }}
             style={{
               background: "transparent", border: 0, cursor: "pointer",
-              color: "var(--ink-4)", fontSize: 16, lineHeight: 1, padding: 4,
+              color: "var(--ink-4)", fontSize: 16, lineHeight: 1.5, padding: 4,
             }}
           >
             ×
@@ -1501,7 +1501,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                   fontSize: 36,
                   fontWeight: 700,
                   color: "var(--ink-3)",
-                  lineHeight: 1,
+                  lineHeight: 1.5,
                 }}
               >
                 —
@@ -1548,7 +1548,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     fontSize: 36,
                     fontWeight: 700,
                     color: "hsl(var(--foreground))",
-                    lineHeight: 1,
+                    lineHeight: 1.5,
                   }}
                 >
                   {auraData.aura_score}
@@ -1689,7 +1689,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                       className="tabular-nums"
                       style={{
                         fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-                        fontSize: 18, fontWeight: 700, color: f.color, lineHeight: 1,
+                        fontSize: 18, fontWeight: 700, color: f.color, lineHeight: 1.5,
                       }}
                     >
                       {f.weighted}
@@ -1839,7 +1839,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               color: "var(--ink-3)",
               cursor: "pointer",
               fontSize: 18,
-              lineHeight: 1,
+              lineHeight: 1.5,
               padding: 4,
               flexShrink: 0,
             }}
@@ -1874,7 +1874,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             <div style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 10 }}>
               {newSignal.signal_title}
             </div>
-            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, margin: "0 0 14px" }}>
               Aura found this pattern in what you captured. This is the market theme where your intelligence runs deepest. Capture more on this topic to strengthen it.
             </p>
             <button
@@ -1913,7 +1913,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
             transition: "all 400ms ease",
           }}
         >
-          <span aria-hidden style={{ color: "var(--brand)", fontSize: 16, lineHeight: 1 }}>✦</span>
+          <span aria-hidden style={{ color: "var(--brand)", fontSize: 16, lineHeight: 1.5 }}>✦</span>
           <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             New signal detected: {newSignal.signal_title}
           </span>
@@ -1942,7 +1942,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
               setBannerVisible(false);
               setTimeout(() => setNewSignal(null), 250);
             }}
-            style={{ background: "transparent", border: "none", color: "var(--ink-3)", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1 }}
+            style={{ background: "transparent", border: "none", color: "var(--ink-3)", fontSize: 16, cursor: "pointer", padding: 0, lineHeight: 1.5 }}
           >
             ×
           </button>
@@ -2068,7 +2068,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 style={{
                   fontSize: 24,
                   color: "var(--brand)",
-                  lineHeight: 1,
+                  lineHeight: 1.5,
                   marginBottom: 10,
                 }}
                 aria-hidden

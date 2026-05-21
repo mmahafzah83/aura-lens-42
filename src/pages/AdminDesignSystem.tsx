@@ -229,7 +229,7 @@ function PreviewCard({ tokens, theme }: { tokens: DesignTokens; theme: Theme }) 
       <div style={{ fontFamily: String(t.display || "Cormorant Garamond") + ", serif", fontSize: 28, fontWeight: 600, marginBottom: 8 }}>
         Sample Card Heading
       </div>
-      <div style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 16, opacity: 0.85 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.625, marginBottom: 16, opacity: 0.85 }}>
         This card mirrors how the brand colors and typography would render across the app.
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -602,7 +602,7 @@ const AdminDesignSystem = () => {
             <div>
               <div style={{ fontSize: 12, color: "var(--ink-5)", marginBottom: 8, fontWeight: 600 }}>Live preview</div>
               {editing && <PreviewCard tokens={editing} theme={editTheme} />}
-              <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 12, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 12, lineHeight: 1.625 }}>
                 The card above always reflects your edits. Use Preview below to apply changes to the entire page
                 (still client-side only — nothing is saved until you Activate).
               </div>

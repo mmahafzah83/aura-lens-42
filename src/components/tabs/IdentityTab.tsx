@@ -489,10 +489,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--brand)", marginBottom: 8, textTransform: "uppercase", fontWeight: 600 }}>
               Your professional identity
             </div>
-            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.25 }}>
+            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.375 }}>
               Your expertise deserves a frame. Not a CV — a market position. Tell Aura who you are in 5 minutes, and it'll show you how the market should see you.
             </h2>
-            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.6, marginBottom: 20, maxWidth: 620 }}>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.72)", lineHeight: 1.625, marginBottom: 20, maxWidth: 620 }}>
               This shapes everything Aura does for you — from what it reads between the lines to how it writes in your voice. The more honest you are, the more powerful the result.
             </p>
             <button
@@ -779,7 +779,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           fontFamily: "var(--aura-font-heading, 'Cormorant Garamond')",
                           fontSize: 16,
                           fontStyle: "italic",
-                          lineHeight: 1.55,
+                          lineHeight: 1.625,
                           color: "var(--ink)",
                           margin: 0,
                         }}

@@ -182,7 +182,7 @@ function CoverageBody({ data, onOpenCapture }: { data: CoverageResult; onOpenCap
           fontStyle: "italic",
           color: "var(--ink-muted, var(--ink-4))",
           margin: "0 0 16px",
-          lineHeight: 1.6,
+          lineHeight: 1.625,
         }}
       >
         {data.narrative}

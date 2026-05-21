@@ -852,7 +852,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
             <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", marginBottom: 10, fontWeight: 600 }}>
               {isCustomAngle ? "Selected post angle" : "Generate from your top signal"}
             </div>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, color: "#fff", lineHeight: 1.25, margin: 0 }}>
+            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 500, color: "#fff", lineHeight: 1.375, margin: 0 }}>
               {heroTitle}
             </h2>
             {isCustomAngle && (
@@ -2036,7 +2036,7 @@ const VoiceTrainer = () => {
       </div>
 
       <div className="mb-4 space-y-2 text-xs text-muted-foreground leading-relaxed">
-        <p className="text-foreground font-medium">Every post Aura writes will mirror YOUR writing style — not generic AI.</p>
+        <p className="text-foreground font-normal leading-relaxed">Every post Aura writes will mirror YOUR writing style — not generic AI.</p>
         <p>Paste 3-5 LinkedIn posts you've written. Aura analyses your rhythm, your word choices, your sentence patterns.</p>
         <p>The more examples you give, the more authentically Aura writes as you.</p>
       </div>
@@ -2963,7 +2963,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   <LinkedInPreview text={p.post_text} profile={profile} />
 
                   {/* Body text */}
-                  <p style={{ fontSize: 14, color: "var(--color-foreground, var(--ink-7))", lineHeight: 1.6 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
+                  <p style={{ fontSize: 14, color: "var(--color-foreground, var(--ink-7))", lineHeight: 1.625 }} className={expandedCards.has(p.id) ? "" : "line-clamp-4"} dir="auto">
                     {p.post_text || "Untitled draft"}
                   </p>
                   {(p.post_text?.split("\n").length || 0) > 4 || (p.post_text?.length || 0) > 280 ? (

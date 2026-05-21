@@ -609,9 +609,9 @@ const Onboarding = () => {
               animate={{ opacity: i < revealCount ? 1 : 0, y: i < revealCount ? 0 : 8 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
               className="flex items-start gap-3"
-              style={{ fontSize: 14, lineHeight: 1.6, color: "hsl(var(--foreground))" }}
+              style={{ fontSize: 14, lineHeight: 1.625, color: "hsl(var(--foreground))" }}
             >
-              <span style={{ color: "var(--brand)", fontSize: 14, lineHeight: 1.6 }}>◆</span>
+              <span style={{ color: "var(--brand)", fontSize: 14, lineHeight: 1.625 }}>◆</span>
               <span>{it}</span>
             </motion.li>
           ))}
@@ -675,7 +675,7 @@ const Onboarding = () => {
                     className="mt-2 p-3 rounded-md"
                     style={{
                       fontSize: 14,
-                      lineHeight: 1.6,
+                      lineHeight: 1.625,
                       color: "hsl(var(--muted-foreground))",
                       background: "hsl(var(--muted) / 0.4)",
                       borderLeft: "3px solid var(--brand)",

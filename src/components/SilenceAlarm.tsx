@@ -147,7 +147,7 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
             While you were busy
           </div>
 
-          <p style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)", fontSize: 14, color: "var(--ink)", lineHeight: 1.55, margin: 0 }}>
+          <p style={{ fontFamily: "var(--font-body, 'DM Sans', sans-serif)", fontSize: 14, color: "var(--ink)", lineHeight: 1.625, margin: 0 }}>
             {data.alarm_message}
           </p>
 

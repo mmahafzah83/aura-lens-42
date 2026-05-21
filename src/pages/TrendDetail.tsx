@@ -395,7 +395,7 @@ export default function TrendDetail() {
               <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
                 Legacy signal · incomplete
               </div>
-              <div style={{ fontSize: 14, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.6, marginBottom: 12 }}>
+              <div style={{ fontSize: 14, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.625, marginBottom: 12 }}>
                 This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
               </div>
               <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>

@@ -29,7 +29,7 @@ const SectionError = ({
         textAlign: "center",
         fontSize: 12,
         color: "#777",
-        lineHeight: 1.6,
+        lineHeight: 1.625,
       }}
     >
       <span>{message}</span>

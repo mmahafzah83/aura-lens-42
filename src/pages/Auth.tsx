@@ -429,7 +429,7 @@ const Auth = () => {
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12.5,
-                  lineHeight: 1.6,
+                  lineHeight: 1.625,
                   color: "var(--ink-5)",
                   background: "var(--brand-muted)",
                   border: "0.5px solid var(--bronze-line)",
@@ -529,7 +529,7 @@ const Auth = () => {
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12.5,
-                  lineHeight: 1.55,
+                  lineHeight: 1.625,
                   color: "var(--ink-6)",
                   background: "rgba(220, 80, 60, 0.08)",
                   border: "0.5px solid rgba(220, 80, 60, 0.35)",
@@ -544,7 +544,7 @@ const Auth = () => {
                 style={{
                   fontFamily: "'DM Sans', sans-serif",
                   fontSize: 12.5,
-                  lineHeight: 1.55,
+                  lineHeight: 1.625,
                   color: "var(--ink-5)",
                   background: "var(--brand-muted)",
                   border: "0.5px solid var(--bronze-line)",

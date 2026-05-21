@@ -173,7 +173,7 @@ const VoiceEngineSection = () => {
           color: "var(--ink-3)",
           padding: "14px 20px 0",
           margin: 0,
-          lineHeight: 1.55,
+          lineHeight: 1.625,
         }}
       >
         Teach Aura your voice. Paste examples of your best posts below — Aura will learn your tone, structure, and vocabulary.

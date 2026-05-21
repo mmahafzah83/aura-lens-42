@@ -158,7 +158,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
 
       {row && (
         <>
-          <p style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))", lineHeight: 1.55, margin: "0 0 12px" }}>
+          <p style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))", lineHeight: 1.625, margin: "0 0 12px" }}>
             Here's how three audiences would describe you today — based on your assessment. As your intelligence grows, this portrait sharpens.
           </p>
           <div style={{ display: "flex", gap: 6, marginBottom: 14, borderBottom: "1px solid var(--brand-line, rgba(197,165,90,0.18))" }}>
@@ -191,7 +191,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
             })}
           </div>
 
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink, #f5efe1)", whiteSpace: "pre-wrap", margin: "0 0 14px" }}>
+          <p style={{ fontSize: 14, lineHeight: 1.625, color: "var(--ink, #f5efe1)", whiteSpace: "pre-wrap", margin: "0 0 14px" }}>
             {text || "No perspective generated."}
           </p>
 
@@ -210,10 +210,10 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                 <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: ALERT, fontWeight: 600, marginBottom: 6 }}>
                   Authority gap
                 </div>
-                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.55 }}>
+                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.625 }}>
                   A {persona} would notice: {gap}
                 </div>
-                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.55, marginTop: 6, fontStyle: "italic", opacity: 0.85 }}>
+                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.625, marginTop: 6, fontStyle: "italic", opacity: 0.85 }}>
                   Is that a choice?
                 </div>
               </div>

@@ -86,11 +86,11 @@ const StepCard = ({
               </span>
             )}
           </div>
-          <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.25, margin: "6px 0 10px" }}>
+          <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 22, color: "var(--ink)", lineHeight: 1.375, margin: "6px 0 10px" }}>
             {title}
           </div>
           {!isDone && (
-            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, margin: "0 0 14px" }}>
               {why}
             </p>
           )}
@@ -155,7 +155,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
         <h1 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           Tell Aura who you are
         </h1>
-        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 10, lineHeight: 1.55, maxWidth: 640 }}>
+        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 10, lineHeight: 1.625, maxWidth: 640 }}>
           You've spent years building expertise. This is where Aura learns what makes you different — so everything it does reflects your knowledge, your voice, your sector.
         </p>
         <div style={{ marginTop: 12, height: 4, background: "var(--brand-line, rgba(197,165,90,0.15))", borderRadius: 999, overflow: "hidden", maxWidth: 320 }}>

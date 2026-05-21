@@ -369,7 +369,7 @@ const ExpandedSource = ({
         </div>
       ) : (
         <>
-          <p style={{ color: "var(--ink-7)", fontSize: 14, lineHeight: 1.6, margin: "14px 0", whiteSpace: "pre-wrap" }}>{entry.content}</p>
+          <p style={{ color: "var(--ink-7)", fontSize: 14, lineHeight: 1.625, margin: "14px 0", whiteSpace: "pre-wrap" }}>{entry.content}</p>
 
           {entry.summary && entry.summary !== entry.content && (
             <div style={{ marginBottom: 12 }}>

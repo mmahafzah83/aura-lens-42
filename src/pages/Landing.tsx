@@ -408,7 +408,7 @@ const Landing = () => {
             <div className="text-center">
               <div className="flex items-center justify-center gap-1">
                 <span style={{ fontSize: 14, color: "var(--brand)" }}>↑</span>
-                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "'JetBrains Mono', ui-monospace, monospace", lineHeight: 1 }}>
+                <span className="font-semibold" style={{ fontSize: 40, color: "var(--brand)", fontFamily: "'JetBrains Mono', ui-monospace, monospace", lineHeight: 1.5 }}>
                   <Counter target={s.num} visible={stats.visible} />
                 </span>
               </div>

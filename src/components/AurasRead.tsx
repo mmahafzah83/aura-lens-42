@@ -197,7 +197,7 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
                         }}>
                           {item.urgency}
                         </span>
-                        <span aria-hidden style={{ fontSize: 14, color: "hsl(var(--muted-foreground) / 0.6)", lineHeight: 1 }}>
+                        <span aria-hidden style={{ fontSize: 14, color: "hsl(var(--muted-foreground) / 0.6)", lineHeight: 1.5 }}>
                           →
                         </span>
                       </div>

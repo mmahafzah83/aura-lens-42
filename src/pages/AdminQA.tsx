@@ -599,7 +599,7 @@ const AdminQA = () => {
       color: "var(--ink, #F4EFE6)",
       fontFamily: "var(--font-body, 'DM Sans', sans-serif)",
       fontSize: 15,
-      lineHeight: 1.55,
+      lineHeight: 1.625,
       padding: "32px 40px 80px",
     }}>
       <header style={{ marginBottom: 32 }}>

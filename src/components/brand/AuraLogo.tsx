@@ -127,7 +127,7 @@ export function AuraLogo({
             letterSpacing: "0.14em",
             fontSize: wordmarkSize,
             color,
-            lineHeight: 1,
+            lineHeight: 1.5,
           }}
         >
           AURA

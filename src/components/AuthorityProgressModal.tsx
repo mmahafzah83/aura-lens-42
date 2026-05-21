@@ -130,8 +130,8 @@ const AuthorityProgressModal = ({ tierName, score, sectorFocus, userId }: Props)
           transition: "all 300ms ease",
         }}
       >
-        <div style={{ fontSize: 32, color: "var(--brand)", lineHeight: 1, marginBottom: 12 }} aria-hidden>★</div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 32, color: "var(--brand)", marginBottom: 8, lineHeight: 1.1 }}>
+        <div style={{ fontSize: 32, color: "var(--brand)", lineHeight: 1.5, marginBottom: 12 }} aria-hidden>★</div>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 32, color: "var(--brand)", marginBottom: 8, lineHeight: 1.375 }}>
           {tier}
         </div>
         <div style={{ fontSize: 16, color: "var(--ink)", marginBottom: 20 }}>

@@ -165,7 +165,7 @@ export default function ArchetypeHeroCard({
           {archetypeName || "Complete assessment to reveal your archetype"}
         </div>
         {description && (
-          <p style={{ fontSize: 14, color: "var(--aura-t1)", opacity: 0.78, lineHeight: 1.6, margin: 0, marginBottom: 16 }}>
+          <p style={{ fontSize: 14, color: "var(--aura-t1)", opacity: 0.78, lineHeight: 1.625, margin: 0, marginBottom: 16 }}>
             {description}
           </p>
         )}
