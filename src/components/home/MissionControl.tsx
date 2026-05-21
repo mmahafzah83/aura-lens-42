@@ -105,11 +105,13 @@ export default function MissionControl({ userId, entriesCount = 0 }: { userId: s
           return (
             <div
               key={m.id}
-              className="flex"
+              className="flex animate-fade-up-in"
               style={{
                 gap: 12, padding: "12px 16px",
                 borderBottom: i === missions.length - 1 ? "none" : "1px solid var(--aura-border)",
                 alignItems: "flex-start",
+                animationDelay: `${Math.min(i * 60, 480)}ms`,
+                animationFillMode: "backwards",
               }}
             >
               <button
