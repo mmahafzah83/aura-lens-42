@@ -1147,7 +1147,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   </span>
                   <div className="flex items-center gap-1.5">
                     <Button data-testid="pub-copy-btn" size="sm" variant="ghost" onClick={handleCopy} className="h-7 gap-1.5 text-xs">
-                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? "Copied" : "Copy"}
                     </Button>
                     <Button
@@ -1158,11 +1158,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       className={`h-7 gap-1.5 text-xs ${draftSaved ? "border-emerald-500/40 text-emerald-500" : "border-border/15"}`}
                     >
                       {savingDraft ? (
-                        <><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</>
                       ) : draftSaved ? (
-                        <><Check className="w-3 h-3" /> Saved</>
+                        <><Check className="w-3.5 h-3.5" /> Saved</>
                       ) : (
-                        <><Save className="w-3 h-3" /> Save Draft</>
+                        <><Save className="w-3.5 h-3.5" /> Save Draft</>
                       )}
                     </Button>
                   </div>
@@ -1171,7 +1171,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                 {/* Back to full version link */}
                 {showingShort && !generatingShort && (
                   <button onClick={switchToFull} className="flex items-center gap-1 text-xs text-primary hover:underline">
-                    <ChevronLeft className="w-3 h-3" /> Back to full version
+                    <ChevronLeft className="w-3.5 h-3.5" /> Back to full version
                   </button>
                 )}
 
@@ -1382,7 +1382,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     } catch { toast.error("Failed to update voice engine"); }
                   }}
                 >
-                  <Check className="w-3 h-3 mr-1" /> Sounds like me
+                  <Check className="w-3.5 h-3.5 mr-1" /> Sounds like me
                 </Button>
                 <Button
                   size="sm"
@@ -1407,7 +1407,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                     } catch { toast.error("Failed to save preference"); }
                   }}
                 >
-                  <X className="w-3 h-3 mr-1" /> Doesn't sound like me
+                  <X className="w-3.5 h-3.5 mr-1" /> Doesn't sound like me
                 </Button>
               </div>
             )}
@@ -1450,7 +1450,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                           onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--brand-line)"; }}
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            {loading && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "var(--brand)" }} />}
+                            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: "var(--brand)" }} />}
                             <span className="text-sm font-medium" style={{ color: "var(--ink)" }}>
                               {v.label}
                             </span>
@@ -1717,7 +1717,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
                           planTitle: s.topic,
                         })}
                       >
-                        <ArrowRight className="w-3 h-3" /> Generate this →
+                        <ArrowRight className="w-3.5 h-3.5" /> Generate this →
                       </Button>
                     </div>
                   ))}
@@ -2238,7 +2238,7 @@ const LibraryCard = ({
           onClick={() => p.post_text && onCopy(p.id, p.post_text)}
           disabled={!p.post_text}
         >
-          {copiedId === p.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copiedId === p.id ? "Copied" : "Copy"}
         </Button>
         {isDraft && (
@@ -2248,7 +2248,7 @@ const LibraryCard = ({
             className="h-7 text-xs gap-1.5 border-border/15"
             onClick={() => onMarkPublished(p.id)}
           >
-            <Check className="w-3 h-3" /> Mark as published
+            <Check className="w-3.5 h-3.5" /> Mark as published
           </Button>
         )}
         <Button
@@ -2257,7 +2257,7 @@ const LibraryCard = ({
           className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
           onClick={() => onDelete(p.id)}
         >
-          <Trash2 className="w-3 h-3" />
+          <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
 
@@ -2315,7 +2315,7 @@ const LibraryCard = ({
                   onClick={saveMetrics}
                   disabled={saving}
                 >
-                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                   Save metrics
                 </Button>
                 <Button
@@ -2511,7 +2511,7 @@ Generated by Aura — ${date}
                         style={{ fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 6, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}
                         className="hover:bg-muted/40 transition-colors"
                       >
-                        <ImageIcon className="w-3 h-3" /> View
+                        <ImageIcon className="w-3.5 h-3.5" /> View
                       </button>
                     )}
                     <button
@@ -2520,14 +2520,14 @@ Generated by Aura — ${date}
                       className="hover:bg-muted/40 transition-colors"
                       title="Download framework as text"
                     >
-                      <Download className="w-3 h-3" /> Download
+                      <Download className="w-3.5 h-3.5" /> Download
                     </button>
                     <button
                       onClick={() => setPendingDeleteId(`fw_${fw.id}`)}
                       style={{ fontSize: 12, fontWeight: 500, padding: "4px 8px", borderRadius: 6, backgroundColor: "transparent", color: "var(--danger)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
                       className="hover:bg-red-500/10 transition-colors"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -3020,7 +3020,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                     if (!title) return null;
                     return (
                       <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 8, fontSize: 12, color: "var(--color-muted)" }}>
-                        <Lightbulb className="w-3 h-3" style={{ color: "var(--brand)" }} />
+                        <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
                         <span className="line-clamp-1">From signal: {title}</span>
                       </div>
                     );
@@ -3155,7 +3155,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                         if (!title) return null;
                         return (
                           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6, fontSize: 12, color: "var(--color-muted)" }}>
-                            <Lightbulb className="w-3 h-3" style={{ color: "var(--brand)" }} />
+                            <Lightbulb className="w-3.5 h-3.5" style={{ color: "var(--brand)" }} />
                             <span className="line-clamp-1">From signal: {title}</span>
                           </div>
                         );
@@ -3201,7 +3201,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
                   {p._source === "linkedin_posts" && (
                     savedUrls[p.id] ? (
                       <div style={{ marginTop: 10, fontSize: 12, color: "var(--success)", display: "flex", alignItems: "center", gap: 6 }}>
-                        <Check className="w-3 h-3" /> URL linked ✓ —{" "}
+                        <Check className="w-3.5 h-3.5" /> URL linked ✓ —{" "}
                         <a href={savedUrls[p.id]} target="_blank" rel="noopener noreferrer" style={{ color: "var(--brand)", textDecoration: "underline" }}>
                           view on LinkedIn
                         </a>

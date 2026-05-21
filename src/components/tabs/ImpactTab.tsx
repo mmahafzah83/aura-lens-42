@@ -1474,7 +1474,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                             className="shrink-0"
                             style={{ color: "var(--color-text-muted)" }}
                           >
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
                       </div>

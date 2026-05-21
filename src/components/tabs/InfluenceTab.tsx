@@ -116,7 +116,7 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
                       disabled={isDrafting}
                       className="flex items-center gap-1.5 text-xs font-medium text-primary/70 hover:text-primary transition-all duration-200 disabled:opacity-40 px-3 py-1.5 rounded-lg bg-primary/6 hover:bg-primary/12 tactile-press border border-primary/8"
                     >
-                      {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
+                      {isDrafting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Linkedin className="w-3.5 h-3.5" />}
                       Generate EN Post
                     </button>
                   </div>

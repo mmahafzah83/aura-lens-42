@@ -256,7 +256,7 @@ const MarketTab = () => {
                       <span>{item.source}</span>
                       {item.url && (
                         <a href={item.url} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                       )}
                     </div>
@@ -278,7 +278,7 @@ const MarketTab = () => {
                           disabled={generatingIdx === idx}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary font-medium hover:bg-primary/15 transition-all tactile-press"
                         >
-                          {generatingIdx === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                          {generatingIdx === idx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                           Draft Content
                         </button>
                       )}
@@ -418,7 +418,7 @@ const MarketTab = () => {
               <div className="space-y-2">
                 {approvedPosts.map((idx) => (
                   <div key={idx} className="flex items-center gap-2 text-xs text-emerald-400/70">
-                    <Check className="w-3 h-3" />
+                    <Check className="w-3.5 h-3.5" />
                     <span className="truncate">{newsItems[idx]?.title}</span>
                   </div>
                 ))}

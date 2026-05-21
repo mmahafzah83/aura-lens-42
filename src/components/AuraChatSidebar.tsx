@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { X, Send, Loader2, Trash2, Briefcase, Rocket, FileText, Target, Linkedin, Bookmark, Check, Plus, ChevronLeft, Presentation, Clock, MessageSquare, Pin, PinOff, Pencil, ChevronDown } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
+import UserAvatar from "@/components/ui/UserAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -316,6 +317,8 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
   const [titleDraft, setTitleDraft] = useState("");
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [headerCounts, setHeaderCounts] = useState<{ signals: number; captures: number } | null>(null);
+  // ── User identity for avatar on user messages ──
+  const [userIdentity, setUserIdentity] = useState<{ firstName: string | null; lastName: string | null }>({ firstName: null, lastName: null });
   // ── Cross-session memory (aura_conversation_memory) ──
   type MemoryRow = { id: string; role: string | null; content: string | null; created_at: string };
   const [memoryRows, setMemoryRows] = useState<MemoryRow[]>([]);
@@ -383,11 +386,14 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
         const uid = session.user.id;
-        const [sigRes, entRes] = await Promise.all([
+        const [sigRes, entRes, profRes] = await Promise.all([
           supabase.from("strategic_signals").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("status", "active"),
           supabase.from("entries").select("id", { count: "exact", head: true }).eq("user_id", uid),
+          supabase.from("diagnostic_profiles").select("first_name, last_name").eq("user_id", uid).maybeSingle(),
         ]);
         setHeaderCounts({ signals: sigRes.count ?? 0, captures: entRes.count ?? 0 });
+        const p = (profRes as any)?.data;
+        if (p) setUserIdentity({ firstName: p.first_name ?? null, lastName: p.last_name ?? null });
       } catch {
         // fail silently
       }
@@ -1350,23 +1356,27 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                         YOUR MARKET MIRROR — 18 MONTHS AHEAD
                       </div>
                     )}
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-md"
-                          : msg.isError
-                            ? "bg-destructive/10 border border-destructive/30 text-foreground rounded-bl-md"
-                            : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
-                      }`}
-                      style={{
-                        wordBreak: "break-word",
-                        overflowWrap: "anywhere",
-                        ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid var(--brand)" } : {}),
-                        ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
-                        ...(msg.role === "assistant" && msg.isError ? { borderLeft: "3px solid hsl(var(--destructive))" } : {}),
-                      }}
-                    >
-                      {msg.role === "assistant" ? (
+                    <div className={`flex ${msg.role === "user" ? "flex-row-reverse" : "flex-row"} items-end gap-2 max-w-[85%]`}>
+                      {msg.role === "user" && (
+                        <UserAvatar firstName={userIdentity.firstName} lastName={userIdentity.lastName} size="sm" />
+                      )}
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : msg.isError
+                              ? "bg-destructive/10 border border-destructive/30 text-foreground rounded-bl-md"
+                              : "bg-secondary/60 border border-border/20 text-foreground rounded-bl-md"
+                        }`}
+                        style={{
+                          wordBreak: "break-word",
+                          overflowWrap: "anywhere",
+                          ...(msg.role === "assistant" && msg.isBrief ? { borderLeft: "3px solid var(--brand)" } : {}),
+                          ...(msg.role === "assistant" && msg.isShadowTwin ? { borderLeft: "3px solid #7F77DD" } : {}),
+                          ...(msg.role === "assistant" && msg.isError ? { borderLeft: "3px solid hsl(var(--destructive))" } : {}),
+                        }}
+                      >
+                        {msg.role === "assistant" ? (
                         <ReactMarkdown
                           components={{
                             // Preserve the bubble's text-sm leading-relaxed styling
@@ -1387,6 +1397,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                       ) : (
                         msg.content
                       )}
+                      </div>
                     </div>
                     {msg.role === "assistant" && msg.content && !isLoading && (
                       <>
