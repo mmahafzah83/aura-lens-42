@@ -2819,14 +2819,15 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           style={{
             display: "flex", alignItems: "flex-start", gap: 14,
             padding: "14px 18px",
-            background: "var(--surface-ink-raised, var(--card))",
+            background: "var(--paper, var(--card))",
+            borderLeft: "3px solid var(--gold-dark, var(--brand))",
             border: "1px solid var(--brand-line, var(--border))",
-            borderRadius: 12,
-            boxShadow: "0 12px 32px rgba(0,0,0,0.25)",
+            borderRadius: 8,
+            boxShadow: "0 12px 32px rgba(0,0,0,0.18)",
             minWidth: 320, maxWidth: 420,
           }}
         >
-          <span aria-hidden style={{
+          <span aria-hidden className="aura-gold-pulse" style={{
             fontSize: 22, lineHeight: 1, color: "var(--gold-dark, var(--brand))",
             flexShrink: 0, marginTop: 2,
           }}>✦</span>
@@ -2835,7 +2836,9 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               Published — your authority just grew
             </div>
             <div className="font-normal text-sm text-ink-4">
-              This post strengthens your {signalTitle} positioning.
+              {linkedSignalId
+                ? `This strengthens your ${signalTitle} positioning.`
+                : "Every post compounds your visibility."}
             </div>
           </div>
         </div>

@@ -153,10 +153,13 @@ const AurasRead = ({ userId, onOpenCapture, onSwitchTab }: AurasReadProps) => {
                     handleClick(item);
                   }
                 }}
+                className="animate-fade-up-in"
                 style={{
                   padding: "12px 0",
                   borderTop: idx === 0 ? "none" : "0.5px solid hsl(var(--border))",
                   cursor: "pointer",
+                  animationDelay: `${Math.min(idx * 60, 480)}ms`,
+                  animationFillMode: "backwards",
                 }}
               >
                 <div className="flex items-start gap-3">

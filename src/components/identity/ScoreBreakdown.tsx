@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
@@ -46,6 +46,40 @@ export default function ScoreBreakdown({ userId }: Props) {
     { label: "Consistency", val: consistencyPts, max: 20, color: "var(--gold-dark)" },
   ];
 
+  // Animate progress bars from 0 → actual on first mount only.
+  const [animatedPct, setAnimatedPct] = useState<number[]>([0, 0, 0]);
+  const animatedRef = useRef(false);
+  useEffect(() => {
+    const targets = rows.map(r => Math.min(100, Math.round((r.val / r.max) * 100)));
+    if (animatedRef.current) {
+      setAnimatedPct(targets);
+      return;
+    }
+    if (targets.every(t => t === 0)) return;
+    animatedRef.current = true;
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      setAnimatedPct(targets);
+      return;
+    }
+    setAnimatedPct([0, 0, 0]);
+    const start = performance.now();
+    const duration = 600;
+    const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const e = easeOut(t);
+      setAnimatedPct(targets.map(target => Math.round(target * e)));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signalPts, contentPts, consistencyPts]);
+
   return (
     <div style={{
       background: "var(--aura-card)",
@@ -80,8 +114,8 @@ export default function ScoreBreakdown({ userId }: Props) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {rows.map((r) => {
-          const pct = Math.min(100, Math.round((r.val / r.max) * 100));
+        {rows.map((r, i) => {
+          const pct = animatedPct[i];
           return (
             <div key={r.label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
@@ -100,7 +134,7 @@ export default function ScoreBreakdown({ userId }: Props) {
                 <div style={{
                   width: `${pct}%`, height: "100%",
                   background: r.color, borderRadius: 999,
-                  transition: "width 400ms ease",
+                  transition: "width 60ms linear",
                 }} />
               </div>
             </div>

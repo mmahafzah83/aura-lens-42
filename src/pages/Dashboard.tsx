@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { Plus, LogOut, MessageCircle, Compass, User, Shield, Crown, TrendingUp, Menu, X, Paperclip, Sparkles, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,6 +99,22 @@ const Dashboard = () => {
   useEffect(() => {
     applyThemeToRoot(theme);
   }, [theme]);
+
+  // Force-enable elevation motion globally (count-up + ring draw-in).
+  useEffect(() => {
+    document.documentElement.setAttribute("data-fx-score-ring", "true");
+  }, []);
+
+  // Sidebar Intelligence icon pulse — fires once when a new signal arrives.
+  const prevIntelCount = useRef<number | null>(null);
+  const [intelPulseToken, setIntelPulseToken] = useState(0);
+  useEffect(() => {
+    const prev = prevIntelCount.current;
+    if (prev !== null && newIntelSignalCount > prev) {
+      setIntelPulseToken(t => t + 1);
+    }
+    prevIntelCount.current = newIntelSignalCount;
+  }, [newIntelSignalCount]);
 
   // Database-driven design tokens (overrides CSS fallbacks via inline style)
   useDesignTokens(theme);
@@ -444,7 +460,8 @@ const Dashboard = () => {
                 }}
               >
                 <item.icon
-                  className="w-4.5 h-4.5 shrink-0"
+                  key={item.value === "intelligence" ? `intel-icon-${intelPulseToken}` : undefined}
+                  className={`w-4.5 h-4.5 shrink-0${item.value === "intelligence" && intelPulseToken > 0 ? " nav-intelligence-pulse" : ""}`}
                   style={{
                     color: isActive ? "var(--aura-accent)" : "var(--aura-t3)",
                     transition: "color var(--t-fast) var(--ease)",

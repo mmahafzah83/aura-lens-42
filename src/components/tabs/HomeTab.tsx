@@ -8,6 +8,7 @@ import SectionError from "@/components/ui/section-error";
 import { formatSmartDate } from "@/lib/formatDate";
 import { useAuthReady } from "@/hooks/useAuthReady";
 import { useDelayedFlag } from "@/hooks/useDelayedFlag";
+import { useCountUp } from "@/hooks/useCountUp";
 import { withTimeout } from "@/lib/safeQuery";
 import { EMPTY_STATE } from "@/constants/language";
 import AurasRead from "@/components/AurasRead";
@@ -206,6 +207,8 @@ const timeAgo = (iso: string) => formatSmartDate(iso);
 // ────────────────────────────────────────────────
 
 const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
+  // Local helper for the home score number — counts up once per session.
+
   const { user: authUser, session: authSession, isReady: authReady } = useAuthReady();
   // Session is "confirmed" only when auth restore is done AND we have an access
   // token. This is the gate for ALL data fetches — without it, RLS-protected
@@ -1553,7 +1556,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                     lineHeight: 1.5,
                   }}
                 >
-                  {auraData.aura_score}
+                  <AnimatedScore value={auraData.aura_score} />
                 </span>
                 <InfoTooltip side="bottom" align="left" label="Authority Score" width={280}>
                   <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
@@ -2257,3 +2260,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
 };
 
 export default HomeTab;
+
+const AnimatedScore = ({ value }: { value: number }) => {
+  const display = useCountUp(value, { duration: 800, once: true, key: "home-score" });
+  return <>{display}</>;
+};

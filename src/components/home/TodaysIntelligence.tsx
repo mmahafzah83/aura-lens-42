@@ -147,9 +147,12 @@ export default function TodaysIntelligence() {
               {items.slice(0, 3).map((item, idx) => (
                 <div
                   key={idx}
+                  className="animate-fade-up-in"
                   style={{
                     paddingTop: 10,
                     borderTop: idx === 0 ? "none" : "1px solid hsl(var(--border) / 0.4)",
+                    animationDelay: `${Math.min(idx * 60, 480)}ms`,
+                    animationFillMode: "backwards",
                   }}
                 >
                   <div className="flex items-start" style={{ gap: 8 }}>

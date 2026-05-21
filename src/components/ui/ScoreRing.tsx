@@ -22,9 +22,7 @@ export function ScoreRing({
   stroke = 5,
   numberStyle,
 }: ScoreRingProps) {
-  const enabled =
-    typeof document !== "undefined" &&
-    document.documentElement.getAttribute("data-fx-score-ring") === "true";
+  const enabled = true;
   const reduced =
     typeof window !== "undefined" &&
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -35,18 +33,25 @@ export function ScoreRing({
 
   // Animate stroke-dashoffset on mount.
   const [offset, setOffset] = useState(enabled && !reduced ? c : c * (1 - pct));
+  const [breathing, setBreathing] = useState(false);
   useEffect(() => {
     if (!enabled || reduced) {
       setOffset(c * (1 - pct));
+      setBreathing(true);
       return;
     }
     // start fully empty, fill to pct on next frame
     setOffset(c);
     const id = requestAnimationFrame(() => setOffset(c * (1 - pct)));
-    return () => cancelAnimationFrame(id);
+    // After the draw-in completes, switch the ring to its breathing pulse.
+    const breatheTimer = window.setTimeout(() => setBreathing(true), 1500);
+    return () => {
+      cancelAnimationFrame(id);
+      window.clearTimeout(breatheTimer);
+    };
   }, [enabled, reduced, c, pct]);
 
-  const display = useCountUp(value, { duration: 1200, gate: enabled });
+  const display = useCountUp(value, { duration: 800, gate: enabled, once: true, key: `score-ring-${max}` });
 
   return (
     <div
@@ -79,8 +84,9 @@ export function ScoreRing({
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
+          className={breathing ? "aura-ring-breathing" : undefined}
           style={{
-            transition: enabled && !reduced ? "stroke-dashoffset 1.5s cubic-bezier(0.16, 1, 0.3, 1)" : "none",
+            transition: enabled && !reduced ? "stroke-dashoffset 800ms cubic-bezier(0.16, 1, 0.3, 1)" : "none",
           }}
         />
       </svg>
