@@ -103,9 +103,12 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.closePath();
+    const cs = getComputedStyle(document.documentElement);
+    const brand = cs.getPropertyValue("--brand").trim() || "#B08D3A";
+    const ink3 = cs.getPropertyValue("--ink-3").trim() || "#B8AE99";
     ctx.fillStyle = "rgba(197, 165, 90, 0.12)";
     ctx.fill();
-    ctx.strokeStyle = "var(--brand)";
+    ctx.strokeStyle = brand;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -117,13 +120,13 @@ const AuditResultsView = ({ scores, onNavigate, onClose }: AuditResultsViewProps
       const y = cy + radius * val * Math.sin(angle);
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, 2 * Math.PI);
-      ctx.fillStyle = "var(--brand)";
+      ctx.fillStyle = brand;
       ctx.fill();
     }
 
     // Labels
-    ctx.font = "9px system-ui, sans-serif";
-    ctx.fillStyle = "var(--ink-5)";
+    ctx.font = "600 12px system-ui, sans-serif";
+    ctx.fillStyle = ink3;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (let i = 0; i < n; i++) {

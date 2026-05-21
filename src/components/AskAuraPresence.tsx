@@ -51,7 +51,7 @@ function getVisual(count: number, mostUrgent: EventType | null): Visual {
     case "timing_window":
       return { borderColor: "var(--brand)", badgeBg: "var(--brand)", badgeText: "!", textColor: "#fff", pulse: true };
     case "silence_alarm":
-      return { borderColor: "var(--danger)", badgeBg: "var(--danger)", badgeText: "!", textColor: "#fff", pulse: false };
+      return { borderColor: "var(--brand)", badgeBg: "var(--brand)", badgeText: String(count), textColor: "var(--ink)", pulse: false };
     case "weekly_brief":
       return { borderColor: "#1D9E75", badgeBg: "#1D9E75", badgeText: "B", textColor: "#fff", pulse: false };
     case "knowledge_debt":
@@ -277,21 +277,7 @@ export default function AskAuraPresence({ collapsed = false, onOpen, className, 
               }}
             />
           )}
-          {avatarState === "alarm" && (
-            <span
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                top: -2,
-                right: -2,
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "var(--danger)",
-                pointerEvents: "none",
-              }}
-            />
-          )}
+          {/* Persistent silence-alarm dot removed — Home Silence Alarm card is the canonical reminder. */}
         </span>
         {showLabel && !collapsed && <span className="text-sm font-medium">Ask Aura</span>}
 

@@ -35,6 +35,21 @@ html.dark  { background-color: var(--paper, #14110C); }
   --aura-border-2: rgba(0,0,0,0.12);
   --aura-shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
   --aura-shadow-md: 0 2px 8px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.07);
+  /* Legacy aura-* accent aliases — collapsed to the one warm brand identity.
+     Older components reference these names; they now resolve to brand / semantic tokens
+     so no cyan, teal, or neon leaks through. */
+  --aura-t1: var(--ink);
+  --aura-t2: var(--ink-4);
+  --aura-t3: var(--ink-5);
+  --aura-accent: var(--brand);
+  --aura-accent2: var(--brand);
+  --aura-accent3: var(--brand);
+  --aura-blue: var(--semantic-info);
+  --aura-purple: var(--brand);
+  --aura-pink: var(--brand);
+  --aura-positive: var(--success);
+  --aura-negative: var(--danger);
+  --aura-warning: var(--warning, var(--semantic-warning));
 }
 
 /* ── Aura Design System Tokens ── */
