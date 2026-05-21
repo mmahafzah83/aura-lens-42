@@ -2906,16 +2906,16 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
         {topSignal ? (
           <EmptyState
             icon={PenTool}
-            title="No posts yet."
-            description="Your signals are ready — your first post is one click away."
+            title="Your best posts haven't been written yet"
+            description="They're waiting inside your signals. Pick one and let Aura draft something only you could write."
             ctaLabel={`Write about: "${topSignal.signal_title}" →`}
             ctaAction={onSwitchToCreate}
           />
         ) : (
           <EmptyState
             icon={PenTool}
-            title="No posts yet."
-            description="Capture a few articles first. Once Aura detects patterns, you can turn them into posts in your voice."
+            title="Your best posts haven't been written yet"
+            description="They're waiting inside the signals Aura hasn't detected yet. Capture a few articles, then come back."
             ctaLabel="Capture something →"
             ctaAction={() => navigate("/home")}
           />
