@@ -641,8 +641,8 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               }}
             >
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
-                  SIGNAL COVERAGE
+                <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)" }}>
+                  Signal coverage
                 </div>
                 <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                   {intelligenceStage === 3
