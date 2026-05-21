@@ -867,7 +867,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               Create your first post →
             </AuraButton>
             <AuraButton
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleUploadClick}
               style={{ borderRadius: 6, padding: "10px 22px" }}
