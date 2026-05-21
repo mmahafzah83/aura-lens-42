@@ -34,6 +34,18 @@ const Auth = () => {
   const inRecoveryRef = useRef(false);
   const [linkExpired, setLinkExpired] = useState(false);
 
+  // Daily rotating insight shown beneath "Welcome back" — gives returning
+  // users a sense of continuity without an API call.
+  const dailyInsights = [
+    "Your signals are watching the market for you.",
+    "New intelligence may be waiting inside.",
+    "Your authority compounds while you're away.",
+    "The market moved today. Let's see what Aura found.",
+    "Your next post could be one signal away.",
+  ];
+  const dailyInsight =
+    dailyInsights[new Date().getDay() % dailyInsights.length];
+
   const checkOnboardingAndRedirect = async (session: any) => {
     const { data: profile } = await supabase
       .from("diagnostic_profiles")
@@ -420,7 +432,7 @@ const Auth = () => {
               ? "Enter your new password below."
               : resetSent
                 ? <>We sent a password reset link to <span style={{ color: "var(--ink-7)", fontWeight: 600 }}>{resetSentEmail}</span>.</>
-                : "Sign in. Every session builds your authority."}
+                : dailyInsight}
           </p>
 
           {resetSent ? (
@@ -679,7 +691,7 @@ const Auth = () => {
           <div className="auth-brand-large">
             <AuraLogo size={60} variant="dark" />
           </div>
-          <p className="auth-tagline mt-6">
+          <p className="auth-tagline mt-6 animate-fade-up-in" style={{ animationDuration: "600ms" }}>
             Your expertise is invisible. Aura fixes that.
           </p>
 
@@ -687,16 +699,19 @@ const Auth = () => {
 
           <div className="space-y-6 text-left">
             <FeatureRow
+              delay={300}
               icon={<Radio className="w-4 h-4" style={{ color: "var(--brand)" }} />}
               title="Signal intelligence"
               desc="Converts what you read into ranked market signals"
             />
             <FeatureRow
+              delay={360}
               icon={<PenLine className="w-4 h-4" style={{ color: "var(--brand)" }} />}
               title="Flash content"
               desc="LinkedIn posts in your voice, English or Arabic, in minutes"
             />
             <FeatureRow
+              delay={420}
               icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--brand)" }} />}
               title="Authority score"
               desc="Tracks how your visibility compounds over time"
@@ -716,12 +731,17 @@ const FeatureRow = ({
   icon,
   title,
   desc,
+  delay = 0,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
+  delay?: number;
 }) => (
-  <div className="flex items-start gap-3">
+  <div
+    className="flex items-start gap-3 animate-fade-up-in"
+    style={{ animationDelay: `${delay}ms` }}
+  >
     <div className="auth-feature-icon">
       {icon}
     </div>
