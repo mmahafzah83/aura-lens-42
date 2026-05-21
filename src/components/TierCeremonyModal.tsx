@@ -137,7 +137,7 @@ export default function TierCeremonyModal({ userId }: Props) {
   };
 
   const viewTrajectory = async () => {
-    try { window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: "impact" })); } catch {}
+    try { window.dispatchEvent(new CustomEvent("aura:switch-tab", { detail: { tab: "impact" } })); } catch {}
     await close();
   };
 
