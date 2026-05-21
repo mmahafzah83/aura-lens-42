@@ -37,12 +37,14 @@ function buildHtml(opts: {
   firstName: string;
   dayDate: string;
   alerts: Array<{ type: string; title: string; body: string }>;
-  topSignalTitle: string | null;
-  topSignalConfidencePct: number | null;
+  topSignals: Array<{ title: string; currentPct: number; deltaPct: number }>;
+  postsThisWeek: number;
+  postsLastWeek: number;
+  moves: Array<{ title: string; rationale: string }>;
   brand: string;
   brandFont: string;
 }): string {
-  const { firstName, dayDate, alerts, topSignalTitle, topSignalConfidencePct, brand, brandFont } = opts;
+  const { firstName, dayDate, alerts, topSignals, postsThisWeek, postsLastWeek, moves, brand, brandFont } = opts;
 
   const alertsHtml = alerts.length
     ? alerts
@@ -56,15 +58,47 @@ function buildHtml(opts: {
         </div>`;
         })
         .join("")
-    : `<div style="margin-bottom:14px;padding:18px;background:#faf8f4;border-radius:8px;border-left:4px solid #6B7280;">
-         <p style="font-size:14px;line-height:1.6;color:#333;margin:0;">Your signals are stable this week. Keep capturing — consistency builds authority.</p>
+    : "";
+
+  const signalsHtml = topSignals.length
+    ? `<div style="margin:8px 0 22px;">
+         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Top signals this week</p>
+         ${topSignals
+           .map((s) => {
+             const sign = s.deltaPct > 0 ? "+" : "";
+             const deltaColor = s.deltaPct > 0 ? "#16a34a" : s.deltaPct < 0 ? "#dc2626" : "#888";
+             const deltaText = s.deltaPct === 0 ? "no change" : `${sign}${s.deltaPct} pts`;
+             return `
+           <div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;">
+             <p style="font-size:14px;font-weight:600;color:#0d0d0d;margin-bottom:4px;">${escapeHtml(s.title)}</p>
+             <p style="font-size:12px;color:#555;margin:0;">Confidence <strong style="color:#0d0d0d;">${s.currentPct}%</strong> · <span style="color:${deltaColor};">${deltaText} vs 7d ago</span></p>
+           </div>`;
+           })
+           .join("")}
+       </div>`
+    : "";
+
+  const pubDelta = postsThisWeek - postsLastWeek;
+  const pubDeltaTxt = pubDelta === 0 ? "same as last week" : pubDelta > 0 ? `+${pubDelta} vs last week` : `${pubDelta} vs last week`;
+  const publishingHtml = `<div style="margin:8px 0 22px;padding:14px 16px;background:#faf8f4;border-radius:8px;">
+         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Publishing cadence</p>
+         <p style="font-size:14px;color:#0d0d0d;margin:0;"><strong>${postsThisWeek}</strong> post${postsThisWeek === 1 ? "" : "s"} this week · <span style="color:#555;">${escapeHtml(pubDeltaTxt)}</span></p>
        </div>`;
 
-  const topSignalLine = topSignalTitle
-    ? `Your top signal this week: <strong style="color:#0d0d0d;">${escapeHtml(topSignalTitle)}</strong>${
-        topSignalConfidencePct !== null ? ` · ${topSignalConfidencePct}% confidence` : ""
-      }`
-    : "Capture more this week to surface your next top signal.";
+  const movesHtml = moves.length
+    ? `<div style="margin:8px 0 22px;">
+         <p style="font-size:12px;font-weight:600;color:#888;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">Recommended moves</p>
+         ${moves
+           .map(
+             (m) => `
+           <div style="margin-bottom:10px;padding:14px 16px;background:#faf8f4;border-radius:8px;border-left:4px solid ${brand};">
+             <p style="font-size:14px;font-weight:600;color:#0d0d0d;margin-bottom:4px;">${escapeHtml(m.title)}</p>
+             <p style="font-size:13px;line-height:1.6;color:#555;margin:0;">${escapeHtml(m.rationale)}</p>
+           </div>`,
+           )
+           .join("")}
+       </div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -103,12 +137,13 @@ function buildHtml(opts: {
       <p style="font-size:15px;line-height:1.7;color:#333;margin-bottom:24px;">Here is what shifted in your authority landscape this week.</p>
 
       ${alertsHtml}
+      ${signalsHtml}
+      ${publishingHtml}
+      ${movesHtml}
 
       <div style="text-align:center;margin:28px 0 8px;">
-        <a href="${APP_URL}" class="cta-btn" style="display:inline-block;background:${brand};color:#0d0d0d;padding:16px 32px;border-radius:8px;font-weight:700;font-size:15px;">Open Aura · take action →</a>
+        <a href="${APP_URL}/home" class="cta-btn" style="display:inline-block;background:${brand};color:#0d0d0d;padding:16px 32px;border-radius:8px;font-weight:700;font-size:15px;">Open Aura →</a>
       </div>
-
-      <p style="font-size:13px;line-height:1.6;color:#555;text-align:center;margin-top:20px;">${topSignalLine}</p>
     </div>
 
     <div class="footer-pad" style="padding:28px 40px;background:#faf8f4;border-top:1px solid #ece8e0;">
@@ -267,39 +302,86 @@ serve(async (req) => {
             body: (e.body as string) ?? "",
           }));
 
-        // 5. Top signal
-        const { data: topSignal } = await admin
+        // 5. Top 3 signals + 7-day confidence deltas (snapshot comparison from score_snapshots.components)
+        const { data: topSignalsRows } = await admin
           .from("strategic_signals")
-          .select("signal_title, confidence")
+          .select("id, signal_title, confidence")
           .eq("user_id", userId)
           .eq("status", "active")
           .order("priority_score", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .limit(3);
 
-        const topSignalTitle = (topSignal?.signal_title as string | undefined) ?? null;
-        const topConfidencePct = topSignal?.confidence != null
-          ? Math.round(Number(topSignal.confidence) * 100)
-          : null;
-
-        // 6. Latest authority score (fetched per spec — included in logs for future use)
-        const { data: authority } = await admin
-          .from("authority_scores")
-          .select("authority_score, momentum_score, engagement_score, snapshot_date")
+        // Pull a snapshot from ~7 days ago to compute confidence deltas, if available
+        let priorConfidenceById: Record<string, number> = {};
+        const { data: priorSnapshot } = await admin
+          .from("score_snapshots")
+          .select("components, created_at")
           .eq("user_id", userId)
-          .order("snapshot_date", { ascending: false })
+          .lte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (authority) {
-          console.log("authority loaded for", userId, authority);
+        const priorSignals = (priorSnapshot?.components as any)?.signals;
+        if (Array.isArray(priorSignals)) {
+          for (const s of priorSignals) {
+            if (s?.id && typeof s?.confidence === "number") {
+              priorConfidenceById[s.id] = s.confidence;
+            }
+          }
         }
+
+        const topSignals = (topSignalsRows ?? []).map((s: any) => {
+          const currentPct = s.confidence != null ? Math.round(Number(s.confidence) * 100) : 0;
+          const prior = priorConfidenceById[s.id];
+          const priorPct = prior != null ? Math.round(prior * 100) : currentPct;
+          return {
+            title: s.signal_title as string,
+            currentPct,
+            deltaPct: currentPct - priorPct,
+          };
+        });
+        const topSignalTitle = topSignals[0]?.title ?? null;
+
+        // 6. Publishing cadence: posts this week vs last week
+        const oneWeekAgoIso = sevenDaysAgo;
+        const twoWeeksAgoIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+        const [{ count: postsThisWeek }, { count: postsLastWeek }] = await Promise.all([
+          admin
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("published_at", oneWeekAgoIso),
+          admin
+            .from("linkedin_posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", userId)
+            .gte("published_at", twoWeeksAgoIso)
+            .lt("published_at", oneWeekAgoIso),
+        ]);
+
+        // 7. Recommended moves — up to 2 active
+        const nowIso = new Date().toISOString();
+        const { data: moveRows } = await admin
+          .from("recommended_moves")
+          .select("title, rationale, status, expires_at")
+          .eq("user_id", userId)
+          .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+          .in("status", ["active", "pending", "open"])
+          .order("created_at", { ascending: false })
+          .limit(2);
+        const moves = (moveRows ?? []).map((m: any) => ({
+          title: m.title as string,
+          rationale: (m.rationale as string) ?? "",
+        }));
 
         const html = buildHtml({
           firstName,
           dayDate,
           alerts: sortedEvents,
-          topSignalTitle,
-          topSignalConfidencePct: topConfidencePct,
+          topSignals,
+          postsThisWeek: postsThisWeek ?? 0,
+          postsLastWeek: postsLastWeek ?? 0,
+          moves,
           brand: BRAND,
           brandFont: BRAND_FONT,
         });

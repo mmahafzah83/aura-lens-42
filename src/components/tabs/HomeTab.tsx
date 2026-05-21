@@ -32,6 +32,7 @@ import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
+import TodaysIntelligence from "@/components/home/TodaysIntelligence";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
@@ -1393,6 +1394,9 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         </div>
 {/* Removed "X this week" badge — refresh control lives in the Live Intelligence section */}
       </header>
+
+      {/* Today's intelligence — condensed daily briefing, above the status strip */}
+      <TodaysIntelligence />
 
       {/* H2b — STATUS STRIP (score + tier + rhythm) — promoted above KPI strip */}
       {/* Full-strip skeleton: cover score, tier, sector, AND the right-side
