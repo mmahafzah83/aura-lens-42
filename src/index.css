@@ -155,10 +155,10 @@ html.dark  { background-color: var(--paper, #14110C); }
   --color-accent-border: var(--bronze-line);
 
   /* ── Sovereign world tokens — light mode override ── */
-  --paper: #F5F0E6;
-  --paper-2: #EDE6D6;
-  --paper-3: #E2D9C5;
-  --vellum: #FBF8F1;
+  --paper: #FBF8F1;
+  --paper-2: #F5F0E6;
+  --paper-3: #EDE6D6;
+  --vellum: #E2D9C5;
   --vellum-2: #FFFFFF;
   --ink: #14110C;
   --ink-2: #2D2820;
@@ -171,9 +171,15 @@ html.dark  { background-color: var(--paper, #14110C); }
   --bronze-pale: #F0E6C9;
   --bronze-mist: #F8F2E2;
   --bronze-line: rgba(176,141,58,0.22);
+  --gold-light: #D4B056;
+  --gold-dark:  #B08D3A;
+  --gold-glow:  #E8C77A;
+  --gold-pale:  #F5ECD4;
   --signal: #F97316;
   --signal-pale: #FEF0E6;
   --signal-line: rgba(249,115,22,0.22);
+  --signal-orange: #E85D24;
+  --signal-orange-light: #FEF0E6;
   --shadow-brand: 0 4px 20px rgba(176,141,58,0.35);
   --success: #5C7A3A;
   --success-pale: #E8EFD6;
@@ -181,6 +187,14 @@ html.dark  { background-color: var(--paper, #14110C); }
   --danger-pale: #F4DDD8;
   --info: #3A5A7A;
   --info-pale: #DCE5EE;
+  --semantic-success: #5C7A3A;
+  --semantic-success-light: #EAF3DE;
+  --semantic-danger: #A8392E;
+  --semantic-danger-light: #F4DDD8;
+  --semantic-warning: #BA7517;
+  --semantic-warning-light: #FEF1E1;
+  --semantic-info: #3A5A7A;
+  --semantic-info-light: #E6EDF3;
   --shadow-rest: 0 1px 2px rgba(20,17,12,0.06), 0 0 0 0.5px rgba(20,17,12,0.04);
   --shadow-lift: 0 8px 24px -8px rgba(20,17,12,0.12), 0 0 0 0.5px rgba(20,17,12,0.04);
   --font-display: 'Cormorant Garamond', 'Cairo', Georgia, serif;
