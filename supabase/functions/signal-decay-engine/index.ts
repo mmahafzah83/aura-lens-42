@@ -13,16 +13,38 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const apiKey = req.headers.get("apikey") || req.headers.get("x-api-key") ||
-    (req.headers.get("Authorization") || "").replace("Bearer ", "");
-  if (!serviceKey || apiKey !== serviceKey) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const authHeader = req.headers.get("Authorization") || "";
+  const bearer = authHeader.replace("Bearer ", "");
+  const apiKeyHeader = req.headers.get("apikey") || req.headers.get("x-api-key") || "";
+
+  // Allow service-role callers (cron/lifecycle) OR authenticated users.
+  let authedUserId: string | null = null;
+  const isServiceRole = bearer === serviceKey || apiKeyHeader === serviceKey;
+  if (!isServiceRole) {
+    if (!bearer) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${bearer}` } },
     });
+    const { data: { user }, error: userErr } = await userClient.auth.getUser(bearer);
+    if (userErr || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    authedUserId = user.id;
   }
   try {
-    const { user_id } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const requested = (body as any)?.user_id;
+    // Authenticated users may only decay their own signals; service-role can pass any user_id.
+    const user_id = isServiceRole ? requested : authedUserId;
     if (!user_id) {
       return new Response(JSON.stringify({ error: "user_id required" }), {
         status: 400,
