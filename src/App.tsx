@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import AuraLogo from "@/components/brand/AuraLogo";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -49,9 +49,26 @@ const App = () => (
         <BrowserRouter>
           <Suspense
             fallback={
-              <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Loading…</p>
+              <div
+                className="min-h-screen flex flex-col items-center justify-center gap-3"
+                style={{ background: "var(--paper)" }}
+              >
+                <div className="aura-gold-pulse">
+                  <AuraLogo size={48} />
+                </div>
+                <div
+                  className="text-lg"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    color: "var(--ink)",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  Aura
+                </div>
+                <p className="text-sm" style={{ color: "var(--ink-4)" }}>
+                  Loading your intelligence…
+                </p>
               </div>
             }
           >
