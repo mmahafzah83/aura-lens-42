@@ -392,7 +392,7 @@ const Dashboard = () => {
               </h1>
               <p
                 style={{
-                  fontSize: 9,
+                  fontSize: 12,
                   letterSpacing: "0.08em",
                   color: "var(--aura-t2)",
                   whiteSpace: "nowrap",
@@ -413,7 +413,7 @@ const Dashboard = () => {
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 10,
+                fontSize: 12,
                 letterSpacing: "0.18em",
                 color: "var(--aura-t2)",
                 padding: "12px 24px 8px",
@@ -549,7 +549,7 @@ const Dashboard = () => {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 10,
+                  fontSize: 12,
                   letterSpacing: "0.18em",
                   color: "var(--aura-t3)",
                   padding: "12px 24px 8px",
@@ -859,7 +859,7 @@ const Dashboard = () => {
                       >
                         <Plus className="w-[18px] h-[18px]" strokeWidth={2.5} />
                       </span>
-                      <span style={{ fontSize: 8, color: "var(--bronze)", fontWeight: 600 }}>Aura</span>
+                      <span style={{ fontSize: 12, color: "var(--bronze)", fontWeight: 600 }}>Aura</span>
                     </button>
                   );
                 }
@@ -885,7 +885,7 @@ const Dashboard = () => {
                     </span>
                     <span
                       style={{
-                        fontSize: 8,
+                        fontSize: 12,
                         color: isActive ? "var(--bronze)" : "var(--ink-4)",
                         fontWeight: isActive ? 600 : 400,
                       }}

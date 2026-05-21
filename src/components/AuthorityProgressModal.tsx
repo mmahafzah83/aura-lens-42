@@ -141,7 +141,7 @@ const AuthorityProgressModal = ({ tierName, score, sectorFocus, userId }: Props)
         {signals.length > 0 && (
           <div style={{ textAlign: "left", marginBottom: 18 }}>
             <SectionHeader label="Your strongest signals" />
-            <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", fontSize: 13, color: "var(--ink)" }}>
+            <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", fontSize: 14, color: "var(--ink)" }}>
               {signals.map((s, i) => (
                 <li key={i} style={{ padding: "4px 0", color: "var(--ink-3)" }}>
                   • <span style={{ color: "var(--ink)" }}>{s.signal_title}</span> ({Math.round((s.confidence || 0) * 100)}%)

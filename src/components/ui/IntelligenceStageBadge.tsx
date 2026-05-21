@@ -42,7 +42,7 @@ export const IntelligenceStageBadge: React.FC<Props> = ({ stage, className, styl
   if (!stage) return null;
   const base: React.CSSProperties = {
     fontFamily: "'DM Sans', sans-serif",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 500,
     borderRadius: 16,
     padding: "4px 12px",

@@ -43,13 +43,13 @@ export default function RecommendedMoveCard({
             {signalTitle}
           </span>
           {confidencePct != null && (
-            <span style={{ fontSize: 11, color: "var(--aura-t3)", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: 12, color: "var(--aura-t3)", fontFamily: "'JetBrains Mono', monospace" }}>
               {confidencePct}%
             </span>
           )}
         </div>
         <p style={{
-          fontSize: 13, lineHeight: 1.55, color: "var(--aura-t2)",
+          fontSize: 14, lineHeight: 1.55, color: "var(--aura-t2)",
           margin: "8px 0 0",
         }}>
           {actionText}
@@ -94,7 +94,7 @@ export default function RecommendedMoveCard({
         )}
         {publishWindow && (
           <div className="flex items-center" style={{
-            gap: 5, marginLeft: "auto", fontSize: 11,
+            gap: 5, marginLeft: "auto", fontSize: 12,
             color: "var(--aura-t2)",
           }}>
             <Clock size={12} />

@@ -98,7 +98,7 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
     if (daysSinceCapture == null || daysSinceCapture < 3) return null;
     return (
       <AuraCard hover="none">
-        <p style={{ fontSize: 13, color: "var(--ink-2)", margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 14, color: "var(--ink-2)", margin: 0, lineHeight: 1.5 }}>
           You haven't captured in <strong>{daysSinceCapture} days</strong>. Keep your signal base fresh.
         </p>
         <div style={{ marginTop: 10 }}>
@@ -153,12 +153,12 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
 
           {fading.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 600, marginBottom: 6 }}>
                 Fading signals
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                 {fading.map((s, i) => (
-                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--ink-2)" }}>
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--ink-2)" }}>
                     <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: SIGNAL_ORANGE, flexShrink: 0 }} />
                     <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</span>
                     <span style={{ fontSize: 12, color: "var(--ink-3)", fontFamily: "var(--font-mono)" }}>
@@ -172,14 +172,14 @@ const SilenceAlarm = ({ daysSinceCapture, onOpenCapture, onSwitchTab }: Props) =
 
           {movements.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 600, marginBottom: 6 }}>
                 Market is moving
               </div>
               <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                 {movements.map((m, i) => (
-                  <li key={i} style={{ fontSize: 13, color: "var(--ink-2)", lineHeight: 1.45 }}>
+                  <li key={i} style={{ fontSize: 14, color: "var(--ink-2)", lineHeight: 1.45 }}>
                     {m.headline}
-                    <span style={{ fontSize: 11, color: "var(--ink-4)", marginLeft: 6 }}>— {m.source}</span>
+                    <span style={{ fontSize: 12, color: "var(--ink-4)", marginLeft: 6 }}>— {m.source}</span>
                   </li>
                 ))}
               </ul>

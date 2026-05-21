@@ -266,7 +266,7 @@ export default function TrendDetail() {
   const iColor = impactColor(signal.impact_level);
 
   const sectionLabel: React.CSSProperties = {
-    fontSize: 10, fontWeight: 500, letterSpacing: "0.1em",
+    fontSize: 12, fontWeight: 500, letterSpacing: "0.1em",
     textTransform: "uppercase", color: "var(--brand)", marginBottom: 6,
   };
   const bodyText: React.CSSProperties = {
@@ -280,7 +280,7 @@ export default function TrendDetail() {
     <div className="mx-auto" style={{ maxWidth: 760, padding: "20px 24px 80px" }}>
       <button
         onClick={() => navigate(-1)}
-        style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", background: "transparent", border: "none", padding: 0, cursor: "pointer", marginBottom: 20 }}
+        style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", background: "transparent", border: "none", padding: 0, cursor: "pointer", marginBottom: 20 }}
       >
         ← Back
       </button>
@@ -288,36 +288,36 @@ export default function TrendDetail() {
       {/* Tags row */}
       <div className="flex items-center flex-wrap" style={{ gap: 6, marginBottom: 14 }}>
         {signal.decision_label && (
-          <span style={{ fontSize: 10, color: dStyle.color, background: dStyle.bg, border: `0.5px solid ${dStyle.color}55`, padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, color: dStyle.color, background: dStyle.bg, border: `0.5px solid ${dStyle.color}55`, padding: "3px 10px", borderRadius: 3, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
             ◆ {signal.decision_label}
           </span>
         )}
         {signal.signal_type && (
-          <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
             {signal.signal_type}
           </span>
         )}
         {signal.category && (
-          <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
             {signal.category}
           </span>
         )}
         {signal.impact_level && (
-          <span style={{ fontSize: 9, color: iColor, border: `0.5px solid ${iColor}55`, padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, color: iColor, border: `0.5px solid ${iColor}55`, padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>
             Impact · {signal.impact_level}
           </span>
         )}
         {signal.confidence_level && (
-          <span style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+          <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", border: "0.5px solid hsl(var(--border))", padding: "2px 8px", borderRadius: 3, fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase" }}>
             Confidence · {signal.confidence_level}
           </span>
         )}
         {isTrusted(signal.source) && (
-          <span style={{ fontSize: 9, color: "var(--success)", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
+          <span style={{ fontSize: 12, color: "var(--success)", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 3, fontWeight: 600, letterSpacing: "0.05em" }}>
             ✓ TRUSTED
           </span>
         )}
-        <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground) / 0.6)", marginLeft: "auto" }}>
+        <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground) / 0.6)", marginLeft: "auto" }}>
           {signal.source ? `${signal.source} · ` : ""}{formatSmartDate(signal.fetched_at)}
         </span>
       </div>
@@ -367,7 +367,7 @@ export default function TrendDetail() {
           <div className="flex items-center" style={{ gap: 8, marginBottom: 6 }}>
             <span style={sectionLabel as React.CSSProperties}>Content angle</span>
             {signal.opportunity_type && (
-              <span style={{ fontSize: 9, color: "var(--success)", background: "#7ab64812", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: "var(--success)", background: "#7ab64812", border: "0.5px solid #7ab64855", padding: "2px 8px", borderRadius: 999, fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6 }}>
                 {signal.opportunity_type} opportunity
               </span>
             )}
@@ -377,7 +377,7 @@ export default function TrendDetail() {
       )}
 
       {signal.summary && (
-        <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", lineHeight: 1.65, marginBottom: 16 }}>
+        <div style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", lineHeight: 1.65, marginBottom: 16 }}>
           {signal.summary}
         </div>
       )}
@@ -392,13 +392,13 @@ export default function TrendDetail() {
         if (!hasAny) {
           return (
             <div style={{ borderTop: "0.5px solid hsl(var(--border))", paddingTop: 20, marginBottom: 24, padding: "20px 18px", background: "hsl(var(--muted) / 0.25)", borderRadius: 6 }}>
-              <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
+              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.08em", color: "hsl(var(--muted-foreground))", marginBottom: 8, fontWeight: 700 }}>
                 Legacy signal · incomplete
               </div>
-              <div style={{ fontSize: 13, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.6, marginBottom: 12 }}>
+              <div style={{ fontSize: 14, color: "hsl(var(--foreground) / 0.85)", lineHeight: 1.6, marginBottom: 12 }}>
                 This signal was created before snapshots were stored locally. No internal article copy is available — only the headline and original publisher reference below.
               </div>
-              <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>
+              <div style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>
                 Click <span style={{ color: "var(--brand)" }}>↻ Refresh signals</span> on Home to generate fresh signal-quality results with full article snapshots.
               </div>
             </div>
@@ -411,7 +411,7 @@ export default function TrendDetail() {
             <button
               onClick={() => setSnapshotMode(mode)}
               style={{
-                fontSize: 10,
+                fontSize: 12,
                 color: active ? "var(--brand)" : "hsl(var(--muted-foreground))",
                 background: active ? "var(--brand-muted)" : "transparent",
                 border: `0.5px solid ${active ? "var(--bronze-line)" : "hsl(var(--border))"}`,
@@ -427,7 +427,7 @@ export default function TrendDetail() {
           <div style={{ marginBottom: 20, marginTop: 4 }}>
             <div style={thinRule} />
             <div className="flex items-center justify-between flex-wrap" style={{ marginBottom: 12, gap: 8 }}>
-              <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
+              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "hsl(var(--muted-foreground) / 0.7)" }}>
                 Article snapshot · {snapshotMode === "clean" ? "cleaned" : "raw"}
               </div>
               <div className="flex items-center" style={{ gap: 6 }}>
@@ -439,7 +439,7 @@ export default function TrendDetail() {
                 )}
                 <button
                   onClick={() => setShowFullSnapshot(s => !s)}
-                  style={{ fontSize: 10, color: "var(--brand)", background: "transparent", border: "0.5px solid var(--bronze-line)", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
+                  style={{ fontSize: 12, color: "var(--brand)", background: "transparent", border: "0.5px solid var(--bronze-line)", padding: "3px 10px", borderRadius: 3, cursor: "pointer", letterSpacing: "0.04em" }}
                 >
                   {showFullSnapshot ? "Show less" : "Show more"}
                 </button>
@@ -448,7 +448,7 @@ export default function TrendDetail() {
             <div
               className="prose prose-sm max-w-none dark:prose-invert"
               style={{
-                fontSize: 13,
+                fontSize: 14,
                 lineHeight: 1.7,
                 ...(showFullSnapshot ? {} : {
                   display: "-webkit-box",
@@ -472,7 +472,7 @@ export default function TrendDetail() {
           onClick={handleDraftPost}
           disabled={drafting}
           style={{
-            fontSize: 13, padding: "8px 16px", borderRadius: 8,
+            fontSize: 14, padding: "8px 16px", borderRadius: 8,
             border: "0.5px solid var(--bronze-line)",
             background: "var(--brand)", color: "#fff",
             fontWeight: 500, cursor: drafting ? "not-allowed" : "pointer",
@@ -484,7 +484,7 @@ export default function TrendDetail() {
         {added ? (
           <span
             style={{
-              fontSize: 13, padding: "8px 16px", borderRadius: 8,
+              fontSize: 14, padding: "8px 16px", borderRadius: 8,
               border: "0.5px solid hsl(var(--border))",
               background: "transparent", color: "hsl(var(--muted-foreground))",
             }}
@@ -495,7 +495,7 @@ export default function TrendDetail() {
           <button
             onClick={handleAddToSignals}
             style={{
-              fontSize: 13, padding: "8px 16px", borderRadius: 8,
+              fontSize: 14, padding: "8px 16px", borderRadius: 8,
               border: "0.5px solid hsl(var(--border))",
               background: "transparent", color: "hsl(var(--foreground))",
               cursor: "pointer",
@@ -507,7 +507,7 @@ export default function TrendDetail() {
         <button
           onClick={() => navigate(-1)}
           style={{
-            fontSize: 13, padding: "8px 12px",
+            fontSize: 14, padding: "8px 12px",
             background: "transparent", border: "none",
             color: "hsl(var(--muted-foreground))", cursor: "pointer",
           }}
@@ -520,7 +520,7 @@ export default function TrendDetail() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              fontSize: 13, padding: "8px 12px",
+              fontSize: 14, padding: "8px 12px",
               background: "transparent", border: "none",
               color: "hsl(var(--muted-foreground))",
               textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4,

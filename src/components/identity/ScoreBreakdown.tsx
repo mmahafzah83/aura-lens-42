@@ -114,7 +114,7 @@ export default function ScoreBreakdown({ userId }: Props) {
         display: "flex", alignItems: "baseline", justifyContent: "space-between",
       }}>
         <span style={{
-          fontSize: 10, letterSpacing: "0.12em",
+          fontSize: 12, letterSpacing: "0.12em",
           color: "var(--aura-t1)", opacity: 0.7,
           textTransform: "uppercase", fontWeight: 600,
         }}>
@@ -125,7 +125,7 @@ export default function ScoreBreakdown({ userId }: Props) {
           fontSize: 24, fontWeight: 700,
           color: "var(--aura-accent)",
         }}>
-          {total}<span style={{ fontSize: 13, opacity: 0.6 }}>/100</span>
+          {total}<span style={{ fontSize: 14, opacity: 0.6 }}>/100</span>
         </span>
       </div>
     </div>

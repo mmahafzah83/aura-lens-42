@@ -459,7 +459,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
         <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
           My Story
         </h1>
-        <p style={{ fontSize: 13, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
           Everything you know — finally visible to the people who need to see it.
         </p>
       </div>
@@ -486,7 +486,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             }}
           />
           <div className="relative">
-            <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--brand)", marginBottom: 8, textTransform: "uppercase", fontWeight: 600 }}>
+            <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--brand)", marginBottom: 8, textTransform: "uppercase", fontWeight: 600 }}>
               Your professional identity
             </div>
             <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 24, color: "#fff", margin: "0 0 12px", lineHeight: 1.25 }}>
@@ -503,7 +503,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 border: 0,
                 borderRadius: 10,
                 padding: "12px 20px",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
                 cursor: "pointer",
                 display: "inline-flex",
@@ -514,19 +514,19 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               Show me who I am in this market →
             </button>
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div style={{ fontSize: 10, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
+              <div style={{ fontSize: 12, letterSpacing: 1.5, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 10, fontWeight: 600 }}>
                 What you'll discover
               </div>
               <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-                <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
+                <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
                   Your market archetype — the space you naturally own
                 </li>
-                <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
+                <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
                   Your positioning statement — how a CIO in your sector would describe you
                 </li>
-                <li style={{ fontSize: 13, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
+                <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
                   Your authority territory — where your expertise runs deepest
                 </li>
@@ -578,7 +578,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div style={{ marginBottom: 10 }}>
               <div
                 style={{
-                  fontSize: 9,
+                  fontSize: 12,
                   textTransform: "uppercase",
                   color: "var(--ink-5)",
                   letterSpacing: "0.08em",
@@ -587,7 +587,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               >
                 Where your mind keeps going
               </div>
-              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+              <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                 You keep coming back to these themes. There's a reason — and Aura knows what it is.
               </div>
             </div>
@@ -623,7 +623,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 </button>
               </div>
             ) : (
-              <p style={{ fontSize: 11, color: "var(--ink-5)", fontStyle: "italic" }}>
+              <p style={{ fontSize: 12, color: "var(--ink-5)", fontStyle: "italic" }}>
                 Capture more to build your signal profile
               </p>
             )}
@@ -641,10 +641,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               }}
             >
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--ink)", textTransform: "uppercase" }}>
                   SIGNAL COVERAGE
                 </div>
-                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                   {intelligenceStage === 3
                     ? <>Your authority territory — backed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals and market engagement data</>
                     : intelligenceStage === 2
@@ -667,10 +667,10 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   return (
                     <div key={g.theme}>
                       <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+                        <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>
                           {g.theme}
                         </span>
-                        <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
+                        <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
                           {g.count} {g.count === 1 ? "signal" : "signals"}
                         </span>
                       </div>
@@ -693,7 +693,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                             }}
                           />
                         </div>
-                        <span style={{ fontSize: 11, color: labelColor, fontWeight: 600, minWidth: 76, textAlign: "right", letterSpacing: "0.02em" }}>
+                        <span style={{ fontSize: 12, color: labelColor, fontWeight: 600, minWidth: 76, textAlign: "right", letterSpacing: "0.02em" }}>
                           {label}
                         </span>
                       </div>
@@ -706,7 +706,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                     g => Math.abs(g.avgConfidence - first) < 0.02
                   );
                   return allSame ? (
-                    <div style={{ fontSize: 11, fontStyle: "italic", color: "var(--ink-5)", paddingTop: 8 }}>
+                    <div style={{ fontSize: 12, fontStyle: "italic", color: "var(--ink-5)", paddingTop: 8 }}>
                       Capture more sources to differentiate your signal strengths.
                     </div>
                   ) : null;
@@ -751,11 +751,11 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 <div style={{ marginBottom: 8 }}>
                   <div
                     title="AI-generated from your assessment, signals, and intelligence. Evolves as evidence accumulates."
-                    style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: "var(--aura-t1, var(--ink))", textTransform: "uppercase", cursor: "help" }}
+                    style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: "var(--aura-t1, var(--ink))", textTransform: "uppercase", cursor: "help" }}
                   >
                     How the market sees you
                   </div>
-                  <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
+                  <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                     {intelligenceStage === 3
                       ? "Market-validated positioning — grounded in your intelligence and audience response"
                       : intelligenceStage === 2
@@ -787,7 +787,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                         “{statementText}”
                       </p>
                       {isThirdPerson && (
-                        <p style={{ fontSize: 11, color: "var(--ink-5)", marginTop: 6, fontStyle: "italic" }}>
+                        <p style={{ fontSize: 12, color: "var(--ink-5)", marginTop: 6, fontStyle: "italic" }}>
                           Based on your assessment — click Regenerate for a first-person version.
                         </p>
                       )}
@@ -805,7 +805,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           onClick={regeneratePositioning}
                           disabled={regenerating}
                           style={{
-                            fontSize: 11,
+                            fontSize: 12,
                             color: "var(--aura-accent, var(--brand))",
                             background: "transparent",
                             border: 0,
@@ -837,7 +837,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <div>
                 <div
                   style={{
-                    fontSize: 9,
+                    fontSize: 12,
                     textTransform: "uppercase",
                     color: "var(--ink-5)",
                     letterSpacing: "0.08em",
@@ -860,7 +860,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 ) : (
                   <p
                     style={{
-                      fontSize: 13,
+                      fontSize: 14,
                       color: "var(--surface-ink-subtle)",
                       lineHeight: 1.5,
                       fontWeight: 500,
@@ -933,7 +933,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                           </span>
                           <span
                             style={{
-                              fontSize: 10,
+                              fontSize: 12,
                               color: isCurrent ? "var(--brand)" : isDone ? "var(--ink-3)" : "var(--ink-5)",
                               marginTop: 8,
                               fontWeight: isCurrent ? 600 : 400,
@@ -965,7 +965,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
               <AuditRadarWidget onStartAudit={() => setAuditOpen(true)} />
             </div>
             <div className="pt-4" style={{ borderTop: "1px solid var(--surface-subtle)" }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", marginBottom: 12 }}>Profile Settings</h3>
               <ProfileManagement onResetDiagnostic={onResetDiagnostic} onNavigate={handleNavigate} compact />
             </div>
             {assessmentCompleted && (

@@ -104,7 +104,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
         </div>
         {row && (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 11, color: "var(--ink-muted, rgba(245,239,225,0.6))" }}>
+            <span style={{ fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.6))" }}>
               Last updated: {relTime(row.generated_at)}
             </span>
             <button
@@ -145,7 +145,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
               padding: "10px 18px", borderRadius: 8,
               background: "var(--brand, #B08D3A)",
               color: "var(--ink-on-brand, #1a160f)",
-              border: "none", fontWeight: 600, fontSize: 13,
+              border: "none", fontWeight: 600, fontSize: 14,
               cursor: generating ? "wait" : "pointer",
               display: "inline-flex", alignItems: "center", gap: 8,
             }}
@@ -180,7 +180,7 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                     border: "none",
                     borderBottom: active ? "2px solid var(--brand, #B08D3A)" : "2px solid transparent",
                     color: active ? "var(--brand, #B08D3A)" : "var(--ink, rgba(245,239,225,0.85))",
-                    fontSize: 13, fontWeight: active ? 600 : 600,
+                    fontSize: 14, fontWeight: active ? 600 : 600,
                     opacity: active ? 1 : 0.85,
                     cursor: "pointer",
                   }}
@@ -207,13 +207,13 @@ export default function MarketMirror({ userId }: { userId: string | null }) {
                   borderRadius: 6,
                 }}
               >
-                <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: ALERT, fontWeight: 600, marginBottom: 6 }}>
+                <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: "uppercase", color: ALERT, fontWeight: 600, marginBottom: 6 }}>
                   Authority gap
                 </div>
-                <div style={{ fontSize: 13, color: "var(--ink, #f5efe1)", lineHeight: 1.55 }}>
+                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.55 }}>
                   A {persona} would notice: {gap}
                 </div>
-                <div style={{ fontSize: 13, color: "var(--ink, #f5efe1)", lineHeight: 1.55, marginTop: 6, fontStyle: "italic", opacity: 0.85 }}>
+                <div style={{ fontSize: 14, color: "var(--ink, #f5efe1)", lineHeight: 1.55, marginTop: 6, fontStyle: "italic", opacity: 0.85 }}>
                   Is that a choice?
                 </div>
               </div>

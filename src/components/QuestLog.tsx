@@ -19,7 +19,7 @@ const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: 
 
   if (loading || !currentPhase) {
     return (
-      <div style={{ padding: 12, fontSize: 11, color: "var(--muted-foreground)" }}>
+      <div style={{ padding: 12, fontSize: 12, color: "var(--muted-foreground)" }}>
         Loading progress…
       </div>
     );
@@ -43,15 +43,15 @@ const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: 
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--brand)" }}>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--brand)" }}>
           Your progress
         </span>
-        <span style={{ fontSize: 10, color: "var(--muted-foreground)" }}>
+        <span style={{ fontSize: 12, color: "var(--muted-foreground)" }}>
           Phase {currentPhase.index} of 3
         </span>
       </div>
 
-      <div style={{ fontSize: 11, color: "var(--foreground)", marginBottom: 8, fontWeight: 500 }}>
+      <div style={{ fontSize: 12, color: "var(--foreground)", marginBottom: 8, fontWeight: 500 }}>
         {currentPhase.name} · {currentPhase.completed}/{currentPhase.total} complete
       </div>
 
@@ -86,19 +86,19 @@ const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: 
                 border: "none",
                 background: "transparent",
                 cursor: onQuestAction ? "pointer" : "default",
-                fontSize: 11,
+                fontSize: 12,
                 color: q.done ? "var(--muted-foreground)" : "var(--foreground)",
                 opacity: q.done ? 0.7 : 1,
                 textAlign: "left",
               }}
               className={onQuestAction ? "hover:bg-[var(--brand-ghost,rgba(197,165,90,0.08))] transition-colors" : ""}
             >
-              <span style={{ width: 14, color: q.done ? "var(--brand)" : "var(--muted-foreground)", fontSize: 11 }}>
+              <span style={{ width: 14, color: q.done ? "var(--brand)" : "var(--muted-foreground)", fontSize: 12 }}>
                 {q.done ? "✓" : "○"}
               </span>
               <span style={{ textDecoration: q.done ? "line-through" : "none", flex: 1 }}>{q.label}</span>
               {!q.done && onQuestAction && (
-                <span style={{ color: "var(--brand)", fontSize: 11, opacity: 0.7 }}>›</span>
+                <span style={{ color: "var(--brand)", fontSize: 12, opacity: 0.7 }}>›</span>
               )}
             </button>
           </li>
@@ -116,7 +116,7 @@ const QuestLog = ({ userId, compact = true, onQuestAction, onViewFullJourney }: 
           background: "transparent",
           border: "none",
           color: "var(--brand)",
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 500,
           cursor: "pointer",
           padding: 0,

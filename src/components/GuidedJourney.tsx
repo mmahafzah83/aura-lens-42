@@ -65,23 +65,23 @@ const StepCard = ({
             background: isDone ? "var(--brand)" : isLocked ? "transparent" : "var(--brand-ghost)",
             border: `1px solid ${isDone ? "var(--brand)" : "var(--brand-line)"}`,
             color: isDone ? "var(--ink-on-brand, #1a160f)" : "var(--brand)",
-            fontWeight: 600, fontSize: 13,
+            fontWeight: 600, fontSize: 14,
           }}
         >
           {isDone ? <CheckCircle2 className="w-4 h-4" /> : isLocked ? <Lock className="w-4 h-4" /> : index}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 600 }}>
+            <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)", fontWeight: 600 }}>
               Step {index} of 3
             </div>
             {isDone && (
-              <span style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 700 }}>
+              <span style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 700 }}>
                 ✓ Completed
               </span>
             )}
             {isLocked && lockedAfter && (
-              <span style={{ fontSize: 11, color: "var(--ink-3)" }}>
+              <span style={{ fontSize: 12, color: "var(--ink-3)" }}>
                 Unlocks after Step {lockedAfter}
               </span>
             )}
@@ -90,7 +90,7 @@ const StepCard = ({
             {title}
           </div>
           {!isDone && (
-            <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
+            <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.6, margin: "0 0 14px" }}>
               {why}
             </p>
           )}
@@ -112,7 +112,7 @@ const StepCard = ({
               onClick={onUnlock}
               style={{
                 background: "var(--brand)", color: "var(--ink-on-brand, #1a160f)", border: 0,
-                borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                borderRadius: 8, padding: "10px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer",
                 display: "inline-flex", alignItems: "center", gap: 6,
               }}
             >
@@ -149,7 +149,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
-        <div style={{ fontSize: 10, letterSpacing: 2, color: "var(--brand)", marginBottom: 6, textTransform: "uppercase", fontWeight: 600 }}>
+        <div style={{ fontSize: 12, letterSpacing: 2, color: "var(--brand)", marginBottom: 6, textTransform: "uppercase", fontWeight: 600 }}>
           Your professional identity
         </div>
         <h1 style={{ fontFamily: "var(--font-display, 'Cormorant Garamond', serif)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
@@ -161,7 +161,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
         <div style={{ marginTop: 12, height: 4, background: "var(--brand-line, rgba(197,165,90,0.15))", borderRadius: 999, overflow: "hidden", maxWidth: 320 }}>
           <div style={{ width: `${pct}%`, height: "100%", background: "var(--brand)", transition: "width 300ms ease" }} />
         </div>
-        <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 6 }}>
           {completedCount} of 3 complete
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function GuidedJourney({ journey, onResetDiagnostic }: Props) {
 
       {(step3Status === "completed" || voiceSkipped) && step2Status === "completed" && (
         <div style={{ textAlign: "center", padding: 20 }}>
-          <div style={{ fontSize: 13, color: "var(--ink-3)" }}>
+          <div style={{ fontSize: 14, color: "var(--ink-3)" }}>
             Setup complete. Your full Story view is below.
           </div>
         </div>

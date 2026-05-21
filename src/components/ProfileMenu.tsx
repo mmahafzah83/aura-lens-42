@@ -266,7 +266,7 @@ export default function ProfileMenu({
                       border: "0.5px solid rgba(0,0,0,0.15)",
                     }}
                   />
-                  <span style={{ fontSize: 11, color: active ? "var(--brand)" : "var(--foreground)", fontWeight: 500 }}>
+                  <span style={{ fontSize: 12, color: active ? "var(--brand)" : "var(--foreground)", fontWeight: 500 }}>
                     {THEME_LABELS[t]}
                   </span>
                 </button>
@@ -293,7 +293,7 @@ export default function ProfileMenu({
               borderRadius: 8,
               cursor: "pointer",
               color: "var(--foreground)",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
             }}
             className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
@@ -320,7 +320,7 @@ export default function ProfileMenu({
             borderRadius: 8,
             cursor: "pointer",
             color: "var(--foreground)",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 500,
           }}
           className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"
@@ -346,7 +346,7 @@ export default function ProfileMenu({
             borderRadius: 8,
             cursor: "pointer",
             color: "var(--danger, #c0392b)",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 500,
           }}
           className="hover:bg-[var(--brand-ghost,rgba(0,0,0,0.04))] transition-colors"

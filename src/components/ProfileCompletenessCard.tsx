@@ -110,7 +110,7 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
         />
       </div>
 
-      <p style={{ fontSize: 11, color: "var(--ink-5)", marginBottom: emptyFields.length > 0 ? 10 : 0 }}>
+      <p style={{ fontSize: 12, color: "var(--ink-5)", marginBottom: emptyFields.length > 0 ? 10 : 0 }}>
         Profile complete · Voice engine active · 3 assessments done
       </p>
 
@@ -127,10 +127,10 @@ const ProfileCompletenessCard = ({ onAction }: ProfileCompletenessCardProps) => 
                 className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{ background: "var(--danger)", opacity: 0.6 }}
               />
-              <span style={{ fontSize: 11, color: "var(--ink-5)", flex: 1 }}>{f.label}</span>
+              <span style={{ fontSize: 12, color: "var(--ink-5)", flex: 1 }}>{f.label}</span>
               <span
                 className="group-hover:underline"
-                style={{ fontSize: 11, color: "var(--brand)", fontWeight: 500 }}
+                style={{ fontSize: 12, color: "var(--brand)", fontWeight: 500 }}
               >
                 Add →
               </span>

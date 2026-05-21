@@ -52,7 +52,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           textAlign: "left",
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", lineHeight: 1.5 }}>{q}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", lineHeight: 1.5 }}>{q}</span>
         <ChevronDown
           size={14}
           style={{
@@ -63,7 +63,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
         />
       </button>
       {open && (
-        <div style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.7, marginTop: 8 }}>{a}</div>
+        <div style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginTop: 8 }}>{a}</div>
       )}
     </div>
   );
@@ -142,7 +142,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
             <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--ink)", lineHeight: 1.2 }}>
               How Aura works
             </div>
-            <div style={{ fontSize: 13, fontStyle: "italic", color: "var(--ink-3)", marginTop: 4 }}>
+            <div style={{ fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 4 }}>
               Contextual help for the page you're on
             </div>
           </div>
@@ -172,7 +172,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "var(--ink)", lineHeight: 1.3 }}>
                   {ctx.title}
                 </div>
-                <p style={{ fontSize: 13, color: "var(--ink-3)", lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
+                <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.7, marginTop: 8, marginBottom: 0 }}>
                   {ctx.body}
                 </p>
               </div>
@@ -202,7 +202,7 @@ export function HelpPanel({ open, onClose, activeTab }: { open: boolean; onClose
           >
             Read the full guide →
           </AuraButton>
-          <div style={{ marginTop: 10, textAlign: "center", fontSize: 11, color: "var(--ink-3)", lineHeight: 1.5 }}>
+          <div style={{ marginTop: 10, textAlign: "center", fontSize: 12, color: "var(--ink-3)", lineHeight: 1.5 }}>
             Aura Private Beta · Questions?{" "}
             <a
               href="mailto:mohammad.mahafdhah@aura-intel.org"

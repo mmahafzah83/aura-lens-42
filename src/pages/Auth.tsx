@@ -464,7 +464,7 @@ const Auth = () => {
                   style={{
                     color: "var(--ink-4)",
                     fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13,
+                    fontSize: 14,
                     background: "none",
                     border: "none",
                     cursor: "pointer",

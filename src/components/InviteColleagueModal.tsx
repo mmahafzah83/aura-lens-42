@@ -140,7 +140,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
             style={{
               width: "100%",
               padding: "10px 12px",
-              fontSize: 13,
+              fontSize: 14,
               background: "var(--paper)",
               border: "1px solid var(--brand-line)",
               borderRadius: 6,
@@ -162,7 +162,7 @@ export function InviteColleagueModal({ open, onClose }: Props) {
             </AuraButton>
           </div>
 
-          <div style={{ fontSize: 11, color: "var(--ink-3)", marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: "var(--ink-3)", marginTop: 4 }}>
             {remaining === null
               ? "One moment…"
               : `You have ${remaining}/3 invitations left`}

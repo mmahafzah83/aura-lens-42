@@ -67,7 +67,7 @@ const Item = ({
     >
       {label}
     </div>
-    <div style={{ fontSize: 10, marginTop: 3, color: "var(--aura-t3)" }}>
+    <div style={{ fontSize: 12, marginTop: 3, color: "var(--aura-t3)" }}>
       {delta}
     </div>
   </button>

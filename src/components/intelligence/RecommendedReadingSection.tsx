@@ -57,7 +57,7 @@ const RecommendedReadingSection = () => {
     <div style={{ marginTop: 24 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-7)", margin: 0 }}>
             Recommended reading
           </h3>
           <InfoTooltip text="Articles selected by Aura based on your skill gaps and sector focus" />
@@ -68,7 +68,7 @@ const RecommendedReadingSection = () => {
           style={{
             display: "flex", alignItems: "center", gap: 4,
             background: "none", border: "0.5px solid var(--surface-ink-subtle)",
-            borderRadius: 6, padding: "4px 10px", fontSize: 11, color: "var(--ink-3)",
+            borderRadius: 6, padding: "4px 10px", fontSize: 12, color: "var(--ink-3)",
             cursor: loading ? "default" : "pointer",
           }}
         >
@@ -108,15 +108,15 @@ const RecommendedReadingSection = () => {
                         href={rec.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-7)", textDecoration: "none", lineHeight: 1.4 }}
+                        style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-7)", textDecoration: "none", lineHeight: 1.4 }}
                       >
                         {rec.title}
                       </a>
                     ) : (
-                      <span style={{ fontSize: 13, fontWeight: 500, color: "var(--ink-7)" }}>{rec.title}</span>
+                      <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink-7)" }}>{rec.title}</span>
                     )}
                     {domain && (
-                      <p style={{ fontSize: 11, color: "var(--ink-3)", margin: "2px 0 0" }}>{domain}</p>
+                      <p style={{ fontSize: 12, color: "var(--ink-3)", margin: "2px 0 0" }}>{domain}</p>
                     )}
                     {rec.intelligence_value && (
                       <p style={{ fontSize: 12, color: "var(--ink-2)", margin: "6px 0 0", lineHeight: 1.5 }}>

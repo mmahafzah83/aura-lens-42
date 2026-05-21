@@ -120,7 +120,7 @@ const EmptyState = ({
             color: "var(--brand-foreground, #fff)",
             borderRadius: 9999,
             padding: "10px 22px",
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 500,
             border: "none",
             cursor: "pointer",

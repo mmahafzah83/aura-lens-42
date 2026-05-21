@@ -168,7 +168,7 @@ const VoiceEngineSection = () => {
       `}</style>
       <p
         style={{
-          fontSize: 13,
+          fontSize: 14,
           fontStyle: "italic",
           color: "var(--ink-3)",
           padding: "14px 20px 0",
@@ -195,7 +195,7 @@ const VoiceEngineSection = () => {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 3,
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: 600,
                   color: "var(--brand)",
                   background: "rgba(197,165,90,0.12)",

@@ -112,7 +112,7 @@ export default function TodaysIntelligence() {
           <Sparkles size={14} style={{ color: "var(--brand)" }} />
           <span
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
@@ -122,7 +122,7 @@ export default function TodaysIntelligence() {
             Today's intelligence
           </span>
           {loading && (
-            <span style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}>loading…</span>
+            <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }}>loading…</span>
           )}
         </span>
         <ChevronDown
@@ -160,7 +160,7 @@ export default function TodaysIntelligence() {
                       {item.title && (
                         <div
                           style={{
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: 600,
                             color: "hsl(var(--foreground))",
                             marginBottom: 2,
@@ -194,7 +194,7 @@ export default function TodaysIntelligence() {
                       {item.source && (
                         <div
                           style={{
-                            fontSize: 10,
+                            fontSize: 12,
                             marginTop: 4,
                             color: "hsl(var(--muted-foreground))",
                             letterSpacing: "0.04em",

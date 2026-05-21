@@ -208,7 +208,7 @@ export default function TierCeremonyModal({ userId }: Props) {
         {scoreBreakdown && (
           <div style={{ marginTop: 20, textAlign: "left" }}>
             <div style={{
-              fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase",
+              fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase",
               color: "var(--ink-muted, rgba(245,239,225,0.6))", fontWeight: 600,
               marginBottom: 10, textAlign: "center",
             }}>
@@ -228,7 +228,7 @@ export default function TierCeremonyModal({ userId }: Props) {
                   textAlign: "center",
                 }}>
                   <div style={{
-                    fontSize: 10, color: "var(--ink-muted, rgba(245,239,225,0.65))",
+                    fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.65))",
                     letterSpacing: 0.3, marginBottom: 4,
                   }}>
                     {r.label}
@@ -237,13 +237,13 @@ export default function TierCeremonyModal({ userId }: Props) {
                     fontFamily: "var(--font-mono, 'JetBrains Mono', monospace)",
                     fontSize: 18, color: "var(--brand, #B08D3A)", lineHeight: 1,
                   }}>
-                    {r.val}<span style={{ fontSize: 11, opacity: 0.55 }}>/{r.max}</span>
+                    {r.val}<span style={{ fontSize: 12, opacity: 0.55 }}>/{r.max}</span>
                   </div>
                 </div>
               ))}
             </div>
             <div style={{
-              fontSize: 11, color: "var(--ink-muted, rgba(245,239,225,0.55))",
+              fontSize: 12, color: "var(--ink-muted, rgba(245,239,225,0.55))",
               textAlign: "center", marginTop: 10,
             }}>
               {copy.name} requires {copy.name === "Authority" ? "65" : copy.name === "Strategist" ? "35" : "0"}+ points
@@ -254,7 +254,7 @@ export default function TierCeremonyModal({ userId }: Props) {
         {topSignal && (
           <p
             style={{
-              fontSize: 13,
+              fontSize: 14,
               color: "var(--ink-muted, rgba(245,239,225,0.7))",
               margin: "20px 0 24px",
               lineHeight: 1.5,
@@ -423,7 +423,7 @@ function StatBox({ value, label }: { value: number; label: string }) {
       </div>
       <div
         style={{
-          fontSize: 11,
+          fontSize: 12,
           marginTop: 6,
           color: "var(--ink-muted, rgba(245,239,225,0.65))",
           letterSpacing: 0.4,

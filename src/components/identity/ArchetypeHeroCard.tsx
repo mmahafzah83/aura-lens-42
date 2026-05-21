@@ -137,7 +137,7 @@ export default function ArchetypeHeroCard({
         {/* Archetype */}
         <div
           style={{
-            fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase",
+            fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase",
             color: "var(--aura-accent)", opacity: 0.7, fontWeight: 600, marginBottom: 8,
             display: "inline-flex", alignItems: "center", gap: 6,
           }}
@@ -165,7 +165,7 @@ export default function ArchetypeHeroCard({
           {archetypeName || "Complete assessment to reveal your archetype"}
         </div>
         {description && (
-          <p style={{ fontSize: 13, color: "var(--aura-t1)", opacity: 0.78, lineHeight: 1.6, margin: 0, marginBottom: 16 }}>
+          <p style={{ fontSize: 14, color: "var(--aura-t1)", opacity: 0.78, lineHeight: 1.6, margin: 0, marginBottom: 16 }}>
             {description}
           </p>
         )}
@@ -181,7 +181,7 @@ export default function ArchetypeHeroCard({
                   color: "var(--aura-accent)",
                   borderRadius: 20,
                   padding: "4px 11px",
-                  fontSize: 11,
+                  fontSize: 12,
                   whiteSpace: "nowrap",
                 }}
               >

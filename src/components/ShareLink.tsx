@@ -23,7 +23,7 @@ const ShareLink = ({ label, onClick, ariaLabel }: Props) => (
       padding: 0,
       cursor: "pointer",
       color: "var(--ink-3)",
-      fontSize: 11,
+      fontSize: 12,
       display: "inline-flex",
       alignItems: "center",
       gap: 5,
