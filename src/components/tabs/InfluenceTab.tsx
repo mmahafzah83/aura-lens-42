@@ -72,6 +72,11 @@ const InfluenceTab = ({ entries, onRefresh }: { entries: Entry[]; onRefresh?: ()
 
   return (
     <div className="space-y-12">
+      <div>
+        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+          Your influence this week
+        </div>
+      </div>
       <div className="glass-card rounded-2xl card-pad">
         <div className="flex items-center gap-3 mb-2">
           <Megaphone className="w-5 h-5 text-primary/70" />
