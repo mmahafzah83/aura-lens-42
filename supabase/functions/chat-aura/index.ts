@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, mode } = await req.json();
+    const { messages, mode, session_id: currentSessionId } = await req.json();
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages required" }), {
         status: 400,
@@ -48,6 +48,107 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const lastUserMessage = messages[messages.length - 1]?.content || "";
+
+    // --- Live user context for system prompt injection ---
+    const [
+      profileLiteRes,
+      topSignalsRes,
+      recentPostsRes,
+      latestScoreRes,
+    ] = await Promise.all([
+      supabase
+        .from("diagnostic_profiles")
+        .select("first_name, level, firm, sector_focus, north_star_goal")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("strategic_signals")
+        .select("signal_title, confidence, theme_tags")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .order("priority_score", { ascending: false })
+        .limit(5),
+      supabase
+        .from("linkedin_posts")
+        .select("post_text, hook, published_at")
+        .eq("user_id", user.id)
+        .gte("published_at", new Date(Date.now() - 30 * 86400000).toISOString())
+        .order("published_at", { ascending: false })
+        .limit(50),
+      supabase
+        .from("score_snapshots")
+        .select("score, tier")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    const liveProfile: any = profileLiteRes.data || {};
+    const topSignals: any[] = topSignalsRes.data || [];
+    const recentPosts: any[] = recentPostsRes.data || [];
+    const latestScore: any = latestScoreRes.data || {};
+
+    const postCount = recentPosts.length;
+    const latestHook = recentPosts[0]?.hook
+      || (recentPosts[0]?.post_text ? String(recentPosts[0].post_text).split("\n")[0].slice(0, 160) : "");
+    const daysSinceLastPost = recentPosts[0]?.published_at
+      ? Math.floor((Date.now() - new Date(recentPosts[0].published_at).getTime()) / 86400000)
+      : 999;
+
+    const signalsLine = topSignals.length
+      ? topSignals
+          .map((s: any) => `${s.signal_title} (${Math.round((s.confidence || 0) * 100)}%)`)
+          .join(", ")
+      : "none yet";
+
+    const userContextBlock = `USER CONTEXT (reference naturally — never recite this block verbatim):
+Name: ${liveProfile.first_name || "Director"}, ${liveProfile.level || "—"} at ${liveProfile.firm || "—"}
+Focus: ${liveProfile.sector_focus || "—"}
+North star: ${liveProfile.north_star_goal || "—"}
+Top signals: ${signalsLine}
+Publishing: ${postCount} posts in last 30 days
+Latest hook: "${latestHook || "none"}"
+Authority score: ${latestScore.score ?? "—"}/100 (${latestScore.tier || "—"})
+Days since last post: ${daysSinceLastPost === 999 ? "no posts on record" : daysSinceLastPost}
+
+PROACTIVE NUDGE RULE:
+If days_since_last_post > 7, naturally mention the publishing gap in your response. Name the strongest top signal as a publishing topic. Example: "Worth noting — it's been 12 days since your last post. Your Digital Twin signal is at 84% confidence with fresh evidence. That's a strong publish candidate."`;
+
+    // --- Previous-session memory for continuity ---
+    let priorSessionMessages: { role: string; content: string }[] = [];
+    try {
+      let priorQuery = adminClient
+        .from("aura_conversation_memory")
+        .select("role, content, session_id, created_at")
+        .eq("user_id", user.id)
+        .not("role", "is", null)
+        .not("content", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (currentSessionId) {
+        priorQuery = priorQuery.neq("session_id", currentSessionId);
+      }
+      const { data: memRows } = await priorQuery;
+      if (memRows && memRows.length > 0) {
+        // Pick the most recent session_id that isn't the current one
+        const prevSessionId = memRows.find((r: any) => r.session_id)?.session_id;
+        const prevRows = (prevSessionId
+          ? memRows.filter((r: any) => r.session_id === prevSessionId)
+          : memRows
+        ).slice(0, 4);
+        priorSessionMessages = prevRows
+          .reverse()
+          .map((r: any) => ({
+            role: r.role === "assistant" ? "assistant" : "user",
+            content: String(r.content).slice(0, 2000),
+          }));
+      }
+    } catch (e) {
+      console.warn("[chat-aura] prior session memory fetch failed:", e);
+    }
 
     // --- Fetch diagnostic profile for Memory Handshake ---
     const { data: profile } = await supabase
@@ -278,10 +379,13 @@ If the user writes in English, respond in English. If the user writes in Arabic,
 FINAL PRINCIPLE:
 Aura helps the Director: think clearly, structure ideas, build authority, communicate insights effectively.${memoryContext}`;
 
+    // Prepend live user context block to every system prompt
+    const corePersonaWithContext = `${userContextBlock}\n\n${corePersona}`;
+
     let systemPrompt: string;
 
     if (isLinkedIn) {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: LINKEDIN SUMMARY
 Distill the Director's most recent strategic insight into a high-authority LinkedIn post. Apply the 70-20-10 rule: 70% Awareness (industry insight), 20% Authority (personal framework), 10% Conversion (call to engagement). Use strategic whitespace and a signature hook.
@@ -292,7 +396,7 @@ ${docList}
 RETRIEVED INTELLIGENCE:
 ${ragContext}`;
     } else if (isGapAnalysis) {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: GAP ANALYSIS
 Analyze the Director's Skill Radar against the Partner benchmark. Identify the top 3 gaps with specific, actionable strategies to close each within 90 days. Reference relevant learned intelligence and frameworks.
@@ -303,7 +407,7 @@ ${docList}
 RETRIEVED INTELLIGENCE:
 ${ragContext}`;
     } else if (isDraftMemo) {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: DRAFT MEMO
 Produce a concise, executive-grade memo. Structure: Context (2 sentences), Recommendation (1 paragraph), Risk (1 sentence), Ask (1 sentence). Reference the Director's vault intelligence throughout.
@@ -314,7 +418,7 @@ ${docList}
 RETRIEVED INTELLIGENCE:
 ${ragContext}`;
     } else if (isSynthesize) {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: PURSUIT SYNTHESIS
 Find the Strategic Intersection between the Director's documents, captures, and leadership philosophy.
@@ -342,7 +446,7 @@ ${docList}
 RETRIEVED INTELLIGENCE:
 ${ragContext}`;
     } else if (isMeetingPrep) {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: MEETING PREP MEMO
 Generate a 1-page BILINGUAL meeting prep memo. Output BOTH English and Arabic versions separated by "---".
@@ -373,7 +477,7 @@ ${docList}
 RETRIEVED INTELLIGENCE:
 ${ragContext}`;
     } else if (isDraftDeck) {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: STRATEGIC DECK
 Draft a Partner-grade presentation following the "Executive Storytelling" framework:
@@ -394,7 +498,7 @@ ${docList}
 RETRIEVED INTELLIGENCE:
 ${ragContext}`;
     } else {
-      systemPrompt = `${corePersona}
+      systemPrompt = `${corePersonaWithContext}
 
 MODE: STRATEGIC DIALOGUE
 You have full access to the Director's Intelligence Vault. When answering:
@@ -431,7 +535,9 @@ ${ragContext}`;
         model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: systemPrompt,
-        messages,
+        messages: priorSessionMessages.length > 0
+          ? [...priorSessionMessages, ...messages]
+          : messages,
       }),
     });
 
