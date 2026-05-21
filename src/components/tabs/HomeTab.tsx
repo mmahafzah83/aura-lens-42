@@ -32,6 +32,7 @@ import AuthorityPulseStrip from "@/components/home/AuthorityPulseStrip";
 import JourneyCycle from "@/components/home/JourneyCycle";
 import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
+import TodaysIntelligence from "@/components/home/TodaysIntelligence";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
