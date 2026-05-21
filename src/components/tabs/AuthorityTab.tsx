@@ -3278,6 +3278,18 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
   return (
     <div className="space-y-8">
       <FirstVisitHint page="publish" />
+      {/* Branded header — visible on every sub-tab (Create, Library, Plan) */}
+      <div>
+        <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
+          Your content engine
+        </div>
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
+          Publish
+        </h1>
+        <p style={{ fontSize: 14, color: "var(--ink-3)", marginTop: 8, lineHeight: 1.5, maxWidth: 640 }}>
+          You already know things most people in your sector don't. This is where that knowledge becomes content that opens doors.
+        </p>
+      </div>
       {brandDone === false && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-primary/15 bg-primary/[0.04]">
           <Target className="w-4 h-4 text-primary shrink-0" />
