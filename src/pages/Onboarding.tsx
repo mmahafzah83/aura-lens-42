@@ -565,10 +565,10 @@ const Onboarding = () => {
     ];
     return cardShell(
       <>
-        {eyebrow("Secure your account")}
+        {eyebrow("Welcome to the inner circle.")}
         {heading("Set your password.")}
         <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
-          Set a password so you can always come back to Aura from any device.
+          You're one of the first 50 people in Aura. Set your password to get started.
         </p>
         <div style={{ position: "relative", marginBottom: 12 }}>
           <input
@@ -910,14 +910,14 @@ const Onboarding = () => {
       {cardShell(
         <>
           {eyebrow("Step 3 of 3 — How the market sees you")}
-          {heading("Discover your market archetype.")}
+          {heading("See how the market sees you.")}
           <p className="mb-3" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
-            This 5-minute assessment reveals your market archetype — the way a CIO in your sector would describe you to a colleague.
+            4 quick questions. Takes 60 seconds. This shapes everything Aura creates for you.
           </p>
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--muted-foreground))" }}>
-            It shapes how Aura writes your content and positions your expertise.
+            It shapes how Aura writes your content and reflects your expertise.
           </p>
-          {primaryBtn(<>Discover my market position <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
+          {primaryBtn(<>Let's find out your position in the market <ArrowRight className="w-4 h-4" /></>, () => setAssessmentOpen(true))}
           <div className="mt-3">{ghostLink("I'll do this later", () => goHome())}</div>
         </>,
       )}
