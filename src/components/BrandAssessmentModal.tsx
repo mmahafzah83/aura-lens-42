@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { X, ArrowLeft, Compass, ChevronDown, Copy, Download, ArrowUpRight } from "lucide-react";
+import { X, ArrowLeft, Compass, ChevronDown, Copy, Download, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
