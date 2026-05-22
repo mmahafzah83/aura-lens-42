@@ -2001,6 +2001,9 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
       {/* Sticky bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 px-4 py-3 backdrop-blur-md flex flex-wrap items-center gap-2 justify-center"
            style={{ background: "rgba(15,14,12,0.85)", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <span className="w-full text-center text-[11px]" style={{ color: "rgba(255,255,255,0.55)", letterSpacing: "0.02em" }}>
+          ✦ AI-generated slides · Review before sharing
+        </span>
         <div className="flex items-center gap-1 mr-2">
           {(Object.keys(DIM) as Dimension[]).map(d => (
             <button key={d} onClick={() => setDim(d)}
