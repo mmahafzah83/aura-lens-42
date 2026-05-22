@@ -786,7 +786,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
         style={{
           maxHeight: "88vh",
           zIndex: 1000,
-          background: "#FFFFFF",
+          background: "var(--aura-card)",
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           color: "var(--ink)",
@@ -928,9 +928,9 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                       handleSave();
                     }
                   }}
-                  onFocus={(e) => {
+                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = "var(--brand)";
-                    e.currentTarget.style.background = "#FFFFFF";
+                    e.currentTarget.style.background = "var(--aura-card)";
                     e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                   }}
                   onBlur={async (e) => {
@@ -1004,8 +1004,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               {linkPreview && (
                 <div
                   style={{
-                    background: "#FFFFFF",
-                    border: "0.5px solid var(--border-subtle)",
+                    background: "var(--aura-card)",
+                    border: "0.5px solid hsl(var(--border))",
                     borderRadius: 12,
                     padding: "12px 14px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
@@ -1124,7 +1124,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                 dir="auto"
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--brand)";
-                  e.currentTarget.style.background = "#FFFFFF";
+                  e.currentTarget.style.background = "var(--aura-card)";
                   e.currentTarget.style.boxShadow = "0 0 0 3px var(--brand-muted)";
                 }}
                 onBlur={(e) => {
@@ -1202,11 +1202,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid var(--border)",
+                        border: "0.5px solid hsl(var(--border))",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "#FFFFFF",
+                        background: "var(--aura-card)",
                         color: "var(--ink)",
                         cursor: "pointer",
                       }}
@@ -1221,11 +1221,11 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 6,
-                        border: "0.5px solid var(--border)",
+                        border: "0.5px solid hsl(var(--border))",
                         borderRadius: 10,
                         padding: "8px 16px",
                         fontSize: 12,
-                        background: "#FFFFFF",
+                        background: "var(--aura-card)",
                         color: "var(--ink)",
                         cursor: "pointer",
                       }}
@@ -1273,8 +1273,8 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                             alignItems: "center",
                             gap: 12,
                             padding: "10px 12px",
-                            background: "#FFFFFF",
-                            border: "0.5px solid var(--border-subtle)",
+                            background: "var(--aura-card)",
+                            border: "0.5px solid hsl(var(--border))",
                             borderRadius: 12,
                           }}
                         >

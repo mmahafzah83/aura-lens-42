@@ -947,10 +947,10 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   }}
                   data-testid={key === "flash" ? "pub-flash-trigger" : undefined}
                   style={{
-                    background: active ? "var(--vellum)" : "#fff",
+                    background: active ? "var(--vellum)" : "var(--aura-card)",
                     borderRadius: 12,
                     padding: "12px 14px",
-                    border: active ? "1.5px solid var(--brand)" : "0.5px solid rgba(0,0,0,0.07)",
+                    border: active ? "1.5px solid var(--brand)" : "0.5px solid hsl(var(--border))",
                     boxShadow: "var(--shadow-sm)",
                     cursor: "pointer",
                     textAlign: "center",
@@ -1033,9 +1033,9 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                         fontWeight: 500,
                         padding: "5px 12px",
                         borderRadius: 20,
-                        background: active ? "var(--ink)" : "#fff",
-                        border: `0.5px solid ${active ? "var(--ink)" : "rgba(0,0,0,0.07)"}`,
-                        color: active ? "#fff" : "var(--ink-3)",
+                        background: active ? "var(--ink)" : "var(--aura-card)",
+                        border: `0.5px solid ${active ? "var(--ink)" : "hsl(var(--border))"}`,
+                        color: active ? "var(--paper)" : "var(--ink-3)",
                         cursor: "pointer",
                         transition: "background 0.15s, color 0.15s, border-color 0.15s",
                       }}
@@ -3382,11 +3382,11 @@ const AuthorityTab = ({ entries, onRefresh, signalPrefill, onSignalPrefillConsum
       <div
         className="inline-flex"
         style={{
-          background: "#fff",
+          background: "var(--aura-card)",
           borderRadius: 12,
           padding: 4,
           boxShadow: "var(--shadow-sm)",
-          border: "0.5px solid rgba(0,0,0,0.07)",
+          border: "0.5px solid hsl(var(--border))",
           gap: 2,
         }}
       >
