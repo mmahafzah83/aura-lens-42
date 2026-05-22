@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useCountUp } from "@/hooks/useCountUp";
 
 /**
@@ -101,7 +102,15 @@ export function ScoreRing({
           ...numberStyle,
         }}
       >
-        {display}
+        <motion.span
+          key={value}
+          initial={reduced ? false : { scale: 1.15 }}
+          animate={reduced ? undefined : { scale: 1 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          style={{ display: "inline-block" }}
+        >
+          {display}
+        </motion.span>
       </div>
     </div>
   );
