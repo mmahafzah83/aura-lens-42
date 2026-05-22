@@ -104,8 +104,8 @@ export function ScoreRing({
       >
         <motion.span
           key={value}
-          initial={reduced ? false : { scale: 1.15, color: "var(--brand)" }}
-          animate={reduced ? undefined : { scale: 1, color: "var(--ink)" }}
+          initial={reduced ? false : { scale: 1.15 }}
+          animate={reduced ? undefined : { scale: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           style={{ display: "inline-block" }}
         >
