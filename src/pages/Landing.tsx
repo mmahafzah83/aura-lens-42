@@ -393,6 +393,9 @@ const Landing = () => {
               See how it works
             </button>
           </div>
+          <p className="text-sm mt-3 text-center" style={{ color: "var(--ink-4)" }}>
+            Free during closed beta · By invitation only
+          </p>
         </div>
       </section>
 
