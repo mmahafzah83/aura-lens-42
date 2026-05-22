@@ -547,13 +547,13 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
 
     // Opening
     if (weekDelta !== null && weekDelta < -5) {
-      parts.push({ text: "Your authority score is declining — ", type: "neutral" });
+      parts.push({ text: "Your digital presence is declining — ", type: "neutral" });
       parts.push({ text: `down ${Math.abs(weekDelta)} points this week. `, type: "negative" });
     } else if (weekDelta !== null && weekDelta > 5) {
-      parts.push({ text: "Your authority score is growing — ", type: "neutral" });
+      parts.push({ text: "Your digital presence is growing — ", type: "neutral" });
       parts.push({ text: `up ${weekDelta} points this week. `, type: "positive" });
     } else {
-      parts.push({ text: "Your authority score is holding steady this week. ", type: "neutral" });
+      parts.push({ text: "Your digital presence is holding steady this week. ", type: "neutral" });
     }
 
     // Middle
@@ -725,9 +725,9 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
     const forecast90 = clamp(currentScore + dailyChange * 90);
     const delta90 = forecast90 - currentScore;
     let trendText: string;
-    if (delta90 > 0) trendText = `At current pace, your authority score will increase by ${delta90} pts in 90 days.`;
-    else if (delta90 < 0) trendText = `At current pace, your authority score will decrease by ${Math.abs(delta90)} pts in 90 days.`;
-    else trendText = `At current pace, your authority score will hold steady in 90 days.`;
+    if (delta90 > 0) trendText = `At current pace, your digital presence score will increase by ${delta90} pts in 90 days.`;
+    else if (delta90 < 0) trendText = `At current pace, your digital presence score will decrease by ${Math.abs(delta90)} pts in 90 days.`;
+    else trendText = `At current pace, your digital presence score will hold steady in 90 days.`;
     if (scenario === "publish2x") trendText = trendText.replace("At current pace", "With 2× publishing");
     if (scenario === "stop") trendText = trendText.replace("At current pace", "If you stop capturing");
     let to95Text: string | null = null;
@@ -823,7 +823,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       >
         <div style={{ marginBottom: 8 }}>
           <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-            Your authority trajectory
+            Your digital presence growth
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
             Impact
@@ -854,7 +854,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
             <TrendingUp className="w-7 h-7" style={{ color: "var(--brand)" }} />
           </div>
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 500, color: "var(--ink)", margin: "0 0 10px", letterSpacing: "-0.01em" }}>
-            Your authority trajectory starts here
+            Your digital presence starts here
           </h2>
           <p style={{ fontSize: 14, color: "var(--ink-3)", lineHeight: 1.625, maxWidth: 420, margin: "0 auto" }}>
             Publish your first LinkedIn post from Aura and upload your analytics to see your impact grow.
@@ -875,7 +875,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
               onClick={handleUploadClick}
               style={{ borderRadius: 6, padding: "10px 22px" }}
             >
-              Upload LinkedIn CSV
+              Upload LinkedIn Analytics (.xlsx)
             </AuraButton>
           </div>
 
@@ -909,7 +909,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 24 }}>
         <div>
           <div className="font-serif text-base font-medium tracking-wide text-ink-4" style={{ marginBottom: 6 }}>
-            Your authority trajectory
+            Your digital presence growth
           </div>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 500, color: "var(--ink)", letterSpacing: "-0.02em", margin: 0 }}>
             Impact
@@ -1129,7 +1129,7 @@ const ImpactTab = ({ onOpenCapture }: ImpactTabProps = {}) => {
                 if (daysSinceLastAll !== null && daysSinceLastAll > 7) {
                   return `It's been ${daysSinceLastAll} days since your last capture. A single source today restarts your weekly rhythm.`;
                 }
-                return "Your authority compounds when capture, signal, and publish cycle together. Keep the loop closed.";
+                return "Your presence compounds when capture, signal, and publish cycle together. Keep the loop closed.";
               })()}
             </p>
           </div>
@@ -2151,18 +2151,18 @@ const ScoreHero = ({
                   <TooltipTrigger asChild>
                     <button
                       type="button"
-                      aria-label="About your authority score"
+                      aria-label="About your digital presence score"
                       style={{ background: "transparent", border: 0, cursor: "help", color: "var(--aura-t3)", padding: 0, display: "inline-flex" }}
                     >
                       <HelpCircle size={11} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" align="center" className="max-w-xs text-xs">
-                    <p className="font-semibold mb-1">Authority Score</p>
+                    <p className="font-semibold mb-1">Digital Presence Score</p>
                     <p>Signal intelligence — 40%</p>
-                    <p>Content authority — 40%</p>
+                    <p>Content presence — 40%</p>
                     <p>Capture consistency — 20%</p>
-                    <p className="mt-1 opacity-70">Observer → Strategist → Authority</p>
+                    <p className="mt-1 opacity-70">Observer → Strategist → Presence</p>
                   </TooltipContent>
                 </UiTooltip>
               </TooltipProvider>
