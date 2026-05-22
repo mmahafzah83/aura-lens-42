@@ -2294,7 +2294,17 @@ export default HomeTab;
 
 const AnimatedScore = ({ value }: { value: number }) => {
   const display = useCountUp(value, { duration: 800, once: true, key: "home-score" });
-  return <>{display}</>;
+  return (
+    <motion.span
+      key={value}
+      initial={{ scale: 1.15, color: "var(--brand)" }}
+      animate={{ scale: 1, color: "var(--ink)" }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      style={{ display: "inline-block" }}
+    >
+      {display}
+    </motion.span>
+  );
 };
 
 /* Narrative beat divider — thin gold line + small-caps eyebrow */
