@@ -17,6 +17,7 @@ import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import PasswordGate from "./components/PasswordGate";
 import { ThemeProvider } from "./components/ThemeProvider";
+import CookieConsent from "./components/CookieConsent";
 
 // Lazy-loaded heavy / rarely-visited routes
 const Landing = lazy(() => import("./pages/Landing"));
@@ -47,6 +48,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <CookieConsent />
           <Suspense
             fallback={
               <div
