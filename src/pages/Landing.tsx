@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Link as LinkIcon, FileText, Mic, StickyNote, Image, Zap, ChevronDown } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
+import HeroHead from "@/components/landing/HeroHead";
 import heroBg from "@/assets/hero-bg.jpg";
 import carbonBg from "@/assets/carbon-bg.jpg";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -304,6 +305,8 @@ const Landing = () => {
           }
         }
       `}</style>
+
+      <HeroHead />
 
       <ScrollIndicator />
 

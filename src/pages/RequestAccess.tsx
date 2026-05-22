@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
-import HeroHead from "@/components/landing/HeroHead";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
@@ -76,7 +75,6 @@ const RequestAccess = () => {
           outline: none !important;
         }
       `}</style>
-      <HeroHead />
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
