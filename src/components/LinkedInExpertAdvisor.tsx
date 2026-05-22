@@ -202,13 +202,13 @@ const LinkedInExpertAdvisor = ({ hasSnapshots, refreshTrigger = 0 }: LinkedInExp
             </div>
           )}
 
-          {/* Authority Evolution */}
+          {/* Presence Growth */}
           {advisory.authorityEvolution && (
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-primary/70" />
-                  <h3 className="text-sm font-semibold text-foreground">Authority Evolution</h3>
+                  <h3 className="text-sm font-semibold text-foreground">Presence Growth</h3>
                 </div>
                 {(() => {
                   const t = trajectoryIcon[advisory.authorityEvolution.trajectory] || trajectoryIcon.steady;
