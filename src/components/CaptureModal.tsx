@@ -1108,6 +1108,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     setContent(v);
                   }
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleSave();
+                  }
+                }}
                 onPaste={(e) => {
                   const pasted = e.clipboardData.getData("text");
                   const projected = (content || "").length + pasted.length;
