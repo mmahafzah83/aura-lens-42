@@ -47,11 +47,11 @@ const FORMAT_LABELS: Record<string, { label: string; icon: any; subtitle?: strin
 const FRAMEWORK_OPTIONS: { key: ContentFramework; label: string }[] = [
   { key: "auto", label: "Auto" },
   { key: "hook_insight_question", label: "Hook → Insight → Question" },
-  { key: "slap", label: "SLAP" },
-  { key: "bab", label: "BAB" },
-  { key: "pas", label: "PAS" },
-  { key: "wwh", label: "WWH" },
-  { key: "chef", label: "CHEF" },
+  { key: "slap", label: "Statement → Link → Angle → Proof" },
+  { key: "bab", label: "Before → After → Bridge" },
+  { key: "pas", label: "Problem → Agitate → Solve" },
+  { key: "wwh", label: "What → Why → How" },
+  { key: "chef", label: "Context → Hypothesis → Evidence → Future" },
   { key: "story_lesson_question", label: "Story → Lesson → Question" },
 ];
 
