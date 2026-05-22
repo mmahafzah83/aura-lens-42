@@ -125,7 +125,7 @@ const LinkedInProfileAnalyzer = () => {
         setAnalysis(data);
       }
     } catch (e: any) {
-      toast({ title: "Error", description: e.message || "Failed to analyze profile", variant: "destructive" });
+      toast({ title: "Error", description: e.message || "Couldn't analyze profile", variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import type { Session, User } from "@supabase/supabase-js";
 
 /**
@@ -19,6 +20,7 @@ export function useAuthReady() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const prevSessionRef = useRef<Session | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,6 +32,17 @@ export function useAuthReady() {
         if (cancelled) return;
         setUser(session?.user ?? null);
         setSession(session ?? null);
+        // Detect session expiry: was signed in, now session is null.
+        // Only fires after the initial restore has set prevSessionRef.
+        if (prevSessionRef.current && !session) {
+          const path = typeof window !== "undefined" ? window.location.pathname : "";
+          const publicPaths = ["/", "/auth", "/request-access", "/privacy", "/terms", "/guide"];
+          if (!publicPaths.includes(path)) {
+            toast("Your session expired. Please sign in again.");
+            window.location.href = "/auth";
+          }
+        }
+        prevSessionRef.current = session ?? null;
       }
     );
 
@@ -41,6 +54,7 @@ export function useAuthReady() {
         if (cancelled) return;
         setUser(session?.user ?? null);
         setSession(session ?? null);
+        prevSessionRef.current = session ?? null;
         setIsReady(true);
         console.log(
           "[auth] restore finished",

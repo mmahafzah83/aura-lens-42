@@ -323,7 +323,7 @@ const AdminDesignSystem = () => {
       .order("version", { ascending: false });
     if (error) {
       console.error("design_system fetch failed:", error);
-      toast.error("Failed to load design system versions");
+      toast.error("Couldn't load design system versions");
     } else {
       const mapped = (data || []) as DesignRow[];
       setRows(mapped);
@@ -379,7 +379,7 @@ const AdminDesignSystem = () => {
       await fetchVersions();
     } catch (e: any) {
       console.error("activate failed:", e);
-      toast.error(e?.message || "Failed to activate");
+      toast.error(e?.message || "Couldn't activate");
     } finally {
       setActivating(false);
     }
@@ -405,7 +405,7 @@ const AdminDesignSystem = () => {
       if (data?.tokens) setEditing(JSON.parse(JSON.stringify(data.tokens)));
     } catch (e: any) {
       console.error("rollback failed:", e);
-      toast.error(e?.message || "Failed to rollback");
+      toast.error(e?.message || "Couldn't rollback");
     } finally {
       setRollingBack(null);
     }

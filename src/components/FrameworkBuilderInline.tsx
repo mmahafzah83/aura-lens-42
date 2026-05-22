@@ -180,7 +180,7 @@ const FrameworkBuilderInline = ({
         });
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to save framework");
+      toast.error(e.message || "Couldn't save — please try again");
     } finally {
       setSaving(false);
     }
@@ -214,7 +214,7 @@ const FrameworkBuilderInline = ({
         toast.success("Diagram generated");
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate diagram");
+      toast.error(e.message || "Couldn't generate diagram");
     } finally {
       setGeneratingDiagram(false);
     }
@@ -235,7 +235,7 @@ const FrameworkBuilderInline = ({
       URL.revokeObjectURL(url);
       toast.success("Diagram downloaded");
     } catch {
-      toast.error("Failed to download diagram");
+      toast.error("Couldn't download diagram");
     }
   };
 
@@ -256,7 +256,7 @@ const FrameworkBuilderInline = ({
         body: { framework_id: createdId, user_id: user.id },
       });
 
-      toast.success("Framework approved & activated!");
+      toast.success("Framework activated");
       onFrameworkCreated?.();
     } catch (e: any) {
       toast.error(e.message || "Approval failed");

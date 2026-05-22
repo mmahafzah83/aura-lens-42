@@ -72,7 +72,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
       }
       window.location.href = data.url;
     } catch {
-      toast({ title: "Error", description: "Failed to initiate LinkedIn connection.", variant: "destructive" });
+      toast({ title: "Error", description: "Couldn't initiate LinkedIn connection.", variant: "destructive" });
       setConnecting(false);
     }
   };
@@ -95,7 +95,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         checkStatus();
       }
     } catch {
-      toast({ title: "Error", description: "Failed to sync LinkedIn data.", variant: "destructive" });
+      toast({ title: "Error", description: "Couldn't sync LinkedIn data.", variant: "destructive" });
       onSyncStateChange?.(false, true);
     }
     setSyncing(false);
@@ -115,7 +115,7 @@ const LinkedInConnector = ({ onConnectionChange, onSyncStateChange }: LinkedInCo
         setPostCount(0);
       }
     } catch {
-      toast({ title: "Error", description: "Failed to disconnect.", variant: "destructive" });
+      toast({ title: "Error", description: "Couldn't disconnect.", variant: "destructive" });
     }
     setDisconnecting(false);
   };

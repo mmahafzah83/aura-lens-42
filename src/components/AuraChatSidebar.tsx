@@ -510,7 +510,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       } as any)
       .select()
       .single();
-    if (error || !data) { console.error("Failed to create conversation:", error); return null; }
+    if (error || !data) { console.error("Couldn't create conversation:", error); return null; }
     const conv = data as any as Conversation;
     setActiveConvId(conv.id);
     setActiveConv(conv);
@@ -699,7 +699,7 @@ const AuraChatSidebar = ({ open, onClose, initialMessage, context }: AuraChatSid
       let convId = existingConvId ?? activeConvId;
       if (!convId) {
         convId = await createConversation(ctx || context);
-        if (!convId) throw new Error("Failed to create conversation");
+        if (!convId) throw new Error("Couldn't create conversation");
       }
 
       // Save user message
@@ -986,7 +986,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
       setVaultItems(prev => prev.filter(v => v.id !== item.id));
       toast.success("Removed from Vault");
     } catch (e: any) {
-      toast.error("Failed to remove", { description: e?.message });
+      toast.error("Couldn't remove", { description: e?.message });
     }
   };
 
@@ -1489,7 +1489,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                             }, 2000);
                             toast.success("Saved to Vault");
                           } catch (e: any) {
-                            toast.error("Failed to save", { description: e.message });
+                            toast.error("Couldn't save — please try again", { description: e.message });
                           }
                         }}
                         className={`mt-1.5 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${

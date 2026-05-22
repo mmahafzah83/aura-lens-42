@@ -284,7 +284,7 @@ const Onboarding = () => {
 
       goStep(2);
     } catch (e: any) {
-      toast.error(e.message || "Could not save profile");
+      toast.error(e.message || "Couldn't save profile — please try again");
     } finally {
       setSavingProfile(false);
     }
@@ -492,7 +492,7 @@ const Onboarding = () => {
       });
       if (updateError) {
         console.error("Password update failed:", updateError);
-        toast.error("Failed to set password: " + (updateError.message || "Unknown error"));
+        toast.error("Couldn't set password: " + (updateError.message || "Unknown error"));
         setSettingPwd(false);
         return;
       }

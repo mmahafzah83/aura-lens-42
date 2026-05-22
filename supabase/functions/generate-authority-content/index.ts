@@ -512,13 +512,13 @@ Return ONLY a JSON object matching this exact schema:
           const t = await aiResp.text();
           console.error("extract_card_content AI error:", aiResp.status, t);
           if (aiResp.status === 429) {
-            return new Response(JSON.stringify({ error: "Rate limited, please try again." }), {
+            return new Response(JSON.stringify({ error: "Aura is busy — try again in a moment." }), {
               status: 429,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
           if (aiResp.status === 402) {
-            return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
+            return new Response(JSON.stringify({ error: "Aura is temporarily unavailable. Try again later." }), {
               status: 402,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });

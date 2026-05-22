@@ -138,7 +138,7 @@ const Admin = () => {
       .order("requested_at", { ascending: false });
     if (error) {
       console.error("beta_allowlist fetch failed:", error);
-      toast.error("Failed to load waitlist");
+      toast.error("Couldn't load waitlist");
     } else {
       setRows((data || []) as Row[]);
     }
@@ -204,7 +204,7 @@ const Admin = () => {
       setRows((prev) => prev.filter((r) => r.email.toLowerCase() !== email.toLowerCase()));
       setActiveUsers((prev) => prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()));
     } catch (e: any) {
-      toast.error(e?.message || "Failed to delete user");
+      toast.error(e?.message || "Couldn't delete user");
     } finally {
       setDeletingEmail(null);
       setConfirmEmail(null);
@@ -258,7 +258,7 @@ const Admin = () => {
       toast.success(`Invite sent to ${row.email}`);
       fetchRows();
     } catch (err: any) {
-      toast.error(err?.message || "Failed to send invite");
+      toast.error(err?.message || "Couldn't send invite");
     } finally {
       setSendingId(null);
     }
@@ -288,7 +288,7 @@ const Admin = () => {
       setDirectEmail("");
       fetchRows();
     } catch (err: any) {
-      toast.error(err?.message || "Failed to send direct invite");
+      toast.error(err?.message || "Couldn't send direct invite");
     } finally {
       setDirectSending(false);
     }

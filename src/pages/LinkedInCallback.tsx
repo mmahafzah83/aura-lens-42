@@ -52,7 +52,7 @@ const LinkedInCallback = () => {
         });
 
         if (fnError || !data?.success) {
-          const msg = data?.error || fnError?.message || "Failed to exchange LinkedIn token.";
+          const msg = data?.error || fnError?.message || "Couldn't exchange LinkedIn token.";
           if (msg.includes("redirect_uri")) {
             setErrorMsg("Redirect URI mismatch. Please check your LinkedIn app settings.");
           } else if (msg.includes("scope")) {

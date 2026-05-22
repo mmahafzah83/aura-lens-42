@@ -75,7 +75,7 @@ const MarketTab = () => {
       setDrafts({});
       setApprovedPosts([]);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to fetch news", variant: "destructive" });
+      toast({ title: "Error", description: err.message || "Couldn't fetch news", variant: "destructive" });
     } finally {
       setLoadingNews(false);
     }
@@ -94,7 +94,7 @@ const MarketTab = () => {
       setDrafts((prev) => ({ ...prev, [idx]: data }));
       setExpandedDraft(idx);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to generate post", variant: "destructive" });
+      toast({ title: "Error", description: err.message || "Couldn't generate post", variant: "destructive" });
     } finally {
       setGeneratingIdx(null);
     }

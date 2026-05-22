@@ -68,7 +68,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
 
       setDrafts(prev => ({ ...prev, [targetLang]: data.post || "" }));
     } catch (e: any) {
-      toast.error(e.message || `Failed to generate ${targetLang === "ar" ? "Arabic" : "English"} draft`);
+      toast.error(e.message || `Couldn't generate ${targetLang === "ar" ? "Arabic" : "English"} draft`);
     } finally {
       setLoading(prev => ({ ...prev, [targetLang]: false }));
     }
@@ -92,7 +92,7 @@ const LinkedInDraftPanel = ({ open, onClose, title, hook, angle, context }: Link
       setVisualUrl(data.image_url || null);
       toast.success("Visual generated");
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate visual");
+      toast.error(e.message || "Couldn't generate visual");
     } finally {
       setVisualLoading(false);
     }

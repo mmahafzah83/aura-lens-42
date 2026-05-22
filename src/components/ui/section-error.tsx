@@ -1,7 +1,7 @@
 interface SectionErrorProps {
   /** Called when the user clicks Retry. */
   onRetry: () => void;
-  /** Optional override message before the Retry link. Default: "Failed to load. " */
+  /** Optional override message before the Retry link. Default: "Couldn't load. " */
   message?: string;
   /** Optional override for the link label. Default: "Retry" */
   retryLabel?: string;
@@ -17,7 +17,7 @@ interface SectionErrorProps {
  */
 const SectionError = ({
   onRetry,
-  message = "Failed to load. ",
+  message = "Couldn't load. ",
   retryLabel = "Retry",
   className,
 }: SectionErrorProps) => {

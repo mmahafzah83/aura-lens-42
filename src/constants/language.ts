@@ -1,4 +1,17 @@
 /**
+ * AURA VOCABULARY RULES — enforce on all user-facing copy:
+ *
+ * USE: "digital presence", "influence", "growth", "expertise"
+ * NEVER: "authority" (noun), "trajectory", "personal brand",
+ *        "thought leader", "leverage" (verb), "utilize"
+ *
+ * Score = "Digital Presence Score"
+ * Growth = never "trajectory"
+ * Themes = "Influence Themes"
+ * Territory = "Influence territory"
+ */
+
+/**
  * AURA LANGUAGE SYSTEM — MANDATORY FOR ALL FUTURE CHANGES
  *
  * Every user-facing string lives here.
@@ -68,7 +81,7 @@ export const TOAST = {
   inviteSent: "Sent. They're about to discover what you already know.",
   published: "Published.",
   urlLinked: "Linked. Performance data will flow back.",
-  scoreUpdated: "Your score just moved.",
+  scoreUpdated: "Your digital presence score just moved.",
 } as const;
 
 // ════════════════════════════════════

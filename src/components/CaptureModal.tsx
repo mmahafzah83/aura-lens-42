@@ -1092,7 +1092,23 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               <textarea
                 placeholder="Write your thoughts..."
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                maxLength={15000}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v.length > 15000) {
+                    setContent(v.slice(0, 15000));
+                    sonnerToast("Text trimmed to 15,000 characters for reliable processing.");
+                  } else {
+                    setContent(v);
+                  }
+                }}
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData("text");
+                  const projected = (content || "").length + pasted.length;
+                  if (projected > 15000) {
+                    sonnerToast("Text trimmed to 15,000 characters for reliable processing.");
+                  }
+                }}
                 dir="auto"
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = "var(--brand)";
@@ -1119,6 +1135,19 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   fontFamily: "'DM Sans', system-ui, sans-serif",
                 }}
               />
+              {content.length > 12000 && (
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: 11,
+                    color: content.length >= 15000 ? "var(--brand)" : "var(--ink-4)",
+                    textAlign: "right",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {content.length.toLocaleString()} / 15,000
+                </div>
+              )}
             </div>
           )}
 
