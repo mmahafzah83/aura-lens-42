@@ -696,18 +696,38 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       );
     }
     case "BIG_NUMBER": {
+      // Wrap long context strings so they don't overflow the slide.
+      const ctx = slide.number_context || "";
+      const maxChars = isRTL ? 36 : 42;
+      const ctxLines: string[] = [];
+      if (ctx) {
+        const words = ctx.split(/\s+/);
+        let cur = "";
+        for (const word of words) {
+          if ((cur + " " + word).trim().length > maxChars) {
+            if (cur) ctxLines.push(cur);
+            cur = word;
+          } else {
+            cur = (cur ? cur + " " : "") + word;
+          }
+        }
+        if (cur) ctxLines.push(cur);
+      }
+      const sourceY = cy + 100 + ctxLines.length * 36 + 24;
       return (
         <g>
       <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
-          {slide.number_context && (
+          {ctxLines.length > 0 && (
             <text x={cx} y={cy + 100} textAnchor="middle" fontFamily={bodyFont} fontSize={isRTL ? 24 : 28} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
-              {slide.number_context}
+              {ctxLines.map((ln, i) => (
+                <tspan key={i} x={cx} dy={i === 0 ? 0 : 36}>{ln}</tspan>
+              ))}
             </text>
           )}
           {slide.number_source && (
-            <text x={cx} y={cy + 160} textAnchor="middle" fontFamily={bodyFont} fontSize={18} fill={style.muted}
+            <text x={cx} y={sourceY} textAnchor="middle" fontFamily={bodyFont} fontSize={18} fill={style.muted}
                   fontStyle={isRTL ? "normal" : "italic"} fontWeight={isRTL ? 600 : 400}>
               {slide.number_source}
             </text>
