@@ -306,8 +306,6 @@ const Landing = () => {
         }
       `}</style>
 
-      <HeroHead />
-
       <ScrollIndicator />
 
       {/* Section 1 — Nav */}
@@ -350,43 +348,7 @@ const Landing = () => {
             Your expertise lives in your head, your notes, your readings. Aura turns it into digital presence — posts, signals, and a score that grows while you work.
           </p>
 
-          {/* Capture orb */}
-          <div className="relative w-[220px] h-[220px] mx-auto mb-10">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="rounded-full flex items-center justify-center" style={{ width: 64, height: 64, background: "var(--brand)", animation: "aura-breathe 3s ease-in-out infinite" }}>
-                <AuraLogo size={40} variant="dark" />
-              </div>
-            </div>
-            {[80, 100, 110].map((r, i) => (
-              <div key={i} className="absolute rounded-full" style={{
-                width: r * 2, height: r * 2,
-                left: `calc(50% - ${r}px)`, top: `calc(50% - ${r}px)`,
-                border: `1px solid rgba(197,165,90,${0.12 - i * 0.03})`,
-                animation: `ring-pulse ${4 + i * 0.7}s ease-in-out infinite`,
-                animationDelay: `${i * 0.3}s`,
-              }} />
-            ))}
-            {[
-              { Icon: LinkIcon, label: "link", angle: 0, delay: 0 },
-              { Icon: FileText, label: "document", angle: 60, delay: 0.5 },
-              { Icon: Mic, label: "voice", angle: 120, delay: 1 },
-              { Icon: StickyNote, label: "note", angle: 180, delay: 1.5 },
-              { Icon: Image, label: "image", angle: 240, delay: 2 },
-              { Icon: Zap, label: "quick capture", angle: 300, delay: 2.5 },
-            ].map(({ Icon, label, angle, delay }) => {
-              const rad = (angle - 90) * (Math.PI / 180);
-              const x = 110 + Math.cos(rad) * 95;
-              const y = 110 + Math.sin(rad) * 95;
-              return (
-                <div key={label} className="absolute flex flex-col items-center" style={{ left: x - 18, top: y - 18, animation: "orb-float 3s ease-in-out infinite", animationDelay: `${delay}s`, willChange: "transform" }}>
-                  <div className="orb-icon rounded-full flex items-center justify-center cursor-default" style={{ width: 36, height: 36, background: "transparent", border: "1.5px solid var(--brand)", borderRadius: "50%" }}>
-                    <Icon size={16} style={{ color: "var(--brand)" }} />
-                  </div>
-                  <span className="mt-1 whitespace-nowrap" style={{ fontSize: "12px", color: "var(--ink-4)" }}>{label}</span>
-                </div>
-              );
-            })}
-          </div>
+          <HeroHead />
 
           <div className="flex items-center justify-center gap-3 flex-wrap">
             <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl text-sm font-medium transition-all shadow-[0_1px_2px_hsl(0_0%_0%/0.3)] hover:shadow-[0_0_16px_hsl(43_80%_45%/0.25)] hover:brightness-110" style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)", fontWeight: 500 }}>
