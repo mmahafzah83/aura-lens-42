@@ -131,6 +131,7 @@ const Onboarding = () => {
   const [manualUrl, setManualUrl] = useState("");
   const [capturing, setCapturing] = useState(false);
   const [captureSuccess, setCaptureSuccess] = useState(false);
+  const [capturedTitle, setCapturedTitle] = useState<string>("");
   const articleSearchStartRef = useRef<number>(0);
 
   // Step 3
