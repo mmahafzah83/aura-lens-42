@@ -141,7 +141,7 @@ const LegalPage = ({ title, updated, sections }: Props) => {
                 <span style={{ color: "var(--brand)", marginRight: 8 }}>{i + 1}.</span>
                 {s.title}
               </h2>
-              <p style={{ color: "var(--ink)", fontSize: 15, lineHeight: 1.8 }}>
+              <p style={{ color: "var(--ink)", fontSize: 15, lineHeight: 1.8, whiteSpace: "pre-line" }}>
                 {s.body}
               </p>
             </section>
