@@ -116,10 +116,10 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
             Aura · Strategic Intelligence
           </div>
           <h1 className="mb-2" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: 30, fontWeight: 500, lineHeight: 1.15, color: "hsl(var(--foreground))" }}>
-            Secure your account
+            Welcome to the inner circle.
           </h1>
           <p style={{ fontSize: 14, color: "hsl(var(--muted-foreground))" }}>
-            Set your password so you can always come back.
+            You're one of the first 50 people in Aura. Set your password to get started.
           </p>
         </div>
 
