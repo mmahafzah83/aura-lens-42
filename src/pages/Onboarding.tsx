@@ -327,8 +327,9 @@ const Onboarding = () => {
         throw new Error(data?.error_message || data?.message || "Capture failed");
       }
       // ingest-capture creates the entry server-side — no client-side insert needed.
+      setCapturedTitle(articleMeta?.title || "");
       setCaptureSuccess(true);
-      window.setTimeout(() => goStep(3), 2500);
+      window.setTimeout(() => goStep(3), 3000);
     } catch (e: any) {
       toast.error(e.message || "Couldn't capture that one");
     } finally {
