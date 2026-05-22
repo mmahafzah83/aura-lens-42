@@ -1417,7 +1417,7 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
         <div
           className="flex items-start justify-between gap-4 flex-wrap"
           aria-busy="true"
-          aria-label="Loading authority status"
+          aria-label="Loading presence data"
           style={{
             borderBottom: "1px solid hsl(var(--border) / 0.5)",
             paddingBottom: 16,
@@ -1585,13 +1585,13 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
                 >
                   <AnimatedScore value={auraData.aura_score} />
                 </span>
-                <InfoTooltip side="bottom" align="left" label="Authority Score" width={280}>
-                  <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Authority Score</div>
+                <InfoTooltip side="bottom" align="left" label="Digital Presence Score" width={280}>
+                  <div data-testid="home-score-breakdown" style={{ fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>Digital Presence Score</div>
                   <p style={{ margin: "0 0 4px" }}>Signal intelligence — 40%</p>
-                  <p style={{ margin: "0 0 4px" }}>Content authority — 40%</p>
+                  <p style={{ margin: "0 0 4px" }}>Content presence — 40%</p>
                   <p style={{ margin: "0 0 8px" }}>Capture consistency — 20%</p>
                   <div style={{ fontSize: 12, color: "var(--ink-4)", fontStyle: "italic" }}>
-                    Observer → Strategist → Authority
+                    Observer → Strategist → Presence
                   </div>
                 </InfoTooltip>
                 {trend !== null && trend !== undefined && trend !== 0 && (
