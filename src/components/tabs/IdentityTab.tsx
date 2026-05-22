@@ -569,7 +569,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           {/* Active Focus Areas — pill chips */}
           <div
             style={{
-              background: "#fff",
+              background: "var(--aura-card)",
               borderRadius: 16,
               padding: 18,
               boxShadow: "var(--shadow-sm)",
@@ -633,7 +633,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             <div
               data-testid="story-signal-coverage"
               style={{
-                background: "#fff",
+                background: "var(--aura-card)",
                 borderRadius: 16,
                 padding: 18,
                 boxShadow: "var(--shadow-sm)",
@@ -740,7 +740,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
             return (
               <div
                 style={{
-                  background: "#fff",
+                  background: "var(--aura-card)",
                   borderRadius: 12,
                   padding: "16px 18px",
                   boxShadow: "var(--shadow-sm)",
@@ -825,7 +825,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
           {/* 3-Year Target — Horizontal Timeline */}
           <div
             style={{
-              background: "#fff",
+              background: "var(--aura-card)",
               borderRadius: 16,
               padding: 22,
               boxShadow: "var(--shadow-sm)",
@@ -859,7 +859,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                   <p
                     style={{
                       fontSize: 14,
-                      color: "var(--surface-ink-subtle)",
+                      color: "var(--ink)",
                       lineHeight: 1.5,
                       fontWeight: 500,
                     }}
