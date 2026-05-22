@@ -470,13 +470,33 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             </div>
           ) : (
             <div className="max-w-lg mx-auto pt-4">
-              <p className="text-xs text-ink-5 mb-1 tracking-wider uppercase">
+              <p
+                className="mb-3 uppercase"
+                style={{
+                  fontSize: 11,
+                  letterSpacing: "2px",
+                  color: "rgba(212, 176, 86, 0.4)",
+                }}
+              >
                 Question {step + 1} of {QUESTIONS.length}
               </p>
-              <h2 className="text-[18px] text-ink-7 font-medium leading-snug mb-1">
+              <h2
+                className="leading-snug"
+                style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: 22,
+                  color: "rgba(230, 222, 205, 0.95)",
+                  marginBottom: q.sub ? 8 : 24,
+                  fontWeight: 500,
+                }}
+              >
                 {q.title}
               </h2>
-              {q.sub && <p className="text-[12px] text-ink-5 mb-5">{q.sub}</p>}
+              {q.sub && (
+                <p className="text-[12px] text-ink-5" style={{ marginBottom: 24 }}>
+                  {q.sub}
+                </p>
+              )}
 
               {q.type === "text" ? (
                 <textarea
@@ -491,11 +511,35 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                     <button
                       key={opt}
                       onClick={() => toggleOption(opt)}
-                      className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all duration-200 ${
-                        isSelected(opt)
-                          ? "border-brand/50 bg-brand/10 text-ink-7"
-                          : "border-ink-3 bg-surface-ink-raised text-ink-5 hover:border-ink-4"
-                      }`}
+                      className="w-full text-left transition-all duration-150"
+                      style={{
+                        background: isSelected(opt)
+                          ? "rgba(176, 141, 58, 0.12)"
+                          : "transparent",
+                        border: `1px solid ${
+                          isSelected(opt)
+                            ? "#d4b056"
+                            : "rgba(212, 176, 86, 0.2)"
+                        }`,
+                        color: isSelected(opt)
+                          ? "#ffe896"
+                          : "rgba(230, 222, 205, 0.9)",
+                        borderRadius: 12,
+                        padding: "16px 20px",
+                        fontSize: 15,
+                        fontWeight: isSelected(opt) ? 500 : 400,
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (isSelected(opt)) return;
+                        e.currentTarget.style.borderColor = "rgba(212, 176, 86, 0.5)";
+                        e.currentTarget.style.background = "rgba(176, 141, 58, 0.08)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (isSelected(opt)) return;
+                        e.currentTarget.style.borderColor = "rgba(212, 176, 86, 0.2)";
+                        e.currentTarget.style.background = "transparent";
+                      }}
                     >
                       {opt}
                     </button>
