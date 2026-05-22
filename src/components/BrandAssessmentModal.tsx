@@ -439,12 +439,9 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
         {/* Content — scrollable */}
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           {showResults ? (
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto h-full">
               {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-4">
-                  <div className="w-3 h-3 rounded-full bg-brand animate-pulse" />
-                  <p className="text-sm text-ink-5 transition-opacity duration-300">{LOADING_STAGES[loadingStage]}</p>
-                </div>
+                <CinematicLoading />
               ) : genError ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4 text-center gap-5 max-w-md mx-auto">
                   <h3 className="text-[18px] text-ink-7 font-medium leading-snug">
