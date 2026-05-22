@@ -66,7 +66,7 @@ const RequestAccess = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
+      className="min-h-screen flex flex-col"
       style={{ backgroundColor: "var(--ink)", fontFamily: "Inter, sans-serif" }}
     >
       <style>{`
@@ -76,8 +76,9 @@ const RequestAccess = () => {
           outline: none !important;
         }
       `}</style>
-      <div className="w-full" style={{ maxWidth: "440px" }}>
-        <HeroHead />
+      <HeroHead />
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8">
           <AuraLogo size={40} variant="dark" withWordmark />
@@ -262,6 +263,7 @@ const RequestAccess = () => {
             </Link>
           </span>
         </div>
+      </div>
       </div>
     </div>
   );
