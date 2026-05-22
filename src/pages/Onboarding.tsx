@@ -825,6 +825,20 @@ const Onboarding = () => {
           <p className="mb-6" style={{ fontSize: 15, lineHeight: 1.7, color: "hsl(var(--foreground))" }}>
             Aura is already detecting strategic patterns. After 3-5 more articles, your first signal emerges.
           </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="text-center py-6"
+          >
+            <span className="text-2xl inline-block" style={{ color: "var(--brand)" }}>✦</span>
+            <h3 className="font-display text-lg mt-3" style={{ color: "var(--ink)" }}>
+              {capturedTitle || "Your first intelligence capture"}
+            </h3>
+            <p className="text-sm mt-1" style={{ color: "var(--ink-3)" }}>
+              Aura is building your first signal.
+            </p>
+          </motion.div>
           {primaryBtn(<>Continue <ArrowRight className="w-4 h-4" /></>, () => goStep(3))}
         </>,
       );
