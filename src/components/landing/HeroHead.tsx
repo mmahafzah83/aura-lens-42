@@ -114,7 +114,7 @@ export default function HeroHead() {
       ref={containerRef}
       className="relative flex items-center justify-center overflow-hidden select-none"
       style={{
-        width: "100vw",
+        width: "100%",
         height: "70vh",
         minHeight: "500px",
         perspective: "1200px",
@@ -143,34 +143,27 @@ export default function HeroHead() {
 
       {/* Head */}
       <div
-        className="absolute left-1/2 top-1/2"
+        ref={headRef}
+        className="relative"
         style={{
-          transform: "translate(-50%, -50%)",
           transformStyle: "preserve-3d",
+          transition: "transform 0.05s linear",
+          willChange: "transform",
         }}
       >
-        <div
-          ref={headRef}
+        <img
+          src="/hero-head.png"
+          alt=""
+          className="block h-auto"
           style={{
-            transformStyle: "preserve-3d",
-            transition: "transform 0.05s linear",
-            willChange: "transform",
+            width: "min(600px, 80vw)",
+            margin: "0 auto",
+            filter:
+              "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1) drop-shadow(0 0 50px rgba(176,141,58,0.12))",
+            background: "transparent",
           }}
-          className="relative"
-        >
-          <img
-            src="/hero-head.png"
-            alt=""
-            className="block h-auto mx-auto"
-            style={{
-              width: "min(600px, 80vw)",
-              filter:
-                "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1) drop-shadow(0 0 50px rgba(176,141,58,0.12))",
-              background: "transparent",
-            }}
-            draggable={false}
-          />
-        </div>
+          draggable={false}
+        />
       </div>
 
       {/* Orbiting nodes */}
