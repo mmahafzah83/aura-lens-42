@@ -75,7 +75,6 @@ const RequestAccess = () => {
           outline: none !important;
         }
       `}</style>
-      <HeroHead />
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full" style={{ maxWidth: "440px" }}>
         {/* Logo */}
