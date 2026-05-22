@@ -599,6 +599,16 @@ function ResultsView({
   const { prose, json } = useMemo(() => splitInterpretation(interpretation), [interpretation]);
   const [showFull, setShowFull] = useState(false);
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({ 0: true });
+  const prefersReduced = typeof window !== "undefined"
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  const [revealStage, setRevealStage] = useState(prefersReduced ? 3 : 0);
+  useEffect(() => {
+    if (prefersReduced) return;
+    const t1 = window.setTimeout(() => setRevealStage(s => Math.max(s, 1)), 1500);
+    const t2 = window.setTimeout(() => setRevealStage(s => Math.max(s, 2)), 2500);
+    const t3 = window.setTimeout(() => setRevealStage(s => Math.max(s, 3)), 3300);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [prefersReduced]);
 
   // Resolve display fields with fallback to prose extraction.
   const archetype: string = json?.primary_archetype
