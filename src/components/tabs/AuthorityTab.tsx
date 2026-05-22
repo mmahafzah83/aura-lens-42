@@ -1173,6 +1173,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   {renderMarkdown(fixArabicDirectionalSymbols(displayedOutput))}
                   {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
                 </div>
+                {output.trim() && !isGeneratingAny && (
+                  <p className="mt-2 text-[11px] text-muted-foreground/60" style={{ letterSpacing: "0.02em" }}>
+                    ✦ AI-assisted · Review before publishing
+                  </p>
+                )}
 
                 {/* Generation attribution — connect post to user's real intelligence */}
                 {!isGeneratingAny && (() => {
