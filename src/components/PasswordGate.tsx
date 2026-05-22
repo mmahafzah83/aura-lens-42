@@ -85,7 +85,7 @@ function SetPasswordScreen({ email, onComplete }: { email: string | null; onComp
       toast.success("Password set. You can now log in anytime.");
       onComplete();
     } catch (e: any) {
-      toast.error(e?.message || "Failed to set password. Please try again.");
+      toast.error(e?.message || "Couldn't set password. Please try again.");
       setIsSubmitting(false);
     }
   };

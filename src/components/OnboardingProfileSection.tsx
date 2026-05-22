@@ -85,7 +85,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
     updateObj[dbField] = value;
     const { error } = await (supabase.from("diagnostic_profiles") as any)
       .update(updateObj).eq("user_id", user.id);
-    if (error) { toast.error("Failed to save"); }
+    if (error) { toast.error("Couldn't save"); }
     else {
       toast.success("Profile updated.");
       await loadProfile();
@@ -136,7 +136,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
         body: JSON.stringify({ profileContext }),
       });
 
-      if (!resp.ok) throw new Error("Failed to generate");
+      if (!resp.ok) throw new Error("Couldn't generate");
       const data = await resp.json();
       if (data.positioning) {
         setBrandSummary(data.positioning);
@@ -196,7 +196,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
         body: JSON.stringify({ profileContext }),
       });
 
-      if (!resp.ok) throw new Error("Failed to generate");
+      if (!resp.ok) throw new Error("Couldn't generate");
       const data = await resp.json();
       if (data.positioning) {
         setBrandSummary(data.positioning);
@@ -229,7 +229,7 @@ const OnboardingProfileSection = ({ onRetakeAudit, onRetakeBrand }: OnboardingPr
         core_practice: fullEditData.core_practice,
         firm: fullEditData.firm,
       }).eq("user_id", user.id);
-    if (error) { toast.error("Failed to save"); }
+    if (error) { toast.error("Couldn't save"); }
     else {
       toast.success("Profile updated.");
       await loadProfile();

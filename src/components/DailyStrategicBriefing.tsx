@@ -70,7 +70,7 @@ const DailyStrategicBriefing = ({ onOpenChat, onDraftToStudio }: DailyStrategicB
       }
     } catch (err: any) {
       console.error("Briefing error:", err);
-      if (force) toast.error("Failed to generate briefing");
+      if (force) toast.error("Couldn't generate briefing");
     } finally {
       setLoading(false);
       setRefreshing(false);

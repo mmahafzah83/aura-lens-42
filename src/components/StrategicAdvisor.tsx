@@ -314,7 +314,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
         toast.success("Strategic brief updated");
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate recommendations");
+      toast.error(e.message || "Couldn't generate recommendations");
     }
     setGenerating(false);
   };

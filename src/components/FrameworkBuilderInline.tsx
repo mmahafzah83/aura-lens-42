@@ -214,7 +214,7 @@ const FrameworkBuilderInline = ({
         toast.success("Diagram generated");
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate diagram");
+      toast.error(e.message || "Couldn't generate diagram");
     } finally {
       setGeneratingDiagram(false);
     }
@@ -235,7 +235,7 @@ const FrameworkBuilderInline = ({
       URL.revokeObjectURL(url);
       toast.success("Diagram downloaded");
     } catch {
-      toast.error("Failed to download diagram");
+      toast.error("Couldn't download diagram");
     }
   };
 

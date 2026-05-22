@@ -75,7 +75,7 @@ const ActionWorkspace = ({ open, onClose, action, rationale }: ActionWorkspacePr
       if (data?.error) throw new Error(data.error);
       setContent(data.content || "");
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate output");
+      toast.error(e.message || "Couldn't generate output");
       setSelectedType(null);
     } finally {
       setLoading(false);

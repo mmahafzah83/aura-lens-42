@@ -180,7 +180,7 @@ const FrameworkBuilder = ({
         toast.success("Diagram generated");
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate diagram");
+      toast.error(e.message || "Couldn't generate diagram");
     } finally {
       setGeneratingDiagram(false);
     }

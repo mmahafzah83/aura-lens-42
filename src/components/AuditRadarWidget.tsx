@@ -267,7 +267,7 @@ const AuditRadarWidget = ({ onStartAudit }: AuditRadarWidgetProps) => {
       .eq("user_id", user.id);
 
     if (error) {
-      toast.error("Failed to save scores");
+      toast.error("Couldn't save scores");
     } else {
       setAuditResults(editScores);
       setEditMode(false);

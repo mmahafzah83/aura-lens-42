@@ -492,7 +492,7 @@ const Onboarding = () => {
       });
       if (updateError) {
         console.error("Password update failed:", updateError);
-        toast.error("Failed to set password: " + (updateError.message || "Unknown error"));
+        toast.error("Couldn't set password: " + (updateError.message || "Unknown error"));
         setSettingPwd(false);
         return;
       }

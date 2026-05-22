@@ -305,7 +305,7 @@ const ExpandedSource = ({
   const handleSaveEdit = async () => {
     setSaving(true);
     const { error } = await supabase.from("entries").update({ title: editTitle || null, content: editContent }).eq("id", entry.id);
-    if (error) { toast.error("Failed to save"); setSaving(false); return; }
+    if (error) { toast.error("Couldn't save"); setSaving(false); return; }
     toast.success("Source updated");
     entry.title = editTitle || null;
     entry.content = editContent;
@@ -490,7 +490,7 @@ const SourcesSubTab = ({
       supabase.from("documents").select("id, filename, file_url, file_type, status, summary, page_count, file_size, created_at, error_message"),
     ]);
 
-    if (entriesRes.error) { toast.error("Failed to load sources"); setLoading(false); return; }
+    if (entriesRes.error) { toast.error("Couldn't load sources"); setLoading(false); return; }
 
     const entryItems: SourceEntry[] = (entriesRes.data || []) as any[];
     // Dedupe documents by filename — keep the most recent row per filename so the
@@ -614,7 +614,7 @@ const SourcesSubTab = ({
   const togglePin = async (entry: SourceEntry) => {
     const newPinned = !entry.pinned;
     const { error } = await supabase.from("entries").update({ pinned: newPinned }).eq("id", entry.id);
-    if (error) { toast.error("Failed to update pin"); return; }
+    if (error) { toast.error("Couldn't update pin"); return; }
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, pinned: newPinned } : e));
     toast(newPinned ? "Source pinned" : "Source unpinned");
   };
@@ -623,7 +623,7 @@ const SourcesSubTab = ({
     const target = entries.find(e => e.id === id);
     const table = target?.type === "document" ? "documents" : "entries";
     const { error } = await supabase.from(table).delete().eq("id", id);
-    if (error) { toast.error("Failed to delete"); return; }
+    if (error) { toast.error("Couldn't delete"); return; }
     setEntries(prev => prev.filter(e => e.id !== id));
     setTotalCount(prev => prev - 1);
     setDeleteTarget(null);

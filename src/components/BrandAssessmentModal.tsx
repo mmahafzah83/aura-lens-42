@@ -29,7 +29,7 @@ function splitInterpretation(raw: string): { prose: string; json: any | null } {
     const cleaned = jsonText.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
     return { prose, json: JSON.parse(cleaned) };
   } catch (e) {
-    console.warn("Failed to parse brand-assessment JSON tail", e);
+    console.warn("Couldn't parse brand-assessment JSON tail", e);
     return { prose, json: null };
   }
 }
@@ -225,7 +225,7 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
         .update({ brand_assessment_answers: formattedAnswers })
         .eq("user_id", user.id);
     } catch (e) {
-      console.warn("Failed to persist answers on close:", e);
+      console.warn("Couldn't persist answers on close:", e);
     }
   };
 

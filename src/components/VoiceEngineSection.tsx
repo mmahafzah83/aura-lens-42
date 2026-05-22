@@ -143,7 +143,7 @@ const VoiceEngineSection = () => {
       toast.success("Voice profile saved! Your next generated post will match your style.");
       setTrained(true);
     } catch (e: any) {
-      toast.error(e.message || "Failed to save voice profile");
+      toast.error(e.message || "Couldn't save voice profile");
     } finally {
       setSaving(false);
     }

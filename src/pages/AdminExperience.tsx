@@ -111,8 +111,8 @@ const AdminExperience = () => {
         supabase.from("page_backgrounds").select("*").order("page_key"),
         supabase.from("design_system").select("id, tokens").eq("scope", "global").eq("is_active", true).maybeSingle(),
       ]);
-      if (bgErr) toast.error("Failed to load page backgrounds");
-      if (dsErr) toast.error("Failed to load design system");
+      if (bgErr) toast.error("Couldn't load page backgrounds");
+      if (dsErr) toast.error("Couldn't load design system");
       setBgs((bgData || []) as PageBg[]);
       if (dsData) setTokensRow({ id: dsData.id, tokens: (dsData.tokens as Tokens) || {} });
       setLoading(false);

@@ -51,10 +51,10 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (error) throw error;
-      if (!data?.success || !data.spec) throw new Error(data?.error || "Failed to generate schematic");
+      if (!data?.success || !data.spec) throw new Error(data?.error || "Couldn't generate schematic");
       setSpec(data.spec as SchematicSpec);
     } catch (e: any) {
-      toast.error(e.message || "Failed to generate schematic");
+      toast.error(e.message || "Couldn't generate schematic");
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ export default function SchematicPreviewPanel(props: SchematicPreviewPanelProps)
       const safe = (topicLabel || spec?.title || "schematic").replace(/\s+/g, "-").slice(0, 40);
       downloadBlob(blob, `aura-schematic-${safe}.png`);
     } catch (e: any) {
-      toast.error(e.message || "Failed to download");
+      toast.error(e.message || "Couldn't download");
     } finally {
       setExporting(false);
     }

@@ -100,7 +100,7 @@ const ProfileIntelligence = ({ onGenerateContent, intelligenceStage = null }: Pr
         },
         body: JSON.stringify({}),
       });
-      if (!resp.ok) throw new Error("Failed to generate");
+      if (!resp.ok) throw new Error("Couldn't generate");
       const data = await resp.json();
       if (data.identity) {
         setIdentity({ ...EMPTY_IDENTITY, ...data.identity });

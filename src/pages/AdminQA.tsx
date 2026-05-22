@@ -244,7 +244,7 @@ const AdminQA = () => {
       .select("run_id, run_at, status")
       .order("run_at", { ascending: false })
       .limit(2000);
-    if (error) { toast.error("Failed to load history"); return; }
+    if (error) { toast.error("Couldn't load history"); return; }
     const byRun = new Map<string, RunSummary>();
     (data || []).forEach((r: any) => {
       const key = r.run_id;
@@ -267,7 +267,7 @@ const AdminQA = () => {
       .eq("run_id", run_id)
       .order("category", { ascending: true })
       .order("test_id", { ascending: true });
-    if (error) { toast.error("Failed to load run"); return [] as ResultRow[]; }
+    if (error) { toast.error("Couldn't load run"); return [] as ResultRow[]; }
     setResults((data as ResultRow[]) || []);
     setCurrentRunId(run_id);
     return (data as ResultRow[]) || [];
@@ -431,7 +431,7 @@ const AdminQA = () => {
 
     if (allRows.length > 0) {
       const { error } = await supabase.from("qa_audit_results").insert(allRows);
-      if (error) toast.error(`Failed to save DOM results: ${error.message}`);
+      if (error) toast.error(`Couldn't save DOM results: ${error.message}`);
     }
   }
 

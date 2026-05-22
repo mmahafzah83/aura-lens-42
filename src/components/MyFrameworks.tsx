@@ -129,7 +129,7 @@ const MyFrameworks = () => {
         toast({ title: "Diagram Generated", description: label ? `Style: ${label}` : "Visual representation created." });
       }
     } catch (e: any) {
-      toast({ title: "Diagram Error", description: e.message || "Failed to generate diagram", variant: "destructive" });
+      toast({ title: "Diagram Error", description: e.message || "Couldn't generate diagram", variant: "destructive" });
     }
     setGeneratingDiagramId(null);
   };
@@ -171,7 +171,7 @@ const MyFrameworks = () => {
         });
       }
     } catch (e: any) {
-      toast({ title: "Activation Error", description: e.message || "Failed to generate outputs", variant: "destructive" });
+      toast({ title: "Activation Error", description: e.message || "Couldn't generate outputs", variant: "destructive" });
     }
     setActivatingId(null);
   };
