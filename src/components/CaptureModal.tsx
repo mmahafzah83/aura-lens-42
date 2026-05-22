@@ -922,6 +922,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   placeholder="Paste a URL..."
                   value={content}
                   onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSave();
+                    }
+                  }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = "var(--brand)";
                     e.currentTarget.style.background = "#FFFFFF";
