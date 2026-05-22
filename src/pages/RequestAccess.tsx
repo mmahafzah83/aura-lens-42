@@ -264,6 +264,7 @@ const RequestAccess = () => {
           </span>
         </div>
       </div>
+      </div>
     </div>
   );
 };
