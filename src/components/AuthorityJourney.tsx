@@ -125,10 +125,10 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
           marginBottom: 8,
         }}
       >
-        Authority journey
+        Presence journey
         <InfoTooltip
-          label="Authority Journey"
-          text="Your path from Observer to Authority. Each tier unlocks with specific actions."
+          label="Presence Journey"
+          text="Your path from Observer to Presence. Each tier unlocks with specific actions."
         />
       </div>
       <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, marginBottom: 6, lineHeight: 1.5 }}>
@@ -246,11 +246,11 @@ const AuthorityJourney = ({ userId, data: provided }: Props) => {
       <div className="font-sans" style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", marginTop: 6 }}>
         {atAuthority ? (
           <>
-            <div>You've reached Authority — maintain your edge.</div>
+            <div>You've reached Presence — keep your edge.</div>
             <div style={{ marginTop: 8 }}>
               <ShareLink
-                label="Share your Authority status →"
-                ariaLabel="Share Authority tier on LinkedIn"
+                label="Share your Presence status →"
+                ariaLabel="Share Presence tier on LinkedIn"
                 onClick={() => setShareData({
                   name: `${data.tier_name} Tier`,
                   context: `Aura score ${data.aura_score}/100${sector ? ` · ${sector}` : ""}`,
