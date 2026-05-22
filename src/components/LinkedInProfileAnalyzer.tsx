@@ -69,7 +69,7 @@ const LinkedInProfileAnalyzer = () => {
       const toneSummary = analysis.tone_profile.map(t => `${t.tone}: ${t.strength}`).join(", ");
       const content = [
         `Strategic Positioning: ${analysis.strategic_positioning}`,
-        `\nAuthority Themes:\n${themeSummary}`,
+        `\nInfluence Themes:\n${themeSummary}`,
         `\nTone Profile: ${toneSummary}`,
         `\nIndustries: ${analysis.industries.join(", ")}`,
         `\nInfluence Signals: Posting ${analysis.influence_signals.posting_frequency}, Consistency ${analysis.influence_signals.topic_consistency}, ${analysis.influence_signals.industry_positioning}`,
@@ -134,7 +134,7 @@ const LinkedInProfileAnalyzer = () => {
   return (
     <section className="animate-fade-in">
       <h2 className="text-section-title text-foreground mb-2">Analyze LinkedIn Profile</h2>
-      <p className="text-meta mb-6">Paste a LinkedIn profile URL to extract strategic authority insights — optionally paste profile text for deeper analysis.</p>
+      <p className="text-meta mb-6">Paste a LinkedIn profile URL to extract strategic insights — optionally paste profile text for deeper analysis.</p>
 
       {/* Input card */}
       <div className="glass-card rounded-2xl p-6 mb-8">
@@ -193,7 +193,7 @@ const LinkedInProfileAnalyzer = () => {
           <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
             <div className="flex items-center gap-2 mb-4">
               <Target className="w-5 h-5 text-primary/70" />
-              <h3 className="text-sm font-semibold text-foreground">Strategic Authority Position</h3>
+              <h3 className="text-sm font-semibold text-foreground">Your Market Position</h3>
             </div>
             {analysis.name && (
               <p className="text-label text-xs mb-3">{analysis.name} · {analysis.headline}</p>
@@ -215,13 +215,13 @@ const LinkedInProfileAnalyzer = () => {
             )}
           </div>
 
-          {/* Authority Themes + Tone + Content Formats grid */}
+          {/* Influence Themes + Tone + Content Formats grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Authority Themes */}
+            {/* Influence Themes */}
             <div className="glass-card rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-5">
                 <Crown className="w-4 h-4 text-primary/70" />
-                <h3 className="text-sm font-semibold text-foreground">Authority Themes</h3>
+                <h3 className="text-sm font-semibold text-foreground">Influence Themes</h3>
               </div>
               <div className="space-y-3">
                 {analysis.authority_themes.map((t, i) => (
