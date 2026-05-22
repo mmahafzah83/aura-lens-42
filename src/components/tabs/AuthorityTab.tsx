@@ -2817,12 +2817,21 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     }
   };
 
-  const markPublished = async (id: string) => {
+  const markPublished = async (id: string, url?: string) => {
     const item = drafts.find(p => p.id === id);
     if (!item) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
+      let cleanUrl: string | null = null;
+      if (url) {
+        const trimmed = url.trim();
+        if (trimmed && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(trimmed)) {
+          toast.error("URL must be a linkedin.com link");
+          return;
+        }
+        cleanUrl = trimmed || null;
+      }
       const linkedSignalId = (item.source_metadata as any)?.source_signal_id
         || (item.source_metadata?.signal_ids?.[0])
         || null;
@@ -2835,6 +2844,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           tracking_status: "published",
           source_type: "aura_generated",
           published_at: new Date().toISOString(),
+          linkedin_url: cleanUrl,
+          published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
           like_count: 0,
           comment_count: 0,
           repost_count: 0,
@@ -2885,7 +2896,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
               fontSize: 18, lineHeight: 1.25, color: "var(--ink)", marginBottom: 4,
             }}>
-              Published — your presence is growing.
+              Published — your digital presence is growing.
             </div>
             <div className="font-normal text-sm text-ink-4">
               {linkedSignalId
