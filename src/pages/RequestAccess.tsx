@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import usePageMeta from "@/hooks/usePageMeta";
-import HeroHead from "@/components/landing/HeroHead";
 
 type Status = "idle" | "loading" | "success" | "duplicate" | "error";
 
