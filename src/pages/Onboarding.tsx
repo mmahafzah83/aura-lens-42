@@ -381,14 +381,14 @@ const Onboarding = () => {
         }}
       >
         <ProgressDots />
-        <AnimatePresence mode="wait" custom={direction}>
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
           <motion.div
             key={step}
             custom={direction}
-            initial={{ opacity: 0, x: direction * 30 }}
+            initial={{ opacity: 0, x: direction * 60 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction * -30 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            exit={{ opacity: 0, x: direction * -60 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           >
             {children}
           </motion.div>
