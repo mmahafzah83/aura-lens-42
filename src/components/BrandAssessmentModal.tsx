@@ -751,124 +751,105 @@ function ResultsView({
   };
 
   return (
-    <div className="space-y-4">
-      {/* === CARD 1 — The Verdict === */}
+    <div className="space-y-6">
+      <CinematicKeyframes />
+
+      {/* === Cinematic Reveal === */}
       <div
         style={{
-          background: "var(--surface-ink-raised, var(--ink-2))",
-          border: "1px solid var(--brand)",
-          borderRadius: 14,
-          padding: "22px 22px 20px",
+          minHeight: "62vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "32px 16px",
         }}
       >
-        <div style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600 }}>
-          Aura sees you as
+        {/* 800ms empty pause before label */}
+        <div
+          style={{
+            fontSize: 11,
+            letterSpacing: "3px",
+            textTransform: "uppercase",
+            color: "var(--brand)",
+            fontWeight: 600,
+            opacity: 0,
+            animation: "aura-fade-in 500ms ease-out 800ms forwards",
+          }}
+        >
+          The market sees you as
         </div>
-        {revealStage === 0 && (
+
+        <h2
+          style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: 32,
+            fontWeight: 400,
+            color: "rgba(255, 250, 240, 0.96)",
+            lineHeight: 1.15,
+            letterSpacing: "-0.01em",
+            margin: "18px 0 14px",
+            maxWidth: 520,
+            opacity: 0,
+            transform: "translateY(20px)",
+            animation: "aura-fade-up 600ms ease-out 1800ms forwards",
+          }}
+        >
+          {archetype}
+        </h2>
+
+        {(oneLineDesc || positioning) && (
           <p
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 20,
-              color: "var(--ink-4)",
-              margin: "10px 0 4px",
-              fontStyle: "italic",
+              fontSize: 16,
+              color: "var(--ink-5)",
+              lineHeight: 1.625,
+              maxWidth: 520,
+              margin: 0,
+              opacity: 0,
+              animation: "aura-fade-in 500ms ease-out 2700ms forwards",
             }}
           >
-            Discovering how the market sees you…
+            {positioning || oneLineDesc}
           </p>
         )}
-        {revealStage >= 1 && (
-          <motion.h2
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 28,
-              color: "var(--brand)",
-              lineHeight: 1.15,
-              margin: "8px 0 10px",
-              fontWeight: 500,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {archetype}
-          </motion.h2>
-        )}
-        {revealStage >= 2 && oneLineDesc && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.625, margin: 0 }}
-          >
-            {oneLineDesc}
-          </motion.p>
-        )}
 
-        {revealStage >= 2 && <div style={{ height: 1, background: "var(--brand)", opacity: 0.2, margin: "18px 0" }} />}
-
-        {revealStage >= 2 && positioning && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            style={{
-              fontSize: 16,
-              color: "var(--ink-7, #fff)",
-              fontWeight: 600,
-              lineHeight: 1.625,
-              margin: 0,
-            }}
-          >
-            {positioning}
-          </motion.p>
-        )}
-
-        {revealStage >= 3 && topics.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4">
+        {topics.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center" style={{ marginTop: 24 }}>
             {topics.map((t, i) => (
-              <motion.span
+              <span
                 key={i}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
                 style={{
-                  border: "1px solid var(--brand)",
+                  border: "1px solid rgba(212, 176, 86, 0.4)",
                   color: "var(--brand)",
                   borderRadius: 999,
                   fontSize: 12,
-                  padding: "4px 11px",
+                  padding: "5px 12px",
+                  opacity: 0,
+                  transform: "translateY(10px)",
+                  animation: `aura-fade-up 400ms ease-out ${3100 + i * 100}ms forwards`,
                 }}
               >
                 {t}
-              </motion.span>
+              </span>
             ))}
           </div>
         )}
       </div>
 
-      <p style={{ fontSize: 12, color: "var(--ink-4)", textAlign: "center", margin: "4px 0 0" }}>
-        This is based on your answers today. The more you use Aura, the sharper this gets.
-      </p>
-
-      <div className="flex flex-wrap gap-4 justify-center pt-1">
+      {/* See full picture toggle (appears after reveal) */}
+      <div
+        className="flex justify-center"
+        style={{ opacity: 0, animation: "aura-fade-in 500ms ease-out 3400ms forwards" }}
+      >
         <button
           type="button"
           onClick={() => setShowFull(v => !v)}
-          style={{ background: "transparent", border: 0, color: "var(--brand)", fontSize: 14, cursor: "pointer", fontWeight: 500 }}
+          style={{ background: "transparent", border: 0, color: "var(--brand)", fontSize: 13, cursor: "pointer", fontWeight: 500 }}
         >
           {showFull ? "Hide the full picture ↑" : "See the full picture →"}
         </button>
-        {positioning && (
-          <button
-            type="button"
-            onClick={copyOneLiner}
-            style={{ background: "transparent", border: 0, color: "var(--ink-5)", fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
-            <Copy className="w-3.5 h-3.5" /> Copy my one-liner
-          </button>
-        )}
       </div>
 
       {/* === CARD 2 — The Full Picture === */}
