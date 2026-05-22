@@ -921,41 +921,99 @@ function ResultsView({
       {/* === CARD 3 — Actions === */}
       <div
         style={{
-          background: "var(--surface-ink-raised, var(--ink-2))",
-          border: "1px solid var(--ink-3)",
-          borderRadius: 14,
-          padding: 14,
           display: "flex",
-          gap: 8,
+          gap: 10,
           flexWrap: "wrap",
           justifyContent: "center",
+          opacity: 0,
+          animation: "aura-fade-in 500ms ease-out 3600ms forwards",
         }}
       >
         <button
           type="button"
-          onClick={downloadReport}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid var(--ink-3)", color: "var(--ink-6)", fontSize: 12.5, cursor: "pointer" }}
-        >
-          <Download className="w-3.5 h-3.5" /> Download full report
-        </button>
-        <button
-          type="button"
           onClick={copyOneLiner}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
-          style={{ background: "transparent", border: "1px solid var(--ink-3)", color: "var(--ink-6)", fontSize: 12.5, cursor: "pointer" }}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+          style={{ background: "transparent", border: "1px solid rgba(212, 176, 86, 0.35)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
         >
           <Copy className="w-3.5 h-3.5" /> Copy my one-liner
         </button>
         <button
           type="button"
-          onClick={goToStory}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)", fontSize: 12.5, cursor: "pointer", border: 0, fontWeight: 600 }}
+          onClick={downloadReport}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors"
+          style={{ background: "transparent", border: "1px solid rgba(212, 176, 86, 0.35)", color: "var(--ink-6)", fontSize: 13, cursor: "pointer" }}
         >
-          Go to My Story <ArrowUpRight className="w-3.5 h-3.5" />
+          <Download className="w-3.5 h-3.5" /> Download full report
+        </button>
+        <button
+          type="button"
+          onClick={goToStory}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg hover:brightness-110 transition-all active:scale-[0.98]"
+          style={{ background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))", color: "var(--ink)", fontSize: 13, cursor: "pointer", border: 0, fontWeight: 600 }}
+        >
+          Enter Aura <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </div>
     </div>
+  );
+}
+
+// ============================================================
+// CinematicLoading — full-screen shimmer text while generating
+// ============================================================
+function CinematicLoading() {
+  return (
+    <div
+      style={{
+        minHeight: "70vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 24px",
+      }}
+    >
+      <style>{`
+        @keyframes aura-shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+      `}</style>
+      <p
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: 24,
+          fontStyle: "italic",
+          textAlign: "center",
+          margin: 0,
+          backgroundImage:
+            "linear-gradient(90deg, rgba(212,176,86,0.35) 0%, rgba(255,232,150,0.95) 50%, rgba(212,176,86,0.35) 100%)",
+          backgroundSize: "200% 100%",
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          animation: "aura-shimmer 2s linear infinite",
+        }}
+      >
+        Discovering how the market sees you…
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// CinematicKeyframes — shared keyframes for the reveal sequence
+// ============================================================
+function CinematicKeyframes() {
+  return (
+    <style>{`
+      @keyframes aura-fade-in {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes aura-fade-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    `}</style>
   );
 }
