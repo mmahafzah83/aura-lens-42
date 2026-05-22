@@ -2297,8 +2297,8 @@ const AnimatedScore = ({ value }: { value: number }) => {
   return (
     <motion.span
       key={value}
-      initial={{ scale: 1.15, color: "var(--brand)" }}
-      animate={{ scale: 1, color: "var(--ink)" }}
+      initial={{ scale: 1.15 }}
+      animate={{ scale: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
       style={{ display: "inline-block" }}
     >
