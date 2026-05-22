@@ -294,7 +294,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
 
                     {/* Authority / Content Opportunity */}
                     {ct.title && (
-                      <OpportunitySection icon={Crown} label="Authority Opportunity" accentClass="text-amber-400/80">
+                      <OpportunitySection icon={Crown} label="Content Opportunity" accentClass="text-amber-400/80">
                         <p className="text-xs font-semibold text-foreground/90 mb-1">{ct.title}</p>
                         {ct.hook && (
                           <p className="text-xs text-primary/60 italic leading-relaxed mb-1.5 pl-3 border-l-2 border-primary/15">
@@ -311,7 +311,7 @@ const StrategicSignals = ({ onOpenChat, onDraftToStudio }: StrategicSignalsProps
                           })}
                           className="text-xs text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
                         >
-                          <ArrowRight className="w-3 h-3" /> Draft Authority Post
+                          <ArrowRight className="w-3 h-3" /> Draft a Post
                         </button>
                       </OpportunitySection>
                     )}

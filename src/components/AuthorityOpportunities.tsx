@@ -56,7 +56,7 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
       <div className="glass-card rounded-2xl p-6 border border-amber-500/[0.08]">
         <div className="flex items-center gap-3 justify-center py-3">
           <Loader2 className="w-4 h-4 text-amber-400/60 animate-spin" />
-          <span className="text-sm text-muted-foreground">Scanning authority opportunities…</span>
+          <span className="text-sm text-muted-foreground">Looking for opportunities…</span>
         </div>
       </div>
     );
@@ -71,7 +71,7 @@ const AuthorityOpportunities = ({ onDraftToStudio }: AuthorityOpportunitiesProps
           <Crown className="w-3.5 h-3.5 text-amber-400" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-foreground tracking-tight">Authority Opportunities</h3>
+          <h3 className="text-sm font-semibold text-foreground tracking-tight">Content Opportunities</h3>
           <p className="text-xs text-muted-foreground/50">Ideas strong enough to publish</p>
         </div>
         <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold ml-auto">
