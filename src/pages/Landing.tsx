@@ -211,7 +211,7 @@ const Landing = () => {
 
   const stepData = [
     { n: "00", t: "Know yourself", d: "A short assessment reveals your strengths, your brand positioning, and the exact path to your career target." },
-    { n: "01", t: "Capture anything", d: "Paste a link. Upload a document. Record a voice note. Aura reads it and saves it." },
+    { n: "01", t: "Capture anything", d: "Paste a link. Upload a screenshot. Record a voice note on your way to a meeting. Aura reads it all." },
     { n: "02", t: "Aura finds the patterns", d: "It connects what you read. It finds the ideas that keep coming up. It tells you what is important in your field right now." },
     { n: "03", t: "Create content in your voice", d: "One tap. Aura drafts a post, a framework, or an essay — in English or Arabic — that sounds like you." },
     { n: "04", t: "Watch your influence grow", d: "Track your LinkedIn growth. See which content works. Keep building on what is already working." },
@@ -344,7 +344,7 @@ const Landing = () => {
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
           <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "var(--ink-5)", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
-            Aura reads what you capture, finds the patterns, and turns what you already know into content that builds your digital presence.
+            Your expertise lives in your head, your notes, your readings. Aura turns it into digital presence — posts, signals, and a score that grows while you work.
           </p>
 
           {/* Capture orb */}
