@@ -696,18 +696,38 @@ function SlideBody({ slide, style, w, h, lang = "en", authorHandle = "" }: { sli
       );
     }
     case "BIG_NUMBER": {
+      // Wrap long context strings so they don't overflow the slide.
+      const ctx = slide.number_context || "";
+      const maxChars = isRTL ? 36 : 42;
+      const ctxLines: string[] = [];
+      if (ctx) {
+        const words = ctx.split(/\s+/);
+        let cur = "";
+        for (const word of words) {
+          if ((cur + " " + word).trim().length > maxChars) {
+            if (cur) ctxLines.push(cur);
+            cur = word;
+          } else {
+            cur = (cur ? cur + " " : "") + word;
+          }
+        }
+        if (cur) ctxLines.push(cur);
+      }
+      const sourceY = cy + 100 + ctxLines.length * 36 + 24;
       return (
         <g>
       <text x={cx} y={cy + 30} textAnchor="middle" fontFamily={style.headingFont} fontSize={200} fontWeight={900} fill={style.bigNumberColor ?? style.accent} direction="ltr">
             {slide.number || "—"}
           </text>
-          {slide.number_context && (
+          {ctxLines.length > 0 && (
             <text x={cx} y={cy + 100} textAnchor="middle" fontFamily={bodyFont} fontSize={isRTL ? 24 : 28} fill={style.muted} fontWeight={isRTL ? 600 : 400}>
-              {slide.number_context}
+              {ctxLines.map((ln, i) => (
+                <tspan key={i} x={cx} dy={i === 0 ? 0 : 36}>{ln}</tspan>
+              ))}
             </text>
           )}
           {slide.number_source && (
-            <text x={cx} y={cy + 160} textAnchor="middle" fontFamily={bodyFont} fontSize={18} fill={style.muted}
+            <text x={cx} y={sourceY} textAnchor="middle" fontFamily={bodyFont} fontSize={18} fill={style.muted}
                   fontStyle={isRTL ? "normal" : "italic"} fontWeight={isRTL ? 600 : 400}>
               {slide.number_source}
             </text>
@@ -2016,14 +2036,6 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </button>
           ))}
         </div>
-        <button onClick={exportCurrent} disabled={exporting}
-                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 bg-white/10">
-          <FileImage className="w-3.5 h-3.5" /> This slide
-        </button>
-        <button onClick={exportZip} disabled={exporting}
-                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 bg-white/10">
-          <FileArchive className="w-3.5 h-3.5" /> All slides (ZIP)
-        </button>
         <button onClick={exportPdf} disabled={exporting}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
                 style={{ background: "#B08D3A", color: "#0A0908" }}>

@@ -922,6 +922,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                   placeholder="Paste a URL..."
                   value={content}
                   onChange={(e) => { setContent(e.target.value); setUrlError(null); setDuplicateInfo(null); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleSave();
+                    }
+                  }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = "var(--brand)";
                     e.currentTarget.style.background = "#FFFFFF";
@@ -1100,6 +1106,12 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
                     sonnerToast("Text trimmed to 15,000 characters for reliable processing.");
                   } else {
                     setContent(v);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    handleSave();
                   }
                 }}
                 onPaste={(e) => {

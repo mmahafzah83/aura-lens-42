@@ -2141,7 +2141,7 @@ const LibraryCard = ({
   isPublished: boolean;
   copiedId: string | null;
   onCopy: (id: string, text: string) => void;
-  onMarkPublished: (id: string) => void;
+  onMarkPublished: (id: string, url?: string) => void;
   onDelete: (id: string) => void;
 }) => {
   const [metricsOpen, setMetricsOpen] = useState(false);
@@ -2149,6 +2149,8 @@ const LibraryCard = ({
   const [reactions, setReactions] = useState("");
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmPub, setConfirmPub] = useState(false);
+  const [pubUrl, setPubUrl] = useState("");
 
   const saveMetrics = async () => {
     const imp = parseInt(impressions) || 0;
@@ -2247,9 +2249,10 @@ const LibraryCard = ({
             size="sm"
             variant="outline"
             className="h-7 text-xs gap-1.5 border-border/15"
-            onClick={() => onMarkPublished(p.id)}
+            style={{ color: "var(--brand)" }}
+            onClick={() => setConfirmPub(v => !v)}
           >
-            <Check className="w-3.5 h-3.5" /> Mark as published
+            <Check className="w-3.5 h-3.5" /> Mark as published →
           </Button>
         )}
         <Button
@@ -2261,6 +2264,50 @@ const LibraryCard = ({
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
+
+      {isDraft && confirmPub && (
+        <div className="mt-3 pt-3 border-t border-border/8 space-y-2">
+          <label className="text-xs text-muted-foreground block">
+            Paste your LinkedIn post URL (optional)
+          </label>
+          <Input
+            value={pubUrl}
+            onChange={e => setPubUrl(e.target.value)}
+            placeholder="https://linkedin.com/posts/..."
+            className="h-8 text-xs bg-secondary/20 border-border/10"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onMarkPublished(p.id, pubUrl.trim() || undefined);
+                setConfirmPub(false);
+              }
+            }}
+          />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              style={{ background: "var(--brand)", color: "#fff" }}
+              onClick={() => {
+                onMarkPublished(p.id, pubUrl.trim() || undefined);
+                setConfirmPub(false);
+              }}
+            >
+              <Check className="w-3.5 h-3.5" /> Mark as published
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => {
+                onMarkPublished(p.id);
+                setConfirmPub(false);
+              }}
+            >
+              Skip URL
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Performance logger for published posts */}
       {isPublished && p._source === "linkedin_posts" && (
@@ -2770,12 +2817,21 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
     }
   };
 
-  const markPublished = async (id: string) => {
+  const markPublished = async (id: string, url?: string) => {
     const item = drafts.find(p => p.id === id);
     if (!item) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user?.id) throw new Error("Not authenticated");
+      let cleanUrl: string | null = null;
+      if (url) {
+        const trimmed = url.trim();
+        if (trimmed && !/^https?:\/\/(www\.)?linkedin\.com\//i.test(trimmed)) {
+          toast.error("URL must be a linkedin.com link");
+          return;
+        }
+        cleanUrl = trimmed || null;
+      }
       const linkedSignalId = (item.source_metadata as any)?.source_signal_id
         || (item.source_metadata?.signal_ids?.[0])
         || null;
@@ -2788,6 +2844,8 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
           tracking_status: "published",
           source_type: "aura_generated",
           published_at: new Date().toISOString(),
+          linkedin_url: cleanUrl,
+          published_confirmed_at: cleanUrl ? new Date().toISOString() : null,
           like_count: 0,
           comment_count: 0,
           repost_count: 0,
@@ -2838,7 +2896,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
               fontSize: 18, lineHeight: 1.25, color: "var(--ink)", marginBottom: 4,
             }}>
-              Published — your presence is growing.
+              Published — your digital presence is growing.
             </div>
             <div className="font-normal text-sm text-ink-4">
               {linkedSignalId
