@@ -146,7 +146,7 @@ const FrameworkBuilder = ({
         toast.success("Framework created — you can now generate a diagram or approve it");
       }
     } catch (e: any) {
-      toast.error(e.message || "Failed to save framework");
+      toast.error(e.message || "Couldn't save — please try again");
     } finally {
       setSaving(false);
     }
@@ -205,7 +205,7 @@ const FrameworkBuilder = ({
         body: { framework_id: createdId, user_id: user.id },
       });
 
-      toast.success("Framework approved & activated!");
+      toast.success("Framework activated");
       onFrameworkCreated?.();
       onClose();
     } catch (e: any) {

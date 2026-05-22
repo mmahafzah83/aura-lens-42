@@ -422,8 +422,8 @@ Author context (for tone only — do not hardcode in slides): ${authorFullName}$
     });
 
     if (!aiRes.ok) {
-      if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      if (aiRes.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (aiRes.status === 429) return new Response(JSON.stringify({ error: "Aura is busy — try again in a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (aiRes.status === 402) return new Response(JSON.stringify({ error: "Aura is temporarily unavailable. Try again later." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const errText = await aiRes.text();
       console.error("AI gateway error:", aiRes.status, errText);
       throw new Error(`AI error: ${aiRes.status}`);

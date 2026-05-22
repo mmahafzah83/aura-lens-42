@@ -1489,7 +1489,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                             }, 2000);
                             toast.success("Saved to Vault");
                           } catch (e: any) {
-                            toast.error("Failed to save", { description: e.message });
+                            toast.error("Couldn't save — please try again", { description: e.message });
                           }
                         }}
                         className={`mt-1.5 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md transition-colors tactile-press ${

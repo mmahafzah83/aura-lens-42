@@ -284,7 +284,7 @@ const Onboarding = () => {
 
       goStep(2);
     } catch (e: any) {
-      toast.error(e.message || "Could not save profile");
+      toast.error(e.message || "Couldn't save profile — please try again");
     } finally {
       setSavingProfile(false);
     }

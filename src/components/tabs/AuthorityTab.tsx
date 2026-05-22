@@ -1379,7 +1379,7 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                       } else {
                         await supabase.from("authority_voice_profiles").insert({ user_id: uid, example_posts: [newExample], tone: "analytical, calm authority" });
                       }
-                      toast.success("Voice engine updated ✓");
+                      toast.success("Voice engine updated");
                     } catch { toast.error("Failed to update voice engine"); }
                   }}
                 >
