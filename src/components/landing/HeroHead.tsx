@@ -163,10 +163,11 @@ export default function HeroHead() {
             alt=""
             className="block h-auto mx-auto"
             style={{
-              width: "min(380px, 58vw)",
+              width: "min(600px, 85vw)",
               filter:
                 "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1) drop-shadow(0 0 50px rgba(176,141,58,0.12))",
               background: "transparent",
+              border: "3px solid red",
             }}
             draggable={false}
           />
