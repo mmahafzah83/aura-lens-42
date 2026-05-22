@@ -2036,14 +2036,6 @@ Make it sharper, more specific, more provocative than: "${target.headline || tar
             </button>
           ))}
         </div>
-        <button onClick={exportCurrent} disabled={exporting}
-                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 bg-white/10">
-          <FileImage className="w-3.5 h-3.5" /> This slide
-        </button>
-        <button onClick={exportZip} disabled={exporting}
-                className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5 bg-white/10">
-          <FileArchive className="w-3.5 h-3.5" /> All slides (ZIP)
-        </button>
         <button onClick={exportPdf} disabled={exporting}
                 className="px-3 py-1.5 text-xs rounded-lg flex items-center gap-1.5"
                 style={{ background: "#B08D3A", color: "#0A0908" }}>
