@@ -556,7 +556,7 @@ const Landing = () => {
             className="text-[15px] leading-relaxed"
             style={{ color: "var(--ink-5)", fontFamily: "'DM Sans', sans-serif" }}
           >
-            Mohammad Mahafzah is a Director of Digital Transformation at EY, advising GCC organizations on Vision 2030 programs. He built Aura because he saw the same pattern every week — brilliant professionals whose expertise was invisible to the market. They had the knowledge. They just didn't have a system to turn it into presence.
+            Mohammad Mahafzah is a Director of Digital Transformation at EY, advising GCC organizations on Vision 2030 programs. He built Aura because he saw the same pattern every week — brilliant professionals whose expertise was invisible to the market. They had the knowledge. They just didn't have a system to turn it into digital presence.
           </p>
         </div>
       </section>
