@@ -777,7 +777,7 @@ function ResultsView({
               fontStyle: "italic",
             }}
           >
-            Discovering your market position…
+            Discovering how the market sees you…
           </p>
         )}
         {revealStage >= 1 && (
