@@ -723,29 +723,55 @@ function ResultsView({
         <div style={{ fontSize: 12, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--brand)", fontWeight: 600 }}>
           Aura sees you as
         </div>
-        <h2
-          style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 28,
-            color: "var(--brand)",
-            lineHeight: 1.15,
-            margin: "8px 0 10px",
-            fontWeight: 500,
-            letterSpacing: "-0.01em",
-          }}
-        >
-          {archetype}
-        </h2>
-        {oneLineDesc && (
-          <p style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.625, margin: 0 }}>
-            {oneLineDesc}
+        {revealStage === 0 && (
+          <p
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 20,
+              color: "var(--ink-4)",
+              margin: "10px 0 4px",
+              fontStyle: "italic",
+            }}
+          >
+            Discovering your market position…
           </p>
         )}
+        {revealStage >= 1 && (
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 28,
+              color: "var(--brand)",
+              lineHeight: 1.15,
+              margin: "8px 0 10px",
+              fontWeight: 500,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {archetype}
+          </motion.h2>
+        )}
+        {revealStage >= 2 && oneLineDesc && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            style={{ fontSize: 15, color: "var(--ink-5)", lineHeight: 1.625, margin: 0 }}
+          >
+            {oneLineDesc}
+          </motion.p>
+        )}
 
-        <div style={{ height: 1, background: "var(--brand)", opacity: 0.2, margin: "18px 0" }} />
+        {revealStage >= 2 && <div style={{ height: 1, background: "var(--brand)", opacity: 0.2, margin: "18px 0" }} />}
 
-        {positioning && (
-          <p
+        {revealStage >= 2 && positioning && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
             style={{
               fontSize: 16,
               color: "var(--ink-7, #fff)",
@@ -755,14 +781,17 @@ function ResultsView({
             }}
           >
             {positioning}
-          </p>
+          </motion.p>
         )}
 
-        {topics.length > 0 && (
+        {revealStage >= 3 && topics.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
             {topics.map((t, i) => (
-              <span
+              <motion.span
                 key={i}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05, duration: 0.3 }}
                 style={{
                   border: "1px solid var(--brand)",
                   color: "var(--brand)",
@@ -772,7 +801,7 @@ function ResultsView({
                 }}
               >
                 {t}
-              </span>
+              </motion.span>
             ))}
           </div>
         )}
