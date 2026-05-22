@@ -112,8 +112,14 @@ export default function HeroHead() {
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-[70vh] min-h-[500px] overflow-hidden select-none"
-      style={{ perspective: "1200px" }}
+      className="relative flex items-center justify-center overflow-hidden select-none"
+      style={{
+        width: "100vw",
+        height: "70vh",
+        minHeight: "500px",
+        perspective: "1200px",
+        transformStyle: "preserve-3d",
+      }}
       aria-hidden="true"
     >
       <style>{`
