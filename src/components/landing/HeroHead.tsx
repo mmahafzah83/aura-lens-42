@@ -155,41 +155,14 @@ export default function HeroHead() {
           <img
             src="/hero-head.png"
             alt=""
-            className="block w-[72vw] md:w-[min(380px,58vw)] h-auto mx-auto"
+            className="block h-auto mx-auto"
             style={{
+              width: "min(380px, 58vw)",
               filter:
-                "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1)",
+                "saturate(0.3) sepia(0.85) hue-rotate(-10deg) brightness(1.1) contrast(1.1) drop-shadow(0 0 50px rgba(176,141,58,0.12))",
               background: "transparent",
-              mixBlendMode: "screen",
             }}
             draggable={false}
-          />
-          {/* Eye glow overlays */}
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              top: "36%",
-              left: "28%",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(212,176,86,0.85) 0%, rgba(212,176,86,0) 70%)",
-              animation: "hero-eye-pulse 2.6s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="absolute pointer-events-none"
-            style={{
-              top: "36%",
-              left: "57.5%",
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              background:
-                "radial-gradient(circle, rgba(212,176,86,0.85) 0%, rgba(212,176,86,0) 70%)",
-              animation: "hero-eye-pulse 2.6s ease-in-out infinite",
-            }}
           />
         </div>
       </div>
