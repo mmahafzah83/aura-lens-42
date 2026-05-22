@@ -713,7 +713,7 @@ const Auth = () => {
             <FeatureRow
               delay={420}
               icon={<TrendingUp className="w-4 h-4" style={{ color: "var(--brand)" }} />}
-              title="Authority score"
+              title="Digital Presence Score"
               desc="Tracks how your visibility compounds over time"
             />
           </div>
