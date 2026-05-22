@@ -81,7 +81,7 @@ export const TOAST = {
   inviteSent: "Sent. They're about to discover what you already know.",
   published: "Published.",
   urlLinked: "Linked. Performance data will flow back.",
-  scoreUpdated: "Your score just moved.",
+  scoreUpdated: "Your digital presence score just moved.",
 } as const;
 
 // ════════════════════════════════════
