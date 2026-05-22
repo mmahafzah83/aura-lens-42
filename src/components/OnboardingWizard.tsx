@@ -306,7 +306,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                   />
                 </div>
                 <div>
-                  <Label hint="Your current role — e.g. Director of Digital Transformation.">
+                  <Label hint="Your current role — e.g. Director of Strategy.">
                     Title
                   </Label>
                   <input
@@ -314,7 +314,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                     style={inputStyle}
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
-                    placeholder="Director of Digital Transformation"
+                    placeholder="e.g. Director of Strategy"
                   />
                 </div>
                 <div>
@@ -324,7 +324,7 @@ const OnboardingWizard = ({ userId, onComplete }: Props) => {
                     style={inputStyle}
                     value={firm}
                     onChange={(e) => setFirm(e.target.value)}
-                    placeholder="EY, Aramco, Ministry of Energy…"
+                    placeholder="e.g. Your company"
                   />
                 </div>
                 <div>
