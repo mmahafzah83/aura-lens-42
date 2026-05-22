@@ -158,7 +158,7 @@ export const EMPTY_STATE = {
     cta: "Write from your strongest signal →",
   }),
   impact: {
-    text: "Visibility is credibility. If you're an expert but nobody sees your work — to the market, you don't exist. Every recognized authority started exactly where you are now: one publish away from being found. This is where you'll watch that change.",
+    text: "Visibility is credibility. If you're an expert but nobody sees your work — to the market, you don't exist. Every recognized expert started exactly where you are now: one publish away from being found. This is where you'll watch that change.",
     cta: "Write your first post →",
   },
   library: {

@@ -22,20 +22,20 @@ const STEPS = [
   { n: "01", Icon: Inbox, t: "Capture what you read", d: "Paste any URL, upload a document, or record a voice note. Aura extracts the intelligence and stores it." },
   { n: "02", Icon: Radar, t: "Aura detects patterns", d: "As you capture more, Aura identifies strategic signals — recurring themes across your reading that form your expertise map." },
   { n: "03", Icon: PenTool, t: "Create content from signals", d: "Generate LinkedIn posts in your voice, in English or Arabic. Each post is grounded in your real intelligence — not generic AI." },
-  { n: "04", Icon: TrendingUp, t: "Watch authority compound", d: "Your Authority Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer to Strategist to Authority." },
+  { n: "04", Icon: TrendingUp, t: "Watch presence compound", d: "Your Digital Presence Score tracks signal depth (40%), published content (40%), and capture rhythm (20%). Rise from Observer to Strategist to Presence." },
 ];
 
 const PAGES = [
   { Icon: HomeIcon, t: "Home", d: "Your daily command center" },
   { Icon: Compass, t: "Intelligence", d: "Your strategic radar" },
   { Icon: Sparkles, t: "Publish", d: "Your voice" },
-  { Icon: BarChart3, t: "Impact", d: "Your authority trajectory" },
+  { Icon: BarChart3, t: "Impact", d: "Your digital presence growth" },
   { Icon: User, t: "My Story", d: "Your market position" },
 ];
 
 const SCORE = [
   { label: "Signal Intelligence", pct: 40, desc: "Depth and breadth of captured signals." },
-  { label: "Content Authority", pct: 40, desc: "Quality and cadence of published content." },
+  { label: "Content Presence", pct: 40, desc: "Quality and cadence of published content." },
   { label: "Capture Consistency", pct: 20, desc: "Regular rhythm of new captures." },
 ];
 
@@ -46,7 +46,7 @@ const Guide = () => {
 
   usePageMeta({
     title: "Aura — How It Works",
-    description: "How Aura turns your daily reading into market authority: capture, detect signals, generate content, and track your authority score.",
+    description: "How Aura turns your daily reading into market presence: capture, detect signals, generate content, and track your digital presence score.",
     path: "/guide",
     jsonLd: {
       "@context": "https://schema.org",
@@ -210,7 +210,7 @@ const Guide = () => {
             {[
               { tier: "Observer", range: "0–34", desc: "Building your foundation." },
               { tier: "Strategist", range: "35–64", desc: "Patterns are forming." },
-              { tier: "Authority", range: "65–100", desc: "Recognized in your field." },
+              { tier: "Presence", range: "65–100", desc: "Recognized in your field." },
             ].map((t) => (
               <div
                 key={t.tier}

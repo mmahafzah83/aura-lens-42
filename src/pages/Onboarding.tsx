@@ -689,8 +689,8 @@ const Onboarding = () => {
                   ...(readingLi ? { backgroundImage: "linear-gradient(90deg, transparent, rgba(176,141,58,0.08), transparent)", backgroundSize: "200% 100%", animation: "auraShimmer 1.6s linear infinite" } : {}),
                 } as React.CSSProperties}
                 placeholder={describeMode
-                  ? `e.g., "I'm a Director at EY in Riyadh, focused on digital transformation for water utilities. 10+ years in GCC consulting."`
-                  : `e.g., "Director of Digital Transformation | EY GCC\n\nI help organisations make transformation stick — not by fixing technology, but by fixing how teams think, lead, and move together..."`}
+                  ? `e.g., "I'm a Director at a leading firm in the GCC, focused on strategy and digital change. 10+ years across the region."`
+                  : `e.g., "Director of Strategy | Your Firm\n\nI help organisations make change stick — not by fixing the tools, but by fixing how teams think, lead, and move together..."`}
                 value={linkedinText}
                 onChange={(e) => setLinkedinText(e.target.value)}
                 disabled={readingLi}
@@ -723,7 +723,7 @@ const Onboarding = () => {
                     </p>
                     <p className="mb-1">
                       <strong>1. Your Headline</strong> — the line right below your name<br />
-                      <span style={{ opacity: 0.85 }}>(example: "VP Digital Transformation | Accenture ME")</span>
+                      <span style={{ opacity: 0.85 }}>(example: "VP Strategy | Your Firm")</span>
                     </p>
                     <p className="mb-2">
                       <strong>2. Your About section</strong> — click "see more" first, then select all and copy
@@ -773,15 +773,15 @@ const Onboarding = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>First name</label>
-                <input className={inputCls} style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Mohammad" />
+                <input className={inputCls} style={inputStyle} value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="e.g. Sarah" />
               </div>
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>Last name</label>
-                <input className={inputCls} style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Mahafzah" />
+                <input className={inputCls} style={inputStyle} value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="e.g. Al-Rashid" />
               </div>
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>Firm</label>
-                <input className={inputCls} style={inputStyle} value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="EY" />
+                <input className={inputCls} style={inputStyle} value={firm} onChange={(e) => setFirm(e.target.value)} placeholder="e.g. Your company" />
               </div>
               <div>
                 <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>Level / title</label>
@@ -797,7 +797,7 @@ const Onboarding = () => {
             </div>
             <div className="mb-3">
               <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>Core practice</label>
-              <input className={inputCls} style={inputStyle} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} placeholder="Digital Transformation" />
+              <input className={inputCls} style={inputStyle} value={corePractice} onChange={(e) => setCorePractice(e.target.value)} placeholder="e.g. Strategy, Operations, Technology" />
             </div>
             <div className="mb-5">
               <label className="text-xs font-medium block mb-1" style={{ color: "hsl(var(--muted-foreground))" }}>My 3-year ambition</label>

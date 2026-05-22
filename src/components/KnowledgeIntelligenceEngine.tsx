@@ -156,8 +156,8 @@ const KnowledgeIntelligenceEngine = () => {
             <Brain className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-section-title text-foreground">Authority Intelligence</h2>
-            <p className="text-meta">Cross-source authority pattern analysis</p>
+            <h2 className="text-section-title text-foreground">Presence Intelligence</h2>
+            <p className="text-meta">Cross-source presence pattern analysis</p>
           </div>
         </div>
         <div className="glass-card rounded-2xl p-10 flex items-center justify-center">
@@ -179,18 +179,18 @@ const KnowledgeIntelligenceEngine = () => {
             <Brain className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-section-title text-foreground">Authority Intelligence</h2>
-            <p className="text-meta">Cross-source authority pattern analysis</p>
+            <h2 className="text-section-title text-foreground">Presence Intelligence</h2>
+            <p className="text-meta">Cross-source presence pattern analysis</p>
           </div>
         </div>
         <div className="glass-card rounded-2xl p-8 text-center">
           <Brain className="w-12 h-12 text-primary/15 mx-auto mb-4" />
           <p className="text-sm text-muted-foreground/60 mb-2 max-w-lg mx-auto leading-relaxed">
-            {result?.message || "Analyze all your knowledge sources — LinkedIn posts, captures, documents, research, voice notes, and frameworks — to detect recurring authority themes."}
+            {result?.message || "Analyze all your knowledge sources — LinkedIn posts, captures, documents, research, voice notes, and frameworks — to detect recurring influence themes."}
           </p>
           <Button onClick={analyze} disabled={loading} variant="outline" className="min-w-[220px] mt-4">
             {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-            {loading ? "Looking…" : "Run Authority Intelligence"}
+            {loading ? "Looking…" : "Run Presence Intelligence"}
           </Button>
         </div>
       </section>
@@ -209,7 +209,7 @@ const KnowledgeIntelligenceEngine = () => {
             <Brain className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-section-title text-foreground">Authority Intelligence</h2>
+            <h2 className="text-section-title text-foreground">Presence Intelligence</h2>
             <p className="text-meta">{result.total_sources} sources · {themes.length} themes · {tones.length} tones · {formats.length} formats</p>
           </div>
         </div>
@@ -221,7 +221,7 @@ const KnowledgeIntelligenceEngine = () => {
       {/* Strategic Identity Summary — Hero */}
       {result.strategic_identity_summary && (
         <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
-          <p className="text-label text-xs mb-3">Strategic Authority Position</p>
+          <p className="text-label text-xs mb-3">Your Market Position</p>
           <p className="text-body text-foreground/90 leading-relaxed" dir="auto">
             {result.strategic_identity_summary}
           </p>
@@ -272,7 +272,7 @@ const KnowledgeIntelligenceEngine = () => {
       {/* Section Tabs */}
       <div className="flex gap-1 flex-wrap">
         {([
-          { key: "themes" as Section, label: "Authority Themes", icon: Sparkles },
+          { key: "themes" as Section, label: "Influence Themes", icon: Sparkles },
           { key: "patterns" as Section, label: "Patterns & Signals", icon: Globe },
           { key: "advisor" as Section, label: "Strategic Advisor", icon: Lightbulb },
           { key: "pipeline" as Section, label: "Sources", icon: Layers },
@@ -298,7 +298,7 @@ const KnowledgeIntelligenceEngine = () => {
           {themes.length === 0 ? (
             <div className="glass-card rounded-2xl p-10 text-center">
               <AlertCircle className="w-8 h-8 text-muted-foreground/15 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground/40">Not enough data to detect authority themes yet.</p>
+              <p className="text-sm text-muted-foreground/40">Not enough data to detect your themes yet.</p>
             </div>
           ) : (
             themes.map((theme, i) => (

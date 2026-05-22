@@ -78,7 +78,7 @@ const AuthorityMomentumMap = () => {
     return (
       <div className="glass-card rounded-2xl card-pad text-center min-h-[160px] flex flex-col items-center justify-center gap-3">
         <Crown className="w-6 h-6 text-primary/20" />
-        <p className="text-meta">Build more signals and frameworks to see authority momentum.</p>
+        <p className="text-meta">Build more signals and frameworks to see presence momentum.</p>
       </div>
     );
   }
@@ -93,7 +93,7 @@ const AuthorityMomentumMap = () => {
           <Crown className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-card-title text-foreground">Authority Momentum</h3>
+          <h3 className="text-card-title text-foreground">Presence Momentum</h3>
           <p className="text-meta">Themes gaining traction</p>
         </div>
       </div>

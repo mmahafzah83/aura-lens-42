@@ -313,7 +313,12 @@ ${langLabel}
 ${frameworkInstruction}
 ${extraInstruction}${flashAddendum}
 
-Write with conviction. No generic statements. Every line should demonstrate strategic depth.${postTypeInstruction}${
+Write with conviction. No generic statements. Every line should demonstrate strategic depth.
+
+BANNED VOCABULARY — never use these words or phrases:
+delve, tapestry, landscape (figurative), navigate, realm, beacon, synergy, leverage (as verb), utilize, facilitate, cutting-edge, game-changing, groundbreaking, revolutionary, dive deep, unpack, double down, move the needle, it's worth noting, it goes without saying, in today's rapidly changing world, at the end of the day, not just X but Y, serves as a testament, at its core, let's dive in, here's what you need to know, trajectory (use 'growth' instead).
+
+Rewrite any sentence that uses these with concrete, specific language.${postTypeInstruction}${
   isFlash
     ? (variationNum === 1
         ? "\n\nWrite as a CONTRARIAN — challenge what the sector believes. Open with a provocative claim."

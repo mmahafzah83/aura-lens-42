@@ -528,7 +528,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 </li>
                 <li style={{ fontSize: 14, color: "rgba(255,255,255,0.78)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--brand)", marginRight: 8 }}>◆</span>
-                  Your authority territory — where your expertise runs deepest
+                  Your influence territory — where your expertise runs deepest
                 </li>
               </ul>
             </div>
@@ -645,7 +645,7 @@ const IdentityTab = ({ onResetDiagnostic, onSwitchTab, onDraftToStudio }: Identi
                 </div>
                 <div style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", marginTop: 3, lineHeight: 1.5 }}>
                   {intelligenceStage === 3
-                    ? <>Your authority territory — backed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals and market engagement data</>
+                    ? <>Your influence territory — backed by <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> signals and market engagement data</>
                     : intelligenceStage === 2
                     ? <>Your intelligence footprint — <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.count}</span> active signals across <span style={{ color: "var(--brand)", fontWeight: 600 }}>{signalStats.themeGroups.length}</span> themes</>
                     : "Your starting coverage map — grows sharper with every capture"}

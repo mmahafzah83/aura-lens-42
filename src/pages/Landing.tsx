@@ -340,11 +340,11 @@ const Landing = () => {
           </div>
           <p className="text-xs tracking-[0.2em] uppercase mb-6" style={{ color: "var(--ink-4)" }}>For senior transformation leaders</p>
           <h1 className="text-[28px] sm:text-[38px] leading-[1.15] font-medium mb-5 animate-fade-up-in" style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", animationDuration: "600ms" }}>
-            Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>authority</span>.
+            Everything you read.<br />Turned into <span style={{ color: "var(--brand)" }}>digital presence</span>.
           </h1>
           {/* Improvement 9: larger hero subtitle on mobile */}
           <p className="leading-relaxed max-w-lg mx-auto mb-10 text-[15px] md:text-[16px]" style={{ color: "var(--ink-5)", lineHeight: window.innerWidth <= 768 ? 1.65 : undefined }}>
-            Aura reads what you capture, finds the patterns, and helps you create content that builds your name in your field.
+            Aura reads what you capture, finds the patterns, and turns what you already know into content that builds your digital presence.
           </p>
 
           {/* Capture orb */}
@@ -404,7 +404,7 @@ const Landing = () => {
         {[
           { num: 47, label: "Sources captured", sub: "articles, links and documents added" },
           { num: 7, label: "Signals detected", sub: "strategic patterns identified" },
-          { num: 90, label: "Authority score", sub: "out of 100 — tracks your growth" },
+          { num: 90, label: "Digital Presence Score", sub: "out of 100 — tracks your growth" },
         ].map((s, i) => (
           <div key={i} className="flex items-center">
             {i > 0 && <div className="w-px h-14 mx-6 sm:mx-10" style={{ background: "var(--ink-3)" }} />}
@@ -488,7 +488,7 @@ const Landing = () => {
           <div className="flex flex-col gap-4 mb-10">
             {[
               { icon: "◈", title: "Discover your strengths", desc: "A short assessment based on proven frameworks. Aura finds what you do better than almost anyone else." },
-              { icon: "◎", title: "Find your brand positioning", desc: "Where you can be the known authority. Based on your strengths, experience, and what your market needs." },
+              { icon: "◎", title: "Find your brand positioning", desc: "Where you can be the recognized expert. Based on your strengths, experience, and what your market needs." },
               { icon: "↗", title: "Map your path to your career target", desc: "What stands between you and the role you want. Aura shows you the specific gaps and how to close them." },
             ].map((c, i) => (
               <div key={i} className="glass-card flex gap-4 p-5 rounded-[10px]">
@@ -622,7 +622,7 @@ const Landing = () => {
           willChange: "transform",
         }} />
         <div className="relative">
-          <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "var(--ink)", fontFamily: "var(--font-display)" }}>Your authority starts here.</h2>
+          <h2 className="text-[22px] sm:text-[28px] font-semibold mb-3" style={{ color: "var(--ink)", fontFamily: "var(--font-display)" }}>Your digital presence starts here.</h2>
           <p className="text-sm mb-6" style={{ color: "var(--ink-3)" }}>Free to start. No credit card needed. Takes 2 minutes to set up.</p>
           <button onClick={() => navigate("/auth")} className="px-8 py-3 rounded-xl text-sm font-medium transition-all hover:brightness-90" style={{ background: "var(--ink)", color: "var(--ink-7)" }}>
             Get early access

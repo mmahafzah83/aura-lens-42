@@ -257,14 +257,14 @@ const StrategicCommandCenter = ({ onOpenChat }: { onOpenChat?: (msg?: string) =>
         </div>
       </motion.div>
 
-      {/* ── Section 3: Authority Progress Pipeline ── */}
+      {/* ── Section 3: Presence Progress Pipeline ── */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
         className="space-y-5"
       >
-        <p className="text-label uppercase tracking-wider text-xs font-semibold">Authority Progress</p>
+        <p className="text-label uppercase tracking-wider text-xs font-semibold">Presence Progress</p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
           {(data.pipeline || []).map((step, i) => {
             const Icon = step.icon;

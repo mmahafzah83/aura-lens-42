@@ -24,7 +24,7 @@ const HINTS: Record<PageKey, { desc: string; action?: HintAction }> = {
     action: { label: "Try Flash mode →", eventName: "aura:open-flash" },
   },
   impact: {
-    desc: "Your authority trajectory starts here. The score updates as you capture, build signals, and publish — upload your LinkedIn analytics to see the full picture.",
+    desc: "Your digital presence starts here. The score updates as you capture, build signals, and publish — upload your LinkedIn analytics to see the full picture.",
     action: { label: "Upload LinkedIn data →", eventName: "aura:scroll-linkedin-upload" },
   },
 };

@@ -1579,7 +1579,7 @@ PARAGRAPH 3 — The gap (80 words): Name the 3 specific things that stand betwee
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Strategic query…"
+                  placeholder="Ask Aura anything…"
                   rows={1}
                   className="flex-1 bg-secondary border-border/30 resize-none text-sm min-h-[44px] max-h-[120px]"
                 />

@@ -47,11 +47,11 @@ const FORMAT_LABELS: Record<string, { label: string; icon: any; subtitle?: strin
 const FRAMEWORK_OPTIONS: { key: ContentFramework; label: string }[] = [
   { key: "auto", label: "Auto" },
   { key: "hook_insight_question", label: "Hook → Insight → Question" },
-  { key: "slap", label: "SLAP" },
-  { key: "bab", label: "BAB" },
-  { key: "pas", label: "PAS" },
-  { key: "wwh", label: "WWH" },
-  { key: "chef", label: "CHEF" },
+  { key: "slap", label: "Statement → Link → Angle → Proof" },
+  { key: "bab", label: "Before → After → Bridge" },
+  { key: "pas", label: "Problem → Agitate → Solve" },
+  { key: "wwh", label: "What → Why → How" },
+  { key: "chef", label: "Context → Hypothesis → Evidence → Future" },
   { key: "story_lesson_question", label: "Story → Lesson → Question" },
 ];
 
@@ -1173,6 +1173,11 @@ const CreateTab = ({ planPrefill, signalPrefill, onSignalPrefillConsumed }: { pl
                   {renderMarkdown(fixArabicDirectionalSymbols(displayedOutput))}
                   {isGeneratingAny && <span className="inline-block w-1.5 h-4 bg-primary/60 ml-1 animate-pulse rounded-sm" />}
                 </div>
+                {output.trim() && !isGeneratingAny && (
+                  <p className="mt-2 text-[11px] text-muted-foreground/60" style={{ letterSpacing: "0.02em" }}>
+                    ✦ AI-assisted · Review before publishing
+                  </p>
+                )}
 
                 {/* Generation attribution — connect post to user's real intelligence */}
                 {!isGeneratingAny && (() => {
@@ -1649,7 +1654,7 @@ const PlanTab = ({ onGenerateFromPlan }: { onGenerateFromPlan: (prefill: PlanPre
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Plan your authority narrative based on signals and insights — sequence the moves that compound your influence.</p>
+        <p className="text-sm text-muted-foreground">Plan what to publish next based on signals and insights — sequence the moves that compound your influence.</p>
         <Button variant="outline" size="sm" onClick={generatePlan} disabled={generating} className="gap-2">
           {generating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
           Generate Plan
@@ -1897,7 +1902,7 @@ const AnalyzeTab = () => {
         </div>
         <p className="text-sm text-foreground leading-relaxed">
           {stats.topTheme !== "—"
-            ? `Your strongest authority theme is "${stats.topTheme}". Continue publishing on this topic to deepen audience trust.`
+            ? `Your strongest theme is "${stats.topTheme}". Continue publishing on this topic to deepen audience trust.`
             : "Publish more content to unlock performance insights."
           }
         </p>
@@ -2826,7 +2831,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               fontFamily: "var(--font-display, 'Cormorant Garamond', Georgia, serif)",
               fontSize: 18, lineHeight: 1.25, color: "var(--ink)", marginBottom: 4,
             }}>
-              Published — your authority is compounding.
+              Published — your presence is growing.
             </div>
             <div className="font-normal text-sm text-ink-4">
               {linkedSignalId
@@ -3099,7 +3104,7 @@ const LibraryTab = ({ onSwitchToCreate }: { onSwitchToCreate: () => void }) => {
               Published Posts
             </h3>
             <span style={{ fontFamily: "var(--font-display, 'Cormorant Garamond')", fontSize: 14, fontStyle: "italic", color: "var(--ink-3)", lineHeight: 1.4 }}>
-              Your published authority trail — engagement data flows back to strengthen your signals
+              Your published content — engagement data flows back to strengthen your signals
             </span>
           </div>
           <span style={{ fontSize: 12, fontWeight: 600, padding: "2px 8px", borderRadius: 999, backgroundColor: "var(--bg-subtle)", color: "var(--color-muted)" }}>

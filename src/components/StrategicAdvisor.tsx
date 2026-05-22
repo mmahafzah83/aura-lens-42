@@ -406,7 +406,7 @@ const StrategicAdvisor = ({ onOpenChat }: StrategicAdvisorProps) => {
         <section className="space-y-3">
           <div className="flex items-center gap-2">
             <Crown className="w-3.5 h-3.5 text-primary" />
-            <h4 className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Authority Opportunities</h4>
+            <h4 className="text-xs font-semibold text-muted-foreground/50 uppercase tracking-[0.18em]">Content Opportunities</h4>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {authorityRecs.map(rec => (

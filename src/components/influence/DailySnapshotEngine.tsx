@@ -56,7 +56,7 @@ const DailySnapshotEngine = () => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-foreground">Snapshot Timeline</h3>
-          <p className="text-meta mt-0.5">Authority metrics preserved over time</p>
+          <p className="text-meta mt-0.5">Presence data saved over time</p>
         </div>
         <div className="flex gap-1">
           {ranges.map(r => (
