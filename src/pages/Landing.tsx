@@ -393,6 +393,9 @@ const Landing = () => {
               See how it works
             </button>
           </div>
+          <p className="text-sm mt-3 text-center" style={{ color: "var(--ink-4)" }}>
+            Free during closed beta · By invitation only
+          </p>
         </div>
       </section>
 
@@ -531,6 +534,30 @@ const Landing = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Section 6.5 — About the founder */}
+      <section className="landing-compact py-16 px-5 sm:px-10" style={{ borderTop: "1px solid var(--surface-ink-subtle)" }}>
+        <div
+          className="max-w-2xl mx-auto p-6 md:p-8 rounded-[10px]"
+          style={{
+            background: "var(--surface-ink-raised)",
+            borderLeft: "4px solid var(--brand)",
+          }}
+        >
+          <h2
+            className="text-[24px] md:text-[28px] leading-[1.2] font-medium mb-4"
+            style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: "var(--ink-7)" }}
+          >
+            Built by someone who lives this problem
+          </h2>
+          <p
+            className="text-[15px] leading-relaxed"
+            style={{ color: "var(--ink-5)", fontFamily: "'DM Sans', sans-serif" }}
+          >
+            Mohammad Mahafzah is a Director of Digital Transformation at EY, advising GCC organizations on Vision 2030 programs. He built Aura because he saw the same pattern every week — brilliant professionals whose expertise was invisible to the market. They had the knowledge. They just didn't have a system to turn it into presence.
+          </p>
         </div>
       </section>
 
@@ -678,6 +705,9 @@ const Landing = () => {
           <div className="landing-footer-col-right">
             <p style={{ fontSize: 12, color: "var(--ink-4)" }}>
               Contact: <a href="mailto:mohammad.mahafdhah@aura-intel.org">mohammad.mahafdhah@aura-intel.org</a>
+            </p>
+            <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 6 }}>
+              Support: <a href="mailto:support@aura-intel.org">support@aura-intel.org</a>
             </p>
             <p style={{ fontSize: 12, color: "var(--ink-4)", marginTop: 6 }}>
               Built in Riyadh for the world
