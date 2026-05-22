@@ -125,7 +125,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
          ════════════════════════════════════════════════════ */}
       <section className="animate-fade-in">
         <h2 className="text-section-title text-foreground mb-2">What You're Becoming Known For</h2>
-        <p className="text-meta mb-6">Your authority positioning derived from LinkedIn activity.</p>
+        <p className="text-meta mb-6">Your market positioning derived from LinkedIn activity.</p>
 
         <div className="glass-card-elevated rounded-2xl p-8 gold-glow">
           {authorityTrajectory ? (
@@ -134,7 +134,7 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
             </p>
           ) : (
             <p className="text-body text-muted-foreground/50">
-              Sync more LinkedIn data to surface your authority positioning.
+              Sync more LinkedIn data to surface your market positioning.
             </p>
           )}
 
@@ -292,11 +292,11 @@ const InfluenceIntelligence = ({ linkedInConnected, connectionInfo, syncing = fa
         <p className="text-meta mb-6">Classified analysis of your LinkedIn content.</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Authority Themes */}
+          {/* Influence Themes */}
           <div className="glass-card rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-5">
               <Sparkles className="w-4 h-4 text-primary/70" />
-              <h3 className="text-sm font-semibold text-foreground">Authority Themes</h3>
+              <h3 className="text-sm font-semibold text-foreground">Influence Themes</h3>
             </div>
             {authorityThemes.length > 0 ? (
               <div className="space-y-3">
