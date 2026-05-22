@@ -2141,7 +2141,7 @@ const LibraryCard = ({
   isPublished: boolean;
   copiedId: string | null;
   onCopy: (id: string, text: string) => void;
-  onMarkPublished: (id: string) => void;
+  onMarkPublished: (id: string, url?: string) => void;
   onDelete: (id: string) => void;
 }) => {
   const [metricsOpen, setMetricsOpen] = useState(false);
@@ -2149,6 +2149,8 @@ const LibraryCard = ({
   const [reactions, setReactions] = useState("");
   const [comments, setComments] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmPub, setConfirmPub] = useState(false);
+  const [pubUrl, setPubUrl] = useState("");
 
   const saveMetrics = async () => {
     const imp = parseInt(impressions) || 0;
@@ -2247,9 +2249,10 @@ const LibraryCard = ({
             size="sm"
             variant="outline"
             className="h-7 text-xs gap-1.5 border-border/15"
-            onClick={() => onMarkPublished(p.id)}
+            style={{ color: "var(--brand)" }}
+            onClick={() => setConfirmPub(v => !v)}
           >
-            <Check className="w-3.5 h-3.5" /> Mark as published
+            <Check className="w-3.5 h-3.5" /> Mark as published →
           </Button>
         )}
         <Button
@@ -2261,6 +2264,50 @@ const LibraryCard = ({
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
       </div>
+
+      {isDraft && confirmPub && (
+        <div className="mt-3 pt-3 border-t border-border/8 space-y-2">
+          <label className="text-xs text-muted-foreground block">
+            Paste your LinkedIn post URL (optional)
+          </label>
+          <Input
+            value={pubUrl}
+            onChange={e => setPubUrl(e.target.value)}
+            placeholder="https://linkedin.com/posts/..."
+            className="h-8 text-xs bg-secondary/20 border-border/10"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onMarkPublished(p.id, pubUrl.trim() || undefined);
+                setConfirmPub(false);
+              }
+            }}
+          />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              style={{ background: "var(--brand)", color: "#fff" }}
+              onClick={() => {
+                onMarkPublished(p.id, pubUrl.trim() || undefined);
+                setConfirmPub(false);
+              }}
+            >
+              <Check className="w-3.5 h-3.5" /> Mark as published
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => {
+                onMarkPublished(p.id);
+                setConfirmPub(false);
+              }}
+            >
+              Skip URL
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Performance logger for published posts */}
       {isPublished && p._source === "linkedin_posts" && (
