@@ -374,6 +374,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
               }
               queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
               queryClient.invalidateQueries({ queryKey: ["signals"] });
+              queryClient.invalidateQueries({ queryKey: ["entries"] });
             })
             .catch((err) => console.error("[voice] extract-evidence failed:", err));
         }
@@ -576,6 +577,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
       // Refresh signals UI optimistically; the safety net catches silent server failures.
       queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
       queryClient.invalidateQueries({ queryKey: ["signals"] });
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
       if (entryRow?.id) {
         const checkAt = new Date(Date.now() - 60000).toISOString();
         setTimeout(async () => {
@@ -590,6 +592,7 @@ const CaptureModal = ({ open, onOpenChange, onCaptured, onOpenChat }: CaptureMod
             } else {
               queryClient.invalidateQueries({ queryKey: ["strategic-signals"] });
               queryClient.invalidateQueries({ queryKey: ["signals"] });
+              queryClient.invalidateQueries({ queryKey: ["entries"] });
             }
           } catch {
             // Silent — don't bother the user
