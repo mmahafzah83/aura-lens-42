@@ -1081,6 +1081,8 @@ const Onboarding = () => {
             <CalibrationSliders
               sector={sectorFocus || null}
               onComplete={handleCalibrationComplete}
+              initialScores={initialSkillScores}
+              onAutoSave={autoSaveScores}
             />
           </div>
         </div>
