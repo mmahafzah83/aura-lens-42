@@ -453,7 +453,9 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
           </div>
 
           {!showResults && step === 0 && (
-            <p className="text-xs text-ink-5 mt-2 mb-1">10 questions · 8 minutes · reveals your positioning</p>
+            <p className="text-xs mt-2 mb-1" style={{ color: "rgba(212,176,86,0.7)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600, fontSize: 11 }}>
+              Step 4 of 5 — How the market sees you
+            </p>
           )}
 
           {/* Progress bar */}
@@ -498,6 +500,20 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
             </div>
           ) : (
             <div className="max-w-lg mx-auto pt-4">
+              {step === QUESTIONS.length - 1 && (
+                <p
+                  className="uppercase"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "2px",
+                    color: "var(--brand)",
+                    fontWeight: 700,
+                    marginBottom: 8,
+                  }}
+                >
+                  Final question
+                </p>
+              )}
               <p
                 className="mb-3 uppercase"
                 style={{
@@ -535,77 +551,127 @@ const BrandAssessmentModal = ({ open, onOpenChange, onComplete, onNavigate }: Br
                 />
               ) : (
                 <div className="space-y-2">
-                  {q.options?.map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => toggleOption(opt)}
-                      className="w-full text-left transition-all duration-150"
-                      style={{
-                        background: isSelected(opt)
-                          ? "rgba(176, 141, 58, 0.12)"
-                          : "transparent",
-                        border: `1px solid ${
-                          isSelected(opt)
-                            ? "#d4b056"
-                            : "rgba(212, 176, 86, 0.2)"
-                        }`,
-                        color: isSelected(opt)
-                          ? "#ffe896"
-                          : "rgba(230, 222, 205, 0.9)",
-                        borderRadius: 12,
-                        padding: "16px 20px",
-                        fontSize: 15,
-                        fontWeight: isSelected(opt) ? 500 : 400,
-                        cursor: "pointer",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (isSelected(opt)) return;
-                        e.currentTarget.style.borderColor = "rgba(212, 176, 86, 0.5)";
-                        e.currentTarget.style.background = "rgba(176, 141, 58, 0.08)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (isSelected(opt)) return;
-                        e.currentTarget.style.borderColor = "rgba(212, 176, 86, 0.2)";
-                        e.currentTarget.style.background = "transparent";
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+                  {q.options?.map((opt) => {
+                    const sel = isSelected(opt);
+                    const anySelected = q.type === "single"
+                      ? !!currentAnswer
+                      : Array.isArray(currentAnswer) && currentAnswer.length > 0;
+                    const dim = anySelected && !sel;
+                    return (
+                      <button
+                        key={opt}
+                        onClick={() => toggleOption(opt)}
+                        className="w-full text-left flex items-center justify-between gap-3"
+                        style={{
+                          background: sel ? "rgba(176, 141, 58, 0.14)" : "transparent",
+                          borderTop: "1px solid rgba(212,176,86,0.2)",
+                          borderRight: "1px solid rgba(212,176,86,0.2)",
+                          borderBottom: "1px solid rgba(212,176,86,0.2)",
+                          borderLeft: sel ? "3px solid #d4b056" : "1px solid rgba(212,176,86,0.2)",
+                          color: sel ? "#ffe896" : "rgba(230, 222, 205, 0.9)",
+                          borderRadius: 12,
+                          padding: sel ? "16px 20px 16px 18px" : "16px 20px",
+                          fontSize: 15,
+                          fontWeight: sel ? 500 : 400,
+                          cursor: "pointer",
+                          opacity: dim ? 0.45 : 1,
+                          transform: sel ? "scale(1.02)" : "scale(1)",
+                          transition: "transform 200ms ease, opacity 300ms ease, background 200ms ease, border-color 300ms ease, padding 200ms ease",
+                        }}
+                      >
+                        <span>{opt}</span>
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            color: "#d4b056",
+                            fontSize: 10,
+                            opacity: sel ? 1 : 0,
+                            transition: "opacity 200ms ease",
+                          }}
+                        >✦</span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
+
+              {/* Companion voice */}
+              {companionLine && (
+                <p
+                  style={{
+                    marginTop: 18,
+                    fontSize: 13,
+                    color: "var(--ink-5)",
+                    textAlign: "center",
+                    opacity: 0,
+                    animation: "aura-fade-in 300ms ease-out forwards",
+                  }}
+                >
+                  {companionLine}
+                </p>
+              )}
+              <style>{`
+                @keyframes aura-fade-in { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes aura-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+              `}</style>
             </div>
           )}
         </div>
 
         {/* Footer — sticky */}
-        {!showResults && (
+        {!showResults && canProceed() && (
           <div
             className="shrink-0"
             style={{
               background: "var(--ink)",
               borderTop: "0.5px solid var(--surface-ink-subtle)",
               padding: "12px 16px",
+              animation: "aura-fade-up 300ms ease-out forwards",
             }}
           >
             <button
               onClick={handleNext}
-              disabled={!canProceed()}
-              className={`w-full py-3.5 rounded-xl text-sm font-medium tracking-wide transition-all duration-200 ${
-                canProceed()
-                  ? "hover:brightness-110 active:scale-[0.98]"
-                  : "bg-surface-ink-subtle text-ink-4 cursor-not-allowed"
-              }`}
-              style={canProceed() ? {
+              className="w-full rounded-xl font-medium tracking-wide transition-all duration-200 hover:brightness-110 active:scale-[0.98]"
+              style={{
                 background: "linear-gradient(to bottom, hsl(43 80% 55%), var(--brand))",
                 color: "var(--ink)",
-              } : undefined}
+                padding: step === QUESTIONS.length - 1 ? "16px" : "14px",
+                fontSize: step === QUESTIONS.length - 1 ? 15 : 14,
+              }}
             >
-              {step < QUESTIONS.length - 1 ? "Next" : "Generate Brand Positioning"}
+              {step < QUESTIONS.length - 1 ? "Next →" : "Show me how the market sees me →"}
             </button>
           </div>
         )}
       </div>
+
+      {/* Anticipation interlude overlay (after Q3 / Q6 / Q9) */}
+      {interlude && (
+        <div
+          className="fixed inset-0 flex items-center justify-center px-6"
+          style={{
+            background: "rgba(10,9,7,0.94)",
+            zIndex: 1050,
+            animation: "aura-fade-in 400ms ease-out",
+          }}
+        >
+          <div style={{ textAlign: "center", maxWidth: 360 }}>
+            <div style={{ color: "#B08D3A", fontSize: 16, marginBottom: 18, letterSpacing: "0.3em" }}>{interlude.dots}</div>
+            <p
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: 18,
+                color: "#B08D3A",
+                lineHeight: 1.55,
+                margin: 0,
+              }}
+            >
+              {interlude.text}
+            </p>
+            <div style={{ color: "#B08D3A", fontSize: 16, marginTop: 18, letterSpacing: "0.3em" }}>{interlude.dots}</div>
+          </div>
+        </div>
+      )}
 
       {confirmClose && (
         <div
