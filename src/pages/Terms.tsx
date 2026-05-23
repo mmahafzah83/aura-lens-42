@@ -4,7 +4,7 @@ import usePageMeta from "@/hooks/usePageMeta";
 const Terms = () => {
   usePageMeta({
     title: "Aura — Terms",
-    description: "Aura terms of service.",
+    description: "Aura terms of service: how we license the platform, what you own, acceptable use, AI-generated content disclaimers, and account termination.",
     path: "/terms",
   });
   return (
