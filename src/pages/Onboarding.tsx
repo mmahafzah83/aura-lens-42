@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import usePageMeta from "@/hooks/usePageMeta";
 import BrandAssessmentModal from "@/components/BrandAssessmentModal";
+import CalibrationSliders from "@/components/CalibrationSliders";
 
 const SECTORS = [
   "Energy & Utilities",
@@ -21,7 +22,7 @@ const SECTORS = [
   "Other",
 ];
 
-type Step = 0 | 1 | 2 | 3;
+type Step = 0 | 1 | 2 | 3 | 4;
 
 interface Prefill {
   first_name?: string;
@@ -136,6 +137,10 @@ const Onboarding = () => {
 
   // Step 3
   const [assessmentOpen, setAssessmentOpen] = useState(false);
+
+  // Breathing transition between article capture (step 2) and calibration (step 3)
+  const [breathing, setBreathing] = useState(false);
+  const [breathingLeaving, setBreathingLeaving] = useState(false);
 
   // Auth + gate: if user already onboarded, send them home.
   useEffect(() => {
@@ -340,7 +345,7 @@ const Onboarding = () => {
   // ─── Render helpers ───
   const ProgressDots = () => (
     <div className="flex items-center justify-center gap-2 mb-6">
-      {[0, 1, 2, 3].map((i) => {
+      {[0, 1, 2, 3, 4].map((i) => {
         const isCurrent = i === step;
         const isDone = i < step;
         return (
