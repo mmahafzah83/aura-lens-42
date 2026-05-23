@@ -1086,3 +1086,27 @@ const ArticleManualPaste = ({
 );
 
 export default Onboarding;
+
+const BreathingOverlay = ({ leaving }: { leaving: boolean }) => (
+  <div
+    style={{
+      position: "fixed", inset: 0, zIndex: 100,
+      background: "hsl(var(--background))",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      opacity: leaving ? 0 : 1,
+      transition: "opacity 300ms ease-out",
+    }}
+  >
+    <p
+      style={{
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontSize: 15, lineHeight: 1.6,
+        color: "hsl(var(--muted-foreground))",
+        textAlign: "center", maxWidth: 420, padding: "0 24px",
+      }}
+    >
+      Perfect. Now let's map what makes you different.{" "}
+      <span style={{ color: "#B08D3A" }}>◆</span>
+    </p>
+  </div>
+);
