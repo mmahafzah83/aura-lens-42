@@ -931,6 +931,57 @@ const Admin = () => {
           )}
         </div>
       </div>
+      <AlertDialog
+        open={!!confirmInviteRow}
+        onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send invitation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Send invitation to {confirmInviteRow?.name || "this person"} ({confirmInviteRow?.email})?
+              This will send them an email immediately with a 48-hour access link.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const row = confirmInviteRow;
+                setConfirmInviteRow(null);
+                if (row) sendInvite(row);
+              }}
+            >
+              Send invite
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={!!confirmDeclineRow}
+        onOpenChange={(open) => { if (!open) setConfirmDeclineRow(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline this applicant?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Decline {confirmDeclineRow?.name || confirmDeclineRow?.email}? This will send them a polite email
+              letting them know Aura isn't the right fit at this stage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const row = confirmDeclineRow;
+                if (row) declineRow(row);
+              }}
+            >
+              Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
