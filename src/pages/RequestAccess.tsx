@@ -432,6 +432,12 @@ function SuccessCeremony({
           {companion}
         </p>
       )}
+      <p className="ra-anim-in ra-in-3" style={{
+        fontSize: 12, color: "#666", lineHeight: 1.6,
+        maxWidth: 380, margin: "12px auto 0",
+      }}>
+        Check your inbox (and spam folder) for a confirmation from Aura.
+      </p>
       {withSignature && (
         <div className="ra-anim-in ra-in-4" style={{ marginTop: 36 }}>
           <div style={{ fontSize: 14, color: "#ededed", fontWeight: 500 }}>Mohammad Mahafzah</div>
