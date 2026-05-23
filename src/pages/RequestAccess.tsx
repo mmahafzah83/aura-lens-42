@@ -326,11 +326,12 @@ export default function RequestAccess() {
 }
 
 function Field({
-  id, label, value, onChange, error, placeholder, type = "text", maxLength,
+  id, label, value, onChange, error, placeholder, type = "text", maxLength, onBlur, hint,
 }: {
   id: string; label: string; value: string;
   onChange: (v: string) => void; error?: string;
   placeholder?: string; type?: string; maxLength?: number;
+  onBlur?: () => void; hint?: string;
 }) {
   return (
     <div>
@@ -340,12 +341,18 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         maxLength={maxLength}
         className="ra-field"
         style={fieldStyle}
       />
       {error && <p style={errorStyle}>{error}</p>}
+      {!error && hint && (
+        <p style={{ marginTop: 6, fontSize: 12, color: BRONZE, lineHeight: 1.5, transition: "opacity 300ms ease" }}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
