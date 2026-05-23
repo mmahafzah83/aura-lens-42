@@ -448,6 +448,17 @@ const RA_CSS = `
     box-shadow: 0 0 0 3px rgba(176,141,58,0.15) !important;
   }
 
+  /* Kill the yellow autofill background that browsers force on inputs/selects */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px ${FIELD_BG} inset !important;
+    -webkit-text-fill-color: #ededed !important;
+    caret-color: #ededed !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
   .ra-cta:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(176,141,58,0.2);
