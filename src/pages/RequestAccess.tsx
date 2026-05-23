@@ -44,6 +44,15 @@ const SECTOR = [
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PERSONAL_DOMAINS = new Set([
+  "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com",
+  "aol.com", "live.com", "protonmail.com", "proton.me", "msn.com",
+  "yahoo.co.uk", "googlemail.com",
+]);
+const isPersonalEmail = (e: string) => {
+  const d = e.trim().toLowerCase().split("@")[1];
+  return !!d && PERSONAL_DOMAINS.has(d);
+};
 
 function usePositionCount(target: number, start: boolean, duration = 800) {
   const [value, setValue] = useState(0);
@@ -88,6 +97,8 @@ export default function RequestAccess() {
   const [submittedName, setSubmittedName] = useState("");
   const [position, setPosition] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
+  const [emailTouched, setEmailTouched] = useState(false);
+  const showPersonalWarning = emailTouched && EMAIL_RE.test(email.trim()) && isPersonalEmail(email);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -218,6 +229,8 @@ export default function RequestAccess() {
                     onChange={(v) => { setEmail(v); if (errors.email) setErrors((p) => ({ ...p, email: undefined })); }}
                     error={errors.email}
                     maxLength={255}
+                    onBlur={() => setEmailTouched(true)}
+                    hint={showPersonalWarning ? "We recommend using your work email — it helps us review your application faster." : undefined}
                   />
                   <Select
                     id="seniority"
@@ -313,11 +326,12 @@ export default function RequestAccess() {
 }
 
 function Field({
-  id, label, value, onChange, error, placeholder, type = "text", maxLength,
+  id, label, value, onChange, error, placeholder, type = "text", maxLength, onBlur, hint,
 }: {
   id: string; label: string; value: string;
   onChange: (v: string) => void; error?: string;
   placeholder?: string; type?: string; maxLength?: number;
+  onBlur?: () => void; hint?: string;
 }) {
   return (
     <div>
@@ -327,12 +341,18 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder={placeholder}
         maxLength={maxLength}
         className="ra-field"
         style={fieldStyle}
       />
       {error && <p style={errorStyle}>{error}</p>}
+      {!error && hint && (
+        <p style={{ marginTop: 6, fontSize: 12, color: BRONZE, lineHeight: 1.5, transition: "opacity 300ms ease" }}>
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -412,6 +432,12 @@ function SuccessCeremony({
           {companion}
         </p>
       )}
+      <p className="ra-anim-in ra-in-3" style={{
+        fontSize: 12, color: "#666", lineHeight: 1.6,
+        maxWidth: 380, margin: "12px auto 0",
+      }}>
+        Check your inbox (and spam folder) for a confirmation from Aura.
+      </p>
       {withSignature && (
         <div className="ra-anim-in ra-in-4" style={{ marginTop: 36 }}>
           <div style={{ fontSize: 14, color: "#ededed", fontWeight: 500 }}>Mohammad Mahafzah</div>

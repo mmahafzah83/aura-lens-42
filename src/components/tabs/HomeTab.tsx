@@ -36,6 +36,7 @@ import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
 import TodaysIntelligence from "@/components/home/TodaysIntelligence";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -232,6 +233,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   };
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [assessmentDone, setAssessmentDone] = useState(false);
+  const [assessmentNudgeDismissed, setAssessmentNudgeDismissed] = useState(false);
+  const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
   const entriesLoaded = Array.isArray(entries);
   const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
   // showWelcome / welcomeState computed below, after topSignal is declared.
@@ -1346,6 +1349,67 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
     >
       {/* Onboarding checklist (auto-hides once all 5 steps complete) */}
       <OnboardingChecklist onOpenCapture={onOpenCapture} onSwitchTab={onSwitchTab} />
+
+      {/* Market assessment nudge — appears if onboarding assessment was skipped */}
+      {profileLoaded && !assessmentDone && !assessmentNudgeDismissed && (
+        <div
+          role="region"
+          aria-label="Complete your market assessment"
+          style={{
+            background: "var(--surface-ink-raised, hsl(var(--card)))",
+            borderLeft: "3px solid var(--brand)",
+            borderRadius: 10,
+            padding: "16px 18px",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          <div style={{ flex: "1 1 280px", minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)", marginBottom: 6 }}>
+              <span aria-hidden style={{ color: "var(--brand)", marginRight: 6 }}>◆</span>
+              Complete your market assessment
+            </div>
+            <div style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", lineHeight: 1.55 }}>
+              You skipped the assessment during onboarding. It takes 5 minutes and shapes how Aura writes content for you. Without it, your content won't match your market position.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => setAssessmentModalOpen(true)}
+              style={{
+                background: "var(--brand)", color: "#fff",
+                fontSize: 13, fontWeight: 500,
+                padding: "8px 14px", borderRadius: 8, border: 0, cursor: "pointer",
+              }}
+            >
+              Complete my assessment →
+            </button>
+            <button
+              type="button"
+              onClick={() => setAssessmentNudgeDismissed(true)}
+              aria-label="Dismiss"
+              style={{
+                background: "transparent", border: 0, cursor: "pointer",
+                color: "var(--ink-4, hsl(var(--muted-foreground)))",
+                fontSize: 13, padding: "8px 4px",
+              }}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      <BrandAssessmentModal
+        open={assessmentModalOpen}
+        onOpenChange={setAssessmentModalOpen}
+        onComplete={() => { setAssessmentDone(true); setAssessmentModalOpen(false); }}
+      />
 
       {/* Hide first-visit hint while the persistent welcome card is the
           primary onboarding — or while we don't yet know whether welcome

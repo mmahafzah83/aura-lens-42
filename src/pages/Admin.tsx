@@ -6,6 +6,16 @@ import { toast } from "sonner";
 import { Loader2, Send, Trash2 } from "lucide-react";
 import AuraLogo from "@/components/brand/AuraLogo";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -52,6 +62,7 @@ const statusBadge = (status: string) => {
     approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
     active: "bg-green-500/15 text-green-300 border-green-500/30",
     rejected: "bg-red-500/15 text-red-300 border-red-500/30",
+    declined: "bg-neutral-500/15 text-neutral-400 border-neutral-500/30",
   };
   return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
 };
@@ -70,7 +81,12 @@ const Admin = () => {
   const [noteByRow, setNoteByRow] = useState<Record<string, string>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [directEmail, setDirectEmail] = useState("");
+  const [directName, setDirectName] = useState("");
   const [directSending, setDirectSending] = useState(false);
+  const [confirmInviteRow, setConfirmInviteRow] = useState<Row | null>(null);
+  const [confirmDeclineRow, setConfirmDeclineRow] = useState<Row | null>(null);
+  const [decliningId, setDecliningId] = useState<string | null>(null);
+  const [directDuplicate, setDirectDuplicate] = useState<{ name: string | null; status: string } | null>(null);
   const [npsRows, setNpsRows] = useState<Array<{ id: string; rating: number | null; message: string | null; page: string | null; created_at: string | null }>>([]);
   const [activeUsers, setActiveUsers] = useState<Array<{ email: string; first_name: string | null; sector: string | null; last_sign_in_at: string | null; activated_at: string | null; captures: number }>>([]);
   const [activeLoading, setActiveLoading] = useState(false);
@@ -274,23 +290,57 @@ const Admin = () => {
     try {
       const { data: existing } = await supabase
         .from("beta_allowlist")
-        .select("id, name")
+        .select("id, name, status")
         .eq("email", email)
         .maybeSingle();
+      if (existing && !directDuplicate) {
+        setDirectDuplicate({ name: (existing as any).name ?? null, status: (existing as any).status });
+        setDirectSending(false);
+        return;
+      }
       if (!existing) {
         const { error: insertErr } = await supabase
           .from("beta_allowlist")
-          .insert({ email, status: "pending", source: "direct" });
+          .insert({ email, name: directName.trim() || null, status: "pending", source: "direct" });
         if (insertErr) throw insertErr;
       }
-      await callSendInvite(email, existing?.name ?? null);
+      await callSendInvite(email, directName.trim() || (existing as any)?.name || null);
       toast.success(`Invite sent to ${email}`);
       setDirectEmail("");
+      setDirectName("");
+      setDirectDuplicate(null);
       fetchRows();
     } catch (err: any) {
       toast.error(err?.message || "Couldn't send direct invite");
     } finally {
       setDirectSending(false);
+    }
+  };
+
+  const declineRow = async (row: Row) => {
+    setDecliningId(row.id);
+    try {
+      const { error: upErr } = await supabase
+        .from("beta_allowlist")
+        .update({ status: "declined" })
+        .eq("id", row.id);
+      if (upErr) throw upErr;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        await supabase.functions.invoke("send-decline-email", {
+          body: { email: row.email, name: row.name || "" },
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        });
+      } catch (mailErr) {
+        console.warn("decline email failed", mailErr);
+      }
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: "declined" } : r)));
+      toast.success(`Declined ${row.email}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Couldn't decline");
+    } finally {
+      setDecliningId(null);
+      setConfirmDeclineRow(null);
     }
   };
 
@@ -496,16 +546,30 @@ const Admin = () => {
                         </td>
                         <td className="px-4 py-3 text-right">
                           {r.status === "pending" && (
-                            <button
-                              onClick={() => setActiveInvite(activeInvite === r.id ? null : r.id)}
-                              className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
-                              style={{
-                                backgroundColor: "var(--brand)",
-                                color: "var(--ink)",
-                              }}
-                            >
-                              Invite
-                            </button>
+                            <div className="inline-flex items-center gap-2">
+                              <button
+                                onClick={() => setConfirmDeclineRow(r)}
+                                disabled={decliningId === r.id}
+                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors disabled:opacity-60"
+                                style={{
+                                  backgroundColor: "transparent",
+                                  color: "var(--ink-5)",
+                                  border: "1px solid var(--ink-3)",
+                                }}
+                              >
+                                {decliningId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Decline"}
+                              </button>
+                              <button
+                                onClick={() => setConfirmInviteRow(r)}
+                                className="text-xs px-3 py-1.5 rounded-md font-medium transition-colors"
+                                style={{
+                                  backgroundColor: "var(--brand)",
+                                  color: "var(--ink)",
+                                }}
+                              >
+                                Invite
+                              </button>
+                            </div>
                           )}
                           {r.status === "approved" && (
                             <span className="text-xs" style={{ color: "var(--ink-5)" }}>
@@ -514,6 +578,11 @@ const Admin = () => {
                           )}
                           {r.status === "active" && (
                             <span className="text-xs text-green-400">Active ✓</span>
+                          )}
+                          {r.status === "declined" && (
+                            <span className="text-xs" style={{ color: "var(--ink-5)" }}>
+                              Declined
+                            </span>
                           )}
                         </td>
                       </tr>
@@ -583,16 +652,36 @@ const Admin = () => {
             Send an invite straight to an email — they'll be added to the allowlist automatically.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <input type="email" value={directEmail} onChange={(e) => setDirectEmail(e.target.value)} placeholder="email@company.com" className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none focus:border-brand transition-colors bg-primary-foreground" style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }} />
+            <input
+              type="text"
+              value={directName}
+              onChange={(e) => { setDirectName(e.target.value); setDirectDuplicate(null); }}
+              placeholder="Name (optional)"
+              className="sm:w-[200px] px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
+              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            />
+            <input
+              type="email"
+              value={directEmail}
+              onChange={(e) => { setDirectEmail(e.target.value); setDirectDuplicate(null); }}
+              placeholder="email@company.com"
+              className="flex-1 px-3 py-2.5 rounded-md text-sm outline-none transition-colors"
+              style={{ backgroundColor: "var(--ink)", border: "1px solid var(--ink-3)", color: "var(--ink-7)" }}
+            />
             <button
               onClick={sendDirectInvite}
               disabled={directSending || !directEmail}
               className="px-5 py-2.5 rounded-md text-sm font-medium inline-flex items-center justify-center gap-2 disabled:opacity-60 whitespace-nowrap"
               style={{ backgroundColor: "var(--brand)", color: "var(--ink)" }}
             >
-              {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send invite"}
+              {directSending ? <Loader2 className="w-4 h-4 animate-spin" /> : directDuplicate ? "Send anyway" : "Send invite"}
             </button>
           </div>
+          {directDuplicate && (
+            <p className="text-xs mt-3" style={{ color: "var(--brand)" }}>
+              This email is already on the waitlist as {directDuplicate.name || "(no name)"} ({directDuplicate.status}). Click "Send anyway" to proceed.
+            </p>
+          )}
         </div>
 
         {/* Active users */}
@@ -843,6 +932,57 @@ const Admin = () => {
           )}
         </div>
       </div>
+      <AlertDialog
+        open={!!confirmInviteRow}
+        onOpenChange={(open) => { if (!open) setConfirmInviteRow(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Send invitation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Send invitation to {confirmInviteRow?.name || "this person"} ({confirmInviteRow?.email})?
+              This will send them an email immediately with a 48-hour access link.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const row = confirmInviteRow;
+                setConfirmInviteRow(null);
+                if (row) sendInvite(row);
+              }}
+            >
+              Send invite
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog
+        open={!!confirmDeclineRow}
+        onOpenChange={(open) => { if (!open) setConfirmDeclineRow(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Decline this applicant?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Decline {confirmDeclineRow?.name || confirmDeclineRow?.email}? This will send them a polite email
+              letting them know Aura isn't the right fit at this stage.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const row = confirmDeclineRow;
+                if (row) declineRow(row);
+              }}
+            >
+              Decline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
