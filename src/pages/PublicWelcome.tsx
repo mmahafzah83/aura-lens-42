@@ -670,8 +670,63 @@ const PW_CSS = `
   .pw-milestone-pop { animation: pw-pop 300ms ease-out; }
   @keyframes pw-pop { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
 
+  /* Scroll progress bar — top desktop, bottom mobile (3px) */
+  .pw-progress { top: env(safe-area-inset-top, 0px); height: 2px; }
+  @media (max-width: 767px) {
+    .pw-progress { top: auto; bottom: 0; height: 3px; }
+  }
+
+  /* Slider nudge */
+  .pw-nudge { animation: pw-nudgeIn 280ms ease-out; }
+  @keyframes pw-nudgeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Stat-card: bronze glow on entry + number landing pulse + 54% accent */
+  .pw-stat-card.pw-stat-flash.visible { animation: pw-statGlow 800ms ease-out; }
+  @keyframes pw-statGlow {
+    0% { box-shadow: 0 0 0 transparent; }
+    40% { box-shadow: 0 0 16px rgba(176,141,58,0.28); }
+    100% { box-shadow: 0 0 0 transparent; }
+  }
+  .pw-stat-pulse { animation: pw-statPulse 320ms ease-out; }
+  @keyframes pw-statPulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+  .pw-stat-accent { border-left: 3px solid ${BRONZE} !important; }
+  /* Desktop only: full-width capstone spans two columns */
+  @media (min-width: 640px) {
+    .pw-stat-fullwidth { grid-column: span 2 / span 2; border-top: 2px solid ${BRONZE} !important; }
+  }
+
+  /* Timeline dot ripple */
+  .pw-dot-ripple::after {
+    content: ""; position: absolute; inset: -2px; border-radius: 50%;
+    border: 2px solid ${BRONZE};
+    animation: pw-ripple 700ms ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes pw-ripple {
+    from { transform: scale(1); opacity: 0.4; }
+    to { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* CTA breathing */
+  .pw-cta-breathe { animation: pw-breathe 3s ease-in-out infinite; }
+  .pw-cta-breathe:hover, .pw-cta-breathe:active { animation: none; }
+  @keyframes pw-breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
+
+  /* Section divider sweep */
+  .pw-divider-sweep { transform: scaleX(0); transform-origin: center; transition: transform 800ms ease-out; }
+  .pw-divider-sweep.pw-divider-sweep-on { transform: scaleX(1); }
+
+  /* Typewriter pain quote — word-by-word reveal */
+  .pw-tw .pw-tw-w { opacity: 0; transition: opacity 320ms ease-out; transition-delay: calc(var(--i, 0) * 30ms); }
+  .pw-tw.pw-tw-on .pw-tw-w { opacity: 1; }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal, .pw-fade-up, .pw-eye-in { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
-    .pw-eye-pulse, .pw-bounce, .pw-cta-shimmer::before, .pw-milestone-pop { animation: none !important; }
+    .pw-eye-pulse, .pw-bounce, .pw-cta-shimmer::before, .pw-milestone-pop,
+    .pw-cta-breathe, .pw-stat-flash, .pw-stat-pulse, .pw-dot-ripple::after,
+    .pw-nudge { animation: none !important; }
+    .pw-eye-parallax { transform: none !important; }
+    .pw-divider-sweep { transform: scaleX(1) !important; transition: none !important; }
+    .pw-tw .pw-tw-w { opacity: 1 !important; transition: none !important; }
   }
 `;
