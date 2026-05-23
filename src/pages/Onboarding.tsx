@@ -334,12 +334,37 @@ const Onboarding = () => {
       // ingest-capture creates the entry server-side — no client-side insert needed.
       setCapturedTitle(articleMeta?.title || "");
       setCaptureSuccess(true);
-      window.setTimeout(() => goStep(3), 3000);
+      window.setTimeout(() => startBreathingToCalibration(), 3000);
     } catch (e: any) {
       toast.error(e.message || "Couldn't capture that one");
     } finally {
       setCapturing(false);
     }
+  };
+
+  // Breathing transition between step 2 (article) → step 3 (calibration)
+  const startBreathingToCalibration = () => {
+    setBreathing(true);
+    setBreathingLeaving(false);
+    window.setTimeout(() => setBreathingLeaving(true), 1700);
+    window.setTimeout(() => {
+      setBreathing(false);
+      setBreathingLeaving(false);
+      goStep(3);
+    }, 2000);
+  };
+
+  // Step 3: save calibration scores then advance to assessment (step 4)
+  const handleCalibrationComplete = async (scores: Record<string, number>) => {
+    if (!userId) { goStep(4); return; }
+    try {
+      await (supabase.from("diagnostic_profiles" as any) as any)
+        .update({ skill_ratings: scores, audit_results: scores })
+        .eq("user_id", userId);
+    } catch (e) {
+      console.warn("Could not save calibration scores:", e);
+    }
+    goStep(4);
   };
 
   // ─── Render helpers ───
