@@ -354,11 +354,13 @@ function Select({
 }
 
 function SuccessCeremony({
-  title, subline, companion, withSignature, ctaHref, ctaLabel,
+  title, subline, companion, withSignature, ctaHref, ctaLabel, position,
 }: {
   title: string; subline: string; companion?: string;
   withSignature?: boolean; ctaHref?: string; ctaLabel?: string;
+  position?: number | null;
 }) {
+  const counted = usePositionCount(position ?? 0, position != null);
   return (
     <div style={{ textAlign: "center", padding: "16px 0" }}>
       <div className="ra-star" style={{ fontSize: 32, color: BRONZE, lineHeight: 1 }}>✦</div>
@@ -369,6 +371,13 @@ function SuccessCeremony({
       }}>
         {title}
       </h2>
+      {position != null && position > 0 && (
+        <p className="ra-anim-in ra-in-1" style={{
+          fontSize: 14, color: BRONZE, margin: "0 0 16px", letterSpacing: "0.5px",
+        }}>
+          You're number {counted} on the list.
+        </p>
+      )}
       <p className="ra-anim-in ra-in-2" style={{
         fontSize: 15, color: "#bdbdbd", lineHeight: 1.7,
         maxWidth: 380, margin: "0 auto",
