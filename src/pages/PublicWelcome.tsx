@@ -752,6 +752,35 @@ const PW_CSS = `
   .pw-tw .pw-tw-w { opacity: 0; transition: opacity 320ms ease-out; transition-delay: calc(var(--i, 0) * 30ms); }
   .pw-tw.pw-tw-on .pw-tw-w { opacity: 1; }
 
+  /* Floating mini-CTA pill */
+  .pw-pill {
+    position: fixed; z-index: 90;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
+    background: rgba(26,25,23,0.92);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border: 1px solid rgba(176,141,58,0.3);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px; font-weight: 500;
+    color: #B08D3A;
+    text-decoration: none;
+    display: inline-flex; align-items: center;
+    min-height: 44px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 300ms ease, background 200ms ease, border-color 200ms ease, transform 200ms ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .pw-pill[data-visible="true"] { opacity: 1; pointer-events: auto; }
+  .pw-pill:hover { background: #1a1917; border-color: ${BRONZE}; transform: translateY(-1px); }
+  @media (max-width: 767px) {
+    .pw-pill {
+      right: auto; left: 50%; transform: translateX(-50%);
+      bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    }
+    .pw-pill:hover { transform: translateX(-50%) translateY(-1px); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal, .pw-fade-up, .pw-eye-in { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
     .pw-eye-pulse, .pw-bounce, .pw-cta-shimmer::before, .pw-milestone-pop,
