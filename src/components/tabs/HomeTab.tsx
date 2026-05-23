@@ -36,6 +36,7 @@ import MissionControl from "@/components/home/MissionControl";
 import RecommendedMoveCard from "@/components/home/RecommendedMoveCard";
 import TodaysIntelligence from "@/components/home/TodaysIntelligence";
 import { shareToLinkedIn } from "@/lib/shareLinkedIn";
+import BrandAssessmentModal from "@/components/BrandAssessmentModal";
 
 type TabValue = "home" | "identity" | "intelligence" | "authority" | "influence";
 
@@ -232,6 +233,8 @@ const HomeTab = ({ entries, onOpenCapture, onSwitchTab }: HomeTabProps) => {
   };
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [assessmentDone, setAssessmentDone] = useState(false);
+  const [assessmentNudgeDismissed, setAssessmentNudgeDismissed] = useState(false);
+  const [assessmentModalOpen, setAssessmentModalOpen] = useState(false);
   const entriesLoaded = Array.isArray(entries);
   const entryCountForWelcome = entriesLoaded ? entries!.length : 0;
   // showWelcome / welcomeState computed below, after topSignal is declared.
