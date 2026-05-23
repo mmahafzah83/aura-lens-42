@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import usePageMeta from "@/hooks/usePageMeta";
@@ -45,6 +45,26 @@ const SECTOR = [
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function usePositionCount(target: number, start: boolean, duration = 800) {
+  const [value, setValue] = useState(0);
+  const started = useRef(false);
+  useEffect(() => {
+    if (!start || started.current || !target) return;
+    started.current = true;
+    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) { setValue(target); return; }
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setValue(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [target, start, duration]);
+  return value;
+}
+
 const HorizonEye = ({ size = 48, color = BRONZE }: { size?: number; color?: string }) => (
   <svg width={size} height={size * 0.55} viewBox="0 0 60 33" fill="none" aria-hidden>
     <path d="M2 16.5 C 12 4, 48 4, 58 16.5 C 48 29, 12 29, 2 16.5 Z" stroke={color} strokeWidth="1.5" fill="none" />
@@ -66,16 +86,8 @@ export default function RequestAccess() {
   const [sector, setSector] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [submittedName, setSubmittedName] = useState("");
+  const [position, setPosition] = useState<number | null>(null);
   const [errors, setErrors] = useState<{ name?: string; email?: string; seniority?: string; sector?: string }>({});
-
-  // Persisted submission flag — if user already submitted, skip the form entirely.
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
-        setStatus("duplicate");
-      }
-    } catch { /* ignore */ }
-  }, []);
 
   const validate = () => {
     const next: typeof errors = {};
@@ -98,9 +110,12 @@ export default function RequestAccess() {
       });
       if (error) throw error;
       setSubmittedName(name.trim().split(" ")[0]);
-      try { localStorage.setItem("aura_waitlist_submitted", "true"); } catch { /* ignore */ }
-      if (data?.duplicate) setStatus("duplicate");
-      else setStatus("success");
+      if (data?.duplicate) {
+        setStatus("duplicate");
+      } else {
+        if (typeof data?.position === "number") setPosition(data.position);
+        setStatus("success");
+      }
     } catch (err) {
       console.error("submit-waitlist failed:", err);
       setStatus("error");
@@ -188,7 +203,7 @@ export default function RequestAccess() {
                   <Field
                     id="name"
                     label="Your name"
-                    placeholder="e.g. Mohammad Mahafzah"
+                    placeholder="Your full name"
                     value={name}
                     onChange={(v) => { setName(v); if (errors.name) setErrors((p) => ({ ...p, name: undefined })); }}
                     error={errors.name}
@@ -275,6 +290,9 @@ export default function RequestAccess() {
                 subline="I review every application personally. If Aura is right for you, you'll hear from me within a week."
                 companion="In the meantime — keep reading what matters to your sector. That's exactly what Aura will turn into presence."
                 withSignature
+                position={position}
+                ctaHref="/"
+                ctaLabel="Explore what Aura does →"
               />
             )}
 
@@ -282,6 +300,7 @@ export default function RequestAccess() {
               <SuccessCeremony
                 title="You're already on our list."
                 subline="We have your request. If I haven't reached out yet, I will soon."
+                companion="Want to check your status? Email me at mohammad.mahafdhah@aura-intel.org"
                 ctaHref="/"
                 ctaLabel="Go back to explore Aura →"
               />
@@ -355,11 +374,13 @@ function Select({
 }
 
 function SuccessCeremony({
-  title, subline, companion, withSignature, ctaHref, ctaLabel,
+  title, subline, companion, withSignature, ctaHref, ctaLabel, position,
 }: {
   title: string; subline: string; companion?: string;
   withSignature?: boolean; ctaHref?: string; ctaLabel?: string;
+  position?: number | null;
 }) {
+  const counted = usePositionCount(position ?? 0, position != null);
   return (
     <div style={{ textAlign: "center", padding: "16px 0" }}>
       <div className="ra-star" style={{ fontSize: 32, color: BRONZE, lineHeight: 1 }}>✦</div>
@@ -370,6 +391,13 @@ function SuccessCeremony({
       }}>
         {title}
       </h2>
+      {position != null && position > 0 && (
+        <p className="ra-anim-in ra-in-1" style={{
+          fontSize: 14, color: BRONZE, margin: "0 0 16px", letterSpacing: "0.5px",
+        }}>
+          You're number {counted} on the list.
+        </p>
+      )}
       <p className="ra-anim-in ra-in-2" style={{
         fontSize: 15, color: "#bdbdbd", lineHeight: 1.7,
         maxWidth: 380, margin: "0 auto",

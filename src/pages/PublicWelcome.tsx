@@ -231,15 +231,6 @@ export default function PublicWelcome() {
   const [responseText, setResponseText] = useState(responseFor(30));
   const [fading, setFading] = useState(false);
 
-  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
-  useEffect(() => {
-    try {
-      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
-        setAlreadySubmitted(true);
-      }
-    } catch { /* ignore */ }
-  }, []);
-
   // Gentle scroll-gate
   const [contentRevealed, setContentRevealed] = useState(false);
   const [showNudge, setShowNudge] = useState(false);
@@ -247,6 +238,31 @@ export default function PublicWelcome() {
   useEffect(() => {
     if (moved && !contentRevealed) setContentRevealed(true);
   }, [moved, contentRevealed]);
+
+  // Floating mini-CTA pill: appears after "Until now.", hides at final CTA
+  const untilNowRef = useRef<HTMLElement>(null);
+  const finalCtaRef = useRef<HTMLElement>(null);
+  const [showPill, setShowPill] = useState(false);
+  useEffect(() => {
+    if (!contentRevealed) return;
+    const untilEl = untilNowRef.current;
+    const finalEl = finalCtaRef.current;
+    if (!untilEl || !finalEl) return;
+    let pastUntil = false;
+    let inFinal = false;
+    const update = () => setShowPill(pastUntil && !inFinal);
+    const io1 = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting || e.boundingClientRect.top < 0) pastUntil = true;
+      update();
+    }, { threshold: 0 });
+    const io2 = new IntersectionObserver(([e]) => {
+      inFinal = e.isIntersecting;
+      update();
+    }, { threshold: 0.15 });
+    io1.observe(untilEl);
+    io2.observe(finalEl);
+    return () => { io1.disconnect(); io2.disconnect(); };
+  }, [contentRevealed]);
   useEffect(() => {
     if (contentRevealed) return;
     const onAttempt = () => {
@@ -414,7 +430,7 @@ export default function PublicWelcome() {
         </section>
 
         {/* "Until now." — own moment */}
-        <section style={{
+        <section ref={untilNowRef} style={{
           background: BG, minHeight: "40vh",
           display: "flex", alignItems: "center", justifyContent: "center",
           padding: "80px 24px",
@@ -575,7 +591,7 @@ export default function PublicWelcome() {
         <SectionDivider />
 
         {/* FINAL CTA */}
-        <section style={{ background: BG, minHeight: "80vh", padding: "100px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <section ref={finalCtaRef} style={{ background: BG, minHeight: "80vh", padding: "100px 24px", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ maxWidth: 600, margin: "0 auto", textAlign: "center" }}>
             <div className="pw-eye-pulse reveal" style={{ display: "flex", justifyContent: "center" }}>
               <HorizonEye size={56} />
@@ -591,9 +607,12 @@ export default function PublicWelcome() {
             </p>
             <Link to="/request-access" className="pw-cta pw-cta-shimmer pw-cta-breathe reveal reveal-d3">
               <span style={{ position: "relative", zIndex: 1 }}>
-                {alreadySubmitted ? "You're on the list ✦" : "Accept Your Invitation →"}
+                Accept Your Invitation →
               </span>
             </Link>
+            <p className="reveal reveal-d3" style={{ fontSize: 12, color: "#666", marginTop: 14 }}>
+              Takes 30 seconds. We respond within a week.
+            </p>
             <p className="reveal reveal-d4" dir="rtl" style={{
               fontSize: 18, color: BRONZE, marginTop: 28,
               fontFamily: "'Cairo', 'DM Sans', sans-serif",
@@ -603,10 +622,23 @@ export default function PublicWelcome() {
             <p className="reveal reveal-d4" style={{ fontSize: 11, letterSpacing: "2px", color: "#9a9a9a", marginTop: 20 }}>
               PRIVATE BETA · BY INVITATION ONLY
             </p>
+            <p className="reveal reveal-d4" style={{ fontSize: 13, color: "#666", marginTop: 10 }}>
+              Join 40+ professionals already on the list
+            </p>
           </div>
         </section>
         </div>{/* /gated */}
       </main>
+
+      {/* Floating mini-CTA */}
+      <Link
+        to="/request-access"
+        aria-label="Request access"
+        className="pw-pill"
+        data-visible={showPill ? "true" : "false"}
+      >
+        Request access →
+      </Link>
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
@@ -719,6 +751,35 @@ const PW_CSS = `
   /* Typewriter pain quote — word-by-word reveal */
   .pw-tw .pw-tw-w { opacity: 0; transition: opacity 320ms ease-out; transition-delay: calc(var(--i, 0) * 30ms); }
   .pw-tw.pw-tw-on .pw-tw-w { opacity: 1; }
+
+  /* Floating mini-CTA pill */
+  .pw-pill {
+    position: fixed; z-index: 90;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: 20px;
+    background: rgba(26,25,23,0.92);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border: 1px solid rgba(176,141,58,0.3);
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 13px; font-weight: 500;
+    color: #B08D3A;
+    text-decoration: none;
+    display: inline-flex; align-items: center;
+    min-height: 44px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 300ms ease, background 200ms ease, border-color 200ms ease, transform 200ms ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .pw-pill[data-visible="true"] { opacity: 1; pointer-events: auto; }
+  .pw-pill:hover { background: #1a1917; border-color: ${BRONZE}; transform: translateY(-1px); }
+  @media (max-width: 767px) {
+    .pw-pill {
+      right: auto; left: 50%; transform: translateX(-50%);
+      bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    }
+    .pw-pill:hover { transform: translateX(-50%) translateY(-1px); }
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .reveal, .pw-fade-up, .pw-eye-in { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
