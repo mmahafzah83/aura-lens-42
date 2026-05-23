@@ -62,6 +62,7 @@ const statusBadge = (status: string) => {
     approved: "bg-amber-500/15 text-amber-300 border-amber-500/30",
     active: "bg-green-500/15 text-green-300 border-green-500/30",
     rejected: "bg-red-500/15 text-red-300 border-red-500/30",
+    declined: "bg-neutral-500/15 text-neutral-400 border-neutral-500/30",
   };
   return map[status] || "bg-neutral-700/40 text-neutral-300 border-neutral-600/40";
 };
