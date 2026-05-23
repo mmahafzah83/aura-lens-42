@@ -231,15 +231,54 @@ export default function PublicWelcome() {
   const [responseText, setResponseText] = useState(responseFor(30));
   const [fading, setFading] = useState(false);
 
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && localStorage.getItem("aura_waitlist_submitted") === "true") {
+        setAlreadySubmitted(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Gentle scroll-gate
+  const [contentRevealed, setContentRevealed] = useState(false);
+  const [showNudge, setShowNudge] = useState(false);
+  const [nudgeSeen, setNudgeSeen] = useState(false);
+  useEffect(() => {
+    if (moved && !contentRevealed) setContentRevealed(true);
+  }, [moved, contentRevealed]);
+  useEffect(() => {
+    if (contentRevealed) return;
+    const onAttempt = () => {
+      if (moved || nudgeSeen) return;
+      if (window.scrollY > 60) {
+        setShowNudge(true);
+        setNudgeSeen(true);
+        setTimeout(() => { setShowNudge(false); setContentRevealed(true); }, 3000);
+      }
+    };
+    window.addEventListener("scroll", onAttempt, { passive: true });
+    window.addEventListener("wheel", onAttempt, { passive: true });
+    window.addEventListener("touchmove", onAttempt, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onAttempt);
+      window.removeEventListener("wheel", onAttempt);
+      window.removeEventListener("touchmove", onAttempt);
+    };
+  }, [moved, nudgeSeen, contentRevealed]);
+
   // Eye pupil + scroll progress
   const [pupilR, setPupilR] = useState(5);
   const [scrollPct, setScrollPct] = useState(0);
+  const [heroScroll, setHeroScroll] = useState(0);
   useEffect(() => {
     const onScroll = () => {
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const p = max > 0 ? Math.min(window.scrollY / max, 1) : 0;
       setPupilR(5 + p * 3);
       setScrollPct(p * 100);
+      const h = window.innerHeight || 1;
+      setHeroScroll(Math.min(window.scrollY / h, 1));
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -281,9 +320,9 @@ export default function PublicWelcome() {
     }}>
       <style>{PW_CSS}</style>
 
-      {/* Scroll progress bar */}
-      <div aria-hidden style={{
-        position: "fixed", top: 0, left: 0, height: 2, width: `${scrollPct}%`,
+      {/* Scroll progress bar — top on desktop, bottom on mobile */}
+      <div aria-hidden className="pw-progress" style={{
+        position: "fixed", left: 0, width: `${scrollPct}%`,
         background: BRONZE, zIndex: 100,
         transition: "width 80ms linear",
       }} />
@@ -299,7 +338,10 @@ export default function PublicWelcome() {
             pointerEvents: "none",
           }} />
           <div style={{ position: "relative", width: "100%", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 36 }}>
-            <div className="pw-eye-in pw-eye-pulse">
+            <div className="pw-eye-in pw-eye-pulse pw-eye-parallax" style={{
+              transform: `translateY(${heroScroll * -20}px)`,
+              transition: "transform 120ms linear",
+            }}>
               <HorizonEye size={80} pupilR={pupilR} />
             </div>
             <h1 style={{
