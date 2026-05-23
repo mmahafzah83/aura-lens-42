@@ -607,7 +607,6 @@ export default function PublicWelcome() {
         </section>
         </div>{/* /gated */}
       </main>
-    </div>
 
       {/* FOOTER */}
       <footer style={{ padding: 40, borderTop: "1px solid #1a1a1a", textAlign: "center" }}>
